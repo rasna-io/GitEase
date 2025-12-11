@@ -1,0 +1,27 @@
+import QtQuick
+import QtQuick.Templates as T
+import QtQuick.Controls.Material
+import QtQuick.Controls.Material.impl
+
+T.Pane {
+    id: control
+
+    implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
+                            contentWidth + leftPadding + rightPadding)
+    implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
+                             contentHeight + topPadding + bottomPadding)
+
+    padding: 12
+    Material.roundedScale: control.Material.elevation > 0 ? Material.ExtraSmallScale : Material.NotRounded
+
+    background: Rectangle {
+        color: control.Material.backgroundColor
+        radius: control.Material.roundedScale
+
+        layer.enabled: control.enabled && control.Material.elevation > 0
+        layer.effect: RoundedElevationEffect {
+            elevation: control.Material.elevation
+            roundedScale: control.background.radius
+        }
+    }
+}

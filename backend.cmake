@@ -1,0 +1,12 @@
+set(SOURCES_BACKEND
+
+)
+
+set(HEADERS_BACKEND
+
+)
+
+set(INCLUDE_DIRS_BACKEND
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/
+    ${CMAKE_SOURCE_DIR}/Src
+)

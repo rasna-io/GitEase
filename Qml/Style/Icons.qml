@@ -1,0 +1,6 @@
+import QtQuick
+
+QtObject{
+
+
+}
