@@ -1,49 +1,67 @@
 import QtQuick
 import QtQuick.Templates as T
 import QtQuick.Controls.impl
-import QtQuick.Controls.Material
-import QtQuick.Controls.Material.impl
 
 import GitEase_Style
 
+/*! ***********************************************************************************************
+ * TextField
+ * Custom TextField component with automatic sizing, icon support, and error state
+ * ************************************************************************************************/
 T.TextField {
     id: control
 
     /* Property Declarations
      * ****************************************************************************************/
-    property  bool error
+    // Visual properties
+    property bool error: false
+    property string icon: ""
+    
+    // Customization properties
+    property color backgroundColor: Style.colors.surfaceLight
+    property color borderColor: Style.colors.primaryBorder
+    property color focusBorderColor: Style.colors.accent
+    property color errorBorderColor: Style.colors.error
+    property int borderRadius: 5
+    property int baseFontSize: 12
+    
+    // Icon properties
+    property string iconFontFamily: Style.fontTypes.font6Pro
+    property int iconSize: 18
+    property color iconColor: Style.colors.mutedText
+    
+    /* Internal Automatic Calculations
+     * ****************************************************************************************/
+    readonly property int _horizontalPadding: baseFontSize
+    readonly property int _verticalPadding: Math.max(8, baseFontSize * 0.7)
+    readonly property int _iconLeftMargin: 12
+    readonly property int _iconTotalSpace: icon !== "" ? (iconSize + _iconLeftMargin * 2) : 0
+    
+    /* Object Properties
+     * ****************************************************************************************/
+    implicitWidth: Math.max(200, contentWidth + leftPadding + rightPadding)
+    implicitHeight: Math.max(38, contentHeight + topPadding + bottomPadding)
 
-    implicitWidth: implicitBackgroundWidth + leftInset + rightInset
-                   || Math.max(contentWidth, placeholder.implicitWidth) + leftPadding + rightPadding
-    implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
-                             contentHeight + topPadding + bottomPadding)
+    // Automatic padding based on icon presence
+    leftPadding: icon !== "" ? _iconTotalSpace : _horizontalPadding
+    rightPadding: _horizontalPadding
+    topPadding: _verticalPadding
+    bottomPadding: _verticalPadding
 
-    // If we're clipped, set topInset to half the height of the placeholder text to avoid it being clipped.
-    topInset: clip ? placeholder.largestHeight / 2 : 0
-
-    leftPadding: Material.textFieldHorizontalPadding
-    rightPadding: Material.textFieldHorizontalPadding
-    // Need to account for the placeholder text when it's sitting on top.
-    topPadding: Material.containerStyle === Material.Filled
-        ? placeholderText.length > 0 && (activeFocus || length > 0)
-            ? Material.textFieldVerticalPadding + placeholder.largestHeight
-            : Material.textFieldVerticalPadding
-        // Account for any topInset (used to avoid floating placeholder text being clipped),
-        // otherwise the text will be too close to the background.
-        : Material.textFieldVerticalPadding + topInset
-    bottomPadding: Material.textFieldVerticalPadding
-
-    color: enabled ? Material.foreground : Material.hintTextColor
-    selectionColor: Material.accentColor
-    selectedTextColor: Material.primaryHighlightedTextColor
-    placeholderTextColor: Material.accentColor
+    // Text colors
+    color: enabled ? Style.colors.foreground : Style.colors.mutedText
+    selectionColor: Style.colors.accent
+    selectedTextColor: "white"
+    placeholderTextColor: Style.colors.placeholderText
     verticalAlignment: TextInput.AlignVCenter
+    
+    // Font setup
+    font.pixelSize: baseFontSize
+    font.family: Style.fontTypes.roboto
+    font.weight: 400
 
-    Material.containerStyle: Material.Outlined
-    Material.accent: Style.colors.foreground
-
-    cursorDelegate: CursorDelegate { }
-
+    /* Placeholder Text
+     * ****************************************************************************************/
     PlaceholderText {
         id: placeholder
         x: control.leftPadding
@@ -53,21 +71,53 @@ T.TextField {
 
         text: control.placeholderText
         font: control.font
-        color: control.error ? Style.colors.error
-                             : control.placeholderTextColor
+        color: control.error ? control.errorBorderColor : control.placeholderTextColor
         verticalAlignment: control.verticalAlignment
-        visible: !control.length && !control.preeditText && (!control.activeFocus || control.horizontalAlignment !== Qt.AlignHCenter)
+        visible: !control.length && !control.preeditText && !control.activeFocus
         elide: Text.ElideRight
         renderType: control.renderType
+        
+        Behavior on color {
+            ColorAnimation { duration: 150 }
+        }
     }
 
+    /* Icon
+     * ****************************************************************************************/
+    Text {
+        id: iconText
+        visible: control.icon !== ""
+        anchors.left: parent.left
+        anchors.leftMargin: control._iconLeftMargin
+        anchors.verticalCenter: parent.verticalCenter
+        text: control.icon
+        font.family: control.iconFontFamily
+        font.pixelSize: control.iconSize
+        color: control.error ? control.errorBorderColor : control.iconColor
+        
+        Behavior on color {
+            ColorAnimation { duration: 150 }
+        }
+    }
+
+    /* Background
+     * ****************************************************************************************/
     background: Rectangle {
         implicitWidth: 200
-        implicitHeight: 40
-        radius: 5
+        implicitHeight: 38
+        radius: control.borderRadius
         border.width: control.activeFocus ? 2 : 1
-        color: control.palette.base
-        border.color: control.error ? Style.colors.error
-                        : control.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
+        color: control.backgroundColor
+        border.color: control.error ? control.errorBorderColor
+                        : control.activeFocus ? control.focusBorderColor 
+                        : control.borderColor
+        
+        Behavior on border.width {
+            NumberAnimation { duration: 150 }
+        }
+        
+        Behavior on border.color {
+            ColorAnimation { duration: 150 }
+        }
     }
 }

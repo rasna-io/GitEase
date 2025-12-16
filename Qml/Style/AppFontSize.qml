@@ -1,12 +1,12 @@
 import QtQuick
 
-/*!
+/*! ***********************************************************************************************
  * AppFontSize holds application specific font sizes, like default, secondary, teriary, h1 font, etc
  * Note: Font sizes are in PT (pointsize)
- */
+ * ************************************************************************************************/
 QtObject {
-    //* Property Declarations
-    //* ************************************/
+    /* Property Declarations
+     * ****************************************************************************************/
 
     //! Default Font pointsize
     property real   defaultPt:          11

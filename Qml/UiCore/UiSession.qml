@@ -17,7 +17,8 @@ Item {
     property        AppModel                  appModel:               AppModel {}
 
 
-    property        DeviceController         deviceController:        DeviceController {}
+    // add controllers
+    // property        DeviceController         deviceController:        DeviceController {}
 
 
     property        UiSessionPopups          popups
