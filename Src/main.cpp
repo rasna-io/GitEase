@@ -5,6 +5,8 @@
 #include <QtQml/QQmlContext>
 #include <QtQuick/QQuickWindow>
 
+#include <Src/Git/GitWrapperCPP.h>
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
@@ -21,6 +23,11 @@ int main(int argc, char *argv[])
 
     engine.load(url);
 
+
+    {
+        GitWrapperCPP* c = new GitWrapperCPP();
+        c->runTests();
+    }
 
 
     return app.exec();
