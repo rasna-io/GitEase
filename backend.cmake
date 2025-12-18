@@ -1,9 +1,9 @@
 set(SOURCES_BACKEND
-    Src/Git/GitWrapperCPP.cpp
+
 )
 
 set(HEADERS_BACKEND
-    Src/Git/GitWrapperCPP.h
+
 )
 
 set(INCLUDE_DIRS_BACKEND
