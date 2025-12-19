@@ -15,6 +15,26 @@ set(MAIN_TARGET_URI ${MAIN_TARGET_NAME})
 
 set(THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/Ext" CACHE PATH "Path to third-party libraries")
 
+# ========== EMBEDDED LIBGIT2 SETUP ==========
+# Paths relative to PROJECT_SOURCE_DIR
+set(LIBGIT2_ROOT "${THIRD_PARTY_DIR}/libgit2_mingw")
+set(LIBGIT2_INCLUDE_DIR "${LIBGIT2_ROOT}/include")
+set(LIBGIT2_LIBRARY "${LIBGIT2_ROOT}/lib/libgit2.a")
+
+# Verify the files exist
+if(NOT EXISTS "${LIBGIT2_INCLUDE_DIR}/git2.h")
+    message(FATAL_ERROR "git2.h not found at ${LIBGIT2_INCLUDE_DIR}. Please copy libgit2 files to Ext/libgit2_mingw/")
+endif()
+
+if(NOT EXISTS "${LIBGIT2_LIBRARY}")
+    message(FATAL_ERROR "libgit2.a not found at ${LIBGIT2_LIBRARY}. Please copy libgit2.a to Ext/libgit2_mingw/lib/")
+endif()
+
+message(STATUS "Using embedded libgit2 from: ${LIBGIT2_ROOT}")
+message(STATUS "Libgit2 include dir: ${LIBGIT2_INCLUDE_DIR}")
+# ========== END LIBGIT2 SETUP ==========
+
+
 # Flatten generation of all sub-dependent libraries
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Qml)
 
