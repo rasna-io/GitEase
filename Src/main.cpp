@@ -5,12 +5,16 @@
 #include <QtQml/QQmlContext>
 #include <QtQuick/QQuickWindow>
 
+// #include "Src/Git/GitWrapperCPP.h"
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
 
     QQmlApplicationEngine engine;
+
+    // Register GitServiceCPP with QML
+    // qmlRegisterType<GitWrapperCPP>("GitWrapperCPP", 1, 0, "GitWrapperCPP");
 
     engine.addImportPath(":/");
     engine.addImportPath(qApp->applicationDirPath() + "/Qml/");

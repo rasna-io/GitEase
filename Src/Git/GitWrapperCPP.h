@@ -94,7 +94,7 @@ private:
     bool isValidPath(const QString &path);
 
     /* Internal Test Function */
-    void runInternalTests();
+    void unitTest();
 
 public:
     /**

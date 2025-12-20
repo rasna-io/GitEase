@@ -13,4 +13,4 @@ set(INCLUDE_DIRS_BACKEND
 )
 
 #Add libgit2 include path to all backend files
-include_directories(${LIBGIT2_INCLUDE_DIR})
+include_directories(${INCLUDE_DIRS_BACKEND})

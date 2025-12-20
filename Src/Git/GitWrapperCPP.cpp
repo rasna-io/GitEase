@@ -27,7 +27,7 @@ GitWrapperCPP::GitWrapperCPP(QObject *parent)
     git_libgit2_init();
     qDebug() << "GitWrapperCPP: libgit2 initialized";
 
-    runInternalTests();
+    // unitTest();
 }
 
 GitWrapperCPP::~GitWrapperCPP()
@@ -175,6 +175,20 @@ QVariantMap GitWrapperCPP::clone(const QString &url, const QString &localPath)
     // 8. Print debug message
     qDebug() << "GitWrapperCPP: Repository cloned to" << localPath;
 
+    QVariantMap infoResult = getRepoInfo();
+
+
+    if (infoResult["success"].toBool()) {
+        QVariantMap infoData = infoResult["data"].toMap();
+        qDebug() << "  ✓ getRepoInfo() passed";
+        qDebug() << "    - Branch:" << (infoData["branch"].toString().isEmpty() ? "detached HEAD" : infoData["branch"].toString());
+        qDebug() << "    - Commit count:" << infoData["commitCount"].toInt();
+        qDebug() << "    - Has changes:" << infoData["hasChanges"].toBool();
+
+    } else {
+        qWarning() << "  ✗ getRepoInfo() failed:" << infoResult["error"].toString();
+    }
+
     // 9. Return success result
     return createResult(true, localPath);
 }
@@ -191,6 +205,9 @@ QVariantMap GitWrapperCPP::close()
     m_currentRepoPath.clear();
 
     qDebug() << "GitWrapperCPP: Repository closed";
+    getBranches();
+    getRepoInfo();
+
     return createResult(true);
 }
 
@@ -583,7 +600,7 @@ void GitWrapperCPP::handleGitError(int errorCode)
     }
 }
 
-void GitWrapperCPP::runInternalTests()
+void GitWrapperCPP::unitTest()
 {
     qDebug() << "\n" << QString(60, '=');
     qDebug() << "  GitWrapperCPP - INTERNAL FUNCTIONAL TESTS";
@@ -595,7 +612,7 @@ void GitWrapperCPP::runInternalTests()
     // Create temporary directory for testing
     QTemporaryDir tempDir;
     if (!tempDir.isValid()) {
-        qWarning() << "❌ Failed to create temporary directory for testing";
+        qWarning() << "Failed to create temporary directory for testing";
         return;
     }
 
@@ -613,10 +630,10 @@ void GitWrapperCPP::runInternalTests()
     testsTotal++;
 
     if (initResult["success"].toBool()) {
-        qDebug() << "  ✓ init() passed - Repository created at:" << initResult["data"].toString();
+        qDebug() << " init() passed - Repository created at:" << initResult["data"].toString();
         testsPassed++;
     } else {
-        qWarning() << "  ✗ init() failed:" << initResult["error"].toString();
+        qWarning() << " init() failed:" << initResult["error"].toString();
     }
 
     // --------------------------------------------------------------------
@@ -628,13 +645,13 @@ void GitWrapperCPP::runInternalTests()
 
     if (infoResult["success"].toBool()) {
         QVariantMap infoData = infoResult["data"].toMap();
-        qDebug() << "  ✓ getRepoInfo() passed";
+        qDebug() << "  getRepoInfo() passed";
         qDebug() << "    - Branch:" << (infoData["branch"].toString().isEmpty() ? "detached HEAD" : infoData["branch"].toString());
         qDebug() << "    - Commit count:" << infoData["commitCount"].toInt();
         qDebug() << "    - Has changes:" << infoData["hasChanges"].toBool();
         testsPassed++;
     } else {
-        qWarning() << "  ✗ getRepoInfo() failed:" << infoResult["error"].toString();
+        qWarning() << "getRepoInfo() failed:" << infoResult["error"].toString();
     }
 
     // --------------------------------------------------------------------
@@ -659,16 +676,16 @@ void GitWrapperCPP::runInternalTests()
             int untrackedCount = statusData["untrackedFiles"].toList().size();
 
             if (untrackedCount > 0) {
-                qDebug() << "  ✓ status() passed - Detected" << untrackedCount << "untracked file(s)";
+                qDebug() << " status() passed - Detected" << untrackedCount << "untracked file(s)";
                 testsPassed++;
             } else {
-                qWarning() << "  ✗ status() failed - No untracked files detected";
+                qWarning() << " status() failed - No untracked files detected";
             }
         } else {
-            qWarning() << "  ✗ status() failed:" << statusResult["error"].toString();
+            qWarning() << " status() failed:" << statusResult["error"].toString();
         }
     } else {
-        qWarning() << "  ✗ Failed to create test file";
+        qWarning() << " Failed to create test file";
         testsTotal++;
     }
 
@@ -689,7 +706,7 @@ void GitWrapperCPP::runInternalTests()
         }
         testsPassed++;
     } else {
-        qDebug() << "  ⓘ getBranches() - No branches found (empty repo)";
+        qDebug() << " getBranches() - No branches found (empty repo)";
         testsPassed++; // This is acceptable for a new repo
     }
 
@@ -718,17 +735,17 @@ void GitWrapperCPP::runInternalTests()
     testsTotal++;
 
     if (closeResult["success"].toBool()) {
-        qDebug() << "  ✓ close() passed - Repository closed successfully";
+        qDebug() << "close() passed - Repository closed successfully";
         testsPassed++;
 
         // Verify repository is actually closed
         if (m_currentRepo == nullptr && m_currentRepoPath.isEmpty()) {
-            qDebug() << "  ✓ Repository state cleared correctly";
+            qDebug() << " Repository state cleared correctly";
         } else {
-            qWarning() << "  ⚠ Repository state not fully cleared";
+            qWarning() << "Repository state not fully cleared";
         }
     } else {
-        qWarning() << "  ✗ close() failed:" << closeResult["error"].toString();
+        qWarning() << "close() failed:" << closeResult["error"].toString();
     }
 
     // --------------------------------------------------------------------
@@ -741,11 +758,11 @@ void GitWrapperCPP::runInternalTests()
     QString summary = QString("  Tests: %1/%2 passed").arg(testsPassed).arg(testsTotal);
 
     if (testsPassed == testsTotal) {
-        qDebug() << summary << "✅ ALL TESTS PASSED!";
+        qDebug() << summary << "ALL TESTS PASSED!";
     } else if (testsPassed > testsTotal * 0.7) {
-        qDebug() << summary << "⚠️  MOST TESTS PASSED";
+        qDebug() << summary << "MOST TESTS PASSED";
     } else {
-        qDebug() << summary << "❌ MANY TESTS FAILED";
+        qDebug() << summary << "MANY TESTS FAILED";
     }
 
     qDebug() << "\nNote: Clone test skipped (requires network connection)";
