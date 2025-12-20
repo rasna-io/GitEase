@@ -9,6 +9,8 @@ import GitEase.Resources
 import GitEase_Style_Impl
 
 
+
+
 /*! ***********************************************************************************************
  * This is the highest level graphical object, i.e., the main application window. The state
  * of each instance is stored in the UiSession, which needs to be passed to its children.

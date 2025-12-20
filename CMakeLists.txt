@@ -66,6 +66,7 @@ qt_add_qml_module(${MAIN_TARGET_NAME}
         ${RESOURCES_COMPONENTS}
         ${RESOURCES_POPUPS}
         ${RESOURCES_PAGES}
+        ${RESOURCES_SERVICES}
 
     SOURCES
         ${HEADERS_BACKEND}

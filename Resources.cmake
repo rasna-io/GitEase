@@ -54,3 +54,8 @@ set(RESOURCES_PAGES
     Qml/Pages/Page.qml           # Base page component with dock support
     Qml/Pages/PageTabBar.qml     # Tab bar for page navigation
 )
+
+# Define QML Services
+set(RESOURCES_SERVICES
+    Qml/Core/Services/GitService.qml
+)

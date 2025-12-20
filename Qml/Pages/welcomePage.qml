@@ -113,6 +113,8 @@ Rectangle {
             }
 
             onClicked: {
+                GitService.cloneRepository("https://github.com/Roniasoft/GitEase.git", "C:\test");
+
                 if (!root.controller) {
                     return
                 }
