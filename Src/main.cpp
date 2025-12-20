@@ -1,3 +1,5 @@
+#include "Src/Utilities/windowsManager/windowcontroller.hpp"
+
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QGuiApplication>
@@ -25,7 +27,13 @@ int main(int argc, char *argv[])
 
     engine.load(url);
 
+    auto* win = qobject_cast<QQuickWindow*>(engine.rootObjects().value(0));
+    if (!win)
+        return -1;
 
+    auto controller = WindowController(win, &app);
+    engine.rootContext()->setContextProperty(QStringLiteral("WindowController"), &controller);
+    win->show();
 
     return app.exec();
 }

@@ -1,9 +1,12 @@
 set(SOURCES_BACKEND
     Src/Git/GitWrapperCPP.cpp
+    Src/Utilities/windowsManager/borderlesswindowhelper.cpp
 )
 
 set(HEADERS_BACKEND
     Src/Git/GitWrapperCPP.h
+    Src/Utilities/windowsManager/windowcontroller.hpp
+    Src/Utilities/windowsManager/borderlesswindowhelper.h
 )
 
 set(INCLUDE_DIRS_BACKEND
