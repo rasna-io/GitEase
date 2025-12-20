@@ -15,6 +15,8 @@ set(MAIN_TARGET_URI ${MAIN_TARGET_NAME})
 
 set(THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/Ext" CACHE PATH "Path to third-party libraries")
 
+include(libgit.cmake)
+
 # Flatten generation of all sub-dependent libraries
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Qml)
 
@@ -75,6 +77,7 @@ target_link_libraries(${MAIN_TARGET_NAME} PRIVATE
     ${MAIN_TARGET_NAME}_Styleplugin
     ${MAIN_TARGET_NAME}_Style_Implplugin
     ${MAIN_TARGET_NAME}.Resourcesplugin
+    libgit2
 )
 
 
