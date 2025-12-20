@@ -37,7 +37,7 @@ Item {
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
         text: Style.icons.angleLeft
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.font6Pro
         font.pixelSize: 16
         width: 45
         height: 45
