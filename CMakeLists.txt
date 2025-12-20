@@ -96,6 +96,7 @@ install(TARGETS ${MAIN_TARGET_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
+target_link_libraries(${MAIN_TARGET_NAME} PRIVATE dwmapi)
 
 # Make Qt Creator aware of where the QML modules live
 set(QML_IMPORT_PATH ${QT_QML_OUTPUT_DIRECTORY} CACHE STRING "QtCreator QML Modules Lookup")
