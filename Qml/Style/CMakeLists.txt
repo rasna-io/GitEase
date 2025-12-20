@@ -38,6 +38,7 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style
     VERSION 1.0
     IMPORTS QtQuick.Controls.Material
     QML_FILES
+        FontTypes.qml
         Style.qml
         AppFontSize.qml
         Colors.qml
