@@ -205,9 +205,6 @@ QVariantMap GitWrapperCPP::close()
     m_currentRepoPath.clear();
 
     qDebug() << "GitWrapperCPP: Repository closed";
-    getBranches();
-    getRepoInfo();
-
     return createResult(true);
 }
 
