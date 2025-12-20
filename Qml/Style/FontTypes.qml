@@ -1,23 +1,12 @@
 import QtQuick
 
-import GitEase
-
 /*! ***********************************************************************************************
- * DeviceController
+ * AppFontType holds application specific font Types, like roboto, font6Pro, etc
  * ************************************************************************************************/
-Item {
-    id: root
-
-
-    /* Signals
-     * ****************************************************************************************/
-
+QtObject{
     /* Property Declarations
      * ****************************************************************************************/
 
-
-    /* Functions
-     * ****************************************************************************************/
-
-
+    readonly property string roboto:   "Roboto"
+    readonly property string font6Pro: "Font Awesome 6 Pro"
 }

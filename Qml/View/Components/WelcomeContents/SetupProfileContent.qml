@@ -1,27 +1,25 @@
 import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
 
+import GitEase_Style
+import GitEase_Style_Impl
 import GitEase
 
-
 /*! ***********************************************************************************************
- * The UiSession contains all information required by graphical components to display the right
- * state.
+ * SetupProfileContent
+ * Second step of welcome flow - Profile Setup
  * ************************************************************************************************/
 Item {
     id: root
 
-
     /* Property Declarations
      * ****************************************************************************************/
+    property var controller: null
 
-    property        AppModel                  appModel:               AppModel {}
-
-
-    // add controllers
-    // property        DeviceController         deviceController:        DeviceController {}
-
-
-    property        UiSessionPopups          popups
-
-
+    SetupProfileForm {
+        anchors.fill: parent
+        showHint: true
+    }
 }
+
