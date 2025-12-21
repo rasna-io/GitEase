@@ -45,6 +45,15 @@ ApplicationWindow {
 
     /* Children
      * ****************************************************************************************/
+    UiSession {
+        id: uiSession
+    }
+
+    UiSessionPopups {
+        id: uiSessionPopups
+        width: window.width
+        height: window.height
+    }
 
     // Main content loader - switches between welcome flow and main application
     // Check flag BEFORE creating any components
@@ -89,6 +98,7 @@ ApplicationWindow {
                 onLoaded: {
                     if (item && item.hasOwnProperty("controller")) {
                         item.controller = welcomeController
+                        item.repositoryController = uiSession.repositoryController
                     }
                 }
             }
@@ -101,17 +111,6 @@ ApplicationWindow {
 
         Item {
             anchors.fill: parent
-
-            UiSession {
-                id: uiSession
-                popups: uiSessionPopups
-            }
-
-            UiSessionPopups {
-                id: uiSessionPopups
-                width: window.width
-                height: window.height
-            }
 
             // Main application content goes here
             Rectangle {
