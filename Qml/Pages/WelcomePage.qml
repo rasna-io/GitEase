@@ -128,10 +128,6 @@ Rectangle {
             }
 
             onClicked: {
-                if (!root.controller) {
-                    return
-                }
-
                 switch(root.controller.currentPageIndex) {
                     case Enums.WelcomePages.WelcomeBanner:
                         root.controller.nextPage()
@@ -150,6 +146,10 @@ Rectangle {
 
                     default:
                         break
+                }
+
+                if (!root.controller) {
+                    return
                 }
             }
         }
