@@ -5,12 +5,15 @@ set(RESOURCES_CORE
     # Application Models
     Qml/Core/Models/AppModel.qml              # Main application data model
     Qml/Core/Models/AppSettings.qml           # Application settings (singleton)
+    Qml/Core/Models/Enums.qml
+    Qml/Core/Models/Repository.qml
 
     # Controllers
-    Qml/Core/Controllers/WelcomeController.qml # Welcome page controller
-    Qml/Core/Controllers/DockController.qml    # Dock widget management controller
-    Qml/Core/Controllers/PageController.qml    # Page lifecycle and navigation controller
-    Qml/Core/Controllers/LayoutController.qml  # Layout management controller (singleton)
+    Qml/Core/Controllers/WelcomeController.qml    # Welcome page controller
+    Qml/Core/Controllers/DockController.qml       # Dock widget management controller
+    Qml/Core/Controllers/PageController.qml       # Page lifecycle and navigation controller
+    Qml/Core/Controllers/LayoutController.qml     # Layout management controller (singleton)
+    Qml/Core/Controllers/RepositoryController.qml # Repository Controller
 )
 
 
@@ -31,8 +34,6 @@ set(RESOURCES_COMPONENTS
 
     # Welcome-specific Content - Welcome page content sections
     Qml/View/Components/WelcomeContents/WelcomeContent.qml           # Main welcome content
-    Qml/View/Components/WelcomeContents/SetupProfileContent.qml     # Profile setup content
-    Qml/View/Components/WelcomeContents/OpenRepositoryContent.qml   # Repository opening content
 )
 
 
