@@ -39,7 +39,9 @@ Item {
      * Clone a repository from URL to the specified local path
      */
     function cloneRepository(path, url) : bool {
-        var result = GitService.clone(url, path)
+        let repoName = extractRepoName(url)
+
+        var result = GitService.clone(url, path + "/" + repoName)
 
         if(result.success){
             createRepositoryComponent(path)
@@ -88,5 +90,24 @@ Item {
                 appModel.recentRepositories = appModel.recentRepositories.slice()
             }
         }
+    }
+
+    /**
+     * Extracts the repository name from a Git repository URL.
+     *
+     * Supported formats:
+     *  - HTTPS: https://github.com/owner/repository.git
+     *  - SSH:   git@github.com:owner/repository.git
+     *
+     * Behavior:
+     *  - Returns only the repository name (last path segment)
+     *
+     */
+    function extractRepoName(repoUrl : string) : string {
+        // remove trailing .git
+        let url = repoUrl.replace(/\.git$/, "");
+
+        // handle both / and : (for SSH)
+        return url.split(/[\/:]/).pop();
     }
 }
