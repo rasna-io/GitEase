@@ -1,5 +1,7 @@
 import QtQuick
 
+import GitEase
+
 /*! ***********************************************************************************************
  * WelcomeController
  * Manages the welcome flow navigation and state
@@ -11,7 +13,7 @@ QtObject {
      * ****************************************************************************************/
     
     // Current page index in the welcome flow
-    property int currentPageIndex: 0
+    property int currentPageIndex: Enums.WelcomePages.WelcomeBanner
     
     // Available pages in the welcome flow
     readonly property var pages: [
@@ -24,10 +26,10 @@ QtObject {
     readonly property string currentPage: pages[currentPageIndex]
     
     // Navigation state
-    readonly property bool canGoBack: currentPageIndex > 0
+    readonly property bool canGoBack: currentPageIndex > Enums.WelcomePages.WelcomeBanner
     readonly property bool canGoNext: currentPageIndex < pages.length - 1
-    readonly property bool isFirstPage: currentPageIndex === 0
-    readonly property bool isLastPage: currentPageIndex === pages.length - 1
+    readonly property bool isFirstPage: currentPageIndex === Enums.WelcomePages.WelcomeBanner
+    readonly property bool isLastPage: currentPageIndex === Enums.WelcomePages.OpenRepository
     
     
     /* Signals
@@ -63,7 +65,7 @@ QtObject {
      * Navigate to a specific page by index
      */
     function goToPage(pageIndex) {
-        if (pageIndex >= 0 && pageIndex < pages.length) {
+        if (pageIndex >= Enums.WelcomePages.WelcomeBanner && pageIndex <= Enums.WelcomePages.OpenRepository) {
             currentPageIndex = pageIndex
         }
     }
@@ -72,7 +74,7 @@ QtObject {
      * Reset to the first page
      */
     function reset() {
-        currentPageIndex = 0
+        currentPageIndex = Enums.WelcomePages.WelcomeBanner
     }
     
     /**

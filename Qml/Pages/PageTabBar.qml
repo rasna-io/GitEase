@@ -21,8 +21,8 @@ Rectangle {
     /* Signals
      * ****************************************************************************************/
     signal pageClicked(string pageId)
-    signal repositorySelected(string repositoryId)
-    signal openRepositoryRequested()
+    // signal repositorySelected(string repositoryId)
+    // signal openRepositoryRequested()
 
     /* Object Properties
      * ****************************************************************************************/

@@ -2,26 +2,23 @@ import QtQuick
 
 import GitEase
 
-
 /*! ***********************************************************************************************
- * The UiSession contains all information required by graphical components to display the right
- * state.
+ * UiSession
+ * Main UI session manager that coordinates application controllers and models
  * ************************************************************************************************/
-Item {
+QtObject {
     id: root
-
 
     /* Property Declarations
      * ****************************************************************************************/
+    property AppModel             appModel:             AppModel {}
 
-    property        AppModel                  appModel:               AppModel {}
+    property PageController       pageController:       PageController {
+        currentRepository: appModel.currentRepository
+    }
 
-
-    // add controllers
-    // property        DeviceController         deviceController:        DeviceController {}
-
-
-    property        UiSessionPopups          popups
-
-
+    property RepositoryController repositoryController: RepositoryController {
+        appModel: root.appModel
+    }
 }
+

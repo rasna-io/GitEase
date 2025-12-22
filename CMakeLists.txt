@@ -29,7 +29,9 @@ add_subdirectory(Qml/Style/)
 # Extra QML File properties
 set_source_files_properties(
     Qml/Core/Models/AppSettings.qml
+    Qml/Core/Models/Enums.qml
     Qml/Core/Controllers/LayoutController.qml
+    Qml/Core/Services/GitService.qml
 
     PROPERTIES
         QT_QML_SINGLETON_TYPE True
@@ -40,6 +42,8 @@ set_source_files_properties(
 qt_add_executable(${MAIN_TARGET_NAME}
     Src/main.cpp
 )
+
+target_include_directories(${MAIN_TARGET_NAME} PRIVATE ${INCLUDE_DIRS_BACKEND})
 
 # NO_CACHEGEN is set for qt_add_qml_module() in DEBUG mode so we can have a better QML Preview
 # functionality (Only Qt6.6 and later)
@@ -66,6 +70,7 @@ qt_add_qml_module(${MAIN_TARGET_NAME}
         ${RESOURCES_COMPONENTS}
         ${RESOURCES_POPUPS}
         ${RESOURCES_PAGES}
+        ${RESOURCES_SERVICES}
 
     SOURCES
         ${HEADERS_BACKEND}

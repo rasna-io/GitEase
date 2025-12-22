@@ -15,8 +15,12 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var controller: null
-    property int contentMargins: 24
+    property WelcomeController    controller
+
+    property RepositoryController repositoryController
+
+    property int                  contentMargins:  24
+
 
     /* Object Properties
      * ****************************************************************************************/
@@ -39,10 +43,10 @@ Rectangle {
         PageHeader {
             id: pageHeader
             pageTitle: {
-                switch(root.controller ? root.controller.currentPageIndex : 0) {
-                    case 0: return ""
-                    case 1: return "Set Up Your Profile"
-                    case 2: return "Open a Repository"
+                switch(root.controller ? root.controller.currentPageIndex : Enums.WelcomePages.WelcomeBanner) {
+                    case Enums.WelcomePages.WelcomeBanner: return ""
+                    case Enums.WelcomePages.SetupProfle: return "Set Up Your Profile"
+                    case Enums.WelcomePages.OpenRepository: return "Open a Repository"
                     default: return ""
                 }
             }
@@ -61,21 +65,32 @@ Rectangle {
             
             StackLayout {
                 anchors.fill: parent
-                currentIndex: root.controller ? root.controller.currentPageIndex : 0
+                currentIndex: root.controller ? root.controller.currentPageIndex : Enums.WelcomePages.WelcomeBanner
 
                 // Step 1: Welcome
                 WelcomeContent {
                     controller: root.controller
                 }
 
-                // Step 2: Setup Profile
-                SetupProfileContent {
-                    controller: root.controller
+                SetupProfileForm {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    showHint: true
                 }
 
-                // Step 3: Open Repository
-                OpenRepositoryContent {
-                    controller: root.controller
+                RepositorySelector {
+                    id: repositorySelector
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    showDescription: true
+                    descriptionText: "Choose how you want to get started with your Git repository"
+                    onSelectedPathChanged : {
+                        if(repositorySelector.currentTabIndex === Enums.RepositorySelectorTab.Recents){
+                            if(submit() && root.controller) {
+                                root.controller.completeWelcomeFlow()
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -95,9 +110,9 @@ Rectangle {
                     return "Continue" + " " + Style.icons.arrowRight
                 }
                 switch(root.controller.currentPageIndex) {
-                    case 0: return "Get Started" + " " + Style.icons.arrowRight
-                    case 1:
-                    case 2:
+                    case Enums.WelcomePages.WelcomeBanner: return "Get Started" + " " + Style.icons.arrowRight
+                    case Enums.WelcomePages.SetupProfle:
+                    case Enums.WelcomePages.OpenRepository:
                     default: return "Continue" + " " + Style.icons.arrowRight
                 }
             }
@@ -116,13 +131,41 @@ Rectangle {
                 if (!root.controller) {
                     return
                 }
-                
-                if (root.controller.isLastStep) {
-                    root.controller.completeWelcomeFlow()
-                } else {
-                    root.controller.nextPage()
+
+                switch(root.controller.currentPageIndex) {
+                    case Enums.WelcomePages.WelcomeBanner:
+                        root.controller.nextPage()
+                        break
+
+                    case Enums.WelcomePages.SetupProfle:
+                        //TODO : set user info
+                        root.controller.nextPage()
+                        break
+
+                    case Enums.WelcomePages.OpenRepository:
+                        if(submit()) {
+                            root.controller.completeWelcomeFlow()
+                        }
+                        break
+
+                    default:
+                        break
                 }
             }
+        }
+    }
+
+    function submit() {
+        switch(repositorySelector.currentTabIndex) {
+            case Enums.RepositorySelectorTab.Recents:
+            case Enums.RepositorySelectorTab.Open:
+                return root.repositoryController.openRepository(repositorySelector.selectedPath)
+
+            case Enums.RepositorySelectorTab.Clone:
+                return root.repositoryController.cloneRepository(repositorySelector.selectedPath, repositorySelector.selectedUrl)
+
+            default:
+                return false;
         }
     }
 }

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 
 import GitEase_Style
 import GitEase_Style_Impl
@@ -16,15 +17,23 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property alias currentTabIndex: tabbedView.currentIndex
     property bool showDescription: true
     property string descriptionText: "Choose how you want to get started with your Git repository"
+    property string selectedPath: ""
+    property string selectedUrl: repositoryUrlField.field.text
 
     /* Signals
      * ****************************************************************************************/
-    signal repositorySelected(string name, string path)
 
     /* Children
      * ****************************************************************************************/
+
+    onCurrentTabIndexChanged: {
+        repositoryLocationField.field.text = ""
+        cloneLocationField.field.text = ""
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -49,6 +58,7 @@ Item {
 
         // TabBar and StackLayout
         TabbedView {
+            id: tabbedView
             Layout.fillWidth: true
             Layout.maximumWidth: 465
             Layout.alignment: Qt.AlignHCenter
@@ -76,7 +86,7 @@ Item {
                         ListElement { name: "Machine Learning"; path: "D:/AI/MachineLearning" }
                     }
                     onRepositoryClicked: function(name, path) {
-                        root.repositorySelected(name, path)
+                        root.selectedPath = path
                     }
                 }
             }
@@ -113,7 +123,45 @@ Item {
                             label: "Repository Location"
                             placeholderText: "C:/Users/Username/Documents/MyRepository"
                             button: "Browse"
-                            helperText: "Use the same email as your GitHub/GitLab account to link commits"
+                            helperText: "Select a folder containing a Git repository"
+                            field.text : selectedPath
+
+                            onTextChanged: {
+                                selectedPath = repositoryLocationField.text
+                            }
+
+                            onButtonClicked: {
+                                folderDialog.open()
+                            }
+                        }
+                    }
+                }
+
+                // Folder Dialog for selecting repository folder
+                FolderDialog {
+                    id: folderDialog
+                    title: "Select Repository Folder"
+
+                    onAccepted: {
+                        var selectedFolder = folderDialog.selectedFolder
+                        if (selectedFolder) {
+                            var folderPath = selectedFolder.toString()
+                            // Convert QUrl to local file path
+                            // Remove file:/// prefix (Windows: file:///C:/path, Unix: file:///path)
+                            if (folderPath.startsWith("file:///")) {
+                                folderPath = folderPath.substring(8)
+                            } else if (folderPath.startsWith("file://")) {
+                                folderPath = folderPath.substring(7)
+                            }
+
+                            // Extract folder name for display
+                            var pathParts = folderPath.split(/[\\/]/).filter(function(part) {
+                                return part.length > 0
+                            })
+                            var folderName = pathParts.length > 0 ? pathParts[pathParts.length - 1] : folderPath
+
+                            repositoryLocationField.field.text = folderPath
+                            cloneLocationField.field.text = folderPath
                         }
                     }
                 }
@@ -155,7 +203,10 @@ Item {
                                 id: repositoryUrlField
                                 label: "Repository URL"
                                 placeholderText: "https://github.com/username/repository.git"
-                                button: "Browse"
+
+                                onTextChanged: {
+                                    selectedUrl = repositoryUrlField.text
+                                }
                             }
                         }
 
@@ -169,6 +220,14 @@ Item {
                                 label: "Clone to Location"
                                 placeholderText: "C:/Users/Username/Documents/Projects"
                                 button: "Browse"
+
+                                onTextChanged: {
+                                    selectedPath = cloneLocationField.text
+                                }
+
+                                onButtonClicked: {
+                                    folderDialog.open()
+                                }
                             }
                         }
                     }

@@ -1,15 +1,16 @@
 set(SOURCES_BACKEND
-
+    Src/Git/GitWrapperCPP.cpp
 )
 
 set(HEADERS_BACKEND
-
+    Src/Git/GitWrapperCPP.h
 )
 
 set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Utilities/
     ${CMAKE_SOURCE_DIR}/Src
+    ${CMAKE_SOURCE_DIR}/Src/Git/
 )
 
 #Add libgit2 include path to all backend files
-include_directories(${LIBGIT2_INCLUDE_DIR})
+include_directories(${INCLUDE_DIRS_BACKEND})
