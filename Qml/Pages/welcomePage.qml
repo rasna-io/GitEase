@@ -128,6 +128,10 @@ Rectangle {
             }
 
             onClicked: {
+                if (!root.controller) {
+                    return
+                }
+
                 switch(root.controller.currentPageIndex) {
                     case Enums.WelcomePages.WelcomeBanner:
                         root.controller.nextPage()
@@ -147,10 +151,6 @@ Rectangle {
                     default:
                         break
                 }
-
-                if (!root.controller) {
-                    return
-                }
             }
         }
     }
@@ -165,7 +165,7 @@ Rectangle {
                 return root.repositoryController.cloneRepository(repositorySelector.selectedPath, repositorySelector.selectedUrl)
 
             default:
-                break
+                return false;
         }
     }
 }
