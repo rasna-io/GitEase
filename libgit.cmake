@@ -1,8 +1,12 @@
 # ========== EMBEDDED LIBGIT2 SETUP ==========
 
-set(LIBGIT2_ROOT "${THIRD_PARTY_DIR}/libgit2_mingw")
+set(LIBGIT2_ROOT "${THIRD_PARTY_DIR}/libgit2")
 set(LIBGIT2_INCLUDE_DIR "${LIBGIT2_ROOT}/include")
-set(LIBGIT2_LIBRARY "${LIBGIT2_ROOT}/lib/libgit2.a")
+if (MINGW)
+    set(LIBGIT2_LIBRARY "${LIBGIT2_ROOT}/lib/Windows/libgit2.a")
+elseif(UNIX)
+    set(LIBGIT2_LIBRARY "${LIBGIT2_ROOT}/lib/Linux/libgit2.a")
+endif()
 
 if(NOT EXISTS "${LIBGIT2_INCLUDE_DIR}/git2.h")
     message(FATAL_ERROR "git2.h not found at ${LIBGIT2_INCLUDE_DIR}")
@@ -23,8 +27,7 @@ message(STATUS "Using embedded libgit2:")
 message(STATUS "  Include: ${LIBGIT2_INCLUDE_DIR}")
 message(STATUS "  Library: ${LIBGIT2_LIBRARY}")
 
-# MinGW static libgit2 dependencies
-if (MINGW)
+if (MINGW) # MinGW static libgit2 dependencies
     target_link_libraries(libgit2 INTERFACE
         ws2_32
         bcrypt
@@ -33,6 +36,17 @@ if (MINGW)
         rpcrt4
         winhttp
         z
+    )
+elseif(UNIX) # UNIX static libgit2 dependencies
+    target_link_libraries(libgit2 INTERFACE
+        pthread
+        z
+        crypto
+        ssl
+        gssapi_krb5
+        krb5
+        k5crypto
+        com_err
     )
 endif()
 
