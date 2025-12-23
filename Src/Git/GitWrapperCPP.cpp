@@ -32,6 +32,7 @@ GitWrapperCPP::GitWrapperCPP(QObject *parent)
     qDebug() << "GitWrapperCPP: libgit2 initialized";
 
     // unitTest();
+    unitTestForGitWorkflow();
 }
 
 GitWrapperCPP::~GitWrapperCPP()
@@ -225,14 +226,12 @@ QVariantMap GitWrapperCPP::close()
 
 /* Git Operations Implementation */
 
-QVariantMap GitWrapperCPP::status(const QString &repoPath)
+QVariantMap GitWrapperCPP::status()
 {
-     // 1. Get repository handle
-    git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
-    if (!repo)
-    {
-        return createResult(false, QVariant(), "No repository available");
-    }
+    // 1. Get repository handle - SIMPLIFIED
+    if (!m_currentRepo)
+        return createResult(false, QVariant(), "No repository available. Please open a repository first.");
+
 
     QVariantMap statusData;
     QVariantList stagedFiles;
@@ -245,7 +244,7 @@ QVariantMap GitWrapperCPP::status(const QString &repoPath)
     opts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED;
 
     git_status_list *status_list = nullptr;
-    int gitResult = git_status_list_new(&status_list, repo, &opts);
+    int gitResult = git_status_list_new(&status_list, m_currentRepo, &opts);
 
     if (gitResult == 0) {
         size_t count = git_status_list_entrycount(status_list);
@@ -280,29 +279,25 @@ QVariantMap GitWrapperCPP::status(const QString &repoPath)
         statusData["hasChanges"] = (count > 0);
 
         // Get current branch
-        statusData["currentBranch"] = getCurrentBranchName(repo);
-    }
-
-    // Clean up if we opened a temporary repository
-    if (repo != m_currentRepo) {
-        git_repository_free(repo);
+        statusData["currentBranch"] = getCurrentBranchName(m_currentRepo);
     }
 
     return createResult(true, statusData);
 }
 
-QVariantList GitWrapperCPP::getCommits(const QString &repoPath, int limit)
+QVariantList GitWrapperCPP::getCommits(int limit)
 {
     QVariantList commits;
 
-    // Get repository (opens if needed)
-    git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
-    if (!repo) {
+    // Step 1: Check if repository is open
+    if (!m_currentRepo) {
+        qWarning() << "GitWrapperCPP: No repository open for getCommits";
         return commits; // Empty list
     }
 
+    // Step 2: Use m_currentRepo directly
     git_revwalk *walker = nullptr;
-    int result = git_revwalk_new(&walker, repo);
+    int result = git_revwalk_new(&walker, m_currentRepo);
 
     if (result == 0) {
         // Start from HEAD and sort by time (newest first)
@@ -315,7 +310,7 @@ QVariantList GitWrapperCPP::getCommits(const QString &repoPath, int limit)
         // Walk through commits up to limit
         while (count < limit && git_revwalk_next(&oid, walker) == 0) {
             git_commit *commit = nullptr;
-            result = git_commit_lookup(&commit, repo, &oid);
+            result = git_commit_lookup(&commit, m_currentRepo, &oid);
 
             if (result == 0) {
                 commits.append(commitToMap(commit));
@@ -328,16 +323,12 @@ QVariantList GitWrapperCPP::getCommits(const QString &repoPath, int limit)
         git_revwalk_free(walker);
     }
 
-    // Clean up if we opened a temporary repository
-    if (repo != m_currentRepo) {
-        git_repository_free(repo);
-    }
-
+    // Step 3: No cleanup needed (using m_currentRepo directly)
     qDebug() << "GitWrapperCPP: Retrieved" << commits.size() << "commits";
     return commits;
 }
 
-QVariantList GitWrapperCPP::getBranches(const QString &repoPath)
+QVariantList GitWrapperCPP::getBranches()
 {
     QVariantList branches;
 
@@ -582,61 +573,50 @@ QString GitWrapperCPP::getUpstreamName(const QString &localBranchName)
 
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
 {
-    // 1. Prepare result map
+    // Step 1: Check if repository is open
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository available. Please open a repository first.");
+    }
+
+    // Step 2: Prepare result map and use m_currentRepo
     QVariantMap info;
 
-    // 2. Get repository (open if needed)
-    git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
-    if (!repo)  // If repo is null (not open)
-    {
-        return createResult(false, QVariant(), "No repository available");
-    }
+    // Get current branch name
+    info["branch"] = getCurrentBranchName(m_currentRepo);  // e.g., "main"
 
-    // 3. Get current branch name
-    info["branch"] = getCurrentBranchName(repo);  // e.g., "main"
-
-    // 4. Count commits
+    // Count commits
     int commitCount = 0;
-    git_revwalk *walker = nullptr;  // libgit2's "commit walker"
+    git_revwalk *walker = nullptr;
 
-    // Create a walker to go through commits
-    if (git_revwalk_new(&walker, repo) == 0) {
-        git_revwalk_push_head(walker);  // Start from HEAD (latest commit)
-        git_oid oid;  // libgit2's commit ID object
+    if (git_revwalk_new(&walker, m_currentRepo) == 0) {
+        git_revwalk_push_head(walker);
+        git_oid oid;
 
-        // Walk through all commits
         while (git_revwalk_next(&oid, walker) == 0) {
-            commitCount++;  // Count each commit
+            commitCount++;
         }
-        git_revwalk_free(walker);  // Clean up
+        git_revwalk_free(walker);
     }
-    info["commitCount"] = commitCount;  // e.g., 42
+    info["commitCount"] = commitCount;
 
-    // 5. Check for uncommitted changes
+    // Check for uncommitted changes
     bool hasChanges = false;
-    git_status_options opts = GIT_STATUS_OPTIONS_INIT;  // Default options
+    git_status_options opts = GIT_STATUS_OPTIONS_INIT;
     git_status_list* status = nullptr;
 
-    // Get status list
-    if (git_status_list_new(&status, repo, &opts) == 0) {
-        // If there are any entries, we have changes
+    if (git_status_list_new(&status, m_currentRepo, &opts) == 0) {
         hasChanges = (git_status_list_entrycount(status) > 0);
-        git_status_list_free(status);  // Clean up
+        git_status_list_free(status);
     }
-    info["hasChanges"] = hasChanges;  // true/false
+    info["hasChanges"] = hasChanges;
 
-    // 6. Get repository path
-    const char* path = git_repository_path(repo);  // Get .git folder path
+    // Get repository path
+    const char* path = git_repository_path(m_currentRepo);
     if (path) {
-        info["path"] = QString::fromUtf8(path);  // Convert to QString
+        info["path"] = QString::fromUtf8(path);
     }
 
-    // 7. Clean up if we opened a temporary repository
-    if (repo != m_currentRepo) {
-        git_repository_free(repo);  // Only free if not the main repo
-    }
-
-    // 8. Return structured data
+    // Step 3: Return result
     return createResult(true, info);
 }
 
@@ -782,24 +762,6 @@ bool GitWrapperCPP::isValidPath(const QString &path)
     return true;
 }
 
-
-
-git_repository* GitWrapperCPP::openRepository(const QString &path)
-{
-    if (m_currentRepo) return m_currentRepo;
-
-    git_repository* repo = nullptr;
-    QByteArray pathUtf8 = path.toUtf8();
-    int result = git_repository_open(&repo, pathUtf8.constData());
-
-    if (result != 0) {
-        handleGitError(result);
-        return nullptr;
-    }
-
-    return repo;
-}
-
 void GitWrapperCPP::handleGitError(int errorCode)
 {
     const git_error *error = git_error_last();
@@ -811,6 +773,1004 @@ void GitWrapperCPP::handleGitError(int errorCode)
         qWarning() << m_lastError;
     }
 }
+
+// GitWrapperCPP.cpp - Commit functionality addition
+
+// Add these includes at the top of the file
+#include <git2/commit.h>
+#include <git2/signature.h>
+#include <git2/tree.h>
+#include <git2/index.h>
+#include <git2/revparse.h>
+#include <git2/branch.h>
+#include <git2/refs.h>
+#include <QRegularExpression>
+
+// Add to the helper functions section
+QString GitWrapperCPP::validateCommitMessage(const QString &message)
+{
+    if (message.trimmed().isEmpty()) {
+        return "Commit message cannot be empty";
+    }
+
+    // Check for common commit message issues
+    QRegularExpression trailingWhitespace("\\s+$");
+    if (trailingWhitespace.match(message).hasMatch()) {
+        return "Commit message has trailing whitespace";
+    }
+
+    // Warn about very short messages (optional)
+    if (message.trimmed().length() < 10) {
+        qWarning() << "Commit message is very short, consider adding more details";
+    }
+
+    return QString(); // Empty string means valid
+}
+
+QVariantMap GitWrapperCPP::createSignatureMap(const git_signature *sig)
+{
+    QVariantMap signature;
+    if (sig) {
+        signature["name"] = QString::fromUtf8(sig->name);
+        signature["email"] = QString::fromUtf8(sig->email);
+        signature["timestamp"] = QDateTime::fromSecsSinceEpoch(sig->when.time);
+        signature["offset"] = sig->when.offset;
+    }
+    return signature;
+}
+
+QVariantMap GitWrapperCPP::commit(const QString &message, bool amend, bool allowEmpty)
+{
+    // 1. Validate repository is open
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository open. Please open or init a repository first.");
+    }
+
+    // 2. Validate commit message
+    QString validationError = validateCommitMessage(message);
+    if (!validationError.isEmpty()) {
+        return createResult(false, QVariant(), validationError);
+    }
+
+    // 3. Check if there are staged changes (unless allowing empty commit)
+    if (!allowEmpty && !hasStagedChanges()) {
+        return createResult(false, QVariant(),
+                            "No staged changes to commit. Please stage files first.\n\n"
+                            "Tip: Use status() to see changes, then stageFile() to stage.");
+    }
+
+    // 4. Get the default signature (author & committer)
+    git_signature *author = nullptr;
+    git_signature *committer = nullptr;
+    int result = git_signature_default(&author, m_currentRepo);
+
+    if (result != 0) {
+        // If no default signature, create one with generic info
+        result = git_signature_now(&author, "user_name", "emadil_address");
+        if (result != 0) {
+            handleGitError(result);
+            return createResult(false, QVariant(), "Failed to create author signature");
+        }
+    }
+
+    // For now, use same signature for committer
+    committer = author;
+
+    // 5. Get the index (staging area)
+    git_index *index = nullptr;
+    result = git_repository_index(&index, m_currentRepo);
+    if (result != 0) {
+        git_signature_free(author);
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to get repository index");
+    }
+
+    // 6. Write the tree from the index
+    git_oid tree_oid;
+    result = git_index_write_tree(&tree_oid, index);
+    if (result != 0) {
+        git_index_free(index);
+        git_signature_free(author);
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to write tree from staged changes");
+    }
+
+    git_tree *tree = nullptr;
+    result = git_tree_lookup(&tree, m_currentRepo, &tree_oid);
+    if (result != 0) {
+        git_index_free(index);
+        git_signature_free(author);
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to lookup tree");
+    }
+
+    // 7. Prepare parents for the commit
+    const git_commit **parents = nullptr;
+    size_t parent_count = 0;
+    git_commit *current_commit = nullptr;  // DECLARE HERE - FIXED!
+
+    if (amend) {
+        git_reference* head_ref = nullptr;
+        result = git_repository_head(&head_ref, m_currentRepo);
+
+        if (result == 0 && head_ref) {
+            result = git_reference_peel((git_object**)&current_commit, head_ref, GIT_OBJECT_COMMIT);
+
+            if (result == 0 && current_commit) {
+                parent_count = git_commit_parentcount(current_commit);
+                if (parent_count > 0) {
+                    parents = new const git_commit*[parent_count];
+                    for (unsigned int i = 0; i < parent_count; ++i) {
+                        git_commit* parent = nullptr;
+                        // CORRECT: Use output parameter
+                        if (git_commit_parent(&parent, current_commit, i) == 0) {
+                            parents[i] = parent;
+                        } else {
+                            parents[i] = nullptr;
+                        }
+                    }
+                }
+                // DON'T free current_commit here - it's still referenced by parents[]
+                // We'll free it AFTER the commit creation
+            }
+            git_reference_free(head_ref);
+        }
+    } else {
+        // For regular commit, use HEAD as parent if it exists
+        git_commit *parent = nullptr;
+        result = git_revparse_single((git_object**)&parent, m_currentRepo, "HEAD");
+
+        if (result == 0 && parent) {
+            parent_count = 1;
+            parents = new const git_commit*[1];
+            parents[0] = parent;
+        } else {
+            // First commit in repository (no parent)
+            parent_count = 0;
+        }
+    }
+
+    // 8. Create the commit
+    git_oid commit_oid;
+    QByteArray messageUtf8 = message.trimmed().toUtf8();
+
+    result = git_commit_create(
+        &commit_oid,
+        m_currentRepo,
+        "HEAD",  // Update HEAD (and current branch)
+        author,
+        committer,
+        nullptr,  // Use default message encoding (UTF-8)
+        messageUtf8.constData(),
+        tree,
+        parent_count,
+        parent_count > 0 ? parents : nullptr
+        );
+
+    // 9. Clean up allocations
+    if (parents) {
+        if (amend && current_commit) {
+            // In amend case, parents are borrowed from current_commit
+            // Don't free them individually
+            // First free the parents array elements
+            for (size_t i = 0; i < parent_count; i++) {
+                if (parents[i]) {
+                    git_commit_free((git_commit*)parents[i]);
+                }
+            }
+            // Then free the current_commit itself
+            git_commit_free(current_commit);  // Free the source commit
+        } else {
+            // In normal case, we allocated these parents
+            for (size_t i = 0; i < parent_count; i++) {
+                git_commit_free((git_commit*)parents[i]);
+            }
+        }
+        delete[] parents;
+    }
+
+    git_tree_free(tree);
+    git_index_free(index);
+    git_signature_free(author);
+
+    // 10. Handle commit creation result
+    if (result != 0) {
+        handleGitError(result);
+
+        // Provide more specific error messages for common issues
+        if (result == GIT_EAMBIGUOUS) {
+            return createResult(false, QVariant(),
+                                "Ambiguous commit state. Please resolve conflicts or check repository state.");
+        } else if (result == GIT_EUNBORNBRANCH) {
+            return createResult(false, QVariant(),
+                                "Cannot amend: unborn HEAD (no commits yet). Use regular commit instead.");
+        }
+
+        return createResult(false, QVariant(), "Failed to create commit");
+    }
+
+    // 11. Get the created commit details for the response
+    git_commit *new_commit = nullptr;
+    result = git_commit_lookup(&new_commit, m_currentRepo, &commit_oid);
+
+    QVariantMap commitResult;
+    if (result == 0 && new_commit) {
+        char hash[GIT_OID_HEXSZ + 1];
+        git_oid_tostr(hash, sizeof(hash), git_commit_id(new_commit));
+
+        commitResult["hash"] = QString::fromUtf8(hash);
+        commitResult["shortHash"] = QString::fromUtf8(hash).left(7);
+        commitResult["message"] = QString::fromUtf8(git_commit_message(new_commit));
+        commitResult["summary"] = commitResult["message"].toString().split("\n").first();
+        commitResult["amend"] = amend;
+        commitResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+
+        const git_signature *commit_author = git_commit_author(new_commit);
+        if (commit_author) {
+            commitResult["author"] = createSignatureMap(commit_author);
+        }
+
+        git_commit_free(new_commit);
+    }
+
+    // 12. Log the successful commit
+    qDebug() << "GitWrapperCPP: Commit"
+             << (amend ? "(amend) " : "")
+             << "created:" << commitResult["shortHash"].toString()
+             << "-" << commitResult["summary"].toString();
+
+    // 13. Return success with commit details
+    return createResult(true, commitResult);
+}
+
+QVariantMap GitWrapperCPP::stageFile(const QString &filePath)
+{
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository open");
+    }
+
+    if (filePath.isEmpty()) {
+        return createResult(false, QVariant(), "File path cannot be empty");
+    }
+
+    git_index *index = nullptr;
+    int result = git_repository_index(&index, m_currentRepo);
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to get repository index");
+    }
+
+    QByteArray filePathUtf8 = filePath.toUtf8();
+    result = git_index_add_bypath(index, filePathUtf8.constData());
+
+    if (result != 0) {
+        git_index_free(index);
+        handleGitError(result);
+
+        // Provide specific error messages
+        if (result == GIT_ENOTFOUND) {
+            return createResult(false, QVariant(),
+                                QString("File not found: %1\n\nPlease check the file path exists in the working directory.").arg(filePath));
+        }
+
+        return createResult(false, QVariant(),
+                            QString("Failed to stage file: %1").arg(filePath));
+    }
+
+    // Write the index to disk
+    result = git_index_write(index);
+    git_index_free(index);
+
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to write staged changes to disk");
+    }
+
+    qDebug() << "GitWrapperCPP: Staged file:" << filePath;
+    return createResult(true, filePath);
+}
+
+QVariantMap GitWrapperCPP::unstageFile(const QString &filePath)
+{
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository open");
+    }
+
+    if (filePath.isEmpty()) {
+        return createResult(false, QVariant(), "File path cannot be empty");
+    }
+
+    git_index *index = nullptr;
+    int result = git_repository_index(&index, m_currentRepo);
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to get repository index");
+    }
+
+    QByteArray filePathUtf8 = filePath.toUtf8();
+
+    // First, check if the file is actually in the index
+    const git_index_entry *entry = git_index_get_bypath(index, filePathUtf8.constData(), 0);
+    if (!entry) {
+        git_index_free(index);
+        return createResult(false, QVariant(),
+                            QString("File is not staged: %1\n\nUse status() to see staged files.").arg(filePath));
+    }
+
+    // Remove from index (unstage)
+    result = git_index_remove_bypath(index, filePathUtf8.constData());
+
+    if (result != 0) {
+        git_index_free(index);
+        handleGitError(result);
+        return createResult(false, QVariant(),
+                            QString("Failed to unstage file: %1").arg(filePath));
+    }
+
+    // Write the index to disk
+    result = git_index_write(index);
+    git_index_free(index);
+
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to write unstaged changes to disk");
+    }
+
+    qDebug() << "GitWrapperCPP: Unstaged file:" << filePath;
+    return createResult(true, filePath);
+}
+
+QVariantMap GitWrapperCPP::stageAll()
+{
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository open");
+    }
+
+    // Get current status to find unstaged files
+    QVariantMap statusResult = status();
+    if (!statusResult["success"].toBool()) {
+        return statusResult;
+    }
+
+    QVariantMap statusData = statusResult["data"].toMap();
+    QVariantList unstagedFiles = statusData["unstagedFiles"].toList();
+    QVariantList untrackedFiles = statusData["untrackedFiles"].toList();
+
+    if (unstagedFiles.isEmpty() && untrackedFiles.isEmpty()) {
+        return createResult(false, QVariant(),
+                            "No unstaged changes found.\n\nUse status() to see current changes.");
+    }
+
+    git_index *index = nullptr;
+    int result = git_repository_index(&index, m_currentRepo);
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to get repository index");
+    }
+
+    int stagedCount = 0;
+    QStringList stagedFiles;
+
+    // Stage all unstaged modified/deleted files
+    for (const QVariant &fileVar : unstagedFiles) {
+        QVariantMap fileInfo = fileVar.toMap();
+        QString filePath = fileInfo["path"].toString();
+
+        // Don't stage untracked files through this loop
+        if (fileInfo["status"].toString() == "untracked") {
+            continue;
+        }
+
+        QByteArray filePathUtf8 = filePath.toUtf8();
+
+        if (fileInfo["status"].toString() == "deleted") {
+            result = git_index_remove_bypath(index, filePathUtf8.constData());
+        } else {
+            result = git_index_add_bypath(index, filePathUtf8.constData());
+        }
+
+        if (result == 0) {
+            stagedCount++;
+            stagedFiles.append(filePath);
+        }
+    }
+
+    // Stage all untracked files
+    for (const QVariant &fileVar : untrackedFiles) {
+        QVariantMap fileInfo = fileVar.toMap();
+        QString filePath = fileInfo["path"].toString();
+
+        QByteArray filePathUtf8 = filePath.toUtf8();
+        result = git_index_add_bypath(index, filePathUtf8.constData());
+
+        if (result == 0) {
+            stagedCount++;
+            stagedFiles.append(filePath);
+        }
+    }
+
+    // Write the index to disk
+    result = git_index_write(index);
+    git_index_free(index);
+
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to write staged changes to disk");
+    }
+
+    QVariantMap resultData;
+    resultData["count"] = stagedCount;
+    resultData["files"] = stagedFiles;
+
+    qDebug() << "GitWrapperCPP: Staged all files:" << stagedCount << "files staged";
+    return createResult(true, resultData);
+}
+
+QVariantMap GitWrapperCPP::unstageAll()
+{
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository open");
+    }
+
+    // Get current status to find staged files
+    QVariantMap statusResult = status();
+    if (!statusResult["success"].toBool()) {
+        return statusResult;
+    }
+
+    QVariantMap statusData = statusResult["data"].toMap();
+    QVariantList stagedFiles = statusData["stagedFiles"].toList();
+
+    if (stagedFiles.isEmpty()) {
+        return createResult(false, QVariant(),
+                            "No staged changes found.\n\nUse status() to see current changes.");
+    }
+
+    git_index *index = nullptr;
+    int result = git_repository_index(&index, m_currentRepo);
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to get repository index");
+    }
+
+    int unstagedCount = 0;
+    QStringList unstagedFiles;
+
+    for (const QVariant &fileVar : stagedFiles) {
+        QVariantMap fileInfo = fileVar.toMap();
+        QString filePath = fileInfo["path"].toString();
+
+        QByteArray filePathUtf8 = filePath.toUtf8();
+        result = git_index_remove_bypath(index, filePathUtf8.constData());
+
+        if (result == 0) {
+            unstagedCount++;
+            unstagedFiles.append(filePath);
+        }
+    }
+
+    // Write the index to disk
+    result = git_index_write(index);
+    git_index_free(index);
+
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to write unstaged changes to disk");
+    }
+
+    QVariantMap resultData;
+    resultData["count"] = unstagedCount;
+    resultData["files"] = unstagedFiles;
+
+    qDebug() << "GitWrapperCPP: Unstaged all files:" << unstagedCount << "files unstaged";
+    return createResult(true, resultData);
+}
+
+QVariantMap GitWrapperCPP::getStagedFiles()
+{
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository open");
+    }
+
+    QVariantMap statusResult = status();
+    if (!statusResult["success"].toBool()) {
+        return statusResult;
+    }
+
+    QVariantMap statusData = statusResult["data"].toMap();
+    QVariantList stagedFiles = statusData["stagedFiles"].toList();
+
+    QVariantMap resultData;
+    resultData["files"] = stagedFiles;
+    resultData["count"] = stagedFiles.size();
+
+    return createResult(true, resultData);
+}
+
+bool GitWrapperCPP::hasStagedChanges()
+{
+    if (!m_currentRepo) {
+        return false;
+    }
+
+    QVariantMap statusResult = status();
+    if (!statusResult["success"].toBool()) {
+        return false;
+    }
+
+    QVariantMap statusData = statusResult["data"].toMap();
+    QVariantList stagedFiles = statusData["stagedFiles"].toList();
+
+    return !stagedFiles.isEmpty();
+}
+
+QVariantMap GitWrapperCPP::getCommit(const QString &commitHash)
+{
+    // Step 1: Validate inputs and check repository
+    if (commitHash.isEmpty()) {
+        return createResult(false, QVariant(), "Commit hash cannot be empty");
+    }
+
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository available");
+    }
+
+    // Step 2: Use m_currentRepo directly
+    git_oid oid;
+    int result = git_oid_fromstr(&oid, commitHash.toUtf8().constData());
+
+    if (result != 0) {
+        // Try with short hash
+        git_object *obj = nullptr;
+        result = git_revparse_single(&obj, m_currentRepo, commitHash.toUtf8().constData());
+
+        if (result == 0) {
+            git_oid_cpy(&oid, git_object_id(obj));
+            git_object_free(obj);
+        } else {
+            return createResult(false, QVariant(),
+                                QString("Invalid commit hash: %1").arg(commitHash));
+        }
+    }
+
+    git_commit *commit = nullptr;
+    result = git_commit_lookup(&commit, m_currentRepo, &oid);
+
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(),
+                            QString("Commit not found: %1").arg(commitHash));
+    }
+
+    QVariantMap commitDetails = commitToMap(commit);
+
+    // Add additional details
+    commitDetails["parentCount"] = (int)git_commit_parentcount(commit);
+
+    // Get parent hashes
+    QVariantList parentHashes;
+    unsigned int parentCount = git_commit_parentcount(commit);
+    for (unsigned int i = 0; i < parentCount; ++i) {
+        const git_oid* parentOid = git_commit_parent_id(commit, i);
+        if (parentOid) {
+            char hash[GIT_OID_HEXSZ + 1];
+            git_oid_tostr(hash, sizeof(hash), parentOid);
+            parentHashes.append(QString::fromUtf8(hash));
+        }
+    }
+    commitDetails["parentHashes"] = parentHashes;
+
+    // Get committer signature
+    const git_signature *committer = git_commit_committer(commit);
+    if (committer) {
+        commitDetails["committer"] = createSignatureMap(committer);
+    }
+
+    // Get tree hash
+    const git_oid *tree_oid = git_commit_tree_id(commit);
+    if (tree_oid) {
+        char tree_hash[GIT_OID_HEXSZ + 1];
+        git_oid_tostr(tree_hash, sizeof(tree_hash), tree_oid);
+        commitDetails["treeHash"] = QString::fromUtf8(tree_hash);
+    }
+
+    git_commit_free(commit);
+
+    // Step 3: Return result
+    return createResult(true, commitDetails);
+}
+
+QVariantMap GitWrapperCPP::amendLastCommit(const QString &newMessage)
+{
+    // This is a convenience wrapper around commit() with amend=true
+    if (newMessage.isEmpty()) {
+        return createResult(false, QVariant(),
+                            "Cannot amend commit with empty message.\n\n"
+                            "Tip: Use commit() with amend flag to keep the same message.");
+    }
+
+    return commit(newMessage, true);
+}
+
+QVariantMap GitWrapperCPP::revertCommit(const QString &commitHash)
+{
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository open");
+    }
+
+    if (commitHash.isEmpty()) {
+        return createResult(false, QVariant(), "Commit hash cannot be empty");
+    }
+
+    // 1. Convert commit hash to OID
+    git_oid oid;
+    int result = git_oid_fromstr(&oid, commitHash.toUtf8().constData());
+    if (result != 0) {
+        return createResult(false, QVariant(),
+                            QString("Invalid commit hash: %1").arg(commitHash));
+    }
+
+    // 2. Look up the commit to revert
+    git_commit *commit_to_revert = nullptr;  // DECLARED HERE - FIXED!
+    result = git_commit_lookup(&commit_to_revert, m_currentRepo, &oid);
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(),
+                            QString("Commit not found: %1").arg(commitHash));
+    }
+
+    // 3. Check if there are uncommitted changes
+    if (hasStagedChanges()) {
+        git_commit_free(commit_to_revert);
+        return createResult(false, QVariant(),
+                            "Cannot revert with staged changes.\n\n"
+                            "Please commit or stash your changes before reverting.");
+    }
+
+    // 4. Get HEAD commit (the "our_commit" parameter)
+    git_commit* head_commit = nullptr;
+    git_object* head_obj = nullptr;
+    result = git_revparse_single(&head_obj, m_currentRepo, "HEAD");
+    if (result != 0 || !head_obj) {
+        git_commit_free(commit_to_revert);
+        return createResult(false, QVariant(), "Cannot find HEAD commit");
+    }
+    head_commit = (git_commit*)head_obj;
+
+    // 5. Create revert index (does NOT commit yet)
+    git_index* revert_index = nullptr;
+    git_merge_options merge_opts = GIT_MERGE_OPTIONS_INIT;
+    // For normal commits, mainline is 0. For merge commits, specify which parent.
+    unsigned int mainline = 0;
+
+    result = git_revert_commit(
+        &revert_index,        // out: index with revert changes
+        m_currentRepo,        // repo
+        commit_to_revert,     // commit to revert
+        head_commit,          // our commit (HEAD)
+        mainline,             // parent number for merge commits
+        &merge_opts           // merge options
+        );
+
+    if (result != 0) {
+        git_object_free(head_obj);
+        git_commit_free(commit_to_revert);
+        handleGitError(result);
+
+        if (result == GIT_ECONFLICT) {
+            return createResult(false, QVariant(),
+                                "Revert caused conflicts.\n\n"
+                                "Please resolve conflicts manually and commit the result.");
+        }
+        return createResult(false, QVariant(), "Failed to create revert index");
+    }
+
+    // 6. Apply the revert index to working directory
+    git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
+    checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
+    result = git_checkout_index(m_currentRepo, revert_index, &checkout_opts);
+
+    // 7. Clean up intermediate objects
+    git_index_free(revert_index);
+    git_object_free(head_obj);
+    git_commit_free(commit_to_revert);
+
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to apply revert to working tree");
+    }
+
+    // 8. Create the revert commit (using your existing commit() function)
+    QString message = QString("Revert \"%1\"\n\nThis reverts commit %2.")
+                          .arg(commitHash.left(7))
+                          .arg(commitHash);
+
+    return commit(message, false, false); // Don't amend, don't allow empty
+}
+
+// ====================================================
+// Remote Operations Implementation
+// ====================================================
+
+QVariantList GitWrapperCPP::getRemotes()
+{
+    QVariantList remotes;
+
+    // Step 1: Check if repository is open
+    if (!m_currentRepo) {
+        qWarning() << "GitWrapperCPP: No repository open for getRemotes";
+        return remotes;
+    }
+
+    // Step 2: Use m_currentRepo directly
+    git_strarray remote_list = {0};
+    int result = git_remote_list(&remote_list, m_currentRepo);
+
+    if (result == 0) {
+        for (size_t i = 0; i < remote_list.count; i++) {
+            git_remote* remote = nullptr;
+            result = git_remote_lookup(&remote, m_currentRepo, remote_list.strings[i]);
+
+            if (result == 0 && remote) {
+                QVariantMap remoteInfo;
+                remoteInfo["name"] = QString::fromUtf8(remote_list.strings[i]);
+                remoteInfo["url"] = QString::fromUtf8(git_remote_url(remote));
+
+                // Check if this is the default remote (origin)
+                remoteInfo["isOrigin"] = QString::fromUtf8(remote_list.strings[i]) == "origin";
+
+                // Get fetch and push URLs
+                const char* fetch_url = git_remote_url(remote);
+                const char* push_url = git_remote_pushurl(remote);
+                if (fetch_url) remoteInfo["fetchUrl"] = QString::fromUtf8(fetch_url);
+                if (push_url) remoteInfo["pushUrl"] = QString::fromUtf8(push_url);
+
+                remotes.append(remoteInfo);
+                git_remote_free(remote);
+            }
+        }
+        git_strarray_free(&remote_list);
+    }
+
+    // Step 3: No cleanup needed
+    qDebug() << "GitWrapperCPP: Retrieved" << remotes.size() << "remotes";
+    return remotes;
+}
+
+QVariantMap GitWrapperCPP::addRemote(const QString &name, const QString &url)
+{
+    // Step 1: Validate inputs and check repository
+    if (name.isEmpty() || url.isEmpty()) {
+        return createResult(false, QVariant(), "Remote name and URL cannot be empty");
+    }
+
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository available");
+    }
+
+    // Step 2: Use m_currentRepo directly
+    // Check if remote already exists
+    git_remote* existing = nullptr;
+    if (git_remote_lookup(&existing, m_currentRepo, name.toUtf8().constData()) == 0) {
+        git_remote_free(existing);
+        return createResult(false, QVariant(),
+                            QString("Remote '%1' already exists").arg(name));
+    }
+
+    git_remote* remote = nullptr;
+    int result = git_remote_create(&remote, m_currentRepo, name.toUtf8().constData(), url.toUtf8().constData());
+
+    if (result != 0) {
+        handleGitError(result);
+        return createResult(false, QVariant(),
+                            QString("Failed to add remote '%1'").arg(name));
+    }
+
+    QVariantMap remoteInfo;
+    remoteInfo["name"] = name;
+    remoteInfo["url"] = url;
+
+    git_remote_free(remote);
+
+    // Step 3: Return success
+    qDebug() << "GitWrapperCPP: Added remote" << name << "with URL" << url;
+    return createResult(true, remoteInfo);
+}
+
+QVariantMap GitWrapperCPP::removeRemote(const QString &name)
+{
+    // Step 1: Validate inputs and check repository
+    if (name.isEmpty()) {
+        return createResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository available");
+    }
+
+    // Step 2: Use m_currentRepo directly
+    int result = git_remote_delete(m_currentRepo, name.toUtf8().constData());
+
+    if (result != 0) {
+        handleGitError(result);
+
+        if (result == GIT_ENOTFOUND) {
+            return createResult(false, QVariant(),
+                                QString("Remote '%1' not found").arg(name));
+        }
+
+        return createResult(false, QVariant(),
+                            QString("Failed to remove remote '%1'").arg(name));
+    }
+
+    // Step 3: Return success
+    qDebug() << "GitWrapperCPP: Removed remote" << name;
+    return createResult(true, name);
+}
+
+QVariantMap GitWrapperCPP::push(const QString &remoteName,
+                                const QString &branchName,
+                                const QString &username,
+                                const QString &password,
+                                bool force)
+{
+    // Step 1: Validate inputs and check repository
+    if (remoteName.isEmpty()) {
+        return createResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository available");
+    }
+
+    // Step 2: Use m_currentRepo directly
+    // Determine which branch to push
+    QString targetBranch = branchName;
+    if (targetBranch.isEmpty()) {
+        targetBranch = getCurrentBranchName(m_currentRepo);
+        if (targetBranch.isEmpty()) {
+            return createResult(false, QVariant(),
+                                "No branch specified and repository is in detached HEAD state");
+        }
+    }
+
+    // Look up the remote
+    git_remote* remote = nullptr;
+    int result = git_remote_lookup(&remote, m_currentRepo, remoteName.toUtf8().constData());
+
+    if (result != 0) {
+        handleGitError(result);
+
+        if (result == GIT_ENOTFOUND) {
+            return createResult(false, QVariant(),
+                                QString("Remote '%1' not found. Use addRemote() to add it first.").arg(remoteName));
+        }
+
+        return createResult(false, QVariant(), "Failed to lookup remote");
+    }
+
+    // Prepare push options
+    git_push_options push_opts;
+    result = git_push_options_init(&push_opts, GIT_PUSH_OPTIONS_VERSION);
+    if (result != 0) {
+        git_remote_free(remote);
+        handleGitError(result);
+        return createResult(false, QVariant(), "Failed to initialize push options");
+    }
+
+    // Define a struct to hold credentials
+    struct CredentialsPayload {
+        QString username;
+        QString password;
+    };
+
+    // Create payload on heap (will be freed later)
+    CredentialsPayload* credentialsPayload = new CredentialsPayload{username, password};
+
+    // Set the callback as a static function
+    push_opts.callbacks.credentials = [](git_credential **out,
+                                         const char *url,
+                                         const char *username_from_url,
+                                         unsigned int allowed_types,
+                                         void *payload) -> int {
+
+        CredentialsPayload* creds = static_cast<CredentialsPayload*>(payload);
+
+        qDebug() << "GitWrapperCPP: Attempting authentication for" << url;
+
+        // Check if credentials are provided
+        if (creds->username.isEmpty() || creds->password.isEmpty()) {
+            qDebug() << "GitWrapperCPP: No credentials provided in payload";
+            return GIT_EUSER;
+        }
+
+        // Convert QString to C strings for libgit2
+        QByteArray usernameBytes = creds->username.toUtf8();
+        QByteArray passwordBytes = creds->password.toUtf8();
+        const char* usernameCStr = usernameBytes.constData();
+        const char* passwordCStr = passwordBytes.constData();
+
+        // HTTPS authentication
+        if (allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) {
+            int result = git_credential_userpass_plaintext_new(out, usernameCStr, passwordCStr);
+            if (result == 0) {
+                qDebug() << "GitWrapperCPP: HTTPS credentials provided successfully";
+                return 0; // Success
+            }
+        }
+
+        // SSH authentication
+        if (allowed_types & GIT_CREDENTIAL_SSH_KEY) {
+            qDebug() << "GitWrapperCPP: SSH authentication requested (not implemented)";
+            return GIT_EUSER;
+        }
+
+        qDebug() << "GitWrapperCPP: No suitable authentication method";
+        return GIT_EUSER;
+    };
+
+    // ✅ IMPORTANT: Pass payload pointer
+    push_opts.callbacks.payload = credentialsPayload;
+
+    // Prepare refspecs
+    git_strarray refspecs = {0};
+    QString refspec = force ?
+                          QString("+refs/heads/%1:refs/heads/%1").arg(targetBranch) :
+                          QString("refs/heads/%1:refs/heads/%1").arg(targetBranch);
+
+    char* refspec_cstr = new char[refspec.length() + 1];
+    strcpy(refspec_cstr, refspec.toUtf8().constData());
+    refspecs.strings = &refspec_cstr;
+    refspecs.count = 1;
+
+    // Perform the push
+    qDebug() << "GitWrapperCPP: Pushing" << targetBranch << "to" << remoteName
+             << (force ? "(force)" : "");
+
+    result = git_remote_push(remote, &refspecs, &push_opts);
+
+
+    // ✅ Clean up payload
+    delete credentialsPayload;
+    delete[] refspec_cstr;
+    git_remote_free(remote);
+
+    // Clean up
+    delete[] refspec_cstr;
+    git_remote_free(remote);
+
+    // Step 3: Handle result and return
+    if (result != 0) {
+        handleGitError(result);
+
+        if (result == GIT_EUSER) {
+            return createResult(false, QVariant(),
+                                "Authentication required but not provided.\n\n"
+                                "Please configure your credentials.");
+        } else if (result == GIT_EEXISTS) {
+            return createResult(false, QVariant(),
+                                QString("Push rejected: remote already has changes you don't have.\n\n"
+                                        "Try pulling first with:\n"
+                                        "git pull %1 %2").arg(remoteName).arg(targetBranch));
+        } else if (result == GIT_ENONFASTFORWARD && !force) {
+            return createResult(false, QVariant(),
+                                QString("Push rejected: non-fast-forward update.\n\n"
+                                        "To force push, set force=true (not recommended on shared branches)"));
+        }
+
+        return createResult(false, QVariant(), "Push failed");
+    }
+
+    QVariantMap pushResult;
+    pushResult["remote"] = remoteName;
+    pushResult["branch"] = targetBranch;
+    pushResult["force"] = force;
+    pushResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+
+    qDebug() << "GitWrapperCPP: Successfully pushed to" << remoteName;
+    return createResult(true, pushResult);
+}
+
 
 void GitWrapperCPP::unitTest()
 {
@@ -926,7 +1886,7 @@ void GitWrapperCPP::unitTest()
     // TEST 5: Get commits (should be empty in new repo)
     // --------------------------------------------------------------------
     qDebug() << "\n[TEST 5/6] Testing getCommits()...";
-    QVariantList commits = getCommits("", 10);
+    QVariantList commits = getCommits(10);
     testsTotal++;
 
     qDebug() << "  ✓ getCommits() passed - Found" << commits.size() << "commit(s)";
@@ -980,4 +1940,314 @@ void GitWrapperCPP::unitTest()
     qDebug() << "\nNote: Clone test skipped (requires network connection)";
     qDebug() << "To test clone(), use: gitWrapper.clone(\"https://github.com/...\", \"/path/to/clone\")";
     qDebug() << QString(60, '=') << "\n";
+}
+
+void GitWrapperCPP::unitTestForGitWorkflow()
+{
+    qDebug() << "\nGitWrapperCPP - Git Workflow Test\n";
+
+    int testsPassed = 0;
+    int testsTotal = 0;
+
+    // Test repository
+    QString repoUrl = "https://github.com/github_account/repo.git";
+    QString localPath = QDir::homePath() + "/GitTetser_Test";
+    QDir testDir(localPath);
+
+    // --------------------------------------------------------------------
+    // STEP 1: Setup - Clone or open existing
+    // --------------------------------------------------------------------
+    qDebug() << "STEP 1: Setup repository";
+
+    if (testDir.exists()) {
+        qDebug() << "Opening existing repository at:" << localPath;
+        QVariantMap openResult = open(localPath);
+        if (!openResult["success"].toBool()) {
+            qWarning() << "Failed to open existing repo:" << openResult["error"].toString();
+        }
+    } else {
+        qDebug() << "Cloning repository to:" << localPath;
+        QVariantMap cloneResult = clone(repoUrl, localPath);
+        if (!cloneResult["success"].toBool()) {
+            qWarning() << "Clone failed:" << cloneResult["error"].toString();
+            return;
+        }
+    }
+
+    testsTotal++;
+    testsPassed++;
+    qDebug() << "Repository ready\n";
+
+    // --------------------------------------------------------------------
+    // STEP 2: Test status() function
+    // --------------------------------------------------------------------
+    qDebug() << "STEP 2: Testing status()";
+    QVariantMap statusResult = status();
+    testsTotal++;
+
+    if (statusResult["success"].toBool()) {
+        QVariantMap data = statusResult["data"].toMap();
+        qDebug() << "status() - Current branch:" << data["currentBranch"].toString();
+        qDebug() << "  Files staged:" << data["stagedFiles"].toList().size();
+        qDebug() << "  Files unstaged:" << data["unstagedFiles"].toList().size();
+        testsPassed++;
+    } else {
+        qWarning() << "status() failed:" << statusResult["error"].toString();
+    }
+
+    // --------------------------------------------------------------------
+    // STEP 3: Create test files
+    // --------------------------------------------------------------------
+    qDebug() << "\nSTEP 3: Creating test files";
+
+    QString file1 = localPath + "/test1.txt";
+    QString file2 = localPath + "/test2.txt";
+    QString file3 = localPath + "/test3.txt";
+
+    // Create files
+    QFile f1(file1);
+    if (f1.open(QIODevice::WriteOnly)) {
+        f1.write("Test file 1 content");
+        f1.close();
+        qDebug() << "Created: test1.txt";
+    }
+
+    QFile f2(file2);
+    if (f2.open(QIODevice::WriteOnly)) {
+        f2.write("Test file 2 content");
+        f2.close();
+        qDebug() << "Created: test2.txt";
+    }
+
+    QFile f3(file3);
+    if (f3.open(QIODevice::WriteOnly)) {
+        f3.write("Test file 3 content");
+        f3.close();
+        qDebug() << "Created: test3.txt";
+    }
+
+    // --------------------------------------------------------------------
+    // STEP 4: Test stageFile() and unstageFile()
+    // --------------------------------------------------------------------
+    qDebug() << "\nSTEP 4: Testing stageFile() and unstageFile()";
+
+    // Stage one file
+    qDebug() << "Staging test1.txt";
+    QVariantMap stageResult1 = stageFile("test1.txt");
+    testsTotal++;
+
+    if (stageResult1["success"].toBool()) {
+        qDebug() << "stageFile() passed";
+        testsPassed++;
+    } else {
+        qWarning() << "stageFile() failed:" << stageResult1["error"].toString();
+    }
+
+    // Unstage the file
+    qDebug() << "Unstaging test1.txt";
+    QVariantMap unstageResult = unstageFile("test1.txt");
+    testsTotal++;
+
+    if (unstageResult["success"].toBool()) {
+        qDebug() << "unstageFile() passed";
+        testsPassed++;
+    } else {
+        qWarning() << "unstageFile() failed:" << unstageResult["error"].toString();
+    }
+
+    // --------------------------------------------------------------------
+    // STEP 5: Test stageAll()
+    // --------------------------------------------------------------------
+    qDebug() << "\nSTEP 5: Testing stageAll()";
+    QVariantMap stageAllResult = stageAll();
+    testsTotal++;
+
+    if (stageAllResult["success"].toBool()) {
+        QVariantMap data = stageAllResult["data"].toMap();
+        qDebug() << "stageAll() - Staged" << data["count"].toInt() << "files";
+        testsPassed++;
+    } else {
+        qWarning() << "stageAll() failed:" << stageAllResult["error"].toString();
+    }
+
+    // --------------------------------------------------------------------
+    // STEP 6: Test getStagedFiles()
+    // --------------------------------------------------------------------
+    qDebug() << "\nSTEP 6: Testing getStagedFiles()";
+    QVariantMap stagedFilesResult = getStagedFiles();
+    testsTotal++;
+
+    if (stagedFilesResult["success"].toBool()) {
+        QVariantMap data = stagedFilesResult["data"].toMap();
+        int stagedCount = data["count"].toInt();
+        qDebug() << "getStagedFiles() - Found" << stagedCount << "staged files";
+
+        if (stagedCount > 0) {
+            qDebug() << "Staged files:";
+            QVariantList files = data["files"].toList();
+            for (const QVariant &file : files) {
+                QVariantMap fileInfo = file.toMap();
+                qDebug() << "  -" << fileInfo["path"].toString() << "[" << fileInfo["status"].toString() << "]";
+            }
+        }
+        testsPassed++;
+    } else {
+        qWarning() << "getStagedFiles() failed:" << stagedFilesResult["error"].toString();
+    }
+
+    // --------------------------------------------------------------------
+    // STEP 7: Test commit()
+    // --------------------------------------------------------------------
+    qDebug() << "\nSTEP 7: Testing commit()";
+    QString commitMsg1 = "Test commit: Adding initial files";
+    QVariantMap commitResult1 = commit(commitMsg1, false, false);
+    testsTotal++;
+
+    if (commitResult1["success"].toBool()) {
+        QVariantMap data = commitResult1["data"].toMap();
+        qDebug() << "commit() - Created commit:" << data["shortHash"].toString();
+        qDebug() << "  Message:" << data["summary"].toString();
+        testsPassed++;
+    } else {
+        qWarning() << "commit() failed:" << commitResult1["error"].toString();
+    }
+
+    // --------------------------------------------------------------------
+    // STEP 8: Test getCommit()
+    // --------------------------------------------------------------------
+    qDebug() << "\nSTEP 8: Testing getCommit()";
+    // Get the latest commit from history
+    QVariantList commits = getCommits(1);
+    if (!commits.isEmpty()) {
+        QVariantMap latestCommit = commits.first().toMap();
+        QString commitHash = latestCommit["hash"].toString();
+
+        QVariantMap getCommitResult = getCommit(commitHash);
+        testsTotal++;
+
+        if (getCommitResult["success"].toBool()) {
+            QVariantMap data = getCommitResult["data"].toMap();
+            qDebug() << "getCommit() - Retrieved commit:" << data["shortHash"].toString();
+            qDebug() << "  Author:" << data["author"].toString();
+            qDebug() << "  Message:" << data["summary"].toString();
+            testsPassed++;
+        } else {
+            qWarning() << "getCommit() failed:" << getCommitResult["error"].toString();
+        }
+    }
+
+    // --------------------------------------------------------------------
+    // STEP 9: Test amendLastCommit()
+    // --------------------------------------------------------------------
+    qDebug() << "\nSTEP 9: Testing amendLastCommit()";
+
+    // Create another file to amend with
+    QString amendFile = localPath + "/amend_test.txt";
+    QFile f4(amendFile);
+    if (f4.open(QIODevice::WriteOnly)) {
+        f4.write("File for amend test");
+        f4.close();
+        stageFile("amend_test.txt");
+
+        QString amendedMsg = "Amended: Added amend_test.txt file";
+        QVariantMap amendResult = amendLastCommit(amendedMsg);
+        testsTotal++;
+
+        if (amendResult["success"].toBool()) {
+            QVariantMap data = amendResult["data"].toMap();
+            qDebug() << "amendLastCommit() - Created amended commit:" << data["shortHash"].toString();
+            testsPassed++;
+        } else {
+            qWarning() << "amendLastCommit() failed:" << amendResult["error"].toString();
+        }
+    }
+
+    // --------------------------------------------------------------------
+    // STEP 10: Test revertCommit()
+    // --------------------------------------------------------------------
+    qDebug() << "\nSTEP 10: Testing revertCommit()";
+
+    // Get commit to revert (the amended commit)
+    commits = getCommits(1);
+    if (!commits.isEmpty()) {
+        QVariantMap commitToRevert = commits.first().toMap();
+        QString revertHash = commitToRevert["hash"].toString();
+
+        qDebug() << "Attempting to revert commit:" << commitToRevert["shortHash"].toString();
+        QVariantMap revertResult = revertCommit(revertHash);
+        testsTotal++;
+
+        if (revertResult["success"].toBool()) {
+            qDebug() << "revertCommit() - Success";
+
+            // Commit the revert
+            QString revertMsg = "Revert: " + commitToRevert["summary"].toString();
+            QVariantMap revertCommitResult = commit(revertMsg, false, false);
+            if (revertCommitResult["success"].toBool()) {
+                qDebug() << "Revert committed successfully";
+            }
+            testsPassed++;
+        } else {
+            qDebug() << "Note: revertCommit() result:" << revertResult["error"].toString();
+        }
+    }
+
+    // --------------------------------------------------------------------
+    // STEP 11: Test unstageAll()
+    // --------------------------------------------------------------------
+    qDebug() << "\nSTEP 11: Testing unstageAll()";
+
+    // Create some files and stage them
+    QString file4 = localPath + "/test4.txt";
+    QFile f5(file4);
+    if (f5.open(QIODevice::WriteOnly)) {
+        f5.write("Test for unstageAll");
+        f5.close();
+        stageFile("test4.txt");
+    }
+
+    QVariantMap unstageAllResult = unstageAll();
+    testsTotal++;
+
+    if (unstageAllResult["success"].toBool()) {
+        QVariantMap data = unstageAllResult["data"].toMap();
+        qDebug() << "unstageAll() - Unstaged" << data["count"].toInt() << "files";
+        testsPassed++;
+    } else {
+        qWarning() << "unstageAll() failed:" << unstageAllResult["error"].toString();
+    }
+
+    // --------------------------------------------------------------------
+    // STEP 12: Test push() function
+    // --------------------------------------------------------------------
+    qDebug() << "\nSTEP 12: Testing push()";
+    // Stage and commit some changes first
+    stageAll();
+    QVariantMap finalCommit = commit("Final test commit before push", false, false);
+
+    if (finalCommit["success"].toBool()) {
+        QVariantMap pushResult = push("origin", "", "your_User_Name", "GITHUB_TOKEN",false);
+        testsTotal++;
+
+        if (pushResult["success"].toBool()) {
+            qDebug() << "push() - Successfully pushed to origin";
+            qDebug() << "  Branch:" << pushResult["data"].toMap()["branch"].toString();
+            testsPassed++;
+        } else {
+            qDebug() << "push() result:" << pushResult["error"].toString();
+            qDebug() << "Note: This may be expected if you don't have push permissions";
+        }
+    }
+    // --------------------------------------------------------------------
+    // FINAL SUMMARY
+    // --------------------------------------------------------------------
+    qDebug() << "\nTEST COMPLETE";
+    qDebug() << "============";
+    qDebug() << "Tests passed:" << testsPassed << "/" << testsTotal;
+
+    // Clean up - close repository
+    close();
+
+    qDebug() << "\nRepository path for manual inspection:" << localPath;
+    qDebug() << "You can check the git history with: git log --oneline";
 }
