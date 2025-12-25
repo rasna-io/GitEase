@@ -123,8 +123,27 @@ Rectangle {
 
             background: Rectangle {
                 radius: 3
-                color: continueButton.hovered ? Style.colors.accentHover : Style.colors.accent
+                color: continueButton.enabled ?
+                          (continueButton.hovered ? Style.colors.accentHover : Style.colors.accent) :
+                          Style.colors.disabledButton
                 Behavior on color { ColorAnimation { duration: 150 } }
+            }
+
+            enabled: {
+                if (root.controller.currentPageIndex !== Enums.WelcomePages.OpenRepository)
+                    return true;
+
+                switch(repositorySelector.currentTabIndex) {
+                    case Enums.RepositorySelectorTab.Recents:
+                    case Enums.RepositorySelectorTab.Open:
+                        return repositorySelector.selectedPath !== ""
+
+                    case Enums.RepositorySelectorTab.Clone:
+                        return repositorySelector.selectedPath !== "" && repositorySelector.selectedPath !== ""
+
+                    default:
+                        return false;
+                }
             }
 
             onClicked: {

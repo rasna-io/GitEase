@@ -7,6 +7,7 @@ QtObject{
     property color accent:              "#074E96"
     property color accentHover:         "#0C64BE"
     property color error:               "#DC3545"
+    property color disabledButton:      "#9D9D9D"
     
     // Text colors
     property color secondaryText:       "#5F6A7A"
