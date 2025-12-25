@@ -15,6 +15,10 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/PageController.qml       # Page lifecycle and navigation controller
     Qml/Core/Controllers/LayoutController.qml     # Layout management controller (singleton)
     Qml/Core/Controllers/RepositoryController.qml # Repository Controller
+
+    # Scripts
+    Qml/Core/Scripts/GraphUtils.js
+    Qml/Core/Scripts/GraphLayout.js
 )
 
 
@@ -46,7 +50,12 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Navigation/PagesRail.qml                # Pages-only navigation rail
 
     # Welcome-specific Content - Welcome page content sections
-    Qml/View/Components/WelcomeContents/WelcomeContent.qml           # Main welcome content
+    Qml/View/Components/WelcomeContents/WelcomeContent.qml      # Main welcome content
+
+    # DockPanel Docks
+    Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
+    Qml/View/Components/Docks/CommitGraphSimulator.qml  # GraphDummyDataGenerator
+
 )
 
 
