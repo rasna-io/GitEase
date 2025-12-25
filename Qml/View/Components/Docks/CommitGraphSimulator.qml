@@ -19,13 +19,11 @@ Item {
     property int branchCounter: 0
     property var mergedBranches: []  // Track branches that have been merged
 
-    property var commitDataArray: []
+    property var commits: []
     property var branches: []
-    property var commitDataList: []
 
     /* Signals
      * ****************************************************************************************/
-    signal newCommitsReady(var newCommitList)
 
     /* Children
      * ****************************************************************************************/
@@ -74,8 +72,8 @@ Item {
         }
         
         // Also extract branches from commit data (for checkouts)
-        for (var j = 0; j < commitDataArray.length; j++) {
-            var commit = commitDataArray[j]
+        for (var j = 0; j < commits.length; j++) {
+            var commit = commits[j]
             if (commit && commit.branchNames) {
                 for (var k = 0; k < commit.branchNames.length; k++) {
                     var branchName = commit.branchNames[k]
@@ -87,28 +85,14 @@ Item {
             }
         }
         
-        // Also check commitDataList for newer commits
-        for (var l = 0; l < commitDataList.length; l++) {
-            var commit2 = commitDataList[l]
-            if (commit2 && commit2.branchNames) {
-                for (var m = 0; m < commit2.branchNames.length; m++) {
-                    var branchName2 = commit2.branchNames[m]
-                    if (branchName2 && !seen[branchName2] && mergedBranches.indexOf(branchName2) === -1) {
-                        seen[branchName2] = true
-                        result.push(branchName2)
-                    }
-                }
-            }
-        }
-        
         if (result.length === 0) result.push("main")
         return result
     }
 
     function getBranchHeads() {
         var heads = {}
-        for (var i = 0; i < commitDataArray.length; i++) {
-            var c = commitDataArray[i]
+        for (var i = 0; i < commits.length; i++) {
+            var c = commits[i]
             var b = (c && c.branchNames && c.branchNames.length > 0) ? c.branchNames[0] : "main"
             if (!heads[b]) heads[b] = c.hash
         }
@@ -116,10 +100,11 @@ Item {
     }
 
     function ensureSimulationSeed() {
-        if (commitDataList && commitDataList.length > 0) return
+        if (commits && commits.length > 0)
+            return
+
         var now = new Date().toISOString()
         var seed = {
-            id: "sim_seed_" + Date.now(),
             hash: "sim_seed_" + Date.now(),
             shortHash: "seed",
             message: "Seed commit",
@@ -132,14 +117,15 @@ Item {
             parentHashes: [],
             commitType: "normal"
         }
-        commitDataList = [seed]
-        newCommitsReady(commitDataList)
+        commits = [seed]
+
     }
 
-    function pushToCommitDataList(newCommit) {
-        var list = (commitDataList && Array.isArray(commitDataList)) ? commitDataList.slice() : []
+    function pushCommit(newCommit) {
+        var list = (commits && Array.isArray(commits)) ? commits.slice() : []
         list.push(newCommit)
-        newCommitsReady(list)
+        commits = list
+
     }
 
     function simulateCommitOnBranch(branchName) {
@@ -148,7 +134,6 @@ Item {
         var now = new Date().toISOString()
         var hash = "sim_c_" + Date.now() + "_" + randomInt(100000)
         var c = {
-            id: hash,
             hash: hash,
             shortHash: hash.substring(0, 7),
             message: "Commit on " + branchName,
@@ -161,7 +146,7 @@ Item {
             parentHashes: parent ? [parent] : [],
             commitType: "normal"
         }
-        pushToCommitDataList(c)
+        pushCommit(c)
     }
 
     function simulateCheckoutFromBranch(parentBranch) {
@@ -173,7 +158,6 @@ Item {
         var now = new Date().toISOString()
         var hash = "sim_co_" + Date.now() + "_" + randomInt(100000)
         var c = {
-            id: hash,
             hash: hash,
             shortHash: hash.substring(0, 7),
             message: "Checkout " + newBranch,
@@ -186,7 +170,7 @@ Item {
             parentHashes: [parent],
             commitType: "checkout"
         }
-        pushToCommitDataList(c)
+        pushCommit(c)
     }
 
     function simulateMerge(destBranch, sourceBranch) {
@@ -198,7 +182,6 @@ Item {
         var now = new Date().toISOString()
         var hash = "sim_m_" + Date.now() + "_" + randomInt(100000)
         var c = {
-            id: hash,
             hash: hash,
             shortHash: hash.substring(0, 7),
             message: "Merge " + sourceBranch + " into " + destBranch,
@@ -217,14 +200,14 @@ Item {
             mergedBranches.push(sourceBranch)
         }
         
-        pushToCommitDataList(c)
+        pushCommit(c)
     }
 
     function simulateRandomAction() {
         if (!root.enabled) return
         ensureSimulationSeed()
 
-        if (commitDataList && commitDataList.length > root.maxCommits) {
+        if (commits && commits.length > root.maxCommits) {
             root.enabled = false
             return
         }
