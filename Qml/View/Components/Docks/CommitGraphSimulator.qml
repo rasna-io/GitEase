@@ -1,11 +1,18 @@
 import QtQuick
+
 import GitEase_Style
 import GitEase_Style_Impl
 import GitEase
 
+/*! ***********************************************************************************************
+ * CommitGraphSimulator
+ * Commit Graph Dock dummy data generator
+ * ************************************************************************************************/
 Item {
     id: root
 
+    /* Property Declarations
+     * ****************************************************************************************/
     property bool enabled: true
     property int intervalMs: 10000
     property int maxCommits: 250
@@ -16,8 +23,12 @@ Item {
     property var branches: []
     property var commitDataList: []
 
+    /* Signals
+     * ****************************************************************************************/
     signal newCommitsReady(var newCommitList)
 
+    /* Children
+     * ****************************************************************************************/
     Timer {
         id: simulationTimer
         interval: root.intervalMs
@@ -38,6 +49,8 @@ Item {
         property string branch: ""
     }
 
+    /* Functions
+     * ****************************************************************************************/
     function randomInt(maxExclusive) {
         return Math.floor(Math.random() * maxExclusive)
     }

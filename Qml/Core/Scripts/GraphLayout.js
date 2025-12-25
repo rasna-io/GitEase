@@ -1,3 +1,8 @@
+/*! ***********************************************************************************************
+ * GraphLayout Script
+ * calculateDAGPositions for nodes
+ * ************************************************************************************************/
+
 .pragma library
 
 function calculateDAGPositions(commitDataArray, columnSpacing, commitItemHeight, itemsSpacing) {
