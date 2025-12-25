@@ -141,4 +141,16 @@ Item {
         // handle both / and : (for SSH)
         return url.split(/[\/:]/).pop();
     }
+
+    /**
+     * Get Commits
+     */
+    function getCommits(repo : Repository, limit = 100){
+        var commits = GitService.getCommits(limit)
+        if (commits && commits.length > 0){
+            return commits
+        }
+
+        return []
+    }
 }
