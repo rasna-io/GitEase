@@ -32,6 +32,7 @@ Item {
     onCurrentTabIndexChanged: {
         repositoryLocationField.field.text = ""
         cloneLocationField.field.text = ""
+        root.selectedPath = ""
     }
 
     ColumnLayout {
