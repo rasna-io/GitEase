@@ -1,3 +1,10 @@
+/*! ***********************************************************************************************
+ * GraphUtils Script
+ * Practical tools for drawing nodes and graphs
+ * ************************************************************************************************/
+
+/* Property Declarations
+ * ****************************************************************************************/
 // Dynamic color generation for branches and tags
 var branchColorCache = {}
 var tagColorCache = {}
@@ -13,6 +20,8 @@ var colorPalette = [
     "#8E44AD", "#C0392B", "#D35400", "#7F8C8D", "#17202A"
 ]
 
+/* Functions
+ * ****************************************************************************************/
 function getBranchColor(branchName) {
     if (branchColorCache[branchName]) {
         return branchColorCache[branchName]

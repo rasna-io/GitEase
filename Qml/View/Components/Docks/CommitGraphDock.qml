@@ -11,12 +11,15 @@ import "qrc:/GitEase/Qml/Core/Scripts/GraphUtils.js" as GraphUtils
 
 
 /*! ***********************************************************************************************
- *
+ * CommitGraphDock
+ * show graph and commits
  * ************************************************************************************************/
 Item {
 
     id : root
 
+    /* Property Declarations
+     * ****************************************************************************************/
     property var commits: ListModel {}
     property var commitDataArray: []  // Store full commit data with arrays (ListModel loses arrays)
     property var branches: ListModel {}
@@ -36,21 +39,12 @@ Item {
     property int commitsColAuthorWidth: parent.width * 0.08
     property int commitsColDateWidth: parent.width * 0.17
 
-    // Dummy data provider - will be loaded in Component.onCompleted
+    /* Signals
+     * ****************************************************************************************/
     signal commitClicked(string commitId)
 
-    CommitGraphSimulator {
-        id: simulator
-        enabled: true
-        commitDataArray: root.commitDataArray
-        branches: root.branches
-        commitDataList: root.commitDataList
-        onNewCommitsReady: function(newCommitList) {
-            root.commitDataList = newCommitList
-            root.loadData()
-        }
-    }
-
+    /* Functions
+     * ****************************************************************************************/
     // Helper function to update branches and tags for a single commit
     function updateBranchesAndTags(commit) {
         // Update branches
@@ -124,6 +118,19 @@ Item {
         commitPositions = GraphLayout.calculateDAGPositions(root.commitDataArray, root.columnSpacing, root.commitItemHeight, root.itemsSpacing)
     }
 
+    /* Children
+     * ****************************************************************************************/
+    CommitGraphSimulator {
+        id: simulator
+        enabled: true
+        commitDataArray: root.commitDataArray
+        branches: root.branches
+        commitDataList: root.commitDataList
+        onNewCommitsReady: function(newCommitList) {
+            root.commitDataList = newCommitList
+            root.loadData()
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
