@@ -17,6 +17,7 @@ import "qrc:/GitEase/Qml/Core/Scripts/GraphUtils.js" as GraphUtils
 Item {
 
     id : root
+    property RepositoryController repositoryController: null
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -24,9 +25,10 @@ Item {
     property var branches: ListModel {}
     property var tags: ListModel {}
     property var selectedCommit: null
+
     property int graphColumnWidth: 0  // Will be calculated as half of dock width
     property int commitItemHeight: 24  // Reduced spacing between commits
-    property int itemsSpacing: 4
+    property int commitItemSpacing: 4
     property int columnSpacing: 30  // Increased spacing between branch columns
     property var commitPositions: ({})  // Cache for commit positions {hash: {x, y, column}}
 
@@ -89,28 +91,16 @@ Item {
         branches.clear();
         tags.clear();
 
-        root.commits = commits.slice().reverse();
-
         // Process all commits to extract branches and tags
         for (var i = 0; i < root.commits.length; i++) {
             updateBranchesAndTags(root.commits[i]);
         }
 
-        commitPositions = GraphLayout.calculateDAGPositions(root.commits, root.columnSpacing, root.commitItemHeight, root.itemsSpacing)
+        commitPositions = GraphLayout.calculateDAGPositions(root.commits, root.columnSpacing, root.commitItemHeight, root.commitItemSpacing)
     }
 
     /* Children
      * ****************************************************************************************/
-    CommitGraphSimulator {
-        id: simulator
-        enabled: true
-        branches: root.branches
-        onCommitsChanged: {
-            root.commits = simulator.commits
-            loadData()
-        }
-    }
-
     Rectangle{
         anchors.fill: parent
         color : "#FFFFFF"
@@ -368,7 +358,7 @@ Item {
                             var minWidth = 40 + (maxCols + 1) * root.columnSpacing + 300
                             return Math.max(width, minWidth)
                         }
-                        contentHeight: Math.max(height, root.commits.length * (root.commitItemHeight + (itemsSpacing * 2)))
+                        contentHeight: Math.max(height, root.commits.length * (root.commitItemHeight + (commitItemSpacing * 2)))
                         boundsBehavior: Flickable.StopAtBounds
 
                         property bool syncScroll: false
@@ -396,7 +386,7 @@ Item {
                             id: graphCanvas
                             // Use Flickable's contentWidth
                             width: graphFlickable.contentWidth
-                            height: root.commits.length * (root.commitItemHeight + (root.itemsSpacing * 2))
+                            height: root.commits.length * (root.commitItemHeight + (root.commitItemSpacing * 2))
 
                             Connections {
                                 target: root
@@ -412,7 +402,7 @@ Item {
                             Connections {
                                 target: root
                                 function onCommitsChanged() {
-                                    var newHeight = Math.max(graphFlickable.height, root.commits.length * (root.commitItemHeight + (itemsSpacing * 2)))
+                                    var newHeight = Math.max(graphFlickable.height, root.commits.length * (root.commitItemHeight + (commitItemSpacing * 2)))
                                     graphCanvas.height = newHeight
                                     graphFlickable.contentHeight = newHeight
                                     graphCanvas.requestPaint()
@@ -482,7 +472,7 @@ Item {
                                     if (!pos2) continue;
 
                                     var centerX = centerOffset + pos2.column * root.columnSpacing + root.columnSpacing / 2;
-                                    var centerY = pos2.y + root.commitItemHeight / 2 + root.itemsSpacing;
+                                    var centerY = pos2.y + root.commitItemHeight / 2 + root.commitItemSpacing;
 
                                     var commitBranchName = (commit2.branchNames && commit2.branchNames.length > 0) ? commit2.branchNames[0] : "main";
                                     var newerHash = newerInBranchByCommit[commit2.hash];
@@ -490,7 +480,7 @@ Item {
                                         var newerPos = root.commitPositions[newerHash];
                                         if (newerPos) {
                                             var newerX = centerOffset + newerPos.column * root.columnSpacing + root.columnSpacing / 2;
-                                            var newerY = newerPos.y + root.commitItemHeight / 2 + root.itemsSpacing;
+                                            var newerY = newerPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
                                             var branchObj2 = GraphUtils.findInListModel(root.branches, "name", commitBranchName);
                                             var branchColor2 = branchObj2 ? branchObj2.color : "#4a9eff";
 
@@ -530,7 +520,7 @@ Item {
                                                 if (!parentPos) continue;
 
                                                 var parentX = centerOffset + parentPos.column * root.columnSpacing + root.columnSpacing / 2;
-                                                var parentY = parentPos.y + root.commitItemHeight / 2 + root.itemsSpacing;
+                                                var parentY = parentPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
 
                                                 // For checkout, use current commit's branch color, not parent's
                                                 var lineColor;
@@ -593,7 +583,7 @@ Item {
                                     if (!isHeadCommitForLabels) continue;
 
                                     var centerXForLine = centerOffset + posForLine.column * root.columnSpacing + root.columnSpacing / 2;
-                                    var centerYForLine = posForLine.y + root.commitItemHeight / 2 + root.itemsSpacing;
+                                    var centerYForLine = posForLine.y + root.commitItemHeight / 2 + root.commitItemSpacing;
 
                                     // Collect all labels (tags first, then branches) for this commit
                                     var allLabels = [];
@@ -698,7 +688,7 @@ Item {
                                     if (!pos3) continue;
 
                                     var centerX2 = centerOffset + pos3.column * root.columnSpacing + root.columnSpacing / 2;
-                                    var centerY2 = pos3.y + root.commitItemHeight / 2 + root.itemsSpacing;
+                                    var centerY2 = pos3.y + root.commitItemHeight / 2 + root.commitItemSpacing;
 
                                     var laneBranchName = pos3.branchName || (commit3.branchNames && commit3.branchNames.length > 0 ? commit3.branchNames[0] : "main");
                                     var branchObj = GraphUtils.findInListModel(root.branches, "name", laneBranchName);
@@ -710,7 +700,7 @@ Item {
 
                                     if (isSelected) {
                                         ctx.fillStyle = "#6088B2DF";
-                                        ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + (root.itemsSpacing * 2));
+                                        ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + (root.commitItemSpacing * 2));
                                    }
 
                                     var avatarSize = root.commitItemHeight;
@@ -779,7 +769,7 @@ Item {
 
                     delegate: Rectangle {
                         width: ListView.view.width
-                        height: root.commitItemHeight + itemsSpacing + itemsSpacing
+                        height: root.commitItemHeight + commitItemSpacing + commitItemSpacing
 
                         property var commitData: modelData
                         property bool isHovered: false
@@ -801,8 +791,8 @@ Item {
                         RowLayout {
                             anchors.fill: parent
                             spacing: 0
-                            anchors.topMargin: itemsSpacing
-                            anchors.bottomMargin: itemsSpacing
+                            anchors.topMargin: commitItemSpacing
+                            anchors.bottomMargin: commitItemSpacing
 
                             // Column 1: Commit Message
                             ColumnLayout {
@@ -835,7 +825,7 @@ Item {
                                     }
 
                                     Label {
-                                        text: commitData.message || ""
+                                        text: commitData.summary || ""
                                         color: "#000000"
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
@@ -895,7 +885,7 @@ Item {
                                     }
 
                                     Label {
-                                        text: GraphUtils.formatDate(commitData.timestamp) + " " + GraphUtils.formatTime(commitData.timestamp)
+                                        text: GraphUtils.formatDate(commitData.authorDate) + " " + GraphUtils.formatTime(commitData.authorDate)
                                         color: "#000000"
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
@@ -929,43 +919,10 @@ Item {
     }
 
     Component.onCompleted: {
-        // Initialize simulator with some data if no data exists
-        if (root.commits.length === 0) {
-            // Add an initial branch
-            branches.append({
-                name: "main",
-                isCurrent: true,
-                isLocal: true,
-                isRemote: false,
-                upstream: "",
-                ahead: 0,
-                behind: 0,
-                commitHash: ""
-            })
+        let commits = repositoryController.getCommits(repositoryController.appModel.currentRepository)
 
-            // Enable simulator
-            simulator.enabled = true
-            simulator.intervalMs = 5000  // Speed up simulation for testing
-
-            // Add initial commit
-            var now = new Date().toISOString()
-            var initialCommit = {
-                hash: "initial_commit",
-                shortHash: "initial",
-                message: "Initial commit",
-                author: "System",
-                email: "system@example.com",
-                date: now,
-                timestamp: now,
-                branchNames: ["main"],
-                tagNames: [],
-                parentHashes: [],
-                commitType: "normal"
-            }
-            root.commits = [initialCommit]
-            loadData() // Call loadData to process the initial commit
-        } else {
-            // Load existing data
+        if(commits && commits.length > 0){
+            root.commits = commits
             loadData()
         }
     }
