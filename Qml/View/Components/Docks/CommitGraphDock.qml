@@ -20,8 +20,7 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var commits: ListModel {}
-    property var commitDataArray: []  // Store full commit data with arrays (ListModel loses arrays)
+    property var commits: []
     property var branches: ListModel {}
     property var tags: ListModel {}
     property var selectedCommit: null
@@ -32,7 +31,6 @@ Item {
     property var commitPositions: ({})  // Cache for commit positions {hash: {x, y, column}}
 
     // Property to receive list of CommitData objects
-    property var commitDataList: []
     property int commitsColGraphWidth: parent.width * 0.08
     property int commitsColBranchTagWidth: parent.width * 0.17
     property int commitsColMessageWidth: parent.width * 0.6
@@ -86,36 +84,19 @@ Item {
         }
     }
 
-    // Load data from commitDataList or generate dummy data
+    // Load data from root.commits or generate dummy data
     function loadData() {
-        commits.clear();
         branches.clear();
         tags.clear();
 
-        var commitData = [];
-
-        // If commitDataList is provided, use it.
-        if (commitDataList && commitDataList.length > 0) {
-            commitData = commitDataList;
-        } else {
-            return;
-        }
-
-        // Store full data array (ListModel doesn't preserve arrays)
-        // Reverse array so newest is at index 0 (will be displayed at top)
-        root.commitDataArray = commitData.slice().reverse();
+        root.commits = commits.slice().reverse();
 
         // Process all commits to extract branches and tags
-        for (var i = 0; i < commitData.length; i++) {
-            updateBranchesAndTags(commitData[i]);
+        for (var i = 0; i < root.commits.length; i++) {
+            updateBranchesAndTags(root.commits[i]);
         }
 
-        // Add commits to model in reversed order (newest first) for display
-        for (var revIdx = commitData.length - 1; revIdx >= 0; revIdx--) {
-            commits.append(commitData[revIdx]);
-        }
-
-        commitPositions = GraphLayout.calculateDAGPositions(root.commitDataArray, root.columnSpacing, root.commitItemHeight, root.itemsSpacing)
+        commitPositions = GraphLayout.calculateDAGPositions(root.commits, root.columnSpacing, root.commitItemHeight, root.itemsSpacing)
     }
 
     /* Children
@@ -123,12 +104,10 @@ Item {
     CommitGraphSimulator {
         id: simulator
         enabled: true
-        commitDataArray: root.commitDataArray
         branches: root.branches
-        commitDataList: root.commitDataList
-        onNewCommitsReady: function(newCommitList) {
-            root.commitDataList = newCommitList
-            root.loadData()
+        onCommitsChanged: {
+            root.commits = simulator.commits
+            loadData()
         }
     }
 
@@ -377,10 +356,10 @@ Item {
                         clip: true
                         // Calculate contentWidth based on max columns to avoid binding loop
                         contentWidth: {
-                            if (root.commitDataArray.length === 0) return width
+                            if (root.commits.length === 0) return width
                             var maxCols = 0
-                            for (var i = 0; i < root.commitDataArray.length; i++) {
-                                var commit = root.commitDataArray[i]
+                            for (var i = 0; i < root.commits.length; i++) {
+                                var commit = root.commits[i]
                                 var pos = root.commitPositions[commit.hash]
                                 if (pos && pos.column > maxCols) {
                                     maxCols = pos.column
@@ -389,7 +368,7 @@ Item {
                             var minWidth = 40 + (maxCols + 1) * root.columnSpacing + 300
                             return Math.max(width, minWidth)
                         }
-                        contentHeight: Math.max(height, root.commitDataArray.length * (root.commitItemHeight + (itemsSpacing * 2)))
+                        contentHeight: Math.max(height, root.commits.length * (root.commitItemHeight + (itemsSpacing * 2)))
                         boundsBehavior: Flickable.StopAtBounds
 
                         property bool syncScroll: false
@@ -417,7 +396,7 @@ Item {
                             id: graphCanvas
                             // Use Flickable's contentWidth
                             width: graphFlickable.contentWidth
-                            height: root.commitDataArray.length * (root.commitItemHeight + (root.itemsSpacing * 2))
+                            height: root.commits.length * (root.commitItemHeight + (root.itemsSpacing * 2))
 
                             Connections {
                                 target: root
@@ -432,17 +411,17 @@ Item {
 
                             Connections {
                                 target: root
-                                function onCommitDataArrayChanged() {
-                                    var newHeight = Math.max(graphFlickable.height, root.commitDataArray.length * (root.commitItemHeight + (itemsSpacing * 2)))
+                                function onCommitsChanged() {
+                                    var newHeight = Math.max(graphFlickable.height, root.commits.length * (root.commitItemHeight + (itemsSpacing * 2)))
                                     graphCanvas.height = newHeight
                                     graphFlickable.contentHeight = newHeight
                                     graphCanvas.requestPaint()
                                     // Force contentWidth recalculation
                                     graphFlickable.contentWidth = Qt.binding(function() {
-                                        if (root.commitDataArray.length === 0) return graphFlickable.width
+                                        if (root.commits.length === 0) return graphFlickable.width
                                         var maxCols = 0
-                                        for (var i = 0; i < root.commitDataArray.length; i++) {
-                                            var commit = root.commitDataArray[i]
+                                        for (var i = 0; i < root.commits.length; i++) {
+                                            var commit = root.commits[i]
                                             var pos = root.commitPositions[commit.hash]
                                             if (pos && pos.column > maxCols) {
                                                 maxCols = pos.column
@@ -462,16 +441,20 @@ Item {
                             }
 
                             onPaint: {
+
+                                if (!root.commits || root.commits.length === 0)
+                                    return;
+
                                 var ctx = getContext("2d");
                                 ctx.clearRect(0, 0, width, height);
                                 ctx.globalAlpha = 1.0;
 
-                                if (root.commitDataArray.length === 0) return;
+                                if (root.commits.length === 0) return;
 
                                 // Calculate center offset for graph
                                 var maxColumns = 0;
-                                for (var i = 0; i < root.commitDataArray.length; i++) {
-                                    var commit = root.commitDataArray[i];
+                                for (var i = 0; i < root.commits.length; i++) {
+                                    var commit = root.commits[i];
                                     var pos = root.commitPositions[commit.hash];
                                     if (pos && pos.column > maxColumns) {
                                         maxColumns = pos.column;
@@ -485,16 +468,16 @@ Item {
                                 var newerInBranchByCommit = {};
                                 var lastSeenByBranch = {};
 
-                                for (var j = 0; j < root.commitDataArray.length; j++) {
-                                    var c0 = root.commitDataArray[j];
+                                for (var j = 0; j < root.commits.length; j++) {
+                                    var c0 = root.commits[j];
                                     var b0 = (c0 && c0.branchNames && c0.branchNames.length > 0) ? c0.branchNames[0] : "main";
                                     if (!branchLatestCommit[b0]) branchLatestCommit[b0] = c0.hash;
                                     if (lastSeenByBranch[b0]) newerInBranchByCommit[c0.hash] = lastSeenByBranch[b0];
                                     lastSeenByBranch[b0] = c0.hash;
                                 }
 
-                                for (var j = 0; j < root.commitDataArray.length; j++) {
-                                    var commit2 = root.commitDataArray[j];
+                                for (var j = 0; j < root.commits.length; j++) {
+                                    var commit2 = root.commits[j];
                                     var pos2 = root.commitPositions[commit2.hash];
                                     if (!pos2) continue;
 
@@ -597,8 +580,8 @@ Item {
                                 }
 
                                 // First pass: Draw lines from nodes to branch/tag labels (only for HEAD commits)
-                                for (var lineIdx = 0; lineIdx < root.commitDataArray.length; lineIdx++) {
-                                    var commitForLine = root.commitDataArray[lineIdx];
+                                for (var lineIdx = 0; lineIdx < root.commits.length; lineIdx++) {
+                                    var commitForLine = root.commits[lineIdx];
                                     var posForLine = root.commitPositions[commitForLine.hash];
                                     if (!posForLine) continue;
 
@@ -709,8 +692,8 @@ Item {
                                 }
 
                                 // Second pass: Draw commit nodes (on top of lines)
-                                for (var k = 0; k < root.commitDataArray.length; k++) {
-                                    var commit3 = root.commitDataArray[k];
+                                for (var k = 0; k < root.commits.length; k++) {
+                                    var commit3 = root.commits[k];
                                     var pos3 = root.commitPositions[commit3.hash];
                                     if (!pos3) continue;
 
@@ -798,9 +781,9 @@ Item {
                         width: ListView.view.width
                         height: root.commitItemHeight + itemsSpacing + itemsSpacing
 
-                        property var commitData: model
+                        property var commitData: modelData
                         property bool isHovered: false
-                        property bool isSelected: root.selectedCommit?.id === model?.id
+                        property bool isSelected: root.selectedCommit && root.selectedCommit.hash === commitData.hash
 
                         color: {
                             if (isSelected) {
@@ -930,7 +913,7 @@ Item {
                             hoverEnabled: true
                             onClicked: {
                                 root.selectedCommit = commitData
-                                root.commitClicked(commitData.id)
+                                root.commitClicked(commitData.hash)
                             }
                             onEntered: {
                                 isHovered = true
@@ -947,7 +930,7 @@ Item {
 
     Component.onCompleted: {
         // Initialize simulator with some data if no data exists
-        if (commitDataList.length === 0) {
+        if (root.commits.length === 0) {
             // Add an initial branch
             branches.append({
                 name: "main",
@@ -967,7 +950,6 @@ Item {
             // Add initial commit
             var now = new Date().toISOString()
             var initialCommit = {
-                id: "initial_commit",
                 hash: "initial_commit",
                 shortHash: "initial",
                 message: "Initial commit",
@@ -980,7 +962,7 @@ Item {
                 parentHashes: [],
                 commitType: "normal"
             }
-            commitDataList = [initialCommit]
+            root.commits = [initialCommit]
             loadData() // Call loadData to process the initial commit
         } else {
             // Load existing data
