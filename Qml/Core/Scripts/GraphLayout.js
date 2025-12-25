@@ -5,21 +5,21 @@
 
 .pragma library
 
-function calculateDAGPositions(commitDataArray, columnSpacing, commitItemHeight, itemsSpacing) {
+function calculateDAGPositions(commits, columnSpacing, commitItemHeight, itemsSpacing) {
     var commitPositions = {}
     var hashToCommit = {}  // Map hash to commit data
     var branchToColumn = {}  // Map branch name to column number
     var columnToBranch = {}  // Map column number to branch name (inverse mapping)
     var nextColumn = 0
 
-    // Step 1: Build hash map from commitDataArray
-    for (var h = 0; h < commitDataArray.length; h++) {
-        var commitH = commitDataArray[h]
+    // Step 1: Build hash map from commits
+    for (var h = 0; h < commits.length; h++) {
+        var commitH = commits[h]
         hashToCommit[commitH.hash] = commitH
     }
 
     // Step 2: Sort commits from oldest to newest
-    var topologicalOrder = commitDataArray.slice().reverse();  // Reversed order (oldest->newest)
+    var topologicalOrder = commits.slice().reverse();  // Reversed order (oldest->newest)
 
     // Step 3: Iterate over the commits to assign branches and columns
     for (var topoIdx = 0; topoIdx < topologicalOrder.length; topoIdx++) {
@@ -51,8 +51,8 @@ function calculateDAGPositions(commitDataArray, columnSpacing, commitItemHeight,
                     var occupyingBranch = columnToBranch[col];
                     if (occupyingBranch) {
                         var branchHasHead = false;
-                        for (var checkIdx = 0; checkIdx < commitDataArray.length; checkIdx++) {
-                            var checkCommit = commitDataArray[checkIdx];
+                        for (var checkIdx = 0; checkIdx < commits.length; checkIdx++) {
+                            var checkCommit = commits[checkIdx];
                             if (checkCommit.branchNames && checkCommit.branchNames.indexOf(occupyingBranch) !== -1) {
                                 if (checkCommit.commitType === "merge" && checkCommit.branchNames.indexOf(occupyingBranch) !== -1) {
                                     reuseColumn = col;
@@ -114,8 +114,8 @@ function calculateDAGPositions(commitDataArray, columnSpacing, commitItemHeight,
     }
 
     // Step 4: Assign positions for each commit based on its column and order
-    for (var j = 0; j < commitDataArray.length; j++) {
-        var commit = commitDataArray[j];
+    for (var j = 0; j < commits.length; j++) {
+        var commit = commits[j];
 
         if (!commit) continue;
 
