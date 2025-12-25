@@ -5,7 +5,7 @@
 
 .pragma library
 
-function calculateDAGPositions(commits, columnSpacing, commitItemHeight, itemsSpacing) {
+function calculateDAGPositions(commits, columnSpacing, commitItemHeight, commitItemSpacing) {
     var commitPositions = {}
     var hashToCommit = {}  // Map hash to commit data
     var branchToColumn = {}  // Map branch name to column number
@@ -148,7 +148,7 @@ function calculateDAGPositions(commits, columnSpacing, commitItemHeight, itemsSp
         // Assign positions (x, y) based on column and order of appearance
         commitPositions[commit.hash] = {
             x: commitColumn * columnSpacing,
-            y: j * (commitItemHeight + (itemsSpacing * 2)),  // Adjust for vertical spacing
+            y: j * (commitItemHeight + (commitItemSpacing * 2)),  // Adjust for vertical spacing
             column: commitColumn,
             branchName: commitBranchName
         };
