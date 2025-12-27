@@ -2,9 +2,10 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QOperatingSystemVersion>
-#include <windowsx.h>
+
 
 #ifdef Q_OS_WIN
+#include <windowsx.h>
 #  pragma comment(lib, "dwmapi.lib")
 #endif
 
@@ -12,17 +13,22 @@ BorderlessWindowHelper::BorderlessWindowHelper(QWindow* window, QObject* parent)
     : QObject(parent)
     , m_window(window)
 {
-#ifdef Q_OS_WIN
     if (!m_window)
         return;
 
     // Ensure native handle exists.
     m_window->create();
+#ifdef Q_OS_WIN
+
     m_hwnd = reinterpret_cast<HWND>(m_window->winId());
 
     attach();
 
     applyBorderlessNow();
+#endif
+
+#ifdef Q_OS_LINUX
+    m_window->setFlags(Qt::Window | Qt::FramelessWindowHint);
 #endif
 }
 
@@ -35,8 +41,11 @@ void BorderlessWindowHelper::attach()
 
     // Install app-wide native filter once.
     qApp->installNativeEventFilter(this);
-}
 
+}
+#endif
+
+#ifdef Q_OS_WIN
 void BorderlessWindowHelper::ensureWindowStyles()
 {
     if (!m_hwnd) return;
@@ -57,9 +66,11 @@ void BorderlessWindowHelper::ensureWindowStyles()
 
     // Tell Windows styles changed (recalc non-client)
     ::SetWindowPos(m_hwnd, nullptr, 0,0,0,0,
-    SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+                   SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
 }
+#endif
 
+#ifdef Q_OS_WIN
 void BorderlessWindowHelper::setupDwmShadow()
 {
     if (!m_hwnd) return;
@@ -80,8 +91,9 @@ void BorderlessWindowHelper::setupDwmShadow()
         ::DwmSetWindowAttribute(m_hwnd, 38 /*DWMWA_SYSTEMBACKDROP_TYPE*/, (void*)&backdrop, sizeof(backdrop));
     }
 }
+#endif
 
-// Fallback-friendly wrappers
+#ifdef Q_OS_WIN
 UINT BorderlessWindowHelper::dpiForWindow(HWND h)
 {
     // Try GetDpiForWindow (Win10+), else fallback to DC DPI.
@@ -95,7 +107,9 @@ UINT BorderlessWindowHelper::dpiForWindow(HWND h)
     ::ReleaseDC(h, hdc);
     return dpi ? dpi : 96;
 }
+#endif
 
+#ifdef Q_OS_WIN
 int BorderlessWindowHelper::smForDpi(int index, UINT dpi)
 {
     HMODULE user32 = ::GetModuleHandleW(L"user32.dll");
@@ -105,6 +119,9 @@ int BorderlessWindowHelper::smForDpi(int index, UINT dpi)
         return pGetSystemMetricsForDpi(index, dpi);
     return ::GetSystemMetrics(index);
 }
+#endif
+
+#ifdef Q_OS_WIN
 
 int BorderlessWindowHelper::resizeBorderThicknessX(HWND h)
 {
@@ -112,17 +129,20 @@ int BorderlessWindowHelper::resizeBorderThicknessX(HWND h)
     // sizeframe + padded border = effective resize thickness
     return smForDpi(SM_CXSIZEFRAME, dpi) + smForDpi(SM_CXPADDEDBORDER, dpi);
 }
+#endif
 
+#ifdef Q_OS_WIN
 int BorderlessWindowHelper::resizeBorderThicknessY(HWND h)
 {
     const UINT dpi = dpiForWindow(h);
     return smForDpi(SM_CYSIZEFRAME, dpi) + smForDpi(SM_CXPADDEDBORDER, dpi);
 }
+#endif
 
+#ifdef Q_OS_WIN
 void BorderlessWindowHelper::applyBorderlessNow()
 {
 
-#ifdef Q_OS_WIN
     if (!m_hwnd) return;
 
     // Re-assert styles (no caption, keep thickframe/system boxes)
@@ -138,8 +158,8 @@ void BorderlessWindowHelper::applyBorderlessNow()
     const MARGINS m = (maximized || fullscreen) ? MARGINS{0,0,0,0} : MARGINS{1,1,1,1};
     ::DwmExtendFrameIntoClientArea(m_hwnd, &m);
 
-#endif
 }
+#endif
 
 QSize BorderlessWindowHelper::minimumSize() const
 {
@@ -151,8 +171,10 @@ void BorderlessWindowHelper::setMinimumSize(const QSize &newSize)
     m_minimumSize = newSize;
 }
 
+
 bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result)
 {
+#ifdef Q_OS_WIN
     if (!m_window || !m_hwnd)
         return false;
 
@@ -309,8 +331,8 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
     default:
         break;
     }
+#endif
 
     return false;
 }
 
-#endif // Q_OS_WIN
