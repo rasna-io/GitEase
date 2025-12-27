@@ -528,6 +528,34 @@ bool GitWrapperCPP::checkoutBranch(const QString &branchName, const QString &rep
     return success;
 }
 
+bool GitWrapperCPP::renameBranch(const QString &oldName, const QString &newName)
+{
+    if (!m_currentRepo) return false;
+
+    git_reference* branchRef = nullptr;
+    git_reference* newRef = nullptr;
+    bool success = false;
+
+    int error = git_branch_lookup(&branchRef, m_currentRepo, oldName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+
+    if (error == 0) {
+        error = git_branch_move(&newRef, branchRef, newName.toUtf8().constData(), 0);
+
+        if (error == 0) {
+            qDebug() << "GitWrapperCPP: Renamed" << oldName << "to" << newName;
+            success = true;
+        } else {
+            const git_error* e = git_error_last();
+            qWarning() << "GitWrapperCPP: Rename failed:" << (e ? e->message : "Unknown");
+        }
+    }
+
+    if (newRef) git_reference_free(newRef);
+    if (branchRef) git_reference_free(branchRef);
+
+    return success;
+}
+
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
 {
     // 1. Prepare result map
