@@ -194,6 +194,14 @@ public slots:
     Q_INVOKABLE bool checkoutBranch(const QString &branchName, const QString &repoPath = "");
 
     /**
+    * \brief Renames an existing local branch.
+    * \param oldName The current name of the branch.
+    * \param newName The new desired name for the branch.
+    * \return True if the rename was successful.
+    */
+    Q_INVOKABLE bool renameBranch(const QString &oldName, const QString &newName);
+
+    /**
      * \brief Get basic repository information
      * \param repoPath Path to repository (optional, uses current if empty)
      * \return QVariantMap with repository info
