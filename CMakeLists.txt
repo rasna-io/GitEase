@@ -20,7 +20,7 @@ include(libgit.cmake)
 # Flatten generation of all sub-dependent libraries
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Qml)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick Gui)
+find_package(Qt6 REQUIRED COMPONENTS Quick Gui Concurrent)
 
 # Dependencies
 add_subdirectory(Res/)
@@ -81,6 +81,7 @@ qt_add_qml_module(${MAIN_TARGET_NAME}
 target_link_libraries(${MAIN_TARGET_NAME} PRIVATE
     Qt6::Quick
     Qt6::Gui
+    Qt6::Concurrent
     ${MAIN_TARGET_NAME}_Styleplugin
     ${MAIN_TARGET_NAME}_Style_Implplugin
     ${MAIN_TARGET_NAME}.Resourcesplugin

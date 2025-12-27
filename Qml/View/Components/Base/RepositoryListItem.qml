@@ -14,18 +14,36 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string repositoryName: ""
-    property string repositoryPath: ""
+    required property int index
+
+    required property string name
+
+    required property string path
+
+    property bool   isSelected:     false
 
     /* Signals
      * ****************************************************************************************/
-    signal clicked()
+    signal clicked(index : int)
 
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillWidth: true
     Layout.preferredHeight: 50
-    color: Style.colors.surfaceLight
+    color: {
+        if (msa.containsMouse) {
+            if (isSelected)
+                return Style.colors.accentHover
+            else
+                return Qt.darker(Style.colors.surfaceLight, 1.05)
+        } else {
+            if (isSelected)
+                return Style.colors.accent
+            else
+                return Style.colors.surfaceLight
+        }
+    }
+
     radius: 3
 
     /* Children
@@ -37,12 +55,12 @@ Rectangle {
 
         // Project name
         Text {
-            text: root.repositoryName
+            text: root.name
             font.pixelSize: 12
             font.family: Style.fontTypes.roboto
             font.weight: 400
             font.letterSpacing: 0
-            color: Style.colors.foreground
+            color: root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
         }
 
         // Path row
@@ -55,15 +73,15 @@ Rectangle {
                 text: Style.icons.folder
                 font.family: Style.fontTypes.font6Pro
                 font.pixelSize: 14
-                color: Style.colors.foreground
+                color: root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
             }
 
             // Path
             Text {
-                text: root.repositoryPath
+                text: root.path
                 font.pixelSize: 12
                 font.family: Style.fontTypes.roboto
-                color: Style.colors.mutedText
+                color: root.isSelected ? Style.colors.secondaryForeground : Style.colors.mutedText
                 elide: Text.ElideMiddle
                 font.weight: 400
                 font.letterSpacing: 0
@@ -74,20 +92,13 @@ Rectangle {
 
     // Mouse area for interaction
     MouseArea {
+        id: msa
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         hoverEnabled: true
 
-        onEntered: {
-            root.color = Qt.darker(Style.colors.surfaceLight, 1.05)
-        }
-
-        onExited: {
-            root.color = Style.colors.surfaceLight
-        }
-
         onClicked: {
-            root.clicked()
+            root.clicked(root.index)
         }
     }
 }

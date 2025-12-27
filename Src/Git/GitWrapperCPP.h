@@ -108,6 +108,10 @@ public:
      */
     ~GitWrapperCPP();
 
+signals:
+    void cloneFinished(QVariantMap result);
+    void cloneProgress(int progress);
+
 public slots:
     /* Repository Operations - from UML GitService */
 

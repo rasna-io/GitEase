@@ -16,6 +16,12 @@ Item {
     /* Property Declarations
      * ****************************************************************************************/
     property alias model: repositoryRepeater.model
+
+    property int  selectedIndex: -1
+
+    /* Signals
+     * ****************************************************************************************/
+
     signal repositoryClicked(string name, string path)
 
     /* Children
@@ -46,11 +52,12 @@ Item {
                     id: repositoryRepeater
 
                     delegate: RepositoryListItem {
-                        repositoryName: model.name
-                        repositoryPath: model.path
+                        id: item
+                        isSelected: root.selectedIndex === item.index
 
-                        onClicked: {
-                            root.repositoryClicked(model.name, model.path)
+                        onClicked: (index) => {
+                            root.selectedIndex = index
+                            root.repositoryClicked(item.name, item.path)
                         }
                     }
                 }

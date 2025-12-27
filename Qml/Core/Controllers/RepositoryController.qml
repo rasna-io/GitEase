@@ -47,7 +47,7 @@ Item {
             createRepositoryComponent(path)
         }
 
-        return result.success
+        return result
     }
 
     /**
