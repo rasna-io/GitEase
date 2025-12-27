@@ -25,14 +25,11 @@ ApplicationWindow {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: AppSettings.hasCompletedWelcome ? Style.appWidth : 523
-    height: AppSettings.hasCompletedWelcome ? Style.appHeight : 475
-    x: (Screen.width - width) / 2
-    y: (Screen.height - height) / 2
+    width: 523
+    height: 475
     visible: true
     color: "transparent"
     title: qsTr("GitEase")
-    flags: Qt.Window | Qt.FramelessWindowHint
 
 
     /* Fonts
@@ -59,27 +56,32 @@ ApplicationWindow {
     // Check flag BEFORE creating any components
     Loader {
         id: mainContentLoader
-        anchors.centerIn: parent
-        width: AppSettings.hasCompletedWelcome ? parent.width : undefined
-        height: AppSettings.hasCompletedWelcome ? parent.height : undefined
-        
+        anchors.fill: parent
+
         sourceComponent: {
             // Check flag before creating components
             if (AppSettings.hasCompletedWelcome) {
+                window.width = Qt.binding(function() {return Style.appWidth})
+                window.height = Qt.binding(function() {return Style.appHeight})
+                window.x = (Screen.width - width) / 2
+                window.y = (Screen.height - height) / 2
                 return mainApplicationComponent
             } else {
                 return welcomeFlowComponent
             }
         }
+
+        // sourceComponent:
     }
+    // TODO: Move position bindings from the component to the Loader.
+    //       Check all uses of 'parent' inside the root element of the component.
 
     // Welcome Flow Component
     Component {
         id: welcomeFlowComponent
 
         Item {
-            width: 523
-            height: 475
+            anchors.fill: parent
 
             WelcomeController {
                 id: welcomeController
@@ -91,7 +93,7 @@ ApplicationWindow {
 
             Loader {
                 id: welcomePageLoader
-                anchors.centerIn: parent
+                anchors.fill: parent
                 source: "qrc:/GitEase/Qml/Pages/WelcomePage.qml"
 
                 // Pass controller to loaded page

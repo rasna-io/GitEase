@@ -77,5 +77,14 @@ Item {
         width: 99
         source: "qrc:/GitEase/Resources/Images/Logo.png"
     }
+
+    //! Drag region: we start native move so Snap/AeroShake remain native.
+    MouseArea {
+        id: dragArea
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onPressed: WindowController.startSystemMove()
+        onDoubleClicked: WindowController.toggleMaxRestore()
+    }
 }
 
