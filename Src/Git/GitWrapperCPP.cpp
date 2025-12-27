@@ -343,33 +343,32 @@ QVariantList GitWrapperCPP::getBranches(const QString &repoPath)
     // Get repository (opens if needed)
     git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
     if (!repo) {
-        return branches; // Empty list
+        return branches;
     }
 
-    git_branch_iterator *iter = nullptr;
-    int result = git_branch_iterator_new(&iter, repo, GIT_BRANCH_ALL);
+    git_reference *head = nullptr;
+    git_repository_head(&head, repo);
 
-    if (result == 0) {
+    git_branch_iterator *iter = nullptr;
+
+    if (git_branch_iterator_new(&iter, repo, GIT_BRANCH_ALL) == 0) {
         git_reference *ref = nullptr;
         git_branch_t type;
 
         // Iterate through all branches
         while (git_branch_next(&ref, &type, iter) == 0) {
             const char *name = nullptr;
-            git_branch_name(&name, ref);
 
-            if (name) {
+            if (git_branch_name(&name, ref) && name) {
                 QVariantMap branch;
                 branch["name"] = QString::fromUtf8(name);
                 branch["isRemote"] = (type == GIT_BRANCH_REMOTE);
                 branch["isLocal"] = (type == GIT_BRANCH_LOCAL);
 
                 // Check if this is the current branch
-                git_reference *head = nullptr;
                 bool isCurrent = false;
-                if (git_repository_head(&head, repo) == 0) {
-                    isCurrent = git_reference_cmp(ref, head) == 0;
-                    git_reference_free(head);
+                if (head && git_reference_cmp(ref, head) == 0) {
+                    isCurrent = true;
                 }
                 branch["isCurrent"] = isCurrent;
 
@@ -381,6 +380,11 @@ QVariantList GitWrapperCPP::getBranches(const QString &repoPath)
 
         // Clean up iterator
         git_branch_iterator_free(iter);
+    }
+
+    if (head)
+    {
+        git_reference_free(head);
     }
 
     // Clean up if we opened a temporary repository
