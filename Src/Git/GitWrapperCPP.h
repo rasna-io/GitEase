@@ -202,6 +202,13 @@ public slots:
     Q_INVOKABLE bool renameBranch(const QString &oldName, const QString &newName);
 
     /**
+    * \brief Retrieves the name of the tracked upstream branch.
+    * \param localBranchName The name of the local branch to check.
+    * \return The upstream branch name (e.g., "origin/main") or an empty QString if no upstream is set.
+    */
+    Q_INVOKABLE QString getUpstreamName(const QString &localBranchName);
+
+    /**
      * \brief Get basic repository information
      * \param repoPath Path to repository (optional, uses current if empty)
      * \return QVariantMap with repository info
