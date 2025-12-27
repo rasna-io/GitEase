@@ -504,23 +504,36 @@ QVariantMap GitWrapperCPP::commitToMap(git_commit *commit)
 
 QString GitWrapperCPP::getCurrentBranchName(git_repository* repo)
 {
+    if (!repo)
+    {
+        return "";
+    }
+
     QString branchName;  // Empty string to start
     git_reference* head = nullptr;  // libgit2 HEAD reference
 
+    int error = git_repository_head(&head, repo);
+
     // Get HEAD reference (points to current branch)
-    if (git_repository_head(&head, repo) == 0)
+    if (error == GIT_OK)
     {
         const char* name = nullptr;  // Will store branch name
 
         // Extract branch name from reference
-        if (git_branch_name(&name, head) == 0 && name)
+        if (git_branch_name(&name, head) == GIT_OK && name)
         {
             branchName = QString::fromUtf8(name);  // Convert C string to QString
         }
         git_reference_free(head);  // Clean up libgit2 object
+    } else if (error == GIT_ENOTFOUND)
+    {
+        branchName = "initial/no-commits";
+    } else
+    {
+        branchName = "Detached HEAD";
     }
 
-    return branchName;  // "main", "master", or empty if detached
+    return branchName;  // "main", "master", or Detached HEAD if detached
 }
 
 QVariantMap GitWrapperCPP::statusEntryToMap(const git_status_entry *entry)
