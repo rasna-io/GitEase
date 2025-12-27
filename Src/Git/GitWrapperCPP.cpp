@@ -440,6 +440,45 @@ bool GitWrapperCPP::createBranch(const QString &branchName, const QString &repoP
     return success;
 }
 
+bool GitWrapperCPP::deleteBranch(const QString &branchName, const QString &repoPath)
+{
+    git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
+
+    if (!repo) {
+        qWarning() << "GitWrapperCPP: Cannot delete branch, repository not found.";
+        return false;
+    }
+
+    git_reference* branchRef = nullptr;
+    bool success = false;
+
+    int error = git_branch_lookup(&branchRef, repo, branchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+
+    if (error == 0) {
+        error = git_branch_delete(branchRef);
+
+        if (error == 0) {
+            qDebug() << "GitWrapperCPP: Successfully deleted branch:" << branchName;
+            success = true;
+        } else {
+            const git_error* e = git_error_last();
+            qWarning() << "GitWrapperCPP: Failed to delete branch. Error:" << (e ? e->message : "Unknown");
+        }
+    } else {
+        qWarning() << "GitWrapperCPP: Branch not found:" << branchName;
+    }
+
+    if (branchRef) {
+        git_reference_free(branchRef);
+    }
+
+    if (repo != m_currentRepo) {
+        git_repository_free(repo);
+    }
+
+    return success;
+}
+
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
 {
     // 1. Prepare result map

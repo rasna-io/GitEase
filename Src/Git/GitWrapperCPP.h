@@ -178,6 +178,14 @@ public slots:
     Q_INVOKABLE bool createBranch(const QString &branchName, const QString &repoPath = "");
 
     /**
+    * \brief Deletes an existing local branch from the repository.
+    * \param branchName The name of the local branch to be removed.
+    * \param repoPath Path to the repository. If empty, uses the current repository.
+    * \return True if the branch was successfully deleted, false otherwise.
+    */
+    Q_INVOKABLE bool deleteBranch(const QString &branchName, const QString &repoPath = "");
+
+    /**
      * \brief Get basic repository information
      * \param repoPath Path to repository (optional, uses current if empty)
      * \return QVariantMap with repository info
