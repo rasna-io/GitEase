@@ -33,6 +33,7 @@ Item {
         repositoryLocationField.field.text = ""
         cloneLocationField.field.text = ""
         root.selectedPath = ""
+        recentRepositoriesList.selectedIndex = -1
     }
 
     ColumnLayout {
@@ -75,6 +76,7 @@ Item {
             // Recents tab content
             Item {
                 RecentRepositoriesList {
+                    id: recentRepositoriesList
                     anchors.fill: parent
                     model: ListModel {
                         ListElement { name: "My Project"; path: "C:/Users/Username/Documents/MyProject" }
