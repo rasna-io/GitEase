@@ -186,6 +186,14 @@ public slots:
     Q_INVOKABLE bool deleteBranch(const QString &branchName, const QString &repoPath = "");
 
     /**
+    * \brief Safely switches the current working directory to a target branch.
+    * \param branchName The name of the local branch to checkout.
+    * \param repoPath Path to the repository. If empty, uses the current repository.
+    * \return True if the checkout was successful, false if there are conflicts or errors.
+    */
+    Q_INVOKABLE bool checkoutBranch(const QString &branchName, const QString &repoPath = "");
+
+    /**
      * \brief Get basic repository information
      * \param repoPath Path to repository (optional, uses current if empty)
      * \return QVariantMap with repository info

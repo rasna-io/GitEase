@@ -479,6 +479,55 @@ bool GitWrapperCPP::deleteBranch(const QString &branchName, const QString &repoP
     return success;
 }
 
+bool GitWrapperCPP::checkoutBranch(const QString &branchName, const QString &repoPath)
+{
+    git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
+    if (!repo) {
+        qWarning() << "GitWrapperCPP: Repository not found for checkout.";
+        return false;
+    }
+
+    git_reference* targetRef = nullptr;
+    git_object* targetCommit = nullptr;
+    bool success = false;
+
+    int error = git_branch_lookup(&targetRef, repo, branchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+
+    if (error == 0) {
+        error = git_reference_peel(&targetCommit, targetRef, GIT_OBJ_COMMIT);
+
+        if (error == 0) {
+            git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+            opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+
+            error = git_checkout_tree(repo, targetCommit, &opts);
+
+            if (error == 0) {
+                error = git_repository_set_head(repo, git_reference_name(targetRef));
+
+                if (error == 0) {
+                    qDebug() << "GitWrapperCPP: Successfully checked out to" << branchName;
+                    success = true;
+                }
+            }
+        }
+    }
+
+    if (!success) {
+        const git_error* e = git_error_last();
+        qWarning() << "GitWrapperCPP: Checkout failed." << (e ? e->message : "Unknown error");
+    }
+
+    if (targetCommit) git_object_free(targetCommit);
+    if (targetRef) git_reference_free(targetRef);
+
+    if (repo != m_currentRepo) {
+        git_repository_free(repo);
+    }
+
+    return success;
+}
+
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
 {
     // 1. Prepare result map
