@@ -5,6 +5,9 @@
 #include <QProcess>
 #include <QStandardPaths>
 #include <QTemporaryDir>
+#include <qfuture.h>
+#include <qtconcurrentrun.h>
+#include <QFutureWatcher>
 
 // Helper function to convert git status to string
 QString gitStatusToString(git_status_t status)
@@ -128,69 +131,77 @@ QVariantMap GitWrapperCPP::open(const QString &path)
 
 QVariantMap GitWrapperCPP::clone(const QString &url, const QString &localPath)
 {
-    // 1. Check if inputs are empty
+    qDebug() << "GitWrapperCPP: clone requested:" << localPath;
+
     if (url.isEmpty() || localPath.isEmpty())
-    {
-        // Return error result
         return createResult(false, QVariant(), "URL and local path cannot be empty");
-    }
 
-    // 2. Check if directory already exists
-    QDir dir(localPath);  // Create QDir object for the path
-    if (dir.exists())  // Check if folder exists
-    {
+    QDir dir(localPath);
+    if (dir.exists())
         return createResult(false, QVariant(), "Directory already exists: " + localPath);
-    }
 
-    // 3. Close current repository if open
-    if (m_currentRepo)
-    {
-        git_repository_free(m_currentRepo);  // Free old repository
-        m_currentRepo = nullptr;  // Clear pointer
-    }
+    const QString safeUrl = url;
+    const QString safePath = localPath;
 
-    // 4. Prepare libgit2 clone options
-    git_clone_options opts = GIT_CLONE_OPTIONS_INIT;  // Default options
+    auto future = QtConcurrent::run([=]() -> QVariantMap {
 
-    // Convert QString to C strings (UTF-8)
-    QByteArray urlUtf8 = url.toUtf8();  // "https://..." → bytes
-    QByteArray pathUtf8 = localPath.toUtf8();  // "/home/user/repo" → bytes
+        struct Payload { GitWrapperCPP *self; } payload { this };
 
-    // 5. Call libgit2 to clone repository
-    int result = git_clone(&m_currentRepo,        // Store repo here
-                           urlUtf8.constData(),    // URL as C string
-                           pathUtf8.constData(),   // Path as C string
-                           &opts);                 // Options
+        auto progressCallback = [](const git_indexer_progress *stats, void *p) -> int {
+            auto *data = static_cast<Payload*>(p);
 
-    // 6. Check if clone succeeded
-    if (result != 0)  // 0 means success in libgit2
-    {
-        handleGitError(result);  // Get error message
-        return createResult(false, QVariant(), "Failed to clone repository");
-    }
+            if (stats->total_objects > 0) {
+                int percent = static_cast<int>(
+                    (100.0 * stats->received_objects) / stats->total_objects
+                    );
 
-    // 7. Success! Store the path
-    m_currentRepoPath = localPath;  // Remember where we cloned to
+                QMetaObject::invokeMethod(
+                    data->self,
+                    "cloneProgress",
+                    Qt::QueuedConnection,
+                    Q_ARG(int, percent)
+                    );
+            }
+            return 0;
+        };
 
-    // 8. Print debug message
-    qDebug() << "GitWrapperCPP: Repository cloned to" << localPath;
+        git_repository *repo = nullptr;
 
-    QVariantMap infoResult = getRepoInfo();
+        git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
+        opts.fetch_opts.callbacks.transfer_progress = progressCallback;
+        opts.fetch_opts.callbacks.payload = &payload;
 
+        QByteArray urlUtf8 = safeUrl.toUtf8();
+        QByteArray pathUtf8 = safePath.toUtf8();
 
-    if (infoResult["success"].toBool()) {
-        QVariantMap infoData = infoResult["data"].toMap();
-        qDebug() << "  ✓ getRepoInfo() passed";
-        qDebug() << "    - Branch:" << (infoData["branch"].toString().isEmpty() ? "detached HEAD" : infoData["branch"].toString());
-        qDebug() << "    - Commit count:" << infoData["commitCount"].toInt();
-        qDebug() << "    - Has changes:" << infoData["hasChanges"].toBool();
+        int result = git_clone(&repo, urlUtf8.constData(), pathUtf8.constData(), &opts);
 
-    } else {
-        qWarning() << "  ✗ getRepoInfo() failed:" << infoResult["error"].toString();
-    }
+        if (result != 0) {
+            const git_error *err = git_error_last();
+            QString msg = err ? err->message : "Unknown git error";
+            return QVariantMap { {"success", false}, {"error", msg} };
+        }
 
-    // 9. Return success result
-    return createResult(true, localPath);
+        git_repository_free(repo);
+
+        return QVariantMap { {"success", true}, {"data", safePath} };
+    });
+
+    auto *watcher = new QFutureWatcher<QVariantMap>(this);
+
+    connect(watcher, &QFutureWatcher<QVariantMap>::finished, this, [=]() {
+        QVariantMap result = watcher->result();
+
+        if (result["success"].toBool())
+            m_currentRepoPath = safePath;
+
+        emit cloneFinished(result);
+        watcher->deleteLater();
+    });
+
+    watcher->setFuture(future);
+
+    return createResult(true, QVariant(), "Clone started");
 }
 
 QVariantMap GitWrapperCPP::close()
