@@ -170,6 +170,14 @@ public slots:
     Q_INVOKABLE QVariantList getBranches(const QString &repoPath = "");
 
     /**
+    * \brief Creates a new branch pointing to the current HEAD.
+    * \param branchName Name of the new branch.
+    * \param repoPath Path to the repository (optional).
+    * \return True if creation was successful, false otherwise.
+    */
+    Q_INVOKABLE bool createBranch(const QString &branchName, const QString &repoPath = "");
+
+    /**
      * \brief Get basic repository information
      * \param repoPath Path to repository (optional, uses current if empty)
      * \return QVariantMap with repository info

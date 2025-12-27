@@ -396,6 +396,50 @@ QVariantList GitWrapperCPP::getBranches(const QString &repoPath)
     return branches;
 }
 
+bool GitWrapperCPP::createBranch(const QString &branchName, const QString &repoPath)
+{
+    git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
+    if (!repo) {
+        qWarning() << "GitWrapperCPP: Repository not found for creating branch";
+        return false;
+    }
+
+    bool success = false;
+    git_reference* new_branch_ref = nullptr;
+    git_object* target_object = nullptr;
+
+    if (git_revparse_single(&target_object, repo, "HEAD") == 0)
+    {
+        int error = git_branch_create(
+            &new_branch_ref,
+            repo,
+            branchName.toUtf8(),
+            (const git_commit*)target_object,
+            0
+        );
+
+        if (error == 0) {
+            qDebug() << "GitWrapperCPP: Branch created successfully:" << branchName;
+            success = true;
+        } else {
+            const git_error* e = git_error_last();
+            qWarning() << "GitWrapperCPP: Failed to create branch. Error:" << (e ? e->message : "Unknown");
+        }
+    }
+
+    if (target_object) {
+        git_object_free(target_object);
+    }
+    if (new_branch_ref) {
+        git_reference_free(new_branch_ref);
+    }
+    if (repo != m_currentRepo) {
+        git_repository_free(repo);
+    }
+
+    return success;
+}
+
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
 {
     // 1. Prepare result map
