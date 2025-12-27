@@ -343,33 +343,32 @@ QVariantList GitWrapperCPP::getBranches(const QString &repoPath)
     // Get repository (opens if needed)
     git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
     if (!repo) {
-        return branches; // Empty list
+        return branches;
     }
 
-    git_branch_iterator *iter = nullptr;
-    int result = git_branch_iterator_new(&iter, repo, GIT_BRANCH_ALL);
+    git_reference *head = nullptr;
+    git_repository_head(&head, repo);
 
-    if (result == 0) {
+    git_branch_iterator *iter = nullptr;
+
+    if (git_branch_iterator_new(&iter, repo, GIT_BRANCH_ALL) == 0) {
         git_reference *ref = nullptr;
         git_branch_t type;
 
         // Iterate through all branches
         while (git_branch_next(&ref, &type, iter) == 0) {
             const char *name = nullptr;
-            git_branch_name(&name, ref);
 
-            if (name) {
+            if (git_branch_name(&name, ref) && name) {
                 QVariantMap branch;
                 branch["name"] = QString::fromUtf8(name);
                 branch["isRemote"] = (type == GIT_BRANCH_REMOTE);
                 branch["isLocal"] = (type == GIT_BRANCH_LOCAL);
 
                 // Check if this is the current branch
-                git_reference *head = nullptr;
                 bool isCurrent = false;
-                if (git_repository_head(&head, repo) == 0) {
-                    isCurrent = git_reference_cmp(ref, head) == 0;
-                    git_reference_free(head);
+                if (head && git_reference_cmp(ref, head) == 0) {
+                    isCurrent = true;
                 }
                 branch["isCurrent"] = isCurrent;
 
@@ -383,6 +382,11 @@ QVariantList GitWrapperCPP::getBranches(const QString &repoPath)
         git_branch_iterator_free(iter);
     }
 
+    if (head)
+    {
+        git_reference_free(head);
+    }
+
     // Clean up if we opened a temporary repository
     if (repo != m_currentRepo) {
         git_repository_free(repo);
@@ -390,6 +394,191 @@ QVariantList GitWrapperCPP::getBranches(const QString &repoPath)
 
     qDebug() << "GitWrapperCPP: Retrieved" << branches.size() << "branches";
     return branches;
+}
+
+bool GitWrapperCPP::createBranch(const QString &branchName, const QString &repoPath)
+{
+    git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
+    if (!repo) {
+        qWarning() << "GitWrapperCPP: Repository not found for creating branch";
+        return false;
+    }
+
+    bool success = false;
+    git_reference* new_branch_ref = nullptr;
+    git_object* target_object = nullptr;
+
+    if (git_revparse_single(&target_object, repo, "HEAD") == 0)
+    {
+        int error = git_branch_create(
+            &new_branch_ref,
+            repo,
+            branchName.toUtf8(),
+            (const git_commit*)target_object,
+            0
+        );
+
+        if (error == 0) {
+            qDebug() << "GitWrapperCPP: Branch created successfully:" << branchName;
+            success = true;
+        } else {
+            const git_error* e = git_error_last();
+            qWarning() << "GitWrapperCPP: Failed to create branch. Error:" << (e ? e->message : "Unknown");
+        }
+    }
+
+    if (target_object) {
+        git_object_free(target_object);
+    }
+    if (new_branch_ref) {
+        git_reference_free(new_branch_ref);
+    }
+    if (repo != m_currentRepo) {
+        git_repository_free(repo);
+    }
+
+    return success;
+}
+
+bool GitWrapperCPP::deleteBranch(const QString &branchName, const QString &repoPath)
+{
+    git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
+
+    if (!repo) {
+        qWarning() << "GitWrapperCPP: Cannot delete branch, repository not found.";
+        return false;
+    }
+
+    git_reference* branchRef = nullptr;
+    bool success = false;
+
+    int error = git_branch_lookup(&branchRef, repo, branchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+
+    if (error == 0) {
+        error = git_branch_delete(branchRef);
+
+        if (error == 0) {
+            qDebug() << "GitWrapperCPP: Successfully deleted branch:" << branchName;
+            success = true;
+        } else {
+            const git_error* e = git_error_last();
+            qWarning() << "GitWrapperCPP: Failed to delete branch. Error:" << (e ? e->message : "Unknown");
+        }
+    } else {
+        qWarning() << "GitWrapperCPP: Branch not found:" << branchName;
+    }
+
+    if (branchRef) {
+        git_reference_free(branchRef);
+    }
+
+    if (repo != m_currentRepo) {
+        git_repository_free(repo);
+    }
+
+    return success;
+}
+
+bool GitWrapperCPP::checkoutBranch(const QString &branchName, const QString &repoPath)
+{
+    git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
+    if (!repo) {
+        qWarning() << "GitWrapperCPP: Repository not found for checkout.";
+        return false;
+    }
+
+    git_reference* targetRef = nullptr;
+    git_object* targetCommit = nullptr;
+    bool success = false;
+
+    int error = git_branch_lookup(&targetRef, repo, branchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+
+    if (error == 0) {
+        error = git_reference_peel(&targetCommit, targetRef, GIT_OBJ_COMMIT);
+
+        if (error == 0) {
+            git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+            opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+
+            error = git_checkout_tree(repo, targetCommit, &opts);
+
+            if (error == 0) {
+                error = git_repository_set_head(repo, git_reference_name(targetRef));
+
+                if (error == 0) {
+                    qDebug() << "GitWrapperCPP: Successfully checked out to" << branchName;
+                    success = true;
+                }
+            }
+        }
+    }
+
+    if (!success) {
+        const git_error* e = git_error_last();
+        qWarning() << "GitWrapperCPP: Checkout failed." << (e ? e->message : "Unknown error");
+    }
+
+    if (targetCommit) git_object_free(targetCommit);
+    if (targetRef) git_reference_free(targetRef);
+
+    if (repo != m_currentRepo) {
+        git_repository_free(repo);
+    }
+
+    return success;
+}
+
+bool GitWrapperCPP::renameBranch(const QString &oldName, const QString &newName)
+{
+    if (!m_currentRepo) return false;
+
+    git_reference* branchRef = nullptr;
+    git_reference* newRef = nullptr;
+    bool success = false;
+
+    int error = git_branch_lookup(&branchRef, m_currentRepo, oldName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+
+    if (error == 0) {
+        error = git_branch_move(&newRef, branchRef, newName.toUtf8().constData(), 0);
+
+        if (error == 0) {
+            qDebug() << "GitWrapperCPP: Renamed" << oldName << "to" << newName;
+            success = true;
+        } else {
+            const git_error* e = git_error_last();
+            qWarning() << "GitWrapperCPP: Rename failed:" << (e ? e->message : "Unknown");
+        }
+    }
+
+    if (newRef) git_reference_free(newRef);
+    if (branchRef) git_reference_free(branchRef);
+
+    return success;
+}
+
+QString GitWrapperCPP::getUpstreamName(const QString &localBranchName)
+{
+    if (!m_currentRepo) return "";
+
+    git_reference* localRef = nullptr;
+    git_reference* upstreamRef = nullptr;
+    QString result = "";
+
+    int error = git_branch_lookup(&localRef, m_currentRepo, localBranchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+
+    if (error == 0) {
+        if (git_branch_upstream(&upstreamRef, localRef) == 0) {
+            const char* name = nullptr;
+            if (git_branch_name(&name, upstreamRef) == 0 && name) {
+                result = QString::fromUtf8(name);
+            }
+        }
+    }
+
+    if (upstreamRef) git_reference_free(upstreamRef);
+    if (localRef) git_reference_free(localRef);
+
+    return result;
 }
 
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
@@ -504,23 +693,36 @@ QVariantMap GitWrapperCPP::commitToMap(git_commit *commit)
 
 QString GitWrapperCPP::getCurrentBranchName(git_repository* repo)
 {
+    if (!repo)
+    {
+        return "";
+    }
+
     QString branchName;  // Empty string to start
     git_reference* head = nullptr;  // libgit2 HEAD reference
 
+    int error = git_repository_head(&head, repo);
+
     // Get HEAD reference (points to current branch)
-    if (git_repository_head(&head, repo) == 0)
+    if (error == GIT_OK)
     {
         const char* name = nullptr;  // Will store branch name
 
         // Extract branch name from reference
-        if (git_branch_name(&name, head) == 0 && name)
+        if (git_branch_name(&name, head) == GIT_OK && name)
         {
             branchName = QString::fromUtf8(name);  // Convert C string to QString
         }
         git_reference_free(head);  // Clean up libgit2 object
+    } else if (error == GIT_ENOTFOUND)
+    {
+        branchName = "initial/no-commits";
+    } else
+    {
+        branchName = "Detached HEAD";
     }
 
-    return branchName;  // "main", "master", or empty if detached
+    return branchName;  // "main", "master", or Detached HEAD if detached
 }
 
 QVariantMap GitWrapperCPP::statusEntryToMap(const git_status_entry *entry)

@@ -170,6 +170,45 @@ public slots:
     Q_INVOKABLE QVariantList getBranches(const QString &repoPath = "");
 
     /**
+    * \brief Creates a new branch pointing to the current HEAD.
+    * \param branchName Name of the new branch.
+    * \param repoPath Path to the repository (optional).
+    * \return True if creation was successful, false otherwise.
+    */
+    Q_INVOKABLE bool createBranch(const QString &branchName, const QString &repoPath = "");
+
+    /**
+    * \brief Deletes an existing local branch from the repository.
+    * \param branchName The name of the local branch to be removed.
+    * \param repoPath Path to the repository. If empty, uses the current repository.
+    * \return True if the branch was successfully deleted, false otherwise.
+    */
+    Q_INVOKABLE bool deleteBranch(const QString &branchName, const QString &repoPath = "");
+
+    /**
+    * \brief Safely switches the current working directory to a target branch.
+    * \param branchName The name of the local branch to checkout.
+    * \param repoPath Path to the repository. If empty, uses the current repository.
+    * \return True if the checkout was successful, false if there are conflicts or errors.
+    */
+    Q_INVOKABLE bool checkoutBranch(const QString &branchName, const QString &repoPath = "");
+
+    /**
+    * \brief Renames an existing local branch.
+    * \param oldName The current name of the branch.
+    * \param newName The new desired name for the branch.
+    * \return True if the rename was successful.
+    */
+    Q_INVOKABLE bool renameBranch(const QString &oldName, const QString &newName);
+
+    /**
+    * \brief Retrieves the name of the tracked upstream branch.
+    * \param localBranchName The name of the local branch to check.
+    * \return The upstream branch name (e.g., "origin/main") or an empty QString if no upstream is set.
+    */
+    Q_INVOKABLE QString getUpstreamName(const QString &localBranchName);
+
+    /**
      * \brief Get basic repository information
      * \param repoPath Path to repository (optional, uses current if empty)
      * \return QVariantMap with repository info
