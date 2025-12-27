@@ -95,83 +95,123 @@ Rectangle {
             }
         }
 
+        Connections {
+            target: GitService
+
+            function onCloneFinished() {
+                continueButtonContainer.busy = false
+                continueButtonContainer.progress = 0
+                root.controller.completeWelcomeFlow()
+            }
+
+            function onCloneProgress (progress){
+                continueButtonContainer.progress = progress
+            }
+        }
+
         // Shared Continue/Finish button for all steps
-        Button {
-            id: continueButton
+        Item {
+            id: continueButtonContainer
+
+            property bool busy: false
+            property real progress: 0
+
             Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: 20
             Layout.preferredWidth: 320
             Layout.preferredHeight: 43
-            flat: false
-            Material.background: Style.colors.accent
-            Material.foreground: "white"
-            text: {
-                if (!root.controller) {
-                    return "Continue" + " " + Style.icons.arrowRight
+
+            Button {
+                id: continueButton
+                anchors.fill: parent
+                flat: false
+                Material.background: Style.colors.accent
+                Material.foreground: "white"
+                text: {
+                    if (continueButtonContainer.busy) {
+                        return (continueButtonContainer.progress) + " %"
+                    }
+                    if (!root.controller) {
+                        return "Continue " + Style.icons.arrowRight
+                    }
+                    switch(root.controller.currentPageIndex) {
+                        case Enums.WelcomePages.WelcomeBanner: return "Get Started " + Style.icons.arrowRight
+                        default: return "Continue " + Style.icons.arrowRight
+                    }
                 }
-                switch(root.controller.currentPageIndex) {
-                    case Enums.WelcomePages.WelcomeBanner: return "Get Started" + " " + Style.icons.arrowRight
-                    case Enums.WelcomePages.SetupProfle:
-                    case Enums.WelcomePages.OpenRepository:
-                    default: return "Continue" + " " + Style.icons.arrowRight
-                }
-            }
-            font.family: Style.fontTypes.roboto
-            font.weight: 400
-            font.pixelSize: 15
-            font.letterSpacing: 0
+                font.family: Style.fontTypes.roboto
+                font.weight: 400
+                font.pixelSize: 15
+                font.letterSpacing: 0
 
-            background: Rectangle {
-                radius: 3
-                color: continueButton.enabled ?
-                          (continueButton.hovered ? Style.colors.accentHover : Style.colors.accent) :
-                          Style.colors.disabledButton
-                Behavior on color { ColorAnimation { duration: 150 } }
-            }
+                background: Rectangle {
+                    radius: 3
+                    color: continueButton.enabled ?
+                              (continueButton.hovered ? Style.colors.accentHover : Style.colors.accent) :
+                              Style.colors.disabledButton
+                    Behavior on color { ColorAnimation { duration: 150 } }
 
-            enabled: {
-                if (root.controller.currentPageIndex !== Enums.WelcomePages.OpenRepository)
-                    return true;
+                    // Gray background bar
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "#CCCCCC"
+                        radius: 3
+                        visible: continueButtonContainer.busy
 
-                switch(repositorySelector.currentTabIndex) {
-                    case Enums.RepositorySelectorTab.Recents:
-                    case Enums.RepositorySelectorTab.Open:
-                        return repositorySelector.selectedPath !== ""
-
-                    case Enums.RepositorySelectorTab.Clone:
-                        return repositorySelector.selectedPath !== "" && repositorySelector.selectedPath !== ""
-
-                    default:
-                        return false;
-                }
-            }
-
-            onClicked: {
-                if (!root.controller) {
-                    return
-                }
-
-                switch(root.controller.currentPageIndex) {
-                    case Enums.WelcomePages.WelcomeBanner:
-                        root.controller.nextPage()
-                        break
-
-                    case Enums.WelcomePages.SetupProfle:
-                        //TODO : set user info
-                        root.controller.nextPage()
-                        break
-
-                    case Enums.WelcomePages.OpenRepository:
-                        if(submit()) {
-                            root.controller.completeWelcomeFlow()
+                        // Blue progress bar
+                        Rectangle {
+                            width: continueButtonContainer.busy ? parent.width * continueButtonContainer.progress / 100 : 0
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            color: Style.colors.accent
+                            radius: 3
+                            Behavior on width { NumberAnimation { duration: 100 } }
                         }
-                        break
+                    }
+                }
 
-                    default:
-                        break
+                enabled: {
+                    if (continueButtonContainer.busy)
+                        return false;
+
+                    if (root.controller.currentPageIndex !== Enums.WelcomePages.OpenRepository)
+                        return true;
+
+                    switch(repositorySelector.currentTabIndex) {
+                        case Enums.RepositorySelectorTab.Recents:
+                        case Enums.RepositorySelectorTab.Open:
+                            return repositorySelector.selectedPath !== ""
+
+                        case Enums.RepositorySelectorTab.Clone:
+                            return repositorySelector.selectedPath !== ""
+
+                        default:
+                            return false;
+                    }
+                }
+
+                onClicked: {
+                    if (!root.controller) return
+
+                    switch(root.controller.currentPageIndex) {
+                        case Enums.WelcomePages.WelcomeBanner:
+                            root.controller.nextPage()
+                            break
+                        case Enums.WelcomePages.SetupProfle:
+                            root.controller.nextPage()
+                            break
+                        case Enums.WelcomePages.OpenRepository:
+                            if(submit())
+                                root.controller.completeWelcomeFlow()
+                            break
+                        default:
+                            break
+                    }
                 }
             }
         }
+
     }
 
     function submit() {
@@ -180,8 +220,16 @@ Rectangle {
             case Enums.RepositorySelectorTab.Open:
                 return root.repositoryController.openRepository(repositorySelector.selectedPath)
 
-            case Enums.RepositorySelectorTab.Clone:
-                return root.repositoryController.cloneRepository(repositorySelector.selectedPath, repositorySelector.selectedUrl)
+            case Enums.RepositorySelectorTab.Clone: {
+                let res = root.repositoryController.cloneRepository(repositorySelector.selectedPath, repositorySelector.selectedUrl)
+                continueButtonContainer.busy = res.success
+
+                if (!res.success) {
+                    repositorySelector.errorMessage = res.error
+                }
+
+                return false;
+            }
 
             default:
                 return false;

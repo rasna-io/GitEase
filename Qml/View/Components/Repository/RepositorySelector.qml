@@ -23,6 +23,10 @@ Item {
     property string selectedPath: ""
     property string selectedUrl: repositoryUrlField.field.text
 
+    property string errorMessage: ""
+
+
+
     /* Signals
      * ****************************************************************************************/
 
@@ -32,8 +36,10 @@ Item {
     onCurrentTabIndexChanged: {
         repositoryLocationField.field.text = ""
         cloneLocationField.field.text = ""
+        repositoryUrlField.field.text = ""
         root.selectedPath = ""
         recentRepositoriesList.selectedIndex = -1
+        root.errorMessage = ""
     }
 
     ColumnLayout {
@@ -172,6 +178,10 @@ Item {
 
             // Clone tab content
             Item {
+                id: cloneTab
+
+                property bool hasError: (root.errorMessage !== "" && root.currentTabIndex === Enums.RepositorySelectorTab.Clone)
+
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 0
@@ -181,14 +191,14 @@ Item {
                         Layout.fillWidth: true
                         Layout.topMargin: 10
                         Layout.bottomMargin: 10
-                        text: "Initialize a new Git repository on your local machine"
+                        text: cloneTab.hasError ? root.errorMessage : "Initialize a new Git repository on your local machine"
                         wrapMode: Text.WordWrap
                         font.pixelSize: 13
                         font.family: Style.fontTypes.roboto
                         font.weight: 300
                         font.letterSpacing: 0
                         font.italic: true
-                        color: Style.colors.mutedText
+                        color: cloneTab.hasError ? Style.colors.error  : Style.colors.mutedText
                         horizontalAlignment: Text.AlignHCenter
                     }
 
