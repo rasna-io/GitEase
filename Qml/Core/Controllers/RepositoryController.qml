@@ -44,7 +44,7 @@ Item {
         var result = GitService.clone(url, path + "/" + repoName)
 
         if(result.success){
-            createRepositoryComponent(path)
+            createRepositoryComponent(path, repoName)
         }
 
         return result
@@ -53,18 +53,23 @@ Item {
     /**
      * Create and initialize a Repository component for the given path
      */
-    function createRepositoryComponent(path) {
+    function createRepositoryComponent(path, name = "") {
         // Check if already exists
         var repo = appModel.repositories.find(r => r.path === path)
         if (!repo){
             // Create new repository
             var repoComponent = Qt.createComponent("qrc:/GitEase/Qml/Core/Models/Repository.qml")
             if (repoComponent.status === Component.Ready) {
+
+                if (name === "")
+                    name = path.split('/').pop() || path.split('\\').pop() || "Repository"
+
                 repo = repoComponent.createObject(root, {
                     id: "repo_" + Date.now(),
                     path: path,
-                    name: path.split('/').pop() || path.split('\\').pop() || "Repository"
+                    name: name
                 })
+                appModel.repositories.push(repo)
             }
         }
 
@@ -88,6 +93,7 @@ Item {
                 }
                 // Reassign to trigger change notifications for bindings
                 appModel.recentRepositories = appModel.recentRepositories.slice()
+                appModel.save()
             }
         }
     }
