@@ -115,18 +115,9 @@ ApplicationWindow {
         Item {
             anchors.fill: parent
 
-            // Main application content goes here
-            Rectangle {
+            Loader {
                 anchors.fill: parent
-                color: Style.colors.primaryBackground
-                radius: 16
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "Main Application Window"
-                    font.pixelSize: 24
-                    color: Style.colors.foreground
-                }
+                source: "qrc:/GitEase/Qml/View/MainWindow.qml"
             }
         }
     }
