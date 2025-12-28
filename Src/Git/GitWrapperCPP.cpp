@@ -24,14 +24,14 @@
 // Helper function to convert git status to string
 QString gitStatusToString(git_status_t status)
 {
-    if (status & GIT_STATUS_WT_NEW) return "untracked";
-    if (status & GIT_STATUS_WT_MODIFIED) return "modified";
-    if (status & GIT_STATUS_WT_DELETED) return "deleted";
-    if (status & GIT_STATUS_WT_RENAMED) return "renamed";
-    if (status & GIT_STATUS_WT_TYPECHANGE) return "typechange";
-    if (status & GIT_STATUS_INDEX_NEW) return "staged_new";
-    if (status & GIT_STATUS_INDEX_MODIFIED) return "staged_modified";
-    if (status & GIT_STATUS_INDEX_DELETED) return "staged_deleted";
+    if (status & GIT_STATUS_WT_NEW) return "untracked";                 //working directory
+    if (status & GIT_STATUS_WT_MODIFIED) return "modified";             //Tracked file
+    if (status & GIT_STATUS_WT_DELETED) return "deleted";               //File removed from disk but Still tracked in Git
+    if (status & GIT_STATUS_WT_RENAMED) return "renamed";               //Rename detected in working tree
+    if (status & GIT_STATUS_WT_TYPECHANGE) return "typechange";         //File type changed
+    if (status & GIT_STATUS_INDEX_NEW) return "staged_new";             //File added to index
+    if (status & GIT_STATUS_INDEX_MODIFIED) return "staged_modified";   //Tracked file - Changes are staged
+    if (status & GIT_STATUS_INDEX_DELETED) return "staged_deleted";     //File deletion staged
     if (status & GIT_STATUS_INDEX_RENAMED) return "staged_renamed";
     return "unknown";
 }
@@ -251,7 +251,7 @@ QVariantMap GitWrapperCPP::status()
 
     // Configure status options
     git_status_options opts = GIT_STATUS_OPTIONS_INIT;
-    opts.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
+    opts.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;      //Index vs HEAD
     opts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED;
 
     git_status_list *status_list = nullptr;
@@ -645,11 +645,11 @@ QVariantMap GitWrapperCPP::createResult(bool success,
     result["success"] = success;  // Always include success flag
 
     if (success && !data.isNull())  // If success AND we have data
-        result["data"] = data;  // Add data field
+        result["data"] = data;
     else if (!success)  // If failed
         result["error"] = errorMessage.isEmpty() ? m_lastError : errorMessage;
 
-    return result;  // Return formatted result
+    return result;
 }
 
 QVariantMap GitWrapperCPP::commitToMap(git_commit *commit)
@@ -659,8 +659,9 @@ QVariantMap GitWrapperCPP::commitToMap(git_commit *commit)
     if (!commit) return commitMap;
 
     // Get commit hash
-    char hash[GIT_OID_HEXSZ + 1];
+    char hash[GIT_OID_HEXSZ + 1];   //e83c5163316f89bfbde7d9ab23ca2e25604af290\0
     git_oid_tostr(hash, sizeof(hash), git_commit_id(commit));
+
     commitMap["hash"] = QString::fromUtf8(hash);
     commitMap["shortHash"] = QString::fromUtf8(hash).left(7);
 
@@ -807,22 +808,15 @@ git_repository* GitWrapperCPP::openRepository(const QString &path)
 
 QString GitWrapperCPP::validateCommitMessage(const QString &message)
 {
-    if (message.trimmed().isEmpty()) {
+    if (message.trimmed().isEmpty())
         return "Commit message cannot be empty";
-    }
 
     // Check for common commit message issues
     QRegularExpression trailingWhitespace("\\s+$");
-    if (trailingWhitespace.match(message).hasMatch()) {
+    if (trailingWhitespace.match(message).hasMatch())
         return "Commit message has trailing whitespace";
-    }
 
-    // Warn about very short messages (optional)
-    if (message.trimmed().length() < 10) {
-        qWarning() << "Commit message is very short, consider adding more details";
-    }
-
-    return QString(); // Empty string means valid
+    return QString();
 }
 
 QVariantMap GitWrapperCPP::createSignatureMap(const git_signature *sig)
@@ -837,208 +831,263 @@ QVariantMap GitWrapperCPP::createSignatureMap(const git_signature *sig)
     return signature;
 }
 
-QVariantMap GitWrapperCPP::commit(const QString &message, bool amend, bool allowEmpty)
+QVariantMap GitWrapperCPP::commit(const QString& message,
+                                  bool amend,
+                                  bool allowEmpty)
 {
-    // 1. Validate repository is open
-    if (!m_currentRepo) {
-        return createResult(false, QVariant(), "No repository open. Please open or init a repository first.");
-    }
-
-    // 2. Validate commit message
-    QString validationError = validateCommitMessage(message);
+    QString validationError = validateCommitInputs(m_currentRepo, message, allowEmpty);
     if (!validationError.isEmpty()) {
         return createResult(false, QVariant(), validationError);
     }
 
-    // 3. Check if there are staged changes (unless allowing empty commit)
-    if (!allowEmpty && !hasStagedChanges()) {
+    git_signature* author = getAuthorSignature(m_currentRepo);
+    if (!author) {
         return createResult(false, QVariant(),
-                            "No staged changes to commit. Please stage files first.\n\n"
-                            "Tip: Use status() to see changes, then stageFile() to stage.");
+                            "Failed to create author signature. Check Git config.");
     }
 
-    // 4. Get the default signature (author & committer)
-    git_signature *author = nullptr;
-    git_signature *committer = nullptr;
-    int result = git_signature_default(&author, m_currentRepo);
 
-    if (result != 0) {
-        // If no default signature, create one with generic info
-        result = git_signature_now(&author, "user_name", "emadil_address");
-        if (result != 0) {
-            handleGitError(result);
-            return createResult(false, QVariant(), "Failed to create author signature");
-        }
+    git_tree* tree = createTreeFromStagedChanges(m_currentRepo);
+    if (!tree) {
+        return createResult(false, QVariant(),
+                            "Failed to create tree from staged changes.");
     }
 
-    // For now, use same signature for committer
-    committer = author;
+    ParentCommits parents = resolveParentCommits(m_currentRepo, amend);
 
-    // 5. Get the index (staging area)
-    git_index *index = nullptr;
-    result = git_repository_index(&index, m_currentRepo);
+    git_oid newCommitOid;
+    int result = createCommitObject(m_currentRepo, message, tree,
+                                    author, author, parents, newCommitOid);
+
     if (result != 0) {
-        git_signature_free(author);
+        // Cleanup on failure
+        cleanupCommitResources(author, tree, parents);
         handleGitError(result);
-        return createResult(false, QVariant(), "Failed to get repository index");
+
+        // Provide helpful error messages
+        if (result == GIT_EAMBIGUOUS)
+            return createResult(false, QVariant(),
+                                "Ambiguous commit state. Repository may be mid-merge/rebase.");
+        else if (result == GIT_EUNBORNBRANCH)
+            return createResult(false, QVariant(),
+                                "Cannot amend: no commits yet (unborn branch).");
+
+
+        return createResult(false, QVariant(), "Failed to create commit object.");
     }
 
-    // 6. Write the tree from the index
-    git_oid tree_oid;
-    result = git_index_write_tree(&tree_oid, index);
+    QVariantMap commitDetails = getCommitDetails(m_currentRepo, newCommitOid);
+    commitDetails["amend"] = amend;
+
+    cleanupCommitResources(author, tree, parents);
+
+
+    qDebug() << "GitWrapperCPP: Created commit"
+             << (amend ? "(amend)" : "")
+             << commitDetails["shortHash"].toString()
+             << "-" << commitDetails["summary"].toString();
+
+    return createResult(true, commitDetails);
+}
+
+QString GitWrapperCPP::validateCommitInputs(git_repository* repo,
+                                            const QString& message,
+                                            bool allowEmpty)
+{
+    if (!repo)
+        return QString("No repository available. Please open a repository first.");
+
+    QString msgError = validateCommitMessage(message);
+    if (!msgError.isEmpty())
+        return msgError;
+
+    if (!allowEmpty && !hasStagedChanges())
+        return QString("No staged changes to commit. Please stage files first.");
+
+    return QString();
+}
+
+git_signature* GitWrapperCPP::getAuthorSignature(git_repository* repo)
+{
+    git_signature* signature = nullptr;
+
+    // Try to get default signature from Git config
+    int result = git_signature_default(&signature, repo);
+
     if (result != 0) {
-        git_index_free(index);
-        git_signature_free(author);
         handleGitError(result);
-        return createResult(false, QVariant(), "Failed to write tree from staged changes");
+        return nullptr;
     }
 
-    git_tree *tree = nullptr;
-    result = git_tree_lookup(&tree, m_currentRepo, &tree_oid);
+    return signature;
+}
+
+git_tree* GitWrapperCPP::createTreeFromStagedChanges(git_repository* repo)
+{
+    git_index* index = nullptr;
+
+    int result = git_repository_index(&index, repo);
     if (result != 0) {
-        git_index_free(index);
-        git_signature_free(author);
         handleGitError(result);
-        return createResult(false, QVariant(), "Failed to lookup tree");
+        return nullptr;
     }
 
-    // 7. Prepare parents for the commit
-    const git_commit **parents = nullptr;
-    size_t parent_count = 0;
-    git_commit *current_commit = nullptr;  // DECLARE HERE - FIXED!
+    // creates a tree object in .git/objects/
+    git_oid treeOid;
+    result = git_index_write_tree(&treeOid, index);
+
+    git_index_free(index);
+
+    if (result != 0) {
+        handleGitError(result);
+        return nullptr;
+    }
+
+    // Look up the tree object we just created
+    git_tree* tree = nullptr;
+    result = git_tree_lookup(&tree, repo, &treeOid);
+    if (result != 0) {
+        handleGitError(result);
+        return nullptr;
+    }
+
+    return tree;
+}
+
+ParentCommits GitWrapperCPP::resolveParentCommits(git_repository* repo, bool amend)
+{
+    ParentCommits parents {};
 
     if (amend) {
-        git_reference* head_ref = nullptr;
-        result = git_repository_head(&head_ref, m_currentRepo);
+        // Get current HEAD reference
+        git_reference* headRef = nullptr;
+        int result = git_repository_head(&headRef, repo);
 
-        if (result == 0 && head_ref) {
-            result = git_reference_peel((git_object**)&current_commit, head_ref, GIT_OBJECT_COMMIT);
+        if (result == 0 && headRef) {
+            // Get the commit being amended
+            result = git_reference_peel((git_object**)&parents.amendedCommit,
+                                        headRef, GIT_OBJECT_COMMIT);
+            git_reference_free(headRef);
 
-            if (result == 0 && current_commit) {
-                parent_count = git_commit_parentcount(current_commit);
-                if (parent_count > 0) {
-                    parents = new const git_commit*[parent_count];
-                    for (unsigned int i = 0; i < parent_count; ++i) {
-                        git_commit* parent = nullptr;
-                        // CORRECT: Use output parameter
-                        if (git_commit_parent(&parent, current_commit, i) == 0) {
-                            parents[i] = parent;
-                        } else {
-                            parents[i] = nullptr;
+            if (result == 0 && parents.amendedCommit) {
+                // Copy parent commits from the commit being amended
+                parents.count = git_commit_parentcount(parents.amendedCommit);
+
+                if (parents.count > 0) {
+                    parents.commits = new git_commit*[parents.count];
+
+                    for (size_t i = 0; i < parents.count; ++i) {
+                        // Note: git_commit_parent INCREMENTS refcount
+                        if (git_commit_parent(&parents.commits[i],
+                                              parents.amendedCommit, i) != 0) {
+                            // Error handling: free what we got so far
+                            for (size_t j = 0; j < i; ++j) {
+                                git_commit_free(parents.commits[j]);
+                            }
+                            delete[] parents.commits;
+                            parents.commits = nullptr;
+                            parents.count = 0;
+                            break;
                         }
                     }
                 }
-                // DON'T free current_commit here - it's still referenced by parents[]
-                // We'll free it AFTER the commit creation
             }
-            git_reference_free(head_ref);
         }
     } else {
-        // For regular commit, use HEAD as parent if it exists
-        git_commit *parent = nullptr;
-        result = git_revparse_single((git_object**)&parent, m_currentRepo, "HEAD");
+        // REGULAR COMMIT CASE: Use HEAD as parent
 
-        if (result == 0 && parent) {
-            parent_count = 1;
-            parents = new const git_commit*[1];
-            parents[0] = parent;
+        git_commit* headCommit = nullptr;
+        int result = git_revparse_single((git_object**)&headCommit, repo, "HEAD");
+
+        if (result == 0 && headCommit) {
+            // Normal commit: HEAD is the parent
+            parents.count = 1;
+            parents.commits = new git_commit*[1];
+            parents.commits[0] = headCommit;
         } else {
-            // First commit in repository (no parent)
-            parent_count = 0;
+            // No HEAD = initial commit (0 parents)
+            parents.count = 0;
         }
     }
 
-    // 8. Create the commit
-    git_oid commit_oid;
+    return parents;
+}
+
+int GitWrapperCPP::createCommitObject(git_repository* repo,
+                                      const QString& message,
+                                      git_tree* tree,
+                                      git_signature* author,
+                                      git_signature* committer,
+                                      const ParentCommits& parents,
+                                      git_oid& commitOid)
+{
+    // Convert message to UTF-8 (Git's internal format)
     QByteArray messageUtf8 = message.trimmed().toUtf8();
 
-    result = git_commit_create(
-        &commit_oid,
-        m_currentRepo,
-        "HEAD",  // Update HEAD (and current branch)
-        author,
-        committer,
-        nullptr,  // Use default message encoding (UTF-8)
-        messageUtf8.constData(),
-        tree,
-        parent_count,
-        parent_count > 0 ? parents : nullptr
+    // Create the commit object
+    return git_commit_create(
+        &commitOid,                         // Output: new commit's SHA-1
+        repo,                               // Repository to create in
+        "HEAD",                             // Update HEAD reference
+        author,                             // Who wrote the changes
+        committer,                          // Who committed them
+        nullptr,                            // Default encoding (UTF-8)
+        messageUtf8.constData(),            // Commit message
+        tree,                               // Tree snapshot
+        parents.count,                      // Number of parents
+        (const git_commit**)parents.commits // Parent commits
         );
+}
 
-    // 9. Clean up allocations
-    if (parents) {
-        if (amend && current_commit) {
-            // In amend case, parents are borrowed from current_commit
-            // Don't free them individually
-            // First free the parents array elements
-            for (size_t i = 0; i < parent_count; i++) {
-                if (parents[i]) {
-                    git_commit_free((git_commit*)parents[i]);
-                }
-            }
-            // Then free the current_commit itself
-            git_commit_free(current_commit);  // Free the source commit
-        } else {
-            // In normal case, we allocated these parents
-            for (size_t i = 0; i < parent_count; i++) {
-                git_commit_free((git_commit*)parents[i]);
-            }
-        }
-        delete[] parents;
+QVariantMap GitWrapperCPP::getCommitDetails(git_repository* repo, const git_oid& commitOid)
+{
+    QVariantMap details;
+
+    // Look up the commit we just created
+    git_commit* newCommit = nullptr;
+    int result = git_commit_lookup(&newCommit, repo, &commitOid);
+
+    if (result == 0 && newCommit) { //0 means success
+        details = commitToMap(newCommit);
+
+        // Add extra metadata
+        details["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+
+        git_commit_free(newCommit);
     }
 
-    git_tree_free(tree);
-    git_index_free(index);
-    git_signature_free(author);
+    return details;
+}
 
-    // 10. Handle commit creation result
-    if (result != 0) {
-        handleGitError(result);
+void GitWrapperCPP::cleanupCommitResources(git_signature* signature,
+                                           git_tree* tree,
+                                           ParentCommits& parents)
+{
+    if (signature)
+        git_signature_free(signature);
 
-        // Provide more specific error messages for common issues
-        if (result == GIT_EAMBIGUOUS) {
-            return createResult(false, QVariant(),
-                                "Ambiguous commit state. Please resolve conflicts or check repository state.");
-        } else if (result == GIT_EUNBORNBRANCH) {
-            return createResult(false, QVariant(),
-                                "Cannot amend: unborn HEAD (no commits yet). Use regular commit instead.");
+    if (tree)
+        git_tree_free(tree);
+
+    freeParentCommits(parents);
+}
+
+void GitWrapperCPP::freeParentCommits(ParentCommits& parents)
+{
+    if (parents.commits) {
+        for (size_t i = 0; i < parents.count; i++) {
+            git_commit_free(parents.commits[i]);
         }
-
-        return createResult(false, QVariant(), "Failed to create commit");
+        delete[] parents.commits;
+        parents.commits = nullptr;
     }
+    parents.count = 0;
 
-    // 11. Get the created commit details for the response
-    git_commit *new_commit = nullptr;
-    result = git_commit_lookup(&new_commit, m_currentRepo, &commit_oid);
-
-    QVariantMap commitResult;
-    if (result == 0 && new_commit) {
-        char hash[GIT_OID_HEXSZ + 1];
-        git_oid_tostr(hash, sizeof(hash), git_commit_id(new_commit));
-
-        commitResult["hash"] = QString::fromUtf8(hash);
-        commitResult["shortHash"] = QString::fromUtf8(hash).left(7);
-        commitResult["message"] = QString::fromUtf8(git_commit_message(new_commit));
-        commitResult["summary"] = commitResult["message"].toString().split("\n").first();
-        commitResult["amend"] = amend;
-        commitResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-
-        const git_signature *commit_author = git_commit_author(new_commit);
-        if (commit_author) {
-            commitResult["author"] = createSignatureMap(commit_author);
-        }
-
-        git_commit_free(new_commit);
+    // Free amended commit (if we were amending)
+    if (parents.amendedCommit) {
+        git_commit_free(parents.amendedCommit);
+        parents.amendedCommit = nullptr;
     }
-
-    // 12. Log the successful commit
-    qDebug() << "GitWrapperCPP: Commit"
-             << (amend ? "(amend) " : "")
-             << "created:" << commitResult["shortHash"].toString()
-             << "-" << commitResult["summary"].toString();
-
-    // 13. Return success with commit details
-    return createResult(true, commitResult);
 }
 
 QVariantMap GitWrapperCPP::stageFile(const QString &filePath)
@@ -1506,10 +1555,6 @@ QVariantMap GitWrapperCPP::revertCommit(const QString &commitHash)
     return commit(message, false, false); // Don't amend, don't allow empty
 }
 
-// ====================================================
-// Remote Operations Implementation
-// ====================================================
-
 QVariantList GitWrapperCPP::getRemotes()
 {
     QVariantList remotes;
@@ -1968,7 +2013,7 @@ void GitWrapperCPP::unitTestForGitWorkflow()
     int testsTotal = 0;
 
     // Test repository
-    QString repoUrl = "https://github.com/github_account/repo.git";
+    QString repoUrl = "https://github.com/git/GitTetser.git";
     QString localPath = QDir::homePath() + "/GitTetser_Test";
     QDir testDir(localPath);
 
@@ -2154,9 +2199,9 @@ void GitWrapperCPP::unitTestForGitWorkflow()
         }
     }
 
-    // --------------------------------------------------------------------
-    // STEP 9: Test amendLastCommit()
-    // --------------------------------------------------------------------
+    // // --------------------------------------------------------------------
+    // // STEP 9: Test amendLastCommit()
+    // // --------------------------------------------------------------------
     qDebug() << "\nSTEP 9: Testing amendLastCommit()";
 
     // Create another file to amend with

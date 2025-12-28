@@ -12,10 +12,27 @@
 #include <QVariantMap>
 #include <QQmlEngine>
 #include <QDir>
+#include <QRegularExpression>
 
 extern "C" {
 #include <git2.h>
 }
+
+
+/**
+ * \brief Structure to hold parent commit information
+ *
+ * In Git, every commit has 0+ parent commits:
+ * - Initial commit: 0 parents
+ * - Normal commit: 1 parent (previous commit)
+ * - Merge commit: 2+ parents
+ */
+struct ParentCommits
+{
+    git_commit** commits = nullptr;         ///< Array of parent commit pointers
+    size_t count = 0;                       ///< Number of parents
+    git_commit* amendedCommit = nullptr;    ///< Original commit being amended (for cleanup)
+};
 
 /**
  * This class implements all Git operations required by the multi-page dockable Git client.
@@ -114,6 +131,91 @@ private:
      * \return QVariantMap with signature details
      */
     QVariantMap createSignatureMap(const git_signature *sig);
+
+    /* ============================================================
+     * Commit Operation Helper Functions
+     * Each function does ONE specific job in the commit process
+     * ============================================================ */
+
+    /**
+     * \brief Validates all inputs before starting commit
+     * \param repo Repository to validate
+     * \param message Commit message to validate
+     * \param allowEmpty Whether empty commits are allowed
+     * \return Error message if invalid, empty string if valid
+     */
+    QString validateCommitInputs(git_repository* repo,
+                                 const QString& message,
+                                 bool allowEmpty);
+
+    /**
+     * \brief Get author signature for commit
+     * \param repo Repository to get default signature from
+     * \return git_signature* (caller must free) or nullptr on error
+     */
+    git_signature* getAuthorSignature(git_repository* repo);
+
+    /**
+     * \brief Creates tree object from staged changes in index
+     * \param repo Repository containing the index
+     * \return git_tree* (caller must free) or nullptr on error
+     */
+    git_tree* createTreeFromStagedChanges(git_repository* repo);
+
+    /**
+     * \brief Resolves parent commits for new commit
+     * \param repo Repository to examine
+     * \param amend Whether we're amending previous commit
+     * \return ParentCommits structure (must call freeParentCommits)
+     */
+    ParentCommits resolveParentCommits(git_repository* repo, bool amend);
+
+    /**
+     * \brief Frees resources allocated in ParentCommits structure
+     * \param parents Structure to clean up
+     */
+    void freeParentCommits(ParentCommits& parents);
+
+    /**
+     * \brief Creates commit object in Git database
+     * \param repo Repository to create commit in
+     * \param message Commit message
+     * \param tree Tree object representing file snapshot
+     * \param author Author signature
+     * \param committer Committer signature
+     * \param parents Parent commits for new commit
+     * \param[out] commitOid Output parameter for new commit's SHA-1
+     * \return 0 on success, libgit2 error code on failure
+     */
+    int createCommitObject(git_repository* repo,
+                           const QString& message,
+                           git_tree* tree,
+                           git_signature* author,
+                           git_signature* committer,
+                           const ParentCommits& parents,
+                           git_oid& commitOid);
+
+    /**
+     * \brief Retrieves commit information after successful creation
+     * \param repo Repository containing the commit
+     * \param commitOid SHA-1 of commit to retrieve
+     * \return QVariantMap with commit details
+     */
+    QVariantMap getCommitDetails(git_repository* repo, const git_oid& commitOid);
+
+    /**
+     * \brief Centralized cleanup of all commit-related resources
+     * \param signature Author/committer signature to free
+     * \param tree Tree object to free
+     * \param parents Parent commits structure to free
+     */
+    void cleanupCommitResources(git_signature* signature,
+                                git_tree* tree,
+                                ParentCommits& parents);
+
+    /* ============================================================
+     * End of Commit Operation Helper Functions
+     * ============================================================ */
 
     /* Internal Test Function */
     void unitTest();
