@@ -19,6 +19,8 @@ Rectangle {
 
     property RepositoryController repositoryController
 
+    property AppModel             appModel
+
     property int                  contentMargins:  24
 
 
@@ -84,6 +86,7 @@ Rectangle {
                     Layout.fillHeight: true
                     showDescription: true
                     descriptionText: "Choose how you want to get started with your Git repository"
+                    recentRepositories: appModel.recentRepositories
                     onSelectedPathChanged : {
                         if(repositorySelector.currentTabIndex === Enums.RepositorySelectorTab.Recents){
                             if(submit() && root.controller) {

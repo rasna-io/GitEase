@@ -65,6 +65,7 @@ Item {
                     path: path,
                     name: path.split('/').pop() || path.split('\\').pop() || "Repository"
                 })
+                appModel.repositories.push(repo)
             }
         }
 
@@ -88,6 +89,7 @@ Item {
                 }
                 // Reassign to trigger change notifications for bindings
                 appModel.recentRepositories = appModel.recentRepositories.slice()
+                appModel.save()
             }
         }
     }

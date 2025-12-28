@@ -99,8 +99,9 @@ ApplicationWindow {
                 // Pass controller to loaded page
                 onLoaded: {
                     if (item && item.hasOwnProperty("controller")) {
-                        item.controller = welcomeController
-                        item.repositoryController = uiSession.repositoryController
+                        item.controller = Qt.binding(function() {return welcomeController})
+                        item.repositoryController = Qt.binding(function() {return uiSession.repositoryController})
+                        item.appModel = Qt.binding(function() {return uiSession.appModel})
                     }
                 }
             }

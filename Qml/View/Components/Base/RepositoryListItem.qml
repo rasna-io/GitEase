@@ -16,9 +16,11 @@ Rectangle {
      * ****************************************************************************************/
     required property int index
 
-    required property string name
+    required property var modelData
 
-    required property string path
+    property string name:   modelData.name
+
+    property string path:   modelData.name
 
     property bool   isSelected:     false
 

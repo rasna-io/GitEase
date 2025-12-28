@@ -25,6 +25,8 @@ Item {
 
     property string errorMessage: ""
 
+    property var recentRepositories
+
 
 
     /* Signals
@@ -84,16 +86,7 @@ Item {
                 RecentRepositoriesList {
                     id: recentRepositoriesList
                     anchors.fill: parent
-                    model: ListModel {
-                        ListElement { name: "My Project"; path: "C:/Users/Username/Documents/MyProject" }
-                        ListElement { name: "GitEase"; path: "F:/Projects/Ronia/GitEase" }
-                        ListElement { name: "WebApp Dashboard"; path: "D:/Development/WebApp/Dashboard" }
-                        ListElement { name: "Mobile App"; path: "C:/Projects/MobileApp" }
-                        ListElement { name: "Backend API"; path: "D:/Work/Backend/API" }
-                        ListElement { name: "Frontend React"; path: "C:/Dev/Frontend/React" }
-                        ListElement { name: "Data Analysis"; path: "F:/Research/DataAnalysis" }
-                        ListElement { name: "Machine Learning"; path: "D:/AI/MachineLearning" }
-                    }
+                    model: recentRepositories
                     onRepositoryClicked: function(name, path) {
                         root.selectedPath = path
                     }
