@@ -20,7 +20,7 @@ Rectangle {
 
     property string name:   modelData.name
 
-    property string path:   modelData.name
+    property string path:   modelData.path
 
     property bool   isSelected:     false
 
