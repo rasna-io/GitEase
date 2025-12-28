@@ -1,4 +1,5 @@
 #include "GitWrapperCPP.h"
+#include <string.h>
 #include <QDebug>
 #include <QDir>
 #include <QDateTime>
@@ -359,17 +360,15 @@ QVariantList GitWrapperCPP::getBranches(const QString &repoPath)
         while (git_branch_next(&ref, &type, iter) == 0) {
             const char *name = nullptr;
 
-            if (git_branch_name(&name, ref) && name) {
+            if (git_branch_name(&name, ref) == GIT_OK && name) {
                 QVariantMap branch;
                 branch["name"] = QString::fromUtf8(name);
                 branch["isRemote"] = (type == GIT_BRANCH_REMOTE);
                 branch["isLocal"] = (type == GIT_BRANCH_LOCAL);
 
                 // Check if this is the current branch
-                bool isCurrent = false;
-                if (head && git_reference_cmp(ref, head) == 0) {
-                    isCurrent = true;
-                }
+                int isHead = git_branch_is_head(ref);
+                bool isCurrent = (isHead == 1);
                 branch["isCurrent"] = isCurrent;
 
                 branches.append(branch);
