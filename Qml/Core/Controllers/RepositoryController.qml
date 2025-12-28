@@ -93,8 +93,11 @@ Item {
                     name: name,
                     color: randomRepoColor()
                 })
-                appModel.repositories.push(repo)
-                appModel.repositories = appModel.repositories.slice(0)
+                
+                // Add to repositories array
+                if (repo) {
+                    appModel.repositories.push(repo)
+                }
             }
         }
 
@@ -146,9 +149,21 @@ Item {
      * Get Commits
      */
     function getCommits(repo : Repository, limit = 100){
-        var commits = GitService.getCommits(limit)
+        var commits = GitService.getCommits(repo.path, limit)
         if (commits && commits.length > 0){
             return commits
+        }
+
+        return []
+    }
+
+    /**
+     * Get All Branches
+     */
+    function getBranches(repo : Repository){
+        var branches = GitService.getBranches(repo.path)
+        if (branches && branches.length > 0){
+            return branches
         }
 
         return []

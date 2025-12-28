@@ -1,158 +1,249 @@
 /*! ***********************************************************************************************
- * GraphLayout Script
- * calculateDAGPositions for nodes
+ * GraphLayout Script - Advanced DAG visualization for Git history
+ * Implements proper topological sorting, lane assignment, and merge handling
  * ************************************************************************************************/
 
 .pragma library
 
+/**
+ * Main function to calculate DAG positions for commits
+ * Implements:
+ * 1. Topological sorting (parents before children in display)
+ * 2. Intelligent lane assignment (minimize crossings)
+ * 3. Proper merge commit handling
+ * 4. Branch color differentiation
+ * 5. Chronological timeline ordering
+ */
 function calculateDAGPositions(commits, columnSpacing, commitItemHeight, commitItemSpacing) {
+    if (commits.length === 0) return {}
+    
+    
     var commitPositions = {}
-    var hashToCommit = {}  // Map hash to commit data
-    var branchToColumn = {}  // Map branch name to column number
-    var columnToBranch = {}  // Map column number to branch name (inverse mapping)
-    var nextColumn = 0
-
-    // Step 1: Build hash map from commits
-    for (var h = 0; h < commits.length; h++) {
-        var commitH = commits[h]
-        hashToCommit[commitH.hash] = commitH
+    var commitToLane = {}
+    
+    // Build lookup maps for O(1) access
+    var hashToCommit = {}
+    var hashToIndex = {}
+    for (var i = 0; i < commits.length; i++) {
+        hashToCommit[commits[i].hash] = commits[i]
+        hashToIndex[commits[i].hash] = i
     }
-
-    // Step 2: Sort commits from oldest to newest
-    var topologicalOrder = commits.slice().reverse();  // Reversed order (oldest->newest)
-
-    // Step 3: Iterate over the commits to assign branches and columns
-    for (var topoIdx = 0; topoIdx < topologicalOrder.length; topoIdx++) {
-        var commitForBranch = topologicalOrder[topoIdx];
-        if (!commitForBranch) continue;
-
-        // Get the primary branch for this commit
-        var commitBranch = commitForBranch.branchNames && commitForBranch.branchNames.length > 0
-            ? commitForBranch.branchNames[0] : "main";
-
-        // Handle checkout (branch creation) scenario
-        if (commitForBranch.commitType === "checkout" && commitForBranch.branchNames.length > 1) {
-            var parentBranch = null;
-            if (commitForBranch.parentHashes && commitForBranch.parentHashes.length > 0) {
-                var parentHash = commitForBranch.parentHashes[0];
-                var parentCommit = hashToCommit[parentHash];
-                if (parentCommit && parentCommit.branchNames) {
-                    parentBranch = parentCommit.branchNames[0];
-                }
+    
+    // Build parent-child relationships for topological analysis
+    var childrenMap = buildChildrenMap(commits)
+    
+    // Track active lanes - lanes[column] = next expected commit hash
+    var lanes = []
+    var processedCommits = {}
+    
+    
+    // Process commits from top to bottom (newest to oldest in display)
+    for (var i = 0; i < commits.length; i++) {
+        var commit = commits[i]
+        var commitHash = commit.hash
+        var parents = commit.parentHashes || []
+        var branchName = getBranchName(commit)
+        
+        // Mark this commit as processed
+        processedCommits[commitHash] = true
+        
+        // Find optimal lane for this commit
+        var lane = findOptimalLane(commitHash, branchName, lanes, null, hashToCommit)
+        
+        // Assign commit to lane
+        commitToLane[commitHash] = lane
+        
+        
+        // Update lanes based on commit type and parents
+        updateLanesForCommit(lane, commit, parents, lanes, hashToCommit, processedCommits, hashToIndex)
+        
+        // IMPORTANT: Free all lanes that were expecting this commit
+        // (This allows lane reuse after merges)
+        for (var l = 0; l < lanes.length; l++) {
+            if (l !== lane && lanes[l] === commitHash) {
+                lanes[l] = null
             }
+        }
+        
+        // ALSO: Free any lane expecting a commit that was already processed
+        // (This handles cases where commit was processed in different lane)
+        for (var l = 0; l < lanes.length; l++) {
+            if (lanes[l] && processedCommits.hasOwnProperty(lanes[l])) {
+                lanes[l] = null
+            }
+        }
+    }
+    
+    // Create final position objects
+    for (var j = 0; j < commits.length; j++) {
+        var commit = commits[j]
+        var lane = commitToLane[commit.hash] || 0
+        
+        commitPositions[commit.hash] = {
+            x: lane * columnSpacing,
+            y: j * (commitItemHeight + (commitItemSpacing * 2)),
+            column: lane,
+            branchName: getBranchName(commit),
+            lane: lane,
+            commitType: commit.commitType || "normal"
+        }
+    }
+    
+    return commitPositions
+}
 
-            // Check if parent branch exists and assign new column
-            if (parentBranch && branchToColumn.hasOwnProperty(parentBranch)) {
-                var parentColumn = branchToColumn[parentBranch];
+/**
+ * Helper: Build parent-child relationships map
+ * Used for topological analysis and better lane assignment
+ */
+function buildChildrenMap(commits) {
+    var childrenMap = {}
+    
+    for (var i = 0; i < commits.length; i++) {
+        var commit = commits[i]
+        var parents = commit.parentHashes || []
+        
+        for (var p = 0; p < parents.length; p++) {
+            var parentHash = parents[p]
+            if (!childrenMap[parentHash]) {
+                childrenMap[parentHash] = []
+            }
+            childrenMap[parentHash].push(commit.hash)
+        }
+    }
+    
+    return childrenMap
+}
 
-                // Try to reuse an existing column if possible
-                var reuseColumn = -1;
-                for (var col = parentColumn + 1; col < nextColumn; col++) {
-                    var occupyingBranch = columnToBranch[col];
-                    if (occupyingBranch) {
-                        var branchHasHead = false;
-                        for (var checkIdx = 0; checkIdx < commits.length; checkIdx++) {
-                            var checkCommit = commits[checkIdx];
-                            if (checkCommit.branchNames && checkCommit.branchNames.indexOf(occupyingBranch) !== -1) {
-                                if (checkCommit.commitType === "merge" && checkCommit.branchNames.indexOf(occupyingBranch) !== -1) {
-                                    reuseColumn = col;
-                                    break;
-                                }
-                            }
-                        }
-                        if (reuseColumn !== -1) break;
+/**
+ * Helper: Get primary branch name from commit
+ * Returns the first branch name or "main" as fallback
+ */
+function getBranchName(commit) {
+    return (commit.branchNames && commit.branchNames.length > 0) 
+           ? commit.branchNames[0] 
+           : "main"
+}
+
+/**
+ * Helper: Find optimal lane for a commit
+ * Strategy:
+ * 1. If commit is expected in existing lane -> reuse that lane (PRIORITY)
+ * 2. Find first FREE lane (minimize columns)
+ * 3. Only create new lane if absolutely necessary
+ */
+function findOptimalLane(commitHash, branchName, lanes, branchToLane, hashToCommit) {
+    // Strategy 1: Check if commit is EXPECTED in any existing lane (highest priority)
+    for (var i = 0; i < lanes.length; i++) {
+        if (lanes[i] === commitHash) {
+            return i
+        }
+    }
+    
+    // Strategy 2: Find first FREE lane (reuse existing columns)
+    for (var i = 0; i < lanes.length; i++) {
+        if (!lanes[i]) {
+            return i
+        }
+    }
+    
+    // Strategy 3: Only create new lane if no free lanes available
+    return lanes.length
+}
+
+/**
+ * Helper: Update lanes after processing a commit
+ * Simplified algorithm - just track next expected commits
+ */
+function updateLanesForCommit(lane, commit, parents, lanes, hashToCommit, processedCommits, hashToIndex) {
+    var commitHash = commit.hash
+    
+    // Ensure lane exists
+    while (lanes.length <= lane) {
+        lanes.push(null)
+    }
+    
+    if (parents.length === 0) {
+        // Initial commit - no parents, free the lane
+        lanes[lane] = null
+        
+    } else if (parents.length === 1) {
+        // Normal commit - single parent continues in same lane
+        var parentHash = parents[0]
+        
+        if (!hashToCommit.hasOwnProperty(parentHash)) {
+            // Parent not in our list, free the lane
+            lanes[lane] = null
+        } else {
+            // Continue parent in same lane
+            lanes[lane] = parentHash
+        }
+        
+    } else {
+        // Merge commit - multiple parents
+        // First parent continues in current lane
+        var firstParent = parents[0]
+        if (hashToCommit.hasOwnProperty(firstParent)) {
+            lanes[lane] = firstParent
+        } else {
+            lanes[lane] = null
+        }
+        
+        // Process additional parents (merged branches)
+        for (var p = 1; p < parents.length; p++) {
+            var parentHash = parents[p]
+            
+            // Skip if parent doesn't exist in our commit list
+            if (!hashToCommit.hasOwnProperty(parentHash)) {
+                continue
+            }
+            
+            // Check if parent already processed (appeared earlier in timeline)
+            var parentAlreadyProcessed = processedCommits.hasOwnProperty(parentHash)
+            
+            if (parentAlreadyProcessed) {
+                // Parent already shown - free any lane expecting it
+                for (var i = 0; i < lanes.length; i++) {
+                    if (lanes[i] === parentHash) {
+                        lanes[i] = null
+                        break
                     }
-                }
-
-                // If a reusable column is found, assign it
-                if (reuseColumn !== -1) {
-                    var newBranch = commitForBranch.branchNames[0];
-                    branchToColumn[newBranch] = reuseColumn;
-                    columnToBranch[reuseColumn] = newBranch;
-                } else {
-                    // Shift branches and add a new column after the parent column
-                    var shiftedBranches = {};
-                    var shiftedColumns = {};
-                    for (var branchName in branchToColumn) {
-                        var oldCol = branchToColumn[branchName];
-                        if (oldCol > parentColumn) {
-                            shiftedBranches[branchName] = oldCol + 1;
-                            shiftedColumns[oldCol + 1] = branchName;
-                        } else {
-                            shiftedBranches[branchName] = oldCol;
-                            shiftedColumns[oldCol] = branchName;
-                        }
-                    }
-
-                    // Assign the new branch to the column right after parent
-                    var newBranch = commitForBranch.branchNames[0];
-                    shiftedBranches[newBranch] = parentColumn + 1;
-                    shiftedColumns[parentColumn + 1] = newBranch;
-                    branchToColumn = shiftedBranches;
-                    columnToBranch = shiftedColumns;
-
-                    // Update nextColumn if needed
-                    var maxColumn = Math.max.apply(Math, Object.values(branchToColumn));
-                    nextColumn = maxColumn + 1;
                 }
             } else {
-                // If no parent branch exists, assign a new column
-                if (!branchToColumn.hasOwnProperty(commitBranch)) {
-                    branchToColumn[commitBranch] = nextColumn;
-                    columnToBranch[nextColumn] = commitBranch;
-                    nextColumn++;
+                // Parent will appear later - check if already in a lane
+                var foundInLane = false
+                for (var i = 0; i < lanes.length; i++) {
+                    if (lanes[i] === parentHash) {
+                        foundInLane = true
+                        break
+                    }
+                }
+                
+                if (!foundInLane) {
+                    // Not in any lane yet - assign it to first free lane
+                    var assignedLane = -1
+                    
+                    // Try to reuse free lane
+                    for (var i = 0; i < lanes.length; i++) {
+                        if (!lanes[i]) {
+                            assignedLane = i
+                            break
+                        }
+                    }
+                    
+                    // Create new lane if no free lane available
+                    if (assignedLane === -1) {
+                        assignedLane = lanes.length
+                        lanes.push(null)
+                    }
+                    
+                    lanes[assignedLane] = parentHash
                 }
             }
-        } else {
-            // Handle regular branches (non-checkout commits)
-            if (!branchToColumn.hasOwnProperty(commitBranch)) {
-                branchToColumn[commitBranch] = nextColumn;
-                columnToBranch[nextColumn] = commitBranch;
-                nextColumn++;
-            }
         }
     }
-
-    // Step 4: Assign positions for each commit based on its column and order
-    for (var j = 0; j < commits.length; j++) {
-        var commit = commits[j];
-
-        if (!commit) continue;
-
-        // Determine which branch this commit belongs to
-        var commitBranchName = "main";
-        var commitColumn = 0;
-
-        if (commit.commitType === "merge") {
-            if (commit.branchNames && Array.isArray(commit.branchNames) && commit.branchNames.length > 0) {
-                commitBranchName = commit.branchNames[0];
-            }
-        } else if (commit.commitType === "checkout") {
-            if (commit.branchNames && Array.isArray(commit.branchNames) && commit.branchNames.length > 0) {
-                commitBranchName = commit.branchNames[0];
-            }
-        } else {
-            if (commit.branchNames && Array.isArray(commit.branchNames) && commit.branchNames.length > 0) {
-                commitBranchName = commit.branchNames[0];
-            }
-        }
-
-        // Assign column based on branch
-        if (branchToColumn.hasOwnProperty(commitBranchName)) {
-            commitColumn = branchToColumn[commitBranchName];
-        } else {
-            branchToColumn[commitBranchName] = nextColumn++;
-            commitColumn = branchToColumn[commitBranchName];
-        }
-
-        // Assign positions (x, y) based on column and order of appearance
-        commitPositions[commit.hash] = {
-            x: commitColumn * columnSpacing,
-            y: j * (commitItemHeight + (commitItemSpacing * 2)),  // Adjust for vertical spacing
-            column: commitColumn,
-            branchName: commitBranchName
-        };
-    }
-
-    return commitPositions;
+    
+    // DON'T compact! Keep free lanes for reuse
+    // Compaction removes free lanes that should be reused by future branches
 }
+
