@@ -38,6 +38,13 @@ Item {
     property int commitsColMessageWidth: parent.width * 0.6
     property int commitsColAuthorWidth: parent.width * 0.08
     property int commitsColDateWidth: parent.width * 0.17
+    
+    // Minimum widths for each column
+    readonly property int minColGraphWidth: 60
+    readonly property int minColBranchTagWidth: 80
+    readonly property int minColMessageWidth: 100
+    readonly property int minColAuthorWidth: 60
+    readonly property int minColDateWidth: 80
 
     /* Signals
      * ****************************************************************************************/
@@ -45,33 +52,17 @@ Item {
 
     /* Functions
      * ****************************************************************************************/
-    // Helper function to update branches and tags for a single commit
-    function updateBranchesAndTags(commit) {
-        // Update branches
-        if (commit.branchNames && Array.isArray(commit.branchNames)) {
-            var existingBranches = {};
-            for (var b = 0; b < branches.count; b++) {
-                existingBranches[branches.get(b).name] = true;
-            }
 
-            for (var i = 0; i < commit.branchNames.length; i++) {
-                var branchName = commit.branchNames[i];
-                if (!existingBranches[branchName]) {
-                    branches.append({
-                        name: branchName,
-                        color: GraphUtils.getBranchColor(branchName),
-                        isCurrent: branchName === "main"
-                    });
-                }
-            }
-        }
+    /**
+     * Extract and store all tags from commits
+     */
+    function extractTags() {
+        tags.clear();
+        var existingTags = {};
 
-        // Update tags
-        if (commit.tagNames && Array.isArray(commit.tagNames)) {
-            var existingTags = {};
-            for (var t = 0; t < tags.count; t++) {
-                existingTags[tags.get(t).name] = true;
-            }
+        for (var i = 0; i < root.commits.length; i++) {
+            var commit = root.commits[i];
+            if (!commit.tagNames || commit.tagNames.length === 0) continue;
 
             for (var j = 0; j < commit.tagNames.length; j++) {
                 var tagName = commit.tagNames[j];
@@ -81,22 +72,24 @@ Item {
                         color: GraphUtils.getTagColor(tagName),
                         commitHash: commit.hash
                     });
+                    existingTags[tagName] = true;
                 }
             }
         }
     }
 
-    // Load data from root.commits or generate dummy data
+
+    /**
+     * Load commit data and calculate graph layout positions
+     */
     function loadData() {
-        branches.clear();
-        tags.clear();
-
-        // Process all commits to extract branches and tags
-        for (var i = 0; i < root.commits.length; i++) {
-            updateBranchesAndTags(root.commits[i]);
-        }
-
-        commitPositions = GraphLayout.calculateDAGPositions(root.commits, root.columnSpacing, root.commitItemHeight, root.commitItemSpacing)
+        extractTags();
+        commitPositions = GraphLayout.calculateDAGPositions(
+            root.commits, 
+            root.columnSpacing, 
+            root.commitItemHeight, 
+            root.commitItemSpacing
+        );
     }
 
     /* Children
@@ -116,42 +109,70 @@ Item {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 8
-                    anchors.rightMargin: 8
-                    anchors.left: parent.left
                     spacing: 0
 
                     Rectangle {
                         Layout.preferredWidth: root.commitsColGraphWidth
                         Layout.fillHeight: true
-                        color: "transparent"
+                        color: graphHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        
+                        MouseArea {
+                            id: graphHeaderMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            propagateComposedEvents: true
+                            onPressed: function(mouse) { mouse.accepted = false }
+                            onReleased: function(mouse) { mouse.accepted = false }
+                        }
 
                         Rectangle {
                             anchors.right: parent.right
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: "#f2f2f2"
+                            color: graphDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
 
                             MouseArea {
-                                anchors.fill: parent
+                                id: graphDividerMouseArea
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                width: 10
+                                anchors.rightMargin: -5
                                 hoverEnabled: true
                                 cursorShape: Qt.SizeHorCursor
 
                                 property real startX: 0
                                 property int startWidth: 0
 
-                                onPressed: {
-                                    startX = mouse.x
+                                onPressed: function(mouse) {
+                                    startX = mouseX + mapToItem(header, 0, 0).x
                                     startWidth = root.commitsColGraphWidth
                                 }
 
-                                onPositionChanged: {
+                                onPositionChanged: function(mouse) {
                                     if (!pressed) return
 
-                                    var delta = mouse.x - startX
-                                    var newWidth = startWidth + delta
-                                    root.commitsColGraphWidth =Math.max(80, newWidth)
+                                    var currentX = mouseX + mapToItem(header, 0, 0).x
+                                    var delta = currentX - startX
+                                    
+                                    // Calculate new width with minimum constraint
+                                    var newWidth = Math.max(root.minColGraphWidth, startWidth + delta)
+                                    var actualDelta = newWidth - root.commitsColGraphWidth
+                                    
+                                    // Adjust next column (BranchTag) inversely
+                                    var newBranchTagWidth = root.commitsColBranchTagWidth - actualDelta
+                                    
+                                    // Ensure next column doesn't go below minimum
+                                    if (newBranchTagWidth < root.minColBranchTagWidth) {
+                                        newBranchTagWidth = root.minColBranchTagWidth
+                                        newWidth = root.commitsColGraphWidth + (root.commitsColBranchTagWidth - root.minColBranchTagWidth)
+                                    }
+                                    
+                                    if (newWidth !== root.commitsColGraphWidth) {
+                                        root.commitsColGraphWidth = newWidth
+                                        root.commitsColBranchTagWidth = newBranchTagWidth
+                                    }
                                 }
                             }
                         }
@@ -160,7 +181,16 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.commitsColBranchTagWidth
                         Layout.fillHeight: true
-                        color: "transparent"
+                        color: branchTagHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        
+                        MouseArea {
+                            id: branchTagHeaderMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            propagateComposedEvents: true
+                            onPressed: function(mouse) { mouse.accepted = false }
+                            onReleased: function(mouse) { mouse.accepted = false }
+                        }
 
                         Label {
                             anchors.left: parent.left
@@ -179,27 +209,49 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: "#f2f2f2"
+                            color: branchTagDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
 
                             MouseArea {
-                                anchors.fill: parent
+                                id: branchTagDividerMouseArea
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                width: 10
+                                anchors.rightMargin: -5
                                 hoverEnabled: true
                                 cursorShape: Qt.SizeHorCursor
 
                                 property real startX: 0
                                 property int startWidth: 0
 
-                                onPressed: {
-                                    startX = mouse.x
+                                onPressed: function(mouse) {
+                                    startX = mouseX + mapToItem(header, 0, 0).x
                                     startWidth = root.commitsColBranchTagWidth
                                 }
 
-                                onPositionChanged: {
+                                onPositionChanged: function(mouse) {
                                     if (!pressed) return
 
-                                    var delta = mouse.x - startX
-                                    var newWidth = startWidth + delta
-                                    root.commitsColBranchTagWidth = Math.max(80, newWidth)
+                                    var currentX = mouseX + mapToItem(header, 0, 0).x
+                                    var delta = currentX - startX
+                                    
+                                    // Calculate new width with minimum constraint
+                                    var newWidth = Math.max(root.minColBranchTagWidth, startWidth + delta)
+                                    var actualDelta = newWidth - root.commitsColBranchTagWidth
+                                    
+                                    // Adjust next column (Message) inversely
+                                    var newMessageWidth = root.commitsColMessageWidth - actualDelta
+                                    
+                                    // Ensure next column doesn't go below minimum
+                                    if (newMessageWidth < root.minColMessageWidth) {
+                                        newMessageWidth = root.minColMessageWidth
+                                        newWidth = root.commitsColBranchTagWidth + (root.commitsColMessageWidth - root.minColMessageWidth)
+                                    }
+                                    
+                                    if (newWidth !== root.commitsColBranchTagWidth) {
+                                        root.commitsColBranchTagWidth = newWidth
+                                        root.commitsColMessageWidth = newMessageWidth
+                                    }
                                 }
                             }
                         }
@@ -208,7 +260,16 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.commitsColMessageWidth
                         Layout.fillHeight: true
-                        color: "transparent"
+                        color: messageHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        
+                        MouseArea {
+                            id: messageHeaderMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            propagateComposedEvents: true
+                            onPressed: function(mouse) { mouse.accepted = false }
+                            onReleased: function(mouse) { mouse.accepted = false }
+                        }
 
                         Label {
                             anchors.left: parent.left
@@ -227,27 +288,49 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: "#f2f2f2"
+                            color: messageDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
 
                             MouseArea {
-                                anchors.fill: parent
+                                id: messageDividerMouseArea
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                width: 10
+                                anchors.rightMargin: -5
                                 hoverEnabled: true
                                 cursorShape: Qt.SizeHorCursor
 
                                 property real startX: 0
                                 property int startWidth: 0
 
-                                onPressed: {
-                                    startX = mouse.x
+                                onPressed: function(mouse) {
+                                    startX = mouseX + mapToItem(header, 0, 0).x
                                     startWidth = root.commitsColMessageWidth
                                 }
 
-                                onPositionChanged: {
+                                onPositionChanged: function(mouse) {
                                     if (!pressed) return
 
-                                    var delta = mouse.x - startX
-                                    var newWidth = startWidth + delta
-                                    root.commitsColMessageWidth = Math.max(80, newWidth)
+                                    var currentX = mouseX + mapToItem(header, 0, 0).x
+                                    var delta = currentX - startX
+                                    
+                                    // Calculate new width with minimum constraint
+                                    var newWidth = Math.max(root.minColMessageWidth, startWidth + delta)
+                                    var actualDelta = newWidth - root.commitsColMessageWidth
+                                    
+                                    // Adjust next column (Author) inversely
+                                    var newAuthorWidth = root.commitsColAuthorWidth - actualDelta
+                                    
+                                    // Ensure next column doesn't go below minimum
+                                    if (newAuthorWidth < root.minColAuthorWidth) {
+                                        newAuthorWidth = root.minColAuthorWidth
+                                        newWidth = root.commitsColMessageWidth + (root.commitsColAuthorWidth - root.minColAuthorWidth)
+                                    }
+                                    
+                                    if (newWidth !== root.commitsColMessageWidth) {
+                                        root.commitsColMessageWidth = newWidth
+                                        root.commitsColAuthorWidth = newAuthorWidth
+                                    }
                                 }
                             }
                         }
@@ -256,7 +339,16 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.commitsColAuthorWidth
                         Layout.fillHeight: true
-                        color: "transparent"
+                        color: authorHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        
+                        MouseArea {
+                            id: authorHeaderMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            propagateComposedEvents: true
+                            onPressed: function(mouse) { mouse.accepted = false }
+                            onReleased: function(mouse) { mouse.accepted = false }
+                        }
 
                         Label {
                             anchors.left: parent.left
@@ -275,27 +367,49 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: "#f2f2f2"
+                            color: authorDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
 
                             MouseArea {
-                                anchors.fill: parent
+                                id: authorDividerMouseArea
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                width: 10
+                                anchors.rightMargin: -5
                                 hoverEnabled: true
                                 cursorShape: Qt.SizeHorCursor
 
                                 property real startX: 0
                                 property int startWidth: 0
 
-                                onPressed: {
-                                    startX = mouse.x
+                                onPressed: function(mouse) {
+                                    startX = mouseX + mapToItem(header, 0, 0).x
                                     startWidth = root.commitsColAuthorWidth
                                 }
 
-                                onPositionChanged: {
+                                onPositionChanged: function(mouse) {
                                     if (!pressed) return
 
-                                    var delta = mouse.x - startX
-                                    var newWidth = startWidth + delta
-                                    root.commitsColAuthorWidth = Math.max(80, newWidth)
+                                    var currentX = mouseX + mapToItem(header, 0, 0).x
+                                    var delta = currentX - startX
+                                    
+                                    // Calculate new width with minimum constraint
+                                    var newWidth = Math.max(root.minColAuthorWidth, startWidth + delta)
+                                    var actualDelta = newWidth - root.commitsColAuthorWidth
+                                    
+                                    // Adjust next column (Date) inversely
+                                    var newDateWidth = root.commitsColDateWidth - actualDelta
+                                    
+                                    // Ensure next column doesn't go below minimum
+                                    if (newDateWidth < root.minColDateWidth) {
+                                        newDateWidth = root.minColDateWidth
+                                        newWidth = root.commitsColAuthorWidth + (root.commitsColDateWidth - root.minColDateWidth)
+                                    }
+                                    
+                                    if (newWidth !== root.commitsColAuthorWidth) {
+                                        root.commitsColAuthorWidth = newWidth
+                                        root.commitsColDateWidth = newDateWidth
+                                    }
                                 }
                             }
                         }
@@ -305,7 +419,16 @@ Item {
                         Layout.preferredWidth: root.commitsColDateWidth
                         Layout.fillHeight: true
                         Layout.alignment: Qt.AlignRight
-                        color: "transparent"
+                        color: dateHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        
+                        MouseArea {
+                            id: dateHeaderMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            propagateComposedEvents: true
+                            onPressed: function(mouse) { mouse.accepted = false }
+                            onReleased: function(mouse) { mouse.accepted = false }
+                        }
 
                         Label {
                             anchors.left: parent.left
@@ -319,14 +442,6 @@ Item {
                             elide: Text.ElideRight
                         }
                     }
-                }
-
-                Rectangle {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    height: 2
-                    color: "#f2f2f2"
                 }
             }
 
@@ -423,6 +538,13 @@ Item {
                                 }
                             }
 
+                            Connections {
+                                target: root
+                                function onCommitsColGraphWidthChanged() {
+                                    graphCanvas.requestPaint()
+                                }
+                            }
+
                             property var svgImage: Image {
                                 source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
                                 anchors.centerIn: parent
@@ -454,18 +576,71 @@ Item {
                                 // Start graph from left side
                                 var centerOffset = root.columnSpacing / 2; // Padding from left edge
 
+                                // Track branch HEAD commits for labels
+                                // Use ALL branches from repository, not just from commits
                                 var branchLatestCommit = {};
-                                var newerInBranchByCommit = {};
-                                var lastSeenByBranch = {};
-
+                                
+                                // For each branch in branches ListModel, find its HEAD commit
+                                for (var branchIdx = 0; branchIdx < root.branches.count; branchIdx++) {
+                                    var branchItem = root.branches.get(branchIdx);
+                                    var branchName = branchItem.name;
+                                    
+                                    // Find the first commit (from top) that has this branch in branchNames
+                                    for (var j = 0; j < root.commits.length; j++) {
+                                        var c0 = root.commits[j];
+                                        if (c0 && c0.branchNames && c0.branchNames.length > 0) {
+                                            // Check if this commit has the branch
+                                            for (var bi = 0; bi < c0.branchNames.length; bi++) {
+                                                if (c0.branchNames[bi] === branchName) {
+                                                    branchLatestCommit[branchName] = c0.hash;
+                                                    break; // Found the HEAD for this branch
+                                                }
+                                            }
+                                            if (branchLatestCommit[branchName]) {
+                                                break; // Move to next branch
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                // Build edge routing information for better visualization
+                                // Track ALL parent connections
+                                var parentInSameLane = {};
+                                var crossLaneEdges = [];  // Store cross-lane edges (different columns)
+                                
                                 for (var j = 0; j < root.commits.length; j++) {
                                     var c0 = root.commits[j];
-                                    var b0 = (c0 && c0.branchNames && c0.branchNames.length > 0) ? c0.branchNames[0] : "main";
-                                    if (!branchLatestCommit[b0]) branchLatestCommit[b0] = c0.hash;
-                                    if (lastSeenByBranch[b0]) newerInBranchByCommit[c0.hash] = lastSeenByBranch[b0];
-                                    lastSeenByBranch[b0] = c0.hash;
+                                    var pos0 = root.commitPositions[c0.hash];
+                                    if (!pos0 || !c0.parentHashes) continue;
+                                    
+                                    // Process ALL parents
+                                    for (var p = 0; p < c0.parentHashes.length; p++) {
+                                        var parentHash = c0.parentHashes[p];
+                                        var parentPos = root.commitPositions[parentHash];
+                                        if (!parentPos) continue;
+                                        
+                                        if (parentPos.column === pos0.column) {
+                                            // Same lane - only store first one for straight line
+                                            if (!parentInSameLane[c0.hash]) {
+                                                parentInSameLane[c0.hash] = parentHash;
+                                            }
+                                        } else {
+                                            // Different lane - draw cross-lane edge
+                                            // For merge commits: draw FROM parent TO merge commit
+                                            // For normal commits: draw FROM child TO parent
+                                            var isMerge = c0.commitType === "merge";
+                                            crossLaneEdges.push({
+                                                from: isMerge ? parentHash : c0.hash,
+                                                to: isMerge ? c0.hash : parentHash,
+                                                fromPos: isMerge ? parentPos : pos0,
+                                                toPos: isMerge ? pos0 : parentPos,
+                                                isMerge: isMerge
+                                            });
+                                        }
+                                    }
                                 }
 
+                                // PHASE 1: Draw all continuation lines (same-lane parent connections)
                                 for (var j = 0; j < root.commits.length; j++) {
                                     var commit2 = root.commits[j];
                                     var pos2 = root.commitPositions[commit2.hash];
@@ -474,99 +649,116 @@ Item {
                                     var centerX = centerOffset + pos2.column * root.columnSpacing + root.columnSpacing / 2;
                                     var centerY = pos2.y + root.commitItemHeight / 2 + root.commitItemSpacing;
 
-                                    var commitBranchName = (commit2.branchNames && commit2.branchNames.length > 0) ? commit2.branchNames[0] : "main";
-                                    var newerHash = newerInBranchByCommit[commit2.hash];
-                                    if (newerHash) {
-                                        var newerPos = root.commitPositions[newerHash];
-                                        if (newerPos) {
-                                            var newerX = centerOffset + newerPos.column * root.columnSpacing + root.columnSpacing / 2;
-                                            var newerY = newerPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
-                                            var branchObj2 = GraphUtils.findInListModel(root.branches, "name", commitBranchName);
-                                            var branchColor2 = branchObj2 ? branchObj2.color : "#4a9eff";
+                                    // Draw straight line to parent in same lane
+                                    var parentHash = parentInSameLane[commit2.hash];
+                                    if (parentHash) {
+                                        var parentPos = root.commitPositions[parentHash];
+                                        if (parentPos) {
+                                            var parentX = centerOffset + parentPos.column * root.columnSpacing + root.columnSpacing / 2;
+                                            var parentY = parentPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
+                                            
+                                            // Get color from commit's branch (prefer non-main)
+                                            var branchColor2 = null;
+                                            if (commit2.branchNames && commit2.branchNames.length > 0) {
+                                                for (var bi = 0; bi < commit2.branchNames.length; bi++) {
+                                                    var bn = commit2.branchNames[bi];
+                                                    if (bn !== "main" && bn !== "origin/main" && bn !== "master") {
+                                                        branchColor2 = GraphUtils.getBranchColor(bn);
+                                                        break;
+                                                    }
+                                                }
+                                                // If only main branches found, use first branch
+                                                if (!branchColor2) {
+                                                    branchColor2 = GraphUtils.getBranchColor(commit2.branchNames[0]);
+                                                }
+                                            }
+                                            
+                                            // Fallback if no branches
+                                            if (!branchColor2) {
+                                                branchColor2 = GraphUtils.generateRandomColor();
+                                            }
 
                                             ctx.save();
                                             ctx.strokeStyle = branchColor2;
                                             ctx.globalAlpha = 0.9;
                                             ctx.lineWidth = 2.5;
 
-                                            var lineOffset = 0; // Use center points instead of offset
-                                            if (newerPos.column !== pos2.column) {
-                                                // Draw curved line for column changes from center to center
-                                                ctx.beginPath();
-                                                ctx.moveTo(newerX, newerY);
-
-                                                // Create smooth curve from center to center
-                                                var controlX = (newerX + centerX) / 2;
-                                                var controlY = (newerY + centerY) / 2;
-                                                ctx.quadraticCurveTo(controlX, controlY, centerX, centerY);
-                                                ctx.stroke();
-                                            } else {
-                                                ctx.beginPath();
-                                                ctx.moveTo(centerX, newerY);
-                                                ctx.lineTo(centerX, centerY);
-                                                ctx.stroke();
-                                            }
+                                            ctx.beginPath();
+                                            ctx.moveTo(centerX, centerY);
+                                            ctx.lineTo(parentX, parentY);
+                                            ctx.stroke();
                                             ctx.restore();
                                         }
                                     }
-
-                                    // Handle merge and checkout situations
-                                    if ((commit2.commitType === "checkout" || commit2.commitType === "merge") && commit2.parentHashes) {
-                                        var parentHashesArray = commit2.parentHashes;
-                                        if (Array.isArray(parentHashesArray)) {
-                                            for (var pIdx = 0; pIdx < parentHashesArray.length; pIdx++) {
-                                                var parentHash = parentHashesArray[pIdx];
-                                                var parentPos = root.commitPositions[parentHash];
-                                                if (!parentPos) continue;
-
-                                                var parentX = centerOffset + parentPos.column * root.columnSpacing + root.columnSpacing / 2;
-                                                var parentY = parentPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
-
-                                                // For checkout, use current commit's branch color, not parent's
-                                                var lineColor;
-                                                if (commit2.commitType === "checkout") {
-                                                    var currentBranchName = (commit2.branchNames && commit2.branchNames.length > 0) ? commit2.branchNames[0] : "main";
-                                                    var currentBranchObj = GraphUtils.findInListModel(root.branches, "name", currentBranchName);
-                                                    lineColor = currentBranchObj ? currentBranchObj.color : "#4a9eff";
-                                                } else {
-                                                    // For merge, use parent branch color
-                                                    var parentBranchName = parentPos.branchName || "main";
-                                                    var parentBranchObj = GraphUtils.findInListModel(root.branches, "name", parentBranchName);
-                                                    lineColor = parentBranchObj ? parentBranchObj.color : "#4a9eff";
+                                }
+                                
+                                // PHASE 2: Draw cross-lane edges (Diagonal/Bezier curves for different columns)
+                                for (var edgeIdx = 0; edgeIdx < crossLaneEdges.length; edgeIdx++) {
+                                    var edge = crossLaneEdges[edgeIdx];
+                                    var fromPos = edge.fromPos;
+                                    var toPos = edge.toPos;
+                                    
+                                    var fromX = centerOffset + fromPos.column * root.columnSpacing + root.columnSpacing / 2;
+                                    var fromY = fromPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
+                                    var toX = centerOffset + toPos.column * root.columnSpacing + root.columnSpacing / 2;
+                                    var toY = toPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
+                                    
+                                    // Find the commit at fromPos and get its branch color
+                                    var edgeColor = null;
+                                    for (var ci = 0; ci < root.commits.length; ci++) {
+                                        var c = root.commits[ci];
+                                        var cPos = root.commitPositions[c.hash];
+                                        if (cPos && cPos.column === fromPos.column && cPos.y === fromPos.y) {
+                                            if (c.branchNames && c.branchNames.length > 0) {
+                                                // Prefer non-main branches
+                                                for (var bi = 0; bi < c.branchNames.length; bi++) {
+                                                    var bn = c.branchNames[bi];
+                                                    if (bn !== "main" && bn !== "origin/main" && bn !== "master") {
+                                                        edgeColor = GraphUtils.getBranchColor(bn);
+                                                        break;
+                                                    }
                                                 }
-
-                                                ctx.save();
-                                                ctx.strokeStyle = lineColor;
-                                                ctx.globalAlpha = 2.5;
-                                                ctx.lineWidth = 2.5;
-
-                                                ctx.beginPath();
-
-                                                if (parentPos.column !== pos2.column) {
-                                                    // Different columns: draw L-shaped line from center to center
-                                                    // Start from exact center of parent
-                                                    ctx.moveTo(parentX, parentY);
-
-                                                    // Go horizontally to the middle point (aligned with parent Y)
-                                                    var midX = parentX + (centerX - parentX);
-                                                    ctx.lineTo(midX, parentY);
-
-                                                    // Go vertically to align with target Y
-                                                    ctx.lineTo(midX, centerY);
-
-                                                    // Go horizontally to exact center of target
-                                                    ctx.lineTo(centerX, centerY);
-                                                } else {
-                                                    // Same column: straight line from center to center
-                                                    ctx.moveTo(parentX, parentY);
-                                                    ctx.lineTo(centerX, centerY);
+                                                // If only main branches found, use first branch
+                                                if (!edgeColor) {
+                                                    edgeColor = GraphUtils.getBranchColor(c.branchNames[0]);
                                                 }
-
-                                                ctx.stroke();
-                                                ctx.restore();
                                             }
+                                            break;
                                         }
                                     }
+                                    
+                                    // Fallback if commit not found
+                                    if (!edgeColor) {
+                                        edgeColor = GraphUtils.generateRandomColor();
+                                    }
+                                    
+                                    ctx.save();
+                                    ctx.strokeStyle = edgeColor;
+                                    ctx.globalAlpha = 0.85;
+                                    ctx.lineWidth = 2.5;
+                                    
+                                    ctx.beginPath();
+                                    
+                                    // Draw smooth Bezier curve for diagonal connection
+                                    ctx.moveTo(fromX, fromY);
+                                    
+                                    // Calculate control points for smooth curve
+                                    var verticalDistance = Math.abs(toY - fromY);
+                                    var horizontalDistance = Math.abs(toX - fromX);
+                                    
+                                    // Use bezier curve for smooth diagonal lines
+                                    // Control points are offset to create a natural curve
+                                    var controlOffset = Math.min(verticalDistance * 0.6, 40);
+                                    
+                                    var cp1X = fromX;
+                                    var cp1Y = fromY + (toY > fromY ? controlOffset : -controlOffset);
+                                    var cp2X = toX;
+                                    var cp2Y = toY - (toY > fromY ? controlOffset : -controlOffset);
+                                    
+                                    ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, toX, toY);
+                                    
+                                    ctx.stroke();
+                                    ctx.restore();
                                 }
 
                                 // First pass: Draw lines from nodes to branch/tag labels (only for HEAD commits)
@@ -575,9 +767,17 @@ Item {
                                     var posForLine = root.commitPositions[commitForLine.hash];
                                     if (!posForLine) continue;
 
-                                    // Check if this is a HEAD commit
-                                    var laneBranchName = posForLine.branchName || (commitForLine.branchNames && commitForLine.branchNames.length > 0 ? commitForLine.branchNames[0] : "main");
-                                    var isHeadCommitForLabels = branchLatestCommit && branchLatestCommit[laneBranchName] === commitForLine.hash;
+                                    // Check if this commit is a HEAD of ANY branch
+                                    var isHeadCommitForLabels = false;
+                                    var headBranchesForThisCommit = [];
+                                    
+                                    // Check ALL branches to see if this commit is a HEAD
+                                    for (var branchKey in branchLatestCommit) {
+                                        if (branchLatestCommit[branchKey] === commitForLine.hash) {
+                                            isHeadCommitForLabels = true;
+                                            headBranchesForThisCommit.push(branchKey);
+                                        }
+                                    }
 
                                     // Only show labels for HEAD commits
                                     if (!isHeadCommitForLabels) continue;
@@ -589,7 +789,7 @@ Item {
                                     var allLabels = [];
 
                                     // Add tag labels first (left side)
-                                    if (commitForLine.tagNames && Array.isArray(commitForLine.tagNames)) {
+                                    if (commitForLine.tagNames && commitForLine.tagNames.length > 0) {
                                         for (var tIdx = 0; tIdx < commitForLine.tagNames.length; tIdx++) {
                                             var tagName = commitForLine.tagNames[tIdx];
                                             var tagObj = GraphUtils.findInListModel(root.tags, "name", tagName);
@@ -601,28 +801,29 @@ Item {
                                         }
                                     }
 
-                                    // Add branch labels last (right side)
-                                    if (commitForLine.branchNames && Array.isArray(commitForLine.branchNames)) {
-                                        for (var bIdx = 0; bIdx < commitForLine.branchNames.length; bIdx++) {
-                                            var branchName = commitForLine.branchNames[bIdx];
-                                            var branchObj3 = GraphUtils.findInListModel(root.branches, "name", branchName);
-                                            var branchColor4 = branchObj3 ? branchObj3.color : "#4a9eff";
-                                            var isBranchHead = branchLatestCommit && branchLatestCommit[branchName] === commitForLine.hash;
-                                            allLabels.push({
-                                                text: isBranchHead ? (branchName + " (HEAD)") : (branchName),
-                                                color: branchColor4
-                                            });
-                                        }
+                                    // Add branch labels for HEAD branches
+                                    // Each label shows its own branch color
+                                    for (var hbi = 0; hbi < headBranchesForThisCommit.length; hbi++) {
+                                        var headBranchName = headBranchesForThisCommit[hbi];
+                                        var branchColor4 = GraphUtils.getBranchColor(headBranchName);
+                                        allLabels.push({
+                                            text: headBranchName + " (HEAD)",
+                                            color: branchColor4
+                                        });
                                     }
 
                                     // Draw all labels on same horizontal line
                                     if (allLabels.length > 0) {
-                                        var labelStartX = centerOffset + (maxColumns + 1) * root.columnSpacing + 50;  // Right side of graph
+                                        // Align labels to start at the Graph/BranchTag divider position
+                                        // But ensure labels start AFTER the commit node (never overlap or go backwards)
+                                        var dividerPosition = root.commitsColGraphWidth + 10;  // Position at divider + small padding
+                                        var nodeEndPosition = centerXForLine + 20;  // Node position + node radius + padding
+                                        var labelStartX = Math.max(dividerPosition, nodeEndPosition);  // Use whichever is further right
                                         var labelY = centerYForLine;  // Same Y as node (horizontal line)
                                         var currentLabelX = labelStartX;
                                         var labelSpacing = 8;  // Horizontal spacing between labels
 
-                                        // Draw labels
+                                        // Calculate positions for all labels
                                         var labelPositions = [];
                                         for (var calcIdx = 0; calcIdx < allLabels.length; calcIdx++) {
                                             var calcLabelInfo = allLabels[calcIdx];
@@ -638,46 +839,49 @@ Item {
                                             currentLabelX += calcLabelWidth + labelSpacing;
                                         }
 
-                                        var rightmostLabel = labelPositions[0];
-                                        var rightmostLabelX = rightmostLabel.x;
+                                        // Draw single connecting line using first label's color
+                                        if (labelPositions.length > 0) {
+                                            var firstLabel = labelPositions[0];
+                                            var lastLabel = labelPositions[labelPositions.length - 1];
+                                            var lineEndX = lastLabel.x + lastLabel.width;
+                                            
+                                            ctx.save();
+                                            ctx.strokeStyle = firstLabel.info.color;  // Use FIRST label's branch color
+                                            ctx.globalAlpha = 0.8;
+                                            ctx.lineWidth = 5;
 
-                                        ctx.save();
-                                        ctx.strokeStyle = allLabels[0].color;
-                                        ctx.globalAlpha = 0.8;
-                                        ctx.lineWidth = 5;
+                                            ctx.beginPath();
+                                            ctx.moveTo(centerXForLine, centerYForLine);
+                                            ctx.lineTo(lineEndX, labelY);
+                                            ctx.stroke();
+                                            ctx.restore();
+                                        }
 
-                                        ctx.beginPath();
-                                        ctx.moveTo(centerXForLine, centerYForLine); // Start from right side of node
-                                        ctx.lineTo(rightmostLabelX, labelY); // End at rightmost label
-                                        ctx.stroke();
-                                        ctx.restore();
+                                        // Draw all labels
+                                        for (var labelDrawIdx = 0; labelDrawIdx < labelPositions.length; labelDrawIdx++) {
+                                            var labelPos = labelPositions[labelDrawIdx];
+                                            var labelInfo = labelPos.info;
+                                            var labelX = labelPos.x;
+                                            var labelWidth = labelPos.width;
+                                            var labelHeight = 20;
+                                            var labelRectY = labelY - labelHeight / 2;
 
-                                        currentLabelX = labelStartX;
-                                        var labelInfo = allLabels[0];
+                                            ctx.save();
+                                            ctx.fillStyle = labelInfo.color;
+                                            ctx.globalAlpha = 0.95;
+                                            GraphUtils.drawRoundedRect(ctx, labelX, labelRectY, labelWidth, labelHeight, 2);
+                                            ctx.fill();
 
-                                        ctx.font = "bold 11px Arial";
-                                        ctx.textAlign = "left";
-                                        ctx.textBaseline = "middle";
-                                        var textMetrics = ctx.measureText(labelInfo.text);
-                                        var labelWidth = textMetrics.width + 16;
-                                        var labelHeight = 20;
-                                        var labelX = currentLabelX;
-                                        var labelRectY = labelY - labelHeight / 2;
-
-                                        ctx.fillStyle = labelInfo.color;
-                                        ctx.globalAlpha = 0.95;
-                                        GraphUtils.drawRoundedRect(ctx, labelX, labelRectY, labelWidth, labelHeight, 2);
-                                        ctx.fill();
-
-                                        // Enhanced label styling with better contrast
-                                        var contrastColor = GraphUtils.getContrastColor(labelInfo.color);
-                                        ctx.fillStyle = contrastColor;
-                                        ctx.globalAlpha = 1.0;
-                                        ctx.font = "bold 11px 'Segoe UI', Arial, sans-serif";
-                                        ctx.fillText(labelInfo.text, labelX + 8, labelY);
-                                        ctx.restore();
-
-                                        currentLabelX += labelWidth + labelSpacing;
+                                            // Enhanced label styling with better contrast
+                                            var contrastColor = GraphUtils.getContrastColor(labelInfo.color);
+                                            ctx.fillStyle = contrastColor;
+                                            ctx.globalAlpha = 1.0;
+                                            ctx.font = "bold 11px 'Segoe UI', Arial, sans-serif";
+                                            ctx.textAlign = "left";
+                                            ctx.textBaseline = "middle";
+                                            ctx.fillText(labelInfo.text, labelX + 8, labelY);
+                                            ctx.restore();
+                                        }
                                     }
                                 }
 
@@ -690,25 +894,42 @@ Item {
                                     var centerX2 = centerOffset + pos3.column * root.columnSpacing + root.columnSpacing / 2;
                                     var centerY2 = pos3.y + root.commitItemHeight / 2 + root.commitItemSpacing;
 
+                                    // Get color from commit's branch (prefer non-main)
+                                    var branchColor3 = null;
+                                    if (commit3.branchNames && commit3.branchNames.length > 0) {
+                                        for (var bi = 0; bi < commit3.branchNames.length; bi++) {
+                                            var bn = commit3.branchNames[bi];
+                                            if (bn !== "main" && bn !== "origin/main" && bn !== "master") {
+                                                branchColor3 = GraphUtils.getBranchColor(bn);
+                                                break;
+                                            }
+                                        }
+                                        // If only main branches found, use first branch
+                                        if (!branchColor3) {
+                                            branchColor3 = GraphUtils.getBranchColor(commit3.branchNames[0]);
+                                        }
+                                    }
+                                    
+                                    // Fallback if no branches
+                                    if (!branchColor3) {
+                                        branchColor3 = GraphUtils.generateRandomColor();
+                                    }
+
                                     var laneBranchName = pos3.branchName || (commit3.branchNames && commit3.branchNames.length > 0 ? commit3.branchNames[0] : "main");
-                                    var branchObj = GraphUtils.findInListModel(root.branches, "name", laneBranchName);
-                                    var branchColor3 = branchObj ? branchObj.color : "#4a9eff";
-
                                     var isHeadCommit = branchLatestCommit && branchLatestCommit[laneBranchName] === commit3.hash;
-
                                     var isSelected = root.selectedCommit && root.selectedCommit.hash === commit3.hash;
 
+                                    // Highlight selected commit row
                                     if (isSelected) {
                                         ctx.fillStyle = "#6088B2DF";
                                         ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + (root.commitItemSpacing * 2));
-                                   }
+                                    }
 
                                     var avatarSize = root.commitItemHeight;
                                     var avatarRadius = avatarSize / 2;
 
-                                    var lighterBranchColor = GraphUtils.lightenColor(branchColor3, 0.4);
-                                    var darkerBranchColor = GraphUtils.darkenColor(branchColor3, 0.2);
-
+                                    // All commits: Circle with avatar (same style)
+                                    ctx.save();
                                     ctx.strokeStyle = isSelected ? "#aad711" : GraphUtils.lightenColor(branchColor3, 0.6);
                                     ctx.lineWidth = isSelected ? 4 : 2.5;
 
@@ -718,8 +939,7 @@ Item {
                                     ctx.fill();
                                     ctx.stroke();
 
-                                    // Draw avatar icon with fallback
-                                    ctx.save();
+                                    // Draw avatar icon
                                     ctx.fillStyle = "#ffffff";
                                     ctx.font = (avatarSize * 0.8) + "px Arial";
                                     ctx.textAlign = "center";
@@ -727,9 +947,8 @@ Item {
 
                                     var drawX = centerX2 - svgImage.width / 2;
                                     var drawY = centerY2 - svgImage.height / 2;
-
                                     ctx.drawImage(svgImage, drawX, drawY);
-                                    ctx.stroke();
+                                    
                                     ctx.restore();
                                 }
 
@@ -813,14 +1032,28 @@ Item {
 
                                     // Branch color indicator bar
                                     Rectangle {
+                                        id: branchColorIndicator
                                         Layout.preferredWidth: 3
                                         Layout.preferredHeight: commitItemHeight * 0.8
                                         Layout.alignment: Qt.AlignVCenter
                                         radius: 6
+                                        
                                         color: {
-                                            // TODO : fix bug and find set color
-                                            "#ededed"
-                                            // GraphUtils.getBranchColor(commitData.branchNames)
+                                            // Get color from the branch this commit belongs to
+                                            if (commitData.branchNames && commitData.branchNames.length > 0) {
+                                                // Prefer non-main branch names for color
+                                                for (var i = 0; i < commitData.branchNames.length; i++) {
+                                                    var branchName = commitData.branchNames[i];
+                                                    if (branchName !== "main" && branchName !== "origin/main" && branchName !== "master") {
+                                                        return GraphUtils.getBranchColor(branchName);
+                                                    }
+                                                }
+                                                // If only main branch, use it
+                                                return GraphUtils.getBranchColor(commitData.branchNames[0]);
+                                            }
+                                            
+                                            // Fallback to random color
+                                            return GraphUtils.generateRandomColor();
                                         }
                                     }
 
@@ -918,12 +1151,42 @@ Item {
         }
     }
 
-    Component.onCompleted: {
-        let commits = repositoryController.getCommits(repositoryController.appModel.currentRepository)
-
-        if(commits && commits.length > 0){
-            root.commits = commits
-            loadData()
+    /**
+     * Load all branches from repository and populate branches model
+     */
+    function loadBranches() {
+        branches.clear();
+        var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
+        
+        if (!allBranches || allBranches.length === 0) return;
+        
+        for (var i = 0; i < allBranches.length; i++) {
+            var branch = allBranches[i];
+            var branchColor = GraphUtils.getBranchColor(branch.name);
+            branches.append({
+                name: branch.name,
+                color: branchColor,
+                isCurrent: branch.isCurrent || false,
+                isLocal: branch.isLocal || false,
+                isRemote: branch.isRemote || false
+            });
         }
+    }
+
+    /**
+     * Load all commits from repository
+     */
+    function loadCommits() {
+        var commits = repositoryController.getCommits(repositoryController.appModel.currentRepository);
+        
+        if (!commits || commits.length === 0) return;
+        
+        root.commits = commits;
+    }
+
+    Component.onCompleted: {
+        loadBranches();
+        loadCommits();
+        loadData();
     }
 }

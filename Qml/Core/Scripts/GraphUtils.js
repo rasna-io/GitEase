@@ -8,82 +8,63 @@
 // Dynamic color generation for branches and tags
 var branchColorCache = {}
 var tagColorCache = {}
-var colorIndex = 0
-
-// Modern color palette for better visual appeal
-var colorPalette = [
-    "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7",
-    "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E2",
-    "#F8B739", "#52B788", "#E76F51", "#8E44AD", "#3498DB",
-    "#E74C3C", "#1ABC9C", "#F39C12", "#9B59B6", "#2ECC71",
-    "#E67E22", "#34495E", "#16A085", "#27AE60", "#2980B9",
-    "#8E44AD", "#C0392B", "#D35400", "#7F8C8D", "#17202A"
-]
 
 /* Functions
  * ****************************************************************************************/
+/**
+ * Get color for a branch - generates and caches random color
+ * Each branch gets a unique random color on first access
+ * @param branchName - Name of the branch
+ * @returns Hex color string
+ */
 function getBranchColor(branchName) {
+    if (!branchName) {
+        return generateRandomColor();
+    }
+    
+    // Check cache first
     if (branchColorCache[branchName]) {
-        return branchColorCache[branchName]
+        return branchColorCache[branchName];
     }
 
-    // Check for predefined colors first
-    var predefinedColors = {
-        "main": "#4a9eff",
-        "develop": "#00ff88",
-        "master": "#4a9eff",
-        "dev": "#00ff88"
-    }
+    // Generate new random color and cache it
+    var color = generateRandomColor();
+    branchColorCache[branchName] = color;
 
-    if (predefinedColors[branchName]) {
-        branchColorCache[branchName] = predefinedColors[branchName]
-        return predefinedColors[branchName]
-    }
+    return color;
+}
 
-    // Generate dynamic color based on branch name hash
-    var hash = 0
-    for (var i = 0; i < branchName.length; i++) {
-        hash = branchName.charCodeAt(i) + ((hash << 5) - hash)
-    }
-
-    var colorIndex = Math.abs(hash) % colorPalette.length
-    var color = colorPalette[colorIndex]
-    branchColorCache[branchName] = color
-
-    return color
+/**
+ * Clear the branch color cache
+ * Useful when reloading repository data
+ */
+function clearBranchColorCache() {
+    branchColorCache = {};
 }
 
 function getTagColor(tagName) {
+    if (!tagName) {
+        return generateRandomColor();
+    }
+    
+    // Check cache first
     if (tagColorCache[tagName]) {
-        return tagColorCache[tagName]
+        return tagColorCache[tagName];
     }
 
-    // Check for predefined colors first
-    var predefinedColors = {
-        "v1.0.0": "#ff00aa",
-        "v1.1.0": "#aa00ff",
-        "v1.2.0": "#00aaff",
-        "v2.0.0": "#51cf66",
-        "latest": "#ffd700",
-        "stable": "#00ff00"
-    }
+    // Generate new random color and cache it
+    var color = generateRandomColor();
+    tagColorCache[tagName] = color;
 
-    if (predefinedColors[tagName]) {
-        tagColorCache[tagName] = predefinedColors[tagName]
-        return predefinedColors[tagName]
-    }
+    return color;
+}
 
-    // Generate dynamic color based on tag name hash (different palette offset)
-    var hash = 0
-    for (var i = 0; i < tagName.length; i++) {
-        hash = tagName.charCodeAt(i) + ((hash << 5) - hash)
-    }
-
-    var colorIndex = (Math.abs(hash) + 15) % colorPalette.length // Offset for variety
-    var color = colorPalette[colorIndex]
-    tagColorCache[tagName] = color
-
-    return color
+/**
+ * Clear the tag color cache
+ * Useful when reloading repository data
+ */
+function clearTagColorCache() {
+    tagColorCache = {};
 }
 
 function formatDate(date) {
@@ -177,4 +158,76 @@ function getContrastColor(backgroundColor) {
     var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
 
     return luminance > 0.5 ? "#000000" : "#ffffff"
+}
+
+/**
+ * Generate a random color with good visibility
+ * Generates colors with sufficient saturation and brightness for UI use
+ * @returns Hex color string
+ */
+function generateRandomColor() {
+    // Generate random HSL values for better color control
+    // Hue: 0-360 (full spectrum)
+    var hue = Math.floor(Math.random() * 360);
+    
+    // Saturation: 60-90% (vibrant but not oversaturated)
+    var saturation = 60 + Math.floor(Math.random() * 30);
+    
+    // Lightness: 45-65% (not too dark, not too light)
+    var lightness = 45 + Math.floor(Math.random() * 20);
+    
+    // Convert HSL to RGB
+    var rgb = hslToRgb(hue, saturation, lightness);
+    
+    // Convert RGB to hex
+    var r = Math.round(rgb.r);
+    var g = Math.round(rgb.g);
+    var b = Math.round(rgb.b);
+    
+    return '#' + padString(r.toString(16), 2, '0') +
+           padString(g.toString(16), 2, '0') +
+           padString(b.toString(16), 2, '0');
+}
+
+/**
+ * Convert HSL color values to RGB
+ * @param h - Hue (0-360)
+ * @param s - Saturation (0-100)
+ * @param l - Lightness (0-100)
+ * @returns Object with r, g, b values (0-255)
+ */
+function hslToRgb(h, s, l) {
+    // Normalize values
+    h = h / 360;
+    s = s / 100;
+    l = l / 100;
+    
+    var r, g, b;
+    
+    if (s === 0) {
+        // Achromatic (grey)
+        r = g = b = l;
+    } else {
+        var hue2rgb = function(p, q, t) {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        };
+        
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+    
+    return {
+        r: r * 255,
+        g: g * 255,
+        b: b * 255
+    };
 }
