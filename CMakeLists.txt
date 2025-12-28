@@ -70,6 +70,7 @@ qt_add_qml_module(${MAIN_TARGET_NAME}
         ${RESOURCES_COMPONENTS}
         ${RESOURCES_POPUPS}
         ${RESOURCES_PAGES}
+        ${RESOURCES_VIEW}
         ${RESOURCES_SERVICES}
 
     SOURCES
