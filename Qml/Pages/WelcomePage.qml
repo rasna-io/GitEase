@@ -19,6 +19,8 @@ Rectangle {
 
     property RepositoryController repositoryController
 
+    property AppModel             appModel
+
     property int                  contentMargins:  24
 
 
@@ -84,13 +86,7 @@ Rectangle {
                     Layout.fillHeight: true
                     showDescription: true
                     descriptionText: "Choose how you want to get started with your Git repository"
-                    onSelectedPathChanged : {
-                        if(repositorySelector.currentTabIndex === Enums.RepositorySelectorTab.Recents){
-                            if(submit() && root.controller) {
-                                root.controller.completeWelcomeFlow()
-                            }
-                        }
-                    }
+                    recentRepositories: appModel.recentRepositories
                 }
             }
         }
@@ -218,6 +214,7 @@ Rectangle {
         switch(repositorySelector.currentTabIndex) {
             case Enums.RepositorySelectorTab.Recents:
             case Enums.RepositorySelectorTab.Open:
+                console.log("#####################", repositorySelector.selectedPath)
                 return root.repositoryController.openRepository(repositorySelector.selectedPath)
 
             case Enums.RepositorySelectorTab.Clone: {
