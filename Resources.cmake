@@ -60,3 +60,8 @@ set(RESOURCES_PAGES
 set(RESOURCES_SERVICES
     Qml/Core/Services/GitService.qml
 )
+
+# Define View Resources
+set(RESOURCES_VIEW
+    Qml/View/MainWindow.qml
+)
