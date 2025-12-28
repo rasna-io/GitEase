@@ -34,6 +34,15 @@ private:
     QString m_lastError;                        ///< Last error message for debugging
 
     /* Private Helper Functions */
+    /**
+     * \brief Open repository at given path
+     * \param path Repository path to open
+     * \return git_repository pointer or nullptr on error
+     *
+     * If m_currentRepo is already open and path is empty, returns current repo.
+     * Otherwise opens a new repository. Caller must free if different from m_currentRepo.
+     */
+    git_repository* openRepository(const QString &path);
 
     /**
      * \brief Handle libgit2 error and store in m_lastError
@@ -178,13 +187,13 @@ public slots:
      * \param limit Maximum number of commits to return (default: 50)
      * \return QVariantList of commit objects
      */
-    Q_INVOKABLE QVariantList getCommits(int limit = 50);
+    Q_INVOKABLE QVariantList getCommits(const QString &repoPath = "", int limit = 50);
 
     /**
      * \brief Get list of branches
      * \return QVariantList of branch objects with name, isRemote, isCurrent properties
      */
-    Q_INVOKABLE QVariantList getBranches();
+    Q_INVOKABLE QVariantList getBranches(const QString &repoPath = "");
 
     /**
     * \brief Creates a new branch pointing to the current HEAD.
@@ -229,7 +238,7 @@ public slots:
      * \brief Get basic repository information
      * \return QVariantMap with repository info
      */
-    Q_INVOKABLE QVariantMap getRepoInfo();
+    Q_INVOKABLE QVariantMap getRepoInfo(const QString &repoPath = "");
 
     /* Commit Operations */
 

@@ -1,14 +1,25 @@
 #include "GitWrapperCPP.h"
+
 #include <string.h>
+
 #include <QDebug>
 #include <QDir>
 #include <QDateTime>
 #include <QProcess>
 #include <QStandardPaths>
 #include <QTemporaryDir>
-#include <qfuture.h>
+#include <QFuture>
 #include <qtconcurrentrun.h>
 #include <QFutureWatcher>
+#include <QRegularExpression>
+
+#include <git2/commit.h>
+#include <git2/signature.h>
+#include <git2/tree.h>
+#include <git2/index.h>
+#include <git2/revparse.h>
+#include <git2/branch.h>
+#include <git2/refs.h>
 
 // Helper function to convert git status to string
 QString gitStatusToString(git_status_t status)
@@ -32,7 +43,7 @@ GitWrapperCPP::GitWrapperCPP(QObject *parent)
     qDebug() << "GitWrapperCPP: libgit2 initialized";
 
     // unitTest();
-    unitTestForGitWorkflow();
+    // unitTestForGitWorkflow();
 }
 
 GitWrapperCPP::~GitWrapperCPP()
@@ -285,19 +296,18 @@ QVariantMap GitWrapperCPP::status()
     return createResult(true, statusData);
 }
 
-QVariantList GitWrapperCPP::getCommits(int limit)
+QVariantList GitWrapperCPP::getCommits(const QString &repoPath, int limit)
 {
     QVariantList commits;
 
-    // Step 1: Check if repository is open
-    if (!m_currentRepo) {
-        qWarning() << "GitWrapperCPP: No repository open for getCommits";
+    // Get repository (opens if needed)
+    git_repository* repo = repoPath.isEmpty() ? m_currentRepo : openRepository(repoPath);
+    if (!repo) {
         return commits; // Empty list
     }
 
-    // Step 2: Use m_currentRepo directly
     git_revwalk *walker = nullptr;
-    int result = git_revwalk_new(&walker, m_currentRepo);
+    int result = git_revwalk_new(&walker, repo);
 
     if (result == 0) {
         // Start from HEAD and sort by time (newest first)
@@ -310,7 +320,7 @@ QVariantList GitWrapperCPP::getCommits(int limit)
         // Walk through commits up to limit
         while (count < limit && git_revwalk_next(&oid, walker) == 0) {
             git_commit *commit = nullptr;
-            result = git_commit_lookup(&commit, m_currentRepo, &oid);
+            result = git_commit_lookup(&commit, repo, &oid);
 
             if (result == 0) {
                 commits.append(commitToMap(commit));
@@ -323,12 +333,16 @@ QVariantList GitWrapperCPP::getCommits(int limit)
         git_revwalk_free(walker);
     }
 
-    // Step 3: No cleanup needed (using m_currentRepo directly)
+    // Clean up if we opened a temporary repository
+    if (repo != m_currentRepo) {
+        git_repository_free(repo);
+    }
+
     qDebug() << "GitWrapperCPP: Retrieved" << commits.size() << "commits";
     return commits;
 }
 
-QVariantList GitWrapperCPP::getBranches()
+QVariantList GitWrapperCPP::getBranches(const QString &repoPath)
 {
     QVariantList branches;
 
@@ -774,19 +788,23 @@ void GitWrapperCPP::handleGitError(int errorCode)
     }
 }
 
-// GitWrapperCPP.cpp - Commit functionality addition
-
-// Add these includes at the top of the file
-#include <git2/commit.h>
-#include <git2/signature.h>
-#include <git2/tree.h>
-#include <git2/index.h>
-#include <git2/revparse.h>
-#include <git2/branch.h>
-#include <git2/refs.h>
-#include <QRegularExpression>
-
 // Add to the helper functions section
+git_repository* GitWrapperCPP::openRepository(const QString &path)
+{
+    if (m_currentRepo) return m_currentRepo;
+
+    git_repository* repo = nullptr;
+    QByteArray pathUtf8 = path.toUtf8();
+    int result = git_repository_open(&repo, pathUtf8.constData());
+
+    if (result != 0) {
+        handleGitError(result);
+        return nullptr;
+    }
+
+    return repo;
+}
+
 QString GitWrapperCPP::validateCommitMessage(const QString &message)
 {
     if (message.trimmed().isEmpty()) {
@@ -1886,7 +1904,7 @@ void GitWrapperCPP::unitTest()
     // TEST 5: Get commits (should be empty in new repo)
     // --------------------------------------------------------------------
     qDebug() << "\n[TEST 5/6] Testing getCommits()...";
-    QVariantList commits = getCommits(10);
+    QVariantList commits = getCommits("",10);
     testsTotal++;
 
     qDebug() << "  ✓ getCommits() passed - Found" << commits.size() << "commit(s)";
@@ -2117,7 +2135,7 @@ void GitWrapperCPP::unitTestForGitWorkflow()
     // --------------------------------------------------------------------
     qDebug() << "\nSTEP 8: Testing getCommit()";
     // Get the latest commit from history
-    QVariantList commits = getCommits(1);
+    QVariantList commits = getCommits("",1);
     if (!commits.isEmpty()) {
         QVariantMap latestCommit = commits.first().toMap();
         QString commitHash = latestCommit["hash"].toString();
@@ -2168,7 +2186,7 @@ void GitWrapperCPP::unitTestForGitWorkflow()
     qDebug() << "\nSTEP 10: Testing revertCommit()";
 
     // Get commit to revert (the amended commit)
-    commits = getCommits(1);
+    commits = getCommits("",1);
     if (!commits.isEmpty()) {
         QVariantMap commitToRevert = commits.first().toMap();
         QString revertHash = commitToRevert["hash"].toString();
