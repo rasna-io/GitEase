@@ -228,7 +228,9 @@ Rectangle {
                 Layout.preferredWidth: 50
                 Layout.fillHeight: true
 
-                uiSession: root.uiSession
+                appModel: root.uiSession?.appModel
+                pageController: root.uiSession?.pageController
+                repositoryController: root.uiSession?.repositoryController
             }
 
             Rectangle {
