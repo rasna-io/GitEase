@@ -285,11 +285,12 @@ public slots:
     Q_INVOKABLE QVariantMap status();
 
     /**
-     * \brief Get commit history
+     * \brief Get commit history (paged)
      * \param limit Maximum number of commits to return (default: 50)
+     * \param offset Number of commits to skip from the start of the walk (default: 0)
      * \return QVariantList of commit objects
      */
-    Q_INVOKABLE QVariantList getCommits(const QString &repoPath = "", int limit = 50);
+    Q_INVOKABLE QVariantList getCommits(const QString &repoPath = "", int limit = 50, int offset = 0);
 
     /**
      * \brief Get list of branches

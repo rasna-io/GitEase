@@ -148,8 +148,8 @@ Item {
     /**
      * Get Commits
      */
-    function getCommits(repo :Repository, limit = 100) : var {
-        var commits = GitService.getCommits(repo.path, limit)
+    function getCommits(repo :Repository, limit = 100, offset = 0) : var {
+        var commits = GitService.getCommits(repo.path, limit, offset)
         if (commits && commits.length > 0){
             return commits
         }

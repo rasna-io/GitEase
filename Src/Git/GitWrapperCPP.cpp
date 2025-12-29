@@ -297,7 +297,7 @@ QVariantMap GitWrapperCPP::status()
     return createResult(true, statusData);
 }
 
-QVariantList GitWrapperCPP::getCommits(const QString &repoPath, int limit)
+QVariantList GitWrapperCPP::getCommits(const QString &repoPath, int limit, int offset)
 {
     QVariantList commits;
 
@@ -348,6 +348,12 @@ QVariantList GitWrapperCPP::getCommits(const QString &repoPath, int limit)
 
         git_oid oid;
         int count = 0;
+
+        // Skip `offset` commits (paging)
+        int skipped = 0;
+        while (skipped < offset && git_revwalk_next(&oid, walker) == 0) {
+            skipped++;
+        }
 
         // Walk through commits up to limit
         while (count < limit && git_revwalk_next(&oid, walker) == 0) {
