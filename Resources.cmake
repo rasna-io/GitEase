@@ -34,6 +34,10 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Repository/RepositorySelector.qml       # Repository selection component
     Qml/View/Components/Repository/RepositoriesSidebar.qml      # Repositories Sidebar component
 
+    # Navigation Components - Side rails / tab bars
+    Qml/View/Components/Navigation/NavigationRail.qml           # Combined pages+repos navigation rail
+    Qml/View/Components/Navigation/PagesRail.qml                # Pages-only navigation rail
+
     # Welcome-specific Content - Welcome page content sections
     Qml/View/Components/WelcomeContents/WelcomeContent.qml           # Main welcome content
 )
@@ -54,8 +58,6 @@ set(RESOURCES_POPUPS
 # Define QML Pages
 set(RESOURCES_PAGES
     Qml/Pages/WelcomePage.qml    # Initial welcome/onboarding page
-    Qml/Pages/PageTabBar.qml     # Tab bar for page navigation
-    Qml/Pages/PagesSidebar.qml   # Pages List navigation component
 )
 
 # Define QML Services

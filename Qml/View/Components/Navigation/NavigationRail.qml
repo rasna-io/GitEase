@@ -7,7 +7,7 @@ import GitEase_Style_Impl
 import GitEase
 
 /*! ***********************************************************************************************
- * PageTabBar
+ * NavigationRail
  * Vertical sidebar component for page and repository navigation.
  * Displays list of open pages and available repositories.
  * ************************************************************************************************/
@@ -33,7 +33,7 @@ Rectangle {
         anchors.bottomMargin: 4
 
         // Pages Sidebar (Top section)
-        PagesSidebar {
+        PagesRail {
             Layout.preferredWidth: 50
             Layout.fillHeight: true
 
@@ -85,7 +85,7 @@ Rectangle {
                 }
 
                 onClicked: {
-                    console.log("PageTabBar - Settings clicked")
+                    console.log("NavigationRail - Settings clicked")
                     // TODO: Open settings dialog
                 }
             }
@@ -118,7 +118,7 @@ Rectangle {
                 }
 
                 onClicked: {
-                    console.log("PageTabBar - Profile clicked")
+                    console.log("NavigationRail - Profile clicked")
                     // TODO:
                 }
             }

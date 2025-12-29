@@ -224,7 +224,7 @@ Rectangle {
             Layout.fillHeight: true
             spacing: 0
 
-            PageTabBar {
+            NavigationRail {
                 Layout.preferredWidth: 50
                 Layout.fillHeight: true
 
