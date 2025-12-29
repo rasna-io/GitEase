@@ -8,6 +8,7 @@
 // Dynamic color generation for branches and tags
 var branchColorCache = {}
 var tagColorCache = {}
+var categoryColorCache = {}
 
 /* Functions
  * ****************************************************************************************/
@@ -65,6 +66,45 @@ function getTagColor(tagName) {
  */
 function clearTagColorCache() {
     tagColorCache = {};
+}
+
+/**
+ * Get color for a graph lane (column)
+ * Lane colors are stable within a session and independent of branch names.
+ */
+/**
+ * Deterministic, distinct-ish colors by insertion order.
+ * We intentionally avoid branch-name fallbacks (like "main") to prevent
+ * deleted/unknown branches sharing colors.
+ */
+function getCategoryColor(key) {
+    if (!key)
+        key = "default";
+
+    if (categoryColorCache[key])
+        return categoryColorCache[key];
+
+    // Create a visually distinct color using golden angle steps in HSV.
+    var index = Object.keys(categoryColorCache).length;
+    var hue = (index * 137.508) % 360; // golden angle
+    var saturation = 70;
+    var lightness = 55;
+
+    var rgb = hslToRgb(hue, saturation, lightness);
+    var r = Math.round(rgb.r);
+    var g = Math.round(rgb.g);
+    var b = Math.round(rgb.b);
+
+    var color = '#' + padString(r.toString(16), 2, '0') +
+                padString(g.toString(16), 2, '0') +
+                padString(b.toString(16), 2, '0');
+
+    categoryColorCache[key] = color;
+    return color;
+}
+
+function clearCategoryColorCache() {
+    categoryColorCache = {};
 }
 
 function formatDate(date) {
