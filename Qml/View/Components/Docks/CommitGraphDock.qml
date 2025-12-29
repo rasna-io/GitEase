@@ -22,8 +22,6 @@ Item {
     /* Property Declarations
      * ****************************************************************************************/
     property var commits: []
-    property var branches: ListModel {}
-    property var tags: ListModel {}
     property var selectedCommit: null
 
     property int graphColumnWidth: 0  // Will be calculated as half of dock width
@@ -53,41 +51,15 @@ Item {
     /* Functions
      * ****************************************************************************************/
 
-    /**
-     * Extract and store all tags from commits
-     */
-    function extractTags() {
-        tags.clear();
-        var existingTags = {};
-
-        for (var i = 0; i < root.commits.length; i++) {
-            var commit = root.commits[i];
-            if (!commit.tagNames || commit.tagNames.length === 0) continue;
-
-            for (var j = 0; j < commit.tagNames.length; j++) {
-                var tagName = commit.tagNames[j];
-                if (!existingTags[tagName]) {
-                    tags.append({
-                        name: tagName,
-                        color: GraphUtils.getTagColor(tagName),
-                        commitHash: commit.hash
-                    });
-                    existingTags[tagName] = true;
-                }
-            }
-        }
-    }
-
 
     /**
      * Load commit data and calculate graph layout positions
      */
     function loadData() {
-        extractTags();
         commitPositions = GraphLayout.calculateDAGPositions(
-            root.commits, 
-            root.columnSpacing, 
-            root.commitItemHeight, 
+            root.commits,
+            root.columnSpacing,
+            root.commitItemHeight,
             root.commitItemSpacing
         );
     }
@@ -576,29 +548,17 @@ Item {
                                 // Start graph from left side
                                 var centerOffset = root.columnSpacing / 2; // Padding from left edge
 
-                                // Track branch HEAD commits for labels
-                                // Use ALL branches from repository, not just from commits
+                                // Track branch HEAD commits for labels.
+                                // No separate branches model: HEAD labels are stored on commits as commit.branchNames.
+                                // Build a map: branchName -> commitHash for quick checks.
                                 var branchLatestCommit = {};
-                                
-                                // For each branch in branches ListModel, find its HEAD commit
-                                for (var branchIdx = 0; branchIdx < root.branches.count; branchIdx++) {
-                                    var branchItem = root.branches.get(branchIdx);
-                                    var branchName = branchItem.name;
-                                    
-                                    // Find the first commit (from top) that has this branch in branchNames
-                                    for (var j = 0; j < root.commits.length; j++) {
-                                        var c0 = root.commits[j];
-                                        if (c0 && c0.branchNames && c0.branchNames.length > 0) {
-                                            // Check if this commit has the branch
-                                            for (var bi = 0; bi < c0.branchNames.length; bi++) {
-                                                if (c0.branchNames[bi] === branchName) {
-                                                    branchLatestCommit[branchName] = c0.hash;
-                                                    break; // Found the HEAD for this branch
-                                                }
-                                            }
-                                            if (branchLatestCommit[branchName]) {
-                                                break; // Move to next branch
-                                            }
+                                for (var bi = 0; bi < root.commits.length; bi++) {
+                                    var bc = root.commits[bi];
+                                    if (bc && bc.branchNames && bc.branchNames.length) {
+                                        for (var bni = 0; bni < bc.branchNames.length; bni++) {
+                                            var bn = bc.branchNames[bni];
+                                            if (bn)
+                                                branchLatestCommit[bn] = bc.hash;
                                         }
                                     }
                                 }
@@ -792,8 +752,7 @@ Item {
                                     if (commitForLine.tagNames && commitForLine.tagNames.length > 0) {
                                         for (var tIdx = 0; tIdx < commitForLine.tagNames.length; tIdx++) {
                                             var tagName = commitForLine.tagNames[tIdx];
-                                            var tagObj = GraphUtils.findInListModel(root.tags, "name", tagName);
-                                            var tagColor = tagObj ? tagObj.color : "#ff00aa";
+                                            var tagColor = GraphUtils.getTagColor(tagName);
                                             allLabels.push({
                                                 text: tagName,
                                                 color: tagColor
@@ -1152,41 +1111,84 @@ Item {
     }
 
     /**
-     * Load all branches from repository and populate branches model
+     * Load all commits from repository
      */
-    function loadBranches() {
-        branches.clear();
+    // Build graph-ready commits by combining:
+    // - getCommits(): list of commits (hash, summary, author, ...)
+    // - getCommit(hash): per-commit details (parentHashes, etc)
+    // - getBranches(): to attach branch name labels to tip commits (targetHash)
+    function compileGraphCommits(rawCommits, rawBranches) {
+        if (!rawCommits) return []
+
+        // Build a fast lookup from tip commit hash -> [branchName,...]
+        var tipHashToBranches = {}
+        if (rawBranches && rawBranches.length) {
+            for (var i = 0; i < rawBranches.length; i++) {
+                var b = rawBranches[i]
+                if (!b || !b.targetHash) continue
+                if (!tipHashToBranches[b.targetHash]) tipHashToBranches[b.targetHash] = []
+                tipHashToBranches[b.targetHash].push(b.name)
+            }
+        }
+
+        var compiled = []
+
+        for (var c = 0; c < rawCommits.length; c++) {
+            var commit = rawCommits[c]
+
+            // parent hashes come from getCommit()
+            var parentHashes = []
+            var details = repositoryController.getCommitDetail(commit.hash)
+            if (details && details.parentHashes) {
+                parentHashes = details.parentHashes
+            }
+
+            var branchNames = tipHashToBranches[commit.hash] || []
+
+            compiled.push({
+                // base info from getCommits
+                hash: commit.hash,
+                shortHash: commit.shortHash,
+                message: commit.message,
+                summary: commit.summary,
+                author: commit.author,
+                authorEmail: commit.authorEmail,
+                authorDate: commit.authorDate,
+
+                // graph-required
+                parentHashes: parentHashes,
+                commitType: (parentHashes.length > 1) ? "merge" : "normal",
+                branchNames: branchNames,
+                tagNames: [] // TODO : can't find function in gitWrapperCPP
+            })
+        }
+
+        return compiled
+    }
+
+    function reloadAll() {
+        if (!repositoryController || !repositoryController.appModel || !repositoryController.appModel.currentRepository) {
+            return;
+        }
+
+        GraphUtils.clearBranchColorCache();
+        GraphUtils.clearTagColorCache();
+
         var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
-        
-        if (!allBranches || allBranches.length === 0) return;
-        
-        for (var i = 0; i < allBranches.length; i++) {
-            var branch = allBranches[i];
-            var branchColor = GraphUtils.getBranchColor(branch.name);
-            branches.append({
-                name: branch.name,
-                color: branchColor,
-                isCurrent: branch.isCurrent || false,
-                isLocal: branch.isLocal || false,
-                isRemote: branch.isRemote || false
-            });
+        var commits = repositoryController.getCommits(repositoryController.appModel.currentRepository);
+
+        root.commits = compileGraphCommits(commits, allBranches);
+        loadData();
+    }
+
+    Connections {
+        target: repositoryController
+        function onRepositorySelected(repo) {
+            reloadAll();
         }
     }
 
-    /**
-     * Load all commits from repository
-     */
-    function loadCommits() {
-        var commits = repositoryController.getCommits(repositoryController.appModel.currentRepository);
-        
-        if (!commits || commits.length === 0) return;
-        
-        root.commits = commits;
-    }
-
     Component.onCompleted: {
-        loadBranches();
-        loadCommits();
-        loadData();
+        reloadAll();
     }
 }
