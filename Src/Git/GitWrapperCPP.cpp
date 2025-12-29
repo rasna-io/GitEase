@@ -20,6 +20,7 @@
 #include <git2/revparse.h>
 #include <git2/branch.h>
 #include <git2/refs.h>
+#include <git2/object.h>
 
 // Helper function to convert git status to string
 QString gitStatusToString(git_status_t status)
@@ -311,8 +312,39 @@ QVariantList GitWrapperCPP::getCommits(const QString &repoPath, int limit)
 
     if (result == 0) {
         // Start from HEAD and sort by time (newest first)
+        git_revwalk_sorting(walker, GIT_SORT_TOPOLOGICAL | GIT_SORT_TIME);
+
+        // Push *all* branch tips so we get commits reachable from any branch.
+        {
+            git_branch_iterator* iter = nullptr;
+            if (git_branch_iterator_new(&iter, repo, GIT_BRANCH_ALL) == 0) {
+                git_reference* ref = nullptr;
+                git_branch_t type;
+
+                while (git_branch_next(&ref, &type, iter) == 0) {
+                    const git_oid* oid = git_reference_target(ref);
+                    if (oid) {
+                        git_revwalk_push(walker, oid);
+                    } else {
+                        // Symbolic ref, peel to commit
+                        git_object* target = nullptr;
+                        if (git_reference_peel(&target, ref, GIT_OBJECT_COMMIT) == 0 && target) {
+                            const git_oid* peeledOid = git_object_id(target);
+                            if (peeledOid)
+                                git_revwalk_push(walker, peeledOid);
+                            git_object_free(target);
+                        }
+                    }
+
+                    git_reference_free(ref);
+                }
+
+                git_branch_iterator_free(iter);
+            }
+        }
+
+        // Also push HEAD as a fallback (detached HEAD or repos without branches)
         git_revwalk_push_head(walker);
-        git_revwalk_sorting(walker, GIT_SORT_TIME);
 
         git_oid oid;
         int count = 0;
@@ -322,7 +354,7 @@ QVariantList GitWrapperCPP::getCommits(const QString &repoPath, int limit)
             git_commit *commit = nullptr;
             result = git_commit_lookup(&commit, repo, &oid);
 
-            if (result == 0) {
+            if (result == 0 && commit) {
                 commits.append(commitToMap(commit));
                 git_commit_free(commit);
                 count++;
@@ -370,6 +402,23 @@ QVariantList GitWrapperCPP::getBranches(const QString &repoPath)
                 branch["name"] = QString::fromUtf8(name);
                 branch["isRemote"] = (type == GIT_BRANCH_REMOTE);
                 branch["isLocal"] = (type == GIT_BRANCH_LOCAL);
+
+                // Branch tip commit hash (needed to map branches to commits in QML)
+                QString targetHash;
+                const git_oid* oid = git_reference_target(ref);
+                if (!oid) {
+                    git_object* target = nullptr;
+                    if (git_reference_peel(&target, ref, GIT_OBJECT_COMMIT) == 0 && target) {
+                        oid = git_object_id(target);
+                        git_object_free(target);
+                    }
+                }
+                if (oid) {
+                    char hash[GIT_OID_HEXSZ + 1];
+                    git_oid_tostr(hash, sizeof(hash), oid);
+                    targetHash = QString::fromUtf8(hash);
+                }
+                branch["targetHash"] = targetHash;
 
                 // Check if this is the current branch
                 int isHead = git_branch_is_head(ref);
