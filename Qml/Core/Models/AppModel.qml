@@ -21,6 +21,10 @@ Item {
 
     property                FileIO            fileIO:                   FileIO {}
 
+    property                var               pages:                    []
+
+    property                Page              currentPage:              null
+
 
     /* Signals
      * ****************************************************************************************/
