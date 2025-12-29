@@ -7,6 +7,7 @@ set(RESOURCES_CORE
     Qml/Core/Models/AppSettings.qml           # Application settings (singleton)
     Qml/Core/Models/Enums.qml
     Qml/Core/Models/Repository.qml
+    Qml/Core/Models/Page.qml
 
     # Controllers
     Qml/Core/Controllers/WelcomeController.qml    # Welcome page controller
@@ -29,8 +30,9 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Profile/SetupProfileForm.qml     # Profile setup/editing form
 
     # Repository Components - Git repository management
-    Qml/View/Components/Repository/RecentRepositoriesList.qml  # Recent repositories list
+    Qml/View/Components/Repository/RecentRepositoriesList.qml   # Recent repositories list
     Qml/View/Components/Repository/RepositorySelector.qml       # Repository selection component
+    Qml/View/Components/Repository/RepositoriesSidebar.qml      # Repositories Sidebar component
 
     # Welcome-specific Content - Welcome page content sections
     Qml/View/Components/WelcomeContents/WelcomeContent.qml           # Main welcome content
@@ -52,8 +54,8 @@ set(RESOURCES_POPUPS
 # Define QML Pages
 set(RESOURCES_PAGES
     Qml/Pages/WelcomePage.qml    # Initial welcome/onboarding page
-    Qml/Pages/Page.qml           # Base page component with dock support
     Qml/Pages/PageTabBar.qml     # Tab bar for page navigation
+    Qml/Pages/PagesSidebar.qml   # Pages List navigation component
 )
 
 # Define QML Services
