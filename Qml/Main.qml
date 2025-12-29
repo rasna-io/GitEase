@@ -73,8 +73,6 @@ ApplicationWindow {
 
         // sourceComponent:
     }
-    // TODO: Move position bindings from the component to the Loader.
-    //       Check all uses of 'parent' inside the root element of the component.
 
     // Welcome Flow Component
     Component {
@@ -118,6 +116,12 @@ ApplicationWindow {
             Loader {
                 anchors.fill: parent
                 source: "qrc:/GitEase/Qml/View/MainWindow.qml"
+
+                onLoaded: {
+                    if (item && item.hasOwnProperty("uiSession")) {
+                        item.uiSession = uiSession
+                    }
+                }
             }
         }
     }
