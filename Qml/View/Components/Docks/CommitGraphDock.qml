@@ -24,6 +24,12 @@ Item {
     property var commits: []
     property var selectedCommit: null
 
+    // Lazy loading (infinite scroll)
+    property int pageSize: 200
+    property int commitsOffset: 0
+    property bool isLoadingMore: false
+    property bool hasMoreCommits: true
+
     property int graphColumnWidth: 0  // Will be calculated as half of dock width
     property int commitItemHeight: 24  // Reduced spacing between commits
     property int commitItemSpacing: 4
@@ -500,6 +506,14 @@ Item {
 
                         // Sync scroll position with commits list
                         onContentYChanged: {
+                            // Infinite scroll trigger (graph side)
+                            if (!root.isLoadingMore && root.hasMoreCommits) {
+                                var remaining = graphFlickable.contentHeight - (graphFlickable.contentY + graphFlickable.height)
+                                if (remaining < 300) {
+                                    root.loadMoreCommits()
+                                }
+                            }
+
                             if (!syncScroll && graphFlickable.contentHeight > graphFlickable.height) {
                                 syncScroll = true
                                 var graphMaxY = graphFlickable.contentHeight - graphFlickable.height
@@ -930,6 +944,14 @@ Item {
 
                     // Sync scroll position with graph
                     onContentYChanged: {
+                        // Infinite scroll trigger (list side)
+                        if (!root.isLoadingMore && root.hasMoreCommits) {
+                            var remaining = commitsListView.contentHeight - (commitsListView.contentY + commitsListView.height)
+                            if (remaining < 300) {
+                                root.loadMoreCommits()
+                            }
+                        }
+
                         if (!syncScroll && commitsListView.contentHeight > commitsListView.height) {
                             syncScroll = true
                             var listMaxY = commitsListView.contentHeight - commitsListView.height
@@ -1171,11 +1193,44 @@ Item {
         GraphUtils.clearTagColorCache();
         GraphUtils.clearCategoryColorCache();
 
-        var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
-        var commits = repositoryController.getCommits(repositoryController.appModel.currentRepository);
+        commitsOffset = 0
+        hasMoreCommits = true
+        isLoadingMore = false
 
-        root.commits = compileGraphCommits(commits, allBranches);
+        var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
+        var page = repositoryController.getCommits(repositoryController.appModel.currentRepository, pageSize, commitsOffset);
+
+        root.commits = compileGraphCommits(page, allBranches);
+        commitsOffset = root.commits.length
+        hasMoreCommits = (page && page.length === pageSize)
         loadData();
+    }
+
+    function loadMoreCommits() {
+        if (isLoadingMore || !hasMoreCommits)
+            return
+        if (!repositoryController || !repositoryController.appModel || !repositoryController.appModel.currentRepository)
+            return
+
+        isLoadingMore = true
+
+        var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
+        var page = repositoryController.getCommits(repositoryController.appModel.currentRepository, pageSize, commitsOffset);
+        if (!page || page.length === 0) {
+            hasMoreCommits = false
+            isLoadingMore = false
+            return
+        }
+
+        var compiled = compileGraphCommits(page, allBranches);
+
+        // Append and advance
+        root.commits = root.commits.concat(compiled)
+        commitsOffset = root.commits.length
+        hasMoreCommits = (page.length === pageSize)
+
+        loadData()
+        isLoadingMore = false
     }
 
     Connections {
