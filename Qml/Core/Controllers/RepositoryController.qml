@@ -168,4 +168,16 @@ Item {
 
         return []
     }
+
+    /**
+     * Get Commit Detail
+     * Wrapper around GitService.getCommit(hash)
+     */
+    function getCommitDetail(commitHash : string){
+        var result = GitService.getCommit(commitHash)
+        if (result && result.success) {
+            return result.data
+        }
+        return null
+    }
 }
