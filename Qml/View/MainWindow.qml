@@ -225,7 +225,7 @@ Rectangle {
             spacing: 0
 
             NavigationRail {
-                Layout.preferredWidth: 50
+                id: navigationRail
                 Layout.fillHeight: true
 
                 appModel: root.uiSession?.appModel

@@ -17,9 +17,56 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property AppModel             appModel: null
-    property PageController       pageController: null
-    property RepositoryController repositoryController: null
+    required property AppModel             appModel
+    required property PageController       pageController
+    required property RepositoryController repositoryController
+
+    property real                          collapsedWidth:       50
+    property real                          expandedWidth:        125
+    property bool                          expanded:             hoverHandler.hovered
+    property real                          animatedWidth:        collapsedWidth
+
+    // HoverHandler reliably tracks hover even with complex children.
+    HoverHandler {
+        id: hoverHandler
+        margin: 6
+    }
+
+    states: [
+        State {
+            name: "expanded"
+            when: root.expanded
+            PropertyChanges {
+                target: root;
+                animatedWidth: root.expandedWidth
+            }
+        },
+        State {
+            name: "collapsed"
+            when: !root.expanded
+            PropertyChanges {
+                target: root;
+                animatedWidth: root.collapsedWidth
+            }
+        }
+    ]
+
+    transitions: [
+        Transition {
+            NumberAnimation {
+                properties: "animatedWidth"
+                duration: 100
+                easing.type: Easing.InOutCubic
+            }
+        }
+    ]
+
+    implicitWidth: animatedWidth
+    width: animatedWidth
+
+    Layout.preferredWidth: animatedWidth
+    Layout.minimumWidth: collapsedWidth
+    Layout.maximumWidth: expandedWidth
 
     /* Object Properties
      * ****************************************************************************************/
@@ -34,7 +81,7 @@ Rectangle {
 
         // Pages Sidebar (Top section)
         PagesRail {
-            Layout.preferredWidth: 50
+            Layout.fillWidth: true
             Layout.fillHeight: true
 
             color: "#F9F9F9"
@@ -44,7 +91,7 @@ Rectangle {
 
         // Repositories Sidebar (Middle section)
         RepositoriesSidebar {
-            Layout.preferredWidth: 50
+            Layout.fillWidth: true
             Layout.fillHeight: true
             color: "#F9F9F9"
 
