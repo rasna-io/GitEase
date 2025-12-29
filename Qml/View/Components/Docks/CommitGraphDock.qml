@@ -904,7 +904,7 @@ Item {
 
                                     // All commits: Circle with avatar (same style)
                                     ctx.save();
-                                    ctx.strokeStyle = isSelected ? "#aad711" : GraphUtils.lightenColor(branchColor3, 0.6);
+                                    ctx.strokeStyle = isSelected ? GraphUtils.darkenColor(branchColor3, 0.2): GraphUtils.lightenColor(branchColor3, 0.3);
                                     ctx.lineWidth = isSelected ? 4 : 2.5;
 
                                     ctx.beginPath();
