@@ -52,6 +52,21 @@ Item {
      * ****************************************************************************************/
 
 
+    function commitColor(commitObj) {
+        if (!commitObj || !commitObj.colorKey)
+            return GraphUtils.getCategoryColor("default")
+        return GraphUtils.getCategoryColor(commitObj.colorKey)
+    }
+
+    function edgeColor(edge, commitByHash) {
+        if (commitByHash && edge && edge.from) {
+            var fromCommit = commitByHash[edge.from]
+            if (fromCommit && fromCommit.colorKey)
+                return GraphUtils.getCategoryColor(fromCommit.colorKey)
+        }
+        return GraphUtils.getCategoryColor("edge:" + edge.from + ":" + edge.to)
+    }
+
     /**
      * Load commit data and calculate graph layout positions
      */
@@ -62,6 +77,39 @@ Item {
             root.commitItemHeight,
             root.commitItemSpacing
         );
+
+        // Color assignment:
+        var colorKeyByHash = {}
+
+        for (var j = root.commits.length - 1; j >= 0; j--) {
+            var c2 = root.commits[j]
+            var pos2 = root.commitPositions[c2.hash]
+            if (!pos2) continue
+
+            var inheritedKey = ""
+            if (c2.parentHashes && c2.parentHashes.length) {
+                // Find a parent in the same column; if found, inherit its color key.
+                for (var pi = 0; pi < c2.parentHashes.length; pi++) {
+                    var pHash = c2.parentHashes[pi]
+                    var pPos = root.commitPositions[pHash]
+                    if (pPos && pPos.column === pos2.column) {
+                        inheritedKey = colorKeyByHash[pHash] || ""
+                        break
+                    }
+                }
+            }
+
+            if (inheritedKey) {
+                c2.colorKey = inheritedKey
+            } else {
+                // Start a new segment (unique per checkout / new branch instance)
+                c2.colorKey = "lane-seg:" + pos2.column + ":" + c2.hash
+            }
+
+            colorKeyByHash[c2.hash] = c2.colorKey
+        }
+
+        root.commits = root.commits.slice(0)
     }
 
     /* Children
@@ -548,6 +596,14 @@ Item {
                                 // Start graph from left side
                                 var centerOffset = root.columnSpacing / 2; // Padding from left edge
 
+                                // Build quick lookup: hash -> commit object (for edge coloring)
+                                var commitByHash = {}
+                                for (var bi0 = 0; bi0 < root.commits.length; bi0++) {
+                                    var c0m = root.commits[bi0]
+                                    if (c0m && c0m.hash)
+                                        commitByHash[c0m.hash] = c0m
+                                }
+
                                 // Track branch HEAD commits for labels.
                                 // No separate branches model: HEAD labels are stored on commits as commit.branchNames.
                                 // Build a map: branchName -> commitHash for quick checks.
@@ -617,26 +673,7 @@ Item {
                                             var parentX = centerOffset + parentPos.column * root.columnSpacing + root.columnSpacing / 2;
                                             var parentY = parentPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
                                             
-                                            // Get color from commit's branch (prefer non-main)
-                                            var branchColor2 = null;
-                                            if (commit2.branchNames && commit2.branchNames.length > 0) {
-                                                for (var bi = 0; bi < commit2.branchNames.length; bi++) {
-                                                    var bn = commit2.branchNames[bi];
-                                                    if (bn !== "main" && bn !== "origin/main" && bn !== "master") {
-                                                        branchColor2 = GraphUtils.getBranchColor(bn);
-                                                        break;
-                                                    }
-                                                }
-                                                // If only main branches found, use first branch
-                                                if (!branchColor2) {
-                                                    branchColor2 = GraphUtils.getBranchColor(commit2.branchNames[0]);
-                                                }
-                                            }
-                                            
-                                            // Fallback if no branches
-                                            if (!branchColor2) {
-                                                branchColor2 = GraphUtils.generateRandomColor();
-                                            }
+                                            var branchColor2 = commitColor(commit2);
 
                                             ctx.save();
                                             ctx.strokeStyle = branchColor2;
@@ -663,37 +700,11 @@ Item {
                                     var toX = centerOffset + toPos.column * root.columnSpacing + root.columnSpacing / 2;
                                     var toY = toPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
                                     
-                                    // Find the commit at fromPos and get its branch color
-                                    var edgeColor = null;
-                                    for (var ci = 0; ci < root.commits.length; ci++) {
-                                        var c = root.commits[ci];
-                                        var cPos = root.commitPositions[c.hash];
-                                        if (cPos && cPos.column === fromPos.column && cPos.y === fromPos.y) {
-                                            if (c.branchNames && c.branchNames.length > 0) {
-                                                // Prefer non-main branches
-                                                for (var bi = 0; bi < c.branchNames.length; bi++) {
-                                                    var bn = c.branchNames[bi];
-                                                    if (bn !== "main" && bn !== "origin/main" && bn !== "master") {
-                                                        edgeColor = GraphUtils.getBranchColor(bn);
-                                                        break;
-                                                    }
-                                                }
-                                                // If only main branches found, use first branch
-                                                if (!edgeColor) {
-                                                    edgeColor = GraphUtils.getBranchColor(c.branchNames[0]);
-                                                }
-                                            }
-                                            break;
-                                        }
-                                    }
-                                    
-                                    // Fallback if commit not found
-                                    if (!edgeColor) {
-                                        edgeColor = GraphUtils.generateRandomColor();
-                                    }
+                                    // Color edge by the originating commit's lane/graph color
+                                    var edgeColorVal = edgeColor(edge, commitByHash)
                                     
                                     ctx.save();
-                                    ctx.strokeStyle = edgeColor;
+                                    ctx.strokeStyle = edgeColorVal;
                                     ctx.globalAlpha = 0.85;
                                     ctx.lineWidth = 2.5;
                                     
@@ -746,28 +757,28 @@ Item {
                                     var centerYForLine = posForLine.y + root.commitItemHeight / 2 + root.commitItemSpacing;
 
                                     // Collect all labels (tags first, then branches) for this commit
+                                    // Label colors are based on the commit's lane/graph color
+                                    var laneLabelColor = commitColor(commitForLine)
                                     var allLabels = [];
 
                                     // Add tag labels first (left side)
                                     if (commitForLine.tagNames && commitForLine.tagNames.length > 0) {
                                         for (var tIdx = 0; tIdx < commitForLine.tagNames.length; tIdx++) {
                                             var tagName = commitForLine.tagNames[tIdx];
-                                            var tagColor = GraphUtils.getTagColor(tagName);
                                             allLabels.push({
                                                 text: tagName,
-                                                color: tagColor
+                                                color: laneLabelColor
                                             });
                                         }
                                     }
 
                                     // Add branch labels for HEAD branches
-                                    // Each label shows its own branch color
+                                    // Each label uses the lane/graph color
                                     for (var hbi = 0; hbi < headBranchesForThisCommit.length; hbi++) {
                                         var headBranchName = headBranchesForThisCommit[hbi];
-                                        var branchColor4 = GraphUtils.getBranchColor(headBranchName);
                                         allLabels.push({
                                             text: headBranchName + " (HEAD)",
-                                            color: branchColor4
+                                            color: laneLabelColor
                                         });
                                     }
 
@@ -805,7 +816,7 @@ Item {
                                             var lineEndX = lastLabel.x + lastLabel.width;
                                             
                                             ctx.save();
-                                            ctx.strokeStyle = firstLabel.info.color;  // Use FIRST label's branch color
+                                            ctx.strokeStyle = laneLabelColor;  // Use commit lane/graph color
                                             ctx.globalAlpha = 0.8;
                                             ctx.lineWidth = 5;
 
@@ -853,29 +864,19 @@ Item {
                                     var centerX2 = centerOffset + pos3.column * root.columnSpacing + root.columnSpacing / 2;
                                     var centerY2 = pos3.y + root.commitItemHeight / 2 + root.commitItemSpacing;
 
-                                    // Get color from commit's branch (prefer non-main)
-                                    var branchColor3 = null;
-                                    if (commit3.branchNames && commit3.branchNames.length > 0) {
-                                        for (var bi = 0; bi < commit3.branchNames.length; bi++) {
-                                            var bn = commit3.branchNames[bi];
-                                            if (bn !== "main" && bn !== "origin/main" && bn !== "master") {
-                                                branchColor3 = GraphUtils.getBranchColor(bn);
+                                    var branchColor3 = commitColor(commit3);
+
+                                    // Determine HEAD status without falling back to "main"
+                                    var isHeadCommit = false;
+                                    if (commit3.branchNames && commit3.branchNames.length) {
+                                        for (var hb = 0; hb < commit3.branchNames.length; hb++) {
+                                            var bname = commit3.branchNames[hb]
+                                            if (branchLatestCommit && branchLatestCommit[bname] === commit3.hash) {
+                                                isHeadCommit = true;
                                                 break;
                                             }
                                         }
-                                        // If only main branches found, use first branch
-                                        if (!branchColor3) {
-                                            branchColor3 = GraphUtils.getBranchColor(commit3.branchNames[0]);
-                                        }
                                     }
-                                    
-                                    // Fallback if no branches
-                                    if (!branchColor3) {
-                                        branchColor3 = GraphUtils.generateRandomColor();
-                                    }
-
-                                    var laneBranchName = pos3.branchName || (commit3.branchNames && commit3.branchNames.length > 0 ? commit3.branchNames[0] : "main");
-                                    var isHeadCommit = branchLatestCommit && branchLatestCommit[laneBranchName] === commit3.hash;
                                     var isSelected = root.selectedCommit && root.selectedCommit.hash === commit3.hash;
 
                                     // Highlight selected commit row
@@ -996,23 +997,10 @@ Item {
                                         Layout.preferredHeight: commitItemHeight * 0.8
                                         Layout.alignment: Qt.AlignVCenter
                                         radius: 6
-                                        
+
+                                        // Color indicator by graph lane/column (same color as the drawn graph line)
                                         color: {
-                                            // Get color from the branch this commit belongs to
-                                            if (commitData.branchNames && commitData.branchNames.length > 0) {
-                                                // Prefer non-main branch names for color
-                                                for (var i = 0; i < commitData.branchNames.length; i++) {
-                                                    var branchName = commitData.branchNames[i];
-                                                    if (branchName !== "main" && branchName !== "origin/main" && branchName !== "master") {
-                                                        return GraphUtils.getBranchColor(branchName);
-                                                    }
-                                                }
-                                                // If only main branch, use it
-                                                return GraphUtils.getBranchColor(commitData.branchNames[0]);
-                                            }
-                                            
-                                            // Fallback to random color
-                                            return GraphUtils.generateRandomColor();
+                                            return commitColor(commitData)
                                         }
                                     }
 
@@ -1120,33 +1108,35 @@ Item {
     function compileGraphCommits(rawCommits, rawBranches) {
         if (!rawCommits) return []
 
-        // Build a fast lookup from tip commit hash -> [branchName,...]
+        // tip commit hash -> [branchName,...]
         var tipHashToBranches = {}
+        var branchTipHashes = []
         if (rawBranches && rawBranches.length) {
             for (var i = 0; i < rawBranches.length; i++) {
                 var b = rawBranches[i]
                 if (!b || !b.targetHash) continue
-                if (!tipHashToBranches[b.targetHash]) tipHashToBranches[b.targetHash] = []
+                if (!tipHashToBranches[b.targetHash]) {
+                    tipHashToBranches[b.targetHash] = []
+                    branchTipHashes.push(b.targetHash)
+                }
                 tipHashToBranches[b.targetHash].push(b.name)
             }
         }
 
+        // Build commits
         var compiled = []
 
         for (var c = 0; c < rawCommits.length; c++) {
             var commit = rawCommits[c]
 
-            // parent hashes come from getCommit()
+            // parent hashes come from getCommitDetail()
             var parentHashes = []
             var details = repositoryController.getCommitDetail(commit.hash)
             if (details && details.parentHashes) {
                 parentHashes = details.parentHashes
             }
 
-            var branchNames = tipHashToBranches[commit.hash] || []
-
-            compiled.push({
-                // base info from getCommits
+            var obj = {
                 hash: commit.hash,
                 shortHash: commit.shortHash,
                 message: commit.message,
@@ -1155,12 +1145,18 @@ Item {
                 authorEmail: commit.authorEmail,
                 authorDate: commit.authorDate,
 
-                // graph-required
                 parentHashes: parentHashes,
                 commitType: (parentHashes.length > 1) ? "merge" : "normal",
-                branchNames: branchNames,
-                tagNames: [] // TODO : can't find function in gitWrapperCPP
-            })
+
+                // Only branch tips start with branch names; we'll propagate membership below
+                branchNames: tipHashToBranches[commit.hash] || [],
+                tagNames: [],
+
+                // assigned in loadData() after layout (lane -> category)
+                colorKey: ""
+            }
+
+            compiled.push(obj)
         }
 
         return compiled
@@ -1173,6 +1169,7 @@ Item {
 
         GraphUtils.clearBranchColorCache();
         GraphUtils.clearTagColorCache();
+        GraphUtils.clearCategoryColorCache();
 
         var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
         var commits = repositoryController.getCommits(repositoryController.appModel.currentRepository);
