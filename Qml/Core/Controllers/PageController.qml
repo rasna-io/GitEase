@@ -12,9 +12,8 @@ QtObject {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var pages: []
-    property var activePage: pages.length > 0 ? pages[0] : null
-    property var currentRepository: null
+    required property var  pages
+    required property Page currentPage
 
     /* Signals
      * ****************************************************************************************/
@@ -51,14 +50,6 @@ QtObject {
      */
     function switchToPage(pageId) {
         // TODO: Implementation
-    }
-
-    onCurrentRepositoryChanged: {
-        // TODO: Implementation
-    }
-
-    Component.onCompleted: {
-        // TODO: Initialization
     }
 }
 
