@@ -640,6 +640,52 @@ QString GitWrapperCPP::getUpstreamName(const QString &localBranchName)
     return result;
 }
 
+QVariantList GitWrapperCPP::getFileDiff(const QString &relativeFilePath)
+{
+    QVariantList diffModel;
+    if (!m_currentRepo) return diffModel;
+
+    git_diff *diff = nullptr;
+    git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+    QByteArray pathBytes = relativeFilePath.toUtf8();
+    const char* path = pathBytes.constData();
+    opts.pathspec.strings = const_cast<char**>(&path);
+    opts.pathspec.count = 1;
+
+    if (git_diff_index_to_workdir(&diff, m_currentRepo, nullptr, &opts) != 0) {
+        return diffModel;
+    }
+
+    struct DiffData { QVariantList *list; };
+    DiffData data = { &diffModel };
+
+    git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, [](
+                                                    const git_diff_delta *delta,
+                                                    const git_diff_hunk *hunk,
+                                                    const git_diff_line *line,
+                                                    void *payload) -> int {
+
+        auto *model = static_cast<DiffData*>(payload)->list;
+        QVariantMap lineMap;
+
+        lineMap["content"] = QString::fromUtf8(line->content, line->content_len);
+        lineMap["oldLine"] = line->old_lineno;
+        lineMap["newLine"] = line->new_lineno;
+
+        int type = 0;
+        if (line->origin == GIT_DIFF_LINE_ADDITION) type = 1;
+        else if (line->origin == GIT_DIFF_LINE_DELETION) type = 2;
+
+        lineMap["type"] = type;
+        model->append(lineMap);
+
+        return 0;
+    }, &data);
+
+    git_diff_free(diff);
+    return diffModel;
+}
+
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
 {
     // Step 1: Check if repository is open

@@ -1,4 +1,4 @@
-/*! ***********************************************************************************************
+    /*! ***********************************************************************************************
  * GitWrapperCPP : C++ wrapper for libgit2 operations, exposed to QML.
  *                 Follows the UML design as QML_Service layer.
  * ************************************************************************************************/
@@ -336,6 +336,16 @@ public slots:
     * \return The upstream branch name (e.g., "origin/main") or an empty QString if no upstream is set.
     */
     Q_INVOKABLE QString getUpstreamName(const QString &localBranchName);
+
+    /**
+    * @brief Retrieves the line-by-line diff information for a specific file.
+    * * Compares the current working directory version of the file with the index (staged) version.
+    * Returns a list of maps containing line content, line numbers, and change types.
+    * * @param relativeFilePath The path of the file relative to the repository root.
+    * @return QVariantList A list of QVariantMaps with keys: "content", "oldLine", "newLine", and "type".
+    * Type values: 0 (context), 1 (addition), 2 (deletion).
+    */
+    Q_INVOKABLE QVariantList getFileDiff(const QString &relativeFilePath);
 
     /**
      * \brief Get basic repository information
