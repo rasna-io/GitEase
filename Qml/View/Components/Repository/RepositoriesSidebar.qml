@@ -19,6 +19,8 @@ Rectangle {
     property var                     repositories:         []
     property Repository              currentRepository:    null
 
+    property bool                    expanded:             false
+
     /* Signals
      * ****************************************************************************************/
 
@@ -48,45 +50,75 @@ Rectangle {
                 Repeater {
                     model: root.repositories
 
-                    Row {
-                        spacing: 2
-                        anchors.horizontalCenter: parent.horizontalCenter
+                    Item {
+                        width: parent.width
+                        height: repositoryRow.implicitHeight + 8
 
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: modelData.id === currentRepository?.id ?? false
-                            color: "#074E96"
-                            width: 3
-                            height: 28
-                            radius: 2
-                        }
+                        Row {
+                            id: repositoryRow
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            spacing: 4
 
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 33
-                            height: 33
-                            radius: 6
-                            color: "#B9FAB9"
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: modelData && modelData.name ? modelData.name.charAt(0).toUpperCase() + modelData.name.charAt(1).toUpperCase() : "?"
-                                font.pixelSize: 24
-                                font.family: Style.fontTypes.roboto
-                                font.weight: 400
-                                color: Qt.darker(parent.color, 1.5)
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: (modelData.id === (currentRepository?.id ?? -1))
+                                color: "#074E96"
+                                width: 3
+                                height: 28
+                                radius: 2
                             }
 
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                hoverEnabled: true
+                            Rectangle {
+                                id: repositoryAvatar
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: 33
+                                radius: 6
+                                clip: true
 
-                                onClicked: root.repositoryController.openRepository(modelData.path)
-                                onEntered: parent.color = Qt.darker(parent.color, 1.3)
-                                onExited: parent.color = Qt.lighter(parent.color, 1.3)
+                                width: root.expanded ? repositoryRow.width - (repositoryRow.spacing + 2 + repositoryRow.anchors.margins) : 33
+                                color: repoMouseArea.containsMouse ?  Qt.darker("#B9FAB9", 1.25) : "#B9FAB9"
+
+                                Text {
+                                    property string initials: {
+                                        const n = (modelData && modelData.name) ? modelData.name : "";
+                                        if (n.length >= 2) return (n.charAt(0) + n.charAt(1)).toUpperCase();
+                                        if (n.length === 1) return n.charAt(0).toUpperCase();
+                                        return "?";
+                                    }
+
+                                    text: root.expanded ? modelData.name : initials
+                                    font.family: Style.fontTypes.roboto
+                                    font.weight: 400
+                                    font.pixelSize:root.expanded ? 16 : 24
+                                    Behavior on font.pixelSize {
+                                        NumberAnimation {
+                                            duration: 10;
+                                            easing.type: Easing.OutCubic
+                                        }
+                                    }
+
+                                    color: Qt.darker(parent.color, 2.0)
+                                    elide: Text.ElideRight
+
+                                    x: root.expanded ? 5 : ((repositoryAvatar.width - width) / 2)
+                                    y: (repositoryAvatar.height - height) / 2
+
+                                    Behavior on x {
+                                        NumberAnimation {
+                                            duration: 10;
+                                            easing.type: Easing.OutCubic
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: repoMouseArea
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
+                                    onClicked: root.repositoryController.openRepository(modelData.path)
+                                }
                             }
                         }
                     }
