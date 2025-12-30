@@ -48,6 +48,8 @@ set(RESOURCES_COMPONENTS
     # Navigation Components - Side rails / tab bars
     Qml/View/Components/Navigation/NavigationRail.qml           # Combined pages+repos navigation rail
     Qml/View/Components/Navigation/PagesRail.qml                # Pages-only navigation rail
+    Qml/View/Components/Repository/DiffRow.qml
+    Qml/View/Components/Repository/DiffView.qml
 
     # Welcome-specific Content - Welcome page content sections
     Qml/View/Components/WelcomeContents/WelcomeContent.qml      # Main welcome content
