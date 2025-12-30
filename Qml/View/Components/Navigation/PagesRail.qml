@@ -17,10 +17,11 @@ Rectangle {
     /* Property Declarations
      * ****************************************************************************************/
     required property PageController pageController
+    property bool expanded: false
 
     /* Signals
      * ****************************************************************************************/
-    
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
@@ -44,49 +45,94 @@ Rectangle {
                 spacing: 8
 
                 Repeater {
-                    model: root.pageController?.pages
+                    model: root.pageController?.appModel?.pages
 
-                    RowLayout {
-                        spacing: 2
+                    Item {
                         width: parent.width
+                        height: 36
+                        
+                        property bool isSelected: (modelData && root.pageController && root.pageController?.appModel?.currentPage)
+                                                  ? (modelData.id === root.pageController?.appModel?.currentPage?.id)
+                                                  : false
+                        property bool isHovered: false
 
                         Rectangle {
-                            Layout.alignment: Qt.AlignHCenter
-                            width: 30
-                            height: 30
-                            radius: 3
+                            anchors.fill: parent
+                            anchors.leftMargin: 2
+                            anchors.rightMargin: 2
+                            radius: 4
 
-                            property bool isSelected: modelData.id === root.pageController?.currentPage?.id ?? false
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: Style.icons.download
-                                font.pixelSize: 17
-                                font.family: Style.fontTypes.font6Pro
-                                font.weight: 500
-                                color: Qt.darker(parent.color, 1.5)
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
+                            color: {
+                                if (parent.isSelected) {
+                                    return "#FFFFFF"
+                                }
+                                return parent.isHovered ? Qt.darker(root.color, 1.05) : "transparent"
                             }
 
-                            color: isSelected ? "#FFFFFF" : "#F9F9F9"
-                            border.width: isSelected ? 1 : 0
-                            border.color: isSelected ? "#f2f2f2" : "F9F9F9"
+                            border.width: parent.isSelected ? 1 : 0
+                            border.color: parent.isSelected ? "#F2F2F2" : "transparent"
 
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                hoverEnabled: true
+                            RowLayout {
+                                anchors.centerIn: parent
+                                width: parent.width - 12
+                                spacing: 8
 
-                                onClicked: {
-                                    root.pageClicked(modelData)
-                                    if (pageController && modelData) {
-                                        pageController.switchToPage(modelData.id)
+                                // Icon
+                                Rectangle {
+                                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                                    width: 20
+                                    height: 20
+                                    radius: 3
+                                    color: "transparent"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: (modelData && modelData.icon && modelData.icon.length)
+                                              ? modelData.icon
+                                              : Style.icons.download
+                                        font.pixelSize: 16
+                                        font.family: Style.fontTypes.font6Pro
+                                        font.weight: 500
+                                        color: parent.parent.parent.parent.isSelected ? "#484848" : "#9D9D9D"
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
                                     }
                                 }
-                                onEntered: parent.color = Qt.darker(parent.color, 1.1)
-                                onExited: parent.color = Qt.lighter(parent.color, 1.1)
+
+                                // Title
+                                Text {
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    text: (modelData && modelData.title) ? modelData.title : ""
+                                    font.pixelSize: 13
+                                    font.family: Style.fontTypes.roboto
+                                    color: parent.parent.parent.isSelected ? "#484848" : "#9D9D9D"
+                                    elide: Text.ElideRight
+                                    visible: root.expanded
+                                    opacity: root.expanded ? 1 : 0
+                                    
+                                    Behavior on opacity {
+                                        NumberAnimation {
+                                            duration: 100
+                                            easing.type: Easing.InOutQuad
+                                        }
+                                    }
+                                }
                             }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+
+                            onClicked: {
+                                if (pageController && modelData) {
+                                    pageController.switchToPage(modelData.id)
+                                }
+                            }
+                            onEntered: parent.isHovered = true
+                            onExited: parent.isHovered = false
                         }
                     }
                 }
