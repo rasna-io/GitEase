@@ -70,6 +70,7 @@ Item {
                     name: name
                 })
                 appModel.repositories.push(repo)
+                appModel.repositories = appModel.repositories.slice(0)
             }
         }
 
