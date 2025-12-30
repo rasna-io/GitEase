@@ -100,6 +100,7 @@ Rectangle {
             repositoryController: root.repositoryController
             repositories: root.appModel.repositories
             currentRepository: root.appModel.currentRepository
+            recentRepositories: root.appModel.recentRepositories
         }
 
         // Settings button (Bottom section)
