@@ -57,7 +57,9 @@ set(RESOURCES_POPUPS
 
 # Define QML Pages
 set(RESOURCES_PAGES
-    Qml/Pages/WelcomePage.qml    # Initial welcome/onboarding page
+    Qml/Pages/WelcomePage.qml       # Initial welcome/onboarding page
+    Qml/Pages/GraphViewPage.qml     # Main graph view page
+    Qml/Pages/BlankPage.qml         # Blank placeholder page
 )
 
 # Define QML Services
