@@ -87,6 +87,7 @@ Rectangle {
             color: "#F9F9F9"
 
             pageController: root.pageController
+            expanded: root.expanded
         }
 
         // Repositories Sidebar (Middle section)
