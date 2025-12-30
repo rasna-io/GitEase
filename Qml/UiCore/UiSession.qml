@@ -14,8 +14,7 @@ QtObject {
     property AppModel             appModel:             AppModel {}
 
     property PageController       pageController:       PageController {
-        pages: appModel.pages
-        currentPage: appModel.currentPage
+        appModel: root.appModel
     }
 
     property RepositoryController repositoryController: RepositoryController {
