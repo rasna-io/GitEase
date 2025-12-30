@@ -245,11 +245,24 @@ Rectangle {
                 border.width: 1
                 radius: 6
 
-                Text {
-                    anchors.centerIn: parent
-                    text: "Main Content Area"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                Loader {
+                    id: pageLoader
+                    anchors.fill: parent
+                    anchors.margins: 0
+
+                    source: root.uiSession?.appModel?.currentPage?.source ?? ""
+
+                    onLoaded: {
+                        // If the loaded page exposes a `page` property, bind it to the current page model.
+                        if (item && item.hasOwnProperty("page")) {
+                            item.page = Qt.binding(function() { return root.uiSession?.appModel?.currentPage })
+                        }
+                    }
+
+                    onStatusChanged: {
+                        if (status === Loader.Error)
+                            console.error("[MainWindow] Failed to load page:", source)
+                    }
                 }
             }
         }
