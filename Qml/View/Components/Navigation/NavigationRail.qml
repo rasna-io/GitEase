@@ -96,6 +96,7 @@ Rectangle {
             Layout.fillHeight: true
             color: "#F9F9F9"
 
+            expanded: root.expanded
             repositoryController: root.repositoryController
             repositories: root.appModel.repositories
             currentRepository: root.appModel.currentRepository

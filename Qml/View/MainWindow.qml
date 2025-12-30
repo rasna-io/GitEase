@@ -227,6 +227,7 @@ Rectangle {
             NavigationRail {
                 id: navigationRail
                 Layout.fillHeight: true
+                Layout.bottomMargin: 4
 
                 appModel: root.uiSession?.appModel
                 pageController: root.uiSession?.pageController
@@ -238,6 +239,7 @@ Rectangle {
                 Layout.fillHeight: true
                 Layout.topMargin: 4
                 Layout.rightMargin: 4
+                Layout.leftMargin: -2
                 Layout.bottomMargin: 4
 
                 color: "#FFFFFF"
