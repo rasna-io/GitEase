@@ -20,6 +20,11 @@ set(RESOURCES_CORE
 
 # Define QML Components
 set(RESOURCES_COMPONENTS
+
+    Qml/View/Header.qml
+    Qml/View/WindowsHeader.qml
+    Qml/View/WindowsButton.qml
+
     # Base Components - Fundamental UI building blocks
     Qml/View/Components/Base/PageHeader.qml              # Standard page header component
     Qml/View/Components/Base/FormInputField.qml          # Form input field with validation
