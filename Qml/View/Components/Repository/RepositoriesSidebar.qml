@@ -38,7 +38,6 @@ Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: addButton.top
-            anchors.bottomMargin: 12
 
             height: Math.min(repositoryColumn.height, parent.height - addButton.height - 12)
             contentHeight: repositoryColumn.height
@@ -132,31 +131,49 @@ Rectangle {
         Rectangle {
             id: addButton
             anchors.bottom: parent.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            width: 33
             height: 33
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 6
+            anchors.rightMargin: 6
+            anchors.topMargin: 3
+            anchors.bottomMargin: 3
             radius: 6
             color: "#F3F3F3"
 
-            Text {
-                anchors.centerIn: parent
-                text: "+"
-                font.pixelSize: 22
-                font.family: Style.fontTypes.roboto
-                font.weight: 400
-                color: "#C9C9C9"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
+            Behavior on color { ColorAnimation { duration: 120 } }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                anchors.topMargin: 4
+                anchors.bottomMargin: 4
+                spacing: 8
+
+                Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: root.expanded ? "Add repository" : "+"
+                    font.family: Style.fontTypes.roboto
+                    font.weight: 400
+                    font.pixelSize: 14
+                    elide: Text.ElideRight
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
             }
 
+            // Make the whole row clickable
             MouseArea {
+                id: addRepoMouse
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 hoverEnabled: true
 
                 onClicked: root.newRepositoryRequested()
-                onEntered: parent.color = Qt.darker("#F3F3F3", 2)
+                onEntered: parent.color = Qt.darker("#F3F3F3", 1.3)
                 onExited: parent.color = "#F3F3F3"
             }
         }
