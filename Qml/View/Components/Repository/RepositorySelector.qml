@@ -17,31 +17,37 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property RepositoryController repositoryController
+
+    property var recentRepositories
+
     property alias currentTabIndex: tabbedView.currentIndex
+
     property bool showDescription: true
+
     property string descriptionText: "Choose how you want to get started with your Git repository"
+
     property string selectedPath: ""
+
     property string selectedUrl: repositoryUrlField.field.text
 
     property string errorMessage: ""
 
-    property var recentRepositories
+    property bool busy: false
+
+    property real progress: 0
 
 
 
     /* Signals
      * ****************************************************************************************/
+    signal cloneFinished()
 
     /* Children
      * ****************************************************************************************/
 
     onCurrentTabIndexChanged: {
-        repositoryLocationField.field.text = ""
-        cloneLocationField.field.text = ""
-        repositoryUrlField.field.text = ""
-        root.selectedPath = ""
-        recentRepositoriesList.selectedIndex = -1
-        root.errorMessage = ""
+        reset()
     }
 
     ColumnLayout {
@@ -240,6 +246,55 @@ Item {
                 }
             }
         }
+    }
+
+
+    Connections {
+        target: GitService
+
+        function onCloneFinished() {
+            root.busy = false
+            root.progress = 0
+            root.cloneFinished()
+        }
+
+        function onCloneProgress (progress){
+            root.progress = progress
+        }
+    }
+
+
+    function submit() {
+        switch(root.currentTabIndex) {
+            case Enums.RepositorySelectorTab.Recents:
+            case Enums.RepositorySelectorTab.Open:
+                return root.repositoryController.openRepository(root.selectedPath)
+
+            case Enums.RepositorySelectorTab.Clone: {
+                let res = root.repositoryController.cloneRepository(root.selectedPath, root.selectedUrl)
+                root.busy = res.success
+
+                if (!res.success) {
+                    root.errorMessage = res.error
+                }
+
+                return false;
+            }
+
+            default:
+                return false;
+        }
+    }
+
+    function reset() {
+        root.busy = false
+        root.progress = 0
+        repositoryLocationField.field.text = ""
+        cloneLocationField.field.text = ""
+        repositoryUrlField.field.text = ""
+        root.selectedPath = ""
+        recentRepositoriesList.selectedIndex = -1
+        root.errorMessage = ""
     }
 }
 

@@ -20,5 +20,7 @@ QtObject {
     property RepositoryController repositoryController: RepositoryController {
         appModel: root.appModel
     }
+
+    property UiSessionPopups      popups
 }
 

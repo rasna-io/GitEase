@@ -54,6 +54,12 @@ Rectangle {
                 appModel: root.uiSession?.appModel
                 pageController: root.uiSession?.pageController
                 repositoryController: root.uiSession?.repositoryController
+                onNewRepositoryRequested: function () {
+                    let popup = root.uiSession?.popups?.repositorySelectorPopup
+                    popup.repositoryController = Qt.binding(function () {return uiSession.repositoryController})
+                    popup.recentRepositories = Qt.binding(function () {return uiSession.appModel.recentRepositories})
+                    popup.open()
+                }
             }
 
             Rectangle {

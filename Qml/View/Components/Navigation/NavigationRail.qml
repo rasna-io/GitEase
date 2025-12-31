@@ -26,6 +26,12 @@ Rectangle {
     property bool                          expanded:             hoverHandler.hovered
     property real                          animatedWidth:        collapsedWidth
 
+    /* Signals
+     * ****************************************************************************************/
+    signal newRepositoryRequested()
+
+
+
     // HoverHandler reliably tracks hover even with complex children.
     HoverHandler {
         id: hoverHandler
@@ -101,6 +107,9 @@ Rectangle {
             repositories: root.appModel.repositories
             currentRepository: root.appModel.currentRepository
             recentRepositories: root.appModel.recentRepositories
+            onNewRepositoryRequested: function () {
+                root.newRepositoryRequested()
+            }
         }
 
         // Settings button (Bottom section)

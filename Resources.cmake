@@ -25,6 +25,8 @@ set(RESOURCES_COMPONENTS
     Qml/View/WindowsHeader.qml
     Qml/View/WindowsButton.qml
 
+    Qml/View/Components/ProgressButton.qml
+
     # Base Components - Fundamental UI building blocks
     Qml/View/Components/Base/PageHeader.qml              # Standard page header component
     Qml/View/Components/Base/FormInputField.qml          # Form input field with validation
@@ -57,6 +59,7 @@ set(RESOURCES_UICORE
 # Define Popups Resources
 set(RESOURCES_POPUPS
     # Popup components will be added here as they are created
+    Qml/View/Popups/RepositorySelectorPopup.qml
 )
 
 

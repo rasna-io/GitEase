@@ -44,6 +44,7 @@ ApplicationWindow {
      * ****************************************************************************************/
     UiSession {
         id: uiSession
+        popups: uiSessionPopups
     }
 
     UiSessionPopups {
