@@ -12,4 +12,6 @@ import GitEase
 Item {
     id: root
 
+
+    property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {}
 }

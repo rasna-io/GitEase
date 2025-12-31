@@ -15,4 +15,5 @@ QtObject{
     property string folder:         "\uf660" // folder
     property string clock:          "\uf017" // clock
     property string download:       "\ue094"  // download
+    property string gear:           "\uf013" // gear (settings)
 }

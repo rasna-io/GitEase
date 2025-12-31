@@ -7,6 +7,7 @@ set(RESOURCES_CORE
     Qml/Core/Models/AppSettings.qml           # Application settings (singleton)
     Qml/Core/Models/Enums.qml
     Qml/Core/Models/Repository.qml
+    Qml/Core/Models/Page.qml
 
     # Controllers
     Qml/Core/Controllers/WelcomeController.qml    # Welcome page controller
@@ -19,6 +20,13 @@ set(RESOURCES_CORE
 
 # Define QML Components
 set(RESOURCES_COMPONENTS
+
+    Qml/View/Header.qml
+    Qml/View/WindowsHeader.qml
+    Qml/View/WindowsButton.qml
+
+    Qml/View/Components/ProgressButton.qml
+
     # Base Components - Fundamental UI building blocks
     Qml/View/Components/Base/PageHeader.qml              # Standard page header component
     Qml/View/Components/Base/FormInputField.qml          # Form input field with validation
@@ -29,8 +37,13 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Profile/SetupProfileForm.qml     # Profile setup/editing form
 
     # Repository Components - Git repository management
-    Qml/View/Components/Repository/RecentRepositoriesList.qml  # Recent repositories list
+    Qml/View/Components/Repository/RecentRepositoriesList.qml   # Recent repositories list
     Qml/View/Components/Repository/RepositorySelector.qml       # Repository selection component
+    Qml/View/Components/Repository/RepositoriesSidebar.qml      # Repositories Sidebar component
+
+    # Navigation Components - Side rails / tab bars
+    Qml/View/Components/Navigation/NavigationRail.qml           # Combined pages+repos navigation rail
+    Qml/View/Components/Navigation/PagesRail.qml                # Pages-only navigation rail
 
     # Welcome-specific Content - Welcome page content sections
     Qml/View/Components/WelcomeContents/WelcomeContent.qml           # Main welcome content
@@ -46,17 +59,23 @@ set(RESOURCES_UICORE
 # Define Popups Resources
 set(RESOURCES_POPUPS
     # Popup components will be added here as they are created
+    Qml/View/Popups/RepositorySelectorPopup.qml
 )
 
 
 # Define QML Pages
 set(RESOURCES_PAGES
-    Qml/Pages/WelcomePage.qml    # Initial welcome/onboarding page
-    Qml/Pages/Page.qml           # Base page component with dock support
-    Qml/Pages/PageTabBar.qml     # Tab bar for page navigation
+    Qml/Pages/WelcomePage.qml       # Initial welcome/onboarding page
+    Qml/Pages/GraphViewPage.qml     # Main graph view page
+    Qml/Pages/BlankPage.qml         # Blank placeholder page
 )
 
 # Define QML Services
 set(RESOURCES_SERVICES
     Qml/Core/Services/GitService.qml
+)
+
+# Define View Resources
+set(RESOURCES_VIEW
+    Qml/View/MainWindow.qml
 )

@@ -75,7 +75,8 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         height: 28
         width: 99
-        source: "qrc:/GitEase/Resources/Images/Logo.png"
+        fillMode: Image.PreserveAspectFit
+        source: "qrc:/GitEase/Resources/Images/Logo.svg"
     }
 
     //! Drag region: we start native move so Snap/AeroShake remain native.

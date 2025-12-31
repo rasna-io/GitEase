@@ -44,6 +44,7 @@ ApplicationWindow {
      * ****************************************************************************************/
     UiSession {
         id: uiSession
+        popups: uiSessionPopups
     }
 
     UiSessionPopups {
@@ -73,8 +74,6 @@ ApplicationWindow {
 
         // sourceComponent:
     }
-    // TODO: Move position bindings from the component to the Loader.
-    //       Check all uses of 'parent' inside the root element of the component.
 
     // Welcome Flow Component
     Component {
@@ -115,17 +114,14 @@ ApplicationWindow {
         Item {
             anchors.fill: parent
 
-            // Main application content goes here
-            Rectangle {
+            Loader {
                 anchors.fill: parent
-                color: Style.colors.primaryBackground
-                radius: 16
+                source: "qrc:/GitEase/Qml/View/MainWindow.qml"
 
-                Text {
-                    anchors.centerIn: parent
-                    text: "Main Application Window"
-                    font.pixelSize: 24
-                    color: Style.colors.foreground
+                onLoaded: {
+                    if (item && item.hasOwnProperty("uiSession")) {
+                        item.uiSession = uiSession
+                    }
                 }
             }
         }

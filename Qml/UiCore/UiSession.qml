@@ -14,11 +14,13 @@ QtObject {
     property AppModel             appModel:             AppModel {}
 
     property PageController       pageController:       PageController {
-        currentRepository: appModel.currentRepository
+        appModel: root.appModel
     }
 
     property RepositoryController repositoryController: RepositoryController {
         appModel: root.appModel
     }
+
+    property UiSessionPopups      popups
 }
 
