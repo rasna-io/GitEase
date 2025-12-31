@@ -87,45 +87,29 @@ Rectangle {
                     showDescription: true
                     descriptionText: "Choose how you want to get started with your Git repository"
                     recentRepositories: appModel.recentRepositories
+                    onCloneFinished:  root.controller.completeWelcomeFlow()
+                    repositoryController: root.repositoryController
                 }
             }
         }
 
-        Connections {
-            target: GitService
 
-            function onCloneFinished() {
-                continueButtonContainer.busy = false
-                continueButtonContainer.progress = 0
-                root.controller.completeWelcomeFlow()
-            }
-
-            function onCloneProgress (progress){
-                continueButtonContainer.progress = progress
-            }
-        }
-
-        // Shared Continue/Finish button for all steps
         Item {
             id: continueButtonContainer
-
-            property bool busy: false
-            property real progress: 0
 
             Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: 20
             Layout.preferredWidth: 320
             Layout.preferredHeight: 43
 
-            Button {
-                id: continueButton
+            ProgressButton {
                 anchors.fill: parent
-                flat: false
-                Material.background: Style.colors.accent
-                Material.foreground: "white"
-                text: {
-                    if (continueButtonContainer.busy) {
-                        return (continueButtonContainer.progress) + " %"
+                progress: repositorySelector.progress
+                busy: repositorySelector.busy
+
+                idleText:  {
+                    if (repositorySelector.busy) {
+                        return (repositorySelector.progress) + " %"
                     }
                     if (!root.controller) {
                         return "Continue " + Style.icons.arrowRight
@@ -135,40 +119,9 @@ Rectangle {
                         default: return "Continue " + Style.icons.arrowRight
                     }
                 }
-                font.family: Style.fontTypes.roboto
-                font.weight: 400
-                font.pixelSize: 15
-                font.letterSpacing: 0
-
-                background: Rectangle {
-                    radius: 3
-                    color: continueButton.enabled ?
-                              (continueButton.hovered ? Style.colors.accentHover : Style.colors.accent) :
-                              Style.colors.disabledButton
-                    Behavior on color { ColorAnimation { duration: 150 } }
-
-                    // Gray background bar
-                    Rectangle {
-                        anchors.fill: parent
-                        color: "#CCCCCC"
-                        radius: 3
-                        visible: continueButtonContainer.busy
-
-                        // Blue progress bar
-                        Rectangle {
-                            width: continueButtonContainer.busy ? parent.width * continueButtonContainer.progress / 100 : 0
-                            anchors.left: parent.left
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            color: Style.colors.accent
-                            radius: 3
-                            Behavior on width { NumberAnimation { duration: 100 } }
-                        }
-                    }
-                }
 
                 enabled: {
-                    if (continueButtonContainer.busy)
+                    if (repositorySelector.busy)
                         return false;
 
                     if (root.controller.currentPageIndex !== Enums.WelcomePages.OpenRepository)
@@ -187,6 +140,7 @@ Rectangle {
                     }
                 }
 
+
                 onClicked: {
                     if (!root.controller) return
 
@@ -198,7 +152,7 @@ Rectangle {
                             root.controller.nextPage()
                             break
                         case Enums.WelcomePages.OpenRepository:
-                            if(submit())
+                            if(repositorySelector.submit())
                                 root.controller.completeWelcomeFlow()
                             break
                         default:
@@ -206,30 +160,6 @@ Rectangle {
                     }
                 }
             }
-        }
-
-    }
-
-    function submit() {
-        switch(repositorySelector.currentTabIndex) {
-            case Enums.RepositorySelectorTab.Recents:
-            case Enums.RepositorySelectorTab.Open:
-                console.log("#####################", repositorySelector.selectedPath)
-                return root.repositoryController.openRepository(repositorySelector.selectedPath)
-
-            case Enums.RepositorySelectorTab.Clone: {
-                let res = root.repositoryController.cloneRepository(repositorySelector.selectedPath, repositorySelector.selectedUrl)
-                continueButtonContainer.busy = res.success
-
-                if (!res.success) {
-                    repositorySelector.errorMessage = res.error
-                }
-
-                return false;
-            }
-
-            default:
-                return false;
         }
     }
 }
