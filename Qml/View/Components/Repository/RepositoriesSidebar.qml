@@ -154,7 +154,7 @@ Rectangle {
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    text: root.expanded ? "Add repository" : "+"
+                    text: root.expanded ? "+ Add new" : "+"
                     font.family: Style.fontTypes.roboto
                     font.weight: 400
                     font.pixelSize: 14
