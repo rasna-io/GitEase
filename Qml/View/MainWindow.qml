@@ -83,9 +83,18 @@ Rectangle {
                     source: root.uiSession?.appModel?.currentPage?.source ?? ""
 
                     onLoaded: {
+                        // Bind common context properties if the loaded page exposes them.
+                        if (!item)
+                            return
+
                         // If the loaded page exposes a `page` property, bind it to the current page model.
                         if (item && item.hasOwnProperty("page")) {
                             item.page = Qt.binding(function() { return root.uiSession?.appModel?.currentPage })
+                        }
+
+                        // Repository controller (for pages that need repository context)
+                        if (item.hasOwnProperty("repositoryController")) {
+                            item.repositoryController = Qt.binding(function() { return root.uiSession?.repositoryController })
                         }
                     }
 
