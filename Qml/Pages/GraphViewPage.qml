@@ -35,8 +35,7 @@ Item {
             color: "transparent"
 
             CommitGraphDock {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                anchors.fill: parent
                 repositoryController: root.repositoryController
 
                 onCommitClicked: function(commitId) {
