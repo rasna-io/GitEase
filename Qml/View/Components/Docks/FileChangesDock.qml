@@ -625,13 +625,6 @@ Item {
         }
     }
 
-    onRepositoryControllerChanged:{
-        if(!repositoryController)
-            return
-
-        root.files = repositoryController.getCommitFileChanges("ba078be181784e69d0c311803d6c23e9be46128b")
-    }
-
     onCommitHashChanged:{
         if(!repositoryController)
             return
