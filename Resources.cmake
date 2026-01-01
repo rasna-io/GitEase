@@ -44,6 +44,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Repository/RecentRepositoriesList.qml   # Recent repositories list
     Qml/View/Components/Repository/RepositorySelector.qml       # Repository selection component
     Qml/View/Components/Repository/RepositoriesSidebar.qml      # Repositories Sidebar component
+    Qml/View/Components/Repository/SideBySideDiff.qml
 
     # Navigation Components - Side rails / tab bars
     Qml/View/Components/Navigation/NavigationRail.qml           # Combined pages+repos navigation rail
