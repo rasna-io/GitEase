@@ -15,7 +15,7 @@ Item {
 
     property                var               repositories:             []
 
-    property                var               currentRepository:        null
+    property                Repository        currentRepository:        null
 
     property                var               recentRepositories:       []
 

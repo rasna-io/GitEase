@@ -93,6 +93,8 @@ Item {
                     name: name,
                     color: randomRepoColor()
                 })
+                
+                // Add to repositories array
                 appModel.repositories.push(repo)
                 appModel.repositories = appModel.repositories.slice(0)
             }
@@ -104,7 +106,7 @@ Item {
     /**
      * Select a repository by ID and update current repository state
      */
-    function selectRepository(repoId) {
+    function selectRepository(repoId :string) {
         var repo = appModel.repositories.find(r => r.id === repoId)
         if (repo) {
             appModel.currentRepository = repo
@@ -140,5 +142,41 @@ Item {
 
         // handle both / and : (for SSH)
         return url.split(/[\/:]/).pop();
+    }
+
+    /**
+     * Get Commits
+     */
+    function getCommits(repo :Repository, limit = 100, offset = 0) : var {
+        var commits = GitService.getCommits(repo.path, limit, offset)
+        if (commits && commits.length > 0){
+            return commits
+        }
+
+        return []
+    }
+
+    /**
+     * Get All Branches
+     */
+    function getBranches(repo :Repository) : var {
+        var branches = GitService.getBranches(repo.path)
+        if (branches && branches.length > 0){
+            return branches
+        }
+
+        return []
+    }
+
+    /**
+     * Get Commit Detail
+     * Wrapper around GitService.getCommit(hash)
+     */
+    function getCommitDetail(commitHash :string) : var {
+        var result = GitService.getCommit(commitHash)
+        if (result && result.success) {
+            return result.data
+        }
+        return null
     }
 }

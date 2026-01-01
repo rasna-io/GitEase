@@ -120,7 +120,7 @@ Rectangle {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     hoverEnabled: true
-                                    onClicked: root.repositoryController.openRepository(modelData.path)
+                                    onClicked: root.repositoryController.selectRepository(modelData.id)
                                 }
                             }
                         }

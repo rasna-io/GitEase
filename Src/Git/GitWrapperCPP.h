@@ -11,10 +11,28 @@
 #include <QVariantList>
 #include <QVariantMap>
 #include <QQmlEngine>
+#include <QDir>
+#include <QRegularExpression>
 
 extern "C" {
 #include <git2.h>
 }
+
+
+/**
+ * \brief Structure to hold parent commit information
+ *
+ * In Git, every commit has 0+ parent commits:
+ * - Initial commit: 0 parents
+ * - Normal commit: 1 parent (previous commit)
+ * - Merge commit: 2+ parents
+ */
+struct ParentCommits
+{
+    git_commit** commits = nullptr;         ///< Array of parent commit pointers
+    size_t count = 0;                       ///< Number of parents
+    git_commit* amendedCommit = nullptr;    ///< Original commit being amended (for cleanup)
+};
 
 /**
  * This class implements all Git operations required by the multi-page dockable Git client.
@@ -33,7 +51,6 @@ private:
     QString m_lastError;                        ///< Last error message for debugging
 
     /* Private Helper Functions */
-
     /**
      * \brief Open repository at given path
      * \param path Repository path to open
@@ -93,8 +110,121 @@ private:
      */
     bool isValidPath(const QString &path);
 
+    /* Commit Operations */
+
+    /**
+     * \brief Check if there are any staged changes
+     * \return true if there are staged changes
+     */
+    bool hasStagedChanges();
+
+    /**
+     * \brief Validate commit message
+     * \param message Commit message to validate
+     * \return Empty string if valid, error message if invalid
+     */
+    QString validateCommitMessage(const QString &message);
+
+    /**
+     * \brief Convert git_signature to QVariantMap
+     * \param sig Git signature to convert
+     * \return QVariantMap with signature details
+     */
+    QVariantMap createSignatureMap(const git_signature *sig);
+
+    /* ============================================================
+     * Commit Operation Helper Functions
+     * Each function does ONE specific job in the commit process
+     * ============================================================ */
+
+    /**
+     * \brief Validates all inputs before starting commit
+     * \param repo Repository to validate
+     * \param message Commit message to validate
+     * \param allowEmpty Whether empty commits are allowed
+     * \return Error message if invalid, empty string if valid
+     */
+    QString validateCommitInputs(git_repository* repo,
+                                 const QString& message,
+                                 bool allowEmpty);
+
+    /**
+     * \brief Get author signature for commit
+     * \param repo Repository to get default signature from
+     * \return git_signature* (caller must free) or nullptr on error
+     */
+    git_signature* getAuthorSignature(git_repository* repo);
+
+    /**
+     * \brief Creates tree object from staged changes in index
+     * \param repo Repository containing the index
+     * \return git_tree* (caller must free) or nullptr on error
+     */
+    git_tree* createTreeFromStagedChanges(git_repository* repo);
+
+    /**
+     * \brief Resolves parent commits for new commit
+     * \param repo Repository to examine
+     * \param amend Whether we're amending previous commit
+     * \return ParentCommits structure (must call freeParentCommits)
+     */
+    ParentCommits resolveParentCommits(git_repository* repo, bool amend);
+
+    /**
+     * \brief Frees resources allocated in ParentCommits structure
+     * \param parents Structure to clean up
+     */
+    void freeParentCommits(ParentCommits& parents);
+
+    /**
+     * \brief Creates commit object in Git database
+     * \param repo Repository to create commit in
+     * \param message Commit message
+     * \param tree Tree object representing file snapshot
+     * \param author Author signature
+     * \param committer Committer signature
+     * \param parents Parent commits for new commit
+     * \param[out] commitOid Output parameter for new commit's SHA-1
+     * \return 0 on success, libgit2 error code on failure
+     */
+    int createCommitObject(git_repository* repo,
+                           const QString& message,
+                           git_tree* tree,
+                           git_signature* author,
+                           git_signature* committer,
+                           const ParentCommits& parents,
+                           git_oid& commitOid);
+
+    /**
+     * \brief Retrieves commit information after successful creation
+     * \param repo Repository containing the commit
+     * \param commitOid SHA-1 of commit to retrieve
+     * \return QVariantMap with commit details
+     */
+    QVariantMap getCommitDetails(git_repository* repo, const git_oid& commitOid);
+
+    /**
+     * \brief Centralized cleanup of all commit-related resources
+     * \param signature Author/committer signature to free
+     * \param tree Tree object to free
+     * \param parents Parent commits structure to free
+     */
+    void cleanupCommitResources(git_signature* signature,
+                                git_tree* tree,
+                                ParentCommits& parents);
+
+    /* ============================================================
+     * End of Commit Operation Helper Functions
+     * ============================================================ */
+
     /* Internal Test Function */
     void unitTest();
+
+    /**
+     * \brief Run comprehensive tests for commit operations
+     * Tests complete workflow: clone -> create files -> stage -> commit -> push
+     */
+    void unitTestForGitWorkflow();
 
 public:
     /**
@@ -115,6 +245,7 @@ signals:
 public slots:
     /* Repository Operations - from UML GitService */
 
+    /* these three functions set m_currentRepo */
     /**
      * \brief Initialize a new Git repository
      * \param path Path where to create the repository
@@ -149,22 +280,20 @@ public slots:
 
     /**
      * \brief Get repository status (staged/unstaged/untracked files)
-     * \param repoPath Path to repository (optional, uses current if empty)
      * \return QVariantMap with status information
      */
-    Q_INVOKABLE QVariantMap status(const QString &repoPath = "");
+    Q_INVOKABLE QVariantMap status();
 
     /**
-     * \brief Get commit history
-     * \param repoPath Path to repository (optional, uses current if empty)
+     * \brief Get commit history (paged)
      * \param limit Maximum number of commits to return (default: 50)
+     * \param offset Number of commits to skip from the start of the walk (default: 0)
      * \return QVariantList of commit objects
      */
-    Q_INVOKABLE QVariantList getCommits(const QString &repoPath = "", int limit = 50);
+    Q_INVOKABLE QVariantList getCommits(const QString &repoPath = "", int limit = 50, int offset = 0);
 
     /**
      * \brief Get list of branches
-     * \param repoPath Path to repository (optional, uses current if empty)
      * \return QVariantList of branch objects with name, isRemote, isCurrent properties
      */
     Q_INVOKABLE QVariantList getBranches(const QString &repoPath = "");
@@ -210,10 +339,110 @@ public slots:
 
     /**
      * \brief Get basic repository information
-     * \param repoPath Path to repository (optional, uses current if empty)
      * \return QVariantMap with repository info
      */
     Q_INVOKABLE QVariantMap getRepoInfo(const QString &repoPath = "");
+
+    /* Commit Operations */
+
+    /**
+     * \brief Create a new commit with staged changes
+     * \param message Commit message (required)
+     * \param amend Whether to amend the previous commit (default: false)
+     * \param allowEmpty Allow empty commit (no changes) (default: false)
+     * \return QVariantMap with commit result
+     */
+    Q_INVOKABLE QVariantMap commit(const QString &message, bool amend = false, bool allowEmpty = false);
+
+    /**
+     * \brief Stage a file for commit
+     * \param filePath Path to the file to stage
+     * \return QVariantMap with operation result
+     */
+    Q_INVOKABLE QVariantMap stageFile(const QString &filePath);
+
+    /**
+     * \brief Unstage a file
+     * \param filePath Path to the file to unstage
+     * \return QVariantMap with operation result
+     */
+    Q_INVOKABLE QVariantMap unstageFile(const QString &filePath);
+
+    /**
+     * \brief Stage all unstaged changes
+     * \return QVariantMap with count of staged files
+     */
+    Q_INVOKABLE QVariantMap stageAll();
+
+    /**
+     * \brief Unstage all staged changes
+     * \return QVariantMap with count of unstaged files
+     */
+    Q_INVOKABLE QVariantMap unstageAll();
+
+    /**
+     * \brief Get list of currently staged files
+     * \return QVariantMap with staged files list
+     */
+    Q_INVOKABLE QVariantMap getStagedFiles();
+
+    /**
+     * \brief Get detailed information about a specific commit
+     * \param commitHash Full or short commit hash
+     * \return QVariantMap with commit details
+     */
+    Q_INVOKABLE QVariantMap getCommit(const QString &commitHash);
+
+    /**
+     * \brief Amend the last commit with a new message
+     * \param newMessage New commit message
+     * \return QVariantMap with operation result
+     */
+    Q_INVOKABLE QVariantMap amendLastCommit(const QString &newMessage);
+
+    /**
+     * \brief Revert a specific commit
+     * \param commitHash Hash of commit to revert
+     * \return QVariantMap with operation result
+     */
+    Q_INVOKABLE QVariantMap revertCommit(const QString &commitHash);
+
+    /**
+     * \brief Push commits to a remote repository
+     * \param remoteName Name of the remote (default: "origin")
+     * \param branchName Branch to push (default: current branch)
+     * \param username GitHub username (required for HTTPS)
+     * \param password GitHub Personal Access Token (required for HTTPS)
+     * \param force Whether to force push (default: false)
+     * \return QVariantMap with operation result
+     */
+    Q_INVOKABLE QVariantMap push(const QString &remoteName = "origin",
+                                 const QString &branchName = "",
+                                 const QString &username = "",
+                                 const QString &password = "",
+                                 bool force = false);
+
+    /**
+     * \brief Get list of remotes for the repository
+     * \return QVariantList with remote information
+     */
+    Q_INVOKABLE QVariantList getRemotes();
+
+    /**
+     * \brief Add a new remote
+     * \param name Remote name
+     * \param url Remote URL
+     * \return QVariantMap with operation result
+     */
+    Q_INVOKABLE QVariantMap addRemote(const QString &name,
+                                      const QString &url);
+
+    /**
+     * \brief Remove a remote
+     * \param name Remote name
+     * \return QVariantMap with operation result
+     */
+    Q_INVOKABLE QVariantMap removeRemote(const QString &name);
 };
 
 #endif // GITWRAPPERCPP_H
