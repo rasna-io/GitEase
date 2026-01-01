@@ -34,13 +34,13 @@ Item {
             Layout.maximumHeight: root.height / 2
             color: "transparent"
 
-            Label {
-                text: "Commit Graph Dock"
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.margins: 8
-                font.bold: true
-                opacity: 0.85
+            CommitGraphDock {
+                anchors.fill: parent
+                repositoryController: root.repositoryController
+
+                onCommitClicked: function(commitId) {
+                    console.log("Commit clicked:", commitId)
+                }
             }
         }
 
