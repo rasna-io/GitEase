@@ -94,7 +94,7 @@ Item {
                     anchors.fill: parent
                     model: recentRepositories
                     onRepositoryClicked: function(name, path) {
-                        root.selectedPath = `${path}/${name}`
+                        root.selectedPath = path
                     }
                 }
             }

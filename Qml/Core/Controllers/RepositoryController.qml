@@ -67,7 +67,7 @@ Item {
         var result = GitService.clone(url, path + "/" + repoName)
 
         if(result.success){
-            createRepositoryComponent(path, repoName)
+            createRepositoryComponent(path + "/" + repoName, repoName)
         }
 
         return result
