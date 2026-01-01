@@ -57,6 +57,8 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
     Qml/View/Components/Docks/CommitGraphSimulator.qml  # GraphDummyDataGenerator
 
+    # DockPanel Docks
+    Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
 )
 
 
