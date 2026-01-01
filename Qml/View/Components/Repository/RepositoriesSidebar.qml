@@ -78,7 +78,9 @@ Rectangle {
                                 clip: true
 
                                 width: root.expanded ? repositoryRow.width - (repositoryRow.spacing + 2 + repositoryRow.anchors.margins) : 33
-                                color: repoMouseArea.containsMouse ?  Qt.darker("#B9FAB9", 1.25) : "#B9FAB9"
+
+                                property color repoColor: modelData?.color ?? "#B9FAB9"
+                                color: repoMouseArea.containsMouse ?  Qt.darker(repoColor, 1.25) : repoColor
 
                                 Text {
                                     property string initials: {
@@ -99,7 +101,7 @@ Rectangle {
                                         }
                                     }
 
-                                    color: Qt.darker(parent.color, 2.0)
+                                    color: Qt.darker(repositoryAvatar.repoColor, 2.0)
                                     elide: Text.ElideRight
 
                                     x: root.expanded ? 5 : ((repositoryAvatar.width - width) / 2)
