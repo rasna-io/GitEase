@@ -717,6 +717,94 @@ QVariantList GitWrapperCPP::getSideBySideDiff(const QString &filePath)
     return result;
 }
 
+QVariantList GitWrapperCPP::getCommitsDiff(const QString &oldCommitHash, const QString &newCommitHash, const QString &filePath)
+{
+    QVariantList result;
+    if (!m_currentRepo) return result;
+
+    git_object *oldCommitObj = nullptr;
+    git_object *newCommitObj = nullptr;
+    git_tree *oldTree = nullptr;
+    git_tree *newTree = nullptr;
+    git_diff *diff = nullptr;
+
+    if (git_revparse_single(&oldCommitObj, m_currentRepo, oldCommitHash.toUtf8().constData()) != 0)
+        return result;
+
+    if (git_revparse_single(&newCommitObj, m_currentRepo, newCommitHash.toUtf8().constData()) != 0) {
+        git_object_free(oldCommitObj);
+        return result;
+    }
+
+    bool treeError = (git_commit_tree(&oldTree, reinterpret_cast<const git_commit*>(oldCommitObj)) != 0 ||
+                      git_commit_tree(&newTree, reinterpret_cast<const git_commit*>(newCommitObj)) != 0);
+
+    if (!treeError) {
+        git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+        opts.flags |= GIT_DIFF_PATIENCE | GIT_DIFF_INDENT_HEURISTIC | GIT_DIFF_MINIMAL;
+
+        QByteArray pathBytes = filePath.toUtf8();
+        char* path = const_cast<char*>(pathBytes.constData());
+        opts.pathspec.strings = &path;
+        opts.pathspec.count = 1;
+
+        if (git_diff_tree_to_tree(&diff, m_currentRepo, oldTree, newTree, &opts) == 0) {
+            struct RawLine { char origin; int old_no; int new_no; QString content; };
+            std::vector<RawLine> rawLines;
+
+            git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, [](
+                                                            const git_diff_delta*, const git_diff_hunk*, const git_diff_line *line, void *payload) -> int {
+                auto *vec = static_cast<std::vector<RawLine>*>(payload);
+                if (line->origin == GIT_DIFF_LINE_CONTEXT ||
+                    line->origin == GIT_DIFF_LINE_ADDITION ||
+                    line->origin == GIT_DIFF_LINE_DELETION) {
+
+                    QString content = QString::fromUtf8(line->content, line->content_len);
+                    content.remove('\n').remove('\r');
+                    vec->push_back({line->origin, line->old_lineno, line->new_lineno, content});
+                }
+                return 0;
+            }, &rawLines);
+
+            for (size_t i = 0; i < rawLines.size(); ++i) {
+                QVariantMap map;
+                if (rawLines[i].origin == '-' && (i + 1) < rawLines.size() && rawLines[i+1].origin == '+') {
+                    map["type"] = 3; // Modified
+                    map["content"] = rawLines[i].content;
+                    map["contentNew"] = rawLines[i+1].content;
+                    map["oldLine"] = rawLines[i].old_no;
+                    map["newLine"] = rawLines[i+1].new_no;
+                    i++;
+                } else if (rawLines[i].origin == '-') {
+                    map["type"] = 2; // Deleted
+                    map["content"] = rawLines[i].content;
+                    map["oldLine"] = rawLines[i].old_no;
+                    map["newLine"] = -1;
+                } else if (rawLines[i].origin == '+') {
+                    map["type"] = 1; // Added
+                    map["content"] = rawLines[i].content;
+                    map["oldLine"] = -1;
+                    map["newLine"] = rawLines[i].new_no;
+                } else {
+                    map["type"] = 0; // Context
+                    map["content"] = rawLines[i].content;
+                    map["oldLine"] = rawLines[i].old_no;
+                    map["newLine"] = rawLines[i].new_no;
+                }
+                result.append(map);
+            }
+        }
+    }
+
+    if (diff) git_diff_free(diff);
+    if (oldTree) git_tree_free(oldTree);
+    if (newTree) git_tree_free(newTree);
+    if (oldCommitObj) git_object_free(oldCommitObj);
+    if (newCommitObj) git_object_free(newCommitObj);
+
+    return result;
+}
+
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
 {
     // Step 1: Check if repository is open

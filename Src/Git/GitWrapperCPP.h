@@ -357,6 +357,14 @@ public slots:
     Q_INVOKABLE QVariantList getSideBySideDiff(const QString &filePath);
 
     /**
+    * @brief Retrieves a side-by-side diff between two specific commits for a file.
+    * @param oldCommitHash The hash of the base commit.
+    * @param newCommitHash The hash of the target commit to compare against.
+    * @param filePath The relative path of the file.
+    */
+    Q_INVOKABLE QVariantList getCommitsDiff(const QString &oldCommitHash, const QString &newCommitHash, const QString &filePath);
+
+    /**
      * \brief Get basic repository information
      * \return QVariantMap with repository info
      */
