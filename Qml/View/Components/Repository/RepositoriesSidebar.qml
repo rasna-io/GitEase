@@ -151,17 +151,42 @@ Rectangle {
                 anchors.bottomMargin: 4
                 spacing: 8
 
+                Item {
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                    Layout.preferredWidth: 20
+                    Layout.minimumWidth: 20
+                    Layout.maximumWidth: 20
+                    Layout.preferredHeight: 20
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: Style.icons.plus
+                        font.family: Style.fontTypes.font6Pro
+                        font.weight: 400
+                        font.pixelSize: 14
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+
                 Text {
+                    visible: root.expanded
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    text: root.expanded ? "+ Add new" : "+"
+                    text: "Add new"
                     font.family: Style.fontTypes.roboto
                     font.weight: 400
                     font.pixelSize: 14
                     elide: Text.ElideRight
                     color: Style.colors.foreground
-                    horizontalAlignment: Text.AlignHCenter
+                    horizontalAlignment: Text.AlignLeft
                     verticalAlignment: Text.AlignVCenter
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    visible: root.expanded
                 }
             }
 

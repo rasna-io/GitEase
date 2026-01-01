@@ -133,17 +133,23 @@ Rectangle {
                 anchors.bottomMargin: 4
                 spacing: 8
 
-                Text {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignVCenter
-                    text: Style.icons.gear
-                    font.family: settingButtonMouse.containsMouse ? Style.fontTypes.font6ProSolid :  Style.fontTypes.font6Pro
-                    font.weight: 400
-                    font.pixelSize: 14
-                    elide: Text.ElideRight
-                    color: Style.colors.foreground
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                Item {
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                    Layout.preferredWidth: 20
+                    Layout.minimumWidth: 20
+                    Layout.maximumWidth: 20
+                    Layout.preferredHeight: 20
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: Style.icons.gear
+                        font.family: settingButtonMouse.containsMouse ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
+                        font.weight: 400
+                        font.pixelSize: 14
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
                 Text {
@@ -156,7 +162,7 @@ Rectangle {
                     font.pixelSize: 14
                     elide: Text.ElideRight
                     color: Style.colors.foreground
-                    horizontalAlignment: Text.AlignHCenter
+                    horizontalAlignment: Text.AlignLeft
                     verticalAlignment: Text.AlignVCenter
                 }
 
@@ -217,7 +223,7 @@ Rectangle {
                     font.pixelSize: 14
                     elide: Text.ElideRight
                     color: Style.colors.foreground
-                    horizontalAlignment: Text.AlignHCenter
+                    horizontalAlignment: Text.AlignLeft
                     verticalAlignment: Text.AlignVCenter
                 }
 
