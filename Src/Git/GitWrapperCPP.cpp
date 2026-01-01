@@ -805,6 +805,75 @@ QVariantList GitWrapperCPP::getCommitsDiff(const QString &oldCommitHash, const Q
     return result;
 }
 
+QVariantList GitWrapperCPP::getCommitFileChanges(const QString &commitHash)
+{
+    QVariantList fileList;
+    if (!m_currentRepo || commitHash.isEmpty()) return fileList;
+
+    git_object *commitObj = nullptr;
+    git_commit *commit = nullptr;
+    git_commit *parent = nullptr;
+    git_tree *commitTree = nullptr;
+    git_tree *parentTree = nullptr;
+    git_diff *diff = nullptr;
+
+    if (git_revparse_single(&commitObj, m_currentRepo, commitHash.toUtf8().constData()) != 0)
+        return fileList;
+
+    commit = reinterpret_cast<git_commit*>(commitObj);
+
+    if (git_commit_tree(&commitTree, commit) != 0) {
+        git_object_free(commitObj);
+        return fileList;
+    }
+
+    if (git_commit_parentcount(commit) > 0) {
+        if (git_commit_parent(&parent, commit, 0) == 0) {
+            git_commit_tree(&parentTree, parent);
+        }
+    }
+
+    git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+
+    if (git_diff_tree_to_tree(&diff, m_currentRepo, parentTree, commitTree, &opts) == 0) {
+        size_t num_deltas = git_diff_num_deltas(diff);
+        for (size_t i = 0; i < num_deltas; ++i) {
+            const git_diff_delta *delta = git_diff_get_delta(diff, i);
+
+            git_patch *patch = nullptr;
+            size_t add = 0, del = 0;
+            if (git_patch_from_diff(&patch, diff, i) == 0) {
+                git_patch_line_stats(nullptr, &add, &del, patch);
+                git_patch_free(patch);
+            }
+
+            QVariantMap fileMap;
+            fileMap["filePath"] = QString::fromUtf8(delta->new_file.path);
+            fileMap["additions"] = static_cast<int>(add);
+            fileMap["deletions"] = static_cast<int>(del);
+
+            QString statusChar;
+            switch (delta->status) {
+            case GIT_DELTA_ADDED:     statusChar = "A"; break;
+            case GIT_DELTA_DELETED:   statusChar = "D"; break;
+            case GIT_DELTA_MODIFIED:  statusChar = "M"; break;
+            case GIT_DELTA_RENAMED:   statusChar = "R"; break;
+            default:                  statusChar = "U"; break;
+            }
+            fileMap["status"] = statusChar;
+            fileList.append(fileMap);
+        }
+    }
+
+    if (diff) git_diff_free(diff);
+    if (parentTree) git_tree_free(parentTree);
+    if (commitTree) git_tree_free(commitTree);
+    if (parent) git_commit_free(parent);
+    if (commitObj) git_object_free(commitObj);
+
+    return fileList;
+}
+
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
 {
     // Step 1: Check if repository is open

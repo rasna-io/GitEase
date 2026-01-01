@@ -365,6 +365,22 @@ public slots:
     Q_INVOKABLE QVariantList getCommitsDiff(const QString &oldCommitHash, const QString &newCommitHash, const QString &filePath);
 
     /**
+    * @brief Retrieves the list of files changed in a specific commit with their stats.
+    *
+    * This function compares the given commit with its parent (if any) and extracts
+    * the list of modified, added, or deleted files along with line-level statistics
+    * (additions and deletions counts).
+    *
+    * @param commitHash The SHA-1 hash of the commit to inspect.
+    * @return A QVariantList of maps, where each map contains:
+    * - "filePath" (QString): Relative path of the file.
+    * - "status" (QString): "A" for Added, "D" for Deleted, "M" for Modified, "R" for Renamed.
+    * - "additions" (int): Number of lines added in this file.
+    * - "deletions" (int): Number of lines deleted in this file.
+    */
+    Q_INVOKABLE QVariantList getCommitFileChanges(const QString &commitHash);
+
+    /**
      * \brief Get basic repository information
      * \return QVariantMap with repository info
      */
