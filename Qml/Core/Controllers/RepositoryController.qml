@@ -95,9 +95,8 @@ Item {
                 })
                 
                 // Add to repositories array
-                if (repo) {
-                    appModel.repositories.push(repo)
-                }
+                appModel.repositories.push(repo)
+                appModel.repositories = appModel.repositories.slice(0)
             }
         }
 
