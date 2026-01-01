@@ -8,7 +8,7 @@ import GitEase
 
 /*! ***********************************************************************************************
  * GraphViewPage
- * Initial main page shown after startup.
+ * Graph View Page shown Commit Graph Dock, File Changes and Diff View
  * ************************************************************************************************/
 
 Item {
@@ -18,28 +18,60 @@ Item {
     // Provided by MainWindow Loader (current Page model)
     property var page: null
 
-    Column {
-        anchors.centerIn: parent
-        spacing: 6
+    // Provided by MainWindow Loader (UiSession context)
+    property RepositoryController repositoryController: null
 
-        Text {
-            text: "GraphViewPage"
-            font.pixelSize: 18
-            font.weight: 600
-            color: "#222222"
-            horizontalAlignment: Text.AlignHCenter
+    readonly property var currentRepo: repositoryController?.appModel?.currentRepository ?? null
+
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
+
+        Rectangle {
+            id: commitGraphDock
+            Layout.fillWidth: true
+            Layout.minimumHeight: root.height / 2
+            Layout.maximumHeight: root.height / 2
+            color: "transparent"
+
+            Label {
+                text: "Commit Graph Dock"
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.margins: 8
+                font.bold: true
+                opacity: 0.85
+            }
         }
 
-        Text {
-            text: "title: " + (root.page ? root.page.title : "Graph View")
-            color: "#444444"
-            horizontalAlignment: Text.AlignHCenter
-        }
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.minimumHeight: root.height / 2
+            Layout.maximumHeight: root.height / 2
+            color: "transparent"
 
-        Text {
-            text: "id: " + (root.page ? root.page.id : "graph")
-            color: "#666666"
-            horizontalAlignment: Text.AlignHCenter
+            RowLayout {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: 8
+                anchors.topMargin: 32
+                spacing: 12
+
+                Label {
+                    text: "File Changes";
+                    font.bold: true;
+                    opacity: 0.8;
+                    elide: Text.ElideRight
+                }
+
+                Label {
+                    text: "DiffView";
+                    font.bold: true;
+                    opacity: 0.8;
+                    elide: Text.ElideRight
+                }
+            }
         }
     }
 }
