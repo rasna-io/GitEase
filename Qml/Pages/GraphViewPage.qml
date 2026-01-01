@@ -20,8 +20,10 @@ Item {
 
     // Provided by MainWindow Loader (UiSession context)
     property RepositoryController repositoryController: null
-
     readonly property var currentRepo: repositoryController?.appModel?.currentRepository ?? null
+
+    property string selectedCommit: ""
+    property string selectedFilePath: ""
 
     ColumnLayout {
         anchors.fill: parent
@@ -58,18 +60,33 @@ Item {
                 anchors.topMargin: 32
                 spacing: 12
 
-                Label {
-                    text: "File Changes";
-                    font.bold: true;
-                    opacity: 0.8;
-                    elide: Text.ElideRight
+                Rectangle {
+                    Layout.preferredWidth: root.width / 2
+                    Layout.fillHeight: true
+                    color: "transparent"
+
+                    FileChangesDock {
+                        anchors.fill: parent
+
+                        repositoryController : root.repositoryController
+                        commitHash : root.selectedCommit
+
+                        onFileSelected: function(filePath){
+                            root.selectedFilePath = filePath
+                        }
+                    }
                 }
 
-                Label {
-                    text: "DiffView";
-                    font.bold: true;
-                    opacity: 0.8;
-                    elide: Text.ElideRight
+                Rectangle {
+                    Layout.preferredWidth: root.width / 2
+                    Layout.fillHeight: true
+                    color: "transparent"
+
+                    SideBySideDiff {
+                        anchors.fill: parent
+
+                        diffData : root.repositoryController.getSideBySideDiff(root.selectedFilePath)
+                    }
                 }
             }
         }
