@@ -76,9 +76,9 @@ Item {
     /**
      * Load commit data and calculate graph layout positions
      */
-    function loadData() {
+    function loadData(commits) {
         commitPositions = GraphLayout.calculateDAGPositions(
-            root.commits,
+            commits,
             root.columnSpacing,
             root.commitItemHeight,
             root.commitItemSpacing
@@ -87,8 +87,8 @@ Item {
         // Color assignment:
         var colorKeyByHash = {}
 
-        for (var j = root.commits.length - 1; j >= 0; j--) {
-            var c2 = root.commits[j]
+        for (var j = commits.length - 1; j >= 0; j--) {
+            var c2 = commits[j]
             var pos2 = root.commitPositions[c2.hash]
             if (!pos2) continue
 
@@ -115,7 +115,7 @@ Item {
             colorKeyByHash[c2.hash] = c2.colorKey
         }
 
-        root.commits = root.commits.slice(0)
+        root.commits = commits.slice(0)
     }
 
     /* Children
@@ -1200,10 +1200,10 @@ Item {
         var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
         var page = repositoryController.getCommits(repositoryController.appModel.currentRepository, pageSize, commitsOffset);
 
-        root.commits = compileGraphCommits(page, allBranches);
-        commitsOffset = root.commits.length
+        var commits = compileGraphCommits(page, allBranches);
+        commitsOffset = commits.length
         hasMoreCommits = (page && page.length === pageSize)
-        loadData();
+        loadData(commits);
     }
 
     function loadMoreCommits() {
@@ -1225,22 +1225,20 @@ Item {
         var compiled = compileGraphCommits(page, allBranches);
 
         // Append and advance
-        root.commits = root.commits.concat(compiled)
-        commitsOffset = root.commits.length
+        var commits = root.commits.concat(compiled)
+        commitsOffset = commits.length
         hasMoreCommits = (page.length === pageSize)
 
-        loadData()
+        loadData(commits)
         isLoadingMore = false
     }
+
+    onRepositoryControllerChanged: reloadAll();
 
     Connections {
         target: repositoryController
         function onRepositorySelected(repo) {
             reloadAll();
         }
-    }
-
-    Component.onCompleted: {
-        reloadAll();
     }
 }
