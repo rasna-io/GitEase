@@ -33,6 +33,13 @@ struct ParentCommits
     size_t count = 0;                       ///< Number of parents
     git_commit* amendedCommit = nullptr;    ///< Original commit being amended (for cleanup)
 };
+struct DiffLineData {
+    int type; // 0: Context, 1: Add, 2: Del, 3: Modified
+    int oldLine;
+    int newLine;
+    QString content;
+    QString contentNew;
+};
 
 /**
  * This class implements all Git operations required by the multi-page dockable Git client.
@@ -338,14 +345,16 @@ public slots:
     Q_INVOKABLE QString getUpstreamName(const QString &localBranchName);
 
     /**
-    * @brief Retrieves the line-by-line diff information for a specific file.
-    * * Compares the current working directory version of the file with the index (staged) version.
-    * Returns a list of maps containing line content, line numbers, and change types.
-    * * @param relativeFilePath The path of the file relative to the repository root.
-    * @return QVariantList A list of QVariantMaps with keys: "content", "oldLine", "newLine", and "type".
-    * Type values: 0 (context), 1 (addition), 2 (deletion).
+    * @brief Retrieves a processed side-by-side diff for a specific file.
+    *
+    * This function uses the Patience diff algorithm to compare the index with the
+    * working directory and pairs deleted/added lines into a single row structure
+    * for side-by-side visualization in QML.
+    *
+    * @param filePath The relative path of the file within the repository to diff.
+    * @return A QVariantList of maps containing line data (type, oldLine, newLine, content, contentNew).
     */
-    Q_INVOKABLE QVariantList getFileDiff(const QString &relativeFilePath);
+    Q_INVOKABLE QVariantList getSideBySideDiff(const QString &filePath);
 
     /**
      * \brief Get basic repository information
