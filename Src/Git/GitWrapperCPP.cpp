@@ -640,50 +640,81 @@ QString GitWrapperCPP::getUpstreamName(const QString &localBranchName)
     return result;
 }
 
-QVariantList GitWrapperCPP::getFileDiff(const QString &relativeFilePath)
+QVariantList GitWrapperCPP::getSideBySideDiff(const QString &filePath)
 {
-    QVariantList diffModel;
-    if (!m_currentRepo) return diffModel;
+    QVariantList result;
+    if (!m_currentRepo) return result;
 
-    git_diff *diff = nullptr;
+    git_diff* diff = nullptr;
     git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
-    QByteArray pathBytes = relativeFilePath.toUtf8();
-    const char* path = pathBytes.constData();
-    opts.pathspec.strings = const_cast<char**>(&path);
+
+    opts.flags |= GIT_DIFF_PATIENCE | GIT_DIFF_INDENT_HEURISTIC | GIT_DIFF_MINIMAL;
+
+    QByteArray pathBytes = filePath.toUtf8();
+    char* path = const_cast<char*>(pathBytes.constData());
+    opts.pathspec.strings = &path;
     opts.pathspec.count = 1;
 
-    if (git_diff_index_to_workdir(&diff, m_currentRepo, nullptr, &opts) != 0) {
-        return diffModel;
+    int error = git_diff_index_to_workdir(&diff, m_currentRepo, nullptr, &opts);
+
+    if (error == 0) {
+        struct RawLine { char origin; int old_no; int new_no; QString content; };
+        std::vector<RawLine> rawLines;
+
+        git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, [](
+                                                        const git_diff_delta*, const git_diff_hunk*, const git_diff_line *line, void *payload) -> int {
+            auto *vec = static_cast<std::vector<RawLine>*>(payload);
+
+            if (line->origin == GIT_DIFF_LINE_CONTEXT ||
+                line->origin == GIT_DIFF_LINE_ADDITION ||
+                line->origin == GIT_DIFF_LINE_DELETION) {
+
+                QString content = QString::fromUtf8(line->content, line->content_len);
+                content.remove('\n').remove('\r');
+                vec->push_back({line->origin, line->old_lineno, line->new_lineno, content});
+            }
+            return 0;
+        }, &rawLines);
+
+        for (size_t i = 0; i < rawLines.size(); ++i) {
+            QVariantMap map;
+
+            if (rawLines[i].origin == GIT_DIFF_LINE_DELETION &&
+                (i + 1) < rawLines.size() &&
+                rawLines[i+1].origin == GIT_DIFF_LINE_ADDITION) {
+
+                map["type"] = 3; // Modified
+                map["content"] = rawLines[i].content;
+                map["contentNew"] = rawLines[i+1].content;
+                map["oldLine"] = rawLines[i].old_no;
+                map["newLine"] = rawLines[i+1].new_no;
+                i++;
+            }
+            else if (rawLines[i].origin == GIT_DIFF_LINE_DELETION) {
+                map["type"] = 2; // Deleted
+                map["content"] = rawLines[i].content;
+                map["oldLine"] = rawLines[i].old_no;
+                map["newLine"] = -1;
+            }
+            else if (rawLines[i].origin == GIT_DIFF_LINE_ADDITION) {
+                map["type"] = 1; // Added
+                map["content"] = rawLines[i].content;
+                map["oldLine"] = -1;
+                map["newLine"] = rawLines[i].new_no;
+            }
+            else {
+                map["type"] = 0; // Context
+                map["content"] = rawLines[i].content;
+                map["oldLine"] = rawLines[i].old_no;
+                map["newLine"] = rawLines[i].new_no;
+            }
+            result.append(map);
+        }
     }
 
-    struct DiffData { QVariantList *list; };
-    DiffData data = { &diffModel };
+    if (diff) git_diff_free(diff);
 
-    git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, [](
-                                                    const git_diff_delta *delta,
-                                                    const git_diff_hunk *hunk,
-                                                    const git_diff_line *line,
-                                                    void *payload) -> int {
-
-        auto *model = static_cast<DiffData*>(payload)->list;
-        QVariantMap lineMap;
-
-        lineMap["content"] = QString::fromUtf8(line->content, line->content_len);
-        lineMap["oldLine"] = line->old_lineno;
-        lineMap["newLine"] = line->new_lineno;
-
-        int type = 0;
-        if (line->origin == GIT_DIFF_LINE_ADDITION) type = 1;
-        else if (line->origin == GIT_DIFF_LINE_DELETION) type = 2;
-
-        lineMap["type"] = type;
-        model->append(lineMap);
-
-        return 0;
-    }, &data);
-
-    git_diff_free(diff);
-    return diffModel;
+    return result;
 }
 
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
