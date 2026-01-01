@@ -14,4 +14,5 @@ QtObject {
     property string id: ""
     property string path: ""
     property string name: ""
+    property color  color: "transparent"
 }
