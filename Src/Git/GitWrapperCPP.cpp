@@ -847,8 +847,6 @@ void GitWrapperCPP::handleGitError(int errorCode)
 // Add to the helper functions section
 git_repository* GitWrapperCPP::openRepository(const QString &path)
 {
-    if (m_currentRepo) return m_currentRepo;
-
     git_repository* repo = nullptr;
     QByteArray pathUtf8 = path.toUtf8();
     int result = git_repository_open(&repo, pathUtf8.constData());
@@ -857,6 +855,8 @@ git_repository* GitWrapperCPP::openRepository(const QString &path)
         handleGitError(result);
         return nullptr;
     }
+
+    m_currentRepo = repo;
 
     return repo;
 }
