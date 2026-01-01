@@ -115,75 +115,136 @@ Rectangle {
         // Settings button (Bottom section)
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 40
+            Layout.leftMargin: 6
+            Layout.rightMargin: 6
+            Layout.topMargin: 3
+            Layout.bottomMargin: 3
+            Layout.preferredHeight: 33
+            radius: 6
             color: "transparent"
 
-            RoundButton {
-                id: settingsButton
-                anchors.centerIn: parent
-                text: Style.icons.gear
-                font.pixelSize: 20
-                width: 31
-                height: 31
-                flat: true
-                hoverEnabled: true
+            Behavior on color { ColorAnimation { duration: 120 } }
 
-                font.family: settingsButton.hovered ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                anchors.topMargin: 4
+                anchors.bottomMargin: 4
+                spacing: 8
 
-                background: Rectangle {
-                    implicitWidth: 31
-                    implicitHeight: 31
-                    radius: width / 2
-                    color: settingsButton.hovered ? "#E5E5E5" : "transparent"
-                    
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 150
-                        }
+                Item {
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                    Layout.preferredWidth: 20
+                    Layout.minimumWidth: 20
+                    Layout.maximumWidth: 20
+                    Layout.preferredHeight: 20
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: Style.icons.gear
+                        font.family: settingButtonMouse.containsMouse ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
+                        font.weight: 400
+                        font.pixelSize: 14
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
                 }
 
-                onClicked: {
-                    console.log("NavigationRail - Settings clicked")
-                    // TODO: Open settings dialog
+                Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Settings"
+                    visible: root.expanded
+                    font.family: Style.fontTypes.roboto
+                    font.weight: 400
+                    font.pixelSize: 14
+                    elide: Text.ElideRight
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
                 }
+
+                Item {
+                    Layout.fillWidth: true
+                    visible: root.expanded
+                }
+            }
+
+            // Make the whole row clickable
+            MouseArea {
+                id: settingButtonMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+
+                // onClicked: // TODO
+                onEntered: parent.color = Qt.darker("#F3F3F3", 1.3)
+                onExited: parent.color = "transparent"
             }
         }
 
-        // Profile Icon(Bottom profile)
+        // Profile button
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 35
+            Layout.leftMargin: 6
+            Layout.rightMargin: 6
+            Layout.topMargin: 3
+            Layout.bottomMargin: 3
+            Layout.preferredHeight: 33
+            radius: 6
             color: "transparent"
 
-            RoundButton {
-                anchors.centerIn: parent
-                width: 42
-                height: 42
-                flat: true
+            Behavior on color { ColorAnimation { duration: 120 } }
 
-                background: Rectangle {
-                    width: 42
-                    height: 42
-                    radius: width / 2
-                    color: "#D9D9D9"
-                }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                anchors.topMargin: 4
+                anchors.bottomMargin: 4
+                spacing: 8
 
-                contentItem: Image {
+                Image {
                     source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
-                    anchors.centerIn: parent
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                     width: 42
                     height: 42
                 }
 
-                onClicked: {
-                    console.log("NavigationRail - Profile clicked")
-                    // TODO:
+                Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "username"
+                    visible: root.expanded
+                    font.family: Style.fontTypes.roboto
+                    font.weight: 400
+                    font.pixelSize: 14
+                    elide: Text.ElideRight
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
                 }
+
+                Item {
+                    Layout.fillWidth: true
+                    visible: root.expanded
+                }
+            }
+
+            // Make the whole row clickable
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+
+                // onClicked: // TODO
+                onEntered: parent.color = Qt.darker("#F3F3F3", 1.3)
+                onExited: parent.color = "transparent"
             }
         }
     }
-
 }
 
 

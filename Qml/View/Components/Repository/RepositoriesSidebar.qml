@@ -38,7 +38,6 @@ Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: addButton.top
-            anchors.bottomMargin: 12
 
             height: Math.min(repositoryColumn.height, parent.height - addButton.height - 12)
             contentHeight: repositoryColumn.height
@@ -79,7 +78,9 @@ Rectangle {
                                 clip: true
 
                                 width: root.expanded ? repositoryRow.width - (repositoryRow.spacing + 2 + repositoryRow.anchors.margins) : 33
-                                color: repoMouseArea.containsMouse ?  Qt.darker("#B9FAB9", 1.25) : "#B9FAB9"
+
+                                property color repoColor: modelData?.color ?? "#B9FAB9"
+                                color: repoMouseArea.containsMouse ?  Qt.darker(repoColor, 1.25) : repoColor
 
                                 Text {
                                     property string initials: {
@@ -100,7 +101,7 @@ Rectangle {
                                         }
                                     }
 
-                                    color: Qt.darker(parent.color, 2.0)
+                                    color: Qt.darker(repositoryAvatar.repoColor, 2.0)
                                     elide: Text.ElideRight
 
                                     x: root.expanded ? 5 : ((repositoryAvatar.width - width) / 2)
@@ -132,31 +133,74 @@ Rectangle {
         Rectangle {
             id: addButton
             anchors.bottom: parent.bottom
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            width: 33
             height: 33
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 6
+            anchors.rightMargin: 6
+            anchors.topMargin: 3
+            anchors.bottomMargin: 3
             radius: 6
             color: "#F3F3F3"
 
-            Text {
-                anchors.centerIn: parent
-                text: "+"
-                font.pixelSize: 22
-                font.family: Style.fontTypes.roboto
-                font.weight: 400
-                color: "#C9C9C9"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
+            Behavior on color { ColorAnimation { duration: 120 } }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                anchors.topMargin: 4
+                anchors.bottomMargin: 4
+                spacing: 8
+
+                Item {
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                    Layout.preferredWidth: 20
+                    Layout.minimumWidth: 20
+                    Layout.maximumWidth: 20
+                    Layout.preferredHeight: 20
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: Style.icons.plus
+                        font.family: Style.fontTypes.font6Pro
+                        font.weight: 400
+                        font.pixelSize: 14
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+
+                Text {
+                    visible: root.expanded
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Add new"
+                    font.family: Style.fontTypes.roboto
+                    font.weight: 400
+                    font.pixelSize: 14
+                    elide: Text.ElideRight
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    visible: root.expanded
+                }
             }
 
+            // Make the whole row clickable
             MouseArea {
+                id: addRepoMouse
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 hoverEnabled: true
 
                 onClicked: root.newRepositoryRequested()
-                onEntered: parent.color = Qt.darker("#F3F3F3", 2)
+                onEntered: parent.color = Qt.darker("#F3F3F3", 1.3)
                 onExited: parent.color = "#F3F3F3"
             }
         }
