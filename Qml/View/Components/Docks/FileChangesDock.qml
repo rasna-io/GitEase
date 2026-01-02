@@ -648,14 +648,14 @@ Item {
        return ""; // Return empty string if no extension found
    }
 
-    function getChangeColor(type : string) {
-        switch(type) {
+    function getChangeColor(type: string) : string {
+        switch (type) {
             case "A": return "#B9FAB9"
             case "D": return "#FF9898"
             case "M": return "#FFF398"
             case "R": return "#aafff8"
             case "U": return "#990000ff"
-            default: return "#990000ff"
+            default:  return "#990000ff"
         }
     }
 }

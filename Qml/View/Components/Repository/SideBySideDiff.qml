@@ -1,99 +1,148 @@
 import QtQuick
 import QtQuick.Controls
 
-Rectangle {
+import GitEase
+import GitEase_Style
+
+/*! ***********************************************************************************************
+ * SideBySideDiff
+ * ************************************************************************************************/
+Item {
     id: root
-    property var diffData: []
-    color: "#1e1e1e"
 
-    Component {
-        id: diagonalHatch
-        Canvas {
+    /* Property Declarations
+     * ****************************************************************************************/
+    required property var modelData
+
+    required property Component hatch
+
+    property int gutterWidth: 35
+
+    property int padH: 8
+
+    property int padV: 6
+
+    property int gap: 2
+
+    readonly property int rowHeight: Math.ceil(Math.max(leftBlock.implicitHeight, rightBlock.implicitHeight))
+
+    /* Object Properties
+     * ****************************************************************************************/
+    width: parent ? parent.width : 0
+    implicitHeight: content.height
+
+    /* Children
+     * ****************************************************************************************/
+    Item {
+        id: content
+        width: parent.width
+        height: root.rowHeight
+
+        Row {
+            id: row
             anchors.fill: parent
-            opacity: 0.2
-            onPaint: {
-                var ctx = getContext("2d");
-                ctx.strokeStyle = "#ffffff";
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                var step = 10;
-                for (var i = -height; i < width + height; i += step) {
-                    ctx.moveTo(i + height, 0);
-                    ctx.lineTo(i, height);
-                }
-                ctx.stroke();
-            }
-        }
-    }
+            spacing: root.gap
 
-    ListView {
-        id: diffList
-        anchors.fill: parent
-        model: root.diffData
-        clip: true
-        delegate: Item {
-            width: diffList.width
-            height: 22
+            Rectangle {
+                id: leftBlock
+                width: (parent.width - root.gap) / 2
+                height: parent.height
 
-            Row {
-                anchors.fill: parent
+                color: (modelData.type === 2 || modelData.type === 3)
+                       ? Style.colors.diffRemovedBg
+                       : Style.colors.primaryBackground
 
-                // Left side
-                Rectangle {
-                    width: parent.width / 2; height: 22
-                    color: (modelData.type === 2 || modelData.type === 3) ? "#4b1818" : (modelData.type === 1 ? "#1a1a1a" : "transparent")
+                implicitHeight: leftRow.implicitHeight + root.padV * 2
 
-                    Loader {
-                        anchors.fill: parent;
-                        sourceComponent: modelData.type === 1 ? diagonalHatch : null
-                        active: modelData.type === 1
-                    }
-
-                    Row {
-                        anchors.fill: parent; spacing: 8
-                        Text {
-                            width: 35; text: modelData.oldLine !== -1 ? modelData.oldLine : ""
-                            color: "#606060"; font.pixelSize: 10; horizontalAlignment: Text.AlignRight
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: modelData.type !== 1 ? modelData.content : ""
-                            color: "#d4d4d4"; font.family: "Consolas"; font.pixelSize: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
+                Loader {
+                    anchors.fill: parent
+                    active: root.modelData.type === 1
+                    sourceComponent: active ? root.hatch : null
+                    opacity: 0.08
                 }
 
-                // Middle side
-                Rectangle { width: 1; height: 22; color: "#2d2d2d" }
+                Row {
+                    id: leftRow
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: root.padH
+                    anchors.topMargin: root.padV
+                    spacing: 8
 
-                // Right side
-                Rectangle {
-                    width: (parent.width / 2) - 1; height: 22
-                    color: (modelData.type === 1 || modelData.type === 3) ? "#2d4a2d" : (modelData.type === 2 ? "#1a1a1a" : "transparent")
-
-                    Loader {
-                        anchors.fill: parent;
-                        sourceComponent: modelData.type === 2 ? diagonalHatch : null
-                        active: modelData.type === 2
+                    Text {
+                        width: root.gutterWidth
+                        text: root.modelData.oldLine !== -1 ? root.modelData.oldLine : ""
+                        color: Style.colors.mutedText
+                        font.pixelSize: 10
+                        horizontalAlignment: Text.AlignRight
+                        verticalAlignment: Text.AlignTop
                     }
 
-                    Row {
-                        anchors.fill: parent; spacing: 8
-                        Text {
-                            width: 35; text: modelData.newLine !== -1 ? modelData.newLine : ""
-                            color: "#606060"; font.pixelSize: 10; horizontalAlignment: Text.AlignRight
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: modelData.type === 3 ? modelData.contentNew : (modelData.type !== 2 ? modelData.content : "")
-                            color: "#d4d4d4"; font.family: "Consolas"; font.pixelSize: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
+                    Text {
+                        width: parent.width - root.gutterWidth - leftRow.spacing
+                        text: root.modelData.type !== 1 ? root.modelData.content : ""
+                        color: Style.colors.foreground
+                        font.family: "Consolas"
+                        font.pixelSize: 12
+                        wrapMode: Text.WrapAnywhere
+                        textFormat: Text.PlainText
+                        verticalAlignment: Text.AlignTop
                     }
                 }
             }
+
+            Rectangle {
+                id: rightBlock
+                width: (parent.width - root.gap) / 2
+                height: parent.height
+
+                color: (modelData.type === 1 || modelData.type === 3)
+                       ? Style.colors.diffAddedBg
+                       : Style.colors.primaryBackground
+
+                implicitHeight: rightRow.implicitHeight + root.padV * 2
+
+                Loader {
+                    anchors.fill: parent
+                    active: root.modelData.type === 2
+                    sourceComponent: active ? root.hatch : null
+                    opacity: 0.08
+                }
+
+                Row {
+                    id: rightRow
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: root.padH
+                    anchors.topMargin: root.padV
+                    spacing: 8
+
+                    Text {
+                        width: root.gutterWidth
+                        text: root.modelData.newLine !== -1 ? root.modelData.newLine : ""
+                        color: Style.colors.mutedText
+                        font.pixelSize: 10
+                        horizontalAlignment: Text.AlignRight
+                        verticalAlignment: Text.AlignTop
+                    }
+
+                    Text {
+                        width: parent.width - root.gutterWidth - rightRow.spacing
+
+                        text: root.modelData.type === 3 ? root.modelData.contentNew
+                              : (root.modelData.type !== 2 ? root.modelData.content : "")
+
+                        color: Style.colors.foreground
+                        font.family: "Consolas"
+                        font.pixelSize: 12
+                        wrapMode: Text.WrapAnywhere
+                        textFormat: Text.PlainText
+                        verticalAlignment: Text.AlignTop
+                    }
+                }
+            }
         }
-        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
     }
 }

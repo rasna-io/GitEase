@@ -41,6 +41,7 @@ Item {
                 repositoryController: root.repositoryController
 
                 onCommitClicked: function(commitId) {
+                    root.selectedCommit = commitId
                     console.log("Commit clicked:", commitId)
                 }
             }
@@ -53,9 +54,7 @@ Item {
             color: "transparent"
 
             RowLayout {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
+                anchors.fill: parent
                 anchors.margins: 8
                 anchors.topMargin: 32
                 spacing: 12
@@ -82,9 +81,8 @@ Item {
                     Layout.fillHeight: true
                     color: "transparent"
 
-                    SideBySideDiff {
+                    DiffView {
                         anchors.fill: parent
-
                         diffData : root.repositoryController.getSideBySideDiff(root.selectedFilePath)
                     }
                 }
