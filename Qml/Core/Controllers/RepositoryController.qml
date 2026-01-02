@@ -179,6 +179,7 @@ Item {
         }
         return null
     }
+    /**
      * Get File PropertyChanges
      * Wrapper around GitService.getCommitFileChanges(hash)
      */
