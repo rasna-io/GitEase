@@ -32,12 +32,12 @@ Rectangle {
             Layout.fillWidth: true
             content: Rectangle {
                 // TODO : main header for each page
-                Text {
-                    anchors.centerIn: parent
-                    text: "# main header in docks"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
+                // Text {
+                //     anchors.centerIn: parent
+                //     text: "# main header in docks"
+                //     horizontalAlignment: Text.AlignHCenter
+                //     verticalAlignment: Text.AlignVCenter
+                // }
             }
         }
 

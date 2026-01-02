@@ -30,11 +30,11 @@ QtObject {
                         "qrc:/GitEase/Qml/Pages/GraphViewPage.qml",
                         Style.icons.workflow)
 
-            root.createPage(
-                        "blank",
-                        "Blank Page",
-                        "qrc:/GitEase/Qml/Pages/BlankPage.qml",
-                        Style.icons.lightbulb)
+            // root.createPage(
+            //             "blank",
+            //             "Blank Page",
+            //             "qrc:/GitEase/Qml/Pages/BlankPage.qml",
+            //             Style.icons.lightbulb)
         } else if (!root.appModel?.currentPage && root.appModel?.pages?.length) {
             root.appModel.currentPage = appModel.pages[0]
         }
