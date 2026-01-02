@@ -26,4 +26,9 @@ QtObject{
     
     // Border colors
     property color primaryBorder:       "#D7DCE5"
+
+    property color diffRemovedBg:       "#FDECEC"
+    property color diffAddedBg:         "#ECFDF3"
+    property color diffRemovedBorder:   "#F5C2C7"
+    property color diffAddedBorder:     "#A6E9C6"
 }

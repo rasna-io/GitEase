@@ -179,4 +179,39 @@ Item {
         }
         return null
     }
+    /**
+     * Get File PropertyChanges
+     * Wrapper around GitService.getCommitFileChanges(hash)
+     */
+    function getCommitFileChanges(commitHash : string) : var {
+        var result = GitService.getCommitFileChanges(commitHash)
+        if (result && result.length > 0) {
+            return result
+        }
+        return null
+    }
+
+    /**
+     * Get Side By Side Diff
+     * Wrapper around GitService.getSideBySideDiff(filePath)
+     */
+    function getSideBySideDiff(filePath : string) : var {
+        var result = GitService.getSideBySideDiff(filePath)
+        if (result && result.length > 0) {
+            return result
+        }
+        return null
+    }
+
+    function getCommitsDiff(parentHash : string, commitHash : string, filePath : string) : var {
+        var result = GitService.getCommitsDiff(parentHash, commitHash, filePath)
+        if (result && result.length > 0) {
+            return result
+        }
+        return null
+    }
+
+    function getParentHash(commitHash : string) : string {
+        return GitService.getParentHash(commitHash)
+    }
 }
