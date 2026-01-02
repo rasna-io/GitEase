@@ -62,10 +62,6 @@ ApplicationWindow {
         sourceComponent: {
             // Check flag before creating components
             if (AppSettings.hasCompletedWelcome) {
-                window.width = Qt.binding(function() {return Style.appWidth})
-                window.height = Qt.binding(function() {return Style.appHeight})
-                window.x = (Screen.width - width) / 2
-                window.y = (Screen.height - height) / 2
                 return mainApplicationComponent
             } else {
                 return welcomeFlowComponent
@@ -123,6 +119,13 @@ ApplicationWindow {
                         item.uiSession = uiSession
                     }
                 }
+            }
+
+            Component.onCompleted: {
+                window.width = Qt.binding(function() {return Style.appWidth})
+                window.height = Qt.binding(function() {return Style.appHeight})
+                window.x = (Screen.width - Style.appWidth) / 2
+                window.y = (Screen.height - Style.appHeight) / 2
             }
         }
     }
