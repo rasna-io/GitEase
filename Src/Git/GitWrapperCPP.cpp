@@ -1179,6 +1179,37 @@ QVariantMap GitWrapperCPP::commit(const QString& message,
     return createResult(true, commitDetails);
 }
 
+QString GitWrapperCPP::getParentHash(const QString &commitHash, int index)
+{
+    if (!m_currentRepo || commitHash.isEmpty() || index < 0)
+        return "";
+
+    git_oid oid;
+    if (git_oid_fromstr(&oid, commitHash.toUtf8().constData()) != 0)
+        return "";
+
+    git_commit* commit = nullptr;
+    if (git_commit_lookup(&commit, m_currentRepo, &oid) != 0)
+        return "";
+
+    QString parentHash;
+
+    unsigned int parentCount = git_commit_parentcount(commit);
+
+    if (index < static_cast<int>(parentCount)) {
+        const git_oid* parentOid = git_commit_parent_id(commit, index);
+        if (parentOid) {
+            char hash[GIT_OID_HEXSZ + 1];
+            git_oid_tostr(hash, sizeof(hash), parentOid);
+            parentHash = QString::fromUtf8(hash);
+        }
+    }
+
+    git_commit_free(commit);
+    return parentHash;
+}
+
+
 QString GitWrapperCPP::validateCommitInputs(git_repository* repo,
                                             const QString& message,
                                             bool allowEmpty)

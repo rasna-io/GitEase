@@ -398,6 +398,21 @@ public slots:
     Q_INVOKABLE QVariantMap commit(const QString &message, bool amend = false, bool allowEmpty = false);
 
     /**
+    * \brief Get a parent commit hash by index
+    *
+    * Returns the hash of the parent commit at the specified index.
+    *
+    * - index = 0 → first parent (default Git diff behavior)
+    * - index > 0 → additional parents (merge commits)
+    * - Initial commits have no parents → returns empty string
+    *
+    * \param commitHash Full or short commit hash
+    * \param index Parent index (default: 0)
+    * \return Parent commit hash, or empty string if index is invalid
+    */
+    Q_INVOKABLE QString getParentHash(const QString &commitHash, int index = 0);
+
+    /**
      * \brief Stage a file for commit
      * \param filePath Path to the file to stage
      * \return QVariantMap with operation result

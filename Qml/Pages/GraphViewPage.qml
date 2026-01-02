@@ -83,7 +83,10 @@ Item {
 
                     DiffView {
                         anchors.fill: parent
-                        diffData : root.repositoryController.getSideBySideDiff(root.selectedFilePath)
+                        diffData:{
+                            let parentHash = repositoryController.getParentHash(root.selectedCommit)
+                            return root.repositoryController.getCommitsDiff(parentHash, root.selectedCommit, root.selectedFilePath)
+                        }
                     }
                 }
             }

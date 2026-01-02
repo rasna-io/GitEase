@@ -202,4 +202,16 @@ Item {
         }
         return null
     }
+
+    function getCommitsDiff(parentHash : string, commitHash : string, filePath : string) : var {
+        var result = GitService.getCommitsDiff(parentHash, commitHash, filePath)
+        if (result && result.length > 0) {
+            return result
+        }
+        return null
+    }
+
+    function getParentHash(commitHash : string) : string {
+        return GitService.getParentHash(commitHash)
+    }
 }
