@@ -46,6 +46,9 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Repository/RepositoriesSidebar.qml      # Repositories Sidebar component
     Qml/View/Components/Repository/SideBySideDiff.qml
 
+    Qml/View/Components/Diff/DiffView.qml
+    Qml/View/Components/Diff/StackedDiff.qml
+
     # Navigation Components - Side rails / tab bars
     Qml/View/Components/Navigation/NavigationRail.qml           # Combined pages+repos navigation rail
     Qml/View/Components/Navigation/PagesRail.qml                # Pages-only navigation rail
