@@ -112,18 +112,39 @@ Item {
             appModel.currentRepository = repo
             root.repositorySelected(repo)
 
-            // Add to recent
-            if (!appModel.recentRepositories.includes(repo)) {
-                appModel.recentRepositories.unshift(repo)
-                if (appModel.recentRepositories.length > root.maxRecentLength) {
-                    appModel.recentRepositories.pop()
-                }
-                // Reassign to trigger change notifications for bindings
-                appModel.recentRepositories = appModel.recentRepositories.slice()
-                appModel.save()
-            }
+            updateRecentRepositories(repo)
+            appModel.recentRepositories = appModel.recentRepositories.slice()
+            appModel.save()
         }
     }
+
+    function updateRecentRepositories(repo) {
+        if (!appModel.recentRepositories)
+            appModel.recentRepositories = []
+
+        if (!repo || !repo.path)
+            return appModel.recentRepositories
+
+        function normalizePath(p) {
+            return (p || "").replace(/\\/g, "/").toLowerCase()
+        }
+
+        const targetPath = normalizePath(repo.path)
+
+        // remove duplicates
+        appModel.recentRepositories = appModel.recentRepositories.filter(r =>
+            r && normalizePath(r.path) !== targetPath
+        )
+
+        // add to end (newest last)
+        appModel.recentRepositories.unshift(repo)
+
+        // trim to max length
+        if (root.maxRecentLength && appModel.recentRepositories.length > root.maxRecentLength) {
+            appModel.recentRepositories = appModel.recentRepositories.slice(appModel.recentRepositories.length - root.maxRecentLength)
+        }
+    }
+
 
     /**
      * Extracts the repository name from a Git repository URL.
