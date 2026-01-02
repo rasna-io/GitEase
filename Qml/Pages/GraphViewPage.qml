@@ -72,6 +72,8 @@ Item {
 
                         onFileSelected: function(filePath){
                             root.selectedFilePath = filePath
+                            let parentHash = repositoryController.getParentHash(root.selectedCommit)
+                            diffView.diffData =  root.repositoryController.getCommitsDiff(parentHash, root.selectedCommit, root.selectedFilePath)
                         }
                     }
                 }
@@ -82,11 +84,8 @@ Item {
                     color: "transparent"
 
                     DiffView {
+                        id: diffView
                         anchors.fill: parent
-                        diffData:{
-                            let parentHash = repositoryController.getParentHash(root.selectedCommit)
-                            return root.repositoryController.getCommitsDiff(parentHash, root.selectedCommit, root.selectedFilePath)
-                        }
                     }
                 }
             }
