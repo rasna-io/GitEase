@@ -20,8 +20,10 @@ Item {
 
     // Provided by MainWindow Loader (UiSession context)
     property RepositoryController repositoryController: null
-
     readonly property var currentRepo: repositoryController?.appModel?.currentRepository ?? null
+
+    property string selectedCommit: ""
+    property string selectedFilePath: ""
 
     ColumnLayout {
         anchors.fill: parent
@@ -39,6 +41,7 @@ Item {
                 repositoryController: root.repositoryController
 
                 onCommitClicked: function(commitId) {
+                    root.selectedCommit = commitId
                     console.log("Commit clicked:", commitId)
                 }
             }
@@ -51,25 +54,40 @@ Item {
             color: "transparent"
 
             RowLayout {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
+                anchors.fill: parent
                 anchors.margins: 8
                 anchors.topMargin: 32
                 spacing: 12
 
-                Label {
-                    text: "File Changes";
-                    font.bold: true;
-                    opacity: 0.8;
-                    elide: Text.ElideRight
+                Rectangle {
+                    Layout.preferredWidth: root.width / 2
+                    Layout.fillHeight: true
+                    color: "transparent"
+
+                    FileChangesDock {
+                        anchors.fill: parent
+
+                        repositoryController : root.repositoryController
+                        commitHash : root.selectedCommit
+
+                        onFileSelected: function(filePath){
+                            root.selectedFilePath = filePath
+                        }
+                    }
                 }
 
-                Label {
-                    text: "DiffView";
-                    font.bold: true;
-                    opacity: 0.8;
-                    elide: Text.ElideRight
+                Rectangle {
+                    Layout.preferredWidth: root.width / 2
+                    Layout.fillHeight: true
+                    color: "transparent"
+
+                    DiffView {
+                        anchors.fill: parent
+                        diffData:{
+                            let parentHash = repositoryController.getParentHash(root.selectedCommit)
+                            return root.repositoryController.getCommitsDiff(parentHash, root.selectedCommit, root.selectedFilePath)
+                        }
+                    }
                 }
             }
         }

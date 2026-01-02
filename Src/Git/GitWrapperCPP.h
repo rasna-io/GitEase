@@ -1,4 +1,4 @@
-/*! ***********************************************************************************************
+    /*! ***********************************************************************************************
  * GitWrapperCPP : C++ wrapper for libgit2 operations, exposed to QML.
  *                 Follows the UML design as QML_Service layer.
  * ************************************************************************************************/
@@ -32,6 +32,13 @@ struct ParentCommits
     git_commit** commits = nullptr;         ///< Array of parent commit pointers
     size_t count = 0;                       ///< Number of parents
     git_commit* amendedCommit = nullptr;    ///< Original commit being amended (for cleanup)
+};
+struct DiffLineData {
+    int type; // 0: Context, 1: Add, 2: Del, 3: Modified
+    int oldLine;
+    int newLine;
+    QString content;
+    QString contentNew;
 };
 
 /**
@@ -338,6 +345,42 @@ public slots:
     Q_INVOKABLE QString getUpstreamName(const QString &localBranchName);
 
     /**
+    * @brief Retrieves a processed side-by-side diff for a specific file.
+    *
+    * This function uses the Patience diff algorithm to compare the index with the
+    * working directory and pairs deleted/added lines into a single row structure
+    * for side-by-side visualization in QML.
+    *
+    * @param filePath The relative path of the file within the repository to diff.
+    * @return A QVariantList of maps containing line data (type, oldLine, newLine, content, contentNew).
+    */
+    Q_INVOKABLE QVariantList getSideBySideDiff(const QString &filePath);
+
+    /**
+    * @brief Retrieves a side-by-side diff between two specific commits for a file.
+    * @param oldCommitHash The hash of the base commit.
+    * @param newCommitHash The hash of the target commit to compare against.
+    * @param filePath The relative path of the file.
+    */
+    Q_INVOKABLE QVariantList getCommitsDiff(const QString &oldCommitHash, const QString &newCommitHash, const QString &filePath);
+
+    /**
+    * @brief Retrieves the list of files changed in a specific commit with their stats.
+    *
+    * This function compares the given commit with its parent (if any) and extracts
+    * the list of modified, added, or deleted files along with line-level statistics
+    * (additions and deletions counts).
+    *
+    * @param commitHash The SHA-1 hash of the commit to inspect.
+    * @return A QVariantList of maps, where each map contains:
+    * - "filePath" (QString): Relative path of the file.
+    * - "status" (QString): "A" for Added, "D" for Deleted, "M" for Modified, "R" for Renamed.
+    * - "additions" (int): Number of lines added in this file.
+    * - "deletions" (int): Number of lines deleted in this file.
+    */
+    Q_INVOKABLE QVariantList getCommitFileChanges(const QString &commitHash);
+
+    /**
      * \brief Get basic repository information
      * \return QVariantMap with repository info
      */
@@ -353,6 +396,21 @@ public slots:
      * \return QVariantMap with commit result
      */
     Q_INVOKABLE QVariantMap commit(const QString &message, bool amend = false, bool allowEmpty = false);
+
+    /**
+    * \brief Get a parent commit hash by index
+    *
+    * Returns the hash of the parent commit at the specified index.
+    *
+    * - index = 0 → first parent (default Git diff behavior)
+    * - index > 0 → additional parents (merge commits)
+    * - Initial commits have no parents → returns empty string
+    *
+    * \param commitHash Full or short commit hash
+    * \param index Parent index (default: 0)
+    * \return Parent commit hash, or empty string if index is invalid
+    */
+    Q_INVOKABLE QString getParentHash(const QString &commitHash, int index = 0);
 
     /**
      * \brief Stage a file for commit

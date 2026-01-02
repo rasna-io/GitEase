@@ -44,6 +44,10 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Repository/RecentRepositoriesList.qml   # Recent repositories list
     Qml/View/Components/Repository/RepositorySelector.qml       # Repository selection component
     Qml/View/Components/Repository/RepositoriesSidebar.qml      # Repositories Sidebar component
+    Qml/View/Components/Repository/SideBySideDiff.qml
+
+    Qml/View/Components/Diff/DiffView.qml
+    Qml/View/Components/Diff/StackedDiff.qml
 
     # Navigation Components - Side rails / tab bars
     Qml/View/Components/Navigation/NavigationRail.qml           # Combined pages+repos navigation rail
@@ -56,6 +60,8 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
     Qml/View/Components/Docks/CommitGraphSimulator.qml  # GraphDummyDataGenerator
 
+    # DockPanel Docks
+    Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
 )
 
 

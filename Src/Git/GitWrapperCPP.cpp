@@ -640,6 +640,240 @@ QString GitWrapperCPP::getUpstreamName(const QString &localBranchName)
     return result;
 }
 
+QVariantList GitWrapperCPP::getSideBySideDiff(const QString &filePath)
+{
+    QVariantList result;
+    if (!m_currentRepo) return result;
+
+    git_diff* diff = nullptr;
+    git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+
+    opts.flags |= GIT_DIFF_PATIENCE | GIT_DIFF_INDENT_HEURISTIC | GIT_DIFF_MINIMAL;
+
+    QByteArray pathBytes = filePath.toUtf8();
+    char* path = const_cast<char*>(pathBytes.constData());
+    opts.pathspec.strings = &path;
+    opts.pathspec.count = 1;
+
+    int error = git_diff_index_to_workdir(&diff, m_currentRepo, nullptr, &opts);
+
+    if (error == 0) {
+        struct RawLine { char origin; int old_no; int new_no; QString content; };
+        std::vector<RawLine> rawLines;
+
+        git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, [](
+                                                        const git_diff_delta*, const git_diff_hunk*, const git_diff_line *line, void *payload) -> int {
+            auto *vec = static_cast<std::vector<RawLine>*>(payload);
+
+            if (line->origin == GIT_DIFF_LINE_CONTEXT ||
+                line->origin == GIT_DIFF_LINE_ADDITION ||
+                line->origin == GIT_DIFF_LINE_DELETION) {
+
+                QString content = QString::fromUtf8(line->content, line->content_len);
+                content.remove('\n').remove('\r');
+                vec->push_back({line->origin, line->old_lineno, line->new_lineno, content});
+            }
+            return 0;
+        }, &rawLines);
+
+        for (size_t i = 0; i < rawLines.size(); ++i) {
+            QVariantMap map;
+
+            if (rawLines[i].origin == GIT_DIFF_LINE_DELETION &&
+                (i + 1) < rawLines.size() &&
+                rawLines[i+1].origin == GIT_DIFF_LINE_ADDITION) {
+
+                map["type"] = 3; // Modified
+                map["content"] = rawLines[i].content;
+                map["contentNew"] = rawLines[i+1].content;
+                map["oldLine"] = rawLines[i].old_no;
+                map["newLine"] = rawLines[i+1].new_no;
+                i++;
+            }
+            else if (rawLines[i].origin == GIT_DIFF_LINE_DELETION) {
+                map["type"] = 2; // Deleted
+                map["content"] = rawLines[i].content;
+                map["oldLine"] = rawLines[i].old_no;
+                map["newLine"] = -1;
+            }
+            else if (rawLines[i].origin == GIT_DIFF_LINE_ADDITION) {
+                map["type"] = 1; // Added
+                map["content"] = rawLines[i].content;
+                map["oldLine"] = -1;
+                map["newLine"] = rawLines[i].new_no;
+            }
+            else {
+                map["type"] = 0; // Context
+                map["content"] = rawLines[i].content;
+                map["oldLine"] = rawLines[i].old_no;
+                map["newLine"] = rawLines[i].new_no;
+            }
+            result.append(map);
+        }
+    }
+
+    if (diff) git_diff_free(diff);
+
+    return result;
+}
+
+QVariantList GitWrapperCPP::getCommitsDiff(const QString &oldCommitHash, const QString &newCommitHash, const QString &filePath)
+{
+    QVariantList result;
+    if (!m_currentRepo) return result;
+
+    git_object *oldCommitObj = nullptr;
+    git_object *newCommitObj = nullptr;
+    git_tree *oldTree = nullptr;
+    git_tree *newTree = nullptr;
+    git_diff *diff = nullptr;
+
+    if (git_revparse_single(&oldCommitObj, m_currentRepo, oldCommitHash.toUtf8().constData()) != 0)
+        return result;
+
+    if (git_revparse_single(&newCommitObj, m_currentRepo, newCommitHash.toUtf8().constData()) != 0) {
+        git_object_free(oldCommitObj);
+        return result;
+    }
+
+    bool treeError = (git_commit_tree(&oldTree, reinterpret_cast<const git_commit*>(oldCommitObj)) != 0 ||
+                      git_commit_tree(&newTree, reinterpret_cast<const git_commit*>(newCommitObj)) != 0);
+
+    if (!treeError) {
+        git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+        opts.flags |= GIT_DIFF_PATIENCE | GIT_DIFF_INDENT_HEURISTIC | GIT_DIFF_MINIMAL;
+
+        QByteArray pathBytes = filePath.toUtf8();
+        char* path = const_cast<char*>(pathBytes.constData());
+        opts.pathspec.strings = &path;
+        opts.pathspec.count = 1;
+
+        if (git_diff_tree_to_tree(&diff, m_currentRepo, oldTree, newTree, &opts) == 0) {
+            struct RawLine { char origin; int old_no; int new_no; QString content; };
+            std::vector<RawLine> rawLines;
+
+            git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, [](
+                                                            const git_diff_delta*, const git_diff_hunk*, const git_diff_line *line, void *payload) -> int {
+                auto *vec = static_cast<std::vector<RawLine>*>(payload);
+                if (line->origin == GIT_DIFF_LINE_CONTEXT ||
+                    line->origin == GIT_DIFF_LINE_ADDITION ||
+                    line->origin == GIT_DIFF_LINE_DELETION) {
+
+                    QString content = QString::fromUtf8(line->content, line->content_len);
+                    content.remove('\n').remove('\r');
+                    vec->push_back({line->origin, line->old_lineno, line->new_lineno, content});
+                }
+                return 0;
+            }, &rawLines);
+
+            for (size_t i = 0; i < rawLines.size(); ++i) {
+                QVariantMap map;
+                if (rawLines[i].origin == '-' && (i + 1) < rawLines.size() && rawLines[i+1].origin == '+') {
+                    map["type"] = 3; // Modified
+                    map["content"] = rawLines[i].content;
+                    map["contentNew"] = rawLines[i+1].content;
+                    map["oldLine"] = rawLines[i].old_no;
+                    map["newLine"] = rawLines[i+1].new_no;
+                    i++;
+                } else if (rawLines[i].origin == '-') {
+                    map["type"] = 2; // Deleted
+                    map["content"] = rawLines[i].content;
+                    map["oldLine"] = rawLines[i].old_no;
+                    map["newLine"] = -1;
+                } else if (rawLines[i].origin == '+') {
+                    map["type"] = 1; // Added
+                    map["content"] = rawLines[i].content;
+                    map["oldLine"] = -1;
+                    map["newLine"] = rawLines[i].new_no;
+                } else {
+                    map["type"] = 0; // Context
+                    map["content"] = rawLines[i].content;
+                    map["oldLine"] = rawLines[i].old_no;
+                    map["newLine"] = rawLines[i].new_no;
+                }
+                result.append(map);
+            }
+        }
+    }
+
+    if (diff) git_diff_free(diff);
+    if (oldTree) git_tree_free(oldTree);
+    if (newTree) git_tree_free(newTree);
+    if (oldCommitObj) git_object_free(oldCommitObj);
+    if (newCommitObj) git_object_free(newCommitObj);
+
+    return result;
+}
+
+QVariantList GitWrapperCPP::getCommitFileChanges(const QString &commitHash)
+{
+    QVariantList fileList;
+    if (!m_currentRepo || commitHash.isEmpty()) return fileList;
+
+    git_object *commitObj = nullptr;
+    git_commit *commit = nullptr;
+    git_commit *parent = nullptr;
+    git_tree *commitTree = nullptr;
+    git_tree *parentTree = nullptr;
+    git_diff *diff = nullptr;
+
+    if (git_revparse_single(&commitObj, m_currentRepo, commitHash.toUtf8().constData()) != 0)
+        return fileList;
+
+    commit = reinterpret_cast<git_commit*>(commitObj);
+
+    if (git_commit_tree(&commitTree, commit) != 0) {
+        git_object_free(commitObj);
+        return fileList;
+    }
+
+    if (git_commit_parentcount(commit) > 0) {
+        if (git_commit_parent(&parent, commit, 0) == 0) {
+            git_commit_tree(&parentTree, parent);
+        }
+    }
+
+    git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+
+    if (git_diff_tree_to_tree(&diff, m_currentRepo, parentTree, commitTree, &opts) == 0) {
+        size_t num_deltas = git_diff_num_deltas(diff);
+        for (size_t i = 0; i < num_deltas; ++i) {
+            const git_diff_delta *delta = git_diff_get_delta(diff, i);
+
+            git_patch *patch = nullptr;
+            size_t add = 0, del = 0;
+            if (git_patch_from_diff(&patch, diff, i) == 0) {
+                git_patch_line_stats(nullptr, &add, &del, patch);
+                git_patch_free(patch);
+            }
+
+            QVariantMap fileMap;
+            fileMap["filePath"] = QString::fromUtf8(delta->new_file.path);
+            fileMap["additions"] = static_cast<int>(add);
+            fileMap["deletions"] = static_cast<int>(del);
+
+            QString statusChar;
+            switch (delta->status) {
+            case GIT_DELTA_ADDED:     statusChar = "A"; break;
+            case GIT_DELTA_DELETED:   statusChar = "D"; break;
+            case GIT_DELTA_MODIFIED:  statusChar = "M"; break;
+            case GIT_DELTA_RENAMED:   statusChar = "R"; break;
+            default:                  statusChar = "U"; break;
+            }
+            fileMap["status"] = statusChar;
+            fileList.append(fileMap);
+        }
+    }
+
+    if (diff) git_diff_free(diff);
+    if (parentTree) git_tree_free(parentTree);
+    if (commitTree) git_tree_free(commitTree);
+    if (parent) git_commit_free(parent);
+    if (commitObj) git_object_free(commitObj);
+
+    return fileList;
+}
+
 QVariantMap GitWrapperCPP::getRepoInfo(const QString &repoPath)
 {
     // Step 1: Check if repository is open
@@ -944,6 +1178,37 @@ QVariantMap GitWrapperCPP::commit(const QString& message,
 
     return createResult(true, commitDetails);
 }
+
+QString GitWrapperCPP::getParentHash(const QString &commitHash, int index)
+{
+    if (!m_currentRepo || commitHash.isEmpty() || index < 0)
+        return "";
+
+    git_oid oid;
+    if (git_oid_fromstr(&oid, commitHash.toUtf8().constData()) != 0)
+        return "";
+
+    git_commit* commit = nullptr;
+    if (git_commit_lookup(&commit, m_currentRepo, &oid) != 0)
+        return "";
+
+    QString parentHash;
+
+    unsigned int parentCount = git_commit_parentcount(commit);
+
+    if (index < static_cast<int>(parentCount)) {
+        const git_oid* parentOid = git_commit_parent_id(commit, index);
+        if (parentOid) {
+            char hash[GIT_OID_HEXSZ + 1];
+            git_oid_tostr(hash, sizeof(hash), parentOid);
+            parentHash = QString::fromUtf8(hash);
+        }
+    }
+
+    git_commit_free(commit);
+    return parentHash;
+}
+
 
 QString GitWrapperCPP::validateCommitInputs(git_repository* repo,
                                             const QString& message,
