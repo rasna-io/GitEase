@@ -2306,7 +2306,20 @@ QVariantMap GitWrapperCPP::exportCompleteBundle(const QString &targetBranch, con
                             "Failed to insert objects into packbuilder. Repository might be corrupted.");
     }
 
+    // 8. WALK THROUGH ALL COMMITS IN HISTORY
+    gitError = git_revwalk_new(&walker, m_currentRepo);
+    if (gitError == 0) {
+        git_revwalk_sorting(walker, GIT_SORT_TOPOLOGICAL);
+        git_revwalk_push(walker, targetOid);
 
+        git_oid commitOid;
+        int commitCount = 0;
+        while (git_revwalk_next(&commitOid, walker) == 0) {
+            git_packbuilder_insert(packbuilder, &commitOid, nullptr);
+            commitCount++;
+        }
+        qDebug() << "   Included " << commitCount << " commits in history";
+    }
 
     // 9. VALIDATE WE HAVE OBJECTS TO BUNDLE
     size_t totalObjects = git_packbuilder_object_count(packbuilder);
