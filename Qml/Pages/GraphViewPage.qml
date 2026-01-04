@@ -34,6 +34,8 @@ Item {
     property string selectedCommit: ""
     property string selectedFilePath: ""
 
+    property Component headerContent: null
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
