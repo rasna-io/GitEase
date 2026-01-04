@@ -224,6 +224,46 @@ private:
      * End of Commit Operation Helper Functions
      * ============================================================ */
 
+
+    /* ============================================================
+     * Bundle Operation Helper Functions
+     * ============================================================ */
+
+    /**
+     * \brief Clean up Git resources safely (RAII-style)
+     */
+    void cleanupBundleResources(git_reference* ref, git_object* object, git_revwalk* walker, git_packbuilder* packbuilder);
+
+    /**
+     * \brief Convert git_oid to hexadecimal string
+     */
+    QString gitOidToString(const git_oid* oid);
+
+    /**
+     * \brief Create actual bundle file from packbuilder
+     * \param packbuilder Packbuilder containing objects to bundle
+     * \param bundleFilePath Output file path
+     * \param targetCommitSha SHA of target commit
+     * \param branchName Name of branch being bundled
+     * \param isCompleteBundle True for complete bundle, false for diff bundle
+     * \return QVariantMap with operation result
+     */
+    QVariantMap createBundleFile(git_packbuilder* packbuilder,
+                                                const QString& bundleFilePath,
+                                                const QString& targetCommitSha,
+                                                const QString& branchName,
+                                                bool isCompleteBundle);
+
+    /**
+     * \brief Verify bundle using Git command line (most reliable)
+     */
+    QVariantMap verifyBundleWithGit(const QString& bundlePath);
+
+    /* ============================================================
+     * End of Bundle Operation Helper Functions
+     * ============================================================ */
+
+
     /* Internal Test Function */
     void unitTest();
 
@@ -501,6 +541,23 @@ public slots:
      * \return QVariantMap with operation result
      */
     Q_INVOKABLE QVariantMap removeRemote(const QString &name);
+
+
+    /* bundle Operations */
+    /**
+     * \brief Create a complete bundle containing ALL history of a branch
+     * \param targetBranch Name of branch to bundle (e.g., "feature/commit")
+     * \param outputPath Where to save the .bundle file
+     * \return QVariantMap with bundle metadata and operation result
+     *
+     * USAGE: When you need to send someone EVERYTHING in a branch,
+     *        including all shared history they might not have.
+     *
+     * WARNING: Can create large bundles (contains entire Git history reachable from branch)
+     *
+     * Example: exportCompleteBundle("main", "E:/backup/main.bundle")
+     */
+    QVariantMap exportCompleteBundle(const QString& targetBranch, const QString& outputPath);
 };
 
 #endif // GITWRAPPERCPP_H
