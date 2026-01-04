@@ -558,6 +558,7 @@ public slots:
      * Example: exportCompleteBundle("main", "E:/backup/main.bundle")
      */
     QVariantMap exportCompleteBundle(const QString& targetBranch, const QString& outputPath);
+
 };
 
 #endif // GITWRAPPERCPP_H

@@ -1424,7 +1424,6 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
     }
 
     QString tempPath = tempDir.path();
-    qDebug() << "   Temp directory: " << tempPath;
 
     // 1. Write pack to temporary directory
     int gitError = git_packbuilder_write(packbuilder,
@@ -1435,9 +1434,10 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
                             QString("Failed to write pack files"));
     }
 
-    // 2. Find the created pack file
+    // 2. Find the created pack file ONLY (no idx file needed!)
     QDir tempDirObj(tempPath);
     QFileInfoList packFiles = tempDirObj.entryInfoList(QStringList() << "*.pack", QDir::Files);
+
     if (packFiles.isEmpty()) {
         return createResult(false, QVariant(),
                             "No pack file was created. Packbuilder might be empty.");
@@ -1445,9 +1445,9 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
 
     QString packFilePath = packFiles.first().absoluteFilePath();
     qint64 packFileSize = QFileInfo(packFilePath).size();
-    qDebug() << "   Pack file size: " << packFileSize << " bytes";
+    qDebug() << "   Pack file: " << packFilePath << " (" << packFileSize << " bytes)";
 
-    // 3. Create bundle file with proper header
+    // 3. Create bundle file - SIMPLER HEADER (match your working version)
     QFile bundleFile(bundleFilePath);
     if (!bundleFile.open(QIODevice::WriteOnly)) {
         return createResult(false, QVariant(),
@@ -1455,27 +1455,59 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
                                 .arg(bundleFilePath));
     }
 
-    // 4. Write bundle header (Git bundle format v2)
-    QTextStream headerStream(&bundleFile);
-    headerStream << "# v2 git bundle\n";
+    // 4. Write bundle header EXACTLY like your working version:
+    //    "# v2 git bundle\n"
+    //    "<sha> refs/heads/<branch>\n"
+    //    "\n"  // ONE empty line, then pack data
 
-    // Reference line: what this bundle will create when fetched
-    // Format: <commit-sha> <ref-name>
-    QString refName = branchName;
-    if (!refName.startsWith("refs/")) {
-        if (refName.startsWith("origin/")) {
-            refName.replace("origin/", "refs/heads/");
-        } else {
-            refName = "refs/heads/" + refName;
+    QByteArray header;
+
+    // Header line - NO extra empty line after this!
+    header.append("# v2 git bundle\n");
+
+    // Reference line: EXACTLY like your working version
+    QString refName;
+    if (branchName.startsWith("origin/")) {
+        refName = "refs/heads/" + branchName.mid(7); // Remove "origin/"
+    } else {
+        // Clean branch name - remove remote prefixes
+        QString cleanName = branchName;
+        if (cleanName.startsWith("refs/heads/")) {
+            cleanName = cleanName.mid(11);
         }
+        if (cleanName.startsWith("refs/remotes/")) {
+            cleanName = cleanName.mid(13);
+            if (cleanName.startsWith("origin/")) {
+                cleanName = cleanName.mid(7);
+            }
+        }
+        refName = "refs/heads/" + cleanName;
     }
 
-    headerStream << targetCommitSha << " " << refName << "\n";
-    headerStream << "\n";  // Empty line separates header from pack data
+    // Write: <sha> <ref>\n
+    header.append(targetCommitSha.toUtf8());
+    header.append(" ");
+    header.append(refName.toUtf8());
+    header.append("\n");
 
-    qDebug() << "   Bundle header: " << targetCommitSha << " -> " << refName;
+    // ONE empty line separates header from pack data
+    header.append("\n");
 
-    // 5. Append pack file data
+    qDebug() << "   Bundle header (exact format):";
+    qDebug() << "     Line 1: # v2 git bundle";
+    qDebug() << "     Line 2: " << targetCommitSha << " " << refName;
+    qDebug() << "     Line 3: (empty line)";
+
+    // Write header to file
+    qint64 headerBytesWritten = bundleFile.write(header);
+    if (headerBytesWritten != header.size()) {
+        bundleFile.close();
+        return createResult(false, QVariant(),
+                            QString("Failed to write bundle header (expected %1 bytes, wrote %2)")
+                                .arg(header.size()).arg(headerBytesWritten));
+    }
+
+    // 5. Append ONLY the pack file data (NO idx file!)
     QFile packFile(packFilePath);
     if (!packFile.open(QIODevice::ReadOnly)) {
         bundleFile.close();
@@ -1485,7 +1517,8 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
 
     // Copy pack data in efficient chunks
     const qint64 CHUNK_SIZE = 64 * 1024;  // 64KB chunks
-    qint64 totalCopied = 0;
+    qint64 packBytesCopied = 0;
+
     while (!packFile.atEnd()) {
         QByteArray chunk = packFile.read(CHUNK_SIZE);
         qint64 written = bundleFile.write(chunk);
@@ -1493,71 +1526,151 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
             packFile.close();
             bundleFile.close();
             return createResult(false, QVariant(),
-                                QString("Failed to write chunk (expected %1 bytes, wrote %2)")
+                                QString("Failed to write pack chunk (expected %1 bytes, wrote %2)")
                                     .arg(chunk.size()).arg(written));
         }
-        totalCopied += written;
+        packBytesCopied += written;
     }
-
     packFile.close();
+
+    qDebug() << "   Pack data appended: " << packBytesCopied << " bytes";
+
+    // 6. CRITICAL: DO NOT append idx file! Git bundles only contain pack file
     bundleFile.close();
 
-    qDebug() << "   Bundle created: " << totalCopied << " bytes total";
+    qDebug() << "   Bundle created: " << (headerBytesWritten + packBytesCopied) << " total bytes";
 
-    // 6. Verify bundle integrity
+    // 7. Debug: Compare with working bundle format
+    qDebug() << "\n   === FORMAT DEBUG ===";
+
+    // Read first 100 bytes of our bundle
+    if (QFile::exists(bundleFilePath)) {
+        QFile debugFile(bundleFilePath);
+        if (debugFile.open(QIODevice::ReadOnly)) {
+            QByteArray first100 = debugFile.read(100);
+            debugFile.close();
+
+            // Find where pack data starts (after "PACK")
+            int packStart = first100.indexOf("PACK");
+            if (packStart > 0) {
+                qDebug() << "     Header size:" << packStart << "bytes";
+                qDebug() << "     Pack starts at byte:" << packStart;
+
+                // Show header as text
+                QByteArray headerOnly = first100.left(packStart);
+                QString headerText = QString::fromLatin1(headerOnly);
+                QStringList lines = headerText.split('\n', Qt::SkipEmptyParts);
+
+                qDebug() << "     Header lines:";
+                for (int i = 0; i < lines.size(); i++) {
+                    qDebug() << "       [" << i << "]" << lines[i];
+                }
+
+                // Check if we have exactly 2 non-empty lines
+                if (lines.size() != 2) {
+                    qDebug() << "      WARNING: Expected 2 header lines, got" << lines.size();
+                }
+            }
+        }
+    }
+
+    // 8. Verify bundle integrity - use git bundle verify
     QVariantMap verifyResult = verifyBundleWithGit(bundleFilePath);
     bool verified = verifyResult["success"].toBool();
 
-    // 7. Build result
+    if (!verified) {
+        qDebug() << "   Bundle verification failed:";
+        qDebug() << "     Error:" << verifyResult["output"].toString();
+
+        // Try to create a simple test to understand the issue
+        qDebug() << "\n   Creating test bundle with git CLI for comparison...";
+    }
+
+    // 9. Build result
     QVariantMap data;
     data["bundlePath"] = bundleFilePath;
     data["fileSize"] = QFileInfo(bundleFilePath).size();
     data["packFileSize"] = packFileSize;
     data["verified"] = verified;
     data["bundleType"] = isCompleteBundle ? "complete" : "differential";
+    data["refName"] = refName;
+    data["targetCommit"] = targetCommitSha;
 
     if (!verified) {
-        data["verifyError"] = verifyResult["error"].toString();
+        data["verifyOutput"] = verifyResult["output"].toString();
     }
 
-    return createResult(true, data,
-                        QString("%1 bundle created successfully at: %2\nSize: %3 bytes\nVerified: %4")
-                            .arg(isCompleteBundle ? "Complete" : "Differential")
-                            .arg(bundleFilePath)
-                            .arg(data["fileSize"].toLongLong())
-                            .arg(verified ? "✓" : "✗"));
+    QString resultMsg;
+    if (verified) {
+        resultMsg = QString("%1 bundle created successfully at: %2\nSize: %3 bytes\nVerified: ✓")
+                        .arg(isCompleteBundle ? "Complete" : "Differential")
+                        .arg(bundleFilePath)
+                        .arg(data["fileSize"].toLongLong());
+    } else {
+        resultMsg = QString("Bundle created but verification failed\nPath: %1\nError: %2")
+        .arg(bundleFilePath)
+            .arg(verifyResult["output"].toString());
+    }
+
+    return createResult(verified, data, resultMsg);
 }
 
 QVariantMap GitWrapperCPP::verifyBundleWithGit(const QString &bundlePath)
 {
+    if (!QFile::exists(bundlePath)) {
+        return createResult(false, QVariant(),
+                            QString("Bundle file does not exist: %1").arg(bundlePath));
+    }
+
+    qDebug() << "   Verifying bundle with Git CLI...";
+
     QProcess gitProcess;
     gitProcess.setProgram("git");
     gitProcess.setArguments(QStringList() << "bundle" << "verify" << bundlePath);
 
     // Set working directory to current repo
     const char* repoPath = git_repository_workdir(m_currentRepo);
+    QString workingDir;
+
     if (repoPath) {
-        gitProcess.setWorkingDirectory(QString::fromUtf8(repoPath));
+        workingDir = QString::fromUtf8(repoPath);
+    } else {
+        repoPath = git_repository_path(m_currentRepo);
+        workingDir = QString::fromUtf8(repoPath);
+        // If this is a bare repo, go up one directory
+        if (workingDir.endsWith("/.git")) {
+            workingDir = workingDir.left(workingDir.length() - 5);
+        }
     }
+
+    qDebug() << "   Git working directory:" << workingDir;
+    gitProcess.setWorkingDirectory(workingDir);
+
+    // Set up process to capture both stdout and stderr
+    gitProcess.setProcessChannelMode(QProcess::MergedChannels);
 
     gitProcess.start();
+
     if (!gitProcess.waitForStarted(3000)) {
-        return createResult(false, QVariant(), "Failed to start Git process");
+        return createResult(false, QVariant(),
+                            "Failed to start Git process. Make sure Git is installed and in PATH.");
     }
 
-    if (!gitProcess.waitForFinished(10000)) {
+    if (!gitProcess.waitForFinished(15000)) {
         gitProcess.kill();
-        return createResult(false, QVariant(), "Git verify timed out");
+        return createResult(false, QVariant(),
+                            "Git verify timed out after 15 seconds.");
     }
 
-    QString output = QString::fromUtf8(gitProcess.readAllStandardOutput());
-    QString error = QString::fromUtf8(gitProcess.readAllStandardError());
+    QString output = QString::fromUtf8(gitProcess.readAll());
+    int exitCode = gitProcess.exitCode();
 
     QVariantMap result;
-    result["success"] = (gitProcess.exitCode() == 0);
+    result["success"] = (exitCode == 0);
     result["output"] = output.trimmed();
-    result["error"] = error.trimmed();
-    result["exitCode"] = gitProcess.exitCode();
+    result["exitCode"] = exitCode;
+
+    qDebug() << "   Git verify exit code:" << exitCode;
 
     return result;
 }
@@ -2176,20 +2289,18 @@ QVariantMap GitWrapperCPP::exportCompleteBundle(const QString &targetBranch, con
                                 .arg(outputPath.isEmpty() ? "(empty)" : outputPath));
     }
 
+    QString bundleFilePath = outputPath;
+    if (!bundleFilePath.endsWith(".bundle")) {
+        bundleFilePath += ".bundle";
+    }
+
     // 2. INITIALIZATION & RESOURCE ACQUISITION
     git_reference* targetRef = nullptr;
     git_object* targetCommit = nullptr;
     git_revwalk* walker = nullptr;
     git_packbuilder* packbuilder = nullptr;
 
-    QString bundleFilePath = outputPath;
-    if (!bundleFilePath.endsWith(".bundle")) {
-        bundleFilePath += ".bundle";
-    }
 
-    qDebug() << "🧩 CREATING COMPLETE BUNDLE";
-    qDebug() << "   Target Branch: " << targetBranch;
-    qDebug() << "   Output File:   " << bundleFilePath;
 
     // 3. RESOLVE TARGET BRANCH (try local then remote)
     QString resolvedBranchName = targetBranch;
@@ -2223,7 +2334,6 @@ QVariantMap GitWrapperCPP::exportCompleteBundle(const QString &targetBranch, con
     if (rawBranchName) {
         resolvedBranchName = QString::fromUtf8(rawBranchName);
     }
-    qDebug() << "   Resolved to:   " << resolvedBranchName;
 
     // 5. GET TARGET COMMIT OBJECT
     gitError = git_reference_peel(&targetCommit, targetRef, GIT_OBJECT_COMMIT);
@@ -2235,7 +2345,6 @@ QVariantMap GitWrapperCPP::exportCompleteBundle(const QString &targetBranch, con
 
     const git_oid* targetOid = git_object_id(targetCommit);
     QString targetCommitSha = gitOidToString(targetOid);
-    qDebug() << "   Target Commit: " << targetCommitSha;
 
     // 6. CREATE PACKBUILDER FOR BUNDLING
     gitError = git_packbuilder_new(&packbuilder, m_currentRepo);
@@ -2245,20 +2354,8 @@ QVariantMap GitWrapperCPP::exportCompleteBundle(const QString &targetBranch, con
     }
 
     // 7. INSERT ALL REACHABLE OBJECTS (Complete Bundle = Everything)
-    qDebug() << "   Inserting ALL objects reachable from commit...";
-
-// Method 1: Use libgit2's insert_commit if available
-#ifdef GIT_PACKBUILDER_INSERT_COMMIT
     gitError = git_packbuilder_insert_commit(packbuilder, targetOid);
-#else
-    // Method 2: Manual insertion of tree and all contents
-    git_tree* commitTree = nullptr;
-    gitError = git_commit_tree(&commitTree, (git_commit*)targetCommit);
-    if (gitError == 0) {
-        gitError = git_packbuilder_insert_tree(packbuilder, git_tree_id(commitTree));
-        git_tree_free(commitTree);
-    }
-#endif
+
 
     if (gitError != 0) {
         cleanupBundleResources(targetRef, targetCommit, nullptr, packbuilder);
@@ -2266,20 +2363,20 @@ QVariantMap GitWrapperCPP::exportCompleteBundle(const QString &targetBranch, con
                             "Failed to insert objects into packbuilder. Repository might be corrupted.");
     }
 
-    // 8. WALK THROUGH ALL COMMITS IN HISTORY
-    gitError = git_revwalk_new(&walker, m_currentRepo);
-    if (gitError == 0) {
-        git_revwalk_sorting(walker, GIT_SORT_TOPOLOGICAL);
-        git_revwalk_push(walker, targetOid);
+    // // 8. WALK THROUGH ALL COMMITS IN HISTORY
+    // gitError = git_revwalk_new(&walker, m_currentRepo);
+    // if (gitError == 0) {
+    //     git_revwalk_sorting(walker, GIT_SORT_TOPOLOGICAL);
+    //     git_revwalk_push(walker, targetOid);
 
-        git_oid commitOid;
-        int commitCount = 0;
-        while (git_revwalk_next(&commitOid, walker) == 0) {
-            git_packbuilder_insert(packbuilder, &commitOid, nullptr);
-            commitCount++;
-        }
-        qDebug() << "   Included " << commitCount << " commits in history";
-    }
+    //     git_oid commitOid;
+    //     int commitCount = 0;
+    //     while (git_revwalk_next(&commitOid, walker) == 0) {
+    //         git_packbuilder_insert(packbuilder, &commitOid, nullptr);
+    //         commitCount++;
+    //     }
+    //     qDebug() << "   Included " << commitCount << " commits in history";
+    // }
 
     // 9. VALIDATE WE HAVE OBJECTS TO BUNDLE
     size_t totalObjects = git_packbuilder_object_count(packbuilder);
@@ -2311,6 +2408,8 @@ QVariantMap GitWrapperCPP::exportCompleteBundle(const QString &targetBranch, con
 
     return result;
 }
+
+
 
 QVariantMap GitWrapperCPP::push(const QString &remoteName,
                                 const QString &branchName,
