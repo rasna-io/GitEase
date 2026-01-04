@@ -30,15 +30,8 @@ Rectangle {
         Header {
             Layout.fillHeight: true
             Layout.fillWidth: true
-            content: Rectangle {
-                // TODO : main header for each page
-                // Text {
-                //     anchors.centerIn: parent
-                //     text: "# main header in docks"
-                //     horizontalAlignment: Text.AlignHCenter
-                //     verticalAlignment: Text.AlignVCenter
-                // }
-            }
+
+            content: (pageLoader.item && pageLoader.item.hasOwnProperty("headerContent")) ? pageLoader.item.headerContent : null
         }
 
         RowLayout {
