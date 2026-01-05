@@ -28,8 +28,18 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
+    // Full data set (unfiltered) vs displayed set (filtered)
+    property var allCommits: []
     property var commits: []
     property var selectedCommit: null
+
+    // Filtering state
+    // filterColumn: one of ["Message", "Author"]
+    property string filterColumn: "Message"
+    // Dates are inclusive; accept empty string to disable bound. Format: YYYY-MM-DD
+    property string filterStartDate: ""
+    property string filterEndDate: ""
+    property string filterText: ""
 
     // Lazy loading (infinite scroll)
     property int pageSize: 200
@@ -78,6 +88,112 @@ Item {
                 return GraphUtils.getCategoryColor(fromCommit.colorKey)
         }
         return GraphUtils.getCategoryColor("edge:" + edge.from + ":" + edge.to)
+    }
+
+    function normalizeFilterString(str) {
+        return (str === null || str === undefined) ? "" : ("" + str)
+    }
+
+    function parseDateYYYYMMDD(str) {
+        // Returns milliseconds since epoch, or NaN if invalid.
+        // Accepts:
+        // - YYYY-MM-DD
+        // - YYYY/MM/DD (used by GraphViewPage placeholders)
+        if (str === null || str === undefined)
+            return NaN
+
+        str = ("" + str).trim()
+        if (str.length < 8)
+            return NaN
+
+        // Split on '-' or '/'
+        var parts = str.split(/[-\/]/)
+        if (parts.length !== 3)
+            return NaN
+
+        var y = parseInt(parts[0])
+        var m = parseInt(parts[1])
+        var d = parseInt(parts[2])
+        if (isNaN(y) || isNaN(m) || isNaN(d))
+            return NaN
+
+        // local time midnight
+        return new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
+    }
+
+    function applyFilter(column, text, startDate, endDate) {
+        if (column !== undefined)
+            root.filterColumn = column
+        if (text !== undefined)
+            root.filterText = text
+        if (startDate !== undefined)
+            root.filterStartDate = startDate
+        if (endDate !== undefined)
+            root.filterEndDate = endDate
+
+        var base = root.allCommits || []
+        if (!base.length) {
+            loadData([])
+            return
+        }
+
+        var needle = normalizeFilterString(root.filterText).trim().toLowerCase()
+
+        var startMs = parseDateYYYYMMDD(root.filterStartDate)
+        var endMs = parseDateYYYYMMDD(root.filterEndDate)
+        // Make end date inclusive by moving to end-of-day
+        if (!isNaN(endMs))
+            endMs = endMs + (24 * 60 * 60 * 1000) - 1
+
+        var filtered = []
+        for (var i = 0; i < base.length; i++) {
+            var c = base[i]
+            if (!c)
+                continue
+
+            // Date range filter (authorDate)
+            if (!isNaN(startMs) || !isNaN(endMs)) {
+                var commitMs = new Date(c.authorDate).getTime()
+                if (!isNaN(startMs) && !(commitMs >= startMs))
+                    continue
+                if (!isNaN(endMs) && !(commitMs <= endMs))
+                    continue
+            }
+
+            // Text filter
+            if (needle.length) {
+                var hay = ""
+                if (root.filterColumn === "Author") {
+                    hay = normalizeFilterString(c.author)
+                } else {
+                    // Message
+                    hay = normalizeFilterString(c.summary) + " " + normalizeFilterString(c.message)
+                }
+
+                if (hay.toLowerCase().indexOf(needle) === -1)
+                    continue
+            }
+
+            filtered.push(c)
+        }
+
+        loadData(filtered)
+
+        // If current selection is filtered out, clear it.
+        if (root.selectedCommit && root.selectedCommit.hash) {
+            var stillThere = filtered.find(function(x) { return x && x.hash === root.selectedCommit.hash })
+            if (!stillThere)
+                root.selectedCommit = null
+        }
+    }
+
+    function clearFilter() {
+        root.filterText = ""
+        root.filterStartDate = ""
+        root.filterEndDate = ""
+        root.filterColumn = "Message"
+
+        loadData((root.allCommits || []).slice(0))
     }
 
     /**
@@ -138,7 +254,8 @@ Item {
             Rectangle {
                 id: header
                 Layout.fillWidth: true
-                Layout.preferredHeight: 30
+                visible: root.commits && root.commits.length > 0
+                Layout.preferredHeight: visible ? 30 : 0
 
                 RowLayout {
                     anchors.fill: parent
@@ -594,15 +711,18 @@ Item {
                             }
 
                             onPaint: {
+                                // Always clear the canvas first. Otherwise, when commits becomes empty
+                                // (e.g., filter has no results), the old graph remains visible.
+                                var ctx = getContext("2d");
+
+                                // Erase previous frame completely
+                                ctx.clearRect(0, 0, width, height);
+                                ctx.globalAlpha = 1.0;
+                                ctx.fillStyle = "#FFFFFF";
+                                ctx.fillRect(0, 0, width, height);
 
                                 if (!root.commits || root.commits.length === 0)
                                     return;
-
-                                var ctx = getContext("2d");
-                                ctx.clearRect(0, 0, width, height);
-                                ctx.globalAlpha = 1.0;
-
-                                if (root.commits.length === 0) return;
 
                                 // Calculate center offset for graph
                                 var maxColumns = 0;
@@ -1194,6 +1314,58 @@ Item {
         return compiled
     }
 
+    function selectedIndex() {
+        if (!root.selectedCommit || !root.selectedCommit.hash)
+            return -1
+
+        for (var i = 0; i < root.commits.length; i++) {
+            if (root.commits[i] && root.commits[i].hash === root.selectedCommit.hash)
+                return i
+        }
+        return -1
+    }
+
+    function selectCommitAtIndex(index) {
+        if (!root.commits || root.commits.length === 0)
+            return
+
+        var i = Math.max(0, Math.min(index, root.commits.length - 1))
+        var c = root.commits[i]
+        if (!c)
+            return
+
+        root.selectedCommit = c
+        root.commitClicked(c.hash)
+
+        commitsListView.positionViewAtIndex(i, ListView.Contain)
+    }
+
+    function selectPrevious() {
+        if (!root.commits || root.commits.length === 0)
+            return
+
+        var idx = selectedIndex()
+        if (idx < 0)
+            idx = 0
+        else
+            idx = Math.max(0, idx - 1)
+
+        selectCommitAtIndex(idx)
+    }
+
+    function selectNext() {
+        if (!root.commits || root.commits.length === 0)
+            return
+
+        var idx = selectedIndex()
+        if (idx < 0)
+            idx = 0
+        else
+            idx = Math.min(root.commits.length - 1, idx + 1)
+
+        selectCommitAtIndex(idx)
+    }
+
     function reloadAll() {
         if (!repositoryController || !root.appModel || !root.appModel.currentRepository) {
             return;
@@ -1217,7 +1389,10 @@ Item {
         var commits = compileGraphCommits(page, allBranches);
         commitsOffset = commits.length
         hasMoreCommits = (page && page.length === pageSize)
-        loadData(commits);
+
+        // Store full dataset and apply current filter
+        root.allCommits = commits.slice(0)
+        root.applyFilter(root.filterColumn, root.filterText, root.filterStartDate, root.filterEndDate)
     }
 
     function loadMoreCommits() {
@@ -1242,12 +1417,12 @@ Item {
 
         var compiled = compileGraphCommits(page, allBranches);
 
-        // Append and advance
-        var commits = root.commits.concat(compiled)
+        var commits = root.allCommits.concat(compiled)
         commitsOffset = commits.length
         hasMoreCommits = (page.length === pageSize)
 
-        loadData(commits)
+        root.allCommits = commits.slice(0)
+        root.applyFilter(root.filterColumn, root.filterText, root.filterStartDate, root.filterEndDate)
         isLoadingMore = false
     }
 
