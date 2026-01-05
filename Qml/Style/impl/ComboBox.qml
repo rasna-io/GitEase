@@ -30,7 +30,7 @@ T.ComboBox {
     rightPadding: padding + (control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
 
     Material.background: flat ? "transparent" : undefined
-    Material.foreground: flat ? undefined : Material.primaryTextColor
+    Material.foreground: flat ? undefined : control.palette.text
 
     delegate: ItemDelegate {
         required property var model
