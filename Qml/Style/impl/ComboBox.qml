@@ -16,6 +16,8 @@ T.ComboBox {
     property  bool error
 
     property int minHeight: 40
+    property int borderWidth: 1
+    property int focusBorderWidth: 2
 
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             implicitContentWidth + leftPadding + rightPadding)
@@ -79,7 +81,7 @@ T.ComboBox {
         implicitWidth: 200
         implicitHeight: control.minHeight
         radius: 5
-        border.width: control.activeFocus ? 2 : 1
+        border.width: control.activeFocus ? control.focusBorderWidth : control.borderWidth
         color: control.palette.base
         border.color: control.error ? Style.colors.error
                                     : control.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
