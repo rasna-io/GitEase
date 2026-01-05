@@ -83,7 +83,7 @@ Rectangle {
                     Layout.fillWidth: true
                     text: root.title
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
+                    font.pixelSize: 11
                     font.bold: true
                     color: Style.colors.foreground
                     elide: Text.ElideRight
