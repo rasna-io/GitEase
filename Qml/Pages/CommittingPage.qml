@@ -25,74 +25,66 @@ Item {
 
     /* Children
      * ****************************************************************************************/
-    ColumnLayout {
+    RowLayout {
         anchors.fill: parent
-        spacing: 0
+        anchors.margins: 8
+        anchors.topMargin: 32
+        spacing: 12
 
-        // Top bar placeholder (commit actions)
-        // Styled like GraphViewPage: transparent, no borders/radius.
+        // Left panel: two stacked placeholders
         Rectangle {
+            Layout.fillHeight: true
             Layout.fillWidth: true
-            Layout.preferredHeight: 56
+            Layout.preferredWidth: root.width / 3
             color: "transparent"
 
-            RowLayout {
+            ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 8
                 spacing: 12
 
-                Text {
-                    Layout.alignment: Qt.AlignCenter
-                    text: "Committing (placeholder)"
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 13
-                    color: Style.colors.placeholderText
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    color: "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "(commit actions) (placeholder)"
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 13
+                        color: Style.colors.placeholderText
+                    }
                 }
 
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    color: "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "(file lists) (placeholder)"
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 13
+                        color: Style.colors.placeholderText
+                    }
+                }
             }
         }
 
-        // Main content: left panel (file list) + right panel (diff viewer)
+        // Right panel: diff placeholder
         Rectangle {
-            Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.preferredWidth: root.width * 2 / 3
             color: "transparent"
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.margins: 8
-                anchors.topMargin: 32
-                spacing: 12
-
-                // Left panel placeholder (file lists)
-                Rectangle {
-                    Layout.preferredWidth: root.width / 2
-                    Layout.fillHeight: true
-                    color: "transparent"
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Files (placeholder)"
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 13
-                        color: Style.colors.placeholderText
-                    }
-                }
-
-                // Right panel placeholder (diff viewer)
-                Rectangle {
-                    Layout.preferredWidth: root.width / 2
-                    Layout.fillHeight: true
-                    color: "transparent"
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Diff viewer (placeholder)"
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 13
-                        color: Style.colors.placeholderText
-                    }
-                }
+            Text {
+                anchors.centerIn: parent
+                text: "Diff (placeholder)"
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 13
+                color: Style.colors.placeholderText
             }
         }
     }
