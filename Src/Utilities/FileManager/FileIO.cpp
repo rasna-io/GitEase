@@ -43,21 +43,31 @@ void FileIO::setFileContent(QString fileContent)
     }
 }
 
-QString FileIO::pathNormalizer(const QString &path)
+QString FileIO::pathNormalizer(const QString &inputPath)
 {
-    QString normalizedPath = path;
-    if (path.startsWith("file:///")) {
-        normalizedPath = normalizedPath.replace("file:///", "");
-    }
-
-    if (normalizedPath.startsWith("/") ||
-        normalizedPath.contains("//") ||
-        normalizedPath.indexOf('/') == 0)
-    {
+    if (inputPath.isEmpty())
         return QString();
+
+    QString path = inputPath;
+
+    if (path.startsWith("file:///")) {
+        path = path.replace("file:///", "");
     }
 
-    return normalizedPath;
+    path = QDir::fromNativeSeparators(path);
+    path = QDir::cleanPath(path);
+
+#ifdef Q_OS_WIN
+    if (path.startsWith("//"))
+        return QString();
+    if (path.length() < 3 || !path[0].isLetter() || path[1] != ':' || path[2] != '/')
+        return QString();
+#else
+    if (!path.startsWith('/'))
+        path.prepend("/");
+#endif
+
+    return path;
 }
 
 void FileIO::read(bool async)
@@ -150,7 +160,9 @@ void FileIO::write(bool async)
 
 bool FileIO::createDir(QString path)
 {
+#ifdef Q_OS_WIN
     path = pathNormalizer(path);
+#endif
     QDir dir;
     if (!dir.exists(path)) {
         if (dir.mkpath(path)) {
