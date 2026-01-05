@@ -60,6 +60,11 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
     Qml/View/Components/Docks/CommitGraphSimulator.qml  # GraphDummyDataGenerator
 
+    # File list components (commit UI)
+    Qml/View/Components/FileLists/ChangesFileLists.qml  # File Status Section (stage, unstage)
+    Qml/View/Components/FileLists/FileListSection.qml   # File List Section (header + rows)
+    Qml/View/Components/FileLists/FileListRow.qml       # File List Section row item
+
     # DockPanel Docks
     Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
 )
