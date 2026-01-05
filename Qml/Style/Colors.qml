@@ -10,6 +10,13 @@ QtObject{
     property color error:               "#DC3545"
     property color disabledButton:      "#9D9D9D"
     
+    // Files Status
+    property color addedFile:           "#B9FAB9"
+    property color deletededFile:       "#FF9898"
+    property color modifiediedFile:     "#FFF398"
+    property color renamedFile:         "#aafff8"
+    property color untrackedFile:       "#990000ff"
+
     // Text colors
     property color secondaryText:       "#5F6A7A"
     property color mutedText:           "#9D9D9D"
