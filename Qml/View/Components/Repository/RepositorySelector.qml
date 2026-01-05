@@ -154,22 +154,9 @@ Item {
                         var selectedFolder = folderDialog.selectedFolder
                         if (selectedFolder) {
                             var folderPath = selectedFolder.toString()
-                            // Convert QUrl to local file path
-                            // Remove file:/// prefix (Windows: file:///C:/path, Unix: file:///path)
-                            if (folderPath.startsWith("file:///")) {
-                                folderPath = folderPath.substring(8)
-                            } else if (folderPath.startsWith("file://")) {
-                                folderPath = folderPath.substring(7)
-                            }
-
-                            // Extract folder name for display
-                            var pathParts = folderPath.split(/[\\/]/).filter(function(part) {
-                                return part.length > 0
-                            })
-                            var folderName = pathParts.length > 0 ? pathParts[pathParts.length - 1] : folderPath
-
-                            repositoryLocationField.field.text = folderPath
-                            cloneLocationField.field.text = folderPath
+                            let path = repositoryController.appModel.fileIO.pathNormalizer(folderPath);
+                            repositoryLocationField.field.text = path
+                            cloneLocationField.field.text = path
                         }
                     }
                 }
