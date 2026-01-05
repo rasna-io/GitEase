@@ -30,12 +30,21 @@ QtObject {
                         "qrc:/GitEase/Qml/Pages/GraphViewPage.qml",
                         Style.icons.workflow)
 
+            root.createPage(
+                        "committing",
+                        "Committing",
+                        "qrc:/GitEase/Qml/Pages/CommittingPage.qml",
+                        Style.icons.gitBranch)
+
+
             // root.createPage(
             //             "blank",
             //             "Blank Page",
             //             "qrc:/GitEase/Qml/Pages/BlankPage.qml",
             //             Style.icons.lightbulb)
-        } else if (!root.appModel?.currentPage && root.appModel?.pages?.length) {
+        }
+
+        if(!root.appModel?.pages || root.appModel?.pages.length > 0) {
             root.appModel.currentPage = appModel.pages[0]
         }
     }
