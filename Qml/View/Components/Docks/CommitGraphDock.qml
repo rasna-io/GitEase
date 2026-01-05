@@ -41,6 +41,45 @@ Item {
     property string filterEndDate: ""
     property string filterText: ""
 
+    // Empty-state helper
+    readonly property bool hasAnyFilter: (root.filterText && root.filterText.trim().length > 0)
+                                          || (root.filterStartDate && root.filterStartDate.trim().length > 0)
+                                          || (root.filterEndDate && root.filterEndDate.trim().length > 0)
+
+    function emptyStateDetailsText() {
+        // 1) No commits in repo at all
+        if (!root.allCommits || root.allCommits.length === 0)
+            return "This repository has no commits."
+
+        // 2) Commits exist, but filter/search returned no matches
+        if (!root.hasAnyFilter)
+            return "No commits to show."
+
+        var parts = []
+
+        var needle = (root.filterText || "").trim()
+        if (needle.length > 0) {
+            var scope = (root.filterColumn === "Author") ? "author" : "message"
+            parts.push(scope + " contains '" + needle + "'")
+        }
+
+        var start = (root.filterStartDate || "").trim()
+        var end = (root.filterEndDate || "").trim()
+        if (start.length > 0 || end.length > 0) {
+            if (start.length > 0 && end.length > 0)
+                parts.push("date between " + start + " and " + end)
+            else if (start.length > 0)
+                parts.push("date from " + start)
+            else
+                parts.push("date until " + end)
+        }
+
+        if (parts.length === 0)
+            return "No commits match your filter."
+
+        return "No commits match: " + parts.join(", ")
+    }
+
     // Lazy loading (infinite scroll)
     property int pageSize: 200
     property int commitsOffset: 0
@@ -247,7 +286,54 @@ Item {
         anchors.fill: parent
         color : "#FFFFFF"
 
-        ColumnLayout {
+        // Empty state (no commits to render)
+        Item {
+            anchors.fill: parent
+            visible: !root.commits || root.commits.length === 0
+            z: 999
+
+            Column {
+                id: emptyStateColumn
+                anchors.centerIn: parent
+                spacing: 10
+
+                // Give the column a concrete width so children using width bindings can render.
+                width: Math.min(parent.width, 360)
+
+                Text {
+                    text: "\uf071"
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: 34
+                    color: Style.colors.mutedText
+                    horizontalAlignment: Text.AlignHCenter
+                    width: emptyStateColumn.width
+                }
+
+                Text {
+                    text: "no commit to show"
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: 14
+                    font.weight: 600
+                    color: Style.colors.mutedText
+                    horizontalAlignment: Text.AlignHCenter
+                    width: emptyStateColumn.width
+                    wrapMode: Text.WordWrap
+                }
+
+                Text {
+                    text: root.emptyStateDetailsText()
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: 12
+                    font.weight: 400
+                    color: Style.colors.placeholderText
+                    horizontalAlignment: Text.AlignHCenter
+                    width: emptyStateColumn.width
+                    wrapMode: Text.WordWrap
+                }
+            }
+        }
+
+        ColumnLayout {          
             anchors.fill: parent
             spacing: 0
 
