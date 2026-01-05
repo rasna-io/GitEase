@@ -18,6 +18,7 @@ Item {
      * ****************************************************************************************/
     property var                  page:                 null
     property RepositoryController repositoryController: null
+    property string               selectedFilePath:     ""
 
     /* Object Properties
      * ****************************************************************************************/
@@ -56,17 +57,37 @@ Item {
                     }
                 }
 
+                // File lists
                 Rectangle {
+                    id: fileListsPanel
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     color: "transparent"
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: "(file lists) (placeholder)"
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 13
-                        color: Style.colors.placeholderText
+                    // Default fake data so the UI is visibly populated without git wiring.
+                    // Keep one list non-empty and the other empty to demonstrate both states.
+                    property var unstagedChanges: [
+                        { path: "README.md", mode: "M" },
+                        { path: "Src/main.cpp", mode: "A" },
+                        { path: "Qml/Pages/CommittingPage.qml", mode: "M" },
+                        { path: "Src/Git/GitWrapperCPP.cpp", mode: "D" },
+                        { path: "Res/Images/Logo.svg", mode: "R" },
+                        { path: "Res/Images/q.svg", mode: "R" },
+                        { path: "Res/Images/b.svg", mode: "R" },
+                        { path: "Res/Images/c.svg", mode: "R" },
+                        { path: "CMakeLists.txt", mode: "M" }
+                    ]
+                    property var stagedChanges: []
+
+                    ChangesFileLists {
+                        anchors.fill: parent
+                        unstagedModel: fileListsPanel.unstagedChanges
+                        stagedModel: fileListsPanel.stagedChanges
+
+                        selectedFilePath: root.selectedFilePath
+                        onFileSelected: function(filePath) {
+                            root.selectedFilePath = filePath
+                        }
                     }
                 }
             }
@@ -81,7 +102,8 @@ Item {
 
             Text {
                 anchors.centerIn: parent
-                text: "Diff (placeholder)"
+                text: root.selectedFilePath === "" ? "Diff (placeholder)" : ("Diff (placeholder)\n" + root.selectedFilePath)
+                horizontalAlignment: Text.AlignHCenter
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 13
                 color: Style.colors.placeholderText
