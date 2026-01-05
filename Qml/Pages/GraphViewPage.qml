@@ -49,6 +49,12 @@ Item {
             property string filterEndDate: ""     // YYYY-MM-DD
             property string filterText: ""
 
+            function applyFilter() {
+                if (!commitGraph)
+                    return
+                commitGraph.applyFilter(filterColumn, filterText, filterStartDate, filterEndDate)
+            }
+
             TextField {
                 id: textFilterField
                 Layout.fillWidth: true
@@ -61,7 +67,10 @@ Item {
                 borderRadius: 5
                 borderWidth: 0
                 focusBorderWidth: 1
-                // TODO : onTextChanged
+                onTextChanged: {
+                    parent.filterText = text
+                    parent.applyFilter()
+                }
             }
 
             ToolButton {
@@ -89,7 +98,15 @@ Item {
                            clearFilterButton.hovered ? "#e8e8e8" : "#f3f3f3"
                 }
 
-                // TODO : onClicked
+                onClicked: {
+                    // reset local state
+                    parent.filterColumn = "Message"
+                    parent.filterStartDate = ""
+                    parent.filterEndDate = ""
+                    parent.filterText = ""
+                    if (commitGraph)
+                        commitGraph.clearFilter()
+                }
             }
 
             Label {
@@ -115,7 +132,10 @@ Item {
                 borderRadius: 5
                 borderWidth: 0
                 focusBorderWidth: 1
-                // TODO : onEditingFinished
+                onEditingFinished: {
+                    parent.filterStartDate = text.trim()
+                    parent.applyFilter()
+                }
             }
 
             Label {
@@ -139,7 +159,10 @@ Item {
                 borderRadius: 5
                 borderWidth: 0
                 focusBorderWidth: 1
-                // TODO : onEditingFinished
+                onEditingFinished: {
+                    parent.filterEndDate = text.trim()
+                    parent.applyFilter()
+                }
             }
 
             ComboBox {
@@ -161,6 +184,7 @@ Item {
                 currentIndex: parent.filterColumns.indexOf(parent.filterColumn)
                 onActivated: function(index) {
                     parent.filterColumn = parent.filterColumns[index]
+                    parent.applyFilter()
                 }
             }
 
@@ -169,6 +193,7 @@ Item {
                 Layout.preferredWidth: 25
                 Layout.preferredHeight: 25
 
+                enabled: !!commitGraph
                 hoverEnabled: true
 
                 text: Style.icons.caretDown
@@ -191,7 +216,7 @@ Item {
                            downButton.hovered ? "#e8e8e8" : "#f3f3f3"
                 }
 
-                // TODO : onClicked
+                onClicked: commitGraph.selectNext()
             }
 
             ToolButton {
@@ -199,6 +224,7 @@ Item {
                 Layout.preferredWidth: 25
                 Layout.preferredHeight: 25
 
+                enabled: !!commitGraph
                 hoverEnabled: true
 
                 text: Style.icons.caretUp
@@ -221,7 +247,7 @@ Item {
                            upButton.hovered ? "#e8e8e8" : "#f3f3f3"
                 }
 
-                // TODO : onClicked
+                onClicked: commitGraph.selectPrevious()
             }
 
             ToolButton {
@@ -230,6 +256,7 @@ Item {
                 Layout.preferredHeight: 25
                 Layout.leftMargin: 10
 
+                enabled: !!commitGraph
                 hoverEnabled: true
 
                 text: Style.icons.refresh
@@ -252,7 +279,7 @@ Item {
                            reloadButton.hovered ? "#e8e8e8" : "#f3f3f3"
                 }
 
-                // TODO : onClicked
+                onClicked: commitGraph.reloadAll()
             }
         }
     }
@@ -269,6 +296,7 @@ Item {
             color: "transparent"
 
             CommitGraphDock {
+                id: commitGraph
                 anchors.fill: parent
                 repositoryController: root.repositoryController
                 appModel: root.appModel
@@ -277,7 +305,6 @@ Item {
 
                 onCommitClicked: function(commitId) {
                     root.selectedCommit = commitId
-                    console.log("Commit clicked:", commitId)
                 }
             }
         }
