@@ -13,11 +13,17 @@ import GitEase
 
 Item {
     id: root
-    anchors.fill: parent
 
-    // Provided by MainWindow Loader (current Page model)
+    /* Property Declarations
+     * ****************************************************************************************/
     property var page: null
 
+    /* Object Properties
+     * ****************************************************************************************/
+    anchors.fill: parent
+
+    /* Children
+     * ****************************************************************************************/
     Column {
         anchors.centerIn: parent
         spacing: 6
