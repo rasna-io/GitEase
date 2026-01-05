@@ -26,7 +26,7 @@ ColumnLayout {
      * ****************************************************************************************/
     RowLayout {
         Layout.fillWidth: true
-        Layout.preferredHeight: 35
+        Layout.preferredHeight: 50
         spacing: 0
         
         Item {
