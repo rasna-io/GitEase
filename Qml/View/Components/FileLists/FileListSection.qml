@@ -24,8 +24,15 @@ Rectangle {
     property bool expanded: true
     property int headerHeight: 32
     property int emptyExpandedHeight: 32
+
+    // Optional custom row delegate. If not set, a default delegate is used.
+    property Component rowDelegate: null
+    // Optional header actions content (rendered on the right side of the header)
+    property Component headerActions: null
+
     readonly property bool needsVScroll: listView.contentHeight > (listView.height + 1)
     readonly property bool wantsFillHeight: expanded && !(listView.count === 0)
+    readonly property int count: listView.count
 
     /* Object Properties
      * ****************************************************************************************/
@@ -38,7 +45,6 @@ Rectangle {
 
     /* Children
      * ****************************************************************************************/
-
     Behavior on implicitHeight {
         NumberAnimation {
             duration: 120
@@ -87,6 +93,13 @@ Rectangle {
                     font.bold: true
                     color: Style.colors.foreground
                     elide: Text.ElideRight
+                }
+
+                Loader {
+                    id: headerActionsLoader
+                    Layout.alignment: Qt.AlignVCenter
+                    active: root.headerActions !== null
+                    sourceComponent: root.headerActions
                 }
 
                 // Count badge
@@ -138,6 +151,24 @@ Rectangle {
                 anchors.fill: parent
                 spacing: 0
 
+                Component {
+                    id: defaultRowDelegate
+
+                    FileListRow {
+                        width: ListView.view ? ListView.view.width : implicitWidth
+                        rowModelData: modelData
+                        rowIndex: index
+                        text: modelData && modelData.path ? modelData.path : ""
+                        mode: modelData && modelData.mode ? modelData.mode : ""
+                        selected: root.selectedFilePath !== "" && root.selectedFilePath === (modelData && modelData.path ? modelData.path : "")
+                        showSeparator: index < (listView.count - 1)
+
+                        onClicked: {
+                            root.selectFile(modelData.path)
+                        }
+                    }
+                }
+
                 ListView {
                     id: listView
                     Layout.fillWidth: true
@@ -151,23 +182,22 @@ Rectangle {
 
                     delegate: Item {
                         width: ListView.view.width
-                        height: row.implicitHeight
+                        height: (rowLoader.item && rowLoader.item.implicitHeight) ? rowLoader.item.implicitHeight : 24
 
-                        FileListRow {
-                            id: row
+                        Loader {
+                            id: rowLoader
                             anchors.fill: parent
+                            sourceComponent: root.rowDelegate ? root.rowDelegate : defaultRowDelegate
 
-                            text: modelData && modelData.path ? modelData.path : ""
-                            mode: modelData && modelData.mode ? modelData.mode : ""
-                            selected: root.selectedFilePath !== "" && root.selectedFilePath === modelData.path
+                            onLoaded: {
+                                if (!item)
+                                    return
 
-                            showSeparator: index < (listView.count - 1)
+                                item.rowModelData = modelData
+                                item.rowIndex = index
 
-                            onClicked: {
-                                if ((modelData && modelData.path ? modelData.path : "") !== "") {
-                                    root.selectedFilePath = modelData.path
-                                    root.fileSelected(modelData.path)
-                                }
+                                if (item.hasOwnProperty("showSeparator"))
+                                    item.showSeparator = index < (listView.count - 1)
                             }
                         }
                     }
@@ -188,7 +218,6 @@ Rectangle {
                 }
 
                 Item {
-                    id: scrollGutter
                     Layout.fillHeight: true
                     Layout.preferredWidth: root.needsVScroll ? 5 : 0
 
@@ -205,8 +234,17 @@ Rectangle {
                         visible: root.needsVScroll
                     }
                 }
-
             }
         }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function selectFile(filePath) {
+        if (!filePath || filePath === "")
+            return
+
+        root.selectedFilePath = filePath
+        root.fileSelected(filePath)
     }
 }
