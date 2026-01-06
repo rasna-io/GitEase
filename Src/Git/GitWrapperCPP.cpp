@@ -45,8 +45,8 @@ GitWrapperCPP::GitWrapperCPP(QObject *parent)
 
     open("E:/family/dadash/work/ROMINA/work_10/GitEase");
 
-    // exportCompleteBundle("55-export-diff-bundle", "E:/family/dadash/work/ROMINA/work_10/com100");
-    exportDiffBundle("main", "44-evaluate-export-possibilities-for-offline-git-workflows", "E:/family/dadash/work/ROMINA/work_10/diff4");
+    exportCompleteBundle("55-export-diff-bundle", "E:/family/dadash/work/ROMINA/work_10/com100");
+    exportDiffBundle("44-evaluate-export-possibilities-for-offline-git-workflows", "55-export-diff-bundle", "E:/family/dadash/work/ROMINA/work_10/diff4");
     qDebug()<<"finished";
     // unitTest();
     // unitTestForGitWorkflow();
@@ -1416,7 +1416,7 @@ QString GitWrapperCPP::gitOidToString(const git_oid *oid)
     return QString::fromUtf8(oidStr, GIT_OID_HEXSZ);
 }
 
-QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const QString &bundleFilePath, const QString &targetCommitSha, const QString &branchName, bool isCompleteBundle)
+QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const QString &bundleFilePath, const QString &targetCommitSha, const QString &branchName)
 {
     QTemporaryDir tempDir;
     if (!tempDir.isValid()) {
@@ -1435,7 +1435,7 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
                             QString("Failed to write pack files"));
     }
 
-    // 2. Find the created pack file ONLY (no idx file needed!)
+    // 2. Find the created pack file ONLY
     QDir tempDirObj(tempPath);
     QFileInfoList packFiles = tempDirObj.entryInfoList(QStringList() << "*.pack", QDir::Files);
 
@@ -1446,7 +1446,6 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
 
     QString packFilePath = packFiles.first().absoluteFilePath();
     qint64 packFileSize = QFileInfo(packFilePath).size();
-    qDebug() << "   Pack file: " << packFilePath << " (" << packFileSize << " bytes)";
 
     // 3. Create bundle file - SIMPLER HEADER (match your working version)
     QFile bundleFile(bundleFilePath);
@@ -1456,17 +1455,10 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
                                 .arg(bundleFilePath));
     }
 
-    // 4. Write bundle header EXACTLY like your working version:
-    //    "# v2 git bundle\n"
-    //    "<sha> refs/heads/<branch>\n"
-    //    "\n"  // ONE empty line, then pack data
-
     QByteArray header;
 
-    // Header line - NO extra empty line after this!
     header.append("# v2 git bundle\n");
 
-    // Reference line: EXACTLY like your working version
     QString refName;
     if (branchName.startsWith("origin/")) {
         refName = "refs/heads/" + branchName.mid(7); // Remove "origin/"
@@ -1491,10 +1483,8 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
     header.append(refName.toUtf8());
     header.append("\n");
 
-    // ONE empty line separates header from pack data
     header.append("\n");
 
-    // Write header to file
     qint64 headerBytesWritten = bundleFile.write(header);
     if (headerBytesWritten != header.size()) {
         bundleFile.close();
@@ -1503,7 +1493,7 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
                                 .arg(header.size()).arg(headerBytesWritten));
     }
 
-    // 5. Append ONLY the pack file data (NO idx file!)
+    // 5. Append ONLY the pack file data
     QFile packFile(packFilePath);
     if (!packFile.open(QIODevice::ReadOnly)) {
         bundleFile.close();
@@ -1511,7 +1501,6 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
                             "Failed to read pack file. File might be corrupted.");
     }
 
-    // Copy pack data in efficient chunks
     const qint64 CHUNK_SIZE = 64 * 1024;  // 64KB chunks
     qint64 packBytesCopied = 0;
 
@@ -1540,11 +1529,7 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
     QVariantMap data;
     data["bundlePath"] = bundleFilePath;
     data["fileSize"] = QFileInfo(bundleFilePath).size();
-    data["packFileSize"] = packFileSize;
     data["verified"] = verified;
-    data["bundleType"] = isCompleteBundle ? "complete" : "differential";
-    data["refName"] = refName;
-    data["targetCommit"] = targetCommitSha;
 
     if (!verified) {
         data["verifyOutput"] = verifyResult["output"].toString();
@@ -1552,8 +1537,7 @@ QVariantMap GitWrapperCPP::createBundleFile(git_packbuilder *packbuilder, const 
 
     QString resultMsg;
     if (verified) {
-        resultMsg = QString("%1 bundle created successfully at: %2\nSize: %3 bytes\nVerified: ✓")
-                        .arg(isCompleteBundle ? "Complete" : "Differential")
+        resultMsg = QString("%1 bundle created successfully at: %2\nSize: %3 bytes\nVerified:")
                         .arg(bundleFilePath)
                         .arg(data["fileSize"].toLongLong());
     } else {
@@ -1576,7 +1560,6 @@ QVariantMap GitWrapperCPP::verifyBundleWithGit(const QString &bundlePath)
     gitProcess.setProgram("git");
     gitProcess.setArguments(QStringList() << "bundle" << "verify" << bundlePath);
 
-    // Set working directory to current repo
     const char* repoPath = git_repository_workdir(m_currentRepo);
     QString workingDir;
 
@@ -1585,7 +1568,7 @@ QVariantMap GitWrapperCPP::verifyBundleWithGit(const QString &bundlePath)
     } else {
         repoPath = git_repository_path(m_currentRepo);
         workingDir = QString::fromUtf8(repoPath);
-        // If this is a bare repo, go up one directory
+
         if (workingDir.endsWith("/.git")) {
             workingDir = workingDir.left(workingDir.length() - 5);
         }
@@ -1615,7 +1598,6 @@ QVariantMap GitWrapperCPP::verifyBundleWithGit(const QString &bundlePath)
     QVariantMap result;
     result["success"] = (exitCode == 0);
     result["output"] = output.trimmed();
-    result["exitCode"] = exitCode;
 
     return result;
 }
@@ -2332,7 +2314,7 @@ QVariantMap GitWrapperCPP::exportCompleteBundle(const QString &targetBranch, con
 
     // 10. CREATE BUNDLE FILE
     QVariantMap result = createBundleFile(packbuilder, bundleFilePath,
-                                          targetCommitSha, resolvedBranchName, true);
+                                          targetCommitSha, resolvedBranchName);
 
     // 11. CLEANUP
     cleanupBundleResources(targetRef, targetCommit, walker, packbuilder);
@@ -2370,15 +2352,15 @@ QVariantMap GitWrapperCPP::exportDiffBundle(
                                 .arg(outputPath));
     }
 
-    // 2. INITIALIZATION
-    git_object* baseObj = nullptr;
-    git_object* targetObj = nullptr;
-    git_revwalk* walker = nullptr;
-    git_packbuilder* packbuilder = nullptr;
-
     QString bundleFilePath = outputPath.endsWith(".bundle")
                                  ? outputPath
                                  : outputPath + ".bundle";
+
+    // 2. INITIALIZATION
+    git_object* baseObj             = nullptr;  // Any Git object (commit, tree, tag, blob)
+    git_object* targetObj           = nullptr;
+    git_revwalk* walker             = nullptr;  // Commit graph traversal engine
+    git_packbuilder* packbuilder    = nullptr;  // Packfile generator (what bundles contain)
 
     // 3. RESOLVE BASE & TARGET
     if (git_revparse_single(&baseObj, m_currentRepo,
@@ -2442,13 +2424,12 @@ QVariantMap GitWrapperCPP::exportDiffBundle(
                             "No new commits to bundle.");
     }
 
-    // 6. CREATE + VERIFY BUNDLE (helper does BOTH)
+    // 6. CREATE + VERIFY BUNDLE
     QVariantMap result = createBundleFile(
         packbuilder,
         bundleFilePath,
         targetSha,
-        targetBranchOrCommit,
-        false   // differential
+        targetBranchOrCommit
         );
 
     // 7. CLEANUP
@@ -2464,16 +2445,12 @@ QVariantMap GitWrapperCPP::exportDiffBundle(
         data["target"] = targetBranchOrCommit;
         data["targetCommit"] = targetSha;
         data["newCommitCount"] = commitCount;
-        data["newCommitShas"] = QVariant::fromValue(newCommitShas.toList());
-        data["recommendedFor"] = "Incremental update from known base";
+
         result["data"] = data;
     }
 
     return result;
 }
-
-
-
 
 QVariantMap GitWrapperCPP::push(const QString &remoteName,
                                 const QString &branchName,

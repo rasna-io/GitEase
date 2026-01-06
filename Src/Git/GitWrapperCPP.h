@@ -251,11 +251,10 @@ private:
     QVariantMap createBundleFile(git_packbuilder* packbuilder,
                                                 const QString& bundleFilePath,
                                                 const QString& targetCommitSha,
-                                                const QString& branchName,
-                                                bool isCompleteBundle);
+                                                const QString& branchName);
 
     /**
-     * \brief Verify bundle using Git command line (most reliable)
+     * \brief Verify bundle using Git command line
      */
     QVariantMap verifyBundleWithGit(const QString& bundlePath);
 
