@@ -257,7 +257,7 @@ Item {
                     width: 12
                     height: 12
                     text: Style.icons.caretDown
-                    font.pixelSize: 10
+                    font.pixelSize: 15
                     color: Style.colors.descriptionText
                 }
 
@@ -306,7 +306,7 @@ Item {
                     width: 12
                     height: 12
                     text: Style.icons.caretDown
-                    font.pixelSize: 10
+                    font.pixelSize: 15
                     color: Style.colors.descriptionText
                 }
 
