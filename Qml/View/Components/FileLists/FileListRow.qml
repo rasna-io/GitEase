@@ -6,35 +6,38 @@ import GitEase_Style
 
 /*! ***********************************************************************************************
  * FileListRow
- * A single row in the commit file list.
+ * Generic row for a file list section.
+ * - Handles selection click + hover highlight
+ * - Shows mode indicator and optional extra right-side content
  * ************************************************************************************************/
 
 Rectangle {
     id: root
+    clip: true
 
     /* Property Declarations
      * ****************************************************************************************/
     required property string text
     property bool selected: false
+    property bool showSeparator: true
 
     // Optional file mode (e.g. "M", "A", "D", "R"). Empty = no indicator.
     property string mode: ""
-    property bool showSeparator: true
+
+    // Row context (populated by FileListSection's delegate)
+    property var rowModelData: null
+    property int rowIndex: -1
+
+    // Optional right-side content injected by specialized rows.
+    property Component rightAccessory: null
 
     /* Object Properties
      * ****************************************************************************************/
-    property bool isHovered: false
+    readonly property bool isHovered: hoverHandler.hovered
     implicitHeight: 24
     radius: 4
     color: root.selected ? Qt.darker(Style.colors.surfaceLight, 1.06)
                     : (isHovered ? Style.colors.surfaceLight : "transparent")
-
-    /* Signals
-     * ****************************************************************************************/
-    signal clicked()
-
-    /* Children
-     * ****************************************************************************************/
 
     // Left change indicator color
     readonly property color indicatorColor: (function () {
@@ -48,15 +51,23 @@ Rectangle {
         }
     })()
 
+    /* Signals
+     * ****************************************************************************************/
+    signal clicked()
+
+    /* Children
+     * ****************************************************************************************/
+    HoverHandler {
+        id: hoverHandler
+        acceptedDevices: PointerDevice.Mouse
+    }
+
     MouseArea {
         anchors.fill: parent
-        hoverEnabled: true
-        onEntered: root.isHovered = true
-        onExited: root.isHovered = false
+        hoverEnabled: false
         onClicked: root.clicked()
     }
 
-    // Change indicator bar (left)
     Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
@@ -69,7 +80,7 @@ Rectangle {
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 8
-        anchors.rightMargin: 8
+        anchors.rightMargin: 6
         spacing: 8
 
         Text {
@@ -83,7 +94,13 @@ Rectangle {
             elide: Text.ElideRight
         }
 
-        // Mode label (right)
+        Loader {
+            id: accessoryLoader
+            Layout.alignment: Qt.AlignVCenter
+            active: root.rightAccessory !== null
+            sourceComponent: root.rightAccessory
+        }
+
         Text {
             Layout.alignment: Qt.AlignVCenter
             text: (root.mode || "").toString().toUpperCase()
