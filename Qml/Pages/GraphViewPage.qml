@@ -37,6 +37,7 @@ Item {
     // Exposed to MainWindow's header area (see MainWindow.qml)
     property Component headerContent: Component {
         RowLayout {
+            id: headerRow
             anchors.leftMargin: 20
             anchors.rightMargin: 5
             anchors.fill: parent
@@ -53,6 +54,87 @@ Item {
                 if (!commitGraph)
                     return
                 commitGraph.applyFilter(filterColumn, filterText, filterStartDate, filterEndDate)
+            }
+
+            // Date picker support (Qt 6.10 / MinGW compatible)
+            property var activeDateField: null
+            property bool activeIsStart: true
+
+            function openDatePicker(field, isStart) {
+                activeDateField = field
+                activeIsStart = isStart
+
+                var pos = field.mapToItem(parent, 0, field.height + 6)
+                datePopup.x = Math.max(0, Math.min(pos.x, parent.width - datePopup.width))
+                datePopup.y = Math.max(0, Math.min(pos.y, parent.height - datePopup.height))
+
+                datePopup.open()
+            }
+
+            function formatDateYYYYMMDD(d) {
+                function pad2(n) { return (n < 10) ? ("0" + n) : ("" + n) }
+                return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate())
+            }
+
+            Popup {
+                id: datePopup
+                modal: true
+                focus: true
+                padding: 4
+                closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+                Overlay.modal: Rectangle {
+                    color: "transparent"
+                }
+
+                Overlay.modeless: Rectangle {
+                    color: "transparent"
+                }
+
+                background: Rectangle {
+                    radius: 8
+                    color: Style.colors.primaryBackground
+                    border.width: 1
+                    border.color: Style.colors.primaryBorder
+                }
+
+                implicitWidth: calendar.implicitWidth + padding * 2
+                implicitHeight: calendar.implicitHeight + padding * 2
+
+                contentItem: Column {
+                    spacing: 4
+
+                    Calendar {
+                        id: calendar
+
+                        function commitDate(date) {
+                            if (!headerRow.activeDateField)
+                                return
+
+                            var formatted = headerRow.formatDateYYYYMMDD(date)
+
+                            if (headerRow.activeIsStart)
+                                headerRow.filterStartDate = formatted
+                            else
+                                headerRow.filterEndDate = formatted
+
+                            headerRow.applyFilter()
+                            datePopup.close()
+                        }
+
+                        onDateSelected: commitDate(calendar.selectedDate)
+
+                        onClearRequested: {
+                            if (headerRow.activeIsStart)
+                                headerRow.filterStartDate = ""
+                            else
+                                headerRow.filterEndDate = ""
+
+                            headerRow.applyFilter()
+                            datePopup.close()
+                        }
+                    }
+                }
             }
 
             TextField {
@@ -145,25 +227,44 @@ Item {
                 font.pixelSize: 12
             }
 
-
-            TextField {
-                id: startDateField
-                placeholderTextColor: Style.colors.descriptionText
-                backgroundColor: Style.colors.primaryBackground
+            Item {
                 Layout.preferredWidth: 77
                 Layout.fillWidth: true
-                minHeight: 25
-                placeholderText: "2025/08/30"
-                text: parent.filterStartDate
-                font.family: Style.fontTypes.roboto
-                font.weight: 400
-                font.pixelSize: 9
-                borderRadius: 5
-                borderWidth: 0
-                focusBorderWidth: 1
-                onEditingFinished: {
-                    parent.filterStartDate = text.trim()
-                    parent.applyFilter()
+                Layout.preferredHeight: 25
+
+                TextField {
+                    id: startDateField
+                    placeholderTextColor: Style.colors.descriptionText
+                    backgroundColor: Style.colors.primaryBackground
+                    anchors.fill: parent
+                    minHeight: 25
+                    placeholderText: "2025-08-30"
+                    text: headerRow.filterStartDate
+                    font.family: Style.fontTypes.roboto
+                    font.weight: 400
+                    font.pixelSize: 10
+                    borderRadius: 5
+                    borderWidth: 0
+                    focusBorderWidth: 1
+                    readOnly: true
+                    enabled: text.trim().length > 0
+                }
+
+                RoniaTextIcon {
+                    anchors.right: parent.right
+                    anchors.rightMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 12
+                    height: 12
+                    text: Style.icons.caretDown
+                    font.pixelSize: 10
+                    color: Style.colors.descriptionText
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton
+                    onClicked: headerRow.openDatePicker(startDateField, true)
                 }
             }
 
@@ -175,24 +276,44 @@ Item {
                 font.pixelSize: 12
             }
 
-            TextField {
-                id: endDateField
-                placeholderTextColor: Style.colors.descriptionText
-                backgroundColor: Style.colors.primaryBackground
+            Item {
                 Layout.preferredWidth: 77
                 Layout.fillWidth: true
-                minHeight: 25
-                placeholderText: "2025/09/30"
-                text: parent.filterEndDate
-                font.family: Style.fontTypes.roboto
-                font.weight: 400
-                font.pixelSize: 9
-                borderRadius: 5
-                borderWidth: 0
-                focusBorderWidth: 1
-                onEditingFinished: {
-                    parent.filterEndDate = text.trim()
-                    parent.applyFilter()
+                Layout.preferredHeight: 25
+
+                TextField {
+                    id: endDateField
+                    placeholderTextColor: Style.colors.descriptionText
+                    backgroundColor: Style.colors.primaryBackground
+                    anchors.fill: parent
+                    minHeight: 25
+                    placeholderText: "2025-09-30"
+                    text: headerRow.filterEndDate
+                    font.family: Style.fontTypes.roboto
+                    font.weight: 400
+                    font.pixelSize: 10
+                    borderRadius: 5
+                    borderWidth: 0
+                    focusBorderWidth: 1
+                    readOnly: true
+                    enabled: text.trim().length > 0
+                }
+
+                RoniaTextIcon {
+                    anchors.right: parent.right
+                    anchors.rightMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 12
+                    height: 12
+                    text: Style.icons.caretDown
+                    font.pixelSize: 10
+                    color: Style.colors.descriptionText
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton
+                    onClicked: headerRow.openDatePicker(endDateField, false)
                 }
             }
 
