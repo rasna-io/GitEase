@@ -19,4 +19,8 @@ QtObject{
     property string download:       "\ue094" // download
     property string gear:           "\uf013" // gear (settings)
     property string plus:           "\uf067" // plus
+    property string minus:          "\uf068" // minus
+    property string trash:          "\uf1f8" // trash
+    property string file:           "\uf15b" // file
+    property string archive:        "\uf187" // archive
 }
