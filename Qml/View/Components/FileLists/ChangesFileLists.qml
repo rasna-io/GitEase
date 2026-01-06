@@ -20,6 +20,14 @@ Item {
     /* Signals
      * ****************************************************************************************/
     signal fileSelected(string filePath)
+    signal stageFileRequested(string filePath)
+    signal unstageFileRequested(string filePath)
+    signal discardFileRequested(string filePath)
+    signal openFileRequested(string filePath)
+    signal stageAllRequested()
+    signal unstageAllRequested()
+    signal discardAllRequested()
+    signal stashAllRequested(string section)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -32,36 +40,74 @@ Item {
         anchors.fill: parent
         spacing: 10
 
-        FileListSection {
+        StagedFileListSection {
             id: stagedSection
             Layout.fillWidth: true
             Layout.fillHeight: wantsFillHeight
             Layout.minimumHeight: 32
             Layout.preferredHeight: expanded ? -1 : 32
 
-            title: "Staged Changes"
-            emptyText: "No staged changes"
             model: root.stagedModel
 
             selectedFilePath: root.selectedFilePath
+
+            onUnstageFileRequested: function(filePath) {
+                root.unstageFileRequested(filePath)
+            }
+
+            onOpenFileRequested: function(filePath) {
+                root.openFileRequested(filePath)
+            }
+
+            onUnstageAllRequested: function() {
+                root.unstageAllRequested()
+            }
+
+            onStashAllRequested: function() {
+                root.stashAllRequested("staged")
+            }
+
             onFileSelected: function(filePath) {
                 root.selectedFilePath = filePath
                 root.fileSelected(filePath)
             }
         }
 
-        FileListSection {
+        UnstagedFileListSection {
             id: unstagedSection
             Layout.fillWidth: true
             Layout.fillHeight: wantsFillHeight
             Layout.minimumHeight: 32
             Layout.preferredHeight: expanded ? -1 : 32
 
-            title: "Unstaged Changes"
-            emptyText: "No unstaged changes"
             model: root.unstagedModel
 
             selectedFilePath: root.selectedFilePath
+
+            onStageFileRequested: function(filePath) {
+                root.stageFileRequested(filePath)
+            }
+
+            onDiscardFileRequested: function(filePath) {
+                root.discardFileRequested(filePath)
+            }
+
+            onOpenFileRequested: function(filePath) {
+                root.openFileRequested(filePath)
+            }
+
+            onStageAllRequested: function() {
+                root.stageAllRequested()
+            }
+
+            onDiscardAllRequested: function() {
+                root.discardAllRequested()
+            }
+
+            onStashAllRequested: function() {
+                root.stashAllRequested("unstaged")
+            }
+
             onFileSelected: function(filePath) {
                 root.selectedFilePath = filePath
                 root.fileSelected(filePath)
