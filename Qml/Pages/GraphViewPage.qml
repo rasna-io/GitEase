@@ -57,6 +57,8 @@ Item {
 
             TextField {
                 id: textFilterField
+                placeholderTextColor: Style.colors.descriptionText
+                backgroundColor: Style.colors.primaryBackground
                 Layout.fillWidth: true
                 minHeight: 25
                 placeholderText: {
@@ -95,16 +97,16 @@ Item {
                     anchors.centerIn: parent
                     text: filterButton.text
                     font: filterButton.font
-                    color: filterButton.enabled ? Style.colors.placeholderText : Style.colors.mutedText
+                    color: filterButton.enabled ? Style.colors.foreground : Style.colors.mutedText
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
 
                 background: Rectangle {
                     radius: 5
-                    color: !filterButton.enabled ? Style.colors.surfaceLight :
+                    color: !filterButton.enabled ? Style.colors.primaryBackground :
                            filterButton.down ? Style.colors.surfaceMuted :
-                           filterButton.hovered ? Style.colors.cardBackground : Style.colors.surfaceLight
+                           filterButton.hovered ? Style.colors.cardBackground : Style.colors.primaryBackground
                 }
 
                 onClicked: filterOptionsPopup.open()
@@ -136,7 +138,7 @@ Item {
 
             Label {
                 Layout.leftMargin: 40
-                color: "#C9C9C9"
+                color: Style.colors.descriptionText
                 text: "From:"
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
@@ -146,6 +148,8 @@ Item {
 
             TextField {
                 id: startDateField
+                placeholderTextColor: Style.colors.descriptionText
+                backgroundColor: Style.colors.primaryBackground
                 Layout.preferredWidth: 77
                 Layout.fillWidth: true
                 minHeight: 25
@@ -164,7 +168,7 @@ Item {
             }
 
             Label {
-                color: "#C9C9C9"
+                color: Style.colors.descriptionText
                 text: "To:"
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
@@ -173,6 +177,8 @@ Item {
 
             TextField {
                 id: endDateField
+                placeholderTextColor: Style.colors.descriptionText
+                backgroundColor: Style.colors.primaryBackground
                 Layout.preferredWidth: 77
                 Layout.fillWidth: true
                 minHeight: 25
@@ -195,15 +201,15 @@ Item {
                 model: parent.filterColumns
 
                 Layout.leftMargin: 20
-                minHeight: 25
+                minHeight: 26
                 borderWidth: 0
                 focusBorderWidth: 1
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
                 font.pixelSize: 10
 
-                palette.base: Style.colors.surfaceLight
-                palette.text: Style.colors.mutedText
+                palette.base: Style.colors.primaryBackground
+                palette.text: Style.colors.descriptionText
 
                 Layout.preferredWidth: 90
                 currentIndex: parent.filterColumns.indexOf(parent.filterColumn)
@@ -215,8 +221,8 @@ Item {
 
             ToolButton {
                 id: downButton
-                Layout.preferredWidth: 25
-                Layout.preferredHeight: 25
+                Layout.preferredWidth: 26
+                Layout.preferredHeight: 26
 
                 enabled: !!commitGraph
                 hoverEnabled: true
@@ -229,16 +235,16 @@ Item {
                     anchors.centerIn: parent
                     text: downButton.text
                     font: downButton.font
-                    color: downButton.enabled ? "#C9C9C9" : "#9d9d9d"
+                    color: downButton.enabled ? Style.colors.foreground : Style.colors.mutedText
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
 
                 background: Rectangle {
                     radius: 5
-                    color: !downButton.enabled ? "#f3f3f3" :
-                           downButton.down ? "#dcdcdc" :
-                           downButton.hovered ? "#e8e8e8" : "#f3f3f3"
+                    color: !downButton.enabled ? Style.colors.primaryBackground :
+                           downButton.down ? Style.colors.surfaceMuted :
+                           downButton.hovered ? Style.colors.cardBackground : Style.colors.primaryBackground
                 }
 
                 onClicked: commitGraph.selectNext()
@@ -246,8 +252,8 @@ Item {
 
             ToolButton {
                 id: upButton
-                Layout.preferredWidth: 25
-                Layout.preferredHeight: 25
+                Layout.preferredWidth: 26
+                Layout.preferredHeight: 26
 
                 enabled: !!commitGraph
                 hoverEnabled: true
@@ -260,16 +266,16 @@ Item {
                     anchors.centerIn: parent
                     text: upButton.text
                     font: upButton.font
-                    color: upButton.enabled ? "#C9C9C9" : "#9d9d9d"
+                    color: upButton.enabled ? Style.colors.foreground : Style.colors.mutedText
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
 
                 background: Rectangle {
                     radius: 5
-                    color: !upButton.enabled ? "#f3f3f3" :
-                           upButton.down ? "#dcdcdc" :
-                           upButton.hovered ? "#e8e8e8" : "#f3f3f3"
+                    color: !upButton.enabled ? Style.colors.primaryBackground :
+                           upButton.down ? Style.colors.surfaceMuted :
+                           upButton.hovered ? Style.colors.cardBackground : Style.colors.primaryBackground
                 }
 
                 onClicked: commitGraph.selectPrevious()
@@ -277,8 +283,8 @@ Item {
 
             ToolButton {
                 id: reloadButton
-                Layout.preferredWidth: 25
-                Layout.preferredHeight: 25
+                Layout.preferredWidth: 26
+                Layout.preferredHeight: 26
                 Layout.leftMargin: 10
 
                 enabled: !!commitGraph
@@ -292,16 +298,16 @@ Item {
                     anchors.centerIn: parent
                     text: reloadButton.text
                     font: reloadButton.font
-                    color: reloadButton.enabled ? "#C9C9C9" : "#9d9d9d"
+                    color: reloadButton.enabled ? Style.colors.foreground : Style.colors.mutedText
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
 
                 background: Rectangle {
                     radius: 5
-                    color: !reloadButton.enabled ? "#f3f3f3" :
-                           reloadButton.down ? "#dcdcdc" :
-                           reloadButton.hovered ? "#e8e8e8" : "#f3f3f3"
+                    color: !reloadButton.enabled ? Style.colors.primaryBackground :
+                           reloadButton.down ? Style.colors.surfaceMuted :
+                           reloadButton.hovered ? Style.colors.cardBackground : Style.colors.primaryBackground
                 }
 
                 onClicked: commitGraph.reloadAll()
