@@ -59,7 +59,13 @@ Item {
                 id: textFilterField
                 Layout.fillWidth: true
                 minHeight: 25
-                placeholderText: "Filter by Subject, Message, Author"
+                placeholderText: {
+                    var selectedItems = filterOptionsPopup.selectedItems
+                    var selected = (selectedItems && selectedItems.length > 0)
+                            ? selectedItems.map(function(it) { return it.text }).join(", ")
+                            : ""
+                    return selected.length > 0 ? ("Write Filter By " + selected) : "Write Filter By"
+                }
                 text: parent.filterText
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
@@ -74,39 +80,58 @@ Item {
             }
 
             ToolButton {
-                id: clearFilterButton
+                id: filterButton
                 Layout.preferredWidth: 25
                 Layout.preferredHeight: 25
                 hoverEnabled: true
+
                 text: Style.icons.filter
-                font.family: clearFilterButton.hovered ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
+                font.family: (filterOptionsPopup.visible || filterButton.hovered)
+                             ? Style.fontTypes.font6ProSolid
+                             : Style.fontTypes.font6Pro
                 font.pixelSize: 14
 
                 contentItem: Text {
                     anchors.centerIn: parent
-                    text: clearFilterButton.text
-                    font: clearFilterButton.font
-                    color: clearFilterButton.enabled ? "#C9C9C9" : "#9d9d9d"
+                    text: filterButton.text
+                    font: filterButton.font
+                    color: filterButton.enabled ? Style.colors.placeholderText : Style.colors.mutedText
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
 
                 background: Rectangle {
                     radius: 5
-                    color: !clearFilterButton.enabled ? "#f3f3f3" :
-                           clearFilterButton.down ? "#dcdcdc" :
-                           clearFilterButton.hovered ? "#e8e8e8" : "#f3f3f3"
+                    color: !filterButton.enabled ? Style.colors.surfaceLight :
+                           filterButton.down ? Style.colors.surfaceMuted :
+                           filterButton.hovered ? Style.colors.cardBackground : Style.colors.surfaceLight
                 }
 
-                onClicked: {
-                    // reset local state
-                    parent.filterColumn = "Message"
-                    parent.filterStartDate = ""
-                    parent.filterEndDate = ""
-                    parent.filterText = ""
-                    if (commitGraph)
-                        commitGraph.clearFilter()
+                onClicked: filterOptionsPopup.open()
+            }
+
+            ItemSelectorPopup {
+                id: filterOptionsPopup
+
+                // Position under the filter icon
+                x: filterButton.x
+                y: filterButton.y + filterButton.height + 6
+
+                model: filterOptionsModel
+
+                onOpened: {
+                    x = Math.max(0, Math.min(x, parent.width - width))
                 }
+            }
+
+            ListModel {
+                id: filterOptionsModel
+                ListElement { text: "Messages"; checked: false }
+                ListElement { text: "Paths"; checked: false }
+                ListElement { text: "Subjects"; checked: false }
+                ListElement { text: "Authors"; checked: false }
+                ListElement { text: "Emails"; checked: false }
+                ListElement { text: "SHA-1"; checked: false }
             }
 
             Label {
