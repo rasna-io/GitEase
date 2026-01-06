@@ -44,7 +44,7 @@ Item {
 
             // Local UI state for filtering
             property var filterColumns: ["Author Email", "Author", "Parent 1", "Branch"]
-            property string filterColumn: "Message"
+            property string filterColumn: "Author Email"
             property string filterStartDate: ""   // YYYY-MM-DD
             property string filterEndDate: ""     // YYYY-MM-DD
             property string filterText: ""
