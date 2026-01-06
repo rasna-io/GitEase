@@ -45,7 +45,8 @@ GitWrapperCPP::GitWrapperCPP(QObject *parent)
 
     open("E:/family/dadash/work/ROMINA/work_10/GitEase");
 
-    exportCompleteBundle("44-evaluate-export-possibilities-for-offline-git-workflows", "E:/family/dadash/work/ROMINA/work_10/test");
+    // exportCompleteBundle("55-export-diff-bundle", "E:/family/dadash/work/ROMINA/work_10/com100");
+    exportDiffBundle("main", "44-evaluate-export-possibilities-for-offline-git-workflows", "E:/family/dadash/work/ROMINA/work_10/diff4");
     qDebug()<<"finished";
     // unitTest();
     // unitTestForGitWorkflow();
@@ -2350,6 +2351,127 @@ QVariantMap GitWrapperCPP::exportCompleteBundle(const QString &targetBranch, con
 
     return result;
 }
+
+QVariantMap GitWrapperCPP::exportDiffBundle(
+    const QString &baseBranchOrCommit,
+    const QString &targetBranchOrCommit,
+    const QString &outputPath)
+{
+    // 1. VALIDATION
+    if (!m_currentRepo) {
+        return createResult(false, QVariant(), "No repository open. Call open() first.");
+    }
+
+    if (baseBranchOrCommit.isEmpty() || targetBranchOrCommit.isEmpty() || outputPath.isEmpty()) {
+        return createResult(false, QVariant(),
+                            QString("Invalid parameters:\nBase: '%1'\nTarget: '%2'\nOutput: '%3'")
+                                .arg(baseBranchOrCommit)
+                                .arg(targetBranchOrCommit)
+                                .arg(outputPath));
+    }
+
+    // 2. INITIALIZATION
+    git_object* baseObj = nullptr;
+    git_object* targetObj = nullptr;
+    git_revwalk* walker = nullptr;
+    git_packbuilder* packbuilder = nullptr;
+
+    QString bundleFilePath = outputPath.endsWith(".bundle")
+                                 ? outputPath
+                                 : outputPath + ".bundle";
+
+    // 3. RESOLVE BASE & TARGET
+    if (git_revparse_single(&baseObj, m_currentRepo,
+                            baseBranchOrCommit.toUtf8().constData()) != 0) {
+        return createResult(false, QVariant(),
+                            QString("Base '%1' not found").arg(baseBranchOrCommit));
+    }
+
+    if (git_revparse_single(&targetObj, m_currentRepo,
+                            targetBranchOrCommit.toUtf8().constData()) != 0) {
+        git_object_free(baseObj);
+        return createResult(false, QVariant(),
+                            QString("Target '%1' not found").arg(targetBranchOrCommit));
+    }
+
+    const git_oid* baseOid   = git_object_id(baseObj);
+    const git_oid* targetOid = git_object_id(targetObj);
+
+    QString baseSha   = gitOidToString(baseOid);
+    QString targetSha = gitOidToString(targetOid);
+
+    // 4. PACKBUILDER
+    if (git_packbuilder_new(&packbuilder, m_currentRepo) != 0) {
+        git_object_free(baseObj);
+        git_object_free(targetObj);
+        return createResult(false, QVariant(), "Failed to create packbuilder.");
+    }
+
+    // 5. WALK: target minus base
+    if (git_revwalk_new(&walker, m_currentRepo) != 0) {
+        cleanupBundleResources(nullptr, baseObj, nullptr, packbuilder);
+        cleanupBundleResources(nullptr, targetObj, nullptr, nullptr);
+        return createResult(false, QVariant(), "Failed to create revision walker.");
+    }
+
+    git_revwalk_sorting(walker, GIT_SORT_TOPOLOGICAL);
+    git_revwalk_push(walker, targetOid);
+    git_revwalk_hide(walker, baseOid);
+
+    git_oid oid;
+    int commitCount = 0;
+    QVector<QString> newCommitShas;
+
+    while (git_revwalk_next(&oid, walker) == 0) {
+        git_packbuilder_insert(packbuilder, &oid, nullptr);
+        newCommitShas.append(gitOidToString(&oid));
+        commitCount++;
+    }
+
+    if (commitCount == 0) {
+        cleanupBundleResources(nullptr, baseObj, walker, packbuilder);
+        cleanupBundleResources(nullptr, targetObj, nullptr, nullptr);
+
+        if (git_oid_equal(baseOid, targetOid)) {
+            return createResult(false, QVariant(),
+                                QString("Base and target are the same commit (%1)")
+                                    .arg(baseSha.left(8)));
+        }
+
+        return createResult(false, QVariant(),
+                            "No new commits to bundle.");
+    }
+
+    // 6. CREATE + VERIFY BUNDLE (helper does BOTH)
+    QVariantMap result = createBundleFile(
+        packbuilder,
+        bundleFilePath,
+        targetSha,
+        targetBranchOrCommit,
+        false   // differential
+        );
+
+    // 7. CLEANUP
+    cleanupBundleResources(nullptr, baseObj, walker, packbuilder);
+    cleanupBundleResources(nullptr, targetObj, nullptr, nullptr);
+
+    // 8. ADD DIFF METADATA
+    if (result["success"].toBool()) {
+        QVariantMap data = result["data"].toMap();
+        data["bundleType"] = "differential";
+        data["base"] = baseBranchOrCommit;
+        data["baseCommit"] = baseSha;
+        data["target"] = targetBranchOrCommit;
+        data["targetCommit"] = targetSha;
+        data["newCommitCount"] = commitCount;
+        data["newCommitShas"] = QVariant::fromValue(newCommitShas.toList());
+        data["recommendedFor"] = "Incremental update from known base";
+        result["data"] = data;
+    }
+
+    return result;
+}
+
 
 
 

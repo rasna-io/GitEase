@@ -259,6 +259,7 @@ private:
      */
     QVariantMap verifyBundleWithGit(const QString& bundlePath);
 
+
     /* ============================================================
      * End of Bundle Operation Helper Functions
      * ============================================================ */
@@ -558,6 +559,26 @@ public slots:
      * Example: exportCompleteBundle("main", "E:/backup/main.bundle")
      */
     QVariantMap exportCompleteBundle(const QString& targetBranch, const QString& outputPath);
+
+    /**
+     * \brief Create a differential bundle containing ONLY new commits not in base
+     * \param baseBranchOrCommit Common ancestor (what the receiver already has)
+     * \param targetBranchOrCommit New work to send (what you want to share)
+     * \param outputPath Where to save the .bundle file
+     * \return QVariantMap with bundle metadata and operation result
+     *
+     * USAGE: When sharing work with someone who already has the base code.
+     *        This creates minimal bundles containing only YOUR changes.
+     *
+     * Example: exportDiffBundle("main", "feature/new-feature", "E:/review.bundle")
+     *
+     * Scenario: Boss has A-B-C-D, you created Q on top of D
+     *          Bundle will contain ONLY Q (not A-B-C-D)
+     */
+    QVariantMap exportDiffBundle(
+        const QString& baseBranchOrCommit,
+        const QString& targetBranchOrCommit,
+        const QString& outputPath);
 
 };
 
