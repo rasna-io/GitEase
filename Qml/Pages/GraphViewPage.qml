@@ -43,7 +43,7 @@ Item {
             spacing: 10
 
             // Local UI state for filtering
-            property var filterColumns: ["Message", "Author"]
+            property var filterColumns: ["Author Email", "Author", "Parent 1", "Branch"]
             property string filterColumn: "Message"
             property string filterStartDate: ""   // YYYY-MM-DD
             property string filterEndDate: ""     // YYYY-MM-DD
