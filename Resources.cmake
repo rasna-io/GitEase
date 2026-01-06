@@ -82,6 +82,7 @@ set(RESOURCES_POPUPS
 set(RESOURCES_PAGES
     Qml/Pages/WelcomePage.qml       # Initial welcome/onboarding page
     Qml/Pages/GraphViewPage.qml     # Main graph view page
+    Qml/Pages/CommittingPage.qml    # Commit Page
     Qml/Pages/BlankPage.qml         # Blank placeholder page
 )
 
