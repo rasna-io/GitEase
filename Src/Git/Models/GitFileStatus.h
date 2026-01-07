@@ -15,7 +15,9 @@ class GitFileStatus
     Q_PROPERTY(bool isUnstaged READ isUnstaged CONSTANT FINAL)
     Q_PROPERTY(bool isUntracked READ isUntracked CONSTANT FINAL)
 
-
+    Q_PROPERTY(int deletionsCount READ deletionsCount CONSTANT FINAL)
+    Q_PROPERTY(int additionsCount READ additionsCount CONSTANT FINAL)
+    Q_PROPERTY(DeltaStatus deltaStatus READ deltaStatus CONSTANT FINAL)
 
 public:
     enum Status {
@@ -33,12 +35,26 @@ public:
 
     Q_ENUM(Status)
 
+    enum DeltaStatus {
+        ADDED = GIT_DELTA_ADDED,
+        DELETED = GIT_DELTA_DELETED,
+        MODIFIED = GIT_DELTA_MODIFIED,
+        RENAMED = GIT_STATUS_WT_TYPECHANGE,
+        UNTRACKED,
+    };
+
+    Q_ENUM(DeltaStatus)
+
+
     explicit GitFileStatus();
 
     GitFileStatus(const QString &path, const Status &status, bool isStaged,
                   bool isUnstaged, bool isUntracked);
 
     GitFileStatus(const git_status_entry *entry);
+
+    GitFileStatus(const git_diff_delta *delta, int additions, int deletions);
+
 
     QString path() const;
 
@@ -50,6 +66,11 @@ public:
 
     bool isUntracked() const;
 
+    int deletionsCount() const;
+
+    int additionsCount() const;
+
+    DeltaStatus deltaStatus() const;
 
 private:
     QString m_path;
@@ -57,4 +78,7 @@ private:
     bool m_isStaged;
     bool m_isUnstaged;
     bool m_isUntracked;
+    int m_deletionsCount;
+    int m_additionsCount;
+    DeltaStatus m_deltaStatus;
 };

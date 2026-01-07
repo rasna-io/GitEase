@@ -403,7 +403,7 @@ GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
 
     // Retrieve the diff between the commit and its parent
     git_diff *diff = nullptr;
-    GitResult diffResult = getDiffBetweenTrees(commitTree, parentTree, diff);
+    GitResult diffResult = getDiffBetweenTrees(parentTree, commitTree, diff);
     if (!diffResult.success()) {
         git_tree_free(commitTree);
         git_tree_free(parentTree);
@@ -412,7 +412,7 @@ GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
     }
 
     // Process the diff result and return the file changes
-    QVariantList fileChanges = processDiff(diff);
+    QList<GitFileStatus> fileChanges = processDiff(diff);
     git_diff_free(diff);
     git_tree_free(commitTree);
     git_tree_free(parentTree);
@@ -434,9 +434,9 @@ GitResult GitStatus::getDiffBetweenTrees(git_tree* oldTree, git_tree* newTree, g
     return GitResult(true, QVariant(), "Diff created successfully.");
 }
 
-QVariantList GitStatus::processDiff(git_diff* diff)
+QList<GitFileStatus> GitStatus::processDiff(git_diff* diff)
 {
-    QVariantList fileList;
+    QList<GitFileStatus> fileList;
 
     size_t numDeltas = git_diff_num_deltas(diff);
     for (size_t i = 0; i < numDeltas; ++i) {
@@ -451,23 +451,12 @@ QVariantList GitStatus::processDiff(git_diff* diff)
             git_patch_free(patch);
         }
 
-        QVariantMap fileMap;
-        fileMap["filePath"] = QString::fromUtf8(delta->new_file.path);
-        fileMap["additions"] = static_cast<int>(additions);
-        fileMap["deletions"] = static_cast<int>(deletions);
+        int addCount = static_cast<int>(additions);
+        int delCount = static_cast<int>(deletions);
 
-        // Determine the file status (added, deleted, modified)
-        QString statusChar;
-        switch (delta->status) {
-        case GIT_DELTA_ADDED:     statusChar = "A"; break;
-        case GIT_DELTA_DELETED:   statusChar = "D"; break;
-        case GIT_DELTA_MODIFIED:  statusChar = "M"; break;
-        case GIT_DELTA_RENAMED:   statusChar = "R"; break;
-        default:                  statusChar = "U"; break;
-        }
-        fileMap["status"] = statusChar;
+        GitFileStatus fileInfo = GitFileStatus(delta, addCount, delCount);
 
-        fileList.append(fileMap);
+        fileList.append(fileInfo);
     }
 
     return fileList;
