@@ -40,45 +40,12 @@ Item {
     property string filterStartDate: ""
     property string filterEndDate: ""
     property string filterText: ""
+    property var filterMode: []  // Array of selected filter items: ["Messages", "Authors", etc.]
 
     // Empty-state helper
     readonly property bool hasAnyFilter: (root.filterText && root.filterText.trim().length > 0)
                                           || (root.filterStartDate && root.filterStartDate.trim().length > 0)
                                           || (root.filterEndDate && root.filterEndDate.trim().length > 0)
-
-    function emptyStateDetailsText() {
-        // 1) No commits in repo at all
-        if (!root.allCommits || root.allCommits.length === 0)
-            return "This repository has no commits."
-
-        // 2) Commits exist, but filter/search returned no matches
-        if (!root.hasAnyFilter)
-            return "No commits to show."
-
-        var parts = []
-
-        var needle = (root.filterText || "").trim()
-        if (needle.length > 0) {
-            var scope = (root.navigationRule === "Author") ? "author" : "message"
-            parts.push(scope + " contains '" + needle + "'")
-        }
-
-        var start = (root.filterStartDate || "").trim()
-        var end = (root.filterEndDate || "").trim()
-        if (start.length > 0 || end.length > 0) {
-            if (start.length > 0 && end.length > 0)
-                parts.push("date between " + start + " and " + end)
-            else if (start.length > 0)
-                parts.push("date from " + start)
-            else
-                parts.push("date until " + end)
-        }
-
-        if (parts.length === 0)
-            return "No commits match your filter."
-
-        return "No commits match: " + parts.join(", ")
-    }
 
     // Lazy loading (infinite scroll)
     property int pageSize: 200
@@ -112,7 +79,39 @@ Item {
 
     /* Functions
      * ****************************************************************************************/
+    function emptyStateDetailsText() {
+        // 1) No commits in repo at all
+        if (!root.allCommits || root.allCommits.length === 0)
+            return "This repository has no commits."
 
+        // 2) Commits exist, but filter/search returned no matches
+        if (!root.hasAnyFilter)
+            return "No commits to show."
+
+        var parts = []
+
+        var needle = (root.filterText || "").trim()
+        if (needle.length > 0) {
+            var scope = (root.navigationRule === "Author") ? "author" : "message"
+            parts.push(scope + " contains '" + needle + "'")
+        }
+
+        var start = (root.filterStartDate || "").trim()
+        var end = (root.filterEndDate || "").trim()
+        if (start.length > 0 || end.length > 0) {
+            if (start.length > 0 && end.length > 0)
+                parts.push("date between " + start + " and " + end)
+            else if (start.length > 0)
+                parts.push("date from " + start)
+            else
+                parts.push("date until " + end)
+        }
+
+        if (parts.length === 0)
+            return "No commits match your filter."
+
+        return "No commits match: " + parts.join(", ")
+    }
 
     function commitColor(commitObj) {
         if (!commitObj || !commitObj.colorKey)
@@ -160,15 +159,59 @@ Item {
         return new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
     }
 
-    function applyFilter(navigationRule, text, startDate, endDate) {
-        if (navigationRule !== undefined)
-            root.navigationRule = navigationRule
+    /*!
+     * Application-level filter: checks if a commit matches based on selected filter modes
+     * Returns true if the commit matches the filter criteria
+     */
+    function applicationFilter(commit, needle, modes) {
+        if (!needle || needle.length === 0)
+            return true  // No text filter, matches all
+
+        // If no modes selected, default to "Messages"
+        var activeMode = (modes && modes.length > 0) ? modes : ["Messages"]
+        
+        // Check each active filter mode
+        for (var i = 0; i < activeMode.length; i++) {
+            var mode = activeMode[i]
+            var haystack = ""
+            
+            switch(mode) {
+                case "Messages":
+                    haystack = normalizeFilterString(commit.summary) + " " + normalizeFilterString(commit.message)
+                    break
+                case "Subjects":
+                    haystack = normalizeFilterString(commit.summary)
+                    break
+                case "Authors":
+                    haystack = normalizeFilterString(commit.author)
+                    break
+                case "Emails":
+                    haystack = normalizeFilterString(commit.authorEmail)
+                    break
+                case "SHA-1":
+                    haystack = normalizeFilterString(commit.hash)
+                    break
+                default:
+                    continue
+            }
+            
+            // If any mode matches, return true
+            if (haystack.toLowerCase().indexOf(needle) !== -1)
+                return true
+        }
+        
+        return false  // No mode matched
+    }
+
+    function applyFilter(text, startDate, endDate, modes) {
         if (text !== undefined)
             root.filterText = text
         if (startDate !== undefined)
             root.filterStartDate = startDate
         if (endDate !== undefined)
             root.filterEndDate = endDate
+        if (modes !== undefined)
+            root.filterMode = modes
 
         var base = root.allCommits || []
         if (!base.length) {
@@ -180,7 +223,7 @@ Item {
 
         var startMs = parseDateYYYYMMDD(root.filterStartDate)
         var endMs = parseDateYYYYMMDD(root.filterEndDate)
-        // Make end date inclusive by moving to end-of-day
+
         if (!isNaN(endMs))
             endMs = endMs + (24 * 60 * 60 * 1000) - 1
 
@@ -199,19 +242,9 @@ Item {
                     continue
             }
 
-            // Text filter
-            if (needle.length) {
-                var hay = ""
-                if (root.navigationRule === "Author") {
-                    hay = normalizeFilterString(c.author)
-                } else {
-                    // Message
-                    hay = normalizeFilterString(c.summary) + " " + normalizeFilterString(c.message)
-                }
-
-                if (hay.toLowerCase().indexOf(needle) === -1)
-                    continue
-            }
+            // Text filter using applicationFilter
+            if (!applicationFilter(c, needle, root.filterMode))
+                continue
 
             filtered.push(c)
         }
@@ -1484,7 +1517,7 @@ Item {
 
         // Store full dataset and apply current filter
         root.allCommits = commits.slice(0)
-        root.applyFilter(root.navigationRule, root.filterText, root.filterStartDate, root.filterEndDate)
+        root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate)
     }
 
     function loadMoreCommits() {
@@ -1514,7 +1547,7 @@ Item {
         hasMoreCommits = (page.length === pageSize)
 
         root.allCommits = commits.slice(0)
-        root.applyFilter(root.navigationRule, root.filterText, root.filterStartDate, root.filterEndDate)
+        root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate)
         isLoadingMore = false
     }
 
