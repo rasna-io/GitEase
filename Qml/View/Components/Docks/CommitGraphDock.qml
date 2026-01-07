@@ -1426,7 +1426,10 @@ Item {
         commitsListView.positionViewAtIndex(i, ListView.Contain)
     }
 
-    function selectPrevious() {
+    function selectPrevious(navigationRule) {
+        if (navigationRule !== undefined)
+            root.navigationRule = navigationRule
+        
         if (!root.commits || root.commits.length === 0)
             return
 
@@ -1439,7 +1442,10 @@ Item {
         selectCommitAtIndex(idx)
     }
 
-    function selectNext() {
+    function selectNext(navigationRule) {
+        if (navigationRule !== undefined)
+            root.navigationRule = navigationRule
+        
         if (!root.commits || root.commits.length === 0)
             return
 
