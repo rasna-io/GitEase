@@ -251,12 +251,70 @@ Item {
 
         loadData(filtered)
 
+        // Auto-load more pages if filtered results are less than pageSize
+        ensureMinimumResults()
+
         // If current selection is filtered out, clear it.
         if (root.selectedCommit && root.selectedCommit.hash) {
             var stillThere = filtered.find(function(x) { return x && x.hash === root.selectedCommit.hash })
             if (!stillThere)
                 root.selectedCommit = null
         }
+    }
+
+    /*!
+     * Ensures that filtered results meet minimum threshold by loading more pages if needed.
+     * Automatically loads additional pages until we have at least pageSize results or no more commits.
+     */
+    function ensureMinimumResults() {
+        if (!root.hasAnyFilter) {
+            return
+        }
+
+        var currentResultCount = root.commits ? root.commits.length : 0
+        
+        if (currentResultCount >= root.pageSize || !root.hasMoreCommits || root.isLoadingMore) {
+            return
+        }
+
+        loadMoreCommitsForFilter()
+    }
+
+    /*!
+     * Loads additional commits specifically for filter scenarios.
+     * Continues loading until filtered results reach pageSize or no more commits available.
+     */
+    function loadMoreCommitsForFilter() {
+        if (root.isLoadingMore || !root.hasMoreCommits) {
+            return
+        }
+
+        root.isLoadingMore = true
+
+        var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
+        var page = repositoryController.getCommits(repositoryController.appModel.currentRepository, root.pageSize, root.commitsOffset);
+        
+        if (!page || page.length === 0) {
+            root.hasMoreCommits = false
+            root.isLoadingMore = false
+            return
+        }
+
+        var compiled = compileGraphCommits(page, allBranches);
+        var commits = root.allCommits.concat(compiled)
+        root.commitsOffset = commits.length
+        root.hasMoreCommits = (page.length === root.pageSize)
+
+        root.allCommits = commits.slice(0)
+        
+        var currentText = root.filterText
+        var currentStartDate = root.filterStartDate
+        var currentEndDate = root.filterEndDate
+        var currentModes = root.filterMode
+        
+        root.isLoadingMore = false
+        
+        root.applyFilter(currentText, currentStartDate, currentEndDate, currentModes)
     }
 
     function clearFilter() {
