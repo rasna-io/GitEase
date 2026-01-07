@@ -387,7 +387,7 @@ Item {
                            downButton.hovered ? Style.colors.cardBackground : Style.colors.primaryBackground
                 }
 
-                onClicked: commitGraph.selectNext()
+                onClicked: commitGraph.selectNext(navigationRule)
             }
 
             ToolButton {
@@ -419,7 +419,7 @@ Item {
                            upButton.hovered ? Style.colors.cardBackground : Style.colors.primaryBackground
                 }
 
-                onClicked: commitGraph.selectPrevious()
+                onClicked: commitGraph.selectPrevious(navigationRule)
             }
 
             ToolButton {
