@@ -19,7 +19,21 @@ QtObject {
 
     property RepositoryController repositoryController: RepositoryController {
         appModel: root.appModel
+        onCurrentRepoChanged: {
+            branchController.currentRepo = currentRepo
+            remoteController.currentRepo = currentRepo
+            commitController.currentRepo = currentRepo
+            statusController.currentRepo = currentRepo
+        }
     }
+
+    property BranchController branchController: BranchController {}
+
+    property RemoteController remoteController: RemoteController {}
+
+    property CommitController commitController: CommitController {}
+
+    property StatusController statusController: StatusController {}
 
     property UiSessionPopups      popups
 }

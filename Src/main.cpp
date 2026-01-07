@@ -1,3 +1,4 @@
+#include "Remote.h"
 #include "Src/Utilities/windowsManager/windowcontroller.hpp"
 
 #include <QGuiApplication>
@@ -6,6 +7,7 @@
 
 #include <QtQml/QQmlContext>
 #include <QtQuick/QQuickWindow>
+#include <git2/global.h>
 
 int main(int argc, char *argv[])
 {
@@ -26,6 +28,11 @@ int main(int argc, char *argv[])
     auto* win = qobject_cast<QQuickWindow*>(engine.rootObjects().value(0));
     if (!win)
         return -1;
+
+    git_libgit2_init();
+
+
+
 
     auto controller = WindowController(win, &app);
     engine.rootContext()->setContextProperty(QStringLiteral("WindowController"), &controller);
