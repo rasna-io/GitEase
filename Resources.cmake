@@ -15,6 +15,10 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/PageController.qml       # Page lifecycle and navigation controller
     Qml/Core/Controllers/LayoutController.qml     # Layout management controller (singleton)
     Qml/Core/Controllers/RepositoryController.qml # Repository Controller
+    Qml/Core/Controllers/BranchController.qml
+    Qml/Core/Controllers/RemoteController.qml
+    Qml/Core/Controllers/CommitController.qml
+    Qml/Core/Controllers/StatusController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
