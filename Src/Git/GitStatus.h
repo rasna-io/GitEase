@@ -4,6 +4,7 @@
 
 #include <git2/diff.h>
 
+#include "GitFileStatus.h"
 #include "GitResult.h"
 #include "IGitController.h"
 
@@ -84,7 +85,7 @@ public:
     * @param newCommitHash The hash of the target commit to compare against.
     * @param filePath The relative path of the file.
     */
-    GitResult getDiff(const QString &oldCommitHash, const QString &newCommitHash,
+    Q_INVOKABLE GitResult getDiff(const QString &oldCommitHash, const QString &newCommitHash,
                       const QString &filePath);
 
     /**
@@ -123,7 +124,7 @@ private:
      * \param diff The diff object to process
      * \return A list of file changes represented as GitDiff objects
      */
-    QVariantList processDiff(git_diff *diff);
+    QList<GitFileStatus> processDiff(git_diff *diff);
 
 };
 

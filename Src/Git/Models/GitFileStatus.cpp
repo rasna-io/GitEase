@@ -1,4 +1,5 @@
 #include "GitFileStatus.h"
+#include <git2/diff.h>
 
 GitFileStatus::GitFileStatus()
 {}
@@ -42,6 +43,17 @@ GitFileStatus::GitFileStatus(const git_status_entry *entry)
     m_isUntracked = entry->status & GIT_STATUS_WT_NEW;
 }
 
+GitFileStatus::GitFileStatus(const git_diff_delta *delta, int additions, int deletions)
+{
+    if (!delta)
+        return;
+
+    m_path = QString::fromUtf8(delta->new_file.path);
+    m_additionsCount = additions;
+    m_deletionsCount = deletions;
+    m_deltaStatus = static_cast<DeltaStatus>(delta->status);
+}
+
 QString GitFileStatus::path() const
 {
     return m_path;
@@ -67,3 +79,18 @@ bool GitFileStatus::isUntracked() const
     return m_isUntracked;
 }
 
+
+int GitFileStatus::deletionsCount() const
+{
+    return m_deletionsCount;
+}
+
+int GitFileStatus::additionsCount() const
+{
+    return m_additionsCount;
+}
+
+GitFileStatus::DeltaStatus GitFileStatus::deltaStatus() const
+{
+    return m_deltaStatus;
+}
