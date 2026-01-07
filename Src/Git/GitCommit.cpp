@@ -25,7 +25,7 @@ GitResult GitCommit::getCommits(int limit, int offset)
     QList<Commit> commits;
 
     // Check if the repository is open
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -174,7 +174,7 @@ GitResult GitCommit::getCommit(const QString &commitHash)
 
 QString GitCommit::getParentHash(const QString &commitHash, int index)
 {
-    if (!m_currentRepo || m_currentRepo->repo || commitHash.isEmpty() || index < 0)
+    if (!m_currentRepo || !m_currentRepo->repo || commitHash.isEmpty() || index < 0)
         return "";
 
     git_oid oid;
@@ -304,7 +304,7 @@ git_signature* GitCommit::getAuthorSignature(git_repository* repo)
 
 git_tree* GitCommit::createTreeFromStagedChanges()
 {
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return nullptr;
     }
 
@@ -419,7 +419,7 @@ GitResult GitCommit::amendLastCommit(const QString &newMessage)
 
 GitResult GitCommit::revertCommit(const QString &commitHash)
 {
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
