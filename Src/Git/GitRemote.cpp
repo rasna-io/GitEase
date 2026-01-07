@@ -18,7 +18,7 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -163,7 +163,7 @@ GitResult GitRemote::getRemotes()
 {
     QList<Remote> remotes;
 
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -200,7 +200,7 @@ GitResult GitRemote::getRemotes()
 
 GitResult GitRemote::addRemote(const QString &name, const QString &url)
 {
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -236,7 +236,7 @@ GitResult GitRemote::addRemote(const QString &name, const QString &url)
 
 GitResult GitRemote::removeRemote(const QString &name)
 {
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -263,7 +263,7 @@ GitResult GitRemote::removeRemote(const QString &name)
 
 GitResult GitRemote::getUpstreamName(const QString &localBranchName)
 {
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "No repository available");
     }
 

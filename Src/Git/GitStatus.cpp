@@ -71,7 +71,7 @@ GitResult GitStatus::stageAll(bool includeUntrackedFiles)
 GitResult GitStatus::status()
 {
     // Get repository handle - SIMPLIFIED
-    if (!m_currentRepo || m_currentRepo->repo)
+    if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
 
 
@@ -159,7 +159,7 @@ GitResult GitStatus::getStagedFiles()
 
 GitResult GitStatus::addToIndex(const QString& filePath, bool isRemove)
 {
-    if (!m_currentRepo || m_currentRepo->repo)
+    if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "No repository found");
 
     git_index *index = nullptr;
@@ -189,7 +189,7 @@ GitResult GitStatus::getDiff(const QString &filePath)
 {
     QList<GitDiff> result;
 
-    if (!m_currentRepo || m_currentRepo->repo)
+    if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
 
 
@@ -265,7 +265,7 @@ GitResult GitStatus::getDiff(const QString &filePath)
 GitResult GitStatus::getDiff(const QString &oldCommitHash, const QString &newCommitHash, const QString &filePath)
 {
     QList<GitDiff> result;
-    if (!m_currentRepo || m_currentRepo->repo)
+    if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
 
     // Retrieve the commit objects for old and new commits
@@ -359,7 +359,7 @@ GitResult GitStatus::getDiff(const QString &oldCommitHash, const QString &newCom
 
 GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
 {
-    if (!m_currentRepo || m_currentRepo->repo)
+    if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "repository not open.");
 
     if (commitHash.isEmpty())

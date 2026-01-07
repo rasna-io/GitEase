@@ -17,7 +17,7 @@ QVariantList GitBranch::getBranches()
 {
     QVariantList branches;
 
-    if (!m_currentRepo || m_currentRepo->repo)
+    if (!m_currentRepo || !m_currentRepo->repo)
         return branches;
 
     git_reference *head = nullptr;
@@ -85,7 +85,7 @@ QVariantList GitBranch::getBranches()
 
 GitResult GitBranch::createBranch(const QString &branchName)
 {
-    if (!m_currentRepo || m_currentRepo->repo)
+    if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository not found");
 
     git_reference* new_branch_ref = nullptr;
@@ -112,7 +112,7 @@ GitResult GitBranch::createBranch(const QString &branchName)
 
 GitResult GitBranch::deleteBranch(const QString &branchName)
 {
-    if (!m_currentRepo || m_currentRepo->repo)
+    if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository not found for creating branch");
 
     git_reference* branchRef = nullptr;
@@ -137,7 +137,7 @@ GitResult GitBranch::deleteBranch(const QString &branchName)
 
 GitResult GitBranch::checkoutBranch(const QString &branchName)
 {
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository is not open.");
     }
 
@@ -185,7 +185,7 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
 
 GitResult GitBranch::renameBranch(const QString &oldName, const QString &newName)
 {
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository is not open.");
     }
 
@@ -215,7 +215,7 @@ GitResult GitBranch::renameBranch(const QString &oldName, const QString &newName
 
 QString GitBranch::getCurrentBranchName()
 {
-    if (!m_currentRepo || m_currentRepo->repo)
+    if (!m_currentRepo || !m_currentRepo->repo)
         return "";
 
     QString branchName;  // Empty string to start
