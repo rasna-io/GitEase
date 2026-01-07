@@ -237,7 +237,7 @@ Item {
 
 
     Connections {
-        target: GitService
+        target: root.repositoryController
 
         function onCloneFinished() {
             root.busy = false

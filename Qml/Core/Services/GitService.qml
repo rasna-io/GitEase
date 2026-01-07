@@ -6,7 +6,7 @@ pragma Singleton
 import QtQuick
 import GitEase 1.0
 
-GitWrapperCPP {
+Item {
     id: root
 
     /* Property Declarations

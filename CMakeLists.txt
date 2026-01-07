@@ -21,6 +21,8 @@ include(libgit.cmake)
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Qml)
 
 find_package(Qt6 REQUIRED COMPONENTS Quick Gui Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
 # Dependencies
 add_subdirectory(Res/)
@@ -43,6 +45,9 @@ qt_add_executable(${MAIN_TARGET_NAME}
     Src/main.cpp
 )
 
+
+target_link_libraries(GitEase PRIVATE Qt6::Core)
+target_link_libraries(GitEase PRIVATE Qt6::Core)
 target_include_directories(${MAIN_TARGET_NAME} PRIVATE ${INCLUDE_DIRS_BACKEND})
 
 # NO_CACHEGEN is set for qt_add_qml_module() in DEBUG mode so we can have a better QML Preview
@@ -76,7 +81,6 @@ qt_add_qml_module(${MAIN_TARGET_NAME}
     SOURCES
         ${HEADERS_BACKEND}
         ${SOURCES_BACKEND}
-
 )
 
 target_link_libraries(${MAIN_TARGET_NAME} PRIVATE
