@@ -219,6 +219,10 @@ Item {
                 onOpened: {
                     x = Math.max(0, Math.min(x, parent.width - width))
                 }
+
+                onSelectionChanged: function(items) {
+                    headerRow.applyFilter()
+                }
             }
 
             ListModel {
