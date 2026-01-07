@@ -89,7 +89,12 @@ GitResult GitCommit::getCommits(int limit, int offset)
 
         if (result == 0 && gitCommit) {
             // Wrap the git_commit into a Commit object and append to the list
-            commits.append(Commit(gitCommit)); // Assuming Commit class wraps git_commit
+            Commit commit = Commit(gitCommit);
+            QStringList parentHashes = getAllParents(gitCommit);
+
+            commit.setparentHashes(parentHashes);
+
+            commits.append(commit); // Assuming Commit class wraps git_commit
             git_commit_free(gitCommit);  // Clean up the git_commit object
             count++;
         }
@@ -112,7 +117,7 @@ GitResult GitCommit::getCommit(const QString &commitHash)
         return GitResult(false, QVariant(), "Commit hash cannot be empty");
     }
 
-    if (!m_currentRepo || m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -146,16 +151,8 @@ GitResult GitCommit::getCommit(const QString &commitHash)
 
 
     // Get parent hashes
-    QStringList parentHashes;
-    unsigned int parentCount = git_commit_parentcount(gitCommit);
-    for (unsigned int i = 0; i < parentCount; ++i) {
-        const git_oid* parentOid = git_commit_parent_id(gitCommit, i);
-        if (parentOid) {
-            char hash[GIT_OID_HEXSZ + 1];
-            git_oid_tostr(hash, sizeof(hash), parentOid);
-            parentHashes.append(QString::fromUtf8(hash));
-        }
-    }
+    QStringList parentHashes = getAllParents(gitCommit);
+
     commit.setparentHashes(parentHashes);
 
 
@@ -519,4 +516,20 @@ void GitCommit::freeParentCommits(ParentCommits& parents)
         git_commit_free(parents.amendedCommit);
         parents.amendedCommit = nullptr;
     }
+}
+
+QStringList GitCommit::getAllParents(git_commit *gitCommit)
+{
+    QStringList parentHashes;
+    unsigned int parentCount = git_commit_parentcount(gitCommit);
+    for (unsigned int i = 0; i < parentCount; ++i) {
+        const git_oid* parentOid = git_commit_parent_id(gitCommit, i);
+        if (parentOid) {
+            char hash[GIT_OID_HEXSZ + 1];
+            git_oid_tostr(hash, sizeof(hash), parentOid);
+            parentHashes.append(QString::fromUtf8(hash));
+        }
+    }
+
+    return parentHashes;
 }
