@@ -17,6 +17,13 @@ import "qrc:/GitEase/Qml/Core/Scripts/GraphUtils.js" as GraphUtils
 Item {
 
     id : root
+
+    property AppModel appModel: null
+
+    property BranchController branchController: null
+
+    property CommitController commitController: null
+
     property RepositoryController repositoryController: null
 
     /* Property Declarations
@@ -1151,9 +1158,8 @@ Item {
         for (var c = 0; c < rawCommits.length; c++) {
             var commit = rawCommits[c]
 
-            // parent hashes come from getCommitDetail()
             var parentHashes = []
-            var details = repositoryController.getCommitDetail(commit.hash)
+            var details = commit
             if (details && details.parentHashes) {
                 parentHashes = details.parentHashes
             }
@@ -1185,7 +1191,7 @@ Item {
     }
 
     function reloadAll() {
-        if (!repositoryController || !repositoryController.appModel || !repositoryController.appModel.currentRepository) {
+        if (!repositoryController || !root.appModel || !root.appModel.currentRepository) {
             return;
         }
 
@@ -1197,8 +1203,12 @@ Item {
         hasMoreCommits = true
         isLoadingMore = false
 
-        var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
-        var page = repositoryController.getCommits(repositoryController.appModel.currentRepository, pageSize, commitsOffset);
+        let allBranches = branchController.getBranches();
+        let commitRes = commitController.getCommits(pageSize, commitsOffset);
+
+        if (!commitRes.success)
+            return;
+        let page = commitRes.data;
 
         var commits = compileGraphCommits(page, allBranches);
         commitsOffset = commits.length
@@ -1209,13 +1219,17 @@ Item {
     function loadMoreCommits() {
         if (isLoadingMore || !hasMoreCommits)
             return
-        if (!repositoryController || !repositoryController.appModel || !repositoryController.appModel.currentRepository)
+        if (!branchController || !root.appModel || !root.appModel.currentRepository)
             return
 
         isLoadingMore = true
 
-        var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
-        var page = repositoryController.getCommits(repositoryController.appModel.currentRepository, pageSize, commitsOffset);
+        let allBranches = branchController.getBranches();
+        let commitRes = commitController.getCommits(pageSize, commitsOffset);
+
+        if (!commitRes.success)
+            return;
+        let page = commitRes.data;
         if (!page || page.length === 0) {
             hasMoreCommits = false
             isLoadingMore = false

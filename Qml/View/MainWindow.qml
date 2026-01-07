@@ -93,6 +93,18 @@ Rectangle {
                         }
 
                         // Repository controller (for pages that need repository context)
+                        if (item.hasOwnProperty("appModel")) {
+                            item.appModel = Qt.binding(function() { return root.uiSession?.appModel })
+                        }
+                        if (item.hasOwnProperty("branchController")) {
+                            item.branchController = Qt.binding(function() { return root.uiSession?.branchController })
+                        }
+                        if (item.hasOwnProperty("commitController")) {
+                            item.commitController = Qt.binding(function() { return root.uiSession?.commitController })
+                        }
+                        if (item.hasOwnProperty("statusController")) {
+                            item.statusController = Qt.binding(function() { return root.uiSession?.statusController })
+                        }
                         if (item.hasOwnProperty("repositoryController")) {
                             item.repositoryController = Qt.binding(function() { return root.uiSession?.repositoryController })
                         }

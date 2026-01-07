@@ -137,5 +137,8 @@ public:
 
     void setCurrentRepo(Repository *newCurrentRepo);
 
+private:
+    QStringList getAllParents(git_commit* gitCommit);
+
 };
 

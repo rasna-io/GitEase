@@ -19,6 +19,14 @@ Item {
     property var page: null
 
     // Provided by MainWindow Loader (UiSession context)
+    property AppModel appModel: null
+
+    property BranchController branchController: null
+
+    property CommitController commitController: null
+
+    property StatusController statusController: null
+
     property RepositoryController repositoryController: null
     readonly property var currentRepo: repositoryController?.appModel?.currentRepository ?? null
 
@@ -39,6 +47,9 @@ Item {
             CommitGraphDock {
                 anchors.fill: parent
                 repositoryController: root.repositoryController
+                appModel: root.appModel
+                branchController: root.branchController
+                commitController: root.commitController
 
                 onCommitClicked: function(commitId) {
                     root.selectedCommit = commitId
