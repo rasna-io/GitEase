@@ -33,9 +33,9 @@ Item {
     property var commits: []
     property var selectedCommit: null
 
-    // Filtering state
-    // filterColumn: one of ["Message", "Author"]
-    property string filterColumn: "Message"
+    // navigation state
+    // navigationRule: one of ["Author Email", "Author", "Parent 1", "Branch"]
+    property string navigationRule: "Message"
     // Dates are inclusive; accept empty string to disable bound. Format: YYYY-MM-DD
     property string filterStartDate: ""
     property string filterEndDate: ""
@@ -59,7 +59,7 @@ Item {
 
         var needle = (root.filterText || "").trim()
         if (needle.length > 0) {
-            var scope = (root.filterColumn === "Author") ? "author" : "message"
+            var scope = (root.navigationRule === "Author") ? "author" : "message"
             parts.push(scope + " contains '" + needle + "'")
         }
 
@@ -160,9 +160,9 @@ Item {
         return new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
     }
 
-    function applyFilter(column, text, startDate, endDate) {
-        if (column !== undefined)
-            root.filterColumn = column
+    function applyFilter(navigationRule, text, startDate, endDate) {
+        if (navigationRule !== undefined)
+            root.navigationRule = navigationRule
         if (text !== undefined)
             root.filterText = text
         if (startDate !== undefined)
@@ -202,7 +202,7 @@ Item {
             // Text filter
             if (needle.length) {
                 var hay = ""
-                if (root.filterColumn === "Author") {
+                if (root.navigationRule === "Author") {
                     hay = normalizeFilterString(c.author)
                 } else {
                     // Message
@@ -230,7 +230,7 @@ Item {
         root.filterText = ""
         root.filterStartDate = ""
         root.filterEndDate = ""
-        root.filterColumn = "Message"
+        root.navigationRule = "Message"
 
         loadData((root.allCommits || []).slice(0))
     }
@@ -1478,7 +1478,7 @@ Item {
 
         // Store full dataset and apply current filter
         root.allCommits = commits.slice(0)
-        root.applyFilter(root.filterColumn, root.filterText, root.filterStartDate, root.filterEndDate)
+        root.applyFilter(root.navigationRule, root.filterText, root.filterStartDate, root.filterEndDate)
     }
 
     function loadMoreCommits() {
@@ -1508,7 +1508,7 @@ Item {
         hasMoreCommits = (page.length === pageSize)
 
         root.allCommits = commits.slice(0)
-        root.applyFilter(root.filterColumn, root.filterText, root.filterStartDate, root.filterEndDate)
+        root.applyFilter(root.navigationRule, root.filterText, root.filterStartDate, root.filterEndDate)
         isLoadingMore = false
     }
 
