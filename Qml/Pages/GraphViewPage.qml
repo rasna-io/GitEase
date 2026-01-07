@@ -45,9 +45,8 @@ Item {
 
             readonly property bool compact: parent.width < 650
 
-            // Local UI state for filtering
-            property var filterColumns: ["Author Email", "Author", "Parent 1", "Branch"]
-            property string filterColumn: "Author Email"
+            property var navigationRules: ["Author Email", "Author", "Parent 1", "Branch"]
+            property string navigationRule: "Author Email"
             property string filterStartDate: ""   // YYYY-MM-DD
             property string filterEndDate: ""     // YYYY-MM-DD
             property string filterText: ""
@@ -55,7 +54,7 @@ Item {
             function applyFilter() {
                 if (!commitGraph)
                     return
-                commitGraph.applyFilter(filterColumn, filterText, filterStartDate, filterEndDate)
+                commitGraph.applyFilter(navigationRule, filterText, filterStartDate, filterEndDate)
             }
 
             property var activeDateField: null
@@ -228,7 +227,6 @@ Item {
             ListModel {
                 id: filterOptionsModel
                 ListElement { text: "Messages"; checked: false }
-                ListElement { text: "Paths"; checked: false }
                 ListElement { text: "Subjects"; checked: false }
                 ListElement { text: "Authors"; checked: false }
                 ListElement { text: "Emails"; checked: false }
@@ -338,7 +336,7 @@ Item {
 
             ComboBox {
                 id: columnCombo
-                model: parent.filterColumns
+                model: parent.navigationRules
 
                 Layout.leftMargin: headerRow.compact ? 6 : 20
                 minHeight: 26
@@ -353,9 +351,9 @@ Item {
                 palette.text: Style.colors.descriptionText
 
                 Layout.preferredWidth: 90
-                currentIndex: parent.filterColumns.indexOf(parent.filterColumn)
+                currentIndex: parent.navigationRules.indexOf(parent.navigationRule)
                 onActivated: function(index) {
-                    parent.filterColumn = parent.filterColumns[index]
+                    parent.navigationRule = parent.navigationRules[index]
                     parent.applyFilter()
                 }
             }
