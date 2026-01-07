@@ -14,6 +14,9 @@ Item {
     id : root
 
     property RepositoryController repositoryController: null
+
+    property StatusController statusController: null
+
     property string commitHash: ""
 
     /* Property Declarations
@@ -415,7 +418,7 @@ Item {
 
                         property var fileData: modelData
                         property bool isHovered: false
-                        property bool isSelected: root.selectedFile && root.selectedFile.filePath === fileData.filePath
+                        property bool isSelected: root.selectedFile && root.selectedFile.filePath === fileData.path
 
                         color: {
                             if (isSelected) {
@@ -454,7 +457,7 @@ Item {
                                     }
 
                                     Label {
-                                        text: fileData.filePath || ""
+                                        text: fileData.path || ""
                                         color: "#000000"
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
@@ -487,7 +490,7 @@ Item {
                                     }
 
                                     Label {
-                                        text: root.getFileExtension(fileData.filePath) || ""
+                                        text: root.getFileExtension(fileData.path) || ""
                                         color: "#000000"
                                         verticalAlignment: Text.AlignVCenter
                                         horizontalAlignment: Text.AlignHCenter
@@ -521,13 +524,19 @@ Item {
 
                                     Label {
                                         text: {
-                                            switch(fileData.status) {
-                                                case "A": return "Added"
-                                                case "D": return "Deleted"
-                                                case "M": return "Modified"
-                                                case "R": return "Renamed"
-                                                case "U": return "Untracked"
-                                                default: return "Untracked"
+                                            switch(fileData.deltaStatus) {
+                                                case GitFileStatus.ADDED:
+                                                    return "Added"
+                                                case GitFileStatus.DELETED:
+                                                    return "Deleted"
+                                                case GitFileStatus.MODIFIED:
+                                                    return "Modified"
+                                                case GitFileStatus.RENAMED:
+                                                    return "Renamed"
+                                                case GitFileStatus.UNTRACKED:
+                                                    return "Untracked"
+                                                default:
+                                                    return "Untracked"
                                             }
                                         }
 
@@ -540,7 +549,7 @@ Item {
                                         wrapMode: Text.NoWrap
                                         background: Rectangle {
                                             radius: 3
-                                            color: root.getChangeColor(fileData.status)
+                                            color: root.getChangeColor(fileData.deltaStatus)
                                         }
                                     }
                                 }
@@ -563,7 +572,7 @@ Item {
                                     }
 
                                     Label {
-                                        text: fileData.additions  || "0"
+                                        text: fileData.additionsCount  || "0"
                                         color: "#000000"
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
@@ -591,7 +600,7 @@ Item {
                                     }
 
                                     Label {
-                                        text: fileData.deletions  || "0"
+                                        text: fileData.deletionsCount  || "0"
                                         color: "#000000"
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
@@ -610,7 +619,7 @@ Item {
                             hoverEnabled: true
                             onClicked: {
                                 root.selectedFile = fileData
-                                root.fileSelected(fileData.filePath)
+                                root.fileSelected(fileData.path)
                             }
                             onEntered: {
                                 isHovered = true
@@ -626,10 +635,14 @@ Item {
     }
 
     onCommitHashChanged:{
-        if(!repositoryController)
+        if(!statusController)
             return
 
-        root.files = repositoryController.getCommitFileChanges(root.commitHash)
+        let res = statusController.getCommitFileChanges(root.commitHash)
+
+        if (res.success)
+            root.files = res.data
+
     }
 
     /* Functions
@@ -648,14 +661,20 @@ Item {
        return ""; // Return empty string if no extension found
    }
 
-    function getChangeColor(type: string) : string {
-        switch (type) {
-            case "A": return "#B9FAB9"
-            case "D": return "#FF9898"
-            case "M": return "#FFF398"
-            case "R": return "#aafff8"
-            case "U": return "#990000ff"
-            default:  return "#990000ff"
+    function getChangeColor(type) : string {
+        switch(type) {
+        case GitFileStatus.ADDED:
+            return "#B9FAB9"
+        case GitFileStatus.DELETED:
+            return "#FF9898"
+        case GitFileStatus.MODIFIED:
+            return "#FFF398"
+        case GitFileStatus.RENAMED:
+            return "#aafff8"
+        case GitFileStatus.UNTRACKED:
+            return "#990000ff"
+        default:
+            return "#990000ff"
         }
     }
 }

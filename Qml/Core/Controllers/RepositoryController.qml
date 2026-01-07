@@ -7,7 +7,7 @@ import GitEase
  * Manages repository operations including opening, cloning, and selecting repositories.
  * Handles repository lifecycle and maintains recent repositories list.
  * ************************************************************************************************/
-Item {
+GitRepository {
     id : root
 
     /* Property Declarations
@@ -49,7 +49,7 @@ Item {
      * Open an existing repository at the specified path
      */
     function openRepository(path :string) : bool {
-        var result = GitService.open(path)
+        var result = open(path)
 
         if(result.success){
             createRepositoryComponent(path)
@@ -64,7 +64,7 @@ Item {
     function cloneRepository(path, url) : bool {
         let repoName = extractRepoName(url)
 
-        var result = GitService.clone(url, path + "/" + repoName)
+        var result = clone(url, path + "/" + repoName)
 
         if(result.success){
             createRepositoryComponent(path + "/" + repoName, repoName)

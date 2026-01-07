@@ -19,8 +19,17 @@ Item {
     property var page: null
 
     // Provided by MainWindow Loader (UiSession context)
+    property AppModel appModel: null
+
+    property BranchController branchController: null
+
+    property CommitController commitController: null
+
+    property StatusController statusController: null
+
     property RepositoryController repositoryController: null
-    readonly property var currentRepo: repositoryController?.appModel?.currentRepository ?? null
+
+    readonly property var currentRepo: appModel?.currentRepository ?? null
 
     property string selectedCommit: ""
     property string selectedFilePath: ""
@@ -39,6 +48,9 @@ Item {
             CommitGraphDock {
                 anchors.fill: parent
                 repositoryController: root.repositoryController
+                appModel: root.appModel
+                branchController: root.branchController
+                commitController: root.commitController
 
                 onCommitClicked: function(commitId) {
                     root.selectedCommit = commitId
@@ -68,12 +80,17 @@ Item {
                         anchors.fill: parent
 
                         repositoryController : root.repositoryController
+                        statusController: root.statusController
                         commitHash : root.selectedCommit
 
                         onFileSelected: function(filePath){
                             root.selectedFilePath = filePath
-                            let parentHash = repositoryController.getParentHash(root.selectedCommit)
-                            diffView.diffData =  root.repositoryController.getCommitsDiff(parentHash, root.selectedCommit, root.selectedFilePath)
+                            let parentHash = root.commitController.getParentHash(root.selectedCommit)
+                            let res = root.statusController.getDiff(parentHash, root.selectedCommit, root.selectedFilePath)
+
+                            if (res.success) {
+                                diffView.diffData = res.data
+                            }
                         }
                     }
                 }
