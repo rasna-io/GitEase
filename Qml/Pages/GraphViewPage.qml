@@ -54,7 +54,16 @@ Item {
             function applyFilter() {
                 if (!commitGraph)
                     return
-                commitGraph.applyFilter(navigationRule, filterText, filterStartDate, filterEndDate)
+                
+                var selectedModes = []
+                for (var i = 0; i < filterOptionsModel.count; i++) {
+                    var item = filterOptionsModel.get(i)
+                    if (item.checked) {
+                        selectedModes.push(item.text)
+                    }
+                }
+                
+                commitGraph.applyFilter(filterText, filterStartDate, filterEndDate, selectedModes)
             }
 
             property var activeDateField: null
