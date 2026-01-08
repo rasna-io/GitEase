@@ -67,7 +67,7 @@ Item {
                 var pos = field.mapToItem(parent, 0, field.height + 6)
                 calendar.errorMessage = ""
                 datePopup.x = Math.max(0, Math.min(pos.x, parent.width - datePopup.width))
-                datePopup.y = Math.max(0, Math.min(pos.y, parent.height - datePopup.height))
+                datePopup.y = pos.y
 
                 datePopup.open()
             }
