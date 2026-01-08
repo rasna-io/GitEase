@@ -19,6 +19,7 @@ T.Control {
     property date selectedDate: new Date()
     property int month: selectedDate.getMonth()
     property int year: selectedDate.getFullYear()
+    property string errorMessage: ""
 
     /* Signals
      * ****************************************************************************************/
@@ -29,7 +30,7 @@ T.Control {
     /* Object Properties
      * ****************************************************************************************/
     implicitWidth: 280
-    implicitHeight: 230
+    implicitHeight: 230 + (errorMessage !== "" ? 28 : 0)
 
     /* Children
      * ****************************************************************************************/
@@ -157,6 +158,30 @@ T.Control {
             }
         }
 
+        // Error message display (above footer buttons)
+        Rectangle {
+            width: parent.width
+            height: control.errorMessage !== "" ? 28 : 0
+            visible: control.errorMessage !== ""
+            color: Qt.rgba(239/255, 83/255, 80/255, 0.1) // Light red background
+            radius: 4
+            border.width: 1
+            border.color: Style.colors.error || "#ef5350"
+
+            Text {
+                id: errorText
+                anchors.centerIn: parent
+                width: parent.width - 16
+                text: control.errorMessage
+                color: Style.colors.error || "#ef5350"
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 11
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                wrapMode: Text.WordWrap
+            }
+        }
+
         // Footer actions (part of Calendar feature)
         Row {
             id: footerRow
@@ -214,7 +239,10 @@ T.Control {
                     color: clearButton.down ? Style.colors.surfaceMuted: clearButton.hovered ? Style.colors.cardBackground : Style.colors.surfaceLight
                 }
 
-                onClicked: control.clearRequested()
+                onClicked: {
+                    control.errorMessage = ""
+                    control.clearRequested()
+                }
             }
         }
     }
