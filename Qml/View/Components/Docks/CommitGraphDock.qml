@@ -1525,12 +1525,60 @@ Item {
             return
 
         var idx = selectedIndex()
-        if (idx < 0)
-            idx = 0
-        else
-            idx = Math.max(0, idx - 1)
+        if (idx < 0) {
+            selectCommitAtIndex(0)
+            return
+        }
 
-        selectCommitAtIndex(idx)
+        var currentCommit = root.selectedCommit
+        if (!currentCommit)
+            return
+
+        if (root.navigationRule === "Parent 1") {
+            for (var i = idx - 1; i >= 0; i--) {
+                var commit = root.commits[i]
+                if (commit && commit.parentHashes && commit.parentHashes.length > 0) {
+                    if (commit.parentHashes[0] === currentCommit.hash) {
+                        selectCommitAtIndex(i)
+                        return
+                    }
+                }
+            }
+            return
+        }
+
+        if (root.navigationRule === "Branch") {
+            var currentBranch = (currentCommit.branchNames && currentCommit.branchNames.length > 0) 
+                ? currentCommit.branchNames[0] : null
+            
+            if (!currentBranch) {
+                return
+            }
+            
+            for (var i = idx - 1; i >= 0; i--) {
+                var commit = root.commits[i]
+                if (commit && commit.branchNames && commit.branchNames.length > 0) {
+                    // Check if any branch name matches
+                    for (var j = 0; j < commit.branchNames.length; j++) {
+                        if (commit.branchNames[j] === currentBranch) {
+                            selectCommitAtIndex(i)
+                            return
+                        }
+                    }
+                }
+            }
+            return
+        }
+
+        var matchValue = getNavigationRuleValue(currentCommit, root.navigationRule)
+        
+        for (var i = idx - 1; i >= 0; i--) {
+            var commit = root.commits[i]
+            if (commit && getNavigationRuleValue(commit, root.navigationRule) === matchValue) {
+                selectCommitAtIndex(i)
+                return
+            }
+        }
     }
 
     function selectNext(navigationRule) {
@@ -1541,12 +1589,101 @@ Item {
             return
 
         var idx = selectedIndex()
-        if (idx < 0)
-            idx = 0
-        else
-            idx = Math.min(root.commits.length - 1, idx + 1)
+        if (idx < 0) {
+            selectCommitAtIndex(0)
+            return
+        }
 
-        selectCommitAtIndex(idx)
+        var currentCommit = root.selectedCommit
+        if (!currentCommit)
+            return
+
+        if (root.navigationRule === "Parent 1") {
+            if (!currentCommit.parentHashes || currentCommit.parentHashes.length === 0) {
+                return
+            }
+            
+            var parentHash = currentCommit.parentHashes[0]
+            
+            for (var i = idx + 1; i < root.commits.length; i++) {
+                var commit = root.commits[i]
+                if (commit && commit.hash === parentHash) {
+                    selectCommitAtIndex(i)
+                    return
+                }
+            }
+            return
+        }
+
+        if (root.navigationRule === "Branch") {
+            var currentBranch = (currentCommit.branchNames && currentCommit.branchNames.length > 0) 
+                ? currentCommit.branchNames[0] : null
+            
+            if (!currentBranch) {
+                if (currentCommit.parentHashes && currentCommit.parentHashes.length > 0) {
+                    var parentHash = currentCommit.parentHashes[0]
+                    for (var i = idx + 1; i < root.commits.length; i++) {
+                        var commit = root.commits[i]
+                        if (commit && commit.hash === parentHash) {
+                            selectCommitAtIndex(i)
+                            return
+                        }
+                    }
+                }
+                return
+            }
+            
+            for (var i = idx + 1; i < root.commits.length; i++) {
+                var commit = root.commits[i]
+                if (commit && commit.branchNames && commit.branchNames.length > 0) {
+                    for (var j = 0; j < commit.branchNames.length; j++) {
+                        if (commit.branchNames[j] === currentBranch) {
+                            selectCommitAtIndex(i)
+                            return
+                        }
+                    }
+                }
+            }
+            return
+        }
+
+        var matchValue = getNavigationRuleValue(currentCommit, root.navigationRule)
+        
+        for (var i = idx + 1; i < root.commits.length; i++) {
+            var commit = root.commits[i]
+            if (commit && getNavigationRuleValue(commit, root.navigationRule) === matchValue) {
+                selectCommitAtIndex(i)
+                return
+            }
+        }
+    }
+
+    /*!
+     * Helper function to extract the value from a commit based on the navigation rule
+     */
+    function getNavigationRuleValue(commit, rule) {
+        if (!commit)
+            return null
+        
+        switch(rule) {
+            case "Author":
+                return normalizeFilterString(commit.author)
+            case "Author Email":
+                return normalizeFilterString(commit.authorEmail)
+            case "Parent 1":
+                // For Parent 1, return the first parent hash
+                return (commit.parentHashes && commit.parentHashes.length > 0) 
+                    ? commit.parentHashes[0] 
+                    : null
+            case "Branch":
+                // For Branch, return the first branch name if available
+                return (commit.branchNames && commit.branchNames.length > 0) 
+                    ? commit.branchNames[0] 
+                    : null
+            case "Message":
+            default:
+                return normalizeFilterString(commit.summary)
+        }
     }
 
     function reloadAll() {
