@@ -42,14 +42,6 @@ GitWrapperCPP::GitWrapperCPP(QObject *parent)
 {
     git_libgit2_init();
     qDebug() << "GitWrapperCPP: libgit2 initialized";
-
-    open("E:/family/dadash/work/ROMINA/work_10/GitEase");
-
-    exportCompleteBundle("55-export-diff-bundle", "E:/family/dadash/work/ROMINA/work_10/com100");
-    exportDiffBundle("44-evaluate-export-possibilities-for-offline-git-workflows", "55-export-diff-bundle", "E:/family/dadash/work/ROMINA/work_10/diff4");
-    qDebug()<<"finished";
-    // unitTest();
-    // unitTestForGitWorkflow();
 }
 
 GitWrapperCPP::~GitWrapperCPP()
