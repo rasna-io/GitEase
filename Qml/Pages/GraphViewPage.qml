@@ -38,10 +38,12 @@ Item {
     property Component headerContent: Component {
         RowLayout {
             id: headerRow
-            anchors.leftMargin: 20
-            anchors.rightMargin: 5
             anchors.fill: parent
-            spacing: 10
+            anchors.leftMargin: parent.width < Style.appHeight ? 8 : 20
+            anchors.rightMargin: parent.width < Style.appHeight ? 4 : 5
+            spacing: parent.width < Style.appHeight ? 6 : 10
+
+            readonly property bool compact: parent.width < 650
 
             // Local UI state for filtering
             property var filterColumns: ["Author Email", "Author", "Parent 1", "Branch"]
@@ -232,7 +234,7 @@ Item {
             }
 
             Label {
-                Layout.leftMargin: 40
+                Layout.leftMargin: headerRow.compact ? 8 : 40
                 color: Style.colors.descriptionText
                 text: "From:"
                 font.family: Style.fontTypes.roboto
@@ -241,8 +243,7 @@ Item {
             }
 
             Item {
-                Layout.preferredWidth: 77
-                Layout.fillWidth: true
+                Layout.preferredWidth: headerRow.compact ? 22 : 90
                 Layout.preferredHeight: 25
 
                 TextField {
@@ -251,8 +252,9 @@ Item {
                     backgroundColor: Style.colors.primaryBackground
                     anchors.fill: parent
                     minHeight: 25
-                    placeholderText: "2025-08-30"
-                    text: headerRow.filterStartDate
+                    rightPadding: (startDateCaret.width + 5)
+                    placeholderText: headerRow.compact ? "" : "2025-08-30"
+                    text: headerRow.compact ? "" : headerRow.filterStartDate
                     font.family: Style.fontTypes.roboto
                     font.weight: 400
                     font.pixelSize: 10
@@ -264,6 +266,7 @@ Item {
                 }
 
                 RoniaTextIcon {
+                    id: startDateCaret
                     anchors.right: parent.right
                     anchors.rightMargin: 6
                     anchors.verticalCenter: parent.verticalCenter
@@ -290,8 +293,7 @@ Item {
             }
 
             Item {
-                Layout.preferredWidth: 77
-                Layout.fillWidth: true
+                Layout.preferredWidth: headerRow.compact ? 22 : 90
                 Layout.preferredHeight: 25
 
                 TextField {
@@ -300,8 +302,9 @@ Item {
                     backgroundColor: Style.colors.primaryBackground
                     anchors.fill: parent
                     minHeight: 25
-                    placeholderText: "2025-09-30"
-                    text: headerRow.filterEndDate
+                    rightPadding: (endDateCaret.width + 5)
+                    placeholderText: headerRow.compact ? "" : "2025-09-30"
+                    text: headerRow.compact ? "" : headerRow.filterEndDate
                     font.family: Style.fontTypes.roboto
                     font.weight: 400
                     font.pixelSize: 10
@@ -313,6 +316,7 @@ Item {
                 }
 
                 RoniaTextIcon {
+                    id: endDateCaret
                     anchors.right: parent.right
                     anchors.rightMargin: 6
                     anchors.verticalCenter: parent.verticalCenter
@@ -334,8 +338,9 @@ Item {
                 id: columnCombo
                 model: parent.filterColumns
 
-                Layout.leftMargin: 20
+                Layout.leftMargin: headerRow.compact ? 6 : 20
                 minHeight: 26
+                visible: !headerRow.compact
                 borderWidth: 0
                 focusBorderWidth: 1
                 font.family: Style.fontTypes.roboto
@@ -358,6 +363,7 @@ Item {
                 Layout.preferredWidth: 26
                 Layout.preferredHeight: 26
 
+                visible: !headerRow.compact
                 enabled: !!commitGraph
                 hoverEnabled: true
 
@@ -389,6 +395,7 @@ Item {
                 Layout.preferredWidth: 26
                 Layout.preferredHeight: 26
 
+                visible: !headerRow.compact
                 enabled: !!commitGraph
                 hoverEnabled: true
 
