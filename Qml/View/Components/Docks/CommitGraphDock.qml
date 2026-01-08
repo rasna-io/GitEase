@@ -1548,23 +1548,15 @@ Item {
         }
 
         if (root.navigationRule === "Branch") {
-            var currentBranch = (currentCommit.branchNames && currentCommit.branchNames.length > 0) 
-                ? currentCommit.branchNames[0] : null
-            
-            if (!currentBranch) {
+            var laneKey = currentCommit.colorKey
+            if (!laneKey)
                 return
-            }
-            
+
             for (var i = idx - 1; i >= 0; i--) {
                 var commit = root.commits[i]
-                if (commit && commit.branchNames && commit.branchNames.length > 0) {
-                    // Check if any branch name matches
-                    for (var j = 0; j < commit.branchNames.length; j++) {
-                        if (commit.branchNames[j] === currentBranch) {
-                            selectCommitAtIndex(i)
-                            return
-                        }
-                    }
+                if (commit && commit.colorKey === laneKey) {
+                    selectCommitAtIndex(i)
+                    return
                 }
             }
             return
@@ -1616,32 +1608,15 @@ Item {
         }
 
         if (root.navigationRule === "Branch") {
-            var currentBranch = (currentCommit.branchNames && currentCommit.branchNames.length > 0) 
-                ? currentCommit.branchNames[0] : null
-            
-            if (!currentBranch) {
-                if (currentCommit.parentHashes && currentCommit.parentHashes.length > 0) {
-                    var parentHash = currentCommit.parentHashes[0]
-                    for (var i = idx + 1; i < root.commits.length; i++) {
-                        var commit = root.commits[i]
-                        if (commit && commit.hash === parentHash) {
-                            selectCommitAtIndex(i)
-                            return
-                        }
-                    }
-                }
+            var laneKey = currentCommit.colorKey
+            if (!laneKey)
                 return
-            }
-            
+
             for (var i = idx + 1; i < root.commits.length; i++) {
                 var commit = root.commits[i]
-                if (commit && commit.branchNames && commit.branchNames.length > 0) {
-                    for (var j = 0; j < commit.branchNames.length; j++) {
-                        if (commit.branchNames[j] === currentBranch) {
-                            selectCommitAtIndex(i)
-                            return
-                        }
-                    }
+                if (commit && commit.colorKey === laneKey) {
+                    selectCommitAtIndex(i)
+                    return
                 }
             }
             return
@@ -1676,10 +1651,7 @@ Item {
                     ? commit.parentHashes[0] 
                     : null
             case "Branch":
-                // For Branch, return the first branch name if available
-                return (commit.branchNames && commit.branchNames.length > 0) 
-                    ? commit.branchNames[0] 
-                    : null
+                return commit.colorKey
             case "Message":
             default:
                 return normalizeFilterString(commit.summary)
