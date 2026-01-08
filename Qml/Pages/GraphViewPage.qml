@@ -58,7 +58,6 @@ Item {
                 commitGraph.applyFilter(filterColumn, filterText, filterStartDate, filterEndDate)
             }
 
-            // Date picker support (Qt 6.10 / MinGW compatible)
             property var activeDateField: null
             property bool activeIsStart: true
 
@@ -66,17 +65,16 @@ Item {
                 activeDateField = field
                 activeIsStart = isStart
 
+                // If we already have a selected date, open the calendar focused on it.
+                var dateStr = isStart ? filterStartDate : filterEndDate
+                calendar.setDate(dateStr)
+
                 var pos = field.mapToItem(parent, 0, field.height + 6)
                 calendar.errorMessage = ""
                 datePopup.x = Math.max(0, Math.min(pos.x, parent.width - datePopup.width))
                 datePopup.y = pos.y
 
                 datePopup.open()
-            }
-
-            function formatDateYYYYMMDD(d) {
-                function pad2(n) { return (n < 10) ? ("0" + n) : ("" + n) }
-                return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate())
             }
 
             Popup {
@@ -114,7 +112,7 @@ Item {
                             if (!headerRow.activeDateField)
                                 return
 
-                            var formatted = headerRow.formatDateYYYYMMDD(date)
+                            var formatted = calendar.dateToString(date)
                             calendar.errorMessage = ""
 
                             if (headerRow.activeIsStart) {
