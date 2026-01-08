@@ -112,11 +112,23 @@ Item {
                                 return
 
                             var formatted = headerRow.formatDateYYYYMMDD(date)
+                            calendar.errorMessage = ""
 
-                            if (headerRow.activeIsStart)
+                            if (headerRow.activeIsStart) {
+                                if (headerRow.filterEndDate && formatted > headerRow.filterEndDate) {
+                                    calendar.errorMessage = "Start date cannot be greater than end date"
+                                    return
+                                }
+
                                 headerRow.filterStartDate = formatted
-                            else
+                            } else {
+                                if (headerRow.filterStartDate && formatted < headerRow.filterStartDate) {
+                                    calendar.errorMessage = "End date cannot be less than start date"
+                                    return
+                                }
+
                                 headerRow.filterEndDate = formatted
+                            }
 
                             headerRow.applyFilter()
                             datePopup.close()
