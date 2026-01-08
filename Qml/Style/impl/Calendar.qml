@@ -273,10 +273,65 @@ T.Control {
         return isSameDay(_date, t)
     }
 
+    function dateToString(d) {
+        // Converts a JS Date to "YYYY-MM-DD".
+        // Returns empty string when input is invalid.
+        if (!d || typeof d.getFullYear !== "function")
+            return ""
+
+        function pad2(n) { return (n < 10) ? ("0" + n) : ("" + n) }
+        return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate())
+    }
+
+    function dateFromString(s) {
+        // Parses "YYYY-MM-DD" into a JS Date.
+        // Returns null when input is invalid.
+        if (!s || typeof s !== "string")
+            return null
+
+        var parts = s.split("-")
+        if (parts.length !== 3)
+            return null
+
+        var y = parseInt(parts[0], 10)
+        var m = parseInt(parts[1], 10)
+        var d = parseInt(parts[2], 10)
+        if (!isFinite(y) || !isFinite(m) || !isFinite(d))
+            return null
+
+        // JS Date month is 0-based
+        var dt = new Date(y, m - 1, d)
+
+        // Validate (avoid rollover like 2025-13-40)
+        if (dt.getFullYear() !== y || dt.getMonth() !== (m - 1) || dt.getDate() !== d)
+            return null
+
+        return dt
+    }
+
+    function setDate(value) {
+        // Convenience setter. Accepts Date or "YYYY-MM-DD".
+        // Does NOT emit dateSelected.
+        // Returns true on success.
+        var dt = null
+
+        if (value && typeof value.getFullYear === "function") {
+            dt = value
+        } else if (typeof value === "string") {
+            dt = dateFromString(value)
+        }
+
+        if (!dt)
+            return false
+
+        selectedDate = dt
+        month = dt.getMonth()
+        year = dt.getFullYear()
+        return true
+    }
+
     function commitDate(_date) {
-        selectedDate = _date
-        month = _date.getMonth()
-        year = _date.getFullYear()
-        root.dateSelected(_date)
+        setDate(_date)
+        control.dateSelected(_date)
     }
 }
