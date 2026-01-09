@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 
 /*! ***********************************************************************************************
@@ -22,7 +23,7 @@ Rectangle {
     property bool showSeparator: true
 
     // Optional file mode (e.g. "M", "A", "D", "R"). Empty = no indicator.
-    property string mode: ""
+    property var mode
 
     // Row context (populated by FileListSection's delegate)
     property var rowModelData: null
@@ -42,12 +43,18 @@ Rectangle {
     // Left change indicator color
     readonly property color indicatorColor: (function () {
         switch ((root.mode || "").toString().toUpperCase()) {
-            case "A": return Qt.darker(Style.colors.addedFile, 1.5)
-            case "D": return Qt.darker(Style.colors.deletededFile, 1.5)
-            case "M": return Qt.darker(Style.colors.modifiediedFile, 1.5)
-            case "R": return Qt.darker(Style.colors.renamedFile, 1.5)
-            case "U": return Qt.darker(Style.colors.untrackedFile, 1.5)
-        default:  return "transparent"
+            case GitFileStatus.ADDED:
+                return Qt.darker(Style.colors.addedFile, 1.5)
+            case GitFileStatus.DELETED:
+                return Qt.darker(Style.colors.deletededFile, 1.5)
+            case GitFileStatus.MODIFIED:
+                return Qt.darker(Style.colors.modifiediedFile, 1.5)
+            case GitFileStatus.RENAMED:
+                return Qt.darker(Style.colors.renamedFile, 1.5)
+            case GitFileStatus.UNTRACKED:
+                return Qt.darker(Style.colors.untrackedFile, 1.5)
+            default:
+                return "transparent"
         }
     })()
 
@@ -103,7 +110,22 @@ Rectangle {
 
         Text {
             Layout.alignment: Qt.AlignVCenter
-            text: (root.mode || "").toString().toUpperCase()
+            text: {
+                switch (root.mode) {
+                case GitFileStatus.ADDED:
+                    return "A";
+                case GitFileStatus.DELETED:
+                    return "D";
+                case GitFileStatus.MODIFIED:
+                    return "M";
+                case GitFileStatus.RENAMED:
+                    return "R";
+                case GitFileStatus.UNTRACKED:
+                    return "U";
+                default:
+                    return ""
+                }
+            }
             visible: text !== ""
             font.family: Style.fontTypes.roboto
             font.pixelSize: 11
