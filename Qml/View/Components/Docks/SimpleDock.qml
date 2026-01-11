@@ -18,18 +18,18 @@ Item {
     property string title: "Simple Dock"
     property bool isDragging: false
     default property alias contentData: contentArea.data
+
+    z: isDragging ? 999 : 1
     
     /* Children
      * ****************************************************************************************/
     Rectangle {
         id: dockBackground
         anchors.fill: parent
-        z: -1
         color: Style.colors.primaryBackground
-        border.color: "#4a90ff"
-        border.width: root.isDragging ? 4 : 0
-        opacity: root.isDragging ? 0.3 : 1.0
-        radius: root.isDragging ? 6 : 0
+        radius: 6
+        border.color: "#c9c9c9"
+        border.width: root.isDragging ? 1.8 : 1
 
         Behavior on opacity {
             NumberAnimation {
@@ -51,6 +51,7 @@ Item {
 
         Column {
             anchors.fill: parent
+            anchors.margins: 1
             z: 1
 
             // Header
@@ -60,6 +61,7 @@ Item {
                 height: 30
                 z: 2
                 color: dragArea.containsMouse ? Qt.darker("#F9F9F9", 1.9) : "#F9F9F9"
+                radius: 6
 
                 Behavior on color {
                     ColorAnimation {
@@ -87,12 +89,24 @@ Item {
                         color: closeMouseArea.containsMouse ? "#e81123" : "transparent"
                         radius: 3
                         
-                        Text {
+                        Rectangle {
+                            width: 12
+                            height: 2
+                            radius: 1
+                            color:  dragArea.containsMouse ? "#FFFFFF" :
+                                                             closeMouseArea.containsMouse ? "#FFFFFF" : "#808080"
                             anchors.centerIn: parent
-                            text: "×"
-                            color: "#ffffff"
-                            font.pixelSize: 16
-                            font.bold: true
+                            rotation: 45
+                        }
+
+                        Rectangle {
+                            width: 12
+                            height: 2
+                            radius: 1
+                            color:  dragArea.containsMouse ? "#FFFFFF" :
+                                                             closeMouseArea.containsMouse ? "#FFFFFF" : "#808080"
+                            anchors.centerIn: parent
+                            rotation: -45
                         }
                         
                         MouseArea {
