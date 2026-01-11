@@ -44,11 +44,11 @@ SimpleDock {
     property var commitPositions: ({})  // Cache for commit positions {hash: {x, y, column}}
 
     // Property to receive list of CommitData objects
-    property int commitsColGraphWidth: parent.width * 0.08
-    property int commitsColBranchTagWidth: parent.width * 0.17
-    property int commitsColMessageWidth: parent.width * 0.6
-    property int commitsColAuthorWidth: parent.width * 0.08
-    property int commitsColDateWidth: parent.width * 0.17
+    property int commitsColGraphWidth: root.width * 0.08
+    property int commitsColBranchTagWidth: root.width * 0.17
+    property int commitsColMessageWidth: root.width * 0.6
+    property int commitsColAuthorWidth: root.width * 0.08
+    property int commitsColDateWidth: root.width * 0.17
     
     // Minimum widths for each column
     readonly property int minColGraphWidth: 60
