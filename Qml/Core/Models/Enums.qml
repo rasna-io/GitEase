@@ -21,4 +21,11 @@ QtObject {
         Open,
         Clone
     }
+
+    enum DockPosition {
+        Left,
+        Top,
+        Right,
+        Bottom
+    }
 }
