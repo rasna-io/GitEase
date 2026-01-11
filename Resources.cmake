@@ -69,8 +69,10 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/WelcomeContents/WelcomeContent.qml      # Main welcome content
 
     # DockPanel Docks
+    Qml/View/Components/Docks/SimpleDock.qml            # SimpleDock : header + content
     Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
     Qml/View/Components/Docks/CommitGraphSimulator.qml  # GraphDummyDataGenerator
+    Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
 
     # File list components (commit UI)
     Qml/View/Components/FileLists/UnstagedFileListSection.qml  # Unstaged File Status Section
