@@ -17,8 +17,16 @@ Item {
     /* Property Declarations
      * ****************************************************************************************/
     property var                  page:                 null
+
     property RepositoryController repositoryController: null
+
+    property StatusController     statusController:     null
+
     property string               selectedFilePath:     ""
+
+    onStatusControllerChanged: {
+        update()
+    }
 
     /* Object Properties
      * ****************************************************************************************/
@@ -66,20 +74,12 @@ Item {
 
                     // Default fake data so the UI is visibly populated without git wiring.
                     // Keep one list non-empty and the other empty to demonstrate both states.
-                    property var unstagedChanges: [
-                        { path: "README.md", mode: "M" },
-                        { path: "Src/main.cpp", mode: "A" },
-                        { path: "Qml/Pages/CommittingPage.qml", mode: "M" },
-                        { path: "Src/Git/GitWrapperCPP.cpp", mode: "D" },
-                        { path: "Res/Images/Logo.svg", mode: "R" },
-                        { path: "Res/Images/q.svg", mode: "R" },
-                        { path: "Res/Images/b.svg", mode: "R" },
-                        { path: "Res/Images/c.svg", mode: "R" },
-                        { path: "CMakeLists.txt", mode: "M" }
-                    ]
+                    property var unstagedChanges: []
+
                     property var stagedChanges: []
 
                     ChangesFileLists {
+                        id: changesFileLists
                         anchors.fill: parent
                         unstagedModel: fileListsPanel.unstagedChanges
                         stagedModel: fileListsPanel.stagedChanges
@@ -92,29 +92,15 @@ Item {
 
                         // TODO :: only for show demo and handlers
                         onStageFileRequested: function(filePath) {
-                            const src = fileListsPanel.unstagedChanges
-                            const dst = fileListsPanel.stagedChanges
-
-                            const idx = src.findIndex(function(it) { return it.path === filePath })
-                            if (idx < 0)
-                                return
-
-                            const item = src[idx]
-                            fileListsPanel.unstagedChanges = src.slice(0, idx).concat(src.slice(idx + 1))
-                            fileListsPanel.stagedChanges = dst.concat([item])
+                            statusController.stageFile(filePath)
+                            root.update()
                         }
 
                         onUnstageFileRequested: function(filePath) {
-                            const src = fileListsPanel.stagedChanges
-                            const dst = fileListsPanel.unstagedChanges
 
-                            const idx = src.findIndex(function(it) { return it.path === filePath })
-                            if (idx < 0)
-                                return
-
-                            const item = src[idx]
-                            fileListsPanel.stagedChanges = src.slice(0, idx).concat(src.slice(idx + 1))
-                            fileListsPanel.unstagedChanges = dst.concat([item])
+                            //TODO Not rest head
+                            statusController.unstageFile(filePath)
+                            root.update()
                         }
 
                         onDiscardFileRequested: function(filePath) {
@@ -134,21 +120,17 @@ Item {
                         }
 
                         onStageAllRequested: function() {
-                            const src = fileListsPanel.unstagedChanges
-                            if (!src || src.length === 0)
-                                return
 
-                            fileListsPanel.stagedChanges = fileListsPanel.stagedChanges.concat(src)
-                            fileListsPanel.unstagedChanges = []
+
+                            statusController.stageAll()
+                            root.update()
                         }
 
                         onUnstageAllRequested: function() {
-                            const src = fileListsPanel.stagedChanges
-                            if (!src || src.length === 0)
-                                return
 
-                            fileListsPanel.unstagedChanges = fileListsPanel.unstagedChanges.concat(src)
-                            fileListsPanel.stagedChanges = []
+
+                            statusController.unstageAll()
+                            root.update()
                         }
 
                         onDiscardAllRequested: function() {
@@ -188,5 +170,26 @@ Item {
                 color: Style.colors.placeholderText
             }
         }
+    }
+
+
+    function update() {
+        let res = statusController.status()
+
+        if (!res.success)
+            return;
+        fileListsPanel.unstagedChanges = []
+        fileListsPanel.stagedChanges = []
+
+        res.data.forEach((file)=>{
+            if (file.isStaged) {
+                fileListsPanel.stagedChanges.push(file)
+            } else if (file.isUnstaged) {
+                fileListsPanel.unstagedChanges.push(file)
+            }
+        })
+
+        fileListsPanel.unstagedChanges = fileListsPanel.unstagedChanges.slice(0)
+        fileListsPanel.stagedChanges = fileListsPanel.stagedChanges.slice(0)
     }
 }
