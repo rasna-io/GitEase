@@ -742,12 +742,16 @@ Item {
                                     // Control points are offset to create a natural curve
                                     var controlOffset = Math.min(verticalDistance * 0.6, 40);
                                     
-                                    var cp1X = fromX;
-                                    var cp1Y = fromY + (toY > fromY ? controlOffset : -controlOffset);
-                                    var cp2X = toX;
-                                    var cp2Y = toY - (toY > fromY ? controlOffset : -controlOffset);
-                                    
-                                    ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, toX, toY);
+                                    let isUpside = toY < fromY
+
+                                    if (isUpside) {
+                                        ctx.bezierCurveTo(fromX, toY + 5, fromX - 2, toY, fromX - 20, toY);
+                                        ctx.lineTo(toX, toY);
+                                    } else {
+                                        ctx.lineTo(fromX, toY - 20);
+                                        ctx.bezierCurveTo(fromX, toY - 20, fromX - 2, toY, fromX - 20, toY);
+                                        ctx.lineTo(toX, toY);
+                                    }
                                     
                                     ctx.stroke();
                                     ctx.restore();
