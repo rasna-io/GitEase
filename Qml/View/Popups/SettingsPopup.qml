@@ -30,6 +30,7 @@ IPopup {
 
     onClosed: {
         displayAvatar.checked = root.appSettings?.generalSettings?.showAvatar
+        defaultPath.text = root.appSettings.generalSettings.defaultPath
     }
 
     /* Children
@@ -98,6 +99,7 @@ IPopup {
                                 }
 
                                 PathSelectorItem {
+                                    id: defaultPath
                                     Layout.fillWidth: true
                                     fileIO: root.fileIO
                                     title: "Default Path"
@@ -176,6 +178,8 @@ IPopup {
 
     function apply() {
         root.appSettings.generalSettings.showAvatar = displayAvatar.checked
+        root.appSettings.generalSettings.defaultPath = defaultPath.text
+
         root.appModel.save()
     }
 

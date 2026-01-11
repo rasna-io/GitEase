@@ -89,6 +89,7 @@ Rectangle {
                     recentRepositories: appModel.recentRepositories
                     onCloneFinished:  root.controller.completeWelcomeFlow()
                     repositoryController: root.repositoryController
+                    defaultPath: appModel.appSettings.generalSettings.defaultPath
                 }
             }
         }
