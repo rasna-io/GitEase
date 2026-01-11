@@ -27,9 +27,7 @@ QtObject {
     readonly property FontTypes     fontTypes:                  FontTypes{}
 
     //! Font sizes
-    readonly property AppFontSize   appFont:                    AppFontSize {
-        defaultPt: 16
-    }
+    readonly property AppFontSize   appFont:                    AppFontSize {}
 
     readonly property FontIconSize  fontIconSize:               FontIconSize {}
 
