@@ -70,13 +70,14 @@ Rectangle {
 
                             color: {
                                 if (item.isSelected) {
-                                    return "#FFFFFF"
+                                    return Style.colors.primaryBackground
                                 }
                                 return parent.isHovered ? Qt.darker(root.color, 1.05) : "transparent"
                             }
 
+
                             border.width: parent.isSelected ? 1 : 0
-                            border.color: parent.isSelected ? "#F2F2F2" : "transparent"
+                            border.color: parent.isSelected ? Style.colors.accent : "transparent"
 
                             RowLayout {
                                 anchors.centerIn: parent
@@ -99,7 +100,7 @@ Rectangle {
                                         font.pixelSize: 16
                                         font.family: Style.fontTypes.font6Pro
                                         font.weight: 500
-                                        color: parent.parent.parent.parent.isSelected ? "#484848" : "#9D9D9D"
+                                        color: parent.parent.parent.parent.isSelected ? Style.colors.accent : "#9D9D9D"
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
@@ -112,7 +113,7 @@ Rectangle {
                                     text: (modelData && modelData.title) ? modelData.title : ""
                                     font.pixelSize: 13
                                     font.family: Style.fontTypes.roboto
-                                    color: parent.parent.parent.isSelected ? "#484848" : "#9D9D9D"
+                                    color: parent.parent.parent.isSelected ? Style.colors.accent : "#9D9D9D"
                                     elide: Text.ElideRight
                                     visible: root.expanded
                                     opacity: root.expanded ? 1 : 0
