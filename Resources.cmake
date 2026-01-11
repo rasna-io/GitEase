@@ -61,8 +61,10 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/WelcomeContents/WelcomeContent.qml      # Main welcome content
 
     # DockPanel Docks
+    Qml/View/Components/Docks/SimpleDock.qml            # SimpleDock : header + content
     Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
     Qml/View/Components/Docks/CommitGraphSimulator.qml  # GraphDummyDataGenerator
+    Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
 
     # File list components (commit UI)
     Qml/View/Components/FileLists/UnstagedFileListSection.qml  # Unstaged File Status Section
@@ -73,9 +75,6 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/FileLists/ChangesFileLists.qml         # File Status Section Component
     Qml/View/Components/FileLists/FileListSection.qml          # File List Section Base (header + rows)
     Qml/View/Components/FileLists/FileListRow.qml              # File List Section Base row item
-
-    # DockPanel Docks
-    Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
 )
 
 
