@@ -16,11 +16,16 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property PageController pageController
     property bool expanded: false
+
+    property alias model: rpt.model
+
+    property var   currentId
 
     /* Signals
      * ****************************************************************************************/
+
+    signal clicked(var modelData);
 
     /* Children
      * ****************************************************************************************/
@@ -45,14 +50,15 @@ Rectangle {
                 spacing: 8
 
                 Repeater {
-                    model: root.pageController?.appModel?.pages
+                    id: rpt
 
                     Item {
+                        id: item
                         width: parent.width
                         height: 36
-                        
-                        property bool isSelected: (modelData && root.pageController && root.pageController?.appModel?.currentPage)
-                                                  ? (modelData.id === root.pageController?.appModel?.currentPage?.id)
+
+                        property bool isSelected: (modelData)
+                                                  ? (modelData.id === root.currentId)
                                                   : false
                         property bool isHovered: false
 
@@ -63,7 +69,7 @@ Rectangle {
                             radius: 4
 
                             color: {
-                                if (parent.isSelected) {
+                                if (item.isSelected) {
                                     return "#FFFFFF"
                                 }
                                 return parent.isHovered ? Qt.darker(root.color, 1.05) : "transparent"
@@ -110,7 +116,7 @@ Rectangle {
                                     elide: Text.ElideRight
                                     visible: root.expanded
                                     opacity: root.expanded ? 1 : 0
-                                    
+
                                     Behavior on opacity {
                                         NumberAnimation {
                                             duration: 100
@@ -126,11 +132,7 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
 
-                            onClicked: {
-                                if (pageController && modelData) {
-                                    pageController.switchToPage(modelData.id)
-                                }
-                            }
+                            onClicked: root.clicked(modelData)
                             onEntered: parent.isHovered = true
                             onExited: parent.isHovered = false
                         }
