@@ -1,5 +1,3 @@
-pragma Singleton
-
 import QtQuick
 
 /*! ***********************************************************************************************
@@ -17,5 +15,8 @@ QtObject {
     // If false, show welcome page flow
     // You can manually set this flag as needed
     property bool hasCompletedWelcome: false
+
+    property GeneralSettings generalSettings: GeneralSettings {}
+
 }
 

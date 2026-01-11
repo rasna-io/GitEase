@@ -5,6 +5,7 @@ set(RESOURCES_CORE
     # Application Models
     Qml/Core/Models/AppModel.qml              # Main application data model
     Qml/Core/Models/AppSettings.qml           # Application settings (singleton)
+    Qml/Core/Models/GeneralSettings.qml
     Qml/Core/Models/Enums.qml
     Qml/Core/Models/Repository.qml
     Qml/Core/Models/Page.qml
