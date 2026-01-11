@@ -59,16 +59,7 @@ ApplicationWindow {
         id: mainContentLoader
         anchors.fill: parent
 
-        sourceComponent: {
-            // Check flag before creating components
-            if (uiSession.appModel.appSettings.hasCompletedWelcome) {
-                return mainApplicationComponent
-            } else {
-                return welcomeFlowComponent
-            }
-        }
-
-        // sourceComponent:
+        sourceComponent: welcomeFlowComponent
     }
 
     // Welcome Flow Component
@@ -84,6 +75,8 @@ ApplicationWindow {
                 currentPageIndex: uiSession.appModel.appSettings.hasCompletedWelcome ? Enums.WelcomePages.OpenRepository : Enums.WelcomePages.WelcomeBanner
                 onWelcomeFlowCompleted: {
                     uiSession.appModel.appSettings.hasCompletedWelcome = true
+                    uiSession.appModel.save()
+                    mainContentLoader.sourceComponent = mainApplicationComponent
                 }
             }
 
