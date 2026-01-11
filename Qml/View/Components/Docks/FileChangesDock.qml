@@ -25,14 +25,14 @@ SimpleDock {
     property var selectedFile: null
 
     // Property to receive list of fileData objects
-    property int filesColPathWidth: parent.width * 0.4
-    property int filesColExtensionWidth: parent.width * 0.15
-    property int filesColStatusWidth: parent.width * 0.15
-    property int filesColAddedLinesWidth: parent.width * 0.15
-    property int filesColRemovedLinesWidth: parent.width * 0.15
+    property int filesColPathWidth: root.width * 0.4
+    property int filesColExtensionWidth: root.width * 0.15
+    property int filesColStatusWidth: root.width * 0.15
+    property int filesColAddedLinesWidth: root.width * 0.15
+    property int filesColRemovedLinesWidth: root.width * 0.15
     
     // Minimum widths for each column
-    readonly property int minColWidth: parent.width / 7
+    readonly property int minColWidth: root.width / 7
 
     /* Object Properties
      * ****************************************************************************************/
