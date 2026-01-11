@@ -30,6 +30,7 @@ Rectangle {
      * ****************************************************************************************/
     signal newRepositoryRequested()
 
+    signal openSettingsRequested()
 
 
     // HoverHandler reliably tracks hover even with complex children.
@@ -184,7 +185,7 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 hoverEnabled: true
 
-                // onClicked: // TODO
+                onClicked: root.openSettingsRequested()
                 onEntered: parent.color = Qt.darker("#F3F3F3", 1.3)
                 onExited: parent.color = "transparent"
             }

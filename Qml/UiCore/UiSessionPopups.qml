@@ -14,4 +14,7 @@ Item {
 
 
     property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {}
+
+    property SettingsPopup              settingsPopup:              SettingsPopup {}
+
 }

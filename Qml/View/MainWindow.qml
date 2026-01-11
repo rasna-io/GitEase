@@ -53,6 +53,10 @@ Rectangle {
                     popup.recentRepositories = Qt.binding(function () {return uiSession.appModel.recentRepositories})
                     popup.open()
                 }
+                onOpenSettingsRequested: {
+                    let settingsPopup = root.uiSession?.popups?.settingsPopup
+                    settingsPopup.open()
+                }
             }
 
             Rectangle {

@@ -92,6 +92,7 @@ set(RESOURCES_POPUPS
     # Popup components will be added here as they are created
     Qml/View/Popups/RepositorySelectorPopup.qml
     Qml/View/Popups/ItemSelectorPopup.qml           # Select Item popup
+    Qml/View/Popups/SettingsPopup.qml
     Qml/View/Popups/IPopup.qml
 )
 
