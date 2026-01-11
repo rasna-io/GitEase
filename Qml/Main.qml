@@ -61,7 +61,7 @@ ApplicationWindow {
 
         sourceComponent: {
             // Check flag before creating components
-            if (AppSettings.hasCompletedWelcome) {
+            if (uiSession.appModel.appSettings.hasCompletedWelcome) {
                 return mainApplicationComponent
             } else {
                 return welcomeFlowComponent
@@ -81,8 +81,9 @@ ApplicationWindow {
             WelcomeController {
                 id: welcomeController
 
+                currentPageIndex: uiSession.appModel.appSettings.hasCompletedWelcome ? Enums.WelcomePages.OpenRepository : Enums.WelcomePages.WelcomeBanner
                 onWelcomeFlowCompleted: {
-                    AppSettings.hasCompletedWelcome = true
+                    uiSession.appModel.appSettings.hasCompletedWelcome = true
                 }
             }
 
