@@ -10,7 +10,7 @@ import GitEase
  * FileChangesDock
  * show changed files
  * ************************************************************************************************/
-Item {
+SimpleDock {
     id : root
 
     property RepositoryController repositoryController: null
@@ -33,6 +33,10 @@ Item {
     
     // Minimum widths for each column
     readonly property int minColWidth: parent.width / 7
+
+    /* Object Properties
+     * ****************************************************************************************/
+    title: "File Changes Dock"
 
     /* Signals
      * ****************************************************************************************/
