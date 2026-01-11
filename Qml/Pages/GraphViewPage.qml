@@ -11,7 +11,7 @@ import GitEase
  * Graph View Page shown Commit Graph Dock, File Changes and Diff View
  * ************************************************************************************************/
 
-Item {
+DockAblePage {
     id: root
     anchors.fill: parent
 
@@ -208,8 +208,8 @@ Item {
                 background: Rectangle {
                     radius: 5
                     color: !filterButton.enabled ? Style.colors.primaryBackground :
-                           filterButton.down ? Style.colors.surfaceMuted :
-                           filterButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                                                   filterButton.down ? Style.colors.surfaceMuted :
+                                                                       filterButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
                 onClicked: filterOptionsPopup.open()
@@ -401,8 +401,8 @@ Item {
                 background: Rectangle {
                     radius: 5
                     color: !downButton.enabled ? Style.colors.primaryBackground :
-                           downButton.down ? Style.colors.surfaceMuted :
-                           downButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                                                 downButton.down ? Style.colors.surfaceMuted :
+                                                                   downButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
                 onClicked: commitGraph.selectNext(navigationRule)
@@ -433,8 +433,8 @@ Item {
                 background: Rectangle {
                     radius: 5
                     color: !upButton.enabled ? Style.colors.primaryBackground :
-                           upButton.down ? Style.colors.surfaceMuted :
-                           upButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                                               upButton.down ? Style.colors.surfaceMuted :
+                                                               upButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
                 onClicked: commitGraph.selectPrevious(navigationRule)
@@ -465,8 +465,8 @@ Item {
                 background: Rectangle {
                     radius: 5
                     color: !reloadButton.enabled ? Style.colors.primaryBackground :
-                           reloadButton.down ? Style.colors.surfaceMuted :
-                           reloadButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                                                   reloadButton.down ? Style.colors.surfaceMuted :
+                                                                       reloadButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
                 onClicked: commitGraph.reloadAll()
@@ -477,14 +477,13 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
-
         Rectangle {
             id: commitGraphDock
             Layout.fillWidth: true
             Layout.minimumHeight: root.height / 2
             Layout.maximumHeight: root.height / 2
             color: "transparent"
-
+            
             CommitGraphDock {
                 id: commitGraph
                 anchors.fill: parent
@@ -496,57 +495,69 @@ Item {
                 onCommitClicked: function(commitId) {
                     root.selectedCommit = commitId
                 }
+
+                onIsDraggingChanged: {
+                    root.showDropZone = commitGraphDock.isDragging
+                }
             }
         }
+    }
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.minimumHeight: root.height / 2
-            Layout.maximumHeight: root.height / 2
-            color: "transparent"
+    Rectangle {
+        Layout.fillWidth: true
+        Layout.minimumHeight: root.height / 2
+        Layout.maximumHeight: root.height / 2
+        color: "transparent"
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.margins: 8
-                anchors.topMargin: 32
-                spacing: 12
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 8
+            anchors.topMargin: 32
+            spacing: 12
 
-                Rectangle {
-                    Layout.preferredWidth: root.width / 2
-                    Layout.fillHeight: true
-                    color: "transparent"
+            Rectangle {
+                Layout.preferredWidth: root.width / 2
+                Layout.fillHeight: true
+                color: "transparent"
 
-                    FileChangesDock {
-                        anchors.fill: parent
+                FileChangesDock {
+                    anchors.fill: parent
 
-                        repositoryController : root.repositoryController
-                        statusController: root.statusController
-                        commitHash : root.selectedCommit
+                    repositoryController : root.repositoryController
+                    statusController: root.statusController
+                    commitHash : root.selectedCommit
 
-                        onFileSelected: function(filePath){
-                            root.selectedFilePath = filePath
-                            let parentHash = root.commitController.getParentHash(root.selectedCommit)
-                            let res = root.statusController.getDiff(parentHash, root.selectedCommit, root.selectedFilePath)
+                    onFileSelected: function(filePath){
+                        root.selectedFilePath = filePath
+                        let parentHash = root.commitController.getParentHash(root.selectedCommit)
+                        let res = root.statusController.getDiff(parentHash, root.selectedCommit, root.selectedFilePath)
 
-                            if (res.success) {
-                                diffView.diffData = res.data
-                            }
+                        if (res.success) {
+                            diffView.diffData = res.data
                         }
                     }
+
+                    onIsDraggingChanged: {
+                        root.showDropZone = isDragging
+                    }
                 }
+            }
 
-                Rectangle {
-                    Layout.preferredWidth: root.width / 2
-                    Layout.fillHeight: true
-                    color: "transparent"
+            Rectangle {
+                Layout.preferredWidth: root.width / 2
+                Layout.fillHeight: true
+                color: "transparent"
 
-                    DiffView {
-                        id: diffView
-                        anchors.fill: parent
-                        readOnly: true
+                DiffView {
+                    id: diffView
+                    anchors.fill: parent
+                    readOnly: true
+                    onIsDraggingChanged: {
+                        root.showDropZone = isDragging
                     }
                 }
             }
         }
     }
 }
+
