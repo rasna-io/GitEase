@@ -8,8 +8,7 @@ import GitEase_Style
 /*! ***********************************************************************************************
  * DiffView
  * ************************************************************************************************/
-
-Item {
+SimpleDock {
     id: root
 
     /* Property Declarations
@@ -25,6 +24,10 @@ Item {
     signal requestStage(int start, int end, int type)
     signal requestRevert(int start, int end, int type)
 
+
+    /* Object Properties
+     * ****************************************************************************************/
+    title: "Diff View Dock"
 
     /* Children
      * ****************************************************************************************/
