@@ -1731,7 +1731,7 @@ Item {
     }
 
     Connections {
-        target: appModel.appSettings.generalSettings
+        target: appModel?.appSettings?.generalSettings ?? null
         function onShowAvatarChanged() {
             graphCanvas.requestPaint()
         }

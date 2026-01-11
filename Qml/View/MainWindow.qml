@@ -51,6 +51,7 @@ Rectangle {
                     let popup = root.uiSession?.popups?.repositorySelectorPopup
                     popup.repositoryController = Qt.binding(function () {return uiSession.repositoryController})
                     popup.recentRepositories = Qt.binding(function () {return uiSession.appModel.recentRepositories})
+                    popup.appModel = Qt.binding(function () {return uiSession.appModel})
                     popup.open()
                 }
                 onOpenSettingsRequested: {
