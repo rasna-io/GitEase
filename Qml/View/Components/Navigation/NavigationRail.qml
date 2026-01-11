@@ -91,9 +91,14 @@ Rectangle {
             Layout.fillHeight: true
 
             color: "#F9F9F9"
-
-            pageController: root.pageController
+            model: root.appModel?.pages
             expanded: root.expanded
+            currentId: root.appModel.currentPage.id
+            onClicked:(modelData)=> {
+                if (pageController && modelData) {
+                    pageController.switchToPage(modelData.id)
+                }
+            }
         }
 
         // Repositories Sidebar (Middle section)
