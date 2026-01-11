@@ -897,6 +897,8 @@ Item {
                                 ctx.globalAlpha = 1.0;
                                 ctx.fillStyle = "#FFFFFF";
                                 ctx.fillRect(0, 0, width, height);
+                                
+                                let showAvatar = root.appModel?.appSettings?.generalSettings?.showAvatar ?? true
 
                                 if (!root.commits || root.commits.length === 0)
                                     return;
@@ -1207,7 +1209,7 @@ Item {
                                         ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + (root.commitItemSpacing * 2));
                                     }
 
-                                    var avatarSize = root.commitItemHeight;
+                                    var avatarSize = showAvatar ? root.commitItemHeight : 10;
                                     var avatarRadius = avatarSize / 2;
 
                                     // All commits: Circle with avatar (same style)
@@ -1217,20 +1219,21 @@ Item {
 
                                     ctx.beginPath();
                                     ctx.arc(centerX2, centerY2, avatarRadius, 0, 2 * Math.PI);
-                                    ctx.fillStyle = "#D9D9D9";
+                                    ctx.fillStyle = showAvatar ? "#D9D9D9" : GraphUtils.lightenColor(branchColor3, 0.3);
                                     ctx.fill();
                                     ctx.stroke();
 
-                                    // Draw avatar icon
-                                    ctx.fillStyle = "#ffffff";
-                                    ctx.font = (avatarSize * 0.8) + "px Arial";
-                                    ctx.textAlign = "center";
-                                    ctx.textBaseline = "middle";
+                                    if (showAvatar) {
+                                        // Draw avatar icon
+                                        ctx.fillStyle = "#ffffff";
+                                        ctx.font = (avatarSize * 0.8) + "px Arial";
+                                        ctx.textAlign = "center";
+                                        ctx.textBaseline = "middle";
 
-                                    var drawX = centerX2 - svgImage.width / 2;
-                                    var drawY = centerY2 - svgImage.height / 2;
-                                    ctx.drawImage(svgImage, drawX, drawY);
-                                    
+                                        var drawX = centerX2 - svgImage.width / 2;
+                                        var drawY = centerY2 - svgImage.height / 2;
+                                        ctx.drawImage(svgImage, drawX, drawY);
+                                    }
                                     ctx.restore();
                                 }
 
@@ -1724,6 +1727,13 @@ Item {
         target: repositoryController
         function onRepositorySelected(repo) {
             reloadAll();
+        }
+    }
+
+    Connections {
+        target: appModel.appSettings.generalSettings
+        function onShowAvatarChanged() {
+            graphCanvas.requestPaint()
         }
     }
 }

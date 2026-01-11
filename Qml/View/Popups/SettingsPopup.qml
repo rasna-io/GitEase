@@ -16,6 +16,8 @@ IPopup {
      * ****************************************************************************************/
     property AppModel              appModel
 
+    property AppSettings           appSettings: appModel?.appSettings ?? null
+
     property FileIO                fileIO
 
     property int                   currentPage: 0
@@ -25,6 +27,10 @@ IPopup {
      * ****************************************************************************************/
     width: parent.width * 0.8
     height: parent.height * 0.8
+
+    onClosed: {
+        displayAvatar.checked = root.appSettings?.generalSettings?.showAvatar
+    }
 
     /* Children
      * ****************************************************************************************/
@@ -84,10 +90,11 @@ IPopup {
                                 spacing: 20
 
                                 CheckboxItem {
+                                    id: displayAvatar
                                     Layout.fillWidth: true
                                     title: "Display Avatar"
                                     description: "Show profile Avatar on graph view"
-                                    checked: root.appModel.showAvatar ?? false
+                                    checked: root.appSettings?.generalSettings?.showAvatar ?? false
                                 }
 
                                 PathSelectorItem {
@@ -134,6 +141,7 @@ IPopup {
                         border.color: Style.colors.accent
                         radius: 5
                     }
+                    onClicked: root.close()
                 }
 
                 Button {
@@ -144,6 +152,10 @@ IPopup {
                         color: parent.hovered ? Style.colors.accent : "#F9F9F9"
                         border.color: Style.colors.accent
                         radius: 5
+                    }
+                    onClicked: {
+                        root.apply()
+                        root.close()
                     }
                 }
 
@@ -156,8 +168,15 @@ IPopup {
                         border.color: Style.colors.accent
                         radius: 5
                     }
+                    onClicked: root.apply()
                 }
             }
         }
     }
+
+    function apply() {
+        root.appSettings.generalSettings.showAvatar = displayAvatar.checked
+        root.appModel.save()
+    }
+
 }
