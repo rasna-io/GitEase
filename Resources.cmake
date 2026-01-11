@@ -81,7 +81,7 @@ set(RESOURCES_COMPONENTS
 
 
     Qml/View/Components/Settings/CheckboxItem.qml
-
+    Qml/View/Components/Settings/PathSelectorItem.qml
 )
 
 
