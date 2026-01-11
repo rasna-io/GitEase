@@ -25,6 +25,8 @@ Item {
 
     property                Page              currentPage:              null
 
+    property                AppSettings       appSettings:              AppSettings {}
+
 
     /* Signals
      * ****************************************************************************************/
