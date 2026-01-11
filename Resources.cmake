@@ -60,8 +60,12 @@ set(RESOURCES_COMPONENTS
     # Welcome-specific Content - Welcome page content sections
     Qml/View/Components/WelcomeContents/WelcomeContent.qml      # Main welcome content
 
+    #DockPanel Components
+    Qml/View/Components/Docks/SimpleDock.qml                     # SimpleDock : header + content
+    Qml/View/Components/PageDockZone/PageDropZone.qml            # Page Drop Zone
+    Qml/View/Components/PageDockZone/DropZoneIndicator.qml       # Page Drop Zone Indicator
+
     # DockPanel Docks
-    Qml/View/Components/Docks/SimpleDock.qml            # SimpleDock : header + content
     Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
     Qml/View/Components/Docks/CommitGraphSimulator.qml  # GraphDummyDataGenerator
     Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
@@ -93,6 +97,7 @@ set(RESOURCES_POPUPS
 
 # Define QML Pages
 set(RESOURCES_PAGES
+    Qml/Pages/DockAblePage.qml      # Dockable Page (indicators and etc)
     Qml/Pages/WelcomePage.qml       # Initial welcome/onboarding page
     Qml/Pages/GraphViewPage.qml     # Main graph view page
     Qml/Pages/CommittingPage.qml    # Commit Page
