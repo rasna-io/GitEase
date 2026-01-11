@@ -14,6 +14,9 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property AppModel              appModel
+
+    property FileIO                fileIO
 
     property int                   currentPage: 0
 
