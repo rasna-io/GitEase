@@ -117,6 +117,44 @@ IPopup {
                     }
                 }
             }
+
+            Row {
+                spacing: 8
+                Layout.alignment: Qt.AlignRight
+
+                Button {
+                    flat: true
+                    text: "Cancel"
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : "#F9F9F9"
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+                }
+
+                Button {
+                    flat: true
+                    text: "Save"
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : "#F9F9F9"
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+                }
+
+                Button {
+                    flat: true
+                    text: "Apply"
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : "#F9F9F9"
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+                }
+            }
         }
     }
 }
