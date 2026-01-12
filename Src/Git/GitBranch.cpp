@@ -110,6 +110,32 @@ GitResult GitBranch::createBranch(const QString &branchName)
     return GitResult(true, QVariant(), QString("Branch created successfully: %1").arg(branchName));
 }
 
+GitResult GitBranch::createBranchWithCli(const QString &branchName, QString Sha)
+{
+    QProcess gitProcess;
+    gitProcess.setProgram("git");
+    gitProcess.setArguments(QStringList() << "branch" << branchName << Sha);
+
+    gitProcess.start();
+
+    if (!gitProcess.waitForStarted(3000)) {
+        return GitResult(false, QVariant(), "Failed to start Git verify process.");
+    }
+
+    if (!gitProcess.waitForFinished(15000)) {
+        gitProcess.kill();
+        return GitResult(false, QVariant(), "Git Unbundle timed out.");
+    }
+
+    QString output = QString::fromUtf8(gitProcess.readAll()).trimmed();
+
+    if((gitProcess.exitCode() == 0)){
+        return GitResult(true, QVariant());
+    }
+
+    return GitResult(false, QVariant(), output);
+}
+
 GitResult GitBranch::deleteBranch(const QString &branchName)
 {
     if (!m_currentRepo || !m_currentRepo->repo)
