@@ -141,7 +141,7 @@ Rectangle {
             anchors.topMargin: 3
             anchors.bottomMargin: 3
             radius: 6
-            color: "#F3F3F3"
+            color: Style.colors.navButton
 
             Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -200,8 +200,8 @@ Rectangle {
                 hoverEnabled: true
 
                 onClicked: root.newRepositoryRequested()
-                onEntered: parent.color = Qt.darker("#F3F3F3", 1.3)
-                onExited: parent.color = "#F3F3F3"
+                onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
+                onExited: parent.color = Style.colors.navButton
             }
         }
     }

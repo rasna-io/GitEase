@@ -42,7 +42,7 @@ Item {
      * ****************************************************************************************/
     Rectangle{
         anchors.fill: parent
-        color : "#FFFFFF"
+        color: Style.colors.primaryBackground
 
         ColumnLayout {
             anchors.fill: parent
@@ -52,6 +52,7 @@ Item {
                 id: header
                 Layout.fillWidth: true
                 Layout.preferredHeight: 30
+                color: Style.colors.primaryBackground
 
                 RowLayout {
                     anchors.fill: parent
@@ -60,7 +61,7 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.filesColPathWidth
                         Layout.fillHeight: true
-                        color: pathHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        color: pathHeaderMouseArea.containsMouse ? Style.colors.hoverTitle : "transparent"
                         
                         MouseArea {
                             id: pathHeaderMouseArea
@@ -77,7 +78,7 @@ Item {
                             horizontalAlignment: Text.AlignLeft
                             anchors.leftMargin: 5
                             text: "Path"
-                            color: "#000000"
+                            color: Style.colors.foreground
                             font.pixelSize: 11
                             font.bold: true
                             elide: Text.ElideRight
@@ -139,7 +140,7 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.filesColExtensionWidth
                         Layout.fillHeight: true
-                        color: extensionHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        color: extensionHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
                         
                         MouseArea {
                             id: extensionHeaderMouseArea
@@ -155,7 +156,7 @@ Item {
                             anchors.centerIn: parent
                             anchors.leftMargin: 5
                             text: "Extension"
-                            color: "#000000"
+                            color: Style.colors.foreground
                             font.pixelSize: 11
                             font.bold: true
                             elide: Text.ElideRight
@@ -217,7 +218,7 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.filesColStatusWidth
                         Layout.fillHeight: true
-                        color: statusHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        color: statusHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
                         
                         MouseArea {
                             id: statusHeaderMouseArea
@@ -233,7 +234,7 @@ Item {
                             anchors.centerIn: parent
                             anchors.leftMargin: 5
                             text: "Status"
-                            color: "#000000"
+                            color: Style.colors.foreground
                             font.pixelSize: 11
                             font.bold: true
                             elide: Text.ElideRight
@@ -295,7 +296,7 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.filesColAddedLinesWidth
                         Layout.fillHeight: true
-                        color: linesAddedHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        color: linesAddedHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
                         
                         MouseArea {
                             id: linesAddedHeaderMouseArea
@@ -311,7 +312,7 @@ Item {
                             anchors.centerIn: parent
                             anchors.leftMargin: 5
                             text: "Lines Added"
-                            color: "#000000"
+                            color: Style.colors.foreground
                             font.pixelSize: 11
                             font.bold: true
                             elide: Text.ElideRight
@@ -374,7 +375,7 @@ Item {
                         Layout.preferredWidth: root.filesColRemovedLinesWidth
                         Layout.fillHeight: true
                         Layout.alignment: Qt.AlignRight
-                        color: linesRemovedHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        color: linesRemovedHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
                         
                         MouseArea {
                             id: linesRemovedHeaderMouseArea
@@ -390,7 +391,7 @@ Item {
                             anchors.centerIn: parent
                             anchors.leftMargin: 5
                             text: "Lines Removed"
-                            color: "#000000"
+                            color: Style.colors.foreground
                             font.pixelSize: 11
                             font.bold: true
                             elide: Text.ElideRight
@@ -424,9 +425,9 @@ Item {
                             if (isSelected) {
                                 return "#6088B2DF";
                             } else if (isHovered) {
-                                return "#EFEFEF";
+                                return Style.colors.hoverTitle;
                             } else {
-                                return "#FFFFFF";
+                                return Style.colors.primaryBackground;
                             }
                         }
 
@@ -458,7 +459,7 @@ Item {
 
                                     Label {
                                         text: fileData.path || ""
-                                        color: "#000000"
+                                        color: Style.colors.foreground
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
                                         font.family: Style.fontTypes.roboto
@@ -491,7 +492,7 @@ Item {
 
                                     Label {
                                         text: root.getFileExtension(fileData.path) || ""
-                                        color: "#000000"
+                                        color: Style.colors.foreground
                                         verticalAlignment: Text.AlignVCenter
                                         horizontalAlignment: Text.AlignHCenter
                                         font.pixelSize: 10
@@ -540,7 +541,7 @@ Item {
                                             }
                                         }
 
-                                        color: "#000000"
+                                        color: Style.colors.foreground
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 12
                                         Layout.fillWidth: true
@@ -573,7 +574,7 @@ Item {
 
                                     Label {
                                         text: fileData.additionsCount  || "0"
-                                        color: "#000000"
+                                        color: Style.colors.foreground
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
                                         Layout.fillWidth: true
@@ -601,7 +602,7 @@ Item {
 
                                     Label {
                                         text: fileData.deletionsCount  || "0"
-                                        color: "#000000"
+                                        color: Style.colors.foreground
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
                                         Layout.fillWidth: true
@@ -664,17 +665,17 @@ Item {
     function getChangeColor(type) : string {
         switch(type) {
         case GitFileStatus.ADDED:
-            return "#B9FAB9"
+            return Style.colors.addedFile
         case GitFileStatus.DELETED:
-            return "#FF9898"
+            return Style.colors.deletededFile
         case GitFileStatus.MODIFIED:
-            return "#FFF398"
+            return Style.colors.modifiediedFile
         case GitFileStatus.RENAMED:
-            return "#aafff8"
+            return Style.colors.renamedFile
         case GitFileStatus.UNTRACKED:
-            return "#990000ff"
+            return Style.colors.untrackedFile
         default:
-            return "#990000ff"
+            return Style.colors.untrackedFile
         }
     }
 }
