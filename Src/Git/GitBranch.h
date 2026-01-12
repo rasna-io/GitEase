@@ -3,6 +3,7 @@
 #include "GitResult.h"
 #include "IGitController.h"
 #include <QObject>
+#include <QProcess>
 
 class GitBranch : public IGitController
 {
@@ -24,6 +25,8 @@ public:
     * \return True if creation was successful, false otherwise.
     */
     Q_INVOKABLE GitResult createBranch(const QString &branchName);
+
+    Q_INVOKABLE GitResult createBranchWithCli(const QString &branchName, QString Sha);
 
     /**
     * \brief Deletes an existing local branch from the repository.
