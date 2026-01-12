@@ -20,9 +20,7 @@ include(libgit.cmake)
 # Flatten generation of all sub-dependent libraries
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Qml)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick Gui Concurrent)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick Gui Concurrent)
 
 # Dependencies
 add_subdirectory(Res/)
@@ -46,7 +44,6 @@ qt_add_executable(${MAIN_TARGET_NAME}
 )
 
 
-target_link_libraries(GitEase PRIVATE Qt6::Core)
 target_link_libraries(GitEase PRIVATE Qt6::Core)
 target_include_directories(${MAIN_TARGET_NAME} PRIVATE ${INCLUDE_DIRS_BACKEND})
 
