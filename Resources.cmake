@@ -64,6 +64,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/SimpleDock.qml                     # SimpleDock : header + content
     Qml/View/Components/PageDockZone/PageDropZone.qml            # Page Drop Zone
     Qml/View/Components/PageDockZone/DropZoneIndicator.qml       # Page Drop Zone Indicator
+    Qml/View/Components/PageDockZone/TabGroupSide.qml            # Docks Container
 
     # DockPanel Docks
     Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
