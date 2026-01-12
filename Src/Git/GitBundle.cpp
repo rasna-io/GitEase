@@ -328,6 +328,39 @@ bool GitBundle::verifyBundle(const QString &bundlePath)
     return gitProcess.exitCode() == 0;
 }
 
+bool GitBundle::unbundleWithCli(const QString &bundlePath)
+{
+    if (!QFile::exists(bundlePath)) {
+        return false;
+    }
+
+    QProcess gitProcess;
+    gitProcess.setProgram("git");
+    gitProcess.setArguments(QStringList() << "bundle" << "unbundle" << bundlePath);
+
+    gitProcess.start();
+
+    if (!gitProcess.waitForStarted(3000)) {
+        qDebug()<< "Failed to start Git verify process";
+    }
+
+    if (!gitProcess.waitForFinished(15000)) {
+        gitProcess.kill();
+        qDebug()<< "Git verify timed out";
+    }
+
+    if((gitProcess.exitCode() == 0)){
+        QString output = QString::fromUtf8(gitProcess.readAll()).trimmed();
+
+        QStringList outputSplited = output.split(" ");
+        QString SHA = outputSplited[0];
+
+        return true;
+    }
+
+    return false;
+}
+
 void GitBundle::cleanupBundleResources(git_reference *ref, git_object *object, git_revwalk *walker, git_packbuilder *packbuilder)
 {
     if (packbuilder)

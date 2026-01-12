@@ -53,4 +53,6 @@ private:
                                    QStringList &newCommitShas);
 
     bool verifyBundle(const QString &bundlePath);
+
+    bool unbundleWithCli(const QString &bundlePath);
 };
