@@ -28,10 +28,8 @@ IPopup {
     width: parent.width * 0.8
     height: parent.height * 0.8
 
-    onClosed: {
-        displayAvatar.checked = root.appSettings?.generalSettings?.showAvatar
-        defaultPath.text = root.appSettings.generalSettings.defaultPath
-    }
+    onClosed: load()
+    onOpened: load()
 
     /* Children
      * ****************************************************************************************/
@@ -57,7 +55,7 @@ IPopup {
                     Layout.fillHeight: true
                     currentId: root.currentPage
                     radius: 5
-                    color: "#F9F9F9"
+                    color: Style.colors.secondaryBackground
                     model: [
                         {id: 0, title: "General", icon: Style.icons.clock},
                         {id: 1, title: "SSH", icon: Style.icons.clock},
@@ -73,7 +71,7 @@ IPopup {
                     id: settingsContainer
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: "#F9F9F9"
+                    color: Style.colors.secondaryBackground
                     radius: 5
                     clip: true
 
@@ -124,6 +122,39 @@ IPopup {
                         }
 
                         Item {
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.topMargin: 10
+                                anchors.leftMargin: 20
+                                anchors.rightMargin: 20
+
+                                spacing: 20
+
+                                ComboboxItem {
+                                    id: theme
+                                    Layout.fillWidth: true
+                                    title: "Theme"
+                                    description: "Select theme"
+                                    cmb.model: ["Modern Light", "Modern Dark"]
+                                }
+
+
+
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Qt.darker(settingsContainer.color, 1.2)
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                }
+
+                            }
+
                         }
 
                     }
@@ -139,7 +170,7 @@ IPopup {
                     text: "Cancel"
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : "#F9F9F9"
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
                         border.color: Style.colors.accent
                         radius: 5
                     }
@@ -151,7 +182,7 @@ IPopup {
                     text: "Save"
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : "#F9F9F9"
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
                         border.color: Style.colors.accent
                         radius: 5
                     }
@@ -166,7 +197,7 @@ IPopup {
                     text: "Apply"
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : "#F9F9F9"
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
                         border.color: Style.colors.accent
                         radius: 5
                     }
@@ -179,8 +210,16 @@ IPopup {
     function apply() {
         root.appSettings.generalSettings.showAvatar = displayAvatar.checked
         root.appSettings.generalSettings.defaultPath = defaultPath.text
+        root.appSettings.appearanceSettings.currentTheme = theme.cmb.displayText
 
         root.appModel.save()
+    }
+
+    function load() {
+        displayAvatar.checked = root.appSettings?.generalSettings?.showAvatar
+        defaultPath.text = root.appSettings.generalSettings.defaultPath
+
+        theme.cmb.currentIndex = theme.cmb.model.indexOf(root.appSettings.appearanceSettings.currentTheme)
     }
 
 }

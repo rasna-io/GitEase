@@ -28,7 +28,7 @@ ApplicationWindow {
     width: 523
     height: 475
     visible: true
-    color: "transparent"
+    color: Style.colors.primaryBackground
     title: qsTr("GitEase")
 
 

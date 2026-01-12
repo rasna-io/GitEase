@@ -77,7 +77,7 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    color: "#F9F9F9"
+    color: Style.colors.secondaryBackground
 
     /* Children
      * ****************************************************************************************/
@@ -91,7 +91,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            color: "#F9F9F9"
+            color: Style.colors.secondaryBackground
             model: root.appModel?.pages
             expanded: root.expanded
             currentId: root.appModel.currentPage.id
@@ -106,7 +106,7 @@ Rectangle {
         RepositoriesSidebar {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: "#F9F9F9"
+            color: Style.colors.secondaryBackground
 
             expanded: root.expanded
             repositoryController: root.repositoryController
@@ -186,7 +186,7 @@ Rectangle {
                 hoverEnabled: true
 
                 onClicked: root.openSettingsRequested()
-                onEntered: parent.color = Qt.darker("#F3F3F3", 1.3)
+                onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
                 onExited: parent.color = "transparent"
             }
         }
@@ -246,7 +246,7 @@ Rectangle {
                 hoverEnabled: true
 
                 // onClicked: // TODO
-                onEntered: parent.color = Qt.darker("#F3F3F3", 1.3)
+                onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
                 onExited: parent.color = "transparent"
             }
         }

@@ -31,8 +31,6 @@ Rectangle {
     color: Style.colors.primaryBackground
     radius: 16
     clip: true
-    border.color: Style.colors.accent
-    border.width: 1
 
     /* Children
      * ****************************************************************************************/

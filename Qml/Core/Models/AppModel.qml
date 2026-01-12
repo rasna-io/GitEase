@@ -1,6 +1,7 @@
 import QtQuick
 
 import GitEase
+import GitEase_Style
 
 /*! ***********************************************************************************************
  * AppModel
@@ -89,6 +90,9 @@ Item {
     }
 
 
-    Component.onCompleted: load()
+    Component.onCompleted: {
+        Style.currentTheme = Qt.binding(function() { return appSettings.appearanceSettings.currentTheme})
+        load()
+    }
 
 }

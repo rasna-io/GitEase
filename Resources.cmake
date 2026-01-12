@@ -6,6 +6,7 @@ set(RESOURCES_CORE
     Qml/Core/Models/AppModel.qml              # Main application data model
     Qml/Core/Models/AppSettings.qml           # Application settings (singleton)
     Qml/Core/Models/GeneralSettings.qml
+    Qml/Core/Models/AppearanceSettings.qml
     Qml/Core/Models/Enums.qml
     Qml/Core/Models/Repository.qml
     Qml/Core/Models/Page.qml
@@ -84,6 +85,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Settings/CheckboxItem.qml
     Qml/View/Components/Settings/PathSelectorItem.qml
     Qml/View/Components/Settings/TextFieldItem.qml
+    Qml/View/Components/Settings/ComboboxItem.qml
 )
 
 

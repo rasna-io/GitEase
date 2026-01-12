@@ -375,7 +375,7 @@ Item {
      * ****************************************************************************************/
     Rectangle{
         anchors.fill: parent
-        color : "#FFFFFF"
+        color : Style.colors.primaryBackground
 
         // Empty state (no commits to render)
         Item {
@@ -433,6 +433,7 @@ Item {
                 Layout.fillWidth: true
                 visible: root.commits && root.commits.length > 0
                 Layout.preferredHeight: visible ? 30 : 0
+                color: Style.colors.primaryBackground
 
                 RowLayout {
                     anchors.fill: parent
@@ -441,7 +442,7 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.commitsColGraphWidth
                         Layout.fillHeight: true
-                        color: graphHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        color: graphHeaderMouseArea.containsMouse ? Style.colors.hoverTitle : "transparent"
                         
                         MouseArea {
                             id: graphHeaderMouseArea
@@ -508,7 +509,7 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.commitsColBranchTagWidth
                         Layout.fillHeight: true
-                        color: branchTagHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        color: branchTagHeaderMouseArea.containsMouse ? Style.colors.hoverTitle : "transparent"
                         
                         MouseArea {
                             id: branchTagHeaderMouseArea
@@ -525,7 +526,7 @@ Item {
                             horizontalAlignment: Text.AlignLeft
                             anchors.leftMargin: 5
                             text: "Branch/Tag"
-                            color: "#000000"
+                            color: Style.colors.foreground
                             font.pixelSize: 11
                             font.bold: true
                             elide: Text.ElideRight
@@ -587,7 +588,7 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.commitsColMessageWidth
                         Layout.fillHeight: true
-                        color: messageHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        color: messageHeaderMouseArea.containsMouse ? Style.colors.hoverTitle : "transparent"
                         
                         MouseArea {
                             id: messageHeaderMouseArea
@@ -604,7 +605,7 @@ Item {
                             horizontalAlignment: Text.AlignLeft
                             anchors.leftMargin: 5
                             text: "Message"
-                            color: "#000000"
+                            color: Style.colors.foreground
                             font.pixelSize: 11
                             font.bold: true
                             elide: Text.ElideRight
@@ -666,7 +667,7 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: root.commitsColAuthorWidth
                         Layout.fillHeight: true
-                        color: authorHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        color: authorHeaderMouseArea.containsMouse ? Style.colors.hoverTitle : "transparent"
                         
                         MouseArea {
                             id: authorHeaderMouseArea
@@ -683,7 +684,7 @@ Item {
                             horizontalAlignment: Text.AlignLeft
                             anchors.leftMargin: 5
                             text: "Author"
-                            color: "#000000"
+                            color: Style.colors.foreground
                             font.pixelSize: 11
                             font.bold: true
                             elide: Text.ElideRight
@@ -746,7 +747,7 @@ Item {
                         Layout.preferredWidth: root.commitsColDateWidth
                         Layout.fillHeight: true
                         Layout.alignment: Qt.AlignRight
-                        color: dateHeaderMouseArea.containsMouse ? "#E8E8E8" : "transparent"
+                        color: dateHeaderMouseArea.containsMouse ? Style.colors.hoverTitle : "transparent"
                         
                         MouseArea {
                             id: dateHeaderMouseArea
@@ -763,7 +764,7 @@ Item {
                             horizontalAlignment: Text.AlignLeft
                             anchors.leftMargin: 5
                             text: "Date"
-                            color: "#000000"
+                            color: Style.colors.foreground
                             font.pixelSize: 11
                             font.bold: true
                             elide: Text.ElideRight
@@ -781,6 +782,7 @@ Item {
                     Layout.fillWidth: false
                     Layout.preferredWidth: root.commitsColGraphWidth + root.commitsColBranchTagWidth
                     Layout.fillHeight: true
+                    color: Style.colors.primaryBackground
 
                     Flickable {
                         id: graphFlickable
@@ -1291,9 +1293,9 @@ Item {
                             if (isSelected) {
                                 return "#6088B2DF";
                             } else if (isHovered) {
-                                return "#EFEFEF";
+                                return Style.colors.hoverTitle;
                             } else {
-                                return "#FFFFFF";
+                                return Style.colors.primaryBackground;
                             }
                         }
 
@@ -1339,7 +1341,7 @@ Item {
 
                                     Label {
                                         text: commitData.summary || ""
-                                        color: "#000000"
+                                        color: Style.colors.foreground
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
                                         font.family: Style.fontTypes.roboto
@@ -1370,7 +1372,7 @@ Item {
 
                                     Label {
                                         text: commitData.author || ""
-                                        color: "#000000"
+                                        color: Style.colors.foreground
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 12
                                         Layout.fillWidth: true
@@ -1399,7 +1401,7 @@ Item {
 
                                     Label {
                                         text: GraphUtils.formatDate(commitData.authorDate) + " " + GraphUtils.formatTime(commitData.authorDate)
-                                        color: "#000000"
+                                        color: Style.colors.foreground
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
                                         Layout.fillWidth: true

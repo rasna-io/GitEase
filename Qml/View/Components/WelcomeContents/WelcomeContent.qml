@@ -70,7 +70,7 @@ Item {
                     width: 127
                     height: 127
                     radius: 4
-                    color: Style.colors.cardBackground
+                    color: Style.colors.secondaryBackground
 
                     Column {
                         anchors.fill: parent
@@ -104,7 +104,7 @@ Item {
                             font.weight: 400
                             font.pixelSize: 14
                             font.letterSpacing: 0
-                            color: Style.colors.titleText
+                            color: Style.colors.foreground
                             width: 106
                         }
 
@@ -117,7 +117,7 @@ Item {
                             font.weight: 400
                             font.pixelSize: 11
                             font.letterSpacing: 0
-                            color: Style.colors.descriptionText
+                            color: Style.colors.mutedText
                         }
 
                     }
