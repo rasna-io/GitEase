@@ -3,6 +3,7 @@
 #include "Repository.h"
 #include <QObject>
 #include <QQmlEngine>
+#include <git2/deprecated.h>
 
 class IGitController : public QObject
 {
@@ -15,6 +16,8 @@ public:
 
     Repository *currentRepo() const;
     void setCurrentRepo(Repository *newCurrentRepo);
+
+    QString gitOidToString(const git_oid *oid);
 
 signals:
     void currentRepoChanged();
