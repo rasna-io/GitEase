@@ -24,6 +24,7 @@ QtObject {
             remoteController.currentRepo = currentRepo
             commitController.currentRepo = currentRepo
             statusController.currentRepo = currentRepo
+            bundleController.currentRepo = currentRepo
         }
     }
 
@@ -34,6 +35,8 @@ QtObject {
     property CommitController commitController: CommitController {}
 
     property StatusController statusController: StatusController {}
+
+    property BundleController bundleController: BundleController {}
 
     property UiSessionPopups      popups
 }

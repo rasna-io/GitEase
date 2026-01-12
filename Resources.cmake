@@ -19,6 +19,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/RemoteController.qml
     Qml/Core/Controllers/CommitController.qml
     Qml/Core/Controllers/StatusController.qml
+    Qml/Core/Controllers/BundleController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
