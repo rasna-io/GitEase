@@ -244,3 +244,87 @@ QString GitBranch::getCurrentBranchName()
 
     return branchName;  // "main", "master", or Detached HEAD if detached
 }
+
+QString GitBranch::formatRefName(const QString &branchName)
+{
+    QString name = branchName;
+
+    // Remove "origin/" prefix if present
+    if (name.startsWith("origin/")) {
+        name = name.mid(7);
+    }
+
+    // Remove refs/heads/ prefix if present
+    if (name.startsWith("refs/heads/")) {
+        name = name.mid(11);
+    }
+
+    // Remove refs/remotes/ prefix if present
+    if (name.startsWith("refs/remotes/")) {
+        name = name.mid(13);
+
+        // Also remove "origin/" if still there
+        if (name.startsWith("origin/")) {
+            name = name.mid(7);
+        }
+    }
+
+    return "refs/heads/" + name;
+}
+
+
+QString GitBranch::resolveBranchName(const QString& branchName)
+{
+    git_reference* ref = getRef(m_currentRepo->repo, branchName);
+    QString resolvedName;
+
+
+    if (ref == nullptr)
+        return "";
+
+    const char* rawName = nullptr;
+    git_branch_name(&rawName, ref);
+    resolvedName = rawName ? QString::fromUtf8(rawName) : branchName;
+
+    git_reference_free(ref);
+
+    return resolvedName;
+}
+
+git_object *GitBranch::getHead(git_repository* repo, const QString& branchName)
+{
+    git_reference* ref = getRef(repo, branchName);
+    QString commitSha;
+
+    // Get commit
+    git_object* commit = nullptr;
+    git_reference_peel(&commit, ref, GIT_OBJECT_COMMIT);
+
+    git_reference_free(ref);
+
+    return commit;
+}
+
+git_reference *GitBranch::getRef(git_repository* repo, const QString &branchName)
+{
+    git_reference* ref = nullptr;
+
+    // Try local branch
+    if (git_branch_lookup(&ref, repo,
+                          branchName.toUtf8().constData(),
+                          GIT_BRANCH_LOCAL) != 0)
+    {
+        // Try remote branch
+        QString remote = "origin/" + branchName;
+        if (git_branch_lookup(&ref, repo,
+                              remote.toUtf8().constData(),
+                              GIT_BRANCH_REMOTE) != 0)
+        {
+            return nullptr;
+        }
+    }
+
+    return ref;
+}
+
+
