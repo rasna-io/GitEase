@@ -328,7 +328,7 @@ bool GitBundle::verifyBundle(const QString &bundlePath)
     return gitProcess.exitCode() == 0;
 }
 
-bool GitBundle::unbundleWithCli(const QString &bundlePath)
+GitResult GitBundle::unbundleWithCli(const QString &bundlePath)
 {
     if (!QFile::exists(bundlePath)) {
         return false;
@@ -341,24 +341,26 @@ bool GitBundle::unbundleWithCli(const QString &bundlePath)
     gitProcess.start();
 
     if (!gitProcess.waitForStarted(3000)) {
-        qDebug()<< "Failed to start Git verify process";
+        return GitResult(false, QVariant(), "Failed to start Git verify process.");
     }
 
     if (!gitProcess.waitForFinished(15000)) {
         gitProcess.kill();
-        qDebug()<< "Git verify timed out";
+        return GitResult(false, QVariant(), "Git Unbundle timed out.");
     }
+
+    QString output = QString::fromUtf8(gitProcess.readAll()).trimmed();
 
     if((gitProcess.exitCode() == 0)){
-        QString output = QString::fromUtf8(gitProcess.readAll()).trimmed();
-
         QStringList outputSplited = output.split(" ");
-        QString SHA = outputSplited[0];
 
-        return true;
+        QVariantMap data;
+        data["SHA"] =outputSplited[0];
+
+        return GitResult(true, data);
     }
 
-    return false;
+    return GitResult(false, QVariant(), output);
 }
 
 void GitBundle::cleanupBundleResources(git_reference *ref, git_object *object, git_revwalk *walker, git_packbuilder *packbuilder)
