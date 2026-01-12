@@ -33,6 +33,7 @@ public:
                               const QString &refBranchName,
                               const QString &path);
 
+    Q_INVOKABLE GitResult unbundleWithCli(const QString &bundlePath);
 private:
 
     GitResult writeBundleFile(git_packbuilder *packbuilder, const BundleContext &context);
@@ -53,6 +54,4 @@ private:
                                    QStringList &newCommitShas);
 
     bool verifyBundle(const QString &bundlePath);
-
-    bool unbundleWithCli(const QString &bundlePath);
 };
