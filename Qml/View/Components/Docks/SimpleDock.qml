@@ -15,10 +15,18 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string title: "Simple Dock"
+    readonly property string dockId: title + " " + Date.now()
+    required property string title
     property bool isDragging: false
+    property int position: -1
     default property alias contentData: contentArea.data
 
+    /* Signals
+     * ****************************************************************************************/
+    signal dockPositionChanged()
+
+    /* Object Properties
+     * ****************************************************************************************/
     z: isDragging ? 999 : 1
     
     /* Children
@@ -60,7 +68,7 @@ Item {
                 width: parent.width
                 height: 30
                 z: 2
-                color: dragArea.containsMouse ? Qt.darker("#F9F9F9", 1.9) : "#F9F9F9"
+                color: dragArea.containsMouse ? Qt.darker("#F9F9F9", 1.1) : "#F9F9F9"
                 radius: 6
 
                 Behavior on color {
@@ -77,7 +85,7 @@ Item {
 
                     Label {
                         text: root.title
-                        color: dragArea.containsMouse ? "#ffffff" : "#000000"
+                        color: "#000000"
                         font.bold: true
                         Layout.fillWidth: true
                         verticalAlignment: Text.AlignVCenter
@@ -93,7 +101,7 @@ Item {
                             width: 12
                             height: 2
                             radius: 1
-                            color:  dragArea.containsMouse ? "#FFFFFF" :
+                            color:  dragArea.containsMouse ? "#000000" :
                                                              closeMouseArea.containsMouse ? "#FFFFFF" : "#808080"
                             anchors.centerIn: parent
                             rotation: 45
@@ -103,7 +111,7 @@ Item {
                             width: 12
                             height: 2
                             radius: 1
-                            color:  dragArea.containsMouse ? "#FFFFFF" :
+                            color:  dragArea.containsMouse ? "#000000" :
                                                              closeMouseArea.containsMouse ? "#FFFFFF" : "#808080"
                             anchors.centerIn: parent
                             rotation: -45
@@ -143,6 +151,7 @@ Item {
                             if (distance > 10 && !root.isDragging) {
                                 root.isDragging = true
                                 root.clearAnchors()
+                                root.position = -1
                             }
                             
                             if (root.isDragging) {
@@ -155,7 +164,7 @@ Item {
                     onReleased: function(mouse) {                       
                         if (root.isDragging) {                          
                             root.isDragging = false
-                            root.clearAnchors()
+                            root.dockPositionChanged()
                         }
                     }
                 }
