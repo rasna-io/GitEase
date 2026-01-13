@@ -2,6 +2,7 @@
 import QtQuick.Controls
 
 import GitEase
+import GitEase_Style
 import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
@@ -99,6 +100,19 @@ Item {
                 id: centerArea
                 width: parent.width
                 height: parent.height - topArea.height - bottomArea.height
+
+                // Default content - only show when no docks exist
+                Column {
+                    anchors.centerIn: parent
+                    visible : root.docks.length === 0 && parent.height > 50
+                    Label {
+                        text: "No Docks Open"
+                        color: "#a0a0a0"
+                        font.pointSize: Style.appFont.h3Pt
+                        font.bold: true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
             }
 
             // Bottom docks
