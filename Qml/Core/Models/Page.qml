@@ -16,6 +16,7 @@ QtObject {
      * ****************************************************************************************/
     property string id: ""
     property string title: "Page"
+    required property int pageIndex
 
     // QML file to load for this page (qrc:/...)
     property url source: ""
