@@ -505,6 +505,10 @@ DockAblePage {
                     root.moveDock(commitGraph.dockId)
                 }
 
+                onCloseRequested: {
+                    root.closeDock(commitGraph.dockId)
+                }
+
                 Component.onCompleted: {
                     root.docks.push(commitGraph)
                     root.docks = root.docks.slice(0)
@@ -555,6 +559,10 @@ DockAblePage {
 
                     onDockPositionChanged: {
                         root.moveDock(fileChangesDock.dockId)
+                    }
+
+                    onCloseRequested: {
+                        root.closeDock(fileChangesDock.dockId)
                     }
 
                     Component.onCompleted: {
