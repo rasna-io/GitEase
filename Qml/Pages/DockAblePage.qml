@@ -209,4 +209,17 @@ Item {
         // No center zone - if not on edge, stay floating
         return -1
     }
+
+    function closeDock(dockId : string){
+        var index = root.docks.findIndex(d => d.dockId === dockId)
+
+        if (index === -1) {
+            console.warn("[DockAblePage] Dock not found:", dockId)
+            return
+        }
+
+        var dock = root.docks[index]
+        root.docks = root.docks.slice(0, index).concat(root.docks.slice(index + 1))
+        dock.destroy()
+    }
 }
