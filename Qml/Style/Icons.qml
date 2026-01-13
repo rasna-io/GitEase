@@ -11,6 +11,14 @@ QtObject{
     property string angleLeft:      "\uf104" // angle-left
     property string caretDown:      "\u25BE" // caretDownn
     property string caretRight:     "\u25B8" // caretRight
+    property string arrowUp:        "\uf062" // arrow-up
+    property string arrowDown:      "\uf063" // arrow-down
+
+    property string caretDown:      "\uf0d7" // caret-down
+    property string caretUp:        "\uf0d8" // caret-up
+    property string refresh:        "\uf021" // arrows-rotate
+    property string filter:         "\uf0b0" // filter
+
     property string user:           "\uf007" // user
     property string envelope:       "\uf0e0" // envelope
     property string lightbulb:      "\uf0eb" // lightbulb
