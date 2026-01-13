@@ -22,7 +22,11 @@ T.TextField {
     property color borderColor: Style.colors.primaryBorder
     property color focusBorderColor: Style.colors.accent
     property color errorBorderColor: Style.colors.error
+
+    property int borderWidth: 1
+    property int focusBorderWidth: 2
     property int borderRadius: 5
+    property int minHeight: 38
     property int baseFontSize: 12
     
     // Icon properties
@@ -40,7 +44,7 @@ T.TextField {
     /* Object Properties
      * ****************************************************************************************/
     implicitWidth: Math.max(200, contentWidth + leftPadding + rightPadding)
-    implicitHeight: Math.max(38, contentHeight + topPadding + bottomPadding)
+    implicitHeight: Math.max(minHeight, contentHeight + topPadding + bottomPadding)
 
     // Automatic padding based on icon presence
     leftPadding: icon !== "" ? _iconTotalSpace : _horizontalPadding
@@ -104,9 +108,9 @@ T.TextField {
      * ****************************************************************************************/
     background: Rectangle {
         implicitWidth: 200
-        implicitHeight: 38
+        implicitHeight: control.minHeight
         radius: control.borderRadius
-        border.width: control.activeFocus ? 2 : 1
+        border.width: control.activeFocus ? control.focusBorderWidth : control.borderWidth
         color: control.backgroundColor
         border.color: control.error ? control.errorBorderColor
                         : control.activeFocus ? control.focusBorderColor 

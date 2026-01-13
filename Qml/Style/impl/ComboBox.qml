@@ -15,10 +15,14 @@ T.ComboBox {
      * ****************************************************************************************/
     property  bool error
 
+    property int minHeight: 40
+    property int borderWidth: 1
+    property int focusBorderWidth: 2
 
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             implicitContentWidth + leftPadding + rightPadding)
-    implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
+    implicitHeight: Math.max(minHeight,
+                             implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding,
                              implicitIndicatorHeight + topPadding + bottomPadding)
 
@@ -26,7 +30,7 @@ T.ComboBox {
     rightPadding: padding + (control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
 
     Material.background: flat ? "transparent" : undefined
-    Material.foreground: flat ? undefined : Material.primaryTextColor
+    Material.foreground: flat ? undefined : control.palette.text
 
     delegate: ItemDelegate {
         required property var model
@@ -75,9 +79,9 @@ T.ComboBox {
 
     background: Rectangle {
         implicitWidth: 200
-        implicitHeight: 40
+        implicitHeight: control.minHeight
         radius: 5
-        border.width: control.activeFocus ? 2 : 1
+        border.width: control.activeFocus ? control.focusBorderWidth : control.borderWidth
         color: control.palette.base
         border.color: control.error ? Style.colors.error
                                     : control.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
