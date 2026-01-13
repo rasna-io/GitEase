@@ -52,10 +52,21 @@ DockAblePage {
 
         onIsDraggingChanged: {
             root.showDropZone = commitGraphDock.isDragging
+            commitGraphDock.parent = root
+        }
+
+        onDockPositionChanged: {
+            root.moveDock(commitGraphDock.dockId)
+        }
+
+        Component.onCompleted: {
+            root.docks.push(commitGraphDock)
+            root.docks = root.docks.slice(0)
         }
     }
 
     FileChangesDock {
+        id: fileChangesDock
         height: root.height / 2
         width: root.width / 2
 
@@ -75,6 +86,16 @@ DockAblePage {
 
         onIsDraggingChanged: {
             root.showDropZone = isDragging
+            fileChangesDock.parent = root
+        }
+
+        onDockPositionChanged: {
+            root.moveDock(fileChangesDock.dockId)
+        }
+
+        Component.onCompleted: {
+            root.docks.push(fileChangesDock)
+            root.docks = root.docks.slice(0)
         }
     }
 
@@ -86,6 +107,16 @@ DockAblePage {
 
         onIsDraggingChanged: {
             root.showDropZone = isDragging
+            diffView.parent = root
+        }
+
+        onDockPositionChanged: {
+            root.moveDock(diffView.dockId)
+        }
+
+        Component.onCompleted: {
+            root.docks.push(diffView)
+            root.docks = root.docks.slice(0)
         }
     }
 }
