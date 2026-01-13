@@ -497,7 +497,17 @@ DockAblePage {
                 }
 
                 onIsDraggingChanged: {
-                    root.showDropZone = commitGraphDock.isDragging
+                    root.showDropZone = isDragging
+                    commitGraph.parent = root
+                }
+
+                onDockPositionChanged: {
+                    root.moveDock(commitGraph.dockId)
+                }
+
+                Component.onCompleted: {
+                    root.docks.push(commitGraph)
+                    root.docks = root.docks.slice(0)
                 }
             }
         }
@@ -521,6 +531,7 @@ DockAblePage {
                 color: "transparent"
 
                 FileChangesDock {
+                    id: fileChangesDock
                     anchors.fill: parent
 
                     repositoryController : root.repositoryController
@@ -539,6 +550,16 @@ DockAblePage {
 
                     onIsDraggingChanged: {
                         root.showDropZone = isDragging
+                        fileChangesDock.parent = root
+                    }
+
+                    onDockPositionChanged: {
+                        root.moveDock(fileChangesDock.dockId)
+                    }
+
+                    Component.onCompleted: {
+                        root.docks.push(fileChangesDock)
+                        root.docks = root.docks.slice(0)
                     }
                 }
             }
@@ -554,10 +575,19 @@ DockAblePage {
                     readOnly: true
                     onIsDraggingChanged: {
                         root.showDropZone = isDragging
+                        diffView.parent = root
+                    }
+
+                    onDockPositionChanged: {
+                        root.moveDock(diffView.dockId)
+                    }
+
+                    Component.onCompleted: {
+                        root.docks.push(diffView)
+                        root.docks = root.docks.slice(0)
                     }
                 }
             }
         }
     }
 }
-
