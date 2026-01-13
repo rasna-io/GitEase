@@ -82,6 +82,7 @@ QtObject {
         var page = pageComponent.createObject(root, {
             id: id,
             title: title || "Page",
+            pageIndex: root.appModel?.pages.length,
             source: source || "",
             icon: icon || ""
         })
