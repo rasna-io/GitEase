@@ -52,6 +52,7 @@ DockAblePage {
 
         onIsDraggingChanged: {
             root.showDropZone = commitGraphDock.isDragging
+            root.activeDraggingDock = commitGraphDock.isDragging ? commitGraphDock : null
             commitGraphDock.parent = root
         }
 
@@ -89,6 +90,7 @@ DockAblePage {
 
         onIsDraggingChanged: {
             root.showDropZone = isDragging
+            root.activeDraggingDock = isDragging ? fileChangesDock : null
             fileChangesDock.parent = root
         }
 
@@ -113,6 +115,7 @@ DockAblePage {
 
         onIsDraggingChanged: {
             root.showDropZone = isDragging
+            root.activeDraggingDock = isDragging ? diffView : null
             diffView.parent = root
         }
 

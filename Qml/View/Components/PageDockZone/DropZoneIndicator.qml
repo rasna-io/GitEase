@@ -110,19 +110,5 @@ Rectangle {
             }
         }
     }
-
-    MouseArea {
-        id: dropArea
-        anchors.fill: parent
-        hoverEnabled: true
-
-        onEntered: {
-            root.containsDrag = true
-        }
-
-        onExited: {
-            root.containsDrag = false
-        }
-    }
 }
 
