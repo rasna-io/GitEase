@@ -18,6 +18,7 @@ Item {
     readonly property string dockId: title + " " + Date.now()
     required property string title
     property bool isDragging: false
+    property bool isFloating: true
     property int position: -1
     default property alias contentData: contentArea.data
 
@@ -36,7 +37,7 @@ Item {
         anchors.fill: parent
         color: Style.colors.primaryBackground
         radius: 6
-        border.color: "#c9c9c9"
+        border.color: root.isFloating ? "#c9c9c9" : "transparent"
         border.width: root.isDragging ? 1.8 : 1
 
         Behavior on opacity {
@@ -150,6 +151,7 @@ Item {
                             
                             if (distance > 10 && !root.isDragging) {
                                 root.isDragging = true
+                                root.isFloating = true
                                 root.clearAnchors()
                                 root.position = -1
                             }

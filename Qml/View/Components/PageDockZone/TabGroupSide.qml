@@ -58,6 +58,8 @@ Item {
                     dock.anchors.bottom = undefined
                     dock.parent = singleDockContainer
                     dock.anchors.fill = singleDockContainer
+
+                    dock.isFloating = false
                     dock.visible = true
                 }
             }
@@ -158,6 +160,8 @@ Item {
                                 modelData.parent = parent
                                 modelData.anchors.fill = parent
                                 modelData.visible = true
+                                modelData.isFloating = false
+
                             } else {
                                 modelData.visible = false
                             }
