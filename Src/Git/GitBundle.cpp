@@ -277,6 +277,7 @@ GitResult GitBundle::setupDiffPackbuilder(const git_oid *baseOid, const git_oid 
     while (git_revwalk_next(&commitOid, walker) == GIT_OK) {
         git_packbuilder_insert(packbuilder, &commitOid, nullptr);
         newCommitShas.append(gitOidToString(&commitOid));
+        git_packbuilder_insert_commit(packbuilder, &commitOid);
         commitCount++;
     }
 
