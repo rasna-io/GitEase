@@ -61,7 +61,6 @@ DockAblePage {
 
         Component.onCompleted: {
             root.docks.push(commitGraphDock)
-            root.docks = root.docks.slice(0)
         }
     }
 
@@ -95,7 +94,6 @@ DockAblePage {
 
         Component.onCompleted: {
             root.docks.push(fileChangesDock)
-            root.docks = root.docks.slice(0)
         }
     }
 
@@ -116,7 +114,6 @@ DockAblePage {
 
         Component.onCompleted: {
             root.docks.push(diffView)
-            root.docks = root.docks.slice(0)
         }
     }
 }
