@@ -59,6 +59,10 @@ DockAblePage {
             root.moveDock(commitGraphDock.dockId)
         }
 
+        onCloseRequested: {
+            root.closeDock(commitGraphDock.dockId)
+        }
+
         Component.onCompleted: {
             root.docks.push(commitGraphDock)
         }
@@ -92,6 +96,10 @@ DockAblePage {
             root.moveDock(fileChangesDock.dockId)
         }
 
+        onCloseRequested: {
+            root.closeDock(fileChangesDock.dockId)
+        }
+
         Component.onCompleted: {
             root.docks.push(fileChangesDock)
         }
@@ -110,6 +118,10 @@ DockAblePage {
 
         onDockPositionChanged: {
             root.moveDock(diffView.dockId)
+        }
+
+        onCloseRequested: {
+            root.closeDock(diffView.dockId)
         }
 
         Component.onCompleted: {
