@@ -27,6 +27,9 @@ Item {
         visible: showDropZone
         opacity: 0.7
         z: 9
+
+        defaultWidth : root.defaultWidth
+        defaultHeight : root.defaultHeight
     }
 
     Row {
