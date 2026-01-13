@@ -491,14 +491,16 @@ DockAblePage {
                 appModel: root.appModel
                 branchController: root.branchController
                 commitController: root.commitController
+                
 
                 onCommitClicked: function(commitId) {
                     root.selectedCommit = commitId
                 }
 
                 onIsDraggingChanged: {
-                    root.showDropZone = isDragging
-                    commitGraph.parent = root
+                    root.showDropZone = commitGraphDock.isDragging
+                    root.activeDraggingDock = commitGraphDock.isDragging ? commitGraphDock : null
+                    commitGraphDock.parent = root
                 }
 
                 onDockPositionChanged: {
@@ -553,7 +555,8 @@ DockAblePage {
 
                     onIsDraggingChanged: {
                         root.showDropZone = isDragging
-                        fileChangesDock.parent = root
+                        root.activeDraggingDock = isDragging ? diffView : null
+                        diffView.parent = root
                     }
 
                     onDockPositionChanged: {

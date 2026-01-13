@@ -16,6 +16,7 @@ Item {
      * ****************************************************************************************/
     property real defaultWidth: 300
     property real defaultHeight: 180
+    property int activePosition: -1
 
     /* Children
      * ****************************************************************************************/
@@ -33,24 +34,7 @@ Item {
                 position: Enums.DockPosition.Left
                 label: "Left"
                 icon: "◀"
-                containsDrag: leftDropArea.containsDrag
-            }
-
-            MouseArea {
-                id: leftDropArea
-                x: 0
-                y: 0
-                width: root.defaultWidth
-                height: parent.height
-                property bool containsDrag: false
-                hoverEnabled: true
-
-                onEntered: {
-                    containsDrag = true
-                }
-                onExited: {
-                    containsDrag = false
-                }
+                containsDrag: root.activePosition === Enums.DockPosition.Left
             }
 
             DropZoneIndicator {
@@ -61,24 +45,7 @@ Item {
                 position: Enums.DockPosition.Right
                 label: "Right"
                 icon: "▶"
-                containsDrag: rightDropArea.containsDrag
-            }
-
-            MouseArea {
-                id: rightDropArea
-                x: parent.width - root.defaultWidth
-                y: 0
-                width: root.defaultWidth
-                height: parent.height
-                property bool containsDrag: false
-                hoverEnabled: true
-
-                onEntered: {
-                    containsDrag = true
-                }
-                onExited: {
-                    containsDrag = false
-                }
+                containsDrag: root.activePosition === Enums.DockPosition.Right
             }
 
             DropZoneIndicator {
@@ -89,24 +56,7 @@ Item {
                 position: Enums.DockPosition.Top
                 label: "Top"
                 icon: "▲"
-                containsDrag: topDropArea.containsDrag
-            }
-
-            MouseArea {
-                id: topDropArea
-                x: 0
-                y: 0
-                width: parent.width
-                height: root.defaultHeight
-                property bool containsDrag: false
-                hoverEnabled: true
-
-                onEntered: {
-                    containsDrag = true
-                }
-                onExited: {
-                    containsDrag = false
-                }
+                containsDrag: root.activePosition === Enums.DockPosition.Top
             }
 
             DropZoneIndicator {
@@ -117,24 +67,7 @@ Item {
                 position: Enums.DockPosition.Bottom
                 label: "Bottom"
                 icon: "▼"
-                containsDrag: bottomDropArea.containsDrag
-            }
-
-            MouseArea {
-                id: bottomDropArea
-                x: 0
-                y: parent.height - root.defaultHeight
-                width: parent.width
-                height: root.defaultHeight
-                property bool containsDrag: false
-                hoverEnabled: true
-
-                onEntered: {
-                    containsDrag = true
-                }
-                onExited: {
-                    containsDrag = false
-                }
+                containsDrag: root.activePosition === Enums.DockPosition.Bottom
             }
 
             Frame {

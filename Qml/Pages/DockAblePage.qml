@@ -23,6 +23,8 @@ Item {
     property var bottomSideTabGroupDocks: []
 
     property bool showDropZone: false
+    property var activeDraggingDock: null
+    property int hoveredDockPosition: -1
 
     readonly property real defaultWidth: 300
     readonly property real defaultHeight: 180
@@ -42,6 +44,22 @@ Item {
 
         defaultWidth : root.defaultWidth * 0.6
         defaultHeight : root.defaultHeight * 0.6
+        activePosition: root.hoveredDockPosition
+    }
+
+    Timer {
+        id: dropZoneHoverTimer
+        interval: 16
+        repeat: true
+        running: root.showDropZone && root.activeDraggingDock
+        onTriggered: root.updateHoveredDockPosition()
+    }
+
+    onShowDropZoneChanged: {
+        if (!showDropZone) {
+            hoveredDockPosition = -1
+            activeDraggingDock = null
+        }
     }
 
     Row {
@@ -204,6 +222,15 @@ Item {
         dock.position = droppedPosition
 
         root.updateSideDocks()
+    }
+
+    function updateHoveredDockPosition() {
+        if (!root.activeDraggingDock)
+            return
+
+        var globalPos = root.activeDraggingDock.mapToGlobal(root.activeDraggingDock.width / 3, 15)
+        var pagePos = root.mapFromGlobal(globalPos.x, globalPos.y)
+        root.hoveredDockPosition = getDropPosition(pagePos.x, pagePos.y)
     }
 
     function getDropPosition(x, y) {
