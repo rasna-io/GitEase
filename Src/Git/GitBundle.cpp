@@ -170,9 +170,8 @@ GitResult GitBundle::buildDiffBundle(const QString &baseRef, const QString &targ
     context.branchName = targetRef;
     context.refName = refBranchName;
 
-    // Setup packbuilder with only new objects
-    git_packbuilder* packbuilder = nullptr;
-    git_revwalk* walker = nullptr;
+    git_packbuilder* packbuilder = nullptr; // hold the bundle objects
+    git_revwalk* walker = nullptr;          // find commits
     int commitCount = 0;
     QStringList newCommitShas;
 
@@ -268,17 +267,48 @@ GitResult GitBundle::setupDiffPackbuilder(const git_oid *baseOid, const git_oid 
 
     // Configure walker: target minus base
     git_revwalk_sorting(walker, GIT_SORT_TOPOLOGICAL);
-    git_revwalk_push(walker, targetOid);
-    git_revwalk_hide(walker, baseOid);
+    git_revwalk_push(walker, targetOid);    // Start at the taget branch
+    git_revwalk_hide(walker, baseOid);      // Stop at the base branch
 
+    // 4. Collect all objects from base
+    QSet<QString> baseObjects;
+    collectCommitObjects(baseOid, baseObjects);
+
+    // 5. Process new commits
     git_oid commitOid;
+    QSet<QString> newObjects;
     newCommitShas.clear();
+    commitCount = 0;
 
     while (git_revwalk_next(&commitOid, walker) == GIT_OK) {
-        git_packbuilder_insert(packbuilder, &commitOid, nullptr);
-        newCommitShas.append(gitOidToString(&commitOid));
-        git_packbuilder_insert_commit(packbuilder, &commitOid);
+        QString commitSha = gitOidToString(&commitOid);
+        newCommitShas.append(commitSha);
         commitCount++;
+
+        // Collect all objects from this commit
+        collectCommitObjects(&commitOid, newObjects);   // Collect its objects
+    }
+
+    // 6. Insert only new objects (not in base) into packbuilder
+    int insertedCount = 0;
+    for (const QString& objectSha : newObjects) {
+        if (!baseObjects.contains(objectSha)) {
+
+            // This object is new!
+            git_oid objectOid;
+            git_oid_fromstr(&objectOid, objectSha.toUtf8().constData());
+            error = git_packbuilder_insert(packbuilder, &objectOid, nullptr);
+            if (error == GIT_OK) {
+                insertedCount++;
+            }
+        }
+    }
+
+    // 7. Check if we have anything to bundle
+    size_t objectCount = git_packbuilder_object_count(packbuilder);
+    if (objectCount == 0) {
+        return GitResult(false, QVariant(),
+                         "No new objects to bundle. All objects already in base.");
     }
 
     return GitResult(true, QVariantMap());
@@ -327,6 +357,79 @@ bool GitBundle::verifyBundle(const QString &bundlePath)
     QString output = QString::fromUtf8(gitProcess.readAll()).trimmed();
 
     return gitProcess.exitCode() == 0;
+}
+
+void GitBundle::collectTreeObjects(git_tree *tree, QSet<QString> &collectedObjects)
+{
+    size_t entryCount = git_tree_entrycount(tree);
+
+    for (size_t i = 0; i < entryCount; i++) {
+        const git_tree_entry* entry = git_tree_entry_byindex(tree, i);
+        const git_oid* entryOid = git_tree_entry_id(entry);
+        QString entrySha = gitOidToString(entryOid);
+
+        // Skip if already collected
+        if (collectedObjects.contains(entrySha)) {
+            continue;
+        }
+
+        collectedObjects.insert(entrySha);
+
+        // If this is a subtree, recurse
+        if (git_tree_entry_type(entry) == GIT_OBJECT_TREE) {
+            git_tree* subtree = nullptr;
+            if (git_tree_lookup(&subtree, m_currentRepo->repo, entryOid) == 0) {
+                collectTreeObjects(subtree, collectedObjects);
+                git_tree_free(subtree);
+            }
+        }
+    }
+}
+
+void GitBundle::collectCommitObjects(const git_oid *commitOid, QSet<QString> &collectedObjects)
+{
+    // Get commit object
+    git_commit* commit = nullptr;
+    if (git_commit_lookup(&commit, m_currentRepo->repo, commitOid) != 0) {
+        return;
+    }
+
+    // Add commit itself
+    QString commitSha = gitOidToString(commitOid);
+    collectedObjects.insert(commitSha);
+
+    // Get tree from commit
+    const git_oid* treeOid = git_commit_tree_id(commit);
+    if (treeOid) {
+        QString treeSha = gitOidToString(treeOid);
+        if (!collectedObjects.contains(treeSha)) {
+            collectedObjects.insert(treeSha);
+
+            // Get tree object and collect its contents
+            git_tree* tree = nullptr;
+            if (git_tree_lookup(&tree, m_currentRepo->repo, treeOid) == 0) {
+                collectTreeObjects(tree, collectedObjects);
+                git_tree_free(tree);
+            }
+        }
+    }
+
+    git_commit_free(commit);
+}
+
+void GitBundle::insertNewObjects(git_packbuilder *packbuilder, const QSet<QString> &newObjects, const QSet<QString> &baseObjects)
+{
+    for (const QString& objectSha : newObjects) {
+        // Skip if object is already in base
+        if (baseObjects.contains(objectSha)) {
+            continue;
+        }
+
+        // Convert SHA back to git_oid and insert
+        git_oid objectOid;
+        git_oid_fromstr(&objectOid, objectSha.toUtf8().constData());
+        git_packbuilder_insert(packbuilder, &objectOid, nullptr);
+    }
 }
 
 GitResult GitBundle::unbundleWithCli(const QString &bundlePath)
