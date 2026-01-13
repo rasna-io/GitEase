@@ -28,6 +28,10 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    onDocksChanged: {
+        root.updateSideDocks()
+    }
+
     PageDropZone{
         id: pageDropZone
         anchors.fill: parent
