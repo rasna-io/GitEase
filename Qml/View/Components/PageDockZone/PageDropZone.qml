@@ -12,6 +12,11 @@ import GitEase_Style_Impl
 Item {
     id: root
 
+    /* Property Declarations
+     * ****************************************************************************************/
+    property real defaultWidth: 300
+    property real defaultHeight: 180
+
     /* Children
      * ****************************************************************************************/
     Rectangle {
@@ -23,7 +28,7 @@ Item {
             DropZoneIndicator {
                 x: 0
                 y: 0
-                width: 120
+                width: root.defaultWidth
                 height: parent.height
                 position: Enums.DockPosition.Left
                 label: "Left"
@@ -35,7 +40,7 @@ Item {
                 id: leftDropArea
                 x: 0
                 y: 0
-                width: 120
+                width: root.defaultWidth
                 height: parent.height
                 property bool containsDrag: false
                 hoverEnabled: true
@@ -49,9 +54,9 @@ Item {
             }
 
             DropZoneIndicator {
-                x: parent.width - 120
+                x: parent.width - root.defaultWidth
                 y: 0
-                width: 120
+                width: root.defaultWidth
                 height: parent.height
                 position: Enums.DockPosition.Right
                 label: "Right"
@@ -61,9 +66,9 @@ Item {
 
             MouseArea {
                 id: rightDropArea
-                x: parent.width - 120
+                x: parent.width - root.defaultWidth
                 y: 0
-                width: 120
+                width: root.defaultWidth
                 height: parent.height
                 property bool containsDrag: false
                 hoverEnabled: true
@@ -80,7 +85,7 @@ Item {
                 x: 0
                 y: 0
                 width: parent.width
-                height: 120
+                height: root.defaultHeight
                 position: Enums.DockPosition.Top
                 label: "Top"
                 icon: "▲"
@@ -92,7 +97,7 @@ Item {
                 x: 0
                 y: 0
                 width: parent.width
-                height: 120
+                height: root.defaultHeight
                 property bool containsDrag: false
                 hoverEnabled: true
 
@@ -106,9 +111,9 @@ Item {
 
             DropZoneIndicator {
                 x: 0
-                y: parent.height - 120
+                y: parent.height - root.defaultHeight
                 width: parent.width
-                height: 120
+                height: root.defaultHeight
                 position: Enums.DockPosition.Bottom
                 label: "Bottom"
                 icon: "▼"
@@ -118,9 +123,9 @@ Item {
             MouseArea {
                 id: bottomDropArea
                 x: 0
-                y: parent.height - 120
+                y: parent.height - root.defaultHeight
                 width: parent.width
-                height: 120
+                height: root.defaultHeight
                 property bool containsDrag: false
                 hoverEnabled: true
 
