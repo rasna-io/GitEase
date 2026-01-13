@@ -35,8 +35,8 @@ Item {
         opacity: 0.7
         z: 9
 
-        defaultWidth : root.defaultWidth
-        defaultHeight : root.defaultHeight
+        defaultWidth : root.defaultWidth * 0.6
+        defaultHeight : root.defaultHeight * 0.6
     }
 
     Row {
