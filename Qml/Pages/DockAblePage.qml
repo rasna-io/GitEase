@@ -15,7 +15,14 @@ Item {
     /* Property Declarations
      * ****************************************************************************************/
     property var docks: []
+
+    property var leftSideTabGroupDocks:   []
+    property var topSideTabGroupDocks:    []
+    property var rightSideTabGroupDocks:  []
+    property var bottomSideTabGroupDocks: []
+
     property bool showDropZone: false
+
     readonly property real defaultWidth: 300
     readonly property real defaultHeight: 180
 
@@ -42,45 +49,18 @@ Item {
         // Left docks
         Item {
             id: leftColumn
-            width: {
-                var count = 0
-                for (var i = 0; i < root.docks.length; i++) {
-                    if (root.docks[i].position === Enums.DockPosition.Left &&
-                        !root.docks[i].isDragging) {
-                        count++
-                    }
-                }
-                return count > 0 ? root.defaultWidth : 0
-            }
+            width: root.leftSideTabGroupDocks.length > 0 ? root.defaultWidth : 0
             height: parent.height
 
             // Group docks with TabGroupSide
             Item {
                 width: leftColumn.width
                 height: leftColumn.height
-                visible: {
-                    var count = 0
-                    for (var i = 0; i < root.docks.length; i++) {
-                        if (root.docks[i].position === Enums.DockPosition.Left &&
-                            !root.docks[i].isDragging) {
-                            count++
-                        }
-                    }
-                    return count > 0
-                }
+                visible: root.leftSideTabGroupDocks.length > 0
 
                 TabGroupSide {
                     anchors.fill: parent
-                    docks: {
-                        var leftDocks = []
-                        for (var i = 0; i < root.docks.length; i++) {
-                            if (root.docks[i].position === Enums.DockPosition.Left &&
-                                !root.docks[i].isDragging) {
-                                leftDocks.push(root.docks[i])
-                            }
-                        }
-                        return leftDocks
-                    }
+                    docks: root.leftSideTabGroupDocks
                 }
             }
         }
@@ -95,44 +75,17 @@ Item {
             Item {
                 id: topArea
                 width: parent.width
-                height: {
-                    var count = 0
-                    for (var i = 0; i < root.docks.length; i++) {
-                        if (root.docks[i].position === Enums.DockPosition.Top &&
-                            !root.docks[i].isDragging) {
-                            count++
-                        }
-                    }
-                    return count > 0 ? root.defaultHeight : 0
-                }
+                height: root.topSideTabGroupDocks.length > 0 ? root.defaultHeight : 0
 
                 // Group docks with TabGroupSide
                 Item {
                     width: topArea.width
                     height: topArea.height
-                    visible: {
-                        var count = 0
-                        for (var i = 0; i < root.docks.length; i++) {
-                            if (root.docks[i].position === Enums.DockPosition.Top &&
-                                !root.docks[i].isDragging) {
-                                count++
-                            }
-                        }
-                        return count > 0
-                    }
+                    visible: root.topSideTabGroupDocks.length > 0
 
                     TabGroupSide {
                         anchors.fill: parent
-                        docks: {
-                            var topDocks = []
-                            for (var i = 0; i < root.docks.length; i++) {
-                                if (root.docks[i].position === Enums.DockPosition.Top &&
-                                    !root.docks[i].isDragging) {
-                                    topDocks.push(root.docks[i])
-                                }
-                            }
-                            return topDocks
-                        }
+                        docks: root.topSideTabGroupDocks
                     }
                 }
             }
@@ -148,44 +101,17 @@ Item {
             Item {
                 id: bottomArea
                 width: parent.width
-                height: {
-                    var count = 0
-                    for (var i = 0; i < root.docks.length; i++) {
-                        if (root.docks[i].position === Enums.DockPosition.Bottom &&
-                            !root.docks[i].isDragging) {
-                            count++
-                        }
-                    }
-                    return count > 0 ? root.defaultHeight : 0
-                }
+                height: root.bottomSideTabGroupDocks.length > 0 ? root.defaultHeight : 0
 
                 // Group docks with TabGroupSide
                 Item {
                     width: bottomArea.width
                     height: bottomArea.height
-                    visible: {
-                        var count = 0
-                        for (var i = 0; i < docks.length; i++) {
-                            if (root.docks[i].position === Enums.DockPosition.Bottom &&
-                                !root.docks[i].isDragging) {
-                                count++
-                            }
-                        }
-                        return count > 0
-                    }
+                    visible: root.bottomSideTabGroupDocks.length > 0
 
                     TabGroupSide {
                         anchors.fill: parent
-                        docks: {
-                            var bottomDocks = []
-                            for (var i = 0; i < root.docks.length; i++) {
-                                if (root.docks[i].position === Enums.DockPosition.Bottom &&
-                                    !root.docks[i].isDragging) {
-                                    bottomDocks.push(root.docks[i])
-                                }
-                            }
-                            return bottomDocks
-                        }
+                        docks: root.bottomSideTabGroupDocks
                     }
                 }
             }
@@ -194,45 +120,18 @@ Item {
         // Right docks
         Item {
             id: rightColumn
-            width: {
-                var count = 0
-                for (var i = 0; i < root.docks.length; i++) {
-                    if (root.docks[i].position === Enums.DockPosition.Right &&
-                        !root.docks[i].isDragging) {
-                        count++
-                    }
-                }
-                return count > 0 ? root.defaultWidth : 0
-            }
+            width:  root.rightSideTabGroupDocks.length > 0 ? root.defaultWidth : 0
             height: parent.height
 
             // Group docks with TabGroupSide
             Item {
                 width: rightColumn.width
                 height: rightColumn.height
-                visible: {
-                    var count = 0
-                    for (var i = 0; i < root.docks.length; i++) {
-                        if (root.docks[i].position === Enums.DockPosition.Right &&
-                            !root.docks[i].isDragging) {
-                            count++
-                        }
-                    }
-                    return count > 0
-                }
+                visible: root.rightSideTabGroupDocks.length > 0
 
                 TabGroupSide {
                     anchors.fill: parent
-                    docks: {
-                        var rightDocks = []
-                        for (var i = 0; i < root.docks.length; i++) {
-                            if (root.docks[i].position === Enums.DockPosition.Right &&
-                                !root.docks[i].isDragging) {
-                                rightDocks.push(root.docks[i])
-                            }
-                        }
-                        return rightDocks
-                    }
+                    docks: root.rightSideTabGroupDocks
                 }
             }
         }
@@ -240,6 +139,38 @@ Item {
 
     /* Functions
      * ****************************************************************************************/
+    // clear all side docks and reAssign (for update states)
+    function updateSideDocks(){
+
+        root.leftSideTabGroupDocks = []
+        root.topSideTabGroupDocks = []
+        root.rightSideTabGroupDocks = []
+        root.bottomSideTabGroupDocks = []
+
+        for (var i = 0; i < root.docks.length; i++) {
+            let dock = root.docks[i]
+            switch (dock.position){
+                case Enums.DockPosition.Left:
+                    root.leftSideTabGroupDocks.push(dock)
+                    root.leftSideTabGroupDocks = root.leftSideTabGroupDocks.slice(0)
+                    break
+                case Enums.DockPosition.Top:
+                    root.topSideTabGroupDocks.push(dock)
+                    root.topSideTabGroupDocks = root.topSideTabGroupDocks.slice(0)
+                    break
+                case Enums.DockPosition.Right:
+                    root.rightSideTabGroupDocks.push(dock)
+                    root.rightSideTabGroupDocks = root.rightSideTabGroupDocks.slice(0)
+                    break
+                case Enums.DockPosition.Bottom:
+                    root.bottomSideTabGroupDocks.push(dock)
+                    root.bottomSideTabGroupDocks = root.bottomSideTabGroupDocks.slice(0)
+                    break
+                default : break
+            }
+        }
+    }
+
     function moveDock(dockId : string){
         var dock = root.docks.find(d => d.dockId === dockId)
 
@@ -253,6 +184,8 @@ Item {
         var droppedPosition = getDropPosition(pagePos.x, pagePos.y)
 
         dock.position = droppedPosition
+
+        root.updateSideDocks()
     }
 
     function getDropPosition(x, y) {
