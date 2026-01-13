@@ -75,44 +75,71 @@ Rectangle {
                 border.width: 1
                 radius: 6
 
-                Loader {
-                    id: pageLoader
+                SwipeView {
+                    id: pageSwipeView
                     anchors.fill: parent
-                    anchors.margins: 0
+                    clip: true
+                    interactive: false
 
-                    source: root.uiSession?.appModel?.currentPage?.source ?? ""
+                    Repeater {
+                        model: root.uiSession?.appModel?.pages || []
 
-                    onLoaded: {
-                        // Bind common context properties if the loaded page exposes them.
-                        if (!item)
-                            return
+                        Loader {
+                            width: pageSwipeView.width
+                            height: pageSwipeView.height
 
-                        // If the loaded page exposes a `page` property, bind it to the current page model.
-                        if (item && item.hasOwnProperty("page")) {
-                            item.page = Qt.binding(function() { return root.uiSession?.appModel?.currentPage })
-                        }
+                            active: SwipeView.isCurrentItem || SwipeView.isNextItem || SwipeView.isPreviousItem
+                            asynchronous: true
 
-                        // Repository controller (for pages that need repository context)
-                        if (item.hasOwnProperty("appModel")) {
-                            item.appModel = Qt.binding(function() { return root.uiSession?.appModel })
-                        }
-                        if (item.hasOwnProperty("branchController")) {
-                            item.branchController = Qt.binding(function() { return root.uiSession?.branchController })
-                        }
-                        if (item.hasOwnProperty("commitController")) {
-                            item.commitController = Qt.binding(function() { return root.uiSession?.commitController })
-                        }
-                        if (item.hasOwnProperty("statusController")) {
-                            item.statusController = Qt.binding(function() { return root.uiSession?.statusController })
-                        }
-                        if (item.hasOwnProperty("repositoryController")) {
-                            item.repositoryController = Qt.binding(function() { return root.uiSession?.repositoryController })
+                            source: modelData?.source ?? ""
+
+                            onLoaded: {
+                                if (!item)
+                                    return
+
+                                // Bind common context properties if the loaded page exposes them.
+                                if (item.hasOwnProperty("page")) {
+                                    // Bind to the page model represented by this SwipeView index.
+                                    item.page = Qt.binding(function() { return modelData })
+                                }
+
+                                if (item.hasOwnProperty("appModel")) {
+                                    item.appModel = Qt.binding(function() { return root.uiSession?.appModel })
+                                }
+                                if (item.hasOwnProperty("branchController")) {
+                                    item.branchController = Qt.binding(function() { return root.uiSession?.branchController })
+                                }
+                                if (item.hasOwnProperty("commitController")) {
+                                    item.commitController = Qt.binding(function() { return root.uiSession?.commitController })
+                                }
+                                if (item.hasOwnProperty("statusController")) {
+                                    item.statusController = Qt.binding(function() { return root.uiSession?.statusController })
+                                }
+                                if (item.hasOwnProperty("repositoryController")) {
+                                    item.repositoryController = Qt.binding(function() { return root.uiSession?.repositoryController })
+                                }
+                            }
+
+                            onStatusChanged: {
+                                if (status === Loader.Error)
+                                    console.error("[MainWindow] Failed to load page:", source)
+                            }
                         }
                     }
 
-                    onStatusChanged: {
-                        if (status === Loader.Error)
-                            console.error("[MainWindow] Failed to load page:", source)
+                    onCurrentIndexChanged: {
+                        if (!contentItem)
+                            return
+
+                        contentItem.contentX = currentIndex * width
+                    }
+
+                    Connections {
+                        target: root.uiSession?.appModel ?? null
+
+                        function onCurrentPageChanged() {
+                            pageSwipeView.currentIndex = root.uiSession?.appModel?.currentPage.pageIndex ?? 0
+                        }
                     }
                 }
             }
