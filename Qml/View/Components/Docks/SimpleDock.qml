@@ -25,6 +25,7 @@ Item {
     /* Signals
      * ****************************************************************************************/
     signal dockPositionChanged()
+    signal closeRequested()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -122,6 +123,8 @@ Item {
                             id: closeMouseArea
                             anchors.fill: parent
                             hoverEnabled: true
+
+                            onClicked: root.closeRequested()
                         }
                     }
                 }
