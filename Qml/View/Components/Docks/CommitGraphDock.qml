@@ -33,52 +33,19 @@ Item {
     property var commits: []
     property var selectedCommit: null
 
-    // Filtering state
-    // filterColumn: one of ["Message", "Author"]
-    property string filterColumn: "Message"
+    // navigation state
+    // navigationRule: one of ["Author Email", "Author", "Parent 1", "Branch"]
+    property string navigationRule: "Message"
     // Dates are inclusive; accept empty string to disable bound. Format: YYYY-MM-DD
     property string filterStartDate: ""
     property string filterEndDate: ""
     property string filterText: ""
+    property var filterMode: []  // Array of selected filter items: ["Messages", "Authors", etc.]
 
     // Empty-state helper
     readonly property bool hasAnyFilter: (root.filterText && root.filterText.trim().length > 0)
                                           || (root.filterStartDate && root.filterStartDate.trim().length > 0)
                                           || (root.filterEndDate && root.filterEndDate.trim().length > 0)
-
-    function emptyStateDetailsText() {
-        // 1) No commits in repo at all
-        if (!root.allCommits || root.allCommits.length === 0)
-            return "This repository has no commits."
-
-        // 2) Commits exist, but filter/search returned no matches
-        if (!root.hasAnyFilter)
-            return "No commits to show."
-
-        var parts = []
-
-        var needle = (root.filterText || "").trim()
-        if (needle.length > 0) {
-            var scope = (root.filterColumn === "Author") ? "author" : "message"
-            parts.push(scope + " contains '" + needle + "'")
-        }
-
-        var start = (root.filterStartDate || "").trim()
-        var end = (root.filterEndDate || "").trim()
-        if (start.length > 0 || end.length > 0) {
-            if (start.length > 0 && end.length > 0)
-                parts.push("date between " + start + " and " + end)
-            else if (start.length > 0)
-                parts.push("date from " + start)
-            else
-                parts.push("date until " + end)
-        }
-
-        if (parts.length === 0)
-            return "No commits match your filter."
-
-        return "No commits match: " + parts.join(", ")
-    }
 
     // Lazy loading (infinite scroll)
     property int pageSize: 200
@@ -112,7 +79,39 @@ Item {
 
     /* Functions
      * ****************************************************************************************/
+    function emptyStateDetailsText() {
+        // 1) No commits in repo at all
+        if (!root.allCommits || root.allCommits.length === 0)
+            return "This repository has no commits."
 
+        // 2) Commits exist, but filter/search returned no matches
+        if (!root.hasAnyFilter)
+            return "No commits to show."
+
+        var parts = []
+
+        var needle = (root.filterText || "").trim()
+        if (needle.length > 0) {
+            var scope = (root.navigationRule === "Author") ? "author" : "message"
+            parts.push(scope + " contains '" + needle + "'")
+        }
+
+        var start = (root.filterStartDate || "").trim()
+        var end = (root.filterEndDate || "").trim()
+        if (start.length > 0 || end.length > 0) {
+            if (start.length > 0 && end.length > 0)
+                parts.push("date between " + start + " and " + end)
+            else if (start.length > 0)
+                parts.push("date from " + start)
+            else
+                parts.push("date until " + end)
+        }
+
+        if (parts.length === 0)
+            return "No commits match your filter."
+
+        return "No commits match: " + parts.join(", ")
+    }
 
     function commitColor(commitObj) {
         if (!commitObj || !commitObj.colorKey)
@@ -160,15 +159,59 @@ Item {
         return new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
     }
 
-    function applyFilter(column, text, startDate, endDate) {
-        if (column !== undefined)
-            root.filterColumn = column
+    /*!
+     * Application-level filter: checks if a commit matches based on selected filter modes
+     * Returns true if the commit matches the filter criteria
+     */
+    function applicationFilter(commit, needle, modes) {
+        if (!needle || needle.length === 0)
+            return true  // No text filter, matches all
+
+        // If no modes selected, default to "Messages"
+        var activeMode = (modes && modes.length > 0) ? modes : ["Messages"]
+        
+        // Check each active filter mode
+        for (var i = 0; i < activeMode.length; i++) {
+            var mode = activeMode[i]
+            var haystack = ""
+            
+            switch(mode) {
+                case "Messages":
+                    haystack = normalizeFilterString(commit.summary) + " " + normalizeFilterString(commit.message)
+                    break
+                case "Subjects":
+                    haystack = normalizeFilterString(commit.summary)
+                    break
+                case "Authors":
+                    haystack = normalizeFilterString(commit.author)
+                    break
+                case "Emails":
+                    haystack = normalizeFilterString(commit.authorEmail)
+                    break
+                case "SHA-1":
+                    haystack = normalizeFilterString(commit.hash)
+                    break
+                default:
+                    continue
+            }
+            
+            // If any mode matches, return true
+            if (haystack.toLowerCase().indexOf(needle) !== -1)
+                return true
+        }
+        
+        return false  // No mode matched
+    }
+
+    function applyFilter(text, startDate, endDate, modes) {
         if (text !== undefined)
             root.filterText = text
         if (startDate !== undefined)
             root.filterStartDate = startDate
         if (endDate !== undefined)
             root.filterEndDate = endDate
+        if (modes !== undefined)
+            root.filterMode = modes
 
         var base = root.allCommits || []
         if (!base.length) {
@@ -180,7 +223,7 @@ Item {
 
         var startMs = parseDateYYYYMMDD(root.filterStartDate)
         var endMs = parseDateYYYYMMDD(root.filterEndDate)
-        // Make end date inclusive by moving to end-of-day
+
         if (!isNaN(endMs))
             endMs = endMs + (24 * 60 * 60 * 1000) - 1
 
@@ -199,24 +242,17 @@ Item {
                     continue
             }
 
-            // Text filter
-            if (needle.length) {
-                var hay = ""
-                if (root.filterColumn === "Author") {
-                    hay = normalizeFilterString(c.author)
-                } else {
-                    // Message
-                    hay = normalizeFilterString(c.summary) + " " + normalizeFilterString(c.message)
-                }
-
-                if (hay.toLowerCase().indexOf(needle) === -1)
-                    continue
-            }
+            // Text filter using applicationFilter
+            if (!applicationFilter(c, needle, root.filterMode))
+                continue
 
             filtered.push(c)
         }
 
         loadData(filtered)
+
+        // Auto-load more pages if filtered results are less than pageSize
+        ensureMinimumResults()
 
         // If current selection is filtered out, clear it.
         if (root.selectedCommit && root.selectedCommit.hash) {
@@ -226,11 +262,66 @@ Item {
         }
     }
 
+    /*!
+     * Ensures that filtered results meet minimum threshold by loading more pages if needed.
+     * Automatically loads additional pages until we have at least pageSize results or no more commits.
+     */
+    function ensureMinimumResults() {
+        if (!root.hasAnyFilter) {
+            return
+        }
+
+        var currentResultCount = root.commits ? root.commits.length : 0
+        
+        if (currentResultCount >= root.pageSize || !root.hasMoreCommits || root.isLoadingMore) {
+            return
+        }
+
+        loadMoreCommitsForFilter()
+    }
+
+    /*!
+     * Loads additional commits specifically for filter scenarios.
+     * Continues loading until filtered results reach pageSize or no more commits available.
+     */
+    function loadMoreCommitsForFilter() {
+        if (root.isLoadingMore || !root.hasMoreCommits) {
+            return
+        }
+
+        root.isLoadingMore = true
+
+        var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
+        var page = repositoryController.getCommits(repositoryController.appModel.currentRepository, root.pageSize, root.commitsOffset);
+        
+        if (!page || page.length === 0) {
+            root.hasMoreCommits = false
+            root.isLoadingMore = false
+            return
+        }
+
+        var compiled = compileGraphCommits(page, allBranches);
+        var commits = root.allCommits.concat(compiled)
+        root.commitsOffset = commits.length
+        root.hasMoreCommits = (page.length === root.pageSize)
+
+        root.allCommits = commits.slice(0)
+        
+        var currentText = root.filterText
+        var currentStartDate = root.filterStartDate
+        var currentEndDate = root.filterEndDate
+        var currentModes = root.filterMode
+        
+        root.isLoadingMore = false
+        
+        root.applyFilter(currentText, currentStartDate, currentEndDate, currentModes)
+    }
+
     function clearFilter() {
         root.filterText = ""
         root.filterStartDate = ""
         root.filterEndDate = ""
-        root.filterColumn = "Message"
+        root.navigationRule = "Message"
 
         loadData((root.allCommits || []).slice(0))
     }
@@ -1426,30 +1517,145 @@ Item {
         commitsListView.positionViewAtIndex(i, ListView.Contain)
     }
 
-    function selectPrevious() {
+    function selectPrevious(navigationRule) {
+        if (navigationRule !== undefined)
+            root.navigationRule = navigationRule
+        
         if (!root.commits || root.commits.length === 0)
             return
 
         var idx = selectedIndex()
-        if (idx < 0)
-            idx = 0
-        else
-            idx = Math.max(0, idx - 1)
+        if (idx < 0) {
+            selectCommitAtIndex(0)
+            return
+        }
 
-        selectCommitAtIndex(idx)
+        var currentCommit = root.selectedCommit
+        if (!currentCommit)
+            return
+
+        if (root.navigationRule === "Parent 1") {
+            for (var i = idx - 1; i >= 0; i--) {
+                var commit = root.commits[i]
+                if (commit && commit.parentHashes && commit.parentHashes.length > 0) {
+                    if (commit.parentHashes[0] === currentCommit.hash) {
+                        selectCommitAtIndex(i)
+                        return
+                    }
+                }
+            }
+            return
+        }
+
+        if (root.navigationRule === "Branch") {
+            var laneKey = currentCommit.colorKey
+            if (!laneKey)
+                return
+
+            for (var i = idx - 1; i >= 0; i--) {
+                var commit = root.commits[i]
+                if (commit && commit.colorKey === laneKey) {
+                    selectCommitAtIndex(i)
+                    return
+                }
+            }
+            return
+        }
+
+        var matchValue = getNavigationRuleValue(currentCommit, root.navigationRule)
+        
+        for (var i = idx - 1; i >= 0; i--) {
+            var commit = root.commits[i]
+            if (commit && getNavigationRuleValue(commit, root.navigationRule) === matchValue) {
+                selectCommitAtIndex(i)
+                return
+            }
+        }
     }
 
-    function selectNext() {
+    function selectNext(navigationRule) {
+        if (navigationRule !== undefined)
+            root.navigationRule = navigationRule
+        
         if (!root.commits || root.commits.length === 0)
             return
 
         var idx = selectedIndex()
-        if (idx < 0)
-            idx = 0
-        else
-            idx = Math.min(root.commits.length - 1, idx + 1)
+        if (idx < 0) {
+            selectCommitAtIndex(0)
+            return
+        }
 
-        selectCommitAtIndex(idx)
+        var currentCommit = root.selectedCommit
+        if (!currentCommit)
+            return
+
+        if (root.navigationRule === "Parent 1") {
+            if (!currentCommit.parentHashes || currentCommit.parentHashes.length === 0) {
+                return
+            }
+            
+            var parentHash = currentCommit.parentHashes[0]
+            
+            for (var i = idx + 1; i < root.commits.length; i++) {
+                var commit = root.commits[i]
+                if (commit && commit.hash === parentHash) {
+                    selectCommitAtIndex(i)
+                    return
+                }
+            }
+            return
+        }
+
+        if (root.navigationRule === "Branch") {
+            var laneKey = currentCommit.colorKey
+            if (!laneKey)
+                return
+
+            for (var i = idx + 1; i < root.commits.length; i++) {
+                var commit = root.commits[i]
+                if (commit && commit.colorKey === laneKey) {
+                    selectCommitAtIndex(i)
+                    return
+                }
+            }
+            return
+        }
+
+        var matchValue = getNavigationRuleValue(currentCommit, root.navigationRule)
+        
+        for (var i = idx + 1; i < root.commits.length; i++) {
+            var commit = root.commits[i]
+            if (commit && getNavigationRuleValue(commit, root.navigationRule) === matchValue) {
+                selectCommitAtIndex(i)
+                return
+            }
+        }
+    }
+
+    /*!
+     * Helper function to extract the value from a commit based on the navigation rule
+     */
+    function getNavigationRuleValue(commit, rule) {
+        if (!commit)
+            return null
+        
+        switch(rule) {
+            case "Author":
+                return normalizeFilterString(commit.author)
+            case "Author Email":
+                return normalizeFilterString(commit.authorEmail)
+            case "Parent 1":
+                // For Parent 1, return the first parent hash
+                return (commit.parentHashes && commit.parentHashes.length > 0) 
+                    ? commit.parentHashes[0] 
+                    : null
+            case "Branch":
+                return commit.colorKey
+            case "Message":
+            default:
+                return normalizeFilterString(commit.summary)
+        }
     }
 
     function reloadAll() {
@@ -1478,7 +1684,7 @@ Item {
 
         // Store full dataset and apply current filter
         root.allCommits = commits.slice(0)
-        root.applyFilter(root.filterColumn, root.filterText, root.filterStartDate, root.filterEndDate)
+        root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate)
     }
 
     function loadMoreCommits() {
@@ -1508,7 +1714,7 @@ Item {
         hasMoreCommits = (page.length === pageSize)
 
         root.allCommits = commits.slice(0)
-        root.applyFilter(root.filterColumn, root.filterText, root.filterStartDate, root.filterEndDate)
+        root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate)
         isLoadingMore = false
     }
 
