@@ -9,7 +9,6 @@ QtObject{
     property string arrowLeft:      "\uf060" // arrow-left
     property string arrowRight:     "\uf178" // arrow-right
     property string angleLeft:      "\uf104" // angle-left
-    property string caretDown:      "\u25BE" // caretDownn
     property string caretRight:     "\u25B8" // caretRight
     property string arrowUp:        "\uf062" // arrow-up
     property string arrowDown:      "\uf063" // arrow-down
