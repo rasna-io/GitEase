@@ -54,4 +54,15 @@ private:
                                    QStringList &newCommitShas);
 
     bool verifyBundle(const QString &bundlePath);
+
+    // collect all objects from a tree (recursively)
+    void collectTreeObjects(git_tree* tree, QSet<QString>& collectedObjects);
+
+    // collect all objects from a commit
+    void collectCommitObjects(const git_oid* commitOid, QSet<QString>& collectedObjects);
+
+    // insert only new objects into packbuilder
+    void insertNewObjects(git_packbuilder* packbuilder,
+                          const QSet<QString>& newObjects,
+                          const QSet<QString>& baseObjects);
 };
