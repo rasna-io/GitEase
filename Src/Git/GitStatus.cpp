@@ -198,12 +198,17 @@ GitResult GitStatus::getDiff(const QString &filePath)
 
     opts.flags |= GIT_DIFF_PATIENCE | GIT_DIFF_INDENT_HEURISTIC | GIT_DIFF_MINIMAL;
 
+    // every single line of the file that isn't changed as a 'Context' line.
+    opts.context_lines = 100000;
+    opts.interhunk_lines = 100000;
+
     QByteArray pathBytes = filePath.toUtf8();
     char* path = const_cast<char*>(pathBytes.constData());
     opts.pathspec.strings = &path;
     opts.pathspec.count = 1;
 
-    int error = git_diff_index_to_workdir(&diff,  m_currentRepo->repo, nullptr, &opts);
+    // This compares the Staging Area (Index) to the Local File (Workdir)
+    int error = git_diff_index_to_workdir(&diff, m_currentRepo->repo, nullptr, &opts);
 
     if (error == 0) {
         struct RawLine { char origin; int old_no; int new_no; QString content; };
@@ -230,28 +235,18 @@ GitResult GitStatus::getDiff(const QString &filePath)
                 (i + 1) < rawLines.size() &&
                 rawLines[i+1].origin == GIT_DIFF_LINE_ADDITION) {
 
-                GitDiff gitDiff = GitDiff(GitDiff::Modified, rawLines[i].old_no, rawLines[i+1].new_no,
-                        rawLines[i].content, rawLines[i+1].content);
-                result.append(gitDiff);
+                result.append(GitDiff(GitDiff::Modified, rawLines[i].old_no, rawLines[i+1].new_no,
+                                      rawLines[i].content, rawLines[i+1].content));
                 i++;
             }
             else if (rawLines[i].origin == GIT_DIFF_LINE_DELETION) {
-                GitDiff gitDiff = GitDiff(GitDiff::Deleted, rawLines[i].old_no, -1,
-                        rawLines[i].content);
-                result.append(gitDiff);
-
+                result.append(GitDiff(GitDiff::Deleted, rawLines[i].old_no, -1, rawLines[i].content));
             }
             else if (rawLines[i].origin == GIT_DIFF_LINE_ADDITION) {
-                GitDiff gitDiff = GitDiff(GitDiff::Added, -1, rawLines[i].new_no,
-                        rawLines[i].content);
-                result.append(gitDiff);
-
+                result.append(GitDiff(GitDiff::Added, -1, rawLines[i].new_no, rawLines[i].content));
             }
             else {
-                GitDiff gitDiff = GitDiff(GitDiff::Context, rawLines[i].old_no, rawLines[i].new_no,
-                        rawLines[i].content);
-
-                result.append(gitDiff);
+                result.append(GitDiff(GitDiff::Context, rawLines[i].old_no, rawLines[i].new_no, rawLines[i].content));
             }
         }
     }
