@@ -16,6 +16,8 @@ Item {
      * ****************************************************************************************/
     property var diffData: []
 
+    property bool readOnly: false
+
     /* Signals
      * ****************************************************************************************/
     signal requestStage(int start, int end, int type)
@@ -78,7 +80,7 @@ Item {
             delegate: SideBySideDiff {
                 width: diffListView.width
                 horizontalOffset: diffListView.horizontalScrollOffset
-                // Pass properties
+                readOnly: root.readOnly
                 diffType: model.type
                 leftContent: model.leftText
                 rightContent: model.rightText
