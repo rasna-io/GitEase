@@ -17,6 +17,11 @@ QtObject {
         appModel: root.appModel
     }
 
+
+    property LayoutController     layoutController:     LayoutController {
+
+    }
+
     property RepositoryController repositoryController: RepositoryController {
         appModel: root.appModel
         onCurrentRepoChanged: {
