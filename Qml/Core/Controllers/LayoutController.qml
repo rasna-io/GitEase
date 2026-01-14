@@ -12,6 +12,7 @@ QtObject {
 
     /* Property Declarations
      * ****************************************************************************************/
+    required property var pageLayouts
     property var defaultLayouts: ({})
     property var customLayouts: ({})
 

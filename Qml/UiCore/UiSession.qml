@@ -17,9 +17,8 @@ QtObject {
         appModel: root.appModel
     }
 
-
     property LayoutController     layoutController:     LayoutController {
-
+        pageLayouts : root.appModel?.pageLayouts
     }
 
     property RepositoryController repositoryController: RepositoryController {
