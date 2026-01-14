@@ -13,8 +13,9 @@ import GitEase
 
 DockAblePage {
     id: root
-    anchors.fill: parent
 
+    /* Property Declarations
+     * ****************************************************************************************/
     // Provided by MainWindow Loader (current Page model)
     property var page: null
 
