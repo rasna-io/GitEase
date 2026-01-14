@@ -25,6 +25,8 @@ Item {
 
     property                Page              currentPage:              null
 
+    property                var               pageLayouts:              []
+
 
     /* Signals
      * ****************************************************************************************/
@@ -48,6 +50,9 @@ Item {
         fileIO.fileContent = jsonContent
         fileIO.write()
         console.info("[Config] Configuration successfully saved.");
+
+        // TODO
+        // SaveLayouts
     }
 
     /**
@@ -73,6 +78,9 @@ Item {
         root.recentRepositories = jsonContent.recentRepositories
 
         console.info("[Config] Configuration successfully loaded.");
+
+        // TODO
+        // LoadLayouts
     }
 
     /**
