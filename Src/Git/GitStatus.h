@@ -1,12 +1,29 @@
 #pragma once
 
 #include <QObject>
+#include <memory>
+#include <vector>
+#include <QString>
 
+#include <git2/blob.h>
 #include <git2/diff.h>
+#include <git2/patch.h>
+#include <git2/index.h>
 
 #include "GitFileStatus.h"
 #include "GitResult.h"
 #include "IGitController.h"
+
+// Smart pointer deleters for libgit2 types
+struct IndexDeleter { void operator()(git_index* p) const { git_index_free(p); } };
+struct BlobDeleter  { void operator()(git_blob* p)  const { git_blob_free(p);  } };
+struct DiffDeleter  { void operator()(git_diff* p)  const { git_diff_free(p);  } };
+struct PatchDeleter { void operator()(git_patch* p) const { git_patch_free(p); } };
+
+using UniqueIndex = std::unique_ptr<git_index, IndexDeleter>;
+using UniqueBlob  = std::unique_ptr<git_blob,  BlobDeleter>;
+using UniqueDiff  = std::unique_ptr<git_diff,  DiffDeleter>;
+using UniquePatch = std::unique_ptr<git_patch, PatchDeleter>;
 
 class GitStatus : public IGitController
 {
@@ -104,6 +121,12 @@ public:
     */
     Q_INVOKABLE GitResult getCommitFileChanges(const QString &commitHash);
 
+    /**
+     * @brief Prepares a side-by-side diff view compatible with the QML DiffDelegate.
+     * @param filePath Path to the file to inspect.
+     */
+    Q_INVOKABLE GitResult getDiffView(const QString& filePath);
+
 private:
     /**
      * \brief Helper method to create a diff between two trees (commit snapshots).
@@ -126,5 +149,54 @@ private:
      */
     QList<GitFileStatus> processDiff(git_diff *diff);
 
-};
+    /**
+     * @brief Retrieves the blob from the current index for a specific file.
+     * @param repo Pointer to the active repository.
+     * @param filePath Path of the file.
+     * @param outMode Pointer to store the file mode (permissions).
+     * @return Unique pointer to the git_blob.
+     */
+    UniqueBlob getIndexBlob(git_repository *repo, const QString &filePath, uint32_t *outMode);
 
+    /**
+     * @brief Converts a git_blob into a list of strings (one per line).
+     * @param blob The git blob to read.
+     * @return A vector of line contents.
+     */
+    std::vector<QString> readBlobLines(git_blob *blob);
+
+    /**
+     * @brief Splits a raw string into a vector of lines, preserving empty lines.
+     * @param raw The raw content string.
+     * @return A vector of strings split by newline characters.
+     */
+    std::vector<QString> splitLines(const QString &raw);
+
+    /**
+     * @brief Joins a vector of lines back into a single newline-delimited string.
+     * @param lines The lines to join.
+     * @return A single formatted string.
+     */
+    QString joinLines(const std::vector<QString> &lines);
+
+    /**
+     * @brief Reads the actual file content currently on disk (Working Directory).
+     * @param repo Pointer to the active repository.
+     * @param filePath Path of the file.
+     * @return A vector of lines from the physical file.
+     */
+    std::vector<QString> readWorkdirLines(git_repository *repo, const QString &filePath);
+
+    /**
+     * @brief Internal logic to merge a specific patch range into a set of base lines.
+     * @param indexLines The current lines stored in the Git Index.
+     * @param patch The diff patch containing the new changes.
+     * @param startLine The selection start.
+     * @param endLine The selection end.
+     * @return The resulting lines after the selective application.
+     */
+    std::vector<QString> applySelectedFromPatch(const std::vector<QString>& indexLines,
+                                                git_patch* patch,
+                                                int startLine,
+                                                int endLine);
+};
