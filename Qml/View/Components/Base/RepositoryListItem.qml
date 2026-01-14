@@ -42,7 +42,7 @@ Rectangle {
             if (isSelected)
                 return Style.colors.accent
             else
-                return Style.colors.surfaceLight
+                return Style.colors.secondaryBackground
         }
     }
 

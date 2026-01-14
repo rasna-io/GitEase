@@ -37,6 +37,8 @@ Item {
 
     property real progress: 0
 
+    property string defaultPath: ""
+
 
 
     /* Signals
@@ -149,6 +151,7 @@ Item {
                 FolderDialog {
                     id: folderDialog
                     title: "Select Repository Folder"
+                    currentFolder: root.defaultPath
 
                     onAccepted: {
                         var selectedFolder = folderDialog.selectedFolder

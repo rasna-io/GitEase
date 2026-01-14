@@ -30,4 +30,8 @@ QtObject{
     property string trash:          "\uf1f8" // trash
     property string file:           "\uf15b" // file
     property string archive:        "\uf187" // archive
+
+    property string palette:        "\uf53f"
+    property string terminal:       "\uf120"
+    property string slider:         "\uf1de"
 }

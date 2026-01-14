@@ -10,7 +10,7 @@ import GitEase
  * WindowsHeader
  * ************************************************************************************************/
 Rectangle {
-    color: "#F9F9F9"
+    color: Style.colors.primaryBackground
     
     RowLayout {
         anchors.centerIn: parent

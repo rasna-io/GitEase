@@ -18,7 +18,8 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    color: "#F9F9F9"
+    color: Style.colors.primaryBackground
+
 
     /* Children
      * ****************************************************************************************/
@@ -51,7 +52,14 @@ Rectangle {
                     let popup = root.uiSession?.popups?.repositorySelectorPopup
                     popup.repositoryController = Qt.binding(function () {return uiSession.repositoryController})
                     popup.recentRepositories = Qt.binding(function () {return uiSession.appModel.recentRepositories})
+                    popup.appModel = Qt.binding(function () {return uiSession.appModel})
                     popup.open()
+                }
+                onOpenSettingsRequested: {
+                    let settingsPopup = root.uiSession?.popups?.settingsPopup
+                    settingsPopup.appModel = root.uiSession.appModel
+                    settingsPopup.fileIO = root.uiSession.appModel.fileIO
+                    settingsPopup.open()
                 }
             }
 
@@ -63,9 +71,7 @@ Rectangle {
                 Layout.leftMargin: -2
                 Layout.bottomMargin: 4
 
-                color: "#FFFFFF"
-                border.color: "#F3F3F3"
-                border.width: 1
+                color: Style.colors.primaryBackground
                 radius: 6
 
                 Loader {

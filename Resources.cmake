@@ -5,6 +5,8 @@ set(RESOURCES_CORE
     # Application Models
     Qml/Core/Models/AppModel.qml              # Main application data model
     Qml/Core/Models/AppSettings.qml           # Application settings (singleton)
+    Qml/Core/Models/GeneralSettings.qml
+    Qml/Core/Models/AppearanceSettings.qml
     Qml/Core/Models/Enums.qml
     Qml/Core/Models/Repository.qml
     Qml/Core/Models/Page.qml
@@ -78,6 +80,12 @@ set(RESOURCES_COMPONENTS
 
     # DockPanel Docks
     Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
+
+
+    Qml/View/Components/Settings/CheckboxItem.qml
+    Qml/View/Components/Settings/PathSelectorItem.qml
+    Qml/View/Components/Settings/TextFieldItem.qml
+    Qml/View/Components/Settings/ComboboxItem.qml
 )
 
 
@@ -92,6 +100,8 @@ set(RESOURCES_POPUPS
     # Popup components will be added here as they are created
     Qml/View/Popups/RepositorySelectorPopup.qml
     Qml/View/Popups/ItemSelectorPopup.qml           # Select Item popup
+    Qml/View/Popups/SettingsPopup.qml
+    Qml/View/Popups/IPopup.qml
 )
 
 

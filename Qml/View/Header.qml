@@ -69,7 +69,7 @@ ColumnLayout {
         Layout.rightMargin: 4
         Layout.leftMargin: 4
         
-        color: "#074E96"
+        color: Style.colors.accent
         radius: 3
     }
 }

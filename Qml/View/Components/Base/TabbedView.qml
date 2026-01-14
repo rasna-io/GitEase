@@ -46,7 +46,7 @@ ColumnLayout {
         width: tabBarMaxWidth
         Layout.preferredHeight: 45
         Layout.alignment: Qt.AlignHCenter
-        color: Style.colors.surfaceLight
+        color: Style.colors.secondaryBackground
         radius: 8
 
         RowLayout {
@@ -98,7 +98,7 @@ ColumnLayout {
                         implicitWidth: 100
                         implicitHeight: 36
                         radius: 6
-                        color: tabButton.checked ? Style.colors.accent : Style.colors.surfaceMuted
+                        color: tabButton.checked ? Style.colors.accent : Style.colors.surfaceLight
                         Behavior on color { ColorAnimation { duration: 150 } }
                     }
 

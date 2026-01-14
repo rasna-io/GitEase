@@ -28,7 +28,7 @@ ApplicationWindow {
     width: 523
     height: 475
     visible: true
-    color: "transparent"
+    color: Style.colors.primaryBackground
     title: qsTr("GitEase")
 
 
@@ -59,16 +59,7 @@ ApplicationWindow {
         id: mainContentLoader
         anchors.fill: parent
 
-        sourceComponent: {
-            // Check flag before creating components
-            if (AppSettings.hasCompletedWelcome) {
-                return mainApplicationComponent
-            } else {
-                return welcomeFlowComponent
-            }
-        }
-
-        // sourceComponent:
+        sourceComponent: welcomeFlowComponent
     }
 
     // Welcome Flow Component
@@ -81,8 +72,11 @@ ApplicationWindow {
             WelcomeController {
                 id: welcomeController
 
+                currentPageIndex: uiSession.appModel.appSettings.hasCompletedWelcome ? Enums.WelcomePages.OpenRepository : Enums.WelcomePages.WelcomeBanner
                 onWelcomeFlowCompleted: {
-                    AppSettings.hasCompletedWelcome = true
+                    uiSession.appModel.appSettings.hasCompletedWelcome = true
+                    uiSession.appModel.save()
+                    mainContentLoader.sourceComponent = mainApplicationComponent
                 }
             }
 

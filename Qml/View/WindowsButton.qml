@@ -31,7 +31,7 @@ Rectangle {
     radius: 3
     color: msa.containsMouse ? Material.accent : Material.background
 
-    Material.background: "#F9F9F9"
+    Material.background: Style.colors.secondaryBackground
     
 
     /* Children

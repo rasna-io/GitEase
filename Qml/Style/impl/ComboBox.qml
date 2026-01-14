@@ -82,7 +82,7 @@ T.ComboBox {
         implicitHeight: control.minHeight
         radius: 5
         border.width: control.activeFocus ? control.focusBorderWidth : control.borderWidth
-        color: control.palette.base
+        color: Material.background
         border.color: control.error ? Style.colors.error
                                     : control.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
     }

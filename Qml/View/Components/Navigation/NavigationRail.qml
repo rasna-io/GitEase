@@ -30,6 +30,7 @@ Rectangle {
      * ****************************************************************************************/
     signal newRepositoryRequested()
 
+    signal openSettingsRequested()
 
 
     // HoverHandler reliably tracks hover even with complex children.
@@ -76,7 +77,7 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    color: "#F9F9F9"
+    color: Style.colors.secondaryBackground
 
     /* Children
      * ****************************************************************************************/
@@ -90,17 +91,22 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            color: "#F9F9F9"
-
-            pageController: root.pageController
+            color: Style.colors.secondaryBackground
+            model: root.appModel?.pages
             expanded: root.expanded
+            currentId: root.appModel.currentPage.id
+            onClicked:(modelData)=> {
+                if (pageController && modelData) {
+                    pageController.switchToPage(modelData.id)
+                }
+            }
         }
 
         // Repositories Sidebar (Middle section)
         RepositoriesSidebar {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: "#F9F9F9"
+            color: Style.colors.secondaryBackground
 
             expanded: root.expanded
             repositoryController: root.repositoryController
@@ -179,8 +185,8 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 hoverEnabled: true
 
-                // onClicked: // TODO
-                onEntered: parent.color = Qt.darker("#F3F3F3", 1.3)
+                onClicked: root.openSettingsRequested()
+                onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
                 onExited: parent.color = "transparent"
             }
         }
@@ -240,7 +246,7 @@ Rectangle {
                 hoverEnabled: true
 
                 // onClicked: // TODO
-                onEntered: parent.color = Qt.darker("#F3F3F3", 1.3)
+                onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
                 onExited: parent.color = "transparent"
             }
         }

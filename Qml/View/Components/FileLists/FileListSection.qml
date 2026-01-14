@@ -59,7 +59,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: root.headerHeight
-            color: headerMouseArea.containsMouse ? Qt.darker("#F9F9F9", 1.03) : "#F9F9F9"
+            color: headerMouseArea.containsMouse ? Qt.darker(Style.colors.secondaryBackground, 1.03) : Style.colors.secondaryBackground
 
             MouseArea {
                 id: headerMouseArea
@@ -138,7 +138,7 @@ Rectangle {
             Layout.preferredHeight: !root.expanded ? 0 : ((listView.count === 0) ? root.emptyExpandedHeight : -1)
             visible: root.expanded
             opacity: root.expanded ? 1 : 0
-            color: "#F9F9F9"
+            color: Style.colors.secondaryBackground
             clip: true
 
             Behavior on opacity {

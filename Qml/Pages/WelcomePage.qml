@@ -31,8 +31,6 @@ Rectangle {
     color: Style.colors.primaryBackground
     radius: 16
     clip: true
-    border.color: Style.colors.accent
-    border.width: 1
 
     /* Children
      * ****************************************************************************************/
@@ -89,6 +87,7 @@ Rectangle {
                     recentRepositories: appModel.recentRepositories
                     onCloneFinished:  root.controller.completeWelcomeFlow()
                     repositoryController: root.repositoryController
+                    defaultPath: appModel.appSettings.generalSettings.defaultPath
                 }
             }
         }
