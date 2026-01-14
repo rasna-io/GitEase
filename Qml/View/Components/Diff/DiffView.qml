@@ -18,6 +18,7 @@ Item {
 
     /* Signals
      * ****************************************************************************************/
+    signal requestStage(int start, int end, int type)
 
 
     /* Children
@@ -90,7 +91,9 @@ Item {
 
                 isCurrentItem: ListView.isCurrentItem
 
-                onStageHunk:function(linesToStage) {root.stageHunk(linesToStage)}
+                onRequestStage: function (start, end, type) {
+                    root.requestStage(start, end, type)
+                }
             }
         }
 

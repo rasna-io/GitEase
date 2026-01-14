@@ -126,6 +126,18 @@ public:
      * @param filePath Path to the file to inspect.
      */
     Q_INVOKABLE GitResult getDiffView(const QString& filePath);
+    
+    /**
+     * @brief Surgically stages a specific range of lines from a file.
+     * * This allows for "hunk staging" where only specific changes are moved to the index
+     * while other changes in the same file remain in the working directory.
+     * * @param filePath Relative path of the file.
+     * @param startLine The first line number in the range.
+     * @param endLine The last line number in the range.
+     * @param mode The Git delta type (1: Added, 2: Deleted, 4: Modified).
+     * @return GitResult indicating success or failure of the partial stage.
+     */
+    Q_INVOKABLE GitResult stageSelectedLines(const QString &filePath, int startLine, int endLine, int mode);
 
 private:
     /**
@@ -199,4 +211,16 @@ private:
                                                 git_patch* patch,
                                                 int startLine,
                                                 int endLine);
+
+    /**
+    * @brief Directly updates the Git index with provided buffer content.
+    * * Writes content to the object database and updates the index entry for filePath.
+    * Used for partial staging where index content differs from the physical file.
+    * * @param repo Active repository.
+    * @param filePath Relative path of the file.
+    * @param contentUtf8 New index content.
+    * @param modeIfKnown File mode (e.g., 0100644). If 0, standard file mode is used.
+    * @return GitResult success status.
+    */
+    GitResult writeIndexFromBuffer(git_repository *repo, const QString &filePath, const QByteArray &contentUtf8, uint32_t modeIfKnown);
 };

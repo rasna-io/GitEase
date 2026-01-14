@@ -38,6 +38,7 @@ Item {
     signal requestMergeUp()
     signal requestFocusNext()
     signal requestFocusPrev()
+    signal requestStage(int start, int end, int type)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -159,7 +160,9 @@ Item {
                         hoverEnabled: true
                         cursorShape: "PointingHandCursor"
                         onClicked: {
+                            let range = getRange()
 
+                            requestStage(range.start, range.end, range.type);
                         }
                     }
                 }
@@ -288,5 +291,28 @@ Item {
                 }
             }
         }
+    }
+
+
+    function getRange() {
+        let startIdx = index;
+        let endIdx = index;
+
+        // Look ahead to find the end of the consecutive change block
+        for (var i = index; i < fileModel.count; i++) {
+            if (fileModel.get(i).type !== GitDiff.Context) {
+                endIdx = i;
+            } else {
+                break;
+            }
+        }
+
+        let firstItem = fileModel.get(startIdx);
+        let lastItem = fileModel.get(endIdx);
+
+        let gitStart = firstItem.oldLineNum > 0 ? firstItem.oldLineNum : firstItem.newLineNum;
+        let gitEnd = lastItem.oldLineNum > 0 ? lastItem.oldLineNum : lastItem.newLineNum;
+
+        return {start : gitStart, end: gitEnd, type: firstItem.type}
     }
 }
