@@ -117,6 +117,13 @@ Item {
 
                         onOpenFileRequested: function(filePath) {
                             console.log("Open file (placeholder):", filePath)
+
+                            root.selectedFilePath = filePath;
+
+                            let res = root.statusController.getDiffView(filePath)
+                            if (res.success) {
+                                diffView.diffData = res.data.lines
+                            }
                         }
 
                         onStageAllRequested: function() {
@@ -161,13 +168,9 @@ Item {
             Layout.preferredWidth: root.width * 2 / 3
             color: "transparent"
 
-            Text {
-                anchors.centerIn: parent
-                text: root.selectedFilePath === "" ? "Diff (placeholder)" : ("Diff (placeholder)\n" + root.selectedFilePath)
-                horizontalAlignment: Text.AlignHCenter
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
-                color: Style.colors.placeholderText
+            DiffView {
+                id: diffView
+                anchors.fill: parent
             }
         }
     }
