@@ -253,9 +253,12 @@ Item {
                         padding: 0
                         leftPadding: 8
                         topPadding: 2
-
+                        selectionColor: Style.colors.accent
+                        selectedTextColor: Style.colors.secondaryForeground
                         background: null
                         selectByMouse: true
+
+                        Material.accent: Style.colors.accent
 
                         Keys.onPressed: (event) => {
                                             // Enter Key -> Split Line
