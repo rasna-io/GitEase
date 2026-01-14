@@ -23,13 +23,15 @@ Item {
     property bool isCurrentItem: false
     property var fileModel
 
+    property bool readOnly: false
+
     property real horizontalOffset: 0
 
     readonly property bool isAdd: diffType === GitDiff.Added
     readonly property bool isDel: diffType === GitDiff.Deleted
     readonly property bool isMod: diffType === GitDiff.Modified
     readonly property bool isUnchanged: diffType === GitDiff.Context
-    readonly property bool hasAction: !isUnchanged && (index === 0 || fileModel.get(index - 1).type === GitDiff.Context)
+    readonly property bool hasAction: !readOnly && !isUnchanged && (index === 0 || fileModel.get(index - 1).type === GitDiff.Context)
 
 
     /* Signals
@@ -257,6 +259,7 @@ Item {
                         selectedTextColor: Style.colors.secondaryForeground
                         background: null
                         selectByMouse: true
+                        readOnly: delegateRoot.readOnly
 
                         Material.accent: Style.colors.accent
 

@@ -534,6 +534,7 @@ Item {
                     DiffView {
                         id: diffView
                         anchors.fill: parent
+                        readOnly: true
                     }
                 }
             }
