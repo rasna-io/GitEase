@@ -29,6 +29,8 @@ Item {
     readonly property real defaultWidth: 300
     readonly property real defaultHeight: 180
 
+    readonly property real minCenterSize: 200
+
     /* Children
      * ****************************************************************************************/
     onDocksChanged: {
@@ -72,19 +74,17 @@ Item {
         // Left docks
         Item {
             id: leftColumn
-            width: root.leftSideTabGroupDocks.length > 0 ? root.defaultWidth : 0
+            width: root.leftSideTabGroupDocks.length > 0 ? leftTabGroup.preferredSize : 0
             height: parent.height
 
-            // Group docks with TabGroupSide
-            Item {
-                width: leftColumn.width
-                height: leftColumn.height
-                visible: root.leftSideTabGroupDocks.length > 0
-
-                TabGroupSide {
-                    anchors.fill: parent
-                    docks: root.leftSideTabGroupDocks
-                }
+            TabGroupSide {
+                id: leftTabGroup
+                anchors.fill: parent
+                position: Enums.DockPosition.Left
+                docks: root.leftSideTabGroupDocks
+                preferredSize: root.defaultWidth
+                minPreferredSize: 160
+                maxPreferredSize: Math.max(minPreferredSize, root.width - (root.rightSideTabGroupDocks.length > 0 ? rightTabGroup.preferredSize : 0) - root.minCenterSize)
             }
         }
 
@@ -98,18 +98,16 @@ Item {
             Item {
                 id: topArea
                 width: parent.width
-                height: root.topSideTabGroupDocks.length > 0 ? root.defaultHeight : 0
+                height: root.topSideTabGroupDocks.length > 0 ? topTabGroup.preferredSize : 0
 
-                // Group docks with TabGroupSide
-                Item {
-                    width: topArea.width
-                    height: topArea.height
-                    visible: root.topSideTabGroupDocks.length > 0
-
-                    TabGroupSide {
-                        anchors.fill: parent
-                        docks: root.topSideTabGroupDocks
-                    }
+                TabGroupSide {
+                    id: topTabGroup
+                    anchors.fill: parent
+                    position: Enums.DockPosition.Top
+                    docks: root.topSideTabGroupDocks
+                    preferredSize: root.defaultHeight
+                    minPreferredSize: 120
+                    maxPreferredSize: Math.max(minPreferredSize, root.height - (root.bottomSideTabGroupDocks.length > 0 ? bottomTabGroup.preferredSize : 0) - root.minCenterSize)
                 }
             }
 
@@ -137,18 +135,16 @@ Item {
             Item {
                 id: bottomArea
                 width: parent.width
-                height: root.bottomSideTabGroupDocks.length > 0 ? root.defaultHeight : 0
+                height: root.bottomSideTabGroupDocks.length > 0 ? bottomTabGroup.preferredSize : 0
 
-                // Group docks with TabGroupSide
-                Item {
-                    width: bottomArea.width
-                    height: bottomArea.height
-                    visible: root.bottomSideTabGroupDocks.length > 0
-
-                    TabGroupSide {
-                        anchors.fill: parent
-                        docks: root.bottomSideTabGroupDocks
-                    }
+                TabGroupSide {
+                    id: bottomTabGroup
+                    anchors.fill: parent
+                    position: Enums.DockPosition.Bottom
+                    docks: root.bottomSideTabGroupDocks
+                    preferredSize: root.defaultHeight
+                    minPreferredSize: 120
+                    maxPreferredSize: Math.max(minPreferredSize, root.height - (root.topSideTabGroupDocks.length > 0 ? topTabGroup.preferredSize : 0) - root.minCenterSize)
                 }
             }
         }
@@ -156,19 +152,17 @@ Item {
         // Right docks
         Item {
             id: rightColumn
-            width:  root.rightSideTabGroupDocks.length > 0 ? root.defaultWidth : 0
+            width:  root.rightSideTabGroupDocks.length > 0 ? rightTabGroup.preferredSize : 0
             height: parent.height
 
-            // Group docks with TabGroupSide
-            Item {
-                width: rightColumn.width
-                height: rightColumn.height
-                visible: root.rightSideTabGroupDocks.length > 0
-
-                TabGroupSide {
-                    anchors.fill: parent
-                    docks: root.rightSideTabGroupDocks
-                }
+            TabGroupSide {
+                id: rightTabGroup
+                anchors.fill: parent
+                position: Enums.DockPosition.Right
+                docks: root.rightSideTabGroupDocks
+                preferredSize: root.defaultWidth
+                minPreferredSize: 160
+                maxPreferredSize: Math.max(minPreferredSize, root.width - (root.leftSideTabGroupDocks.length > 0 ? leftTabGroup.preferredSize : 0) - root.minCenterSize)
             }
         }
     }
