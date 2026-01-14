@@ -46,10 +46,11 @@ Item {
         radius: 6
         border.color: root.isFloating ? "#c9c9c9" : "transparent"
         border.width: root.isDragging ? 1.8 : 1
+        opacity: root.isDragging ? 0.8 : 1
 
         Behavior on opacity {
             NumberAnimation {
-                duration: 150
+                duration: 100
             }
         }
         
