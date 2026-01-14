@@ -1,6 +1,8 @@
 #include "GitStatus.h"
 #include "GitDiff.h"
 #include "GitFileStatus.h"
+#include <QDir>
+#include <QFile>
 #include <git2.h>
 
 GitStatus::GitStatus(QObject *parent)
@@ -416,6 +418,104 @@ GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
     return GitResult(true, QVariant::fromValue(fileChanges), "File changes retrieved successfully.");
 }
 
+GitResult GitStatus::getDiffView(const QString &filePath)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    // old/index text
+    uint32_t mode = 0;
+    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &mode);
+    QString oldText;
+    if (indexBlob) {
+        oldText = joinLines(readBlobLines(indexBlob.get()));
+    } else {
+        oldText = "";
+    }
+
+    // new/workdir text
+    QString newText = joinLines(readWorkdirLines(m_currentRepo->repo, filePath));
+
+    // diff lines (existing)
+    GitResult diffRes = getDiff(filePath);
+    if (!diffRes.success())
+        return diffRes;
+
+    QVariantMap out;
+    out["oldText"] = oldText;
+    out["newText"] = newText;
+    out["lines"] = diffRes.data();
+
+    return GitResult(true, out);
+}
+
+std::vector<QString> GitStatus::readWorkdirLines(git_repository* repo, const QString& filePath)
+{
+    const char* wd = git_repository_workdir(repo);
+    if (!wd) return {};
+
+    const QString absPath = QDir(QString::fromUtf8(wd)).filePath(filePath);
+    QFile f(absPath);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
+        return {};
+
+    QTextStream in(&f);
+    QString raw = in.readAll();
+    return splitLines(raw);
+}
+
+std::vector<QString> GitStatus::readBlobLines(git_blob *blob)
+{
+    if (!blob) return {};
+    const char* content = static_cast<const char*>(git_blob_rawcontent(blob));
+    const size_t size   = git_blob_rawsize(blob);
+    const QString raw   = QString::fromUtf8(content, (int)size);
+    return splitLines(raw);
+}
+
+std::vector<QString> GitStatus::splitLines(const QString& raw)
+{
+    QString s = raw;
+    s.replace("\r\n", "\n").replace('\r', '\n');
+    const QStringList ql = s.split('\n', Qt::KeepEmptyParts);
+
+    std::vector<QString> out;
+    out.reserve(ql.size());
+    for (const auto& x : ql) out.push_back(x);
+    return out;
+}
+
+QString GitStatus::joinLines(const std::vector<QString>& lines)
+{
+    QString out;
+    out.reserve(4096);
+    for (int i = 0; i < (int)lines.size(); ++i) {
+        out += lines[(size_t)i];
+        if (i + 1 < (int)lines.size()) out += '\n';
+    }
+    return out;
+}
+
+UniqueBlob GitStatus::getIndexBlob(git_repository* repo, const QString& filePath, uint32_t* outMode)
+{
+    git_index* idxRaw = nullptr;
+    if (git_repository_index(&idxRaw, repo) != GIT_OK)
+        return UniqueBlob(nullptr);
+
+    UniqueIndex idx(idxRaw);
+
+    QByteArray p = filePath.toUtf8();
+    const git_index_entry* ent = git_index_get_bypath(idx.get(), p.constData(), 0);
+    if (!ent) return UniqueBlob(nullptr);
+
+    if (outMode) *outMode = ent->mode;
+
+    git_blob* blob = nullptr;
+    if (git_blob_lookup(&blob, repo, &ent->id) != GIT_OK)
+        return UniqueBlob(nullptr);
+
+    return UniqueBlob(blob);
+}
 
 GitResult GitStatus::getDiffBetweenTrees(git_tree* oldTree, git_tree* newTree, git_diff*& diff)
 {
