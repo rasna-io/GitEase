@@ -38,15 +38,14 @@ Item {
      * ****************************************************************************************/
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 8
-        anchors.topMargin: 32
+        anchors.margins: 5
+        anchors.topMargin: 5
         spacing: 12
 
         // Left panel: two stacked placeholders
         Rectangle {
             Layout.fillHeight: true
-            Layout.fillWidth: true
-            Layout.preferredWidth: root.width / 3
+            Layout.preferredWidth: 330
             color: "transparent"
 
             ColumnLayout {
@@ -306,7 +305,6 @@ Item {
         Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
-            Layout.preferredWidth: root.width * 2 / 3
             color: "transparent"
 
             DiffView {
