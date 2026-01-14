@@ -19,6 +19,7 @@ Item {
     /* Signals
      * ****************************************************************************************/
     signal requestStage(int start, int end, int type)
+    signal requestRevert(int start, int end, int type)
 
 
     /* Children
@@ -93,6 +94,9 @@ Item {
 
                 onRequestStage: function (start, end, type) {
                     root.requestStage(start, end, type)
+                }
+                onRequestRevert: function (start, end, type) {
+                    root.requestRevert(start, end, type)
                 }
             }
         }

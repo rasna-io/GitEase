@@ -97,34 +97,23 @@ Item {
                         }
 
                         onUnstageFileRequested: function(filePath) {
-
                             //TODO Not rest head
                             statusController.unstageFile(filePath)
                             root.update()
                         }
 
                         onDiscardFileRequested: function(filePath) {
-                            const src = fileListsPanel.unstagedChanges
-                            const idx = src.findIndex(function(it) { return it.path === filePath })
-                            if (idx < 0)
-                                return
-
-                            fileListsPanel.unstagedChanges = src.slice(0, idx).concat(src.slice(idx + 1))
-
-                            if (root.selectedFilePath === filePath)
-                                root.selectedFilePath = ""
+                            statusController.revertFile(filePath)
+                            root.update()
                         }
 
                         onOpenFileRequested: function(filePath) {
                             console.log("Open file (placeholder):", filePath)
                             root.selectedFilePath = filePath;
                             updateDiff()
-
                         }
 
                         onStageAllRequested: function() {
-
-
                             statusController.stageAll()
                             root.update()
                         }
@@ -137,9 +126,8 @@ Item {
                         }
 
                         onDiscardAllRequested: function() {
-                            fileListsPanel.unstagedChanges = []
-                            if (root.selectedFilePath !== "" && root.selectedFilePath !== null)
-                                root.selectedFilePath = ""
+                            statusController.revertAll()
+                            root.update()
                         }
 
                         onStashAllRequested: function(section) {
@@ -171,9 +159,12 @@ Item {
                 anchors.fill: parent
                 onRequestStage: function (start, end, type) {
                     root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
-
                     root.update()
-                    updateDiff()
+                }
+
+                onRequestRevert: function (start, end, type) {
+                    root.statusController.revertSelectedLines(root.selectedFilePath, start, end, type)
+                    root.update()
                 }
             }
         }
@@ -186,7 +177,7 @@ Item {
         }
     }
 
-    function update() {
+    function updateStatus() {
         let res = statusController.status()
 
         if (!res.success)
@@ -205,5 +196,10 @@ Item {
 
         fileListsPanel.unstagedChanges = fileListsPanel.unstagedChanges.slice(0)
         fileListsPanel.stagedChanges = fileListsPanel.stagedChanges.slice(0)
+    }
+
+    function update() {
+        updateStatus()
+        updateDiff()
     }
 }
