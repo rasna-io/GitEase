@@ -23,7 +23,30 @@ GitResult GitStatus::unstageFile(const QString &filePath)
     if (filePath.isEmpty())
         return GitResult(false, QVariant(), "File path cannot be empty");
 
-    return addToIndex(filePath, true);  // Unstage the file
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    // Get the HEAD commit to use as the reset source
+    git_object *head_obj = nullptr;
+    int error = git_revparse_single(&head_obj, m_currentRepo->repo, "HEAD");
+    if (error != GIT_OK) {
+        // If there is no HEAD (empty repo), we just remove the path from the index
+        return addToIndex(filePath, true);
+    }
+
+    QByteArray pathUtf8 = filePath.toUtf8();
+    char* paths[] = { pathUtf8.data() };
+    git_strarray array = { paths, 1 };
+
+    // Reset the Index entry for this path to match the HEAD version
+    error = git_reset_default(m_currentRepo->repo, head_obj, &array);
+    git_object_free(head_obj);
+
+    if (error != GIT_OK) {
+        return GitResult(false, QVariant(), "Failed to reset index for file.");
+    }
+
+    return GitResult(true, filePath, "File unstaged successfully.");
 }
 
 GitResult GitStatus::stageAll(bool includeUntrackedFiles)
@@ -105,38 +128,6 @@ GitResult GitStatus::status()
     }
 
     return GitResult(true, QVariant::fromValue(fileInfos));
-}
-
-
-GitResult GitStatus::unstageAll()
-{
-
-    GitResult statusResult = status();
-    if (!statusResult.success()) {
-        return GitResult(false, QVariant(), statusResult.errorMessage());
-    }
-
-    QList<GitFileStatus> files = statusResult.data().value<QList<GitFileStatus>>();
-
-    int unstagedCount = 0;
-    QStringList unstagedFiles;
-
-    for (const GitFileStatus& file : files) {
-
-        if (file.isStaged()) {
-            GitResult result = addToIndex(file.path(), true);
-            if (result.success()) {
-                unstagedCount++;
-                unstagedFiles.append(file.path());
-            }
-        }
-    }
-
-    QVariantMap resultData;
-    resultData["count"] = unstagedCount;
-    resultData["files"] = unstagedFiles;
-
-    return GitResult(true, resultData, "All files unstaged successfully.");
 }
 
 GitResult GitStatus::getStagedFiles()

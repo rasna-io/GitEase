@@ -55,12 +55,6 @@ public:
     Q_INVOKABLE GitResult stageAll(bool includeUntrackedFiles = true);
 
     /**
-     * \brief Unstage all staged changes
-     * \return GitResult with count of unstaged files
-     */
-    Q_INVOKABLE GitResult unstageAll();
-
-    /**
      * \brief Get list of currently staged files
      * \return GitResult with staged files list
      */
