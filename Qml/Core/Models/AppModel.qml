@@ -1,6 +1,7 @@
 import QtQuick
 
 import GitEase
+import GitEase_Style
 
 /*! ***********************************************************************************************
  * AppModel
@@ -25,6 +26,8 @@ Item {
 
     property                Page              currentPage:              null
 
+    property                AppSettings       appSettings:              AppSettings {}
+
 
     /* Signals
      * ****************************************************************************************/
@@ -41,9 +44,12 @@ Item {
 
         let config = {
             recentRepositories: root.recentRepositories,
+            settings: root.appSettings.serialize()
         }
 
+
         let jsonContent = JSON.stringify(config, null, 2);
+
         fileIO.fileName = fileIO.configFilePath + "/" + root.fileName
         fileIO.fileContent = jsonContent
         fileIO.write()
@@ -71,6 +77,7 @@ Item {
         let jsonContent = JSON.parse(fileIO.fileContent)
 
         root.recentRepositories = jsonContent.recentRepositories
+        root.appSettings.deserialize(jsonContent.settings)
 
         console.info("[Config] Configuration successfully loaded.");
     }
@@ -83,6 +90,9 @@ Item {
     }
 
 
-    Component.onCompleted: load()
+    Component.onCompleted: {
+        Style.currentTheme = Qt.binding(function() { return appSettings.appearanceSettings.currentTheme})
+        load()
+    }
 
 }

@@ -9,7 +9,7 @@ import GitEase
 /*! ***********************************************************************************************
  * RepositorySelectorPopup
  * ************************************************************************************************/
-Popup {
+IPopup {
     id: root
     
 
@@ -21,33 +21,14 @@ Popup {
 
     property RepositoryController   repositoryController
 
+    property AppModel               appModel
+
     property var                    recentRepositories
 
 
 
     /* Object Properties
      * ****************************************************************************************/
-    modal: true
-    focus: true
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-    
-    
-    width: 523
-    height: 475
-    
-    x: parent ? Math.round((parent.width - width) / 2) : 0
-    y: parent ? Math.round((parent.height - height) / 2) : 0
-    
-    padding: 0
-
-    background: Rectangle {
-        color: "transparent"
-    }
-    
-    Overlay.modal: Rectangle {
-        color: "#000000"
-        opacity: 0.35
-    }
 
     onClosed: {
         repositorySelector.reset()
@@ -83,6 +64,7 @@ Popup {
                 descriptionText: "Choose how you want to get started with your Git repository"
                 recentRepositories: root.recentRepositories
                 repositoryController: root.repositoryController
+                defaultPath: root.appModel?.appSettings?.generalSettings?.defaultPath ?? ""
                 onCloneFinished: root.close()
             }
 

@@ -16,11 +16,16 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property PageController pageController
     property bool expanded: false
+
+    property alias model: rpt.model
+
+    property var   currentId
 
     /* Signals
      * ****************************************************************************************/
+
+    signal clicked(var modelData);
 
     /* Children
      * ****************************************************************************************/
@@ -45,14 +50,15 @@ Rectangle {
                 spacing: 8
 
                 Repeater {
-                    model: root.pageController?.appModel?.pages
+                    id: rpt
 
                     Item {
+                        id: item
                         width: parent.width
                         height: 36
-                        
-                        property bool isSelected: (modelData && root.pageController && root.pageController?.appModel?.currentPage)
-                                                  ? (modelData.id === root.pageController?.appModel?.currentPage?.id)
+
+                        property bool isSelected: (modelData)
+                                                  ? (modelData.id === root.currentId)
                                                   : false
                         property bool isHovered: false
 
@@ -63,14 +69,15 @@ Rectangle {
                             radius: 4
 
                             color: {
-                                if (parent.isSelected) {
-                                    return "#FFFFFF"
+                                if (item.isSelected) {
+                                    return Style.colors.primaryBackground
                                 }
                                 return parent.isHovered ? Qt.darker(root.color, 1.05) : "transparent"
                             }
 
+
                             border.width: parent.isSelected ? 1 : 0
-                            border.color: parent.isSelected ? "#F2F2F2" : "transparent"
+                            border.color: parent.isSelected ? Style.colors.accent : "transparent"
 
                             RowLayout {
                                 anchors.centerIn: parent
@@ -93,7 +100,7 @@ Rectangle {
                                         font.pixelSize: 16
                                         font.family: Style.fontTypes.font6Pro
                                         font.weight: 500
-                                        color: parent.parent.parent.parent.isSelected ? "#484848" : "#9D9D9D"
+                                        color: parent.parent.parent.parent.isSelected ? Style.colors.accent : "#9D9D9D"
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
@@ -106,11 +113,11 @@ Rectangle {
                                     text: (modelData && modelData.title) ? modelData.title : ""
                                     font.pixelSize: 13
                                     font.family: Style.fontTypes.roboto
-                                    color: parent.parent.parent.isSelected ? "#484848" : "#9D9D9D"
+                                    color: parent.parent.parent.isSelected ? Style.colors.accent : "#9D9D9D"
                                     elide: Text.ElideRight
                                     visible: root.expanded
                                     opacity: root.expanded ? 1 : 0
-                                    
+
                                     Behavior on opacity {
                                         NumberAnimation {
                                             duration: 100
@@ -126,11 +133,7 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
 
-                            onClicked: {
-                                if (pageController && modelData) {
-                                    pageController.switchToPage(modelData.id)
-                                }
-                            }
+                            onClicked: root.clicked(modelData)
                             onEntered: parent.isHovered = true
                             onExited: parent.isHovered = false
                         }

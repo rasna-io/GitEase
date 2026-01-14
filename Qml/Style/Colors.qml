@@ -3,12 +3,17 @@ import QtQuick
 QtObject{
     // Primary colors
     property color primaryBackground:   "#FDFDFD"
+    property color secondaryBackground: "#F9F9F9"
     property color foreground:          "#363636"
     property color secondaryForeground: "#FDFDFD"
     property color accent:              "#074E96"
     property color accentHover:         "#0C64BE"
     property color error:               "#DC3545"
     property color disabledButton:      "#9D9D9D"
+
+    property color navButton:           "#F3F3F3"
+    property color hoverTitle:          "#E8E8E8"
+
     
     // Files Status
     property color addedFile:           "#B9FAB9"
