@@ -1,5 +1,6 @@
-import QtQuick
-import QtQuick.Controls
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 import GitEase
 import GitEase_Style
@@ -7,142 +8,320 @@ import GitEase_Style
 /*! ***********************************************************************************************
  * SideBySideDiff
  * ************************************************************************************************/
+
 Item {
-    id: root
+    id: delegateRoot
+
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property var modelData
+    property int diffType
+    property string leftContent: ""
+    property string rightContent: ""
+    property int leftLineNum: -1
+    property int rightLineNum: -1
+    property bool isCurrentItem: false
+    property var fileModel
 
-    required property Component hatch
+    property real horizontalOffset: 0
 
-    property int gutterWidth: 35
+    readonly property bool isAdd: diffType === GitDiff.Added
+    readonly property bool isDel: diffType === GitDiff.Deleted
+    readonly property bool isMod: diffType === GitDiff.Modified
+    readonly property bool isUnchanged: diffType === GitDiff.Context
+    readonly property bool hasAction: !isUnchanged && (index === 0 || fileModel.get(index - 1).type === GitDiff.Context)
 
-    property int padH: 8
 
-    property int padV: 6
-
-    property int gap: 2
-
-    readonly property int rowHeight: Math.ceil(Math.max(leftBlock.implicitHeight, rightBlock.implicitHeight))
+    /* Signals
+     * ****************************************************************************************/
+    signal requestSplit(int cursorPos, string textAfter)
+    signal requestMergeUp()
+    signal requestFocusNext()
+    signal requestFocusPrev()
+    signal requestStage(int start, int end, int type)
+    signal requestRevert(int start, int end, int type)
 
     /* Object Properties
      * ****************************************************************************************/
-    width: parent ? parent.width : 0
-    implicitHeight: content.height
+
+    // Auto-height based on content
+    height: Math.max(hasAction ? 50 : 24, Math.max(leftTextMetrics.height, rightTextEdit.contentHeight + 4))
+
+    onIsCurrentItemChanged: {
+        if (isCurrentItem && !isDel) {
+            rightTextEdit.forceActiveFocus()
+        }
+    }
+
+
 
     /* Children
      * ****************************************************************************************/
-    Item {
-        id: content
-        width: parent.width
-        height: root.rowHeight
 
-        Row {
-            id: row
-            anchors.fill: parent
-            spacing: root.gap
+    RowLayout {
+        anchors.fill: parent
+        spacing: 0
 
-            Rectangle {
-                id: leftBlock
-                width: (parent.width - root.gap) / 2
-                height: parent.height
+        /**
+          * Left Pane
+          * Original Content
+          * Read Only
+          */
+        Rectangle {
+            Layout.fillHeight: true
+            Layout.preferredWidth: parent.width / 2
+            color: (isDel || isMod) ? Style.colors.diffRemovedBg : "transparent"
+            clip: true
 
-                color: (modelData.type === 2 || modelData.type === 3)
-                       ? Style.colors.diffRemovedBg
-                       : Style.colors.primaryBackground
-
-                implicitHeight: leftRow.implicitHeight + root.padV * 2
-
-                Loader {
-                    anchors.fill: parent
-                    active: root.modelData.type === 1
-                    sourceComponent: active ? root.hatch : null
-                    opacity: 0.08
-                }
-
-                Row {
-                    id: leftRow
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: root.padH
-                    anchors.topMargin: root.padV
-                    spacing: 8
-
-                    Text {
-                        width: root.gutterWidth
-                        text: root.modelData.oldLine !== -1 ? root.modelData.oldLine : ""
-                        color: Style.colors.mutedText
-                        font.pixelSize: 10
-                        horizontalAlignment: Text.AlignRight
-                        verticalAlignment: Text.AlignTop
-                    }
-
-                    Text {
-                        width: parent.width - root.gutterWidth - leftRow.spacing
-                        text: root.modelData.type !== 1 ? root.modelData.content : ""
-                        color: Style.colors.foreground
-                        font.family: "Consolas"
-                        font.pixelSize: 12
-                        wrapMode: Text.WrapAnywhere
-                        textFormat: Text.PlainText
-                        verticalAlignment: Text.AlignTop
-                    }
-                }
+            StripedBackground {
+                anchors.fill: parent
+                visible: isAdd
+                stripeColor: Style.colors.voidStripe
             }
 
-            Rectangle {
-                id: rightBlock
-                width: (parent.width - root.gap) / 2
-                height: parent.height
+            Row {
+                anchors.fill: parent
+                spacing: 0
 
-                color: (modelData.type === 1 || modelData.type === 3)
-                       ? Style.colors.diffAddedBg
-                       : Style.colors.primaryBackground
+                // Line Number
+                Label {
+                    width: 45
+                    height: parent.height
+                    text: (leftLineNum > 0) ? leftLineNum : ""
+                    color: Style.colors.linePanelForeground
+                    font.family: "Cascadia Mono"
+                    font.pixelSize: 12
+                    horizontalAlignment: Text.AlignRight
+                    rightPadding: 10
+                    topPadding: 4
 
-                implicitHeight: rightRow.implicitHeight + root.padV * 2
-
-                Loader {
-                    anchors.fill: parent
-                    active: root.modelData.type === 2
-                    sourceComponent: active ? root.hatch : null
-                    opacity: 0.08
+                    background: Rectangle {
+                        color: Style.colors.linePanelBackgroound
+                    }
                 }
 
-                Row {
-                    id: rightRow
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: root.padH
-                    anchors.topMargin: root.padV
-                    spacing: 8
+                Item {
+                    height: parent.height
+                    width: parent.width - 45
+                    clip: true
 
                     Text {
-                        width: root.gutterWidth
-                        text: root.modelData.newLine !== -1 ? root.modelData.newLine : ""
-                        color: Style.colors.mutedText
-                        font.pixelSize: 10
-                        horizontalAlignment: Text.AlignRight
-                        verticalAlignment: Text.AlignTop
-                    }
+                        id: leftDisplay
+                        x: -delegateRoot.horizontalOffset
+                        text: leftContent
+                        color: Style.colors.editorForeground
+                        font.family: "Cascadia Mono"
+                        font.pixelSize: 13
+                        topPadding: 2
+                        leftPadding: 8
+                        TextMetrics { id: leftTextMetrics; text: leftDisplay.text; font: leftDisplay.font;}
 
-                    Text {
-                        width: parent.width - root.gutterWidth - rightRow.spacing
-
-                        text: root.modelData.type === 3 ? root.modelData.contentNew
-                              : (root.modelData.type !== 2 ? root.modelData.content : "")
-
-                        color: Style.colors.foreground
-                        font.family: "Consolas"
-                        font.pixelSize: 12
-                        wrapMode: Text.WrapAnywhere
-                        textFormat: Text.PlainText
-                        verticalAlignment: Text.AlignTop
                     }
                 }
             }
         }
+
+        /**
+          * CENTER GUTTE
+          */
+        Rectangle {
+            Layout.fillHeight: true
+            Layout.preferredWidth: 40
+            color: Style.colors.surfaceLight
+            visible: !isUnchanged // Only show for changes
+            z: 3
+
+            Rectangle {
+                width: 2
+                color: Style.colors.surfaceMuted
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                visible: !isUnchanged
+            }
+
+            ColumnLayout {
+
+                anchors.centerIn: parent
+                visible: hasAction
+
+                Label {
+                    text: Style.icons.plus
+                    font.family: Style.fontTypes.font6ProSolid
+                    color: stageMsa.containsMouse ? Style.colors.secondaryForeground : Qt.darker(Style.colors.linePanelBackgroound, 1.4)
+                    padding: 5
+                    background: Rectangle {
+                        color: stageMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
+                        radius: 5
+                    }
+
+                    MouseArea {
+                        id: stageMsa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: "PointingHandCursor"
+                        onClicked: {
+                            let range = getRange()
+
+                            requestStage(range.start, range.end, range.type);
+                        }
+                    }
+                }
+
+
+
+                Label {
+                    text: Style.icons.arrowRight
+                    font.family: Style.fontTypes.font6ProSolid
+                    color: revertMsa.containsMouse ? Style.colors.secondaryForeground : Qt.darker(Style.colors.linePanelBackgroound, 1.4)
+                    padding: 5
+                    background: Rectangle {
+                        color: revertMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
+                        radius: 5
+                    }
+
+                    MouseArea {
+                        id: revertMsa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: "PointingHandCursor"
+                        onClicked: {
+                            let range = getRange()
+
+                            requestRevert(range.start, range.end, range.type);
+                        }
+                    }
+                }
+
+            }
+        }
+
+
+        /**
+          * Right Pane
+          * New Content
+          * Editable
+          */
+        Rectangle {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            color: (isAdd || isMod) ? Style.colors.diffAddedBg : "transparent"
+            clip: true
+
+            StripedBackground {
+                anchors.fill: parent
+                visible: isDel
+                stripeColor: Style.colors.voidStripe
+            }
+
+
+            Row {
+                anchors.fill: parent
+                spacing: 0
+                visible: !isDel
+
+                // Line Number
+                Label {
+                    width: 45
+                    height: parent.height
+                    z: 2
+                    text: (rightLineNum > 0) ? rightLineNum : ""
+                    color: Style.colors.linePanelForeground
+                    font.family: "Cascadia Mono"
+                    font.pixelSize: 12
+                    horizontalAlignment: Text.AlignRight
+                    rightPadding: 10
+                    topPadding: 4
+
+                    background: Rectangle {
+                        color: Style.colors.linePanelBackgroound
+                    }
+                }
+
+                Item {
+                    height: parent.height
+                    width: parent.width - 45
+                    clip: true
+                    TextArea {
+                        id: rightTextEdit
+                        x: -delegateRoot.horizontalOffset
+                        width: 2000
+                        text: rightContent
+                        color: Style.colors.editorForeground
+                        font.family: "Cascadia Mono"
+                        font.pixelSize: 13
+                        padding: 0
+                        leftPadding: 8
+                        topPadding: 2
+                        selectionColor: Style.colors.accent
+                        selectedTextColor: Style.colors.secondaryForeground
+                        background: null
+                        selectByMouse: true
+
+                        Material.accent: Style.colors.accent
+
+                        Keys.onPressed: (event) => {
+                                            // Enter Key -> Split Line
+                                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                                event.accepted = true
+                                                var pos = cursorPosition
+                                                var txtAfter = text.substring(pos)
+                                                delegateRoot.requestSplit(pos, txtAfter)
+                                            }
+                                            // Up Arrow -> Go to prev row
+                                            else if (event.key === Qt.Key_Up) {
+                                                // If on first line of wrapped text, move up
+                                                if (cursorRectangle.y <= topPadding + 2) {
+                                                    event.accepted = true
+                                                    delegateRoot.requestFocusPrev()
+                                                }
+                                            }
+                                            // Down Arrow -> Go to next row
+                                            else if (event.key === Qt.Key_Down) {
+                                                // If on last line of wrapped text
+                                                if (cursorRectangle.y + cursorRectangle.height >= height - bottomPadding) {
+                                                    event.accepted = true
+                                                    delegateRoot.requestFocusNext()
+                                                }
+                                            }
+                                            // Backspace at start -> Merge Up
+                                            else if (event.key === Qt.Key_Backspace) {
+                                                if (cursorPosition === 0) {
+                                                    event.accepted = true
+                                                    delegateRoot.requestMergeUp()
+                                                }
+                                            }
+                                        }
+
+                        onEditingFinished: {
+                            // TODO save changes
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    function getRange() {
+        let startIdx = index;
+        let endIdx = index;
+
+        // Look ahead to find the end of the consecutive change block
+        for (var i = index; i < fileModel.count; i++) {
+            if (fileModel.get(i).type !== GitDiff.Context) {
+                endIdx = i;
+            } else {
+                break;
+            }
+        }
+
+        let firstItem = fileModel.get(startIdx);
+        let lastItem = fileModel.get(endIdx);
+
+        let gitStart = firstItem.oldLineNum > 0 ? firstItem.oldLineNum : firstItem.newLineNum;
+        let gitEnd = lastItem.oldLineNum > 0 ? lastItem.oldLineNum : lastItem.newLineNum;
+
+        return {start : gitStart, end: gitEnd, type: firstItem.type}
     }
 }

@@ -53,6 +53,7 @@ set(RESOURCES_COMPONENTS
 
     Qml/View/Components/Diff/DiffView.qml
     Qml/View/Components/Diff/StackedDiff.qml
+    Qml/View/Components/Diff/StripedBackground.qml
 
     # Navigation Components - Side rails / tab bars
     Qml/View/Components/Navigation/NavigationRail.qml           # Combined pages+repos navigation rail

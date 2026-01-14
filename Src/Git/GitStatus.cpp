@@ -1,6 +1,8 @@
 #include "GitStatus.h"
 #include "GitDiff.h"
 #include "GitFileStatus.h"
+#include <QDir>
+#include <QFile>
 #include <git2.h>
 
 GitStatus::GitStatus(QObject *parent)
@@ -21,7 +23,30 @@ GitResult GitStatus::unstageFile(const QString &filePath)
     if (filePath.isEmpty())
         return GitResult(false, QVariant(), "File path cannot be empty");
 
-    return addToIndex(filePath, true);  // Unstage the file
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    // Get the HEAD commit to use as the reset source
+    git_object *head_obj = nullptr;
+    int error = git_revparse_single(&head_obj, m_currentRepo->repo, "HEAD");
+    if (error != GIT_OK) {
+        // If there is no HEAD (empty repo), we just remove the path from the index
+        return addToIndex(filePath, true);
+    }
+
+    QByteArray pathUtf8 = filePath.toUtf8();
+    char* paths[] = { pathUtf8.data() };
+    git_strarray array = { paths, 1 };
+
+    // Reset the Index entry for this path to match the HEAD version
+    error = git_reset_default(m_currentRepo->repo, head_obj, &array);
+    git_object_free(head_obj);
+
+    if (error != GIT_OK) {
+        return GitResult(false, QVariant(), "Failed to reset index for file.");
+    }
+
+    return GitResult(true, filePath, "File unstaged successfully.");
 }
 
 GitResult GitStatus::stageAll(bool includeUntrackedFiles)
@@ -105,38 +130,6 @@ GitResult GitStatus::status()
     return GitResult(true, QVariant::fromValue(fileInfos));
 }
 
-
-GitResult GitStatus::unstageAll()
-{
-
-    GitResult statusResult = status();
-    if (!statusResult.success()) {
-        return GitResult(false, QVariant(), statusResult.errorMessage());
-    }
-
-    QList<GitFileStatus> files = statusResult.data().value<QList<GitFileStatus>>();
-
-    int unstagedCount = 0;
-    QStringList unstagedFiles;
-
-    for (const GitFileStatus& file : files) {
-
-        if (file.isStaged()) {
-            GitResult result = addToIndex(file.path(), true);
-            if (result.success()) {
-                unstagedCount++;
-                unstagedFiles.append(file.path());
-            }
-        }
-    }
-
-    QVariantMap resultData;
-    resultData["count"] = unstagedCount;
-    resultData["files"] = unstagedFiles;
-
-    return GitResult(true, resultData, "All files unstaged successfully.");
-}
-
 GitResult GitStatus::getStagedFiles()
 {
     GitResult statusResult = status();
@@ -198,12 +191,17 @@ GitResult GitStatus::getDiff(const QString &filePath)
 
     opts.flags |= GIT_DIFF_PATIENCE | GIT_DIFF_INDENT_HEURISTIC | GIT_DIFF_MINIMAL;
 
+    // every single line of the file that isn't changed as a 'Context' line.
+    opts.context_lines = 100000;
+    opts.interhunk_lines = 100000;
+
     QByteArray pathBytes = filePath.toUtf8();
     char* path = const_cast<char*>(pathBytes.constData());
     opts.pathspec.strings = &path;
     opts.pathspec.count = 1;
 
-    int error = git_diff_index_to_workdir(&diff,  m_currentRepo->repo, nullptr, &opts);
+    // This compares the Staging Area (Index) to the Local File (Workdir)
+    int error = git_diff_index_to_workdir(&diff, m_currentRepo->repo, nullptr, &opts);
 
     if (error == 0) {
         struct RawLine { char origin; int old_no; int new_no; QString content; };
@@ -230,28 +228,18 @@ GitResult GitStatus::getDiff(const QString &filePath)
                 (i + 1) < rawLines.size() &&
                 rawLines[i+1].origin == GIT_DIFF_LINE_ADDITION) {
 
-                GitDiff gitDiff = GitDiff(GitDiff::Modified, rawLines[i].old_no, rawLines[i+1].new_no,
-                        rawLines[i].content, rawLines[i+1].content);
-                result.append(gitDiff);
+                result.append(GitDiff(GitDiff::Modified, rawLines[i].old_no, rawLines[i+1].new_no,
+                                      rawLines[i].content, rawLines[i+1].content));
                 i++;
             }
             else if (rawLines[i].origin == GIT_DIFF_LINE_DELETION) {
-                GitDiff gitDiff = GitDiff(GitDiff::Deleted, rawLines[i].old_no, -1,
-                        rawLines[i].content);
-                result.append(gitDiff);
-
+                result.append(GitDiff(GitDiff::Deleted, rawLines[i].old_no, -1, rawLines[i].content));
             }
             else if (rawLines[i].origin == GIT_DIFF_LINE_ADDITION) {
-                GitDiff gitDiff = GitDiff(GitDiff::Added, -1, rawLines[i].new_no,
-                        rawLines[i].content);
-                result.append(gitDiff);
-
+                result.append(GitDiff(GitDiff::Added, -1, rawLines[i].new_no, rawLines[i].content));
             }
             else {
-                GitDiff gitDiff = GitDiff(GitDiff::Context, rawLines[i].old_no, rawLines[i].new_no,
-                        rawLines[i].content);
-
-                result.append(gitDiff);
+                result.append(GitDiff(GitDiff::Context, rawLines[i].old_no, rawLines[i].new_no, rawLines[i].content));
             }
         }
     }
@@ -421,6 +409,255 @@ GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
     return GitResult(true, QVariant::fromValue(fileChanges), "File changes retrieved successfully.");
 }
 
+GitResult GitStatus::getDiffView(const QString &filePath)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    // old/index text
+    uint32_t mode = 0;
+    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &mode);
+    QString oldText;
+    if (indexBlob) {
+        oldText = joinLines(readBlobLines(indexBlob.get()));
+    } else {
+        oldText = "";
+    }
+
+    // new/workdir text
+    QString newText = joinLines(readWorkdirLines(m_currentRepo->repo, filePath));
+
+    // diff lines (existing)
+    GitResult diffRes = getDiff(filePath);
+    if (!diffRes.success())
+        return diffRes;
+
+    QVariantMap out;
+    out["oldText"] = oldText;
+    out["newText"] = newText;
+    out["lines"] = diffRes.data();
+
+    return GitResult(true, out);
+}
+GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, int endLine, int mode)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    const git_delta_t type = static_cast<git_delta_t>(mode);
+    uint32_t baseMode = 0;
+    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
+
+    if (!indexBlob) {
+        return GitResult(false, QVariant(), "File does not exist in the index.");
+    }
+
+    const auto indexLines = readBlobLines(indexBlob.get());
+
+    git_diff* diffRaw = nullptr;
+    git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
+    diffOpts.flags |= (GIT_DIFF_PATIENCE | GIT_DIFF_MINIMAL);
+
+    // If the file is physically gone (DELETED), we need a diff that represents the
+    // total removal, so we can pick which "removals" to stage.
+    if (type == GIT_DELTA_DELETED) {
+        git_tree* headTree = nullptr;
+        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
+    } else {
+        QByteArray pathUtf8 = filePath.toUtf8();
+        char* path = const_cast<char*>(pathUtf8.constData());
+        diffOpts.pathspec.strings = &path;
+        diffOpts.pathspec.count = 1;
+        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
+    }
+
+    UniqueDiff diff(diffRaw);
+    git_patch* patchRaw = nullptr;
+    if (git_patch_from_diff(&patchRaw, diff.get(), 0) != GIT_OK)
+        return GitResult(false, QVariant(), "Could not generate patch for selection.");
+
+    UniquePatch patch(patchRaw);
+
+    const auto stagedLines = applySelectedFromPatch(indexLines, patch.get(), startLine, endLine);
+    const QString stagedText = joinLines(stagedLines);
+
+    return writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
+}
+
+GitResult GitStatus::writeIndexFromBuffer(git_repository* repo,
+                                          const QString& filePath,
+                                          const QByteArray& contentUtf8,
+                                          uint32_t modeIfKnown)
+{
+    git_index* idxRaw = nullptr;
+    if (git_repository_index(&idxRaw, repo) != GIT_OK)
+        return GitResult(false, QVariant(), "Failed to open index");
+
+    UniqueIndex idx(idxRaw);
+
+    git_index_entry entry;
+    std::memset(&entry, 0, sizeof(entry));
+
+    QByteArray p = filePath.toUtf8();
+    entry.path = p.constData();
+
+    // Use existing mode if available; default to 0100644 for a normal file.
+    entry.mode = (modeIfKnown != 0) ? modeIfKnown : 0100644;
+
+    const int rc = git_index_add_frombuffer(idx.get(), &entry,
+                                            contentUtf8.constData(),
+                                            (size_t)contentUtf8.size());
+    if (rc != GIT_OK)
+        return GitResult(false, QVariant(), "git_index_add_frombuffer failed");
+
+    if (git_index_write(idx.get()) != GIT_OK)
+        return GitResult(false, QVariant(), "Failed to write index");
+
+    return GitResult(true, QVariant(), "Selected lines staged into index");
+}
+
+std::vector<QString> GitStatus::readWorkdirLines(git_repository* repo, const QString& filePath)
+{
+    const char* wd = git_repository_workdir(repo);
+    if (!wd) return {};
+
+    const QString absPath = QDir(QString::fromUtf8(wd)).filePath(filePath);
+    QFile f(absPath);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
+        return {};
+
+    QTextStream in(&f);
+    QString raw = in.readAll();
+    return splitLines(raw);
+}
+
+std::vector<QString> GitStatus::applySelectedFromPatch(const std::vector<QString> &indexLines,
+                                                       git_patch *patch,
+                                                       int startLine,
+                                                       int endLine)
+{
+    std::vector<QString> out;
+    out.reserve(indexLines.size() + 64);
+
+    size_t hunkCount = git_patch_num_hunks(patch);
+    int basePos = 1; // Current line in the Index (old file)
+
+    for (size_t h = 0; h < hunkCount; ++h) {
+        const git_diff_hunk* hunk = nullptr;
+        size_t linesInHunk = 0;
+        if (git_patch_get_hunk(&hunk, &linesInHunk, patch, h) != GIT_OK) continue;
+
+        // Copy context lines from Index that appear before this hunk
+        while (basePos < (int)hunk->old_start && basePos <= (int)indexLines.size()) {
+            out.push_back(indexLines[basePos - 1]);
+            basePos++;
+        }
+
+        bool lastLineWasStagedDeletion = false;
+
+        for (size_t li = 0; li < linesInHunk; ++li) {
+            const git_diff_line* line = nullptr;
+            git_patch_get_line_in_hunk(&line, patch, h, li);
+            char origin = (char)line->origin;
+
+            if (origin == GIT_DIFF_LINE_CONTEXT) {
+                if (basePos <= (int)indexLines.size()) {
+                    out.push_back(indexLines[basePos - 1]);
+                }
+                basePos++;
+                lastLineWasStagedDeletion = false; // Reset tracking
+            }
+            else if (origin == GIT_DIFF_LINE_DELETION) {
+                // Check if the user selected this line (using Old Line Number)
+                bool stageDelete = (line->old_lineno >= startLine && line->old_lineno <= endLine);
+
+                if (stageDelete) {
+                    // Stage the deletion: skip the index line (remove it)
+                    basePos++;
+                    lastLineWasStagedDeletion = true;
+                } else {
+                    // Don't stage: Keep the original index line
+                    if (basePos <= (int)indexLines.size()) {
+                        out.push_back(indexLines[basePos - 1]);
+                    }
+                    basePos++;
+                    lastLineWasStagedDeletion = false;
+                }
+            }
+            else if (origin == GIT_DIFF_LINE_ADDITION) {
+                bool stageAdd = (line->new_lineno >= startLine && line->new_lineno <= endLine) ||
+                                (lastLineWasStagedDeletion);
+
+                if (stageAdd) {
+                    QString add = QString::fromUtf8(line->content, (int)line->content_len);
+                    add.remove('\n').remove('\r');
+                    out.push_back(add);
+                }
+            }
+        }
+    }
+
+    // Copy remaining lines after all hunks
+    while (basePos <= (int)indexLines.size()) {
+        out.push_back(indexLines[basePos - 1]);
+        basePos++;
+    }
+
+    return out;
+}
+
+std::vector<QString> GitStatus::readBlobLines(git_blob *blob)
+{
+    if (!blob) return {};
+    const char* content = static_cast<const char*>(git_blob_rawcontent(blob));
+    const size_t size   = git_blob_rawsize(blob);
+    const QString raw   = QString::fromUtf8(content, (int)size);
+    return splitLines(raw);
+}
+
+std::vector<QString> GitStatus::splitLines(const QString& raw)
+{
+    QString s = raw;
+    s.replace("\r\n", "\n").replace('\r', '\n');
+    const QStringList ql = s.split('\n', Qt::KeepEmptyParts);
+
+    std::vector<QString> out;
+    out.reserve(ql.size());
+    for (const auto& x : ql) out.push_back(x);
+    return out;
+}
+
+QString GitStatus::joinLines(const std::vector<QString>& lines)
+{
+    QString out;
+    out.reserve(4096);
+    for (int i = 0; i < (int)lines.size(); ++i) {
+        out += lines[(size_t)i];
+        if (i + 1 < (int)lines.size()) out += '\n';
+    }
+    return out;
+}
+
+UniqueBlob GitStatus::getIndexBlob(git_repository* repo, const QString& filePath, uint32_t* outMode)
+{
+    git_index* idxRaw = nullptr;
+    if (git_repository_index(&idxRaw, repo) != GIT_OK)
+        return UniqueBlob(nullptr);
+
+    UniqueIndex idx(idxRaw);
+
+    QByteArray p = filePath.toUtf8();
+    const git_index_entry* ent = git_index_get_bypath(idx.get(), p.constData(), 0);
+    if (!ent) return UniqueBlob(nullptr);
+
+    if (outMode) *outMode = ent->mode;
+
+    git_blob* blob = nullptr;
+    if (git_blob_lookup(&blob, repo, &ent->id) != GIT_OK)
+        return UniqueBlob(nullptr);
+
+    return UniqueBlob(blob);
+}
 
 GitResult GitStatus::getDiffBetweenTrees(git_tree* oldTree, git_tree* newTree, git_diff*& diff)
 {
@@ -460,4 +697,166 @@ QList<GitFileStatus> GitStatus::processDiff(git_diff* diff)
     }
 
     return fileList;
+}
+
+GitResult GitStatus::revertFile(const QString &filePath)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    // Configure checkout options
+    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+
+    // GIT_CHECKOUT_FORCE ensures we overwrite local workdir changes.
+    // GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH prevents accidental glob expansion.
+    opts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+
+    // Convert QString path to the format required by git_strarray
+    QByteArray pathUtf8 = filePath.toUtf8();
+    char* path = pathUtf8.data();
+    opts.paths.strings = &path;
+    opts.paths.count = 1;
+
+    // Perform checkout from the index to the working directory
+    int error = git_checkout_index(m_currentRepo->repo, nullptr, &opts);
+
+    if (error != GIT_OK) {
+        const git_error *e = git_error_last();
+        QString errorMsg = e ? QString::fromUtf8(e->message) : "Unknown error during checkout";
+        return GitResult(false, QVariant(), "Failed to revert file: " + errorMsg);
+    }
+
+    return GitResult(true, filePath, "File reverted successfully to index state.");
+}
+
+GitResult GitStatus::revertSelectedLines(const QString &filePath, int startLine, int endLine, int mode)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    // Get the "Source of Truth" (The Index/Staged version)
+    uint32_t baseMode = 0;
+    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
+    if (!indexBlob)
+        return GitResult(false, QVariant(), "File not found in index.");
+
+    const auto indexLines = readBlobLines(indexBlob.get());
+
+    // Generate the patch (Index -> Workdir)
+    git_diff* diffRaw = nullptr;
+    git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
+    QByteArray pathUtf8 = filePath.toUtf8();
+    char* path = pathUtf8.data();
+    diffOpts.pathspec.strings = &path;
+    diffOpts.pathspec.count = 1;
+    diffOpts.flags |= (GIT_DIFF_PATIENCE | GIT_DIFF_MINIMAL);
+
+    git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
+    UniqueDiff diff(diffRaw);
+
+    git_patch* patchRaw = nullptr;
+    if (git_patch_from_diff(&patchRaw, diff.get(), 0) != GIT_OK)
+        return GitResult(false, QVariant(), "No changes to revert.");
+    UniquePatch patch(patchRaw);
+
+
+    std::vector<QString> out;
+    int basePos = 1; // Index line pointer
+    bool lastLineWasReverted = false;
+    size_t hunkCount = git_patch_num_hunks(patch.get());
+
+    for (size_t h = 0; h < hunkCount; ++h) {
+        const git_diff_hunk* hunk = nullptr;
+        size_t linesInHunk = 0;
+        git_patch_get_hunk(&hunk, &linesInHunk, patch.get(), h);
+
+        // Copy context/unaffected lines before the hunk
+        while (basePos < (int)hunk->old_start && basePos <= (int)indexLines.size()) {
+            out.push_back(indexLines[basePos - 1]);
+            basePos++;
+        }
+
+        for (size_t li = 0; li < linesInHunk; ++li) {
+            const git_diff_line* line = nullptr;
+            git_patch_get_line_in_hunk(&line, patch.get(), h, li);
+            char origin = (char)line->origin;
+
+            if (origin == GIT_DIFF_LINE_CONTEXT) {
+                if (basePos <= (int)indexLines.size()) out.push_back(indexLines[basePos - 1]);
+                basePos++;
+                lastLineWasReverted = false;
+            }
+            else if (origin == GIT_DIFF_LINE_DELETION) {
+                // To revert a deletion, we MUST keep the line from the index
+                bool isSelected = (line->old_lineno >= startLine && line->old_lineno <= endLine);
+
+                if (isSelected) {
+                    // REVERT: Keep the index line (don't "delete" it)
+                    if (basePos <= (int)indexLines.size()) out.push_back(indexLines[basePos - 1]);
+                    basePos++;
+                    lastLineWasReverted = true;
+                } else {
+                    // DISCARD REVERT: Follow the workdir (skip the line)
+                    basePos++;
+                    lastLineWasReverted = false;
+                }
+            }
+            else if (origin == GIT_DIFF_LINE_ADDITION) {
+                // To revert an addition, we OMIT the line from the workdir
+                bool isSelected = (line->new_lineno >= startLine && line->new_lineno <= endLine) || lastLineWasReverted;
+
+                if (isSelected) {
+                    // REVERT: Do nothing (don't add the workdir line)
+                } else {
+                    // DISCARD REVERT: Keep the addition from the workdir
+                    QString content = QString::fromUtf8(line->content, (int)line->content_len);
+                    content.remove('\n').remove('\r');
+                    out.push_back(content);
+                }
+            }
+        }
+    }
+
+    // Copy remaining lines
+    while (basePos <= (int)indexLines.size()) {
+        out.push_back(indexLines[basePos - 1]);
+        basePos++;
+    }
+
+    // WRITE TO DISK (Physical File)
+    const char* wd = git_repository_workdir(m_currentRepo->repo);
+    QString absPath = QDir(QString::fromUtf8(wd)).filePath(filePath);
+    QFile f(absPath);
+    if (f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        f.write(joinLines(out).toUtf8());
+        f.close();
+        return GitResult(true, filePath, "Selected lines reverted.");
+    }
+
+    return GitResult(false, QVariant(), "Failed to write file to disk.");
+}
+
+GitResult GitStatus::revertAll()
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+
+    // FORCE: Overwrite all local changes
+    // RECREATE_MISSING: Restore files that were deleted in workdir
+    opts.checkout_strategy = GIT_CHECKOUT_FORCE |
+                             GIT_CHECKOUT_RECREATE_MISSING |
+                             GIT_CHECKOUT_DONT_UPDATE_INDEX;
+
+    // Passing NULL to the second parameter tells libgit2 to use HEAD
+    int error = git_checkout_head(m_currentRepo->repo, &opts);
+
+    if (error != GIT_OK) {
+        const git_error *e = git_error_last();
+        return GitResult(false, QVariant(),
+                         QString("Failed to revert all changes: %1").arg(e ? e->message : "Unknown error"));
+    }
+
+    return GitResult(true, QVariant(), "All changes discarded.");
 }
