@@ -21,6 +21,7 @@ public:
         Deleted = 2,
         Modified = 3
     };
+    Q_ENUM(DiffType)
 
     explicit GitDiff();
     GitDiff(DiffType type, int oldLine, int newLine, const QString &content);
