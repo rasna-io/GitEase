@@ -22,6 +22,8 @@ Item {
 
     property StatusController     statusController:     null
 
+    property BranchController     branchController:     null
+
     property string               selectedFilePath:     ""
 
     onStatusControllerChanged: {
@@ -52,16 +54,171 @@ Item {
                 spacing: 12
 
                 Rectangle {
+                    id: commitPanel
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    color: "transparent"
+                    Layout.preferredHeight: 260
+                    color: Style.colors.secondaryBackground
+                    radius: 2
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: "(commit actions) (placeholder)"
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 13
-                        color: Style.colors.placeholderText
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 12
+
+                        // Header Section
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            Text {
+                                text: "COMMIT"
+                                font.family: Style.fontTypes.roboto
+                                font.pixelSize: 12
+                                color: Style.colors.surfaceMuted
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            // RowLayout {
+                            //     spacing: 6
+                            //     Text {
+                            //         text: "Amend"
+                            //         font.pixelSize: 11
+                            //         color: Style.colors.secondaryText
+                            //     }
+                            // }
+                        }
+
+                        // Modern Input Area
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            color: Style.colors.primaryBackground
+                            radius: 6
+                            border.width: 1
+                            border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: 0
+
+                                ScrollView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+
+                                    TextArea {
+                                        id: commitTextArea
+                                        placeholderText: "What did you change?..."
+                                        placeholderTextColor: Style.colors.placeholderText
+                                        color: Style.colors.foreground
+                                        font.family: Style.fontTypes.roboto
+                                        font.pixelSize: 14
+                                        wrapMode: TextEdit.Wrap
+                                        leftPadding: 12;
+                                        topPadding: 12;
+                                        rightPadding: 12
+                                        selectByMouse: true
+                                        background: null
+                                        selectionColor: Style.colors.accent
+                                        selectedTextColor: Style.colors.secondaryForeground
+                                        Material.accent: Style.colors.accent
+                                    }
+                                }
+
+                                // Character Count & Branch Hint
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 24
+                                    color: "transparent"
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 12; anchors.rightMargin: 12
+                                        Text {
+                                            text: Style.icons.branch
+                                            font.family: Style.fontTypes.font6Pro
+                                            font.pixelSize: 10
+                                            color: Style.colors.placeholderText
+                                        }
+                                        Text {
+                                            text: branchController.getCurrentBranchName()
+                                            font.family: Style.fontTypes.roboto
+                                            font.pixelSize: 10
+                                            color: Style.colors.placeholderText
+                                        }
+                                        Item { Layout.fillWidth: true }
+                                        Text {
+                                            text: commitTextArea.text.length + " characters"
+                                            font.pixelSize: 10
+                                            color: Style.colors.placeholderText
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 1
+
+                            Rectangle {
+                                id: commitPushBtn
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 30
+                                color: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
+                                        ? Style.colors.accent : Style.colors.disabledButton
+                                radius: 1
+
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Commit"
+                                    color: Style.colors.secondaryForeground
+                                    font.family: Style.fontTypes.roboto
+                                    font.pixelSize: 12
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        // statusController.commit(commitTextArea.text)
+                                        // repositoryController.push()
+                                        commitTextArea.text = ""
+                                        root.update()
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                id: commitOnlyBtn
+                                Layout.preferredWidth: 30
+                                Layout.preferredHeight: 30
+                                color: Style.colors.primaryBackground
+                                radius: 4
+                                border.color: Style.colors.accent
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    font.family: Style.fontTypes.font6Pro
+                                    text: Style.icons.arrowUp
+                                    color: Style.colors.accent
+                                    font.pixelSize: 16
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        // statusController.commit(commitTextArea.text)
+                                        commitTextArea.text = ""
+                                        root.update()
+                                    }
+                                }
+                            }
+
+                        }
                     }
                 }
 
