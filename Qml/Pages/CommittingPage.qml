@@ -117,13 +117,9 @@ Item {
 
                         onOpenFileRequested: function(filePath) {
                             console.log("Open file (placeholder):", filePath)
-
                             root.selectedFilePath = filePath;
+                            updateDiff()
 
-                            let res = root.statusController.getDiffView(filePath)
-                            if (res.success) {
-                                diffView.diffData = res.data.lines
-                            }
                         }
 
                         onStageAllRequested: function() {
@@ -149,7 +145,9 @@ Item {
                         onStashAllRequested: function(section) {
                             if (section === "unstaged") {
                                 fileListsPanel.unstagedChanges = []
-                            } else if (section === "staged") {
+                            }
+
+                            if (section === "staged") {
                                 fileListsPanel.stagedChanges = []
                             }
 
@@ -173,11 +171,20 @@ Item {
                 anchors.fill: parent
                 onRequestStage: function (start, end, type) {
                     root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
+
+                    root.update()
+                    updateDiff()
                 }
             }
         }
     }
 
+    function updateDiff() {
+        let res = root.statusController.getDiffView(root.selectedFilePath)
+        if (res.success) {
+            diffView.diffData = res.data.lines
+        }
+    }
 
     function update() {
         let res = statusController.status()
@@ -190,7 +197,8 @@ Item {
         res.data.forEach((file)=>{
             if (file.isStaged) {
                 fileListsPanel.stagedChanges.push(file)
-            } else if (file.isUnstaged) {
+            }
+            if (file.isUnstaged) {
                 fileListsPanel.unstagedChanges.push(file)
             }
         })
