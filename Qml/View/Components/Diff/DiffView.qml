@@ -109,7 +109,7 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            size: (diffListView.width *0.5) / diffListView.maxContentWidth
+            size: diffListView.maxContentWidth === 0 ? 1 : (diffListView.width * 0.5) / diffListView.maxContentWidth
             active: true
             visible: size < 1.0
 
