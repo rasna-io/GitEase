@@ -32,7 +32,6 @@ add_subdirectory(Qml/Style/)
 set_source_files_properties(
     Qml/Core/Models/AppSettings.qml
     Qml/Core/Models/Enums.qml
-    Qml/Core/Controllers/LayoutController.qml
     Qml/Core/Services/GitService.qml
 
     PROPERTIES
