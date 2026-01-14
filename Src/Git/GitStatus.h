@@ -1,12 +1,29 @@
 #pragma once
 
 #include <QObject>
+#include <memory>
+#include <vector>
+#include <QString>
 
+#include <git2/blob.h>
 #include <git2/diff.h>
+#include <git2/patch.h>
+#include <git2/index.h>
 
 #include "GitFileStatus.h"
 #include "GitResult.h"
 #include "IGitController.h"
+
+// Smart pointer deleters for libgit2 types
+struct IndexDeleter { void operator()(git_index* p) const { git_index_free(p); } };
+struct BlobDeleter  { void operator()(git_blob* p)  const { git_blob_free(p);  } };
+struct DiffDeleter  { void operator()(git_diff* p)  const { git_diff_free(p);  } };
+struct PatchDeleter { void operator()(git_patch* p) const { git_patch_free(p); } };
+
+using UniqueIndex = std::unique_ptr<git_index, IndexDeleter>;
+using UniqueBlob  = std::unique_ptr<git_blob,  BlobDeleter>;
+using UniqueDiff  = std::unique_ptr<git_diff,  DiffDeleter>;
+using UniquePatch = std::unique_ptr<git_patch, PatchDeleter>;
 
 class GitStatus : public IGitController
 {
@@ -19,39 +36,33 @@ public:
     /**
      * \brief Stage a file for commit
      * \param filePath Path to the file to stage
-     * \return QVariantMap with operation result
+     * \return GitResult with operation result
      */
     Q_INVOKABLE GitResult stageFile(const QString &filePath);
-
 
     /**
      * \brief Unstage a file
      * \param filePath Path to the file to unstage
-     * \return QVariantMap with operation result
+     * \return GitResult with operation result
      */
     Q_INVOKABLE GitResult unstageFile(const QString &filePath);
 
     /**
      * \brief Stage all unstaged changes
-     * \return QVariantMap with count of staged files
+     * \param includeUntrackedFiles Include new files not yet tracked by git
+     * \return GitResult with count of staged files
      */
-    Q_INVOKABLE GitResult stageAll(bool includeUntrackedFiles  = true);
-
-    /**
-     * \brief Unstage all staged changes
-     * \return QVariantMap with count of unstaged files
-     */
-    Q_INVOKABLE GitResult unstageAll();
+    Q_INVOKABLE GitResult stageAll(bool includeUntrackedFiles = true);
 
     /**
      * \brief Get list of currently staged files
-     * \return QVariantMap with staged files list
+     * \return GitResult with staged files list
      */
     Q_INVOKABLE GitResult getStagedFiles();
 
     /**
      * \brief Get repository status (staged/unstaged/untracked files)
-     * \return QVariantMap with status information
+     * \return GitResult with status information
      */
     Q_INVOKABLE GitResult status();
 
@@ -104,6 +115,49 @@ public:
     */
     Q_INVOKABLE GitResult getCommitFileChanges(const QString &commitHash);
 
+    /**
+     * @brief Prepares a side-by-side diff view compatible with the QML DiffDelegate.
+     * @param filePath Path to the file to inspect.
+     */
+    Q_INVOKABLE GitResult getDiffView(const QString& filePath);
+    
+    /**
+     * @brief Surgically stages a specific range of lines from a file.
+     * * This allows for "hunk staging" where only specific changes are moved to the index
+     * while other changes in the same file remain in the working directory.
+     * * @param filePath Relative path of the file.
+     * @param startLine The first line number in the range.
+     * @param endLine The last line number in the range.
+     * @param mode The Git delta type (1: Added, 2: Deleted, 4: Modified).
+     * @return GitResult indicating success or failure of the partial stage.
+     */
+    Q_INVOKABLE GitResult stageSelectedLines(const QString &filePath, int startLine, int endLine, int mode);
+
+    /**
+     * @brief Discards all unstaged changes in a file, resetting it to the index state.
+     * @param filePath Path to the file to revert.
+     * @return GitResult indicating success or failure.
+     */
+    Q_INVOKABLE GitResult revertFile(const QString &filePath);
+
+    /**
+     * @brief Discards specific lines in the working directory.
+     * @param filePath Path to the file.
+     * @param startLine Selection start.
+     * @param endLine Selection end.
+     * @param mode The Git delta type.
+     * @return GitResult indicating success.
+     */
+    Q_INVOKABLE GitResult revertSelectedLines(const QString &filePath, int startLine, int endLine, int mode);
+
+    /**
+     * @brief Discards all unstaged modifications in the repository.
+     * * Resets the working directory to match the HEAD commit. This will not
+     * delete untracked files but will restore deleted tracked files.
+     * * @return GitResult indicating success.
+     */
+    Q_INVOKABLE GitResult revertAll();
+
 private:
     /**
      * \brief Helper method to create a diff between two trees (commit snapshots).
@@ -126,5 +180,66 @@ private:
      */
     QList<GitFileStatus> processDiff(git_diff *diff);
 
-};
+    /**
+     * @brief Retrieves the blob from the current index for a specific file.
+     * @param repo Pointer to the active repository.
+     * @param filePath Path of the file.
+     * @param outMode Pointer to store the file mode (permissions).
+     * @return Unique pointer to the git_blob.
+     */
+    UniqueBlob getIndexBlob(git_repository *repo, const QString &filePath, uint32_t *outMode);
 
+    /**
+     * @brief Converts a git_blob into a list of strings (one per line).
+     * @param blob The git blob to read.
+     * @return A vector of line contents.
+     */
+    std::vector<QString> readBlobLines(git_blob *blob);
+
+    /**
+     * @brief Splits a raw string into a vector of lines, preserving empty lines.
+     * @param raw The raw content string.
+     * @return A vector of strings split by newline characters.
+     */
+    std::vector<QString> splitLines(const QString &raw);
+
+    /**
+     * @brief Joins a vector of lines back into a single newline-delimited string.
+     * @param lines The lines to join.
+     * @return A single formatted string.
+     */
+    QString joinLines(const std::vector<QString> &lines);
+
+    /**
+     * @brief Reads the actual file content currently on disk (Working Directory).
+     * @param repo Pointer to the active repository.
+     * @param filePath Path of the file.
+     * @return A vector of lines from the physical file.
+     */
+    std::vector<QString> readWorkdirLines(git_repository *repo, const QString &filePath);
+
+    /**
+     * @brief Internal logic to merge a specific patch range into a set of base lines.
+     * @param indexLines The current lines stored in the Git Index.
+     * @param patch The diff patch containing the new changes.
+     * @param startLine The selection start.
+     * @param endLine The selection end.
+     * @return The resulting lines after the selective application.
+     */
+    std::vector<QString> applySelectedFromPatch(const std::vector<QString>& indexLines,
+                                                git_patch* patch,
+                                                int startLine,
+                                                int endLine);
+
+    /**
+    * @brief Directly updates the Git index with provided buffer content.
+    * * Writes content to the object database and updates the index entry for filePath.
+    * Used for partial staging where index content differs from the physical file.
+    * * @param repo Active repository.
+    * @param filePath Relative path of the file.
+    * @param contentUtf8 New index content.
+    * @param modeIfKnown File mode (e.g., 0100644). If 0, standard file mode is used.
+    * @return GitResult success status.
+    */
+    GitResult writeIndexFromBuffer(git_repository *repo, const QString &filePath, const QByteArray &contentUtf8, uint32_t modeIfKnown);
+};

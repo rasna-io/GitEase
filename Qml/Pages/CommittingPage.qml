@@ -90,59 +90,50 @@ Item {
                             root.selectedFilePath = filePath
                         }
 
-                        // TODO :: only for show demo and handlers
                         onStageFileRequested: function(filePath) {
                             statusController.stageFile(filePath)
                             root.update()
                         }
 
                         onUnstageFileRequested: function(filePath) {
-
-                            //TODO Not rest head
                             statusController.unstageFile(filePath)
                             root.update()
                         }
 
                         onDiscardFileRequested: function(filePath) {
-                            const src = fileListsPanel.unstagedChanges
-                            const idx = src.findIndex(function(it) { return it.path === filePath })
-                            if (idx < 0)
-                                return
-
-                            fileListsPanel.unstagedChanges = src.slice(0, idx).concat(src.slice(idx + 1))
-
-                            if (root.selectedFilePath === filePath)
-                                root.selectedFilePath = ""
+                            statusController.revertFile(filePath)
+                            root.update()
                         }
 
                         onOpenFileRequested: function(filePath) {
-                            console.log("Open file (placeholder):", filePath)
+                            root.selectedFilePath = filePath;
+                            updateDiff()
                         }
 
                         onStageAllRequested: function() {
-
-
                             statusController.stageAll()
                             root.update()
                         }
 
                         onUnstageAllRequested: function() {
 
-
-                            statusController.unstageAll()
+                            fileListsPanel.stagedChanges.forEach((file)=>{
+                                statusController.unstageFile(file.path)
+                            })
                             root.update()
                         }
 
                         onDiscardAllRequested: function() {
-                            fileListsPanel.unstagedChanges = []
-                            if (root.selectedFilePath !== "" && root.selectedFilePath !== null)
-                                root.selectedFilePath = ""
+                            statusController.revertAll()
+                            root.update()
                         }
 
                         onStashAllRequested: function(section) {
                             if (section === "unstaged") {
                                 fileListsPanel.unstagedChanges = []
-                            } else if (section === "staged") {
+                            }
+
+                            if (section === "staged") {
                                 fileListsPanel.stagedChanges = []
                             }
 
@@ -161,19 +152,30 @@ Item {
             Layout.preferredWidth: root.width * 2 / 3
             color: "transparent"
 
-            Text {
-                anchors.centerIn: parent
-                text: root.selectedFilePath === "" ? "Diff (placeholder)" : ("Diff (placeholder)\n" + root.selectedFilePath)
-                horizontalAlignment: Text.AlignHCenter
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
-                color: Style.colors.placeholderText
+            DiffView {
+                id: diffView
+                anchors.fill: parent
+                onRequestStage: function (start, end, type) {
+                    root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
+                    root.update()
+                }
+
+                onRequestRevert: function (start, end, type) {
+                    root.statusController.revertSelectedLines(root.selectedFilePath, start, end, type)
+                    root.update()
+                }
             }
         }
     }
 
+    function updateDiff() {
+        let res = root.statusController.getDiffView(root.selectedFilePath)
+        if (res.success) {
+            diffView.diffData = res.data.lines
+        }
+    }
 
-    function update() {
+    function updateStatus() {
         let res = statusController.status()
 
         if (!res.success)
@@ -184,12 +186,18 @@ Item {
         res.data.forEach((file)=>{
             if (file.isStaged) {
                 fileListsPanel.stagedChanges.push(file)
-            } else if (file.isUnstaged) {
+            }
+            if (file.isUnstaged) {
                 fileListsPanel.unstagedChanges.push(file)
             }
         })
 
         fileListsPanel.unstagedChanges = fileListsPanel.unstagedChanges.slice(0)
         fileListsPanel.stagedChanges = fileListsPanel.stagedChanges.slice(0)
+    }
+
+    function update() {
+        updateStatus()
+        updateDiff()
     }
 }
