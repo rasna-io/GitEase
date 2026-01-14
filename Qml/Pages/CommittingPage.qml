@@ -171,6 +171,9 @@ Item {
             DiffView {
                 id: diffView
                 anchors.fill: parent
+                onRequestStage: function (start, end, type) {
+                    root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
+                }
             }
         }
     }
