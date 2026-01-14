@@ -13,8 +13,9 @@ import GitEase
 
 DockAblePage {
     id: root
-    anchors.fill: parent
 
+    /* Property Declarations
+     * ****************************************************************************************/
     // Provided by MainWindow Loader (current Page model)
     property var page: null
 
@@ -34,6 +35,12 @@ DockAblePage {
     property string selectedCommit: ""
     property string selectedFilePath: ""
 
+    /* Object Properties
+     * ****************************************************************************************/
+    anchors.fill: parent
+
+    /* Children
+     * ****************************************************************************************/
     CommitGraphDock {
         id: commitGraphDock
 
