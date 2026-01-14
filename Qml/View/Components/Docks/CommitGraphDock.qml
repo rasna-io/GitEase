@@ -897,7 +897,7 @@ Item {
                                 // Erase previous frame completely
                                 ctx.clearRect(0, 0, width, height);
                                 ctx.globalAlpha = 1.0;
-                                ctx.fillStyle = "#FFFFFF";
+                                ctx.fillStyle = Style.colors.primaryBackground;
                                 ctx.fillRect(0, 0, width, height);
                                 
                                 let showAvatar = root.appModel?.appSettings?.generalSettings?.showAvatar ?? true

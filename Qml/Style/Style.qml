@@ -51,6 +51,12 @@ QtObject {
         renamedFile:         "#aafff8"
         untrackedFile:       "#990000ff"
 
+        voidStripe:          "#565656"
+        editorBackgroound:   "#282828"
+        editorForeground:    "#f1f1f1"
+        linePanelBackgroound:"#383838"
+        linePanelForeground: "#9f9f9f"
+
         diffRemovedBg:       "#ed4c4c"
         diffAddedBg:         "#1b7b3a"
         diffRemovedBorder:   "#F5C2C7"
