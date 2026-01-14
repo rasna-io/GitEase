@@ -57,9 +57,9 @@ IPopup {
                     radius: 5
                     color: Style.colors.secondaryBackground
                     model: [
-                        {id: 0, title: "General", icon: Style.icons.clock},
-                        {id: 1, title: "SSH", icon: Style.icons.clock},
-                        {id: 2, title: "Appearence", icon: Style.icons.clock},
+                        {id: 0, title: "General", icon: Style.icons.slider},
+                        {id: 1, title: "SSH", icon: Style.icons.terminal},
+                        {id: 2, title: "Appearence", icon: Style.icons.palette},
                     ]
                     expanded: true
                     onClicked: (modelData) => {
@@ -78,6 +78,7 @@ IPopup {
                     SwipeView {
                         anchors.fill: parent
                         currentIndex: root.currentPage
+                        interactive: false
 
                         Item {
                             ColumnLayout {
