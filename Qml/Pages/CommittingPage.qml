@@ -90,14 +90,12 @@ Item {
                             root.selectedFilePath = filePath
                         }
 
-                        // TODO :: only for show demo and handlers
                         onStageFileRequested: function(filePath) {
                             statusController.stageFile(filePath)
                             root.update()
                         }
 
                         onUnstageFileRequested: function(filePath) {
-                            //TODO Not rest head
                             statusController.unstageFile(filePath)
                             root.update()
                         }
@@ -108,7 +106,6 @@ Item {
                         }
 
                         onOpenFileRequested: function(filePath) {
-                            console.log("Open file (placeholder):", filePath)
                             root.selectedFilePath = filePath;
                             updateDiff()
                         }
@@ -120,8 +117,9 @@ Item {
 
                         onUnstageAllRequested: function() {
 
-
-                            statusController.unstageAll()
+                            fileListsPanel.stagedChanges.forEach((file)=>{
+                                statusController.unstageFile(file.path)
+                            })
                             root.update()
                         }
 
