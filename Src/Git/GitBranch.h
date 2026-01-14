@@ -54,7 +54,7 @@ public:
      * \param repo Git repository to check
      * \return Current branch name or empty string if detached HEAD
      */
-    QString getCurrentBranchName();
+    Q_INVOKABLE QString getCurrentBranchName();
 
     Q_INVOKABLE QString formatRefName(const QString &branchName);
 

@@ -34,4 +34,6 @@ QtObject{
     property string palette:        "\uf53f"
     property string terminal:       "\uf120"
     property string slider:         "\uf1de"
+
+    property string branch:         "\uf126"
 }
