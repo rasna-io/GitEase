@@ -4,6 +4,7 @@ import QtQuick.Layouts
 
 import GitEase
 import GitEase_Style
+import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * SimpleDock
@@ -24,7 +25,6 @@ Item {
     readonly property int resizeHandleSize: 10
     readonly property int minFloatingWidth: 220
     readonly property int minFloatingHeight: 140
-    property bool isResizing: false
 
     default property alias contentData: contentArea.data
 
@@ -46,327 +46,6 @@ Item {
         radius: 6
         border.color: root.isFloating ? "#c9c9c9" : "transparent"
         border.width: root.isDragging ? 1.8 : 1
-
-        // Resize handles (only when floating)
-        Item {
-            id: resizeOverlay
-            anchors.fill: parent
-            z: 10
-            visible: root.isFloating && !root.isDragging
-
-            // Right edge
-            MouseArea {
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                width: root.resizeHandleSize
-                hoverEnabled: true
-                cursorShape: Qt.SizeHorCursor
-                enabled: resizeOverlay.visible
-
-                property real startW
-                property real startX
-                property real startMouseX
-
-                onPressed: function(m) {
-                    root.isResizing = true
-
-                    startW = root.width
-                    startMouseX = m.x
-                }
-
-                onPositionChanged: function(m) {
-                    if (!pressed)
-                        return
-
-                    let delatX = m.x - startMouseX
-                    root.width = Math.max(startW + delatX, root.minFloatingWidth)
-                }
-
-                onReleased: root.isResizing = false
-
-                onCanceled: root.isResizing = false
-            }
-
-            // Bottom edge
-            MouseArea {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                height: root.resizeHandleSize
-                hoverEnabled: true
-                cursorShape: Qt.SizeVerCursor
-                enabled: resizeOverlay.visible
-
-                property real startH
-                property real startMouseY
-
-                onPressed: function(m) {
-                    root.isResizing = true
-
-                    startH = root.height
-                    startMouseY = m.y
-                }
-
-                onPositionChanged: function(m) {
-                    if (!pressed)
-                        return
-
-                    let deltaY = m.y - startMouseY
-                    root.height = Math.max(startH + deltaY, root.minFloatingHeight)
-                }
-
-                onReleased: root.isResizing = false
-
-                onCanceled: root.isResizing = false
-            }
-
-            // Bottom-right corner
-            MouseArea {
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                width: root.resizeHandleSize
-                height: root.resizeHandleSize
-                hoverEnabled: true
-                cursorShape: Qt.SizeFDiagCursor
-                enabled: resizeOverlay.visible
-
-                property real startW
-                property real startH
-                property real startMouseX
-                property real startMouseY
-
-                onPressed: function(m) {
-                    root.isResizing = true
-
-                    startW = root.width
-                    startH = root.height
-                    startMouseX = m.x
-                    startMouseY = m.y
-                }
-
-                onPositionChanged: function(m) {
-                    if (!pressed)
-                        return
-
-                    let deltaX = m.x - startMouseX
-                    let deltaY = m.y - startMouseY
-                    root.width = Math.max(startW + deltaX, root.minFloatingWidth)
-                    root.height = Math.max(startH + deltaY, root.minFloatingHeight)
-                }
-
-                onReleased: root.isResizing = false
-
-                onCanceled: root.isResizing = false
-            }
-
-            // Left edge
-            MouseArea {
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                width: root.resizeHandleSize
-                hoverEnabled: true
-                cursorShape: Qt.SizeHorCursor
-                enabled: resizeOverlay.visible
-
-                property real startW
-                property real startX
-                property real startMouseX
-
-                onPressed: function(m) {
-                    root.isResizing = true
-
-                    startW = root.width
-                    startX = root.x
-                    startMouseX = m.x
-                }
-
-                onPositionChanged: function(m) {
-                    if (!pressed)
-                        return
-
-                    let deltaX = m.x - startMouseX
-                    let newW = Math.max(startW - deltaX, root.minFloatingWidth)
-                    root.x = startX + (startW - newW)
-                    root.width = newW
-                }
-
-                onReleased: root.isResizing = false
-
-                onCanceled: root.isResizing = false
-            }
-
-            // Top edge
-            MouseArea {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                height: root.resizeHandleSize
-                hoverEnabled: true
-                cursorShape: Qt.SizeVerCursor
-                enabled: resizeOverlay.visible
-
-                property real startH
-                property real startY
-                property real startMouseY
-
-                onPressed: function(m) {
-                    root.isResizing = true
-
-                    startH = root.height
-                    startY = root.y
-                    startMouseY = m.y
-                }
-
-                onPositionChanged: function(m) {
-                    if (!pressed)
-                        return
-
-                    let deltaY = m.y - startMouseY
-                    let newH = Math.max(startH - deltaY, root.minFloatingHeight)
-                    root.y = startY + (startH - newH)
-                    root.height = newH
-                }
-
-                onReleased: root.isResizing = false
-
-                onCanceled: root.isResizing = false
-            }
-
-            // Top-left corner
-            MouseArea {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                width: root.resizeHandleSize
-                height: root.resizeHandleSize
-                hoverEnabled: true
-                cursorShape: Qt.SizeFDiagCursor
-                enabled: resizeOverlay.visible
-
-                property real startW
-                property real startH
-                property real startX
-                property real startY
-                property real startMouseX
-                property real startMouseY
-
-                onPressed: function(m) {
-                    root.isResizing = true
-
-                    startW = root.width
-                    startH = root.height
-                    startX = root.x
-                    startY = root.y
-                    startMouseX = m.x
-                    startMouseY = m.y
-                }
-
-                onPositionChanged: function(m) {
-                    if (!pressed)
-                        return
-
-                    let deltaX = m.x - startMouseX
-                    let deltaY = m.y - startMouseY
-                    let newW = Math.max(startW - deltaX, root.minFloatingWidth)
-                    let newH = Math.max(startH - deltaY, root.minFloatingHeight)
-                    root.x = startX + (startW - newW)
-                    root.y = startY + (startH - newH)
-                    root.width = newW
-                    root.height = newH
-                }
-
-                onReleased: root.isResizing = false
-
-                onCanceled: root.isResizing = false
-            }
-
-            // Top-right corner
-            MouseArea {
-                anchors.right: parent.right
-                anchors.top: parent.top
-                width: root.resizeHandleSize
-                height: root.resizeHandleSize
-                hoverEnabled: true
-                cursorShape: Qt.SizeBDiagCursor
-                enabled: resizeOverlay.visible
-
-                property real startW
-                property real startH
-                property real startY
-                property real startMouseX
-                property real startMouseY
-
-                onPressed: function(m) {
-                    root.isResizing = true
-
-                    startW = root.width
-                    startH = root.height
-                    startY = root.y
-                    startMouseX = m.x
-                    startMouseY = m.y
-                }
-
-                onPositionChanged: function(m) {
-                    if (!pressed)
-                        return
-
-                    let deltaX = m.x - startMouseX
-                    let deltaY = m.y - startMouseY
-                    root.width = Math.max(startW + deltaX, root.minFloatingWidth)
-                    let newH = Math.max(startH - deltaY, root.minFloatingHeight)
-                    root.y = startY + (startH - newH)
-                    root.height = newH
-                }
-
-                onReleased: root.isResizing = false
-
-                onCanceled: root.isResizing = false
-            }
-
-            // Bottom-left corner
-            MouseArea {
-                anchors.left: parent.left
-                anchors.bottom: parent.bottom
-                width: root.resizeHandleSize
-                height: root.resizeHandleSize
-                hoverEnabled: true
-                cursorShape: Qt.SizeBDiagCursor
-                enabled: resizeOverlay.visible
-
-                property real startW
-                property real startH
-                property real startX
-                property real startMouseX
-                property real startMouseY
-
-                onPressed: function(m) {
-                    root.isResizing = true
-
-                    startW = root.width
-                    startH = root.height
-                    startX = root.x
-                    startMouseX = m.x
-                    startMouseY = m.y
-                }
-
-                onPositionChanged: function(m) {
-                    if (!pressed)
-                        return
-
-                    let deltaX = m.x - startMouseX
-                    let deltaY = m.y - startMouseY
-                    let newW = Math.max(startW - deltaX, root.minFloatingWidth)
-                    root.x = startX + (startW - newW)
-                    root.width = newW
-                    root.height = Math.max(startH + deltaY, root.minFloatingHeight)
-                }
-
-                onReleased: root.isResizing = false
-
-                onCanceled: root.isResizing = false
-            }
-        }
 
         Behavior on opacity {
             NumberAnimation {
@@ -462,7 +141,7 @@ Item {
                     anchors.fill: parent
                     anchors.rightMargin: 25
                     hoverEnabled: true
-                    cursorShape: (root.isDragging || root.isResizing) ? Qt.ClosedHandCursor :
+                    cursorShape: root.isDragging ? Qt.ClosedHandCursor :
                                                    dragArea.containsMouse? Qt.SizeAllCursor : Qt.ArrowCursor
                     acceptedButtons: Qt.LeftButton
                     
@@ -473,9 +152,6 @@ Item {
                     }
                     
                     onPositionChanged: function(mouse) {
-                        if (root.isResizing)
-                            return
-
                         if (pressed) {
                             var distance = Math.sqrt(
                                 Math.pow(mouse.x - pressPoint.x, 2) +
@@ -513,6 +189,102 @@ Item {
                 z: 1
             }
         }
+    }
+
+    // Right edge
+    ResizeHandle {
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+
+        thickness: root.resizeHandleSize
+        handle: ResizeHandle.Right
+        minWidth: root.minFloatingWidth
+        enabled: root.isFloating && !root.isDragging
+    }
+
+    // Bottom edge
+    ResizeHandle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+
+        thickness: root.resizeHandleSize
+        handle: ResizeHandle.Bottom
+        minHeight: root.minFloatingHeight
+        enabled: root.isFloating && !root.isDragging
+    }
+
+    // Bottom-right corner
+    ResizeHandle {
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+
+        thickness: root.resizeHandleSize
+        handle: ResizeHandle.BottomRight
+        minWidth: root.minFloatingWidth
+        minHeight: root.minFloatingHeight
+        enabled: root.isFloating && !root.isDragging
+    }
+
+    // Left edge
+    ResizeHandle {
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+
+        thickness: root.resizeHandleSize
+        handle: ResizeHandle.Left
+        minWidth: root.minFloatingWidth
+        enabled: root.isFloating && !root.isDragging
+    }
+
+    // Top edge
+    ResizeHandle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+
+        thickness: root.resizeHandleSize
+        handle: ResizeHandle.Top
+        minHeight: root.minFloatingHeight
+        enabled: root.isFloating && !root.isDragging
+    }
+
+    // Top-left corner
+    ResizeHandle {
+        anchors.left: parent.left
+        anchors.top: parent.top
+
+        thickness: root.resizeHandleSize
+        handle: ResizeHandle.TopLeft
+        minWidth: root.minFloatingWidth
+        minHeight: root.minFloatingHeight
+        enabled: root.isFloating && !root.isDragging
+    }
+
+    // Top-right corner
+    ResizeHandle {
+        anchors.right: parent.right
+        anchors.top: parent.top
+
+        thickness: root.resizeHandleSize
+        handle: ResizeHandle.TopRight
+        minWidth: root.minFloatingWidth
+        minHeight: root.minFloatingHeight
+        enabled: root.isFloating && !root.isDragging
+    }
+
+    // Bottom-left corner
+    ResizeHandle {
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+
+        thickness: root.resizeHandleSize
+        handle: ResizeHandle.BottomLeft
+        minWidth: root.minFloatingWidth
+        minHeight: root.minFloatingHeight
+        enabled: root.isFloating && !root.isDragging
     }
 
     /* Functions
