@@ -19,39 +19,39 @@ public:
     /**
      * \brief Stage a file for commit
      * \param filePath Path to the file to stage
-     * \return QVariantMap with operation result
+     * \return GitResult with operation result
      */
     Q_INVOKABLE GitResult stageFile(const QString &filePath);
-
 
     /**
      * \brief Unstage a file
      * \param filePath Path to the file to unstage
-     * \return QVariantMap with operation result
+     * \return GitResult with operation result
      */
     Q_INVOKABLE GitResult unstageFile(const QString &filePath);
 
     /**
      * \brief Stage all unstaged changes
-     * \return QVariantMap with count of staged files
+     * \param includeUntrackedFiles Include new files not yet tracked by git
+     * \return GitResult with count of staged files
      */
-    Q_INVOKABLE GitResult stageAll(bool includeUntrackedFiles  = true);
+    Q_INVOKABLE GitResult stageAll(bool includeUntrackedFiles = true);
 
     /**
      * \brief Unstage all staged changes
-     * \return QVariantMap with count of unstaged files
+     * \return GitResult with count of unstaged files
      */
     Q_INVOKABLE GitResult unstageAll();
 
     /**
      * \brief Get list of currently staged files
-     * \return QVariantMap with staged files list
+     * \return GitResult with staged files list
      */
     Q_INVOKABLE GitResult getStagedFiles();
 
     /**
      * \brief Get repository status (staged/unstaged/untracked files)
-     * \return QVariantMap with status information
+     * \return GitResult with status information
      */
     Q_INVOKABLE GitResult status();
 
