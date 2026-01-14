@@ -707,3 +707,165 @@ QList<GitFileStatus> GitStatus::processDiff(git_diff* diff)
 
     return fileList;
 }
+
+GitResult GitStatus::revertFile(const QString &filePath)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    // Configure checkout options
+    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+
+    // GIT_CHECKOUT_FORCE ensures we overwrite local workdir changes.
+    // GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH prevents accidental glob expansion.
+    opts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+
+    // Convert QString path to the format required by git_strarray
+    QByteArray pathUtf8 = filePath.toUtf8();
+    char* path = pathUtf8.data();
+    opts.paths.strings = &path;
+    opts.paths.count = 1;
+
+    // Perform checkout from the index to the working directory
+    int error = git_checkout_index(m_currentRepo->repo, nullptr, &opts);
+
+    if (error != GIT_OK) {
+        const git_error *e = git_error_last();
+        QString errorMsg = e ? QString::fromUtf8(e->message) : "Unknown error during checkout";
+        return GitResult(false, QVariant(), "Failed to revert file: " + errorMsg);
+    }
+
+    return GitResult(true, filePath, "File reverted successfully to index state.");
+}
+
+GitResult GitStatus::revertSelectedLines(const QString &filePath, int startLine, int endLine, int mode)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    // Get the "Source of Truth" (The Index/Staged version)
+    uint32_t baseMode = 0;
+    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
+    if (!indexBlob)
+        return GitResult(false, QVariant(), "File not found in index.");
+
+    const auto indexLines = readBlobLines(indexBlob.get());
+
+    // Generate the patch (Index -> Workdir)
+    git_diff* diffRaw = nullptr;
+    git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
+    QByteArray pathUtf8 = filePath.toUtf8();
+    char* path = pathUtf8.data();
+    diffOpts.pathspec.strings = &path;
+    diffOpts.pathspec.count = 1;
+    diffOpts.flags |= (GIT_DIFF_PATIENCE | GIT_DIFF_MINIMAL);
+
+    git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
+    UniqueDiff diff(diffRaw);
+
+    git_patch* patchRaw = nullptr;
+    if (git_patch_from_diff(&patchRaw, diff.get(), 0) != GIT_OK)
+        return GitResult(false, QVariant(), "No changes to revert.");
+    UniquePatch patch(patchRaw);
+
+
+    std::vector<QString> out;
+    int basePos = 1; // Index line pointer
+    bool lastLineWasReverted = false;
+    size_t hunkCount = git_patch_num_hunks(patch.get());
+
+    for (size_t h = 0; h < hunkCount; ++h) {
+        const git_diff_hunk* hunk = nullptr;
+        size_t linesInHunk = 0;
+        git_patch_get_hunk(&hunk, &linesInHunk, patch.get(), h);
+
+        // Copy context/unaffected lines before the hunk
+        while (basePos < (int)hunk->old_start && basePos <= (int)indexLines.size()) {
+            out.push_back(indexLines[basePos - 1]);
+            basePos++;
+        }
+
+        for (size_t li = 0; li < linesInHunk; ++li) {
+            const git_diff_line* line = nullptr;
+            git_patch_get_line_in_hunk(&line, patch.get(), h, li);
+            char origin = (char)line->origin;
+
+            if (origin == GIT_DIFF_LINE_CONTEXT) {
+                if (basePos <= (int)indexLines.size()) out.push_back(indexLines[basePos - 1]);
+                basePos++;
+                lastLineWasReverted = false;
+            }
+            else if (origin == GIT_DIFF_LINE_DELETION) {
+                // To revert a deletion, we MUST keep the line from the index
+                bool isSelected = (line->old_lineno >= startLine && line->old_lineno <= endLine);
+
+                if (isSelected) {
+                    // REVERT: Keep the index line (don't "delete" it)
+                    if (basePos <= (int)indexLines.size()) out.push_back(indexLines[basePos - 1]);
+                    basePos++;
+                    lastLineWasReverted = true;
+                } else {
+                    // DISCARD REVERT: Follow the workdir (skip the line)
+                    basePos++;
+                    lastLineWasReverted = false;
+                }
+            }
+            else if (origin == GIT_DIFF_LINE_ADDITION) {
+                // To revert an addition, we OMIT the line from the workdir
+                bool isSelected = (line->new_lineno >= startLine && line->new_lineno <= endLine) || lastLineWasReverted;
+
+                if (isSelected) {
+                    // REVERT: Do nothing (don't add the workdir line)
+                } else {
+                    // DISCARD REVERT: Keep the addition from the workdir
+                    QString content = QString::fromUtf8(line->content, (int)line->content_len);
+                    content.remove('\n').remove('\r');
+                    out.push_back(content);
+                }
+            }
+        }
+    }
+
+    // Copy remaining lines
+    while (basePos <= (int)indexLines.size()) {
+        out.push_back(indexLines[basePos - 1]);
+        basePos++;
+    }
+
+    // WRITE TO DISK (Physical File)
+    const char* wd = git_repository_workdir(m_currentRepo->repo);
+    QString absPath = QDir(QString::fromUtf8(wd)).filePath(filePath);
+    QFile f(absPath);
+    if (f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        f.write(joinLines(out).toUtf8());
+        f.close();
+        return GitResult(true, filePath, "Selected lines reverted.");
+    }
+
+    return GitResult(false, QVariant(), "Failed to write file to disk.");
+}
+
+GitResult GitStatus::revertAll()
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+
+    // FORCE: Overwrite all local changes
+    // RECREATE_MISSING: Restore files that were deleted in workdir
+    opts.checkout_strategy = GIT_CHECKOUT_FORCE |
+                             GIT_CHECKOUT_RECREATE_MISSING |
+                             GIT_CHECKOUT_DONT_UPDATE_INDEX;
+
+    // Passing NULL to the second parameter tells libgit2 to use HEAD
+    int error = git_checkout_head(m_currentRepo->repo, &opts);
+
+    if (error != GIT_OK) {
+        const git_error *e = git_error_last();
+        return GitResult(false, QVariant(),
+                         QString("Failed to revert all changes: %1").arg(e ? e->message : "Unknown error"));
+    }
+
+    return GitResult(true, QVariant(), "All changes discarded.");
+}

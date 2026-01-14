@@ -39,6 +39,7 @@ Item {
     signal requestFocusNext()
     signal requestFocusPrev()
     signal requestStage(int start, int end, int type)
+    signal requestRevert(int start, int end, int type)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -184,6 +185,11 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: "PointingHandCursor"
+                        onClicked: {
+                            let range = getRange()
+
+                            requestRevert(range.start, range.end, range.type);
+                        }
                     }
                 }
 

@@ -139,6 +139,31 @@ public:
      */
     Q_INVOKABLE GitResult stageSelectedLines(const QString &filePath, int startLine, int endLine, int mode);
 
+    /**
+     * @brief Discards all unstaged changes in a file, resetting it to the index state.
+     * @param filePath Path to the file to revert.
+     * @return GitResult indicating success or failure.
+     */
+    Q_INVOKABLE GitResult revertFile(const QString &filePath);
+
+    /**
+     * @brief Discards specific lines in the working directory.
+     * @param filePath Path to the file.
+     * @param startLine Selection start.
+     * @param endLine Selection end.
+     * @param mode The Git delta type.
+     * @return GitResult indicating success.
+     */
+    Q_INVOKABLE GitResult revertSelectedLines(const QString &filePath, int startLine, int endLine, int mode);
+
+    /**
+     * @brief Discards all unstaged modifications in the repository.
+     * * Resets the working directory to match the HEAD commit. This will not
+     * delete untracked files but will restore deleted tracked files.
+     * * @return GitResult indicating success.
+     */
+    Q_INVOKABLE GitResult revertAll();
+
 private:
     /**
      * \brief Helper method to create a diff between two trees (commit snapshots).
