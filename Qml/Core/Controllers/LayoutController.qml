@@ -25,9 +25,30 @@ QtObject {
         root.defaultLayouts = {
             // Graph page (DockAblePage)
             "Graph View": [
-                { key: "Commit Graph Dock", position: -1,    isFloating: true },
-                { key: "File Changes Dock", position: Enums.DockPosition.Bottom, isFloating: false },
-                { key: "Diff View Dock",    position: Enums.DockPosition.Right,  isFloating: false }
+                { key: "Commit Graph Dock",
+                    position: -1,
+                    isFloating: true ,
+                    x : 0,
+                    y : 0,
+                    width : 600,
+                    height : 380
+                },
+                { key: "File Changes Dock",
+                    position: -1,
+                    isFloating: true,
+                    x : 605,
+                    y : 0,
+                    width : 409,
+                    height : 380
+                },
+                { key: "Diff View Dock",
+                    position: -1,
+                    isFloating: true,
+                    x : 0,
+                    y : 385,
+                    width : 1024,
+                    height : 250
+                }
             ],
 
             "Committing": [],
@@ -131,6 +152,13 @@ QtObject {
 
             dock.position = layoutItem.position
             dock.isFloating = (layoutItem.isFloating === true) || (layoutItem.position === -1)
+
+            if(dock.isFloating){
+                dock.x = layoutItem.x
+                dock.y = layoutItem.y
+                dock.width = layoutItem.width
+                dock.height = layoutItem.height
+            }
         }
     }
 
@@ -150,7 +178,11 @@ QtObject {
             captured.push({
                 key: dock.title,
                 position: dock.position,
-                isFloating: dock.isFloating
+                isFloating: dock.isFloating,
+                x: dock.x,
+                y: dock.y,
+                width: dock.width,
+                height: dock.height
             })
         }
 
