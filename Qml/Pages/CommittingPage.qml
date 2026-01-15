@@ -244,6 +244,7 @@ Item {
 
                         onFileSelected: function(filePath) {
                             root.selectedFilePath = filePath
+                            root.updateDiff()
                         }
 
                         onStageFileRequested: function(filePath) {
