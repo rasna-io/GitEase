@@ -11,4 +11,15 @@ import GitEase_Style_Impl
 
 QtObject {
     id: root
+
+    property string pageTitle: ""
+
+    // Array of dock layout items.
+    // Each item is expected to look like:
+    // {
+    //   key: "Commit Graph Dock",
+    //   position: Enums.DockPosition.Left|Top|Right|Bottom|-1,
+    //   isFloating: true|false
+    // }
+    property var docks: []
 }
