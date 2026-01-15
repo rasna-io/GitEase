@@ -342,7 +342,7 @@ Item {
             if (file.isStaged) {
                 fileListsPanel.stagedChanges.push(file)
             }
-            if (file.isUnstaged) {
+            if (file.isUnstaged || file.isUntracked) {
                 fileListsPanel.unstagedChanges.push(file)
             }
         })
