@@ -20,6 +20,7 @@ Item {
 
     // Provided by MainWindow Loader (UiSession context)
     property AppModel appModel: null
+    property LayoutController layoutController: null
 
     property var docks: []
 
@@ -41,6 +42,10 @@ Item {
      * ****************************************************************************************/
     onDocksChanged: {
         root.updateSideDocks()
+    }
+
+    onLayoutControllerChanged: {
+        applyLayout()
     }
 
     PageDropZone{
@@ -222,6 +227,11 @@ Item {
         dock.position = droppedPosition
 
         root.updateSideDocks()
+
+        if (root.layoutController && root.page) {
+            if (root.page.title && root.page.title.length)
+                root.layoutController.captureLayoutFromDocks(root.page.title, root.docks)
+        }
     }
 
     function updateHoveredDockPosition() {
@@ -266,5 +276,24 @@ Item {
         var dock = root.docks[index]
         root.docks = root.docks.slice(0, index).concat(root.docks.slice(index + 1))
         dock.destroy()
+
+        if (root.layoutController && root.page) {
+            if (root.page.title && root.page.title.length)
+                root.layoutController.captureLayoutFromDocks(root.page.title, root.docks)
+        }
+    }
+
+    function applyLayout() {
+        if (!root.layoutController || !root.page)
+            return
+
+        if (!root.page.title || root.page.title.length === 0)
+            return
+
+        if (!root.docks || root.docks.length === 0)
+            return
+
+        root.layoutController.applyLayoutToDocks(root.page.title, root.docks)
+        root.updateSideDocks()
     }
 }
