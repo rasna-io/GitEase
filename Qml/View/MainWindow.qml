@@ -118,6 +118,9 @@ Rectangle {
                                 if (item.hasOwnProperty("repositoryController")) {
                                     item.repositoryController = Qt.binding(function() { return root.uiSession?.repositoryController })
                                 }
+                                if (item.hasOwnProperty("layoutController")) {
+                                    item.layoutController = Qt.binding(function() { return root.uiSession?.layoutController })
+                                }
                             }
 
                             onStatusChanged: {
