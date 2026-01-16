@@ -35,7 +35,7 @@ Item {
 
     /* Signals
      * ****************************************************************************************/
-
+    signal profilesLoaded(var profiles)
 
     /* Functions
      * ****************************************************************************************/
@@ -48,6 +48,7 @@ Item {
 
         let config = {
             recentRepositories: root.recentRepositories,
+            userProfiles: root.userProfiles,
             settings: root.appSettings.serialize()
         }
 
@@ -82,6 +83,8 @@ Item {
 
         root.recentRepositories = jsonContent.recentRepositories
         root.appSettings.deserialize(jsonContent.settings)
+
+        root.profilesLoaded(jsonContent.userProfiles)
 
         console.info("[Config] Configuration successfully loaded.");
     }
