@@ -16,15 +16,23 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var                  page:                 null
+    property var                   page:                  null
 
-    property RepositoryController repositoryController: null
+    property RepositoryController  repositoryController:  null
 
-    property StatusController     statusController:     null
+    property StatusController      statusController:      null
 
-    property BranchController     branchController:     null
+    property BranchController      branchController:      null
 
-    property string               selectedFilePath:     ""
+    property CommitController      commitController:      null
+
+    property RemoteController      remoteController:      null
+
+    property UserProfileController userProfileController: null
+
+    property string                selectedFilePath:      ""
+
+    property var                   actionResult:          ({})
 
     onStatusControllerChanged: {
         update()
