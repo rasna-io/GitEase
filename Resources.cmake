@@ -13,16 +13,17 @@ set(RESOURCES_CORE
     Qml/Core/Models/UserProfile.qml           # user profile model
 
     # Controllers
-    Qml/Core/Controllers/WelcomeController.qml    # Welcome page controller
-    Qml/Core/Controllers/DockController.qml       # Dock widget management controller
-    Qml/Core/Controllers/PageController.qml       # Page lifecycle and navigation controller
-    Qml/Core/Controllers/LayoutController.qml     # Layout management controller (singleton)
-    Qml/Core/Controllers/RepositoryController.qml # Repository Controller
+    Qml/Core/Controllers/WelcomeController.qml      # Welcome page controller
+    Qml/Core/Controllers/DockController.qml         # Dock widget management controller
+    Qml/Core/Controllers/PageController.qml         # Page lifecycle and navigation controller
+    Qml/Core/Controllers/LayoutController.qml       # Layout management controller (singleton)
+    Qml/Core/Controllers/RepositoryController.qml   # Repository Controller
     Qml/Core/Controllers/BranchController.qml
     Qml/Core/Controllers/RemoteController.qml
     Qml/Core/Controllers/CommitController.qml
     Qml/Core/Controllers/StatusController.qml
     Qml/Core/Controllers/BundleController.qml
+    Qml/Core/Controllers/UserProfileController.qml  # User Profile Controller
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
