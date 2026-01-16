@@ -17,9 +17,10 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property AppModel             appModel
-    required property PageController       pageController
-    required property RepositoryController repositoryController
+    required property AppModel              appModel
+    required property PageController        pageController
+    required property RepositoryController  repositoryController
+    required property UserProfileController userProfileController
 
     property real                          collapsedWidth:       50
     property real                          expandedWidth:        125
@@ -222,7 +223,7 @@ Rectangle {
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    text: "username"
+                    text: root.userProfileController?.currentUserProfile?.username ?? "username"
                     visible: root.expanded
                     font.family: Style.fontTypes.roboto
                     font.weight: 400
