@@ -195,16 +195,20 @@ Item {
                                         if(res.success){
                                             let branchName = branchController.getCurrentBranchName()
                                             let remoteName = remoteController.getUpstreamName(branchName)
-                                            let remoteRes = remoteController.push(
-                                                    remoteName.data,
-                                                    branchName,
-                                                    userProfileController.currentUserProfile.username,
-                                                    userProfileController.currentUserProfile.password)
-
-                                            if(!remoteRes.success){
-                                                errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
+                                            if(!remoteName.success){
+                                                errorMessageLabel.text = remoteName.errorMessage ?? "push error"
                                             }else{
-                                                commitTextArea.text = ""
+                                               let remoteRes = remoteController.push(
+                                                        remoteName.data,
+                                                        branchName,
+                                                        userProfileController.currentUserProfile.username,
+                                                        userProfileController.currentUserProfile.password)
+
+                                                if(!remoteRes.success){
+                                                    errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
+                                                }else{
+                                                    commitTextArea.text = ""
+                                                }
                                             }
 
                                         }else{
