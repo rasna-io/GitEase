@@ -28,6 +28,10 @@ Item {
 
     property                AppSettings       appSettings:              AppSettings {}
 
+    property                var               userProfiles:             []
+
+    property                UserProfile       currentUserProfile:       null
+
 
     /* Signals
      * ****************************************************************************************/
