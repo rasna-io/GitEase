@@ -108,6 +108,12 @@ Rectangle {
                         if (item.hasOwnProperty("repositoryController")) {
                             item.repositoryController = Qt.binding(function() { return root.uiSession?.repositoryController })
                         }
+                        if (item.hasOwnProperty("remoteController")) {
+                            item.remoteController = Qt.binding(function() { return root.uiSession?.remoteController })
+                        }
+                        if (item.hasOwnProperty("userProfileController")) {
+                            item.userProfileController = Qt.binding(function() { return root.uiSession?.userProfileController })
+                        }
                     }
 
                     onStatusChanged: {
