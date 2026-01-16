@@ -93,6 +93,9 @@ ApplicationWindow {
                     if (item && item.hasOwnProperty("repositoryController")) {
                         item.repositoryController = Qt.binding(function() {return uiSession.repositoryController})
                     }
+                    if (item && item.hasOwnProperty("userProfileController")) {
+                        item.userProfileController = Qt.binding(function() {return uiSession.userProfileController})
+                    }
                     if (item && item.hasOwnProperty("appModel")) {
                         item.appModel = Qt.binding(function() {return uiSession.appModel})
                     }
