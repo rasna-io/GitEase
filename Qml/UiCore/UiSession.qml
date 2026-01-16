@@ -38,6 +38,11 @@ QtObject {
 
     property BundleController bundleController: BundleController {}
 
+    property UserProfileController userProfileController: UserProfileController {
+        userProfiles: root.appModel.userProfiles
+        currentUserProfile: root.appModel.currentUserProfile
+    }
+
     property UiSessionPopups      popups
 }
 
