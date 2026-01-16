@@ -179,7 +179,7 @@ Item {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "Commit"
+                                    text: "Commit and push"
                                     color: Style.colors.secondaryForeground
                                     font.family: Style.fontTypes.roboto
                                     font.pixelSize: 12
@@ -189,10 +189,28 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
+                                    enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
                                     onClicked: {
-                                        // statusController.commit(commitTextArea.text)
-                                        // repositoryController.push()
-                                        commitTextArea.text = ""
+                                        let res = commitController.commit(commitTextArea.text, false, false)
+                                        if(res.success){
+                                            let branchName = branchController.getCurrentBranchName()
+                                            let remoteName = remoteController.getUpstreamName(branchName)
+                                            let remoteRes = remoteController.push(
+                                                    remoteName.data,
+                                                    branchName,
+                                                    userProfileController.currentUserProfile.username,
+                                                    userProfileController.currentUserProfile.password)
+
+                                            if(!remoteRes.success){
+                                                errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
+                                            }else{
+                                                commitTextArea.text = ""
+                                            }
+
+                                        }else{
+                                            errorMessageLabel.text = res.errorMessage ?? "commit error"
+                                        }
+
                                         root.update()
                                     }
                                 }
@@ -217,15 +235,60 @@ Item {
                                 MouseArea {
                                     anchors.fill: parent
                                     hoverEnabled: true
+                                    enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
                                     onClicked: {
-                                        // statusController.commit(commitTextArea.text)
-                                        commitTextArea.text = ""
+                                        let res = commitController.commit(commitTextArea.text, false, false)
+                                        if(res.success){
+                                            commitTextArea.text = ""
+                                        }else{
+                                            errorMessageLabel.text = res.errorMessage ?? ""
+                                        }
+
                                         root.update()
                                     }
                                 }
                             }
-
                         }
+
+                        // Modern Error Area
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            color: Style.colors.primaryBackground
+                            radius: 6
+                            border.width: 1
+                            border.color: Style.colors.error
+                            visible: errorMessageLabel.length > 0
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: 0
+
+                                ScrollView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+
+                                    TextArea {
+                                        id: errorMessageLabel
+                                        color: Style.colors.foreground
+                                        font.family: Style.fontTypes.roboto
+                                        font.pixelSize: 10
+                                        readOnly: true
+                                        wrapMode: TextEdit.Wrap
+                                        leftPadding: 5
+                                        topPadding: 5
+                                        rightPadding:5
+                                        selectByMouse: true
+                                        background: null
+                                        selectionColor: Style.colors.accent
+                                        selectedTextColor: Style.colors.secondaryForeground
+                                        Material.accent: Style.colors.accent
+                                    }
+                                }
+                            }
+                        }
+
                     }
                 }
 
