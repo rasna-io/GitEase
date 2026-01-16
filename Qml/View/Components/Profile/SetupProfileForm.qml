@@ -19,6 +19,7 @@ Item {
     property string fullName: fullNameField.text
     property string email: emailField.text
     property bool showHint: true
+    property string errorMessage: ""
 
     /* Children
      * ****************************************************************************************/
@@ -71,7 +72,7 @@ Item {
             // Hint row
             Rectangle {
                 id: hintRectangle
-                visible: root.showHint
+                visible: root.showHint && root.errorMessage.length === 0
                 Layout.fillWidth: true
                 Layout.preferredHeight: 37
                 radius: 5
@@ -93,6 +94,39 @@ Item {
                             wrapMode: Text.WordWrap
                             font.pixelSize: 10
                             color: Style.colors.hintText
+                            font.family: Style.fontTypes.roboto
+                            font.weight: 300
+                            font.styleName: "Light"
+                            font.letterSpacing: 0
+                        }
+                    }
+                }
+            }
+
+            // error row
+            Rectangle {
+                id: errorRectangle
+                visible: root.errorMessage.length > 0
+                Layout.fillWidth: true
+                Layout.preferredHeight: 37
+                radius: 5
+                color: "#FF9898"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 25
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.errorMessage
+                            wrapMode: Text.WordWrap
+                            font.pixelSize: 10
                             font.family: Style.fontTypes.roboto
                             font.weight: 300
                             font.styleName: "Light"
