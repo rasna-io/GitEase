@@ -22,8 +22,8 @@ Rectangle {
     property bool selected: false
     property bool showSeparator: true
 
-    // Optional file mode (e.g. "M", "A", "D", "R"). Empty = no indicator.
-    property var mode
+    // Optional file status (e.g. "M", "A", "D", "R"). Empty = no indicator.
+    property real status
 
     // Row context (populated by FileListSection's delegate)
     property var rowModelData: null
@@ -81,7 +81,6 @@ Rectangle {
         anchors.bottom: parent.bottom
         width: 3
         color: root.indicatorColor
-        visible: root.mode !== ""
     }
 
     RowLayout {
