@@ -80,7 +80,7 @@ Item {
                                 text: "COMMIT"
                                 font.family: Style.fontTypes.roboto
                                 font.pixelSize: 12
-                                color: Style.colors.surfaceMuted
+                                color: Style.colors.secondaryText
                             }
 
                             Item { Layout.fillWidth: true }
@@ -226,13 +226,13 @@ Item {
                                 Layout.preferredHeight: 30
                                 color: Style.colors.primaryBackground
                                 radius: 4
-                                border.color: Style.colors.accent
+                                border.color: Style.colors.foreground
 
                                 Text {
                                     anchors.centerIn: parent
                                     font.family: Style.fontTypes.font6Pro
                                     text: Style.icons.arrowUp
-                                    color: Style.colors.accent
+                                    color: Style.colors.foreground
                                     font.pixelSize: 16
                                 }
 
