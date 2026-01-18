@@ -59,7 +59,9 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: root.headerHeight
-            color: headerMouseArea.containsMouse ? Qt.darker(Style.colors.secondaryBackground, 1.03) : Style.colors.secondaryBackground
+            color: headerMouseArea.containsMouse ^ Style.theme == Style.Light ?
+                       Qt.lighter(Style.colors.secondaryBackground, 1.3) :
+                       Qt.darker(Style.colors.secondaryBackground, 1.3)
 
             MouseArea {
                 id: headerMouseArea
