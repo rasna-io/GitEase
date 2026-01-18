@@ -373,6 +373,13 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    Connections {
+        target: Style
+        function onCurrentThemeChanged(){
+            graphCanvas.requestPaint()
+        }
+    }
+
     Rectangle{
         anchors.fill: parent
         color : Style.colors.primaryBackground
