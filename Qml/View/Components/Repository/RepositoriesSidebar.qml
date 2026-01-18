@@ -101,7 +101,9 @@ Rectangle {
                                         }
                                     }
 
-                                    color: Qt.darker(repositoryAvatar.repoColor, 2.0)
+                                    color: Style.theme == Style.Light ?
+                                               Qt.darker(repositoryAvatar.repoColor, 2.0) :
+                                               Qt.lighter(repositoryAvatar.repoColor, 2.0)
                                     elide: Text.ElideRight
 
                                     x: root.expanded ? 5 : ((repositoryAvatar.width - width) / 2)
@@ -141,7 +143,9 @@ Rectangle {
             anchors.topMargin: 3
             anchors.bottomMargin: 3
             radius: 6
-            color: Style.colors.navButton
+            color: addRepoMouse.containsMouse ^ Style.theme == Style.Light ?
+                       Qt.lighter(Style.colors.navButton, 2.0) :
+                       Qt.darker(Style.colors.navButton, 2.0)
 
             Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -166,7 +170,9 @@ Rectangle {
                         font.family: Style.fontTypes.font6Pro
                         font.weight: 400
                         font.pixelSize: 14
-                        color: Style.colors.foreground
+                        color: addRepoMouse.containsMouse ^ Style.theme == Style.Light ?
+                                   Qt.darker(Style.colors.navButton, 2.0) :
+                                   Qt.lighter(Style.colors.navButton, 2.0)
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -181,7 +187,9 @@ Rectangle {
                     font.weight: 400
                     font.pixelSize: 14
                     elide: Text.ElideRight
-                    color: Style.colors.foreground
+                    color: addRepoMouse.containsMouse ^ Style.theme == Style.Light ?
+                               Qt.darker(Style.colors.navButton, 2.0) :
+                               Qt.lighter(Style.colors.navButton, 2.0)
                     horizontalAlignment: Text.AlignLeft
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -200,8 +208,6 @@ Rectangle {
                 hoverEnabled: true
 
                 onClicked: root.newRepositoryRequested()
-                onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
-                onExited: parent.color = Style.colors.navButton
             }
         }
     }
