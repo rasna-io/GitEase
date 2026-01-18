@@ -458,7 +458,7 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: graphDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
+                            color: graphDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
 
                             MouseArea {
                                 id: graphDividerMouseArea
@@ -537,7 +537,7 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: branchTagDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
+                            color: branchTagDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
 
                             MouseArea {
                                 id: branchTagDividerMouseArea
@@ -616,7 +616,7 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: messageDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
+                            color: messageDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
 
                             MouseArea {
                                 id: messageDividerMouseArea
@@ -695,7 +695,7 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: authorDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
+                            color: authorDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
 
                             MouseArea {
                                 id: authorDividerMouseArea
@@ -1322,7 +1322,7 @@ Item {
                                         Layout.preferredWidth: 1
                                         Layout.fillHeight: true
                                         width: 1
-                                        color: "#f2f2f2"
+                                        color: Style.colors.hoverTitle
                                     }
 
                                     // Branch color indicator bar
@@ -1367,7 +1367,7 @@ Item {
                                         Layout.preferredWidth: 1
                                         Layout.fillHeight: true
                                         width: 1
-                                        color: "#f2f2f2"
+                                        color: Style.colors.hoverTitle
                                     }
 
                                     Label {
@@ -1396,7 +1396,7 @@ Item {
                                         Layout.preferredWidth: 1
                                         Layout.fillHeight: true
                                         width: 1
-                                        color: "#f2f2f2"
+                                        color: Style.colors.hoverTitle
                                     }
 
                                     Label {
