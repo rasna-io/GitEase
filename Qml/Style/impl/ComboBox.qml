@@ -29,9 +29,6 @@ T.ComboBox {
     leftPadding: padding + (!control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
     rightPadding: padding + (control.mirrored || !indicator || !indicator.visible ? 0 : indicator.width + spacing)
 
-    Material.background: flat ? "transparent" : undefined
-    Material.foreground: flat ? undefined : control.palette.text
-
     delegate: ItemDelegate {
         required property var model
         required property int index
@@ -41,7 +38,7 @@ T.ComboBox {
         contentItem: Text {
             text:  model[control.textRole]
             font: control.font
-            color: Material.foreground
+            color: control.Material.foreground
             elide: Text.ElideRight
             verticalAlignment: Text.AlignVCenter
         }
