@@ -86,13 +86,16 @@ QtObject {
     function changeTheme() {
         switch(style.currentTheme) {
         case "Modern Light":
+            style.theme = Style.Theme.Light
             style.colors = modernLightColors
             break;
         case "Modern Dark":
+            style.theme = Style.Theme.Dark
             style.colors = modernDarkColors
             break;
 
         default:
+            style.theme = Style.Theme.Light
             style.colors = modernLightColors
             break;
         }
