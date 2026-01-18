@@ -55,6 +55,7 @@ T.Control {
             ToolButton {
                 width: 24; height: 24
                 text: "<"
+                Material.foreground: Style.colors.secondaryText
                 onClicked: {
                     if (control.month === 0) {
                         control.month = 11
@@ -82,6 +83,7 @@ T.Control {
             ToolButton {
                 width: 24; height: 24
                 text: ">"
+                Material.foreground: Style.colors.secondaryText
                 onClicked: {
                     if (control.month === 11) {
                         control.month = 0
