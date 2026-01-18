@@ -44,6 +44,135 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+
+    IPopup {
+        id: passwordForm
+
+        signal passwordConfirm(string password)
+
+        width: root.width / 2
+        height: 180
+        padding: 20
+
+        background: Rectangle {
+            radius: 4
+            color: Style.colors.primaryBackground
+            border.width: 1
+            border.color: Style.colors.primaryBorder
+        }
+
+        contentItem: Column {
+            width: parent.width
+            spacing: 10
+
+            Label {
+                width: parent.width
+                color: Style.colors.descriptionText
+                text: "Enter your Account Password (PAT)"
+                font.family: Style.fontTypes.roboto
+                font.weight: 400
+                font.pointSize: Style.appFont.h4Pt
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            FormInputField {
+                id: textField
+                width: parent.width
+                label: "Password"
+                placeholderText: "Enter your password"
+                icon: "\uF023"
+                helperText: "This password will be used for authentication"
+                echoMode: TextInput.Password
+                Layout.fillWidth: true
+            }
+
+            Row {
+                id: buttonsRow
+                spacing: 6
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                Button {
+                    id: confirmButton
+                    width: passwordForm.width / 4
+                    height: 40
+                    hoverEnabled: true
+                    text: "Confirm"
+
+                    contentItem: Text {
+                        text: confirmButton.text
+                        font: confirmButton.font
+                        color: Style.colors.secondaryForeground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    background: Rectangle {
+                        radius: 3
+                        color: confirmButton.down ? Style.colors.accentHover : confirmButton.hovered ? Style.colors.accentHover : Style.colors.accent
+                    }
+
+                    onClicked: {
+                        passwordForm.passwordConfirm(textField.text)
+                        textField.field.text = ""
+                        passwordForm.close()
+                    }
+                }
+
+                Button {
+                    id: cancelButton
+                    width: passwordForm.width / 4
+                    height: 40
+                    hoverEnabled: true
+                    text: "Cancel"
+
+                    contentItem: Text {
+                        text: cancelButton.text
+                        font: cancelButton.font
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    background: Rectangle {
+                        radius: 3
+                        border.width: 1
+                        border.color: Style.colors.primaryBorder
+                        color: cancelButton.down ? Style.colors.surfaceMuted: cancelButton.hovered ? Style.colors.cardBackground : Style.colors.surfaceLight
+                    }
+
+                    onClicked: {
+                        textField.field.text = ""
+                        passwordForm.close()
+                    }
+                }
+            }
+        }
+    }
+
+    Connections {
+        target: passwordForm
+        function onPasswordConfirm(password){
+            let branchName = branchController.getCurrentBranchName()
+            if(branchName.length === 0){
+                errorMessageLabel.text = "current Branch Name invalid!"
+            }else{
+               let remoteRes = remoteController.push(
+                    "origin",
+                    branchName,
+                    userProfileController.currentUserProfile.username,
+                    password)
+
+                if(!remoteRes.success){
+                    errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
+                }else{
+                    commitTextArea.text = ""
+                }
+            }
+
+            root.update()
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 5
@@ -169,7 +298,7 @@ Item {
                             spacing: 1
 
                             Rectangle {
-                                id: commitPushBtn
+                                id: commitBtn
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
                                 color: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
@@ -179,7 +308,7 @@ Item {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "Commit and push"
+                                    text: "Commit"
                                     color: Style.colors.secondaryForeground
                                     font.family: Style.fontTypes.roboto
                                     font.pixelSize: 12
@@ -192,25 +321,9 @@ Item {
                                     enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
                                     onClicked: {
                                         let res = commitController.commit(commitTextArea.text, false, false)
+
                                         if(res.success){
-                                            let branchName = branchController.getCurrentBranchName()
-                                            let remoteName = remoteController.getUpstreamName(branchName)
-                                            if(!remoteName.success){
-                                                errorMessageLabel.text = remoteName.errorMessage ?? "push error"
-                                            }else{
-                                               let remoteRes = remoteController.push(
-                                                        remoteName.data,
-                                                        branchName,
-                                                        userProfileController.currentUserProfile.username,
-                                                        userProfileController.currentUserProfile.password)
-
-                                                if(!remoteRes.success){
-                                                    errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
-                                                }else{
-                                                    commitTextArea.text = ""
-                                                }
-                                            }
-
+                                            commitTextArea.text = ""
                                         }else{
                                             errorMessageLabel.text = res.errorMessage ?? "commit error"
                                         }
@@ -221,7 +334,7 @@ Item {
                             }
 
                             Rectangle {
-                                id: commitOnlyBtn
+                                id: pushBtn
                                 Layout.preferredWidth: 30
                                 Layout.preferredHeight: 30
                                 color: Style.colors.primaryBackground
@@ -241,14 +354,7 @@ Item {
                                     hoverEnabled: true
                                     enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
                                     onClicked: {
-                                        let res = commitController.commit(commitTextArea.text, false, false)
-                                        if(res.success){
-                                            commitTextArea.text = ""
-                                        }else{
-                                            errorMessageLabel.text = res.errorMessage ?? ""
-                                        }
-
-                                        root.update()
+                                        passwordForm.open()
                                     }
                                 }
                             }
