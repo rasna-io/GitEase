@@ -34,9 +34,11 @@ Rectangle {
     readonly property color iconColor: (function() {
         switch (root.role) {
             case ActionIconButton.Role.Stage:
-                return Qt.darker(Style.colors.addedFile, 1.5)
+                return Style.theme == Style.Light ?
+                            Qt.darker(Style.colors.addedFile, 1.5) :
+                            Qt.lighter(Style.colors.addedFile, 1.5)
             case ActionIconButton.Role.Unstage:
-                return Style.colors.accent
+                return Style.colors.deletededFile
             case ActionIconButton.Role.Discard:
                 return Style.colors.error
             case ActionIconButton.Role.Stash:
