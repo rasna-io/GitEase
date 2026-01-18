@@ -89,7 +89,7 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: pathDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
+                            color: pathDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
 
                             MouseArea {
                                 id: pathDividerMouseArea
@@ -167,7 +167,7 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: extensionDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
+                            color: extensionDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
 
                             MouseArea {
                                 id: extensionDividerMouseArea
@@ -245,7 +245,7 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: statusDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
+                            color: statusDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
 
                             MouseArea {
                                 id: statusDividerMouseArea
@@ -323,7 +323,7 @@ Item {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 1
-                            color: linesAddedDividerMouseArea.containsMouse ? "#4A6FA5" : "#f2f2f2"
+                            color: linesAddedDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
 
                             MouseArea {
                                 id: linesAddedDividerMouseArea
@@ -454,7 +454,7 @@ Item {
                                         Layout.preferredWidth: 1
                                         Layout.fillHeight: true
                                         width: 1
-                                        color: "#f2f2f2"
+                                        color: Style.colors.hoverTitle
                                     }
 
                                     Label {
@@ -487,7 +487,7 @@ Item {
                                         Layout.preferredWidth: 1
                                         Layout.fillHeight: true
                                         width: 1
-                                        color: "#f2f2f2"
+                                        color: Style.colors.hoverTitle
                                     }
 
                                     Label {
@@ -520,7 +520,7 @@ Item {
                                         Layout.preferredWidth: 1
                                         Layout.fillHeight: true
                                         width: 1
-                                        color: "#f2f2f2"
+                                        color: Style.colors.hoverTitle
                                     }
 
                                     Label {
@@ -541,7 +541,7 @@ Item {
                                             }
                                         }
 
-                                        color: Style.colors.foreground
+                                        color: Style.colors.titleText
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 12
                                         Layout.fillWidth: true
@@ -569,7 +569,7 @@ Item {
                                         Layout.preferredWidth: 1
                                         Layout.fillHeight: true
                                         width: 1
-                                        color: "#f2f2f2"
+                                        color: Style.colors.hoverTitle
                                     }
 
                                     Label {
@@ -597,7 +597,7 @@ Item {
                                         Layout.preferredWidth: 1
                                         Layout.fillHeight: true
                                         width: 1
-                                        color: "#f2f2f2"
+                                        color: Style.colors.hoverTitle
                                     }
 
                                     Label {
