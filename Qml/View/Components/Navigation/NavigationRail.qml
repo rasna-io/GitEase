@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 
 import GitEase_Style
 import GitEase_Style_Impl
@@ -214,10 +215,17 @@ Rectangle {
                 spacing: 8
 
                 Image {
+                    id: icon
                     source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                     width: 42
                     height: 42
+
+                    ColorOverlay {
+                        anchors.fill: icon
+                        source: icon
+                        color: Style.colors.mutedText
+                    }
                 }
 
                 Text {
