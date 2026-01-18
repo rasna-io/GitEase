@@ -40,6 +40,25 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
         return GitResult(false, QVariant(), "Failed to lookup remote");
     }
 
+    // Get remote URL
+    const char* urlCStr = git_remote_url(remote);
+    if (!urlCStr) {
+        git_remote_free(remote);
+        return GitResult(false, QVariant(), "Remote URL is empty");
+    }
+
+    QString remoteUrl = QString::fromUtf8(urlCStr);
+
+    // Check if HTTPS or SSH
+    bool isHttps = remoteUrl.startsWith("https://");
+    bool isSsh   = remoteUrl.startsWith("git@") || remoteUrl.startsWith("ssh://");
+
+    if (isSsh) {
+        git_remote_free(remote);
+        return GitResult(false, QVariant(), "SSH remote detected; username/password cannot be used for push");
+    }
+
+
     // Prepare push options
     git_push_options push_opts;
     result = git_push_options_init(&push_opts, GIT_PUSH_OPTIONS_VERSION);
