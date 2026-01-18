@@ -161,7 +161,7 @@ Rectangle {
                         rowModelData: modelData
                         rowIndex: index
                         text: modelData && modelData.path ? modelData.path : ""
-                        mode: modelData && modelData.mode ? modelData.mode : ""
+                        status: modelData && modelData.status ? modelData.status : GitFileStatus.Unknown
                         selected: root.selectedFilePath !== "" && root.selectedFilePath === (modelData && modelData.path ? modelData.path : "")
                         showSeparator: index < (listView.count - 1)
 
