@@ -124,10 +124,6 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
     delete[] refspec_cstr;
     git_remote_free(remote);
 
-    // Clean up
-    delete[] refspec_cstr;
-    git_remote_free(remote);
-
     // Step 3: Handle result and return
     if (result != GIT_OK) {
 
