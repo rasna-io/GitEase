@@ -359,45 +359,16 @@ Item {
                             }
                         }
 
-                        // Modern Error Area
-                        Rectangle {
+                        Label {
+                            id: errorMessageLabel
                             Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            color: Style.colors.primaryBackground
-                            radius: 6
-                            border.width: 1
-                            border.color: Style.colors.error
-                            visible: errorMessageLabel.length > 0
 
-                            ColumnLayout {
-                                anchors.fill: parent
-                                spacing: 0
-
-                                ScrollView {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    clip: true
-
-                                    TextArea {
-                                        id: errorMessageLabel
-                                        color: Style.colors.foreground
-                                        font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 10
-                                        readOnly: true
-                                        wrapMode: TextEdit.Wrap
-                                        leftPadding: 5
-                                        topPadding: 5
-                                        rightPadding:5
-                                        selectByMouse: true
-                                        background: null
-                                        selectionColor: Style.colors.accent
-                                        selectedTextColor: Style.colors.secondaryForeground
-                                        Material.accent: Style.colors.accent
-                                    }
-                                }
-                            }
+                            visible: errorMessageLabel.text !== ""
+                            color: Style.colors.error
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 10
+                            wrapMode: TextEdit.Wrap
                         }
-
                     }
                 }
 
