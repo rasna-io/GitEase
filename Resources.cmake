@@ -88,6 +88,9 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Settings/PathSelectorItem.qml
     Qml/View/Components/Settings/TextFieldItem.qml
     Qml/View/Components/Settings/ComboboxItem.qml
+
+    # Import Export Bundle Components
+    Qml/View/Components/ImportExport/ImportExportBundle.qml
 )
 
 
