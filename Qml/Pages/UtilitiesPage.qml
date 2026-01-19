@@ -7,8 +7,8 @@ import GitEase_Style_Impl
 import GitEase
 
 /*! ***********************************************************************************************
- * BlankPage
- * Blank placeholder page.
+ * UtilitiesPage
+ * Utilities Page : import export git bundle and etc.
  * ************************************************************************************************/
 
 Item {
@@ -24,28 +24,36 @@ Item {
 
     /* Children
      * ****************************************************************************************/
-    Column {
-        anchors.centerIn: parent
-        spacing: 6
+    RowLayout {
+        anchors.fill: parent
+        anchors.margins: 5
+        anchors.topMargin: 5
+        spacing: 12
 
-        Text {
-            text: "BlankPage"
-            font.pixelSize: 18
-            font.weight: 600
-            color: Style.colors.foreground
-            horizontalAlignment: Text.AlignHCenter
+        // Left Top: Import Export bundle
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 12
+
+            Rectangle {
+                Layout.preferredHeight: 315
+                Layout.preferredWidth: 261
+                color: "transparent"
+
+                ImportExportBundleDock {
+                    anchors.fill: parent
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+            }
         }
 
-        Text {
-            text: "title: " + (root.page ? root.page.title : "Blank Page")
-            color: Style.colors.foreground
-            horizontalAlignment: Text.AlignHCenter
-        }
-
-        Text {
-            text: "id: " + (root.page ? root.page.id : "blank")
-            color: Style.colors.foreground
-            horizontalAlignment: Text.AlignHCenter
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
         }
     }
 }
