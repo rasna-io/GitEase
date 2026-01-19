@@ -51,7 +51,7 @@ QtObject {
         deletededFile:       "#FF3b3b"
         modifiediedFile:     "#FFc33b"
         renamedFile:         "#aafff8"
-        untrackedFile:       "#990000ff"
+        untrackedFile:       "#00ffff"
 
         voidStripe:          "#565656"
         editorBackgroound:   "#282828"
