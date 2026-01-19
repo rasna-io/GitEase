@@ -21,6 +21,7 @@ QtObject{
     property string user:           "\uf007" // user
     property string envelope:       "\uf0e0" // envelope
     property string lightbulb:      "\uf0eb" // lightbulb
+    property string tools:          "\uf7d9" // tools
     property string folder:         "\uf660" // folder
     property string clock:          "\uf017" // clock
     property string download:       "\ue094" // download
