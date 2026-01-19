@@ -352,7 +352,6 @@ Item {
                                 MouseArea {
                                     anchors.fill: parent
                                     hoverEnabled: true
-                                    enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
                                     onClicked: {
                                         passwordForm.open()
                                     }
