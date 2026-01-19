@@ -110,30 +110,50 @@ GitResult GitBranch::createBranch(const QString &branchName)
     return GitResult(true, QVariant(), QString("Branch created successfully: %1").arg(branchName));
 }
 
-GitResult GitBranch::createBranchWithCli(const QString &branchName, QString Sha)
+GitResult GitBranch::createBranchFromCommit(const QString &commitSha, const QString &branchName)
 {
-    QProcess gitProcess;
-    gitProcess.setProgram("git");
-    gitProcess.setArguments(QStringList() << "branch" << branchName << Sha);
-
-    gitProcess.start();
-
-    if (!gitProcess.waitForStarted(3000)) {
-        return GitResult(false, QVariant(), "Failed to start Git verify process.");
+    // Convert SHA to git_oid
+    git_oid commitOid;
+    if (git_oid_fromstr(&commitOid, commitSha.toUtf8().constData()) != 0) {
+        return GitResult(false, QVariant(),
+                         QString("Invalid commit SHA: %1").arg(commitSha));
     }
 
-    if (!gitProcess.waitForFinished(15000)) {
-        gitProcess.kill();
-        return GitResult(false, QVariant(), "Git Unbundle timed out.");
+    // Look up the commit
+    git_commit* commit = nullptr;
+    if (git_commit_lookup(&commit, m_currentRepo->repo, &commitOid) != 0) {
+        return GitResult(false, QVariant(),
+                         QString("Commit %1 not found").arg(commitSha.left(8)));
     }
 
-    QString output = QString::fromUtf8(gitProcess.readAll()).trimmed();
+    // Check if branch already exists
+    git_reference* existingRef = nullptr;
+    QString fullRefName = "refs/heads/" + branchName;
 
-    if((gitProcess.exitCode() == 0)){
-        return GitResult(true, QVariant());
+    if (git_reference_lookup(&existingRef, m_currentRepo->repo,
+                             fullRefName.toUtf8().constData()) == 0) {
+        git_reference_free(existingRef);
+        git_commit_free(commit);
+        return GitResult(false, QVariant(),
+                         QString("Branch '%1' already exists").arg(branchName));
     }
 
-    return GitResult(false, QVariant(), output);
+    // Create the branch
+    git_reference* newRef = nullptr;
+    int error = git_branch_create(&newRef, m_currentRepo->repo,
+                                  branchName.toUtf8().constData(),
+                                  commit, 0);
+
+    // Clean up
+    if (commit) git_commit_free(commit);
+    if (newRef) git_reference_free(newRef);
+
+    if (error != 0) {
+        return GitResult(false, QVariant(),
+                         QString("Failed to create branch '%1'").arg(branchName));
+    }
+
+    return GitResult(true);
 }
 
 GitResult GitBranch::deleteBranch(const QString &branchName)
