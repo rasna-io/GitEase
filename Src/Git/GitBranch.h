@@ -50,6 +50,13 @@ public:
     Q_INVOKABLE GitResult renameBranch(const QString &oldName, const QString &newName);
 
     /**
+    * \brief Retrieves the lineage (ancestry path) of a local branch.
+    * \param branchName The name of the branch to trace.
+    * \return GitResult containing a QVariantList of branch names if successful.
+    */
+    Q_INVOKABLE GitResult getBranchLineage(const QString &branchName);
+
+    /**
      * \brief Get current branch name
      * \param repo Git repository to check
      * \return Current branch name or empty string if detached HEAD
