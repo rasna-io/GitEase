@@ -26,7 +26,7 @@ public:
     */
     Q_INVOKABLE GitResult createBranch(const QString &branchName);
 
-    Q_INVOKABLE GitResult createBranchWithCli(const QString &branchName, QString Sha);
+    Q_INVOKABLE GitResult createBranchFromCommit(const QString &commitSha, const QString &branchName);
 
     /**
     * \brief Deletes an existing local branch from the repository.
