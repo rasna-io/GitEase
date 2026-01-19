@@ -91,6 +91,9 @@ set(RESOURCES_COMPONENTS
 
     # Import Export Bundle Components
     Qml/View/Components/ImportExport/ImportExportBundle.qml
+
+    # DockPanel Docks
+    Qml/View/Components/Docks/ImportExportBundleDock.qml       # Import Export git Bundle Dock
 )
 
 
