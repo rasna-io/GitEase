@@ -32,19 +32,19 @@ Item {
             text: "BlankPage"
             font.pixelSize: 18
             font.weight: 600
-            color: "#222222"
+            color: Style.colors.foreground
             horizontalAlignment: Text.AlignHCenter
         }
 
         Text {
             text: "title: " + (root.page ? root.page.title : "Blank Page")
-            color: "#444444"
+            color: Style.colors.foreground
             horizontalAlignment: Text.AlignHCenter
         }
 
         Text {
             text: "id: " + (root.page ? root.page.id : "blank")
-            color: "#666666"
+            color: Style.colors.foreground
             horizontalAlignment: Text.AlignHCenter
         }
     }
