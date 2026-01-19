@@ -17,4 +17,6 @@ Item {
 
     property SettingsPopup              settingsPopup:              SettingsPopup {}
 
+    property UserAuthenticationPopup    userAuthenticationPopup:    UserAuthenticationPopup {}
+
 }
