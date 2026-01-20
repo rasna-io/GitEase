@@ -291,8 +291,8 @@ Item {
 
         root.isLoadingMore = true
 
-        var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
-        var page = repositoryController.getCommits(repositoryController.appModel.currentRepository, root.pageSize, root.commitsOffset);
+        var allBranches = branchController.getBranches();
+        let page = commitController.getCommits(pageSize, commitsOffset);
         
         if (!page || page.length === 0) {
             root.hasMoreCommits = false
