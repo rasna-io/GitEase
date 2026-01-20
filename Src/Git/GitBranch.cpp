@@ -110,6 +110,52 @@ GitResult GitBranch::createBranch(const QString &branchName)
     return GitResult(true, QVariant(), QString("Branch created successfully: %1").arg(branchName));
 }
 
+GitResult GitBranch::createBranchFromCommit(const QString &commitSha, const QString &branchName)
+{
+    // Convert SHA to git_oid
+    git_oid commitOid;
+    if (git_oid_fromstr(&commitOid, commitSha.toUtf8().constData()) != 0) {
+        return GitResult(false, QVariant(),
+                         QString("Invalid commit SHA: %1").arg(commitSha));
+    }
+
+    // Look up the commit
+    git_commit* commit = nullptr;
+    if (git_commit_lookup(&commit, m_currentRepo->repo, &commitOid) != 0) {
+        return GitResult(false, QVariant(),
+                         QString("Commit %1 not found").arg(commitSha.left(8)));
+    }
+
+    // Check if branch already exists
+    git_reference* existingRef = nullptr;
+    QString fullRefName = "refs/heads/" + branchName;
+
+    if (git_reference_lookup(&existingRef, m_currentRepo->repo,
+                             fullRefName.toUtf8().constData()) == 0) {
+        git_reference_free(existingRef);
+        git_commit_free(commit);
+        return GitResult(false, QVariant(),
+                         QString("Branch '%1' already exists").arg(branchName));
+    }
+
+    // Create the branch
+    git_reference* newRef = nullptr;
+    int error = git_branch_create(&newRef, m_currentRepo->repo,
+                                  branchName.toUtf8().constData(),
+                                  commit, 0);
+
+    // Clean up
+    if (commit) git_commit_free(commit);
+    if (newRef) git_reference_free(newRef);
+
+    if (error != 0) {
+        return GitResult(false, QVariant(),
+                         QString("Failed to create branch '%1'").arg(branchName));
+    }
+
+    return GitResult(true);
+}
+
 GitResult GitBranch::deleteBranch(const QString &branchName)
 {
     if (!m_currentRepo || !m_currentRepo->repo)
