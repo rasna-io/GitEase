@@ -16,23 +16,25 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var                   page:                  null
+    property var                     page:                    null
 
-    property RepositoryController  repositoryController:  null
+    property RepositoryController    repositoryController:    null
 
-    property StatusController      statusController:      null
+    property StatusController        statusController:        null
 
-    property BranchController      branchController:      null
+    property BranchController        branchController:        null
 
-    property CommitController      commitController:      null
+    property CommitController        commitController:        null
 
-    property RemoteController      remoteController:      null
+    property RemoteController        remoteController:        null
 
-    property UserProfileController userProfileController: null
+    property UserProfileController   userProfileController:   null
 
-    property string                selectedFilePath:      ""
+    property UserAuthenticationPopup userAuthenticationPopup: null
 
-    property var                   actionResult:          ({})
+    property string                  selectedFilePath:        ""
+
+    property var                     actionResult:            ({})
 
     onStatusControllerChanged: {
         update()
@@ -44,6 +46,32 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+
+    Connections {
+        target: userAuthenticationPopup
+
+        function onPasswordConfirm(password){
+            let branchName = branchController.getCurrentBranchName()
+            if(branchName.length === 0){
+                errorMessageLabel.text = "current Branch Name invalid!"
+            }else{
+               let remoteRes = remoteController.push(
+                    "origin",
+                    branchName,
+                    userProfileController.currentUserProfile.username,
+                    password)
+
+                if(!remoteRes.success){
+                    errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
+                }else{
+                    commitTextArea.text = ""
+                }
+            }
+
+            root.update()
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 5
@@ -169,7 +197,7 @@ Item {
                             spacing: 1
 
                             Rectangle {
-                                id: commitPushBtn
+                                id: commitBtn
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
                                 color: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
@@ -179,7 +207,7 @@ Item {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "Commit and push"
+                                    text: "Commit"
                                     color: Style.colors.secondaryForeground
                                     font.family: Style.fontTypes.roboto
                                     font.pixelSize: 12
@@ -192,25 +220,9 @@ Item {
                                     enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
                                     onClicked: {
                                         let res = commitController.commit(commitTextArea.text, false, false)
+
                                         if(res.success){
-                                            let branchName = branchController.getCurrentBranchName()
-                                            let remoteName = remoteController.getUpstreamName(branchName)
-                                            if(!remoteName.success){
-                                                errorMessageLabel.text = remoteName.errorMessage ?? "push error"
-                                            }else{
-                                               let remoteRes = remoteController.push(
-                                                        remoteName.data,
-                                                        branchName,
-                                                        userProfileController.currentUserProfile.username,
-                                                        userProfileController.currentUserProfile.password)
-
-                                                if(!remoteRes.success){
-                                                    errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
-                                                }else{
-                                                    commitTextArea.text = ""
-                                                }
-                                            }
-
+                                            commitTextArea.text = ""
                                         }else{
                                             errorMessageLabel.text = res.errorMessage ?? "commit error"
                                         }
@@ -221,7 +233,7 @@ Item {
                             }
 
                             Rectangle {
-                                id: commitOnlyBtn
+                                id: pushBtn
                                 Layout.preferredWidth: 30
                                 Layout.preferredHeight: 30
                                 color: Style.colors.primaryBackground
@@ -239,60 +251,23 @@ Item {
                                 MouseArea {
                                     anchors.fill: parent
                                     hoverEnabled: true
-                                    enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
                                     onClicked: {
-                                        let res = commitController.commit(commitTextArea.text, false, false)
-                                        if(res.success){
-                                            commitTextArea.text = ""
-                                        }else{
-                                            errorMessageLabel.text = res.errorMessage ?? ""
-                                        }
-
-                                        root.update()
+                                        userAuthenticationPopup.open()
                                     }
                                 }
                             }
                         }
 
-                        // Modern Error Area
-                        Rectangle {
+                        Label {
+                            id: errorMessageLabel
                             Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            color: Style.colors.primaryBackground
-                            radius: 6
-                            border.width: 1
-                            border.color: Style.colors.error
-                            visible: errorMessageLabel.length > 0
 
-                            ColumnLayout {
-                                anchors.fill: parent
-                                spacing: 0
-
-                                ScrollView {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    clip: true
-
-                                    TextArea {
-                                        id: errorMessageLabel
-                                        color: Style.colors.foreground
-                                        font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 10
-                                        readOnly: true
-                                        wrapMode: TextEdit.Wrap
-                                        leftPadding: 5
-                                        topPadding: 5
-                                        rightPadding:5
-                                        selectByMouse: true
-                                        background: null
-                                        selectionColor: Style.colors.accent
-                                        selectedTextColor: Style.colors.secondaryForeground
-                                        Material.accent: Style.colors.accent
-                                    }
-                                }
-                            }
+                            visible: errorMessageLabel.text !== ""
+                            color: Style.colors.error
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 10
+                            wrapMode: TextEdit.Wrap
                         }
-
                     }
                 }
 
