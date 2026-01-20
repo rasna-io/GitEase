@@ -45,11 +45,13 @@ QtObject {
         hoverTitle:          "#6b6b6b"
         secondaryText:       "#efefef"
 
+        disabledButton:      "#9f9f9f"
+
         addedFile:           "#3bdb6a"
         deletededFile:       "#FF3b3b"
         modifiediedFile:     "#FFc33b"
         renamedFile:         "#aafff8"
-        untrackedFile:       "#990000ff"
+        untrackedFile:       "#00ffff"
 
         voidStripe:          "#565656"
         editorBackgroound:   "#282828"
@@ -57,10 +59,17 @@ QtObject {
         linePanelBackgroound:"#383838"
         linePanelForeground: "#9f9f9f"
 
+        cardBackground:      "#585858"
+
+        primaryBorder:       "#686868"
+
         diffRemovedBg:       "#ed4c4c"
         diffAddedBg:         "#1b7b3a"
         diffRemovedBorder:   "#F5C2C7"
         diffAddedBorder:     "#A6E9C6"
+
+        resizeHandle:        "#6b6b6b"
+        resizeHandlePressed: "#9b9b9b"
     }
 
     property           string       currentTheme:               "Modern Light"
@@ -77,13 +86,16 @@ QtObject {
     function changeTheme() {
         switch(style.currentTheme) {
         case "Modern Light":
+            style.theme = Style.Theme.Light
             style.colors = modernLightColors
             break;
         case "Modern Dark":
+            style.theme = Style.Theme.Dark
             style.colors = modernDarkColors
             break;
 
         default:
+            style.theme = Style.Theme.Light
             style.colors = modernLightColors
             break;
         }

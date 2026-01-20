@@ -22,8 +22,8 @@ Rectangle {
     property bool selected: false
     property bool showSeparator: true
 
-    // Optional file mode (e.g. "M", "A", "D", "R"). Empty = no indicator.
-    property var mode
+    // Optional file status (e.g. "M", "A", "D", "R"). Empty = no indicator.
+    property real status
 
     // Row context (populated by FileListSection's delegate)
     property var rowModelData: null
@@ -42,16 +42,20 @@ Rectangle {
 
     // Left change indicator color
     readonly property color indicatorColor: (function () {
-        switch ((root.mode || "").toString().toUpperCase()) {
-            case GitFileStatus.ADDED:
+        switch (root.status) {
+            case GitFileStatus.StagedNew:
                 return Qt.darker(Style.colors.addedFile, 1.5)
-            case GitFileStatus.DELETED:
+            case GitFileStatus.Deleted:
+            case GitFileStatus.StagedDeleted:
                 return Qt.darker(Style.colors.deletededFile, 1.5)
-            case GitFileStatus.MODIFIED:
+            case GitFileStatus.Modified:
+            case GitFileStatus.TypeChange:
+            case GitFileStatus.StagedModified:
                 return Qt.darker(Style.colors.modifiediedFile, 1.5)
-            case GitFileStatus.RENAMED:
+            case GitFileStatus.Renamed:
+            case GitFileStatus.StagedRenamed:
                 return Qt.darker(Style.colors.renamedFile, 1.5)
-            case GitFileStatus.UNTRACKED:
+            case GitFileStatus.Untracked:
                 return Qt.darker(Style.colors.untrackedFile, 1.5)
             default:
                 return "transparent"
@@ -81,7 +85,6 @@ Rectangle {
         anchors.bottom: parent.bottom
         width: 3
         color: root.indicatorColor
-        visible: root.mode !== ""
     }
 
     RowLayout {
@@ -111,16 +114,20 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignVCenter
             text: {
-                switch (root.mode) {
-                case GitFileStatus.ADDED:
+                switch (root.status) {
+                case GitFileStatus.StagedNew:
                     return "A";
-                case GitFileStatus.DELETED:
+                case GitFileStatus.Deleted:
+                case GitFileStatus.StagedDeleted:
                     return "D";
-                case GitFileStatus.MODIFIED:
+                case GitFileStatus.Modified:
+                case GitFileStatus.TypeChange:
+                case GitFileStatus.StagedModified:
                     return "M";
-                case GitFileStatus.RENAMED:
+                case GitFileStatus.Renamed:
+                case GitFileStatus.StagedRenamed:
                     return "R";
-                case GitFileStatus.UNTRACKED:
+                case GitFileStatus.Untracked:
                     return "U";
                 default:
                     return ""

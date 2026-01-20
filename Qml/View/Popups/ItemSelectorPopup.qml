@@ -34,7 +34,7 @@ Popup {
     padding: 10
 
     background: Rectangle {
-        color: "#F9F9F9"
+        color: Style.colors.secondaryBackground
         radius: 4
         border.color: Style.colors.primaryBorder
         border.width: 1

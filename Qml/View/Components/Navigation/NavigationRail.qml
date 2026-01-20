@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 
 import GitEase_Style
 import GitEase_Style_Impl
@@ -17,9 +18,10 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property AppModel             appModel
-    required property PageController       pageController
-    required property RepositoryController repositoryController
+    required property AppModel              appModel
+    required property PageController        pageController
+    required property RepositoryController  repositoryController
+    required property UserProfileController userProfileController
 
     property real                          collapsedWidth:       50
     property real                          expandedWidth:        125
@@ -213,16 +215,23 @@ Rectangle {
                 spacing: 8
 
                 Image {
+                    id: icon
                     source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                     width: 42
                     height: 42
+
+                    ColorOverlay {
+                        anchors.fill: icon
+                        source: icon
+                        color: Style.colors.mutedText
+                    }
                 }
 
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    text: "username"
+                    text: root.userProfileController?.currentUserProfile?.username ?? "username"
                     visible: root.expanded
                     font.family: Style.fontTypes.roboto
                     font.weight: 400

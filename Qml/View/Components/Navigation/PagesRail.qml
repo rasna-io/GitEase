@@ -77,7 +77,7 @@ Rectangle {
 
 
                             border.width: parent.isSelected ? 1 : 0
-                            border.color: parent.isSelected ? Style.colors.accent : "transparent"
+                            border.color: parent.isSelected ? Style.colors.secondaryText : "transparent"
 
                             RowLayout {
                                 anchors.centerIn: parent
@@ -100,7 +100,7 @@ Rectangle {
                                         font.pixelSize: 16
                                         font.family: Style.fontTypes.font6Pro
                                         font.weight: 500
-                                        color: parent.parent.parent.parent.isSelected ? Style.colors.accent : "#9D9D9D"
+                                        color: parent.parent.parent.parent.isSelected ? Style.colors.secondaryText : Style.colors.mutedText
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
@@ -113,7 +113,7 @@ Rectangle {
                                     text: (modelData && modelData.title) ? modelData.title : ""
                                     font.pixelSize: 13
                                     font.family: Style.fontTypes.roboto
-                                    color: parent.parent.parent.isSelected ? Style.colors.accent : "#9D9D9D"
+                                    color: parent.parent.parent.isSelected ? Style.colors.secondaryText : Style.colors.mutedText
                                     elide: Text.ElideRight
                                     visible: root.expanded
                                     opacity: root.expanded ? 1 : 0

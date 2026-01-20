@@ -161,7 +161,7 @@ Item {
             TextField {
                 id: textFilterField
                 placeholderTextColor: Style.colors.descriptionText
-                backgroundColor: Style.colors.primaryBackground
+                backgroundColor: textFilterField.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 Layout.fillWidth: true
                 minHeight: 25
                 placeholderText: {
@@ -209,7 +209,7 @@ Item {
                     radius: 5
                     color: !filterButton.enabled ? Style.colors.primaryBackground :
                            filterButton.down ? Style.colors.surfaceMuted :
-                           filterButton.hovered ? Style.colors.cardBackground : Style.colors.primaryBackground
+                           filterButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
                 onClicked: filterOptionsPopup.open()
@@ -258,7 +258,7 @@ Item {
                 TextField {
                     id: startDateField
                     placeholderTextColor: Style.colors.descriptionText
-                    backgroundColor: Style.colors.primaryBackground
+                    backgroundColor: startDateFieldMouseArea.containsMouse ? Style.colors.cardBackground : Style.colors.secondaryBackground
                     anchors.fill: parent
                     minHeight: 25
                     rightPadding: (startDateCaret.width + 5)
@@ -287,8 +287,10 @@ Item {
                 }
 
                 MouseArea {
+                    id: startDateFieldMouseArea
                     anchors.fill: parent
                     acceptedButtons: Qt.LeftButton
+                    hoverEnabled: true
                     onClicked: headerRow.openDatePicker(startDateField, true)
                 }
             }
@@ -308,7 +310,7 @@ Item {
                 TextField {
                     id: endDateField
                     placeholderTextColor: Style.colors.descriptionText
-                    backgroundColor: Style.colors.primaryBackground
+                    backgroundColor: endDateFieldMouseArea.containsMouse ? Style.colors.cardBackground : Style.colors.secondaryBackground
                     anchors.fill: parent
                     minHeight: 25
                     rightPadding: (endDateCaret.width + 5)
@@ -337,8 +339,10 @@ Item {
                 }
 
                 MouseArea {
+                    id: endDateFieldMouseArea
                     anchors.fill: parent
                     acceptedButtons: Qt.LeftButton
+                    hoverEnabled: true
                     onClicked: headerRow.openDatePicker(endDateField, false)
                 }
             }
@@ -356,8 +360,13 @@ Item {
                 font.weight: 400
                 font.pixelSize: 10
 
-                palette.base: Style.colors.primaryBackground
-                palette.text: Style.colors.descriptionText
+                Material.background: Style.colors.primaryBackground
+                Material.foreground: Style.colors.secondaryText
+
+                background: Rectangle {
+                    radius: 5
+                    color: columnCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
 
                 Layout.preferredWidth: 90
                 currentIndex: parent.navigationRules.indexOf(parent.navigationRule)
@@ -393,7 +402,7 @@ Item {
                     radius: 5
                     color: !downButton.enabled ? Style.colors.primaryBackground :
                            downButton.down ? Style.colors.surfaceMuted :
-                           downButton.hovered ? Style.colors.cardBackground : Style.colors.primaryBackground
+                           downButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
                 onClicked: commitGraph.selectNext(navigationRule)
@@ -425,7 +434,7 @@ Item {
                     radius: 5
                     color: !upButton.enabled ? Style.colors.primaryBackground :
                            upButton.down ? Style.colors.surfaceMuted :
-                           upButton.hovered ? Style.colors.cardBackground : Style.colors.primaryBackground
+                           upButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
                 onClicked: commitGraph.selectPrevious(navigationRule)
@@ -457,7 +466,7 @@ Item {
                     radius: 5
                     color: !reloadButton.enabled ? Style.colors.primaryBackground :
                            reloadButton.down ? Style.colors.surfaceMuted :
-                           reloadButton.hovered ? Style.colors.cardBackground : Style.colors.primaryBackground
+                           reloadButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
                 onClicked: commitGraph.reloadAll()

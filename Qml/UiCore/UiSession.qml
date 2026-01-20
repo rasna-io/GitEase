@@ -11,7 +11,16 @@ QtObject {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property AppModel             appModel:             AppModel {}
+    property AppModel             appModel:             AppModel {
+        onProfilesLoaded: {
+            for(let i = 0; i < profiles.length; ++i) {
+                userProfileController.createUserProfile(
+                    profiles[i].username,
+                    profiles[i].password,
+                    profiles[i].email)
+            }
+        }
+    }
 
     property PageController       pageController:       PageController {
         appModel: root.appModel
@@ -37,6 +46,11 @@ QtObject {
     property StatusController statusController: StatusController {}
 
     property BundleController bundleController: BundleController {}
+
+    property UserProfileController userProfileController: UserProfileController {
+        userProfiles: root.appModel.userProfiles
+        currentUserProfile: root.appModel.currentUserProfile
+    }
 
     property UiSessionPopups      popups
 }
