@@ -1631,7 +1631,7 @@ Item {
     }
 
     function reloadAll() {
-        if (!repositoryController || !root.appModel || !root.appModel.currentRepository) {
+        if (!commitController || !branchController || !root.appModel || !root.appModel.currentRepository) {
             return;
         }
 
