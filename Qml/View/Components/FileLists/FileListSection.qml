@@ -59,7 +59,9 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: root.headerHeight
-            color: headerMouseArea.containsMouse ? Qt.darker(Style.colors.secondaryBackground, 1.03) : Style.colors.secondaryBackground
+            color: headerMouseArea.containsMouse ^ Style.theme == Style.Light ?
+                       Qt.lighter(Style.colors.secondaryBackground, 1.3) :
+                       Qt.darker(Style.colors.secondaryBackground, 1.3)
 
             MouseArea {
                 id: headerMouseArea
@@ -159,7 +161,7 @@ Rectangle {
                         rowModelData: modelData
                         rowIndex: index
                         text: modelData && modelData.path ? modelData.path : ""
-                        mode: modelData && modelData.mode ? modelData.mode : ""
+                        status: modelData && modelData.status ? modelData.status : GitFileStatus.Unknown
                         selected: root.selectedFilePath !== "" && root.selectedFilePath === (modelData && modelData.path ? modelData.path : "")
                         showSeparator: index < (listView.count - 1)
 

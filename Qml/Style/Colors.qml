@@ -49,4 +49,13 @@ QtObject{
     property color diffAddedBg:         "#ECFDF3"
     property color diffRemovedBorder:   "#F5C2C7"
     property color diffAddedBorder:     "#A6E9C6"
+
+    // Windows Header Buttons
+    property color windowsMinimize:     "#4A9EFF"
+    property color windowsMaximize:     "#FFB84D"
+    property color windowsClose:        "#FF5555"
+
+    // Header indicator
+    property color resizeHandle:        "#E8E8E8"
+    property color resizeHandlePressed: "#A0a0a0"
 }

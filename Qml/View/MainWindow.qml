@@ -43,11 +43,11 @@ Rectangle {
             NavigationRail {
                 id: navigationRail
                 Layout.fillHeight: true
-                Layout.bottomMargin: 4
 
                 appModel: root.uiSession?.appModel
                 pageController: root.uiSession?.pageController
                 repositoryController: root.uiSession?.repositoryController
+                userProfileController: root.uiSession?.userProfileController
                 onNewRepositoryRequested: function () {
                     let popup = root.uiSession?.popups?.repositorySelectorPopup
                     popup.repositoryController = Qt.binding(function () {return uiSession.repositoryController})
@@ -68,7 +68,7 @@ Rectangle {
                 Layout.fillHeight: true
                 Layout.topMargin: 4
                 Layout.rightMargin: 4
-                Layout.leftMargin: -2
+                Layout.leftMargin: 4
                 Layout.bottomMargin: 4
 
                 color: Style.colors.primaryBackground
@@ -106,6 +106,12 @@ Rectangle {
                         }
                         if (item.hasOwnProperty("repositoryController")) {
                             item.repositoryController = Qt.binding(function() { return root.uiSession?.repositoryController })
+                        }
+                        if (item.hasOwnProperty("remoteController")) {
+                            item.remoteController = Qt.binding(function() { return root.uiSession?.remoteController })
+                        }
+                        if (item.hasOwnProperty("userProfileController")) {
+                            item.userProfileController = Qt.binding(function() { return root.uiSession?.userProfileController })
                         }
                     }
 

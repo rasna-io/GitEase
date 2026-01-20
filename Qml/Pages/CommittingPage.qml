@@ -16,15 +16,23 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var                  page:                 null
+    property var                   page:                  null
 
-    property RepositoryController repositoryController: null
+    property RepositoryController  repositoryController:  null
 
-    property StatusController     statusController:     null
+    property StatusController      statusController:      null
 
-    property BranchController     branchController:     null
+    property BranchController      branchController:      null
 
-    property string               selectedFilePath:     ""
+    property CommitController      commitController:      null
+
+    property RemoteController      remoteController:      null
+
+    property UserProfileController userProfileController: null
+
+    property string                selectedFilePath:      ""
+
+    property var                   actionResult:          ({})
 
     onStatusControllerChanged: {
         update()
@@ -72,7 +80,7 @@ Item {
                                 text: "COMMIT"
                                 font.family: Style.fontTypes.roboto
                                 font.pixelSize: 12
-                                color: Style.colors.surfaceMuted
+                                color: Style.colors.secondaryText
                             }
 
                             Item { Layout.fillWidth: true }
@@ -171,7 +179,7 @@ Item {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "Commit"
+                                    text: "Commit and push"
                                     color: Style.colors.secondaryForeground
                                     font.family: Style.fontTypes.roboto
                                     font.pixelSize: 12
@@ -181,10 +189,32 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
+                                    enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
                                     onClicked: {
-                                        // statusController.commit(commitTextArea.text)
-                                        // repositoryController.push()
-                                        commitTextArea.text = ""
+                                        let res = commitController.commit(commitTextArea.text, false, false)
+                                        if(res.success){
+                                            let branchName = branchController.getCurrentBranchName()
+                                            let remoteName = remoteController.getUpstreamName(branchName)
+                                            if(!remoteName.success){
+                                                errorMessageLabel.text = remoteName.errorMessage ?? "push error"
+                                            }else{
+                                               let remoteRes = remoteController.push(
+                                                        remoteName.data,
+                                                        branchName,
+                                                        userProfileController.currentUserProfile.username,
+                                                        userProfileController.currentUserProfile.password)
+
+                                                if(!remoteRes.success){
+                                                    errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
+                                                }else{
+                                                    commitTextArea.text = ""
+                                                }
+                                            }
+
+                                        }else{
+                                            errorMessageLabel.text = res.errorMessage ?? "commit error"
+                                        }
+
                                         root.update()
                                     }
                                 }
@@ -196,28 +226,73 @@ Item {
                                 Layout.preferredHeight: 30
                                 color: Style.colors.primaryBackground
                                 radius: 4
-                                border.color: Style.colors.accent
+                                border.color: Style.colors.foreground
 
                                 Text {
                                     anchors.centerIn: parent
                                     font.family: Style.fontTypes.font6Pro
                                     text: Style.icons.arrowUp
-                                    color: Style.colors.accent
+                                    color: Style.colors.foreground
                                     font.pixelSize: 16
                                 }
 
                                 MouseArea {
                                     anchors.fill: parent
                                     hoverEnabled: true
+                                    enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
                                     onClicked: {
-                                        // statusController.commit(commitTextArea.text)
-                                        commitTextArea.text = ""
+                                        let res = commitController.commit(commitTextArea.text, false, false)
+                                        if(res.success){
+                                            commitTextArea.text = ""
+                                        }else{
+                                            errorMessageLabel.text = res.errorMessage ?? ""
+                                        }
+
                                         root.update()
                                     }
                                 }
                             }
-
                         }
+
+                        // Modern Error Area
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            color: Style.colors.primaryBackground
+                            radius: 6
+                            border.width: 1
+                            border.color: Style.colors.error
+                            visible: errorMessageLabel.length > 0
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: 0
+
+                                ScrollView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+
+                                    TextArea {
+                                        id: errorMessageLabel
+                                        color: Style.colors.foreground
+                                        font.family: Style.fontTypes.roboto
+                                        font.pixelSize: 10
+                                        readOnly: true
+                                        wrapMode: TextEdit.Wrap
+                                        leftPadding: 5
+                                        topPadding: 5
+                                        rightPadding:5
+                                        selectByMouse: true
+                                        background: null
+                                        selectionColor: Style.colors.accent
+                                        selectedTextColor: Style.colors.secondaryForeground
+                                        Material.accent: Style.colors.accent
+                                    }
+                                }
+                            }
+                        }
+
                     }
                 }
 
@@ -244,6 +319,7 @@ Item {
 
                         onFileSelected: function(filePath) {
                             root.selectedFilePath = filePath
+                            root.updateDiff()
                         }
 
                         onStageFileRequested: function(filePath) {
@@ -342,7 +418,7 @@ Item {
             if (file.isStaged) {
                 fileListsPanel.stagedChanges.push(file)
             }
-            if (file.isUnstaged) {
+            if (file.isUnstaged || file.isUntracked) {
                 fileListsPanel.unstagedChanges.push(file)
             }
         })

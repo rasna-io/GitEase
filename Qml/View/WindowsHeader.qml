@@ -20,13 +20,13 @@ Rectangle {
         WindowsButton {
             id: minimizeButton
             onClicked: WindowController.minimize()
-            Material.accent: "#4A9EFF"
+            Material.accent: Style.colors.windowsMinimize
             content: Rectangle {
                 anchors.centerIn: parent
                 width: 10
                 height: 2
                 radius: 1
-                color: minimizeButton.containsMouse ? "#FFFFFF" : "#808080"
+                color: minimizeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
             }
         }
         
@@ -34,12 +34,13 @@ Rectangle {
         WindowsButton {
             id: maximizeButton
             onClicked: WindowController.toggleMaxRestore()
-            Material.accent: "#FFB84D"
+            Material.accent: Style.colors.windowsMaximize
             content: Rectangle {
                 anchors.centerIn: parent
                 width: 10
                 height: 10
-                border.color: maximizeButton.containsMouse ? "#FFFFFF" : "#808080"
+                color: "transparent"
+                border.color: maximizeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
                 border.width: 2
                 radius: 2
             }
@@ -49,7 +50,7 @@ Rectangle {
         WindowsButton {
             id: closeButton
             onClicked: WindowController.closeWindow()
-            Material.accent: "#FF5555"
+            Material.accent: Style.colors.windowsClose
             content: Item {
                 anchors.centerIn: parent
                 width: 10
@@ -59,7 +60,7 @@ Rectangle {
                     width: 12
                     height: 2
                     radius: 1
-                    color: closeButton.containsMouse ? "#FFFFFF" : "#808080"
+                    color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
                     anchors.centerIn: parent
                     rotation: 45
                 }
@@ -68,7 +69,7 @@ Rectangle {
                     width: 12
                     height: 2
                     radius: 1
-                    color: closeButton.containsMouse ? "#FFFFFF" : "#808080"
+                    color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
                     anchors.centerIn: parent
                     rotation: -45
                 }

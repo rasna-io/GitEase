@@ -15,13 +15,15 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property WelcomeController    controller
+    property WelcomeController     controller
 
-    property RepositoryController repositoryController
+    property RepositoryController  repositoryController
 
-    property AppModel             appModel
+    property UserProfileController userProfileController
 
-    property int                  contentMargins:  24
+    property AppModel              appModel
+
+    property int                   contentMargins:  24
 
 
     /* Object Properties
@@ -73,6 +75,7 @@ Rectangle {
                 }
 
                 SetupProfileForm {
+                    id: setupProfileForm
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     showHint: true
@@ -148,7 +151,32 @@ Rectangle {
                             root.controller.nextPage()
                             break
                         case Enums.WelcomePages.SetupProfle:
-                            root.controller.nextPage()
+                            if(setupProfileForm.fullName.length === 0
+                                    && setupProfileForm.email.length === 0)
+                                root.controller.nextPage()
+                            else{
+                                if(setupProfileForm.fullName.length === 0){
+                                    setupProfileForm.errorMessage = "full name can't empty"
+                                    break
+                                }
+
+                                if(setupProfileForm.email.length === 0){
+                                    setupProfileForm.errorMessage = "email can't empty"
+                                    break
+                                }
+
+                                let userProfile = userProfileController.createUserProfile(
+                                                    setupProfileForm.fullName,
+                                                    "", // Password
+                                                    setupProfileForm.email)
+
+                                if(userProfile) {
+                                    root.controller.nextPage()
+                                    setupProfileForm.errorMessage = ""
+                                }else
+                                    setupProfileForm.errorMessage = "can't register profile"
+                            }
+
                             break
                         case Enums.WelcomePages.OpenRepository:
                             if(repositorySelector.submit())
