@@ -13,6 +13,8 @@ import GitEase
 Item {
     id : root
 
+    property BranchController branchController: null
+
     /* Property Declarations
      * ****************************************************************************************/
 
@@ -23,6 +25,8 @@ Item {
      * ****************************************************************************************/
     ImportExportBundle {
         anchors.fill: parent
+
+        branchController: root.branchController
     }
 
     /* Functions
