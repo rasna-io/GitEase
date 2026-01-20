@@ -11,9 +11,8 @@ GitRemote::GitRemote(QObject *parent)
 {}
 
 GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
-                            const QString &username, const QString &password, bool force)
+                          const QString &username, const QString &password, bool force)
 {
-    // Step 1: Validate inputs and check repository
     if (remoteName.isEmpty()) {
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
@@ -27,7 +26,6 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
                          "No branch specified and repository is in detached HEAD state");
     }
 
-    // Look up the remote
     git_remote* remote = nullptr;
     int result = git_remote_lookup(&remote, m_currentRepo->repo, remoteName.toUtf8().constData());
 
@@ -38,6 +36,22 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
         }
 
         return GitResult(false, QVariant(), "Failed to lookup remote");
+    }
+
+    // Get remote URL and detect type
+    const char* urlCStr = git_remote_url(remote);
+    if (!urlCStr) {
+        git_remote_free(remote);
+        return GitResult(false, QVariant(), "Remote URL is empty");
+    }
+
+    QString remoteUrl = QString::fromUtf8(urlCStr);
+    bool isHttps = remoteUrl.startsWith("https://");
+    bool isSsh   = remoteUrl.startsWith("git@") || remoteUrl.startsWith("ssh://");
+
+    if (isSsh) {
+        git_remote_free(remote);
+        return GitResult(false, QVariant(), "SSH remote detected; username/password cannot be used for push");
     }
 
     // Prepare push options
@@ -51,7 +65,7 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
     // Define a struct to hold credentials
     struct CredentialsPayload {
         QString username;
-        QString password;
+        QString token;
     };
 
     // Create payload on heap (will be freed later)
@@ -66,78 +80,50 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
 
         CredentialsPayload* creds = static_cast<CredentialsPayload*>(payload);
 
-        qDebug() << "GitWrapperCPP: Attempting authentication for" << url;
-
         // Check if credentials are provided
-        if (creds->username.isEmpty() || creds->password.isEmpty()) {
+        if (creds->username.isEmpty() || creds->token.isEmpty()) {
             qDebug() << "GitWrapperCPP: No credentials provided in payload";
             return GIT_EUSER;
         }
 
-        // Convert QString to C strings for libgit2
-        QByteArray usernameBytes = creds->username.toUtf8();
-        QByteArray passwordBytes = creds->password.toUtf8();
-        const char* usernameCStr = usernameBytes.constData();
-        const char* passwordCStr = passwordBytes.constData();
-
         // HTTPS authentication
         if (allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) {
-            int result = git_credential_userpass_plaintext_new(out, usernameCStr, passwordCStr);
-            if (result == GIT_OK) {
-                qDebug() << "GitWrapperCPP: HTTPS credentials provided successfully";
-                return GIT_OK; // Success
-            }
+            return git_credential_userpass_plaintext_new(out,
+                                                         creds->username.toUtf8().constData(),
+                                                         creds->token.toUtf8().constData());
         }
-
-        // SSH authentication
-        if (allowed_types & GIT_CREDENTIAL_SSH_KEY) {
-            qDebug() << "GitWrapperCPP: SSH authentication requested (not implemented)";
-            return GIT_EUSER;
-        }
-
-        qDebug() << "GitWrapperCPP: No suitable authentication method";
         return GIT_EUSER;
     };
 
     push_opts.callbacks.payload = credentialsPayload;
 
-    // Prepare refspecs
-    git_strarray refspecs = {0};
     QString refspec = force ?
                           QString("+refs/heads/%1:refs/heads/%1").arg(branchName) :
                           QString("refs/heads/%1:refs/heads/%1").arg(branchName);
 
     char* refspec_cstr = new char[refspec.length() + 1];
     strcpy(refspec_cstr, refspec.toUtf8().constData());
+
+    git_strarray refspecs;
     refspecs.strings = &refspec_cstr;
     refspecs.count = 1;
 
     // Perform the push
-    qDebug() << "GitWrapperCPP: Pushing" << branchName << "to" << remoteName
-             << (force ? "(force)" : "");
-
     result = git_remote_push(remote, &refspecs, &push_opts);
 
-
-    // Clean up payload
+    // Cleanup
     delete credentialsPayload;
     delete[] refspec_cstr;
     git_remote_free(remote);
 
-    // Clean up
-    delete[] refspec_cstr;
-    git_remote_free(remote);
-
-    // Step 3: Handle result and return
+    // Handle result
     if (result != GIT_OK) {
-
         if (result == GIT_EUSER) {
             return GitResult(false, QVariant(),
-                             "Authentication required but not provided.\n\n"
-                             "Please configure your credentials.");
+                             "Authentication failed. Check your personal access token.");
         } else if (result == GIT_EEXISTS) {
             return GitResult(false, QVariant(),
-                             QString("Push rejected: remote already has changes you don't have.\n\n"
+                             QString("Push rejected: remote already has changes you don't have.\n"
                                      "Try pulling first with:\n"
                                      "git pull %1 %2").arg(remoteName).arg(branchName));
         } else if (result == GIT_ENONFASTFORWARD && !force) {
@@ -146,7 +132,14 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
                                      "To force push, set force=true (not recommended on shared branches)"));
         }
 
-        return GitResult(false, QVariant(), "Push failed");
+        // Get libgit2 error message if available
+        const git_error* error = giterr_last();
+        QString errorMsg = "Push failed";
+        if (error && error->message) {
+            errorMsg += QString(": %1").arg(error->message);
+        }
+
+        return GitResult(false, QVariant(), errorMsg);
     }
 
     QVariantMap pushResult;
@@ -155,7 +148,6 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
     pushResult["force"] = force;
     pushResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    qDebug() << "GitWrapperCPP: Successfully pushed to" << remoteName;
     return GitResult(true, pushResult);
 }
 

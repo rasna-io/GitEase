@@ -19,6 +19,7 @@ ColumnLayout {
     property string helperText: ""
     property string icon: ""
     property string text: field.text
+    property real echoMode: TextInput.Normal
     property bool hasError: false
     property alias field: field
     property string button: ""
@@ -57,6 +58,7 @@ ColumnLayout {
             anchors.verticalCenter: parent.verticalCenter
             anchors.rightMargin: buttonItem.visible ? 8 : 0
             placeholderText: root.placeholderText
+            echoMode: root.echoMode
             icon: root.icon
             error: root.hasError
         }
