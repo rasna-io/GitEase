@@ -44,6 +44,7 @@ QtObject{
     
     // Border colors
     property color primaryBorder:       "#D7DCE5"
+    property color secondaryBorder:     "#E7ECF5"
 
     property color diffRemovedBg:       "#FDECEC"
     property color diffAddedBg:         "#ECFDF3"
