@@ -1665,6 +1665,7 @@ Item {
         if (!branchController || !root.appModel || !root.appModel.currentRepository)
             return
 
+        var currentContentY = commitsListView.contentY;
         isLoadingMore = true
 
         let allBranches = branchController.getBranches();
@@ -1687,6 +1688,9 @@ Item {
 
         root.allCommits = commits.slice(0)
         root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate)
+
+        commitsListView.contentY = currentContentY;
+
         isLoadingMore = false
     }
 
