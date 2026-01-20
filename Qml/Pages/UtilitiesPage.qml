@@ -18,6 +18,8 @@ Item {
      * ****************************************************************************************/
     property var page: null
 
+    property BranchController branchController: null
+
     /* Object Properties
      * ****************************************************************************************/
     anchors.fill: parent
@@ -42,6 +44,8 @@ Item {
 
                 ImportExportBundleDock {
                     anchors.fill: parent
+
+                    branchController: root.branchController
                 }
             }
 
