@@ -213,6 +213,71 @@ GitResult GitBranch::renameBranch(const QString &oldName, const QString &newName
     return GitResult(true, QVariant(), QString("Successfully renamed branch '%1' to '%2'.").arg(oldName).arg(newName));
 }
 
+GitResult GitBranch::getBranchLineage(const QString &branchName)
+{
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "Repository is not open.");
+    }
+
+    if (branchName.isEmpty()) {
+        return GitResult(false, QVariant(), "Branch name is empty.");
+    }
+
+    git_reference *targetRef = nullptr;
+    QByteArray branchPath = "refs/heads/" + branchName.toUtf8();
+
+    // Find the OID of the target branch
+    int error = git_reference_lookup(&targetRef, m_currentRepo->repo, branchPath.constData());
+    if (error != GIT_OK) {
+        return GitResult(false, QVariant(), QString("Target branch '%1' not found.").arg(branchName));
+    }
+
+    git_oid targetOid = *git_reference_target(targetRef);
+    git_reference_free(targetRef);
+
+    // Initialize iterator for local branches
+    git_branch_iterator *iterator = nullptr;
+    error = git_branch_iterator_new(&iterator, m_currentRepo->repo, GIT_BRANCH_LOCAL);
+    if (error != GIT_OK) {
+        return GitResult(false, QVariant(), "Failed to initialize branch iterator.");
+    }
+
+    QVariantList lineage;
+    git_reference *currentRef = nullptr;
+    git_branch_t branchType;
+
+    // Traverse all local branches to check for ancestry relationship
+    while (git_branch_next(&currentRef, &branchType, iterator) == GIT_OK) {
+        const char *outName = nullptr;
+        git_branch_name(&outName, currentRef);
+        QString currentBranchName = QString::fromUtf8(outName);
+
+        // Skip the target branch itself
+        if (currentBranchName == branchName) {
+            git_reference_free(currentRef);
+            continue;
+        }
+
+        git_oid currentOid = *git_reference_target(currentRef);
+        git_oid mergeBaseOid;
+
+        /* * A branch is an ancestor if the merge base between the target
+         * and the candidate is the candidate's tip itself.
+         */
+        int mergeBaseError = git_merge_base(&mergeBaseOid, m_currentRepo->repo, &targetOid, &currentOid);
+
+        if (mergeBaseError == GIT_OK && git_oid_equal(&mergeBaseOid, &currentOid)) {
+            lineage.append(currentBranchName);
+        }
+
+        git_reference_free(currentRef);
+    }
+
+    git_branch_iterator_free(iterator);
+
+    return GitResult(true, lineage, QString("Successfully retrieved lineage for '%1'.").arg(branchName));
+}
+
 QString GitBranch::getCurrentBranchName()
 {
     if (!m_currentRepo || !m_currentRepo->repo)
