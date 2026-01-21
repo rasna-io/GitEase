@@ -59,9 +59,57 @@ Item {
         font.pixelSize: 13
     }
 
+    // Empty state (no Changes to render)
+    Item {
+        anchors.fill: parent
+        visible: !root.diffData || root.diffData.length === 0
+        z: 999
+
+        Column {
+            id: emptyStateColumn
+            anchors.centerIn: parent
+            spacing: 10
+
+            // Give the column a concrete width so children using width bindings can render.
+            width: Math.min(parent.width, 360)
+
+            Text {
+                text: Style.icons.warning
+                font.family: Style.fontTypes.font6Pro
+                font.pixelSize: 34
+                color: Style.colors.mutedText
+                horizontalAlignment: Text.AlignHCenter
+                width: emptyStateColumn.width
+            }
+
+            Text {
+                text: "No file changes to show"
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 14
+                font.weight: 500
+                color: Style.colors.mutedText
+                horizontalAlignment: Text.AlignHCenter
+                width: emptyStateColumn.width
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                text: "Select a file to view the Diff"
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 12
+                font.weight: 400
+                color: Style.colors.placeholderText
+                horizontalAlignment: Text.AlignHCenter
+                width: emptyStateColumn.width
+                wrapMode: Text.WordWrap
+            }
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Style.colors.editorBackgroound
+        visible: root.diffData && root.diffData.length > 0
 
         ListView {
             id: diffListView
