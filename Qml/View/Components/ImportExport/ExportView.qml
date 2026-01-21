@@ -224,10 +224,13 @@ Item {
             }
 
             onClicked: {
-                let base = baseBranchCombo.model[baseBranchCombo.currentIndex]
+                let base   = baseBranchCombo.model[baseBranchCombo.currentIndex]
                 let target = branchesCombo.model[branchesCombo.currentIndex].name
                 let refName = branchController.formatRefName(target)
-                let path = `${root.selectedFolder}/[${base}]-[${target}]`
+
+                let bundleName = buildBundleName(base, target)
+                let path = `${root.selectedFolder}/${bundleName}`
+
                 root.bundleController.buildDiffBundle(base, target, refName, path)
             }
         }
@@ -244,4 +247,33 @@ Item {
 
     /* Functions
      * ****************************************************************************************/
+
+    function sanitizeBranchName(name) {
+        return name
+            .toLowerCase()
+            .replace(/^refs\/heads\//, "")
+            .replace(/[^a-z0-9._-]/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "");
+    }
+
+    function formatTimestamp() {
+        let d = new Date();
+        let pad = n => n.toString().padStart(2, "0");
+
+        return d.getFullYear().toString() +
+               pad(d.getMonth() + 1) +
+               pad(d.getDate()) + "-" +
+               pad(d.getHours()) +
+               pad(d.getMinutes()) +
+               pad(d.getSeconds());
+    }
+
+    function buildBundleName(base, target) {
+        let baseSafe   = sanitizeBranchName(base);
+        let targetSafe = sanitizeBranchName(target);
+        let ts         = formatTimestamp();
+
+        return `${baseSafe}__to__${targetSafe}__${ts}`;
+    }
 }
