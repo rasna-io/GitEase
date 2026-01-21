@@ -385,50 +385,10 @@ Item {
         color : Style.colors.primaryBackground
 
         // Empty state (no commits to render)
-        Item {
-            anchors.fill: parent
+        EmptyStateView {
+            title: "no commit to show"
+            details: root.emptyStateDetailsText()
             visible: !root.commits || root.commits.length === 0
-            z: 999
-
-            Column {
-                id: emptyStateColumn
-                anchors.centerIn: parent
-                spacing: 10
-
-                // Give the column a concrete width so children using width bindings can render.
-                width: Math.min(parent.width, 360)
-
-                Text {
-                    text: "\uf071"
-                    font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: 34
-                    color: Style.colors.mutedText
-                    horizontalAlignment: Text.AlignHCenter
-                    width: emptyStateColumn.width
-                }
-
-                Text {
-                    text: "no commit to show"
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 14
-                    font.weight: 600
-                    color: Style.colors.mutedText
-                    horizontalAlignment: Text.AlignHCenter
-                    width: emptyStateColumn.width
-                    wrapMode: Text.WordWrap
-                }
-
-                Text {
-                    text: root.emptyStateDetailsText()
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
-                    font.weight: 400
-                    color: Style.colors.placeholderText
-                    horizontalAlignment: Text.AlignHCenter
-                    width: emptyStateColumn.width
-                    wrapMode: Text.WordWrap
-                }
-            }
         }
 
         ColumnLayout {          
