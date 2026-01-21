@@ -14,6 +14,7 @@ Item {
     id : root
 
     property BranchController branchController: null
+    property BundleController bundleController: null
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -27,6 +28,7 @@ Item {
         anchors.fill: parent
 
         branchController: root.branchController
+        bundleController: root.bundleController
     }
 
     /* Functions

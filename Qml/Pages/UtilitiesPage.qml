@@ -19,6 +19,7 @@ Item {
     property var page: null
 
     property BranchController branchController: null
+    property BundleController bundleController: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -46,6 +47,7 @@ Item {
                     anchors.fill: parent
 
                     branchController: root.branchController
+                    bundleController: root.bundleController
                 }
             }
 

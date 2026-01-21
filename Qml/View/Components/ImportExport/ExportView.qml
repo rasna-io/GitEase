@@ -18,6 +18,7 @@ Item {
     /* Property Declarations
      * ****************************************************************************************/
     property BranchController   branchController:     null
+    property BundleController   bundleController:     null
     property string             selectedFolder:       ""
     property var                branches:             []
 
