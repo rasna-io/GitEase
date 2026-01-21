@@ -92,6 +92,7 @@ QtObject {
         })
 
         root.appModel?.pages?.push(page)
+        root.appModel.pages = root.appModel.pages.slice()
 
         root.appModel.currentPage = page
         return page
