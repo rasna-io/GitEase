@@ -45,6 +45,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/FormInputField.qml          # Form input field with validation
     Qml/View/Components/Base/TabbedView.qml              # Tabbed interface component
     Qml/View/Components/Base/RepositoryListItem.qml      # Repository list item display
+    Qml/View/Components/Base/EmptyStateView.qml          # Items Empty State View
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml     # Profile setup/editing form
