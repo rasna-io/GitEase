@@ -18,7 +18,7 @@ Item {
     /* Property Declarations
      * ****************************************************************************************/
     property BranchController   branchController:     null
-    property string             selectedFile:         ""
+    property string             selectedFolder:       ""
     property var                branches:             []
 
     /* Object Properties
@@ -27,11 +27,10 @@ Item {
 
     /* Children
      * ****************************************************************************************/
-    FileDialog {
-        id: fileDialog
-        title: "Select Project Archive"
-        nameFilters: ["Archive files (*.zip *.tar.gz)"]
-        onAccepted: root.selectedFile = selectedFile.toString().replace(new RegExp("^file://+"), "")
+    FolderDialog {
+        id: folderDialog
+        title: "Select Directory"
+        onAccepted: root.selectedFolder = folderDialog.selectedFolder.toString().replace(new RegExp("^file://+"), "")
     }
 
     ColumnLayout {
@@ -134,7 +133,7 @@ Item {
                     Layout.rightMargin: 10
                     Layout.preferredHeight: 20
                     elide: Text.ElideRight
-                    color: root.selectedFile === "" ? Style.colors.placeholderText : Style.colors.secondaryText
+                    color: root.selectedFolder === "" ? Style.colors.placeholderText : Style.colors.secondaryText
                     text: "Select Directory..."
                 }
 
@@ -169,7 +168,7 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                     }
 
-                    onClicked: fileDialog.open()
+                    onClicked: folderDialog.open()
                 }
             }
         }
@@ -181,7 +180,7 @@ Item {
         Button {
             Layout.fillWidth: true
             implicitHeight: 44
-            enabled: root.selectedFile !== ""
+            enabled: root.selectedFolder !== ""
 
             background: Rectangle {
                 radius: 8
@@ -217,11 +216,11 @@ Item {
             }
 
             // TODO
-            onClicked: console.log("Export:", root.selectedFile)
+            onClicked: console.log("Export:", root.selectedFolder)
         }
     }
 
-    onSelectedFileChanged: fileLabel.text = root.selectedFile
+    onSelectedFolderChanged: fileLabel.text = root.selectedFolder
 
     onBranchControllerChanged: {
         if(!branchController)
