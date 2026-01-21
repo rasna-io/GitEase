@@ -39,7 +39,7 @@ Item {
             spacing: 12
 
             Rectangle {
-                Layout.preferredHeight: 315
+                Layout.preferredHeight: 370
                 Layout.preferredWidth: 261
                 color: "transparent"
 
