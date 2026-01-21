@@ -117,7 +117,7 @@ Item {
             }
 
             TextField {
-                id: txf
+                id: branchTXF
                 Layout.fillWidth: true
                 Layout.preferredHeight: 40
                 background: Rectangle {
@@ -161,7 +161,7 @@ Item {
         Button {
             Layout.fillWidth: true
             implicitHeight: 44
-            enabled: root.selectedFile !== ""
+            enabled: root.selectedFile !== "" && branchTXF.text !== ""
 
             background: Rectangle {
                 radius: 8
@@ -196,8 +196,12 @@ Item {
                 }
             }
 
-            // TODO
-            onClicked: console.log("Import:", root.selectedFile)
+            onClicked: {
+                let res = root.bundleController.unbundle(root.selectedFile)
+                if (res.success) {
+                    root.branchController.createBranch(res.data, branchTXF.text)
+                }
+            }
         }
     }
 
