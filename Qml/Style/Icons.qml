@@ -40,4 +40,6 @@ QtObject{
     property string branch:         "\uf126"
 
     property string arowLeftRight:  "\uf0ec"
+
+    property string warning:        "\uf071"
 }
