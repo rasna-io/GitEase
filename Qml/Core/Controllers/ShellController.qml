@@ -34,7 +34,8 @@ QtObject {
         })
 
         if(root.arguments["repo"]) {
-            root.repositorySelected = repositoryController.openRepository(root.arguments["repo"])
+            let path = repositoryController.appModel.fileIO.pathNormalizer(root.arguments["repo"])
+            root.repositorySelected = repositoryController.openRepository(path)
         }
 
         if(root.arguments["page"]) {
