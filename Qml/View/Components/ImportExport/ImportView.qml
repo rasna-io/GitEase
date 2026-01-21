@@ -29,8 +29,8 @@ Item {
      * ****************************************************************************************/
     FileDialog {
         id: fileDialog
-        title: "Select Project Archive"
-        nameFilters: ["Archive files (*.zip *.tar.gz)"]
+        title: "Select bundle"
+        nameFilters: ["Bundle files (*.bundle)"]
         onAccepted: root.selectedFile = selectedFile.toString().replace(new RegExp("^file://+"), "")
     }
 
@@ -43,32 +43,38 @@ Item {
             spacing: 2
 
             Text {
-                text: "Project Archive"
+                text: "Bundle"
                 font.pixelSize: 12
                 color: Style.colors.mutedText
             }
 
             RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 20
+                Layout.preferredHeight: 40
                 spacing: 8
 
-                Label {
-                    id: fileLabel
+                Rectangle {
                     Layout.fillWidth: true
-                    Layout.leftMargin: 10
-                    Layout.rightMargin: 10
-                    Layout.preferredHeight: 20
-                    elide: Text.ElideRight
-                    color: root.selectedFile === "" ? Style.colors.placeholderText : Style.colors.secondaryText
-                    text: "Select .zip or .tar.gz file..."
+                    Layout.preferredHeight: 40
+                    radius: 5
+                    color: Style.colors.secondaryBackground
+                    Text {
+                        id: fileLabel
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: 15
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        elide: Text.ElideLeft
+                        color: root.selectedFile === "" ? Style.colors.placeholderText : Style.colors.secondaryText
+                        text: root.selectedFile !== "" ? root.selectedFile : "Select .bundle file..."
+                    }
                 }
 
                 Button {
                     id: fileButton
 
-                    implicitWidth: 28
-                    implicitHeight:28
+                    implicitWidth: 40
+                    implicitHeight: 40
 
                     text: Style.icons.folder
                     font.family: Style.fontTypes.font6Pro
@@ -100,10 +106,31 @@ Item {
             }
         }
 
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 2
+
+            Text {
+                text: "Branch"
+                font.pixelSize: 12
+                color: Style.colors.mutedText
+            }
+
+            TextField {
+                id: txf
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                background: Rectangle {
+                    radius: 5
+                    color: Style.colors.secondaryBackground
+                }
+            }
+        }
+
         // Hint row
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 50
+            Layout.preferredHeight: 65
             radius: 5
             color: Style.colors.secondaryBackground
             border.width: 1
@@ -111,7 +138,7 @@ Item {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 10
+                anchors.margins: 4
 
                 Item {
                     Layout.fillWidth: true
@@ -123,16 +150,12 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Import will extract and restore the project structure, branches, and commit history from the selected archive."
                         wrapMode: Text.WordWrap
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         color: Style.colors.mutedText
                         font.family: Style.fontTypes.roboto
                     }
                 }
             }
-        }
-
-        Item {
-            Layout.fillHeight: true
         }
 
         Button {
@@ -164,7 +187,7 @@ Item {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Import Project"
+                        text: "Import"
                         color: Style.colors.secondaryForeground
                         font.pixelSize: 13
                         horizontalAlignment: Text.AlignHCenter
