@@ -11,6 +11,8 @@
 
 int main(int argc, char *argv[])
 {
+    git_libgit2_init();
+
     QGuiApplication app(argc, argv);
 
 
@@ -28,11 +30,6 @@ int main(int argc, char *argv[])
     auto* win = qobject_cast<QQuickWindow*>(engine.rootObjects().value(0));
     if (!win)
         return -1;
-
-    git_libgit2_init();
-
-
-
 
     auto controller = WindowController(win, &app);
     engine.rootContext()->setContextProperty(QStringLiteral("WindowController"), &controller);
