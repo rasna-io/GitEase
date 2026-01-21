@@ -59,7 +59,9 @@ ApplicationWindow {
         id: mainContentLoader
         anchors.fill: parent
 
-        sourceComponent: welcomeFlowComponent
+        sourceComponent: uiSession?.shellController.pageSelected
+                         && uiSession?.shellController.repositorySelected
+                         ? mainApplicationComponent : welcomeFlowComponent
     }
 
     // Welcome Flow Component
