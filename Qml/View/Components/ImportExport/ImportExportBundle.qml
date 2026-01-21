@@ -70,14 +70,14 @@ Rectangle {
         Rectangle {
             id: viewControl
             Layout.fillWidth: true
-            Layout.preferredHeight: 30
-            radius: 20
+            Layout.preferredHeight: 40
+            radius: 10
             color: Style.colors.cardBackground
 
             RowLayout {
                 anchors.fill: parent
                 spacing: 4
-                anchors.margins: 2
+                anchors.margins: 5
 
                 Button {
                     id: exportBtn

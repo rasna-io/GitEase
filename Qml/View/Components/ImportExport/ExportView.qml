@@ -52,7 +52,7 @@ Item {
                 id: branchesCombo
                 Layout.fillWidth: true
                 model: root.branches
-                minHeight: 26
+                minHeight: 40
                 focusBorderWidth: 1
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
@@ -89,7 +89,7 @@ Item {
                 id: baseBranchCombo
                 Layout.fillWidth: true
                 model: root.branches
-                minHeight: 26
+                minHeight: 40
                 focusBorderWidth: 1
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
@@ -141,8 +141,8 @@ Item {
                 Button {
                     id: fileButton
 
-                    implicitWidth: 28
-                    implicitHeight:28
+                    implicitWidth: 40
+                    implicitHeight: 40
 
                     text: Style.icons.folder
                     font.family: Style.fontTypes.font6Pro
@@ -207,7 +207,7 @@ Item {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Export Project"
+                        text: "Export"
                         color: Style.colors.secondaryForeground
                         font.pixelSize: 13
                         horizontalAlignment: Text.AlignHCenter
