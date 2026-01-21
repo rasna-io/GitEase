@@ -16,6 +16,7 @@ Rectangle {
     id: root
 
     property BranchController branchController: null
+    property BundleController bundleController: null
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -169,10 +170,14 @@ Rectangle {
             currentIndex: root.currentIndex
 
             ExportView {
-                branchController : root.branchController
+                branchController: root.branchController
+                bundleController: root.bundleController
             }
 
-            ImportView { }
+            ImportView {
+                branchController: root.branchController
+                bundleController: root.bundleController
+            }
         }
     }
 

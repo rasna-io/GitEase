@@ -17,6 +17,8 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property BranchController   branchController:     null
+    property BundleController   bundleController:     null
     property string             selectedFile:         ""
 
     /* Object Properties
