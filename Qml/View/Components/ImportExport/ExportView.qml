@@ -68,9 +68,15 @@ Item {
                     color: branchesCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
-                onActivated: function(index) {
-                    // TODO
-                    console.log("Selecte Branch : ", root.branches[index])
+                onCurrentIndexChanged: {
+                    let targetBranch = branchesCombo.model[branchesCombo.currentIndex]
+                    console.log("Selecte Branch : ", targetBranch)
+                    let res = branchController.getBranchLineage(targetBranch)
+                    if (res.success)
+                        baseBranchCombo.model = res.data
+                    else
+                        baseBranchCombo.model = []
+
                 }
             }
         }
@@ -88,7 +94,6 @@ Item {
             ComboBox {
                 id: baseBranchCombo
                 Layout.fillWidth: true
-                model: root.branches
                 minHeight: 40
                 focusBorderWidth: 1
                 font.family: Style.fontTypes.roboto
@@ -127,16 +132,23 @@ Item {
                 Layout.preferredHeight: 20
                 spacing: 8
 
-                Label {
-                    id: fileLabel
+                Rectangle {
                     Layout.fillWidth: true
-                    Layout.leftMargin: 10
-                    Layout.rightMargin: 10
-                    Layout.preferredHeight: 20
-                    elide: Text.ElideRight
-                    color: root.selectedFolder === "" ? Style.colors.placeholderText : Style.colors.secondaryText
-                    text: "Select Directory..."
+                    Layout.preferredHeight: 40
+                    radius: 5
+                    color: Style.colors.secondaryBackground
+                    Text {
+                        id: fileLabel
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: 15
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        elide: Text.ElideLeft
+                        color: root.selectedFolder === "" ? Style.colors.placeholderText : Style.colors.secondaryText
+                        text: root.selectedFolder !== "" ? root.selectedFolder : "Select Directory..."
+                    }
                 }
+
 
                 Button {
                     id: fileButton
@@ -181,8 +193,7 @@ Item {
         Button {
             Layout.fillWidth: true
             implicitHeight: 44
-            enabled: root.selectedFolder !== ""
-
+            enabled: root.selectedFolder !== "" && branchesCombo.currentIndex !== -1 && baseBranchCombo.currentIndex !== -1
             background: Rectangle {
                 radius: 8
                 color: enabled ? Style.colors.accent : Style.colors.disabledButton
@@ -216,12 +227,9 @@ Item {
                 }
             }
 
-            // TODO
             onClicked: console.log("Export:", root.selectedFolder)
         }
     }
-
-    onSelectedFolderChanged: fileLabel.text = root.selectedFolder
 
     onBranchControllerChanged: {
         if(!branchController)
