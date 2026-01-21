@@ -24,6 +24,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/StatusController.qml
     Qml/Core/Controllers/BundleController.qml
     Qml/Core/Controllers/UserProfileController.qml  # User Profile Controller
+    Qml/Core/Controllers/ShellController.qml        # Shell Commands (rightClick Actions) Controller
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
