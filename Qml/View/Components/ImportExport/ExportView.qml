@@ -20,7 +20,6 @@ Item {
     property BranchController   branchController:     null
     property BundleController   bundleController:     null
     property string             selectedFolder:       ""
-    property var                branches:             []
 
     /* Object Properties
      * ****************************************************************************************/
@@ -51,12 +50,12 @@ Item {
             ComboBox {
                 id: branchesCombo
                 Layout.fillWidth: true
-                model: root.branches
                 minHeight: 40
                 focusBorderWidth: 1
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
                 font.pixelSize: 12
+                textRole: "name"
 
                 placeholderText: "Select branch"
 
@@ -69,7 +68,9 @@ Item {
                 }
 
                 onCurrentIndexChanged: {
-                    let targetBranch = branchesCombo.model[branchesCombo.currentIndex]
+                    if (branchesCombo.currentIndex < 0)
+                        return;
+                    let targetBranch = branchesCombo.model[branchesCombo.currentIndex].name
                     console.log("Selecte Branch : ", targetBranch)
                     let res = branchController.getBranchLineage(targetBranch)
                     if (res.success)
@@ -108,11 +109,6 @@ Item {
                 background: Rectangle {
                     radius: 5
                     color: baseBranchCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                }
-
-                onActivated: function(index) {
-                    // TODO
-                    console.log("Selecte Base Branch : ", root.branches[index])
                 }
             }
         }
@@ -227,7 +223,13 @@ Item {
                 }
             }
 
-            onClicked: console.log("Export:", root.selectedFolder)
+            onClicked: {
+                let base = baseBranchCombo.model[baseBranchCombo.currentIndex]
+                let target = branchesCombo.model[branchesCombo.currentIndex].name
+                let refName = branchController.formatRefName(target)
+                let path = `${root.selectedFolder}/[${base}]-[${target}]`
+                root.bundleController.buildDiffBundle(base, target, refName, path)
+            }
         }
     }
 
@@ -235,14 +237,9 @@ Item {
         if(!branchController)
             return
 
-        let allBranches = branchController.getBranches()
-        let branchNames = []
+        let branchNames = branchController.getBranches()
 
-        for(let i = 0 ; i < allBranches.length; i++){
-            branchNames.push(allBranches[i].name)
-        }
-
-        root.branches = branchNames
+        branchesCombo.model = branchNames
     }
 
     /* Functions
