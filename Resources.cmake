@@ -88,6 +88,14 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Settings/PathSelectorItem.qml
     Qml/View/Components/Settings/TextFieldItem.qml
     Qml/View/Components/Settings/ComboboxItem.qml
+
+    # Import Export Bundle Components
+    Qml/View/Components/ImportExport/ImportExportBundle.qml
+    Qml/View/Components/ImportExport/ImportView.qml
+    Qml/View/Components/ImportExport/ExportView.qml
+
+    # DockPanel Docks
+    Qml/View/Components/Docks/ImportExportBundleDock.qml       # Import Export git Bundle Dock
 )
 
 
@@ -113,6 +121,7 @@ set(RESOURCES_PAGES
     Qml/Pages/WelcomePage.qml       # Initial welcome/onboarding page
     Qml/Pages/GraphViewPage.qml     # Main graph view page
     Qml/Pages/CommittingPage.qml    # Commit Page
+    Qml/Pages/UtilitiesPage.qml     # UtilitiesPage, import/export
     Qml/Pages/BlankPage.qml         # Blank placeholder page
 )
 

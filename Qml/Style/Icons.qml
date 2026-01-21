@@ -21,9 +21,11 @@ QtObject{
     property string user:           "\uf007" // user
     property string envelope:       "\uf0e0" // envelope
     property string lightbulb:      "\uf0eb" // lightbulb
+    property string tools:          "\uf7d9" // tools
     property string folder:         "\uf660" // folder
     property string clock:          "\uf017" // clock
     property string download:       "\ue094" // download
+    property string upload:         "\ue09a" // upload
     property string gear:           "\uf013" // gear (settings)
     property string plus:           "\uf067" // plus
     property string minus:          "\uf068" // minus
@@ -36,4 +38,6 @@ QtObject{
     property string slider:         "\uf1de"
 
     property string branch:         "\uf126"
+
+    property string arowLeftRight:  "\uf0ec"
 }

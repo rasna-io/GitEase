@@ -16,8 +16,10 @@ T.ComboBox {
     property  bool error
 
     property int minHeight: 40
+    property int maxPopupHeight: 200
     property int borderWidth: 1
     property int focusBorderWidth: 2
+    property string placeholderText: ""
 
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             implicitContentWidth + leftPadding + rightPadding)
@@ -34,7 +36,7 @@ T.ComboBox {
         required property int index
 
         width: control.width
-        height: control.height
+        height: control.minHeight
         contentItem: Text {
             text:  model[control.textRole]
             font: control.font
@@ -48,7 +50,7 @@ T.ComboBox {
     indicator: ColorImage {
         x: control.mirrored ? control.padding : control.width - width - control.padding
         y: control.topPadding + (control.availableHeight - height) / 2
-        color: control.enabled ? control.Material.foreground : control.Material.hintTextColor
+        color: control.enabled ? control.Material.foreground : Style.colors.placeholderText
         source: "qrc:/qt-project.org/imports/QtQuick/Controls/Material/images/drop-indicator.png"
     }
 
@@ -57,7 +59,8 @@ T.ComboBox {
         topPadding: Material.textFieldVerticalPadding
         bottomPadding: Material.textFieldVerticalPadding
 
-        text: control.editable ? control.editText : control.displayText
+        text: control.currentIndex >= 0 ? control.displayText : control.placeholderText
+        color: control.currentIndex >= 0 ? control.Material.foreground : Style.colors.placeholderText
 
         enabled: control.editable
         autoScroll: control.editable
@@ -66,7 +69,6 @@ T.ComboBox {
         validator: control.validator
         selectByMouse: control.selectTextByMouse
 
-        color: control.enabled ? control.Material.foreground : control.Material.hintTextColor
         selectionColor: control.Material.accentColor
         selectedTextColor: control.Material.primaryHighlightedTextColor
         verticalAlignment: Text.AlignVCenter
@@ -87,15 +89,18 @@ T.ComboBox {
     popup: Popup {
         y: control.height - 1
         width: control.width
-        implicitHeight: contentItem.implicitHeight
         padding: 1
 
+        implicitHeight: Math.min(contentItem.implicitHeight, control.maxPopupHeight)
         contentItem: ListView {
             clip: true
-            implicitHeight: contentHeight
             model: control.delegateModel
             currentIndex: control.highlightedIndex
             highlightMoveDuration: 0
+
+            implicitHeight: contentHeight
+            boundsBehavior: Flickable.StopAtBounds
+
             ScrollIndicator.vertical: ScrollIndicator { }
         }
 
@@ -104,5 +109,9 @@ T.ComboBox {
             radius: 2
             border.color: Style.colors.primaryBorder
         }
+    }
+
+    onModelChanged: {
+        control.currentIndex = placeholderText === "" ? 0 : -1
     }
 }

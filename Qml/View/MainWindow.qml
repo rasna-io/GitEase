@@ -113,6 +113,9 @@ Rectangle {
                         if (item.hasOwnProperty("userProfileController")) {
                             item.userProfileController = Qt.binding(function() { return root.uiSession?.userProfileController })
                         }
+                        if (item.hasOwnProperty("bundleController")) {
+                            item.bundleController = Qt.binding(function() { return root.uiSession?.bundleController })
+                        }
                         if (item.hasOwnProperty("userAuthenticationPopup")) {
                             item.userAuthenticationPopup = Qt.binding(function() { return root.uiSession?.popups?.userAuthenticationPopup })
                         }
