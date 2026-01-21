@@ -110,7 +110,7 @@ GitResult GitBranch::createBranch(const QString &branchName)
     return GitResult(true, QVariant(), QString("Branch created successfully: %1").arg(branchName));
 }
 
-GitResult GitBranch::createBranchFromCommit(const QString &commitSha, const QString &branchName)
+GitResult GitBranch::createBranch(const QString &commitSha, const QString &branchName)
 {
     // Convert SHA to git_oid
     git_oid commitOid;

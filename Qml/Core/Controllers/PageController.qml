@@ -36,6 +36,11 @@ QtObject {
                         "qrc:/GitEase/Qml/Pages/CommittingPage.qml",
                         Style.icons.gitBranch)
 
+            root.createPage(
+                        "utilities",
+                        "Utilities",
+                        "qrc:/GitEase/Qml/Pages/UtilitiesPage.qml",
+                        Style.icons.tools)
 
             // root.createPage(
             //             "blank",

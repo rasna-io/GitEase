@@ -1,0 +1,279 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import QtQuick.Dialogs
+
+import GitEase
+import GitEase_Style
+import GitEase_Style_Impl
+
+/*! ***********************************************************************************************
+ * ExportView
+ * Export bundle view
+ * ************************************************************************************************/
+
+Item {
+    id: root
+
+    /* Property Declarations
+     * ****************************************************************************************/
+    property BranchController   branchController:     null
+    property BundleController   bundleController:     null
+    property string             selectedFolder:       ""
+
+    /* Object Properties
+     * ****************************************************************************************/
+    anchors.fill: parent
+
+    /* Children
+     * ****************************************************************************************/
+    FolderDialog {
+        id: folderDialog
+        title: "Select Directory"
+        onAccepted: root.selectedFolder = folderDialog.selectedFolder.toString().replace(new RegExp("^file://+"), "")
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 10
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 2
+
+            Text {
+                text: "Target Branch"
+                font.pixelSize: 12
+                color: Style.colors.mutedText
+            }
+
+            ComboBox {
+                id: branchesCombo
+                Layout.fillWidth: true
+                minHeight: 40
+                focusBorderWidth: 1
+                font.family: Style.fontTypes.roboto
+                font.weight: 400
+                font.pixelSize: 12
+                textRole: "name"
+
+                placeholderText: "Select branch"
+
+                Material.background: Style.colors.primaryBackground
+                Material.foreground: Style.colors.secondaryText
+
+                background: Rectangle {
+                    radius: 5
+                    color: branchesCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
+
+                onCurrentIndexChanged: {
+                    if (branchesCombo.currentIndex < 0)
+                        return;
+                    let targetBranch = branchesCombo.model[branchesCombo.currentIndex].name
+                    console.log("Selecte Branch : ", targetBranch)
+                    let res = branchController.getBranchLineage(targetBranch)
+                    if (res.success)
+                        baseBranchCombo.model = res.data
+                    else
+                        baseBranchCombo.model = []
+
+                }
+            }
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 2
+
+            Text {
+                text: "Base Branch"
+                font.pixelSize: 12
+                color: Style.colors.mutedText
+            }
+
+            ComboBox {
+                id: baseBranchCombo
+                Layout.fillWidth: true
+                minHeight: 40
+                focusBorderWidth: 1
+                font.family: Style.fontTypes.roboto
+                font.weight: 400
+                font.pixelSize: 12
+
+                placeholderText: "Select Base"
+
+                Material.background: Style.colors.primaryBackground
+                Material.foreground: Style.colors.secondaryText
+
+                background: Rectangle {
+                    radius: 5
+                    color: baseBranchCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
+            }
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 2
+
+            Text {
+                text: "Output Directory"
+                font.pixelSize: 12
+                color: Style.colors.mutedText
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 20
+                spacing: 8
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 40
+                    radius: 5
+                    color: Style.colors.secondaryBackground
+                    Text {
+                        id: fileLabel
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: 15
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        elide: Text.ElideLeft
+                        color: root.selectedFolder === "" ? Style.colors.placeholderText : Style.colors.secondaryText
+                        text: root.selectedFolder !== "" ? root.selectedFolder : "Select Directory..."
+                    }
+                }
+
+
+                Button {
+                    id: fileButton
+
+                    implicitWidth: 40
+                    implicitHeight: 40
+
+                    text: Style.icons.folder
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: 14
+
+                    topInset: 0
+                    bottomInset: 0
+
+                    flat: true
+                    Material.elevation: 0
+
+                    background: Rectangle {
+                        radius: 6
+                        color: fileButton.hovered ? Style.colors.accentHover : "transparent"
+                        border.width: 1
+                        border.color: Style.colors.primaryBorder
+                    }
+
+                    contentItem: Text {
+                        text: fileButton.text
+                        font: fileButton.font
+                        color: fileButton.hovered ? Style.colors.secondaryForeground : Style.colors.secondaryText
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    onClicked: folderDialog.open()
+                }
+            }
+        }
+
+        Item {
+            Layout.fillHeight: true
+        }
+
+        Button {
+            Layout.fillWidth: true
+            implicitHeight: 44
+            enabled: root.selectedFolder !== "" && branchesCombo.currentIndex !== -1 && baseBranchCombo.currentIndex !== -1
+            background: Rectangle {
+                radius: 8
+                color: enabled ? Style.colors.accent : Style.colors.disabledButton
+            }
+
+            contentItem: Item {
+                anchors.fill: parent
+
+                Row {
+                    spacing: 10
+                    anchors.centerIn: parent
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Style.icons.download
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: 12
+                        color: Style.colors.secondaryForeground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Export"
+                        color: Style.colors.secondaryForeground
+                        font.pixelSize: 13
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+            }
+
+            onClicked: {
+                let base   = baseBranchCombo.model[baseBranchCombo.currentIndex]
+                let target = branchesCombo.model[branchesCombo.currentIndex].name
+                let refName = branchController.formatRefName(target)
+
+                let bundleName = buildBundleName(base, target)
+                let path = `${root.selectedFolder}/${bundleName}`
+
+                root.bundleController.buildDiffBundle(base, target, refName, path)
+            }
+        }
+    }
+
+    onBranchControllerChanged: {
+        if(!branchController)
+            return
+
+        let branchNames = branchController.getBranches()
+
+        branchesCombo.model = branchNames
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+
+    function sanitizeBranchName(name) {
+        return name
+            .toLowerCase()
+            .replace(/^refs\/heads\//, "")
+            .replace(/[^a-z0-9._-]/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "");
+    }
+
+    function formatTimestamp() {
+        let d = new Date();
+        let pad = n => n.toString().padStart(2, "0");
+
+        return d.getFullYear().toString() +
+               pad(d.getMonth() + 1) +
+               pad(d.getDate()) + "-" +
+               pad(d.getHours()) +
+               pad(d.getMinutes()) +
+               pad(d.getSeconds());
+    }
+
+    function buildBundleName(base, target) {
+        let baseSafe   = sanitizeBranchName(base);
+        let targetSafe = sanitizeBranchName(target);
+        let ts         = formatTimestamp();
+
+        return `${baseSafe}__to__${targetSafe}__${ts}`;
+    }
+}

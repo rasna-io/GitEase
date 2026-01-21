@@ -62,6 +62,7 @@ QtObject {
         cardBackground:      "#585858"
 
         primaryBorder:       "#686868"
+        secondaryBorder:     "#383838"
 
         diffRemovedBg:       "#ed4c4c"
         diffAddedBg:         "#1b7b3a"
