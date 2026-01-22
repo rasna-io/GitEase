@@ -17,8 +17,8 @@ QtObject {
     required property RepositoryController  repositoryController
 
     property          var                   arguments:              ({})
-    property          bool                  pageSelected:           false
-    property          bool                  repositorySelected:     false
+    property          string                selectedPath:           ""
+    property          bool                  commandExecuted:        false
 
     /* Signals
      * ****************************************************************************************/
@@ -33,14 +33,22 @@ QtObject {
             }
         })
 
-        if(root.arguments["repo"]) {
-            let path = repositoryController.appModel.fileIO.pathNormalizer(root.arguments["repo"])
-            root.repositorySelected = repositoryController.openRepository(path)
+        // --path=""
+        if(!root.arguments["path"])
+            return
+
+        root.selectedPath = repositoryController?.appModel?.fileIO.pathNormalizer(root.arguments["path"])
+
+        // --init
+        if(root.arguments["init"]) {
+            root.commandExecuted = repositoryController?.gitInit(root.selectedPath)
+        } else { // --open
+            root.commandExecuted = repositoryController?.openRepository(root.selectedPath)
         }
 
+        // --page=page name
         if(root.arguments["page"]) {
             pageController.switchToPage(root.arguments["page"])
-            root.pageSelected = true
         }
     }
 
