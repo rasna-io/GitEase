@@ -199,7 +199,7 @@ Item {
             onClicked: {
                 let res = root.bundleController.unbundle(root.selectedFile)
                 if (res.success) {
-                    root.branchController.createBranch(res.data, branchTXF.text)
+                    root.branchController.createBranch(res.data.SHA, branchTXF.text)
                 }
             }
         }

@@ -179,6 +179,15 @@ private:
                                 QString &refName);
 
     /**
+     * @brief Checks if a commit exists in the current repository
+     * @param commitSha The commit SHA to check
+     * @param exists Output parameter, set to true if the commit exists, false otherwise
+     * @return GitResult indicating success or failure. Failure occurs if the SHA is invalid
+     *         or a repository error occurs during lookup.
+     */
+    GitResult checkCommitExists(const QString &commitSha, bool &exists);
+
+    /**
      * @brief Extracts raw pack data from a bundle file
      * @param bundlePath Path to the bundle file
      * @param packData Output parameter for the extracted pack data
