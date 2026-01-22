@@ -312,9 +312,9 @@ Item {
                             root.update()
                         }
 
-                        onOpenFileRequested: function(filePath) {
+                        onOpenFileRequested: function(filePath, isStaged) {
                             root.selectedFilePath = filePath;
-                            updateDiff()
+                            updateDiff(isStaged)
                         }
 
                         onStageAllRequested: function() {
@@ -374,11 +374,13 @@ Item {
         }
     }
 
-    function updateDiff() {
-        let res = root.statusController.getDiffView(root.selectedFilePath)
+    function updateDiff(isStaged) {
+        let res = root.statusController.getDiffView(root.selectedFilePath, isStaged)
         if (res.success) {
             diffView.diffData = res.data.lines
         }
+
+        diffView.readOnly = isStaged
     }
 
     function updateStatus() {
@@ -404,6 +406,6 @@ Item {
 
     function update() {
         updateStatus()
-        updateDiff()
+        updateDiff(diffView.readOnly)
     }
 }
