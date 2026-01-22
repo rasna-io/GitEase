@@ -40,9 +40,16 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    EmptyStateView {
+        title: "No files to show"
+        details: "Select a commit to view the file changes"
+        visible: !root.files || root.files.length === 0
+    }
+
     Rectangle{
         anchors.fill: parent
         color: Style.colors.primaryBackground
+        visible: root.files && root.files.length > 0
 
         ColumnLayout {
             anchors.fill: parent
