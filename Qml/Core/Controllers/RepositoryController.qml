@@ -46,6 +46,19 @@ GitRepository {
     }
 
     /**
+     * Initialize a new Git repository
+     */
+    function gitInit(path: string):bool {
+        var result = init(path)
+
+        if(result.success){
+            createRepositoryComponent(path)
+        }
+
+        return result.success
+    }
+
+    /**
      * Open an existing repository at the specified path
      */
     function openRepository(path :string) : bool {
