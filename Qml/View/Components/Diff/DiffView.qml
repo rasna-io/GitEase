@@ -59,9 +59,16 @@ Item {
         font.pixelSize: 13
     }
 
+    EmptyStateView {
+        title: "No file changes to show"
+        details: "Select a file to view the Diff"
+        visible: !root.diffData || root.diffData.length === 0
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Style.colors.editorBackgroound
+        visible: root.diffData && root.diffData.length > 0
 
         ListView {
             id: diffListView
