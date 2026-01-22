@@ -14,7 +14,9 @@
 
 #include <qprocess.h>
 #include <qtemporarydir.h>
+#ifdef Q_OS_WIN
 #include <winsock.h>
+#endif
 
 #include <algorithm>
 
@@ -569,7 +571,9 @@ bool GitBundle::verifyPackDataManually(const QByteArray &packData)
     // Check version (should be 2 or 3)
     uint32_t version;
     memcpy(&version, data + 4, 4);
+    #ifdef Q_OS_WIN
     version = ntohl(version);
+    #endif
 
     if (version != 2 && version != 3) {
         return false;
@@ -617,7 +621,7 @@ bool GitBundle::addPackDataToRepository(const QByteArray &packData)
     size_t offset = 0;
 
     while (offset < packData.size()) {
-        size_t chunkSize = std::min(CHUNK_SIZE, packData.size() - offset);
+        size_t chunkSize = std::min(static_cast<unsigned long long>(CHUNK_SIZE), packData.size() - offset);
         error = git_indexer_append(indexer, packData.constData() + offset, chunkSize, &stats);
         if (error != 0) {
             const git_error *e = giterr_last();
