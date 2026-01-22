@@ -52,6 +52,11 @@ QtObject {
         currentUserProfile: root.appModel.currentUserProfile
     }
 
+    property ShellController shellController: ShellController {
+        pageController : root.pageController
+        repositoryController : root.repositoryController
+    }
+
     property UiSessionPopups      popups
 }
 
