@@ -434,31 +434,17 @@ GitResult GitBundle::unbundle(const QString &bundlePath)
         return headerResult;
     }
 
-    git_oid targetOid;
-    if (git_oid_fromstr(&targetOid, commitSha.toUtf8().constData()) != 0) {
-        return GitResult(false, QVariant(), "Invalid commit SHA in bundle.");
+    bool commitExists = false;
+    GitResult checkResult = checkCommitExists(commitSha, commitExists);
+    if (!checkResult.success()) {
+        return checkResult;
     }
-
-    // check if commit already exists
-    {
-        git_object *existingCommit = nullptr;
-        int err = git_object_lookup(
-            &existingCommit,
-            m_currentRepo->repo,
-            &targetOid,
-            GIT_OBJECT_COMMIT
-            );
-
-        if (err == 0) {
-            git_object_free(existingCommit);
-
-            QVariantMap data;
-            data["SHA"] = commitSha;
-            data["alreadyPresent"] = true;
-            return GitResult(true, data);
-        }
+    if (commitExists) {
+        QVariantMap data;
+        data["SHA"] = commitSha;
+        data["alreadyPresent"] = true;
+        return GitResult(true, data);
     }
-
 
     // Extract pack data from bundle
     QByteArray packData;
@@ -476,7 +462,6 @@ GitResult GitBundle::unbundle(const QString &bundlePath)
         return GitResult(false, QVariant(), "Failed to add pack data to repository.");
     }
 
-    // Verify that the commit object exists in the repository
     git_oid target_oid;
     if (git_oid_fromstr(&target_oid, commitSha.toUtf8().constData()) != 0) {
         return GitResult(false, QVariant(), "Invalid commit SHA in bundle.");
@@ -528,6 +513,31 @@ GitResult GitBundle::parseBundleHeader(const QString &bundlePath,
     if (!emptyLine.trimmed().isEmpty()) {
         return GitResult(false, QVariant(),
                          "Invalid bundle format. Expected empty line after header.");
+    }
+
+    return GitResult(true);
+}
+
+GitResult GitBundle::checkCommitExists(const QString &commitSha, bool &exists)
+{
+    exists = false;
+
+    git_oid targetOid;
+    if (git_oid_fromstr(&targetOid, commitSha.toUtf8().constData()) != 0) {
+        return GitResult(false, QVariant(), "Invalid commit SHA in bundle.");
+    }
+
+    git_object *commitObj = nullptr;
+    int err = git_object_lookup(
+        &commitObj,
+        m_currentRepo->repo,
+        &targetOid,
+        GIT_OBJECT_COMMIT
+        );
+
+    if (err == 0) {
+        exists = true;
+        git_object_free(commitObj);
     }
 
     return GitResult(true);
