@@ -649,7 +649,10 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
     UniquePatch patch(patchRaw);
 
     const auto stagedLines = applySelectedFromPatch(indexLines, patch.get(), startLine, endLine);
-    const QString stagedText = joinLines(stagedLines);
+    QString stagedText = joinLines(stagedLines);
+    #ifdef Q_OS_WIN
+    stagedText.replace("\n", "\r\n");
+    #endif
 
     return writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
 }
