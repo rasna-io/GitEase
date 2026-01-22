@@ -434,6 +434,32 @@ GitResult GitBundle::unbundle(const QString &bundlePath)
         return headerResult;
     }
 
+    git_oid targetOid;
+    if (git_oid_fromstr(&targetOid, commitSha.toUtf8().constData()) != 0) {
+        return GitResult(false, QVariant(), "Invalid commit SHA in bundle.");
+    }
+
+    // check if commit already exists
+    {
+        git_object *existingCommit = nullptr;
+        int err = git_object_lookup(
+            &existingCommit,
+            m_currentRepo->repo,
+            &targetOid,
+            GIT_OBJECT_COMMIT
+            );
+
+        if (err == 0) {
+            git_object_free(existingCommit);
+
+            QVariantMap data;
+            data["SHA"] = commitSha;
+            data["alreadyPresent"] = true;
+            return GitResult(true, data);
+        }
+    }
+
+
     // Extract pack data from bundle
     QByteArray packData;
     if (!extractPackDataFromBundle(bundlePath, packData)) {
