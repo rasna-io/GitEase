@@ -118,8 +118,9 @@ public:
     /**
      * @brief Prepares a side-by-side diff view compatible with the QML DiffDelegate.
      * @param filePath Path to the file to inspect.
+     * @param staged If true, show staged diff (HEAD to index); if false, show unstaged diff (index to workdir).
      */
-    Q_INVOKABLE GitResult getDiffView(const QString& filePath);
+    Q_INVOKABLE GitResult getDiffView(const QString& filePath, bool staged = false);
     
     /**
      * @brief Surgically stages a specific range of lines from a file.
@@ -159,6 +160,24 @@ public:
     Q_INVOKABLE GitResult revertAll();
 
 private:
+    /**
+     * @brief Get unstaged diff view (index to workdir).
+     * @param filePath Path to the file to inspect.
+     */
+    GitResult getUnstagedDiffView(const QString &filePath);
+
+    /**
+     * @brief Get staged diff view (HEAD to index).
+     * @param filePath Path to the file to inspect.
+     */
+    GitResult getStagedDiffView(const QString &filePath);
+
+    /**
+     * @brief Get staged diff lines (HEAD to index).
+     * @param filePath Path to the file to inspect.
+     */
+    GitResult getStagedDiff(const QString &filePath);
+
     /**
      * \brief Helper method to create a diff between two trees (commit snapshots).
      *
