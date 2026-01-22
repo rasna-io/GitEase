@@ -409,11 +409,22 @@ GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
     return GitResult(true, QVariant::fromValue(fileChanges), "File changes retrieved successfully.");
 }
 
-GitResult GitStatus::getDiffView(const QString &filePath)
+GitResult GitStatus::getDiffView(const QString &filePath, bool staged)
 {
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "No repository available.");
 
+    if (staged) {
+        // compare HEAD to index
+        return getStagedDiffView(filePath);
+    } else {
+        // compare index to workdir
+        return getUnstagedDiffView(filePath);
+    }
+}
+
+GitResult GitStatus::getUnstagedDiffView(const QString &filePath)
+{
     // old/index text
     uint32_t mode = 0;
     auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &mode);
@@ -439,6 +450,165 @@ GitResult GitStatus::getDiffView(const QString &filePath)
 
     return GitResult(true, out);
 }
+
+GitResult GitStatus::getStagedDiffView(const QString &filePath)
+{
+    // old/head text
+    QString oldText;
+    git_object *headObj = nullptr;
+    git_tree *headTree = nullptr;
+
+
+    int error = git_revparse_single(&headObj, m_currentRepo->repo, "HEAD");
+    if (error == GIT_OK && headObj) {
+        // Got HEAD Commit
+
+        git_commit *headCommit = reinterpret_cast<git_commit*>(headObj);
+        error = git_commit_tree(&headTree, headCommit);
+        if (error == GIT_OK && headTree) {
+            // Loaded the tree snapshot from HEAD
+
+            QByteArray pathBytes = filePath.toUtf8();
+            const char* path = pathBytes.constData();
+            git_tree_entry *entry = nullptr;
+            error = git_tree_entry_bypath(&entry, headTree, path);
+            if (error == GIT_OK && entry) {
+                // Found the filePath in commit snapshot
+
+                git_object *blobObj = nullptr;
+                error = git_tree_entry_to_object(&blobObj, m_currentRepo->repo, entry);
+                if (error == GIT_OK && blobObj && git_object_type(blobObj) == GIT_OBJECT_BLOB) {
+                    // Ensured it is a file (blob)
+
+                    git_blob *blob = reinterpret_cast<git_blob*>(blobObj);
+                    oldText = joinLines(readBlobLines(blob));
+                    git_blob_free(blob);
+                }
+                git_tree_entry_free(entry);
+            }
+        }
+    }
+
+    // Clean up HEAD objects
+    if (headTree) git_tree_free(headTree);
+    if (headObj) git_object_free(headObj);
+
+    // new/index text
+    uint32_t mode = 0;
+    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &mode);
+    QString newText;
+    if (indexBlob) {
+        newText = joinLines(readBlobLines(indexBlob.get()));
+    } else {
+        newText = "";
+    }
+
+    // diff lines (HEAD to index)
+    GitResult diffRes = getStagedDiff(filePath);
+    if (!diffRes.success())
+        return diffRes;
+
+    QVariantMap out;
+    out["oldText"] = oldText;
+    out["newText"] = newText;
+    out["lines"] = diffRes.data();
+
+    return GitResult(true, out);
+}
+
+GitResult GitStatus::getStagedDiff(const QString &filePath)
+{
+    QList<GitDiff> result;
+
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
+
+    git_object *headObj = nullptr;
+    git_tree *headTree = nullptr;
+    git_diff *diff = nullptr;
+
+    // Get HEAD commit and tree
+    int error = git_revparse_single(&headObj, m_currentRepo->repo, "HEAD");
+    if (error != GIT_OK) {
+        return GitResult(false, QVariant(), "Failed to get HEAD commit");
+    }
+
+    git_commit *headCommit = reinterpret_cast<git_commit*>(headObj);
+    error = git_commit_tree(&headTree, headCommit);
+    if (error != GIT_OK) {
+        git_object_free(headObj);
+        return GitResult(false, QVariant(), "Failed to get HEAD tree");
+    }
+
+    // Create diff between HEAD tree and index
+    git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+    opts.flags |= GIT_DIFF_PATIENCE | GIT_DIFF_INDENT_HEURISTIC | GIT_DIFF_MINIMAL;
+
+    // Set pathspec to only include the specific file
+    QByteArray pathBytes = filePath.toUtf8();
+    char* path = const_cast<char*>(pathBytes.constData());
+    opts.pathspec.strings = &path;
+    opts.pathspec.count = 1;
+
+    // every single line of the file that isn't changed as a 'Context' line.
+    opts.context_lines = 100000;
+    opts.interhunk_lines = 100000;
+
+    error = git_diff_tree_to_index(&diff, m_currentRepo->repo, headTree, nullptr, &opts);
+    if (error != GIT_OK) {
+        git_tree_free(headTree);
+        git_object_free(headObj);
+        return GitResult(false, QVariant(), "Failed to create diff between HEAD and index");
+    }
+
+    // Process the diff lines
+    struct RawLine { char origin; int old_no; int new_no; QString content; };
+    std::vector<RawLine> rawLines;
+
+    git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, [](
+                                                        const git_diff_delta*, const git_diff_hunk*, const git_diff_line *line, void *payload) -> int {
+        auto *vec = static_cast<std::vector<RawLine>*>(payload);
+
+        if (line->origin == GIT_DIFF_LINE_CONTEXT ||
+            line->origin == GIT_DIFF_LINE_ADDITION ||
+            line->origin == GIT_DIFF_LINE_DELETION) {
+
+            QString content = QString::fromUtf8(line->content, line->content_len);
+            content.remove('\n').remove('\r');
+            vec->push_back({line->origin, line->old_lineno, line->new_lineno, content});
+        }
+        return 0;
+    }, &rawLines);
+
+    // Convert raw lines to GitDiff objects
+    for (size_t i = 0; i < rawLines.size(); ++i) {
+        if (rawLines[i].origin == GIT_DIFF_LINE_DELETION &&
+            (i + 1) < rawLines.size() &&
+            rawLines[i+1].origin == GIT_DIFF_LINE_ADDITION) {
+
+            result.append(GitDiff(GitDiff::Modified, rawLines[i].old_no, rawLines[i+1].new_no,
+                                  rawLines[i].content, rawLines[i+1].content));
+            i++;
+        }
+        else if (rawLines[i].origin == GIT_DIFF_LINE_DELETION) {
+            result.append(GitDiff(GitDiff::Deleted, rawLines[i].old_no, -1, rawLines[i].content));
+        }
+        else if (rawLines[i].origin == GIT_DIFF_LINE_ADDITION) {
+            result.append(GitDiff(GitDiff::Added, -1, rawLines[i].new_no, rawLines[i].content));
+        }
+        else {
+            result.append(GitDiff(GitDiff::Context, rawLines[i].old_no, rawLines[i].new_no, rawLines[i].content));
+        }
+    }
+
+    // Clean up
+    if (diff) git_diff_free(diff);
+    if (headTree) git_tree_free(headTree);
+    if (headObj) git_object_free(headObj);
+
+    return GitResult(true, QVariant::fromValue(result));
+}
+
 GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, int endLine, int mode)
 {
     if (!m_currentRepo || !m_currentRepo->repo)
