@@ -23,7 +23,7 @@ Item {
     signal stageFileRequested(string filePath)
     signal unstageFileRequested(string filePath)
     signal discardFileRequested(string filePath)
-    signal openFileRequested(string filePath)
+    signal openFileRequested(string filePath, bool isStaged)
     signal stageAllRequested()
     signal unstageAllRequested()
     signal discardAllRequested()
@@ -56,7 +56,7 @@ Item {
             }
 
             onOpenFileRequested: function(filePath) {
-                root.openFileRequested(filePath)
+                root.openFileRequested(filePath, true)
             }
 
             onUnstageAllRequested: function() {
@@ -93,7 +93,7 @@ Item {
             }
 
             onOpenFileRequested: function(filePath) {
-                root.openFileRequested(filePath)
+                root.openFileRequested(filePath, false)
             }
 
             onStageAllRequested: function() {
