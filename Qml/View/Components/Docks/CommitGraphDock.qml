@@ -32,6 +32,7 @@ Item {
     property var allCommits: []
     property var commits: []
     property var selectedCommit: null
+    property var allCommitsHash: ({})
 
     // navigation state
     // navigationRule: one of ["Author Email", "Author", "Parent 1", "Branch"]
@@ -291,8 +292,8 @@ Item {
 
         root.isLoadingMore = true
 
-        var allBranches = repositoryController.getBranches(repositoryController.appModel.currentRepository);
-        var page = repositoryController.getCommits(repositoryController.appModel.currentRepository, root.pageSize, root.commitsOffset);
+        var allBranches = branchController.getBranches();
+        let page = commitController.getCommits(pageSize, commitsOffset);
         
         if (!page || page.length === 0) {
             root.hasMoreCommits = false
@@ -975,6 +976,29 @@ Item {
                                             ctx.stroke();
                                             ctx.restore();
                                         }
+                                    } else {
+                                        let canDraw = false
+                                        for(let i = 0; i < commit2.parentHashes.length; i++){
+                                            if(!allCommitsHash[commit2.parentHashes[i]]){
+                                                canDraw = true
+                                                break
+                                            }
+                                        }
+
+                                        if(canDraw){
+                                            var branchColor2 = commitColor(commit2);
+
+                                            ctx.save();
+                                            ctx.strokeStyle = branchColor2;
+                                            ctx.globalAlpha = 0.9;
+                                            ctx.lineWidth = 2.5;
+
+                                            ctx.beginPath();
+                                            ctx.moveTo(centerX, centerY);
+                                            ctx.lineTo(centerX, graphCanvas.height);
+                                            ctx.stroke();
+                                            ctx.restore();
+                                        }
                                     }
                                 }
                                 
@@ -1631,7 +1655,7 @@ Item {
     }
 
     function reloadAll() {
-        if (!repositoryController || !root.appModel || !root.appModel.currentRepository) {
+        if (!commitController || !branchController || !root.appModel || !root.appModel.currentRepository) {
             return;
         }
 
@@ -1665,6 +1689,7 @@ Item {
         if (!branchController || !root.appModel || !root.appModel.currentRepository)
             return
 
+        var currentContentY = commitsListView.contentY;
         isLoadingMore = true
 
         let allBranches = branchController.getBranches();
@@ -1687,10 +1712,19 @@ Item {
 
         root.allCommits = commits.slice(0)
         root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate)
+
+        commitsListView.contentY = currentContentY;
+
         isLoadingMore = false
     }
 
     onRepositoryControllerChanged: reloadAll();
+
+    onAllCommitsChanged: {
+        root.allCommitsHash = {}
+        for(let i = 0 ; i < root.allCommits.length; ++i)
+            root.allCommitsHash[root.allCommits[i].hash] = root.allCommits[i].hash
+    }
 
     Connections {
         target: repositoryController
