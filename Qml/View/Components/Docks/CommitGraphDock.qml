@@ -32,6 +32,7 @@ Item {
     property var allCommits: []
     property var commits: []
     property var selectedCommit: null
+    property var allCommitsHash: ({})
 
     // navigation state
     // navigationRule: one of ["Author Email", "Author", "Parent 1", "Branch"]
@@ -975,6 +976,29 @@ Item {
                                             ctx.stroke();
                                             ctx.restore();
                                         }
+                                    } else {
+                                        let canDraw = false
+                                        for(let i = 0; i < commit2.parentHashes.length; i++){
+                                            if(!allCommitsHash[commit2.parentHashes[i]]){
+                                                canDraw = true
+                                                break
+                                            }
+                                        }
+
+                                        if(canDraw){
+                                            var branchColor2 = commitColor(commit2);
+
+                                            ctx.save();
+                                            ctx.strokeStyle = branchColor2;
+                                            ctx.globalAlpha = 0.9;
+                                            ctx.lineWidth = 2.5;
+
+                                            ctx.beginPath();
+                                            ctx.moveTo(centerX, centerY);
+                                            ctx.lineTo(centerX, graphCanvas.height);
+                                            ctx.stroke();
+                                            ctx.restore();
+                                        }
                                     }
                                 }
                                 
@@ -1695,6 +1719,12 @@ Item {
     }
 
     onRepositoryControllerChanged: reloadAll();
+
+    onAllCommitsChanged: {
+        root.allCommitsHash = {}
+        for(let i = 0 ; i < root.allCommits.length; ++i)
+            root.allCommitsHash[root.allCommits[i].hash] = root.allCommits[i].hash
+    }
 
     Connections {
         target: repositoryController
