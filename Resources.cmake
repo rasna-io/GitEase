@@ -68,6 +68,12 @@ set(RESOURCES_COMPONENTS
     # Welcome-specific Content - Welcome page content sections
     Qml/View/Components/WelcomeContents/WelcomeContent.qml      # Main welcome content
 
+    # Graph Components - Commit graph visualization
+    Qml/View/Components/Graph/GraphView.qml             # Graph visualization with branch/tag labels
+    
+    # Commits Components - Commit list view
+    Qml/View/Components/Commits/CommitsListView.qml     # Commits list with message, author, date columns
+
     # DockPanel Docks
     Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
 
