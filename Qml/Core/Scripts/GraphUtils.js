@@ -3,71 +3,15 @@
  * Practical tools for drawing nodes and graphs
  * ************************************************************************************************/
 
+.pragma library
+
 /* Property Declarations
  * ****************************************************************************************/
 // Dynamic color generation for branches and tags
-var branchColorCache = {}
-var tagColorCache = {}
 var categoryColorCache = {}
 
 /* Functions
  * ****************************************************************************************/
-/**
- * Get color for a branch - generates and caches random color
- * Each branch gets a unique random color on first access
- * @param branchName - Name of the branch
- * @returns Hex color string
- */
-function getBranchColor(branchName) {
-    if (!branchName) {
-        return generateRandomColor();
-    }
-    
-    // Check cache first
-    if (branchColorCache[branchName]) {
-        return branchColorCache[branchName];
-    }
-
-    // Generate new random color and cache it
-    var color = generateRandomColor();
-    branchColorCache[branchName] = color;
-
-    return color;
-}
-
-/**
- * Clear the branch color cache
- * Useful when reloading repository data
- */
-function clearBranchColorCache() {
-    branchColorCache = {};
-}
-
-function getTagColor(tagName) {
-    if (!tagName) {
-        return generateRandomColor();
-    }
-    
-    // Check cache first
-    if (tagColorCache[tagName]) {
-        return tagColorCache[tagName];
-    }
-
-    // Generate new random color and cache it
-    var color = generateRandomColor();
-    tagColorCache[tagName] = color;
-
-    return color;
-}
-
-/**
- * Clear the tag color cache
- * Useful when reloading repository data
- */
-function clearTagColorCache() {
-    tagColorCache = {};
-}
-
 /**
  * Get color for a graph lane (column)
  * Lane colors are stable within a session and independent of branch names.
@@ -123,6 +67,33 @@ function formatTime(date) {
     var minutes = String(d.getMinutes()).padStart(2, '0')
     var seconds = String(d.getSeconds()).padStart(2, '0')
     return hours + ":" + minutes + ":" + seconds
+}
+
+function parseDateYYYYMMDD(str) {
+    // Returns milliseconds since epoch, or NaN if invalid.
+    // Accepts:
+    // - YYYY-MM-DD
+    // - YYYY/MM/DD (used by GraphViewPage placeholders)
+    if (str === null || str === undefined)
+        return NaN
+
+    str = ("" + str).trim()
+    if (str.length < 8)
+        return NaN
+
+    // Split on '-' or '/'
+    var parts = str.split(/[-\/]/)
+    if (parts.length !== 3)
+        return NaN
+
+    var y = parseInt(parts[0])
+    var m = parseInt(parts[1])
+    var d = parseInt(parts[2])
+    if (isNaN(y) || isNaN(m) || isNaN(d))
+        return NaN
+
+    // local time midnight
+    return new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
 }
 
 function findInListModel(listModel, propertyName, value) {
@@ -198,35 +169,6 @@ function getContrastColor(backgroundColor) {
     var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
 
     return luminance > 0.5 ? "#000000" : "#ffffff"
-}
-
-/**
- * Generate a random color with good visibility
- * Generates colors with sufficient saturation and brightness for UI use
- * @returns Hex color string
- */
-function generateRandomColor() {
-    // Generate random HSL values for better color control
-    // Hue: 0-360 (full spectrum)
-    var hue = Math.floor(Math.random() * 360);
-    
-    // Saturation: 60-90% (vibrant but not oversaturated)
-    var saturation = 60 + Math.floor(Math.random() * 30);
-    
-    // Lightness: 45-65% (not too dark, not too light)
-    var lightness = 45 + Math.floor(Math.random() * 20);
-    
-    // Convert HSL to RGB
-    var rgb = hslToRgb(hue, saturation, lightness);
-    
-    // Convert RGB to hex
-    var r = Math.round(rgb.r);
-    var g = Math.round(rgb.g);
-    var b = Math.round(rgb.b);
-    
-    return '#' + padString(r.toString(16), 2, '0') +
-           padString(g.toString(16), 2, '0') +
-           padString(b.toString(16), 2, '0');
 }
 
 /**
