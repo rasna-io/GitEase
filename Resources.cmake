@@ -70,7 +70,6 @@ set(RESOURCES_COMPONENTS
 
     # DockPanel Docks
     Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
-    Qml/View/Components/Docks/CommitGraphSimulator.qml  # GraphDummyDataGenerator
 
     # File list components (commit UI)
     Qml/View/Components/FileLists/UnstagedFileListSection.qml  # Unstaged File Status Section
