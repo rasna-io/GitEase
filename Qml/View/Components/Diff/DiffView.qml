@@ -18,6 +18,8 @@ Item {
 
     property bool readOnly: false
 
+    property alias scrollPosition: diffListView.contentY
+
     /* Signals
      * ****************************************************************************************/
     signal requestStage(int start, int end, int type)
@@ -79,7 +81,7 @@ Item {
             clip: true
             model: fileModel
 
-            cacheBuffer: 1000
+            cacheBuffer: 5000
             reuseItems: true
             anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
             ScrollBar.vertical: ScrollBar { active: true }
