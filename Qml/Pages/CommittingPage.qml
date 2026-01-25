@@ -375,12 +375,18 @@ Item {
     }
 
     function updateDiff(isStaged) {
+        let oldY = diffView.scrollPosition;
+
         let res = root.statusController.getDiffView(root.selectedFilePath, isStaged)
         if (res.success) {
             diffView.diffData = res.data.lines
         }
 
         diffView.readOnly = isStaged
+
+        Qt.callLater(() => {
+            diffView.scrollPosition = oldY;
+        });
     }
 
     function updateStatus() {
