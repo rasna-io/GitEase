@@ -33,9 +33,9 @@ FileListSection {
             spacing: 4
 
             ActionIconButton {
-                role: ActionIconButton.Role.Stash
                 iconText: Style.icons.archive
                 tooltip: "Stash all"
+                textColor: Style.colors.mutedText
                 enabled: root.count > 0
                 opacity: enabled ? 1 : 0.35
 
@@ -43,9 +43,9 @@ FileListSection {
             }
 
             ActionIconButton {
-                role: ActionIconButton.Role.Discard
                 iconText: Style.icons.trash
                 tooltip: "Discard all"
+                textColor: Style.colors.error
                 enabled: root.count > 0
                 opacity: enabled ? 1 : 0.35
 
@@ -53,9 +53,11 @@ FileListSection {
             }
 
             ActionIconButton {
-                role: ActionIconButton.Role.Stage
                 iconText: Style.icons.plus
                 tooltip: "Stage all"
+                textColor: Style.theme == Style.Light ?
+                            Qt.darker(Style.colors.addedFile, 1.5) :
+                            Qt.lighter(Style.colors.addedFile, 1.5)
                 enabled: root.count > 0
                 opacity: enabled ? 1 : 0.35
 

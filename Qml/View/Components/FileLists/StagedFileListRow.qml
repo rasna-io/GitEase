@@ -45,16 +45,16 @@ FileListRow {
             }
 
             ActionIconButton {
-                role: ActionIconButton.Role.Unstage
                 iconText: Style.icons.minus
                 tooltip: "Unstage"
+                textColor: Style.colors.deletededFile
                 onClicked: root.unstageRequested(root.filePath)
             }
 
             ActionIconButton {
-                role: ActionIconButton.Role.Open
                 iconText: Style.icons.file
                 tooltip: "Open"
+                textColor: Style.colors.secondaryText
                 onClicked: root.openRequested(root.filePath)
             }
         }
