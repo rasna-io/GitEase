@@ -51,6 +51,7 @@ set(RESOURCES_COMPONENTS
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml     # Profile setup/editing form
+    Qml/View/Components/Profile/UserInfoSelectorItem.qml       # Profile Selector Item
 
     # Repository Components - Git repository management
     Qml/View/Components/Repository/RecentRepositoriesList.qml   # Recent repositories list
