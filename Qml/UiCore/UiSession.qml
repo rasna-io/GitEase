@@ -47,6 +47,7 @@ QtObject {
 
     property BundleController bundleController: BundleController {}
 
+    property ConfigController configController: ConfigController {}
     property UserProfileController userProfileController: UserProfileController {
         userProfiles: root.appModel.userProfiles
         currentUserProfile: root.appModel.currentUserProfile
