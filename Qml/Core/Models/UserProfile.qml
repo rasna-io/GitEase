@@ -13,8 +13,11 @@ QtObject {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string username: ""
-    property string password: ""
+    property string profileId: ""
+    property string username:  ""
+    property string password:  ""
 
-    property string    email: ""
+    property string email:     ""
+    property int    level:     -1
+    property bool   isDefault: false
 }
