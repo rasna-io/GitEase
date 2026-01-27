@@ -43,14 +43,15 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/ProgressButton.qml
 
     # Base Components - Fundamental UI building blocks
-    Qml/View/Components/Base/PageHeader.qml              # Standard page header component
-    Qml/View/Components/Base/FormInputField.qml          # Form input field with validation
-    Qml/View/Components/Base/TabbedView.qml              # Tabbed interface component
-    Qml/View/Components/Base/RepositoryListItem.qml      # Repository list item display
-    Qml/View/Components/Base/EmptyStateView.qml          # Items Empty State View
+    Qml/View/Components/Base/PageHeader.qml                    # Standard page header component
+    Qml/View/Components/Base/FormInputField.qml                # Form input field with validation
+    Qml/View/Components/Base/TabbedView.qml                    # Tabbed interface component
+    Qml/View/Components/Base/RepositoryListItem.qml            # Repository list item display
+    Qml/View/Components/Base/EmptyStateView.qml                # Items Empty State View
 
     # Profile Components - User profile management
-    Qml/View/Components/Profile/SetupProfileForm.qml     # Profile setup/editing form
+    Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
+    Qml/View/Components/Profile/UserInfoSelector.qml           # Profile Selector
     Qml/View/Components/Profile/UserInfoSelectorItem.qml       # Profile Selector Item
 
     # Repository Components - Git repository management
@@ -112,7 +113,8 @@ set(RESOURCES_UICORE
 # Define Popups Resources
 set(RESOURCES_POPUPS
     # Popup components will be added here as they are created
-    Qml/View/Popups/UserAuthenticationPopup.qml       # enter user password popup
+    Qml/View/Popups/UserInfoSelectionPopup.qml      # Show users list with action
+    Qml/View/Popups/UserAuthenticationPopup.qml     # enter user password popup
     Qml/View/Popups/RepositorySelectorPopup.qml
     Qml/View/Popups/ItemSelectorPopup.qml           # Select Item popup
     Qml/View/Popups/SettingsPopup.qml
