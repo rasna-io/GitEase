@@ -31,9 +31,9 @@ FileListSection {
             spacing: 4
 
             ActionIconButton {
-                role: ActionIconButton.Role.Unstage
                 iconText: Style.icons.minus
                 tooltip: "Unstage all"
+                textColor: Style.colors.deletededFile
                 enabled: root.count > 0
                 opacity: enabled ? 1 : 0.35
 
@@ -41,9 +41,9 @@ FileListSection {
             }
 
             ActionIconButton {
-                role: ActionIconButton.Role.Stash
                 iconText: Style.icons.archive
                 tooltip: "Stash all"
+                textColor: Style.colors.mutedText
                 enabled: root.count > 0
                 opacity: enabled ? 1 : 0.35
 
