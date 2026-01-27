@@ -18,6 +18,7 @@ set(SOURCES_BACKEND
     Src/Git/Models/GitDiff.cpp
     Src/Git/Models/GitFileStatus.cpp
     Src/Git/Models/Repository.cpp
+    Src/Git/Models/Config.cpp
 )
 
 set(HEADERS_BACKEND
@@ -41,6 +42,7 @@ set(HEADERS_BACKEND
     Src/Git/Models/GitDiff.h
     Src/Git/Models/GitFileStatus.h
     Src/Git/Models/Repository.h
+    Src/Git/Models/Config.h
 
 )
 
