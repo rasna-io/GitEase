@@ -36,7 +36,8 @@ Item {
             spacing: 10
 
             Text {
-                text: "User Profiles"
+                text: !root.showAddEditForm ? "User Profiles" :
+                                              root.isEditing ? "Edit User Profile" : "Add New User Profile"
                 font.pixelSize: 15
                 font.family: Style.fontTypes.roboto
                 font.weight: 600
@@ -96,193 +97,176 @@ Item {
             }
         }
 
-        // Add/Edit Form Section
-        Rectangle {
+        ColumnLayout {
+            id: formLayout
             visible: root.showAddEditForm
-            Layout.fillWidth: true
-            Layout.preferredHeight: formLayout.implicitHeight + 28
-            color: Style.colors.cardBackground
-            radius: 6
-            border.color: Style.colors.primaryBorder
-            border.width: 1
+            Layout.fillHeight: true
+            spacing: 12
 
-            ColumnLayout {
-                id: formLayout
-                anchors.fill: parent
-                anchors.margins: 14
-                spacing: 12
+            // Full Name Field
+            FormInputField {
+                id: fullNameField
+                label: "Full Name"
+                placeholderText: "Enter full name"
+                icon: Style.icons.user
+                field.readOnly: root.isEditing
+            }
 
-                // Form Title
-                Text {
-                    text: root.isEditing ? "Edit User Profile" : "Add New User Profile"
-                    font.pixelSize: 13
-                    font.family: Style.fontTypes.roboto
-                    font.weight: 600
-                    color: Style.colors.foreground
-                    verticalAlignment: Text.AlignVCenter
-                }
+            // Email Field
+            FormInputField {
+                id: emailField
+                label: "Email Address"
+                placeholderText: "email@example.com"
+                icon: Style.icons.envelope
+            }
 
-                // Full Name Field
-                FormInputField {
-                    id: fullNameField
-                    label: "Full Name"
-                    placeholderText: "Enter full name"
-                    icon: Style.icons.user
-                    field.readOnly: root.isEditing
-                }
+            // Error Message
+            Rectangle {
+                id: errorRectangle
+                visible: errorMessage.text.length > 0
+                Layout.fillWidth: true
+                Layout.preferredHeight: 32
+                radius: 5
+                color: Qt.rgba(Style.colors.error.r, Style.colors.error.g, Style.colors.error.b, 0.15)
+                border.color: Style.colors.error
+                border.width: 1
 
-                // Email Field
-                FormInputField {
-                    id: emailField
-                    label: "Email Address"
-                    placeholderText: "email@example.com"
-                    icon: Style.icons.envelope
-                }
-
-                // Error Message
-                Rectangle {
-                    id: errorRectangle
-                    visible: errorMessage.text.length > 0
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 32
-                    radius: 5
-                    color: Qt.rgba(Style.colors.error.r, Style.colors.error.g, Style.colors.error.b, 0.15)
-                    border.color: Style.colors.error
-                    border.width: 1
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 6
-                        spacing: 6
-
-                        Text {
-                            Layout.alignment: Qt.AlignVCenter
-                            text: Style.icons.circleExclamation
-                            font.family: Style.fontTypes.font6ProSolid
-                            font.pixelSize: 12
-                            color: Style.colors.error
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-
-                        Text {
-                            id: errorMessage
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignVCenter
-                            wrapMode: Text.WordWrap
-                            font.pixelSize: 11
-                            font.family: Style.fontTypes.roboto
-                            color: Style.colors.error
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                    }
-                }
-
-                // Action Buttons
                 RowLayout {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 4
-                    spacing: 8
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    spacing: 6
 
-                    Item { Layout.fillWidth: true }
-
-                    Button {
-                        Layout.preferredWidth: 75
-                        Layout.preferredHeight: 30
+                    Text {
                         Layout.alignment: Qt.AlignVCenter
-
-                        contentItem: Text {
-                            anchors.centerIn: parent
-                            text: "Cancel"
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
-                            color: Style.colors.foreground
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-
-                        background: Rectangle {
-                            anchors.fill: parent
-                            color: parent.hovered ? Style.colors.surfaceMuted : "transparent"
-                            radius: 5
-                            border.color: Style.colors.primaryBorder
-                            border.width: 1
-                        }
-
-                        onClicked: {
-                            root.showAddEditForm = false
-                            root.isEditing = false
-                            fullNameField.field.text = ""
-                            emailField.field.text = ""
-                            errorMessage.text = ""
-                        }
+                        text: Style.icons.circleExclamation
+                        font.family: Style.fontTypes.font6ProSolid
+                        font.pixelSize: 12
+                        color: Style.colors.error
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
 
-                    Button {
-                        Layout.preferredWidth: 75
-                        Layout.preferredHeight: 30
+                    Text {
+                        id: errorMessage
+                        Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: 11
+                        font.family: Style.fontTypes.roboto
+                        color: Style.colors.error
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+            }
 
-                        contentItem: Text {
-                            anchors.centerIn: parent
-                            text: root.isEditing ? "Save" : "Add"
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
-                            font.weight: 500
-                            color: Style.colors.secondaryForeground
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+            Item {
+                Layout.fillHeight: true
+            }
+
+            // Action Buttons
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: 4
+                spacing: 8
+
+                Item { Layout.fillWidth: true }
+
+                Button {
+                    Layout.preferredWidth: 75
+                    Layout.preferredHeight: 30
+                    Layout.alignment: Qt.AlignVCenter
+
+                    contentItem: Text {
+                        anchors.centerIn: parent
+                        text: "Cancel"
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 12
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    background: Rectangle {
+                        anchors.fill: parent
+                        color: parent.hovered ? Style.colors.surfaceMuted : "transparent"
+                        radius: 5
+                        border.color: Style.colors.primaryBorder
+                        border.width: 1
+                    }
+
+                    onClicked: {
+                        root.showAddEditForm = false
+                        root.isEditing = false
+                        fullNameField.field.text = ""
+                        emailField.field.text = ""
+                        errorMessage.text = ""
+                    }
+                }
+
+                Button {
+                    Layout.preferredWidth: 75
+                    Layout.preferredHeight: 30
+                    Layout.alignment: Qt.AlignVCenter
+
+                    contentItem: Text {
+                        anchors.centerIn: parent
+                        text: root.isEditing ? "Save" : "Add"
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 12
+                        font.weight: 500
+                        color: Style.colors.secondaryForeground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    background: Rectangle {
+                        anchors.fill: parent
+                        color: parent.hovered ? Style.colors.accentHover : Style.colors.accent
+                        radius: 5
+                    }
+
+                    onClicked: {
+                        if (fullNameField.field.text.trim().length === 0) {
+                            errorMessage.text = "Full name cannot be empty"
+                            return
                         }
 
-                        background: Rectangle {
-                            anchors.fill: parent
-                            color: parent.hovered ? Style.colors.accentHover : Style.colors.accent
-                            radius: 5
+                        if (emailField.field.text.trim().length === 0) {
+                            errorMessage.text = "Email cannot be empty"
+                            return
                         }
 
-                        onClicked: {
-                            if (fullNameField.field.text.trim().length === 0) {
-                                errorMessage.text = "Full name cannot be empty"
-                                return
-                            }
-
-                            if (emailField.field.text.trim().length === 0) {
-                                errorMessage.text = "Email cannot be empty"
-                                return
-                            }
-
-                            var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-                            if (!emailRegex.test(emailField.field.text.trim())) {
-                                errorMessage.text = "Please enter a valid email address"
-                                return
-                            }
-
-                            if (root.isEditing) {
-                                // Edit existing profile
-                                let profile = root.userProfileController.findProfileById(root.editingProfileId)
-                                if (profile) {
-                                    profile.email = emailField.field.text.trim()
-                                    userProfileController.edit(root.editingProfileId, profile)
-                                }
-                            } else {
-                                let userProfile = userProfileController.createUserProfile(
-                                    fullNameField.field.text.trim(),
-                                    "",
-                                    emailField.field.text.trim(),
-                                    Config.App
-                                )
-                                if (!userProfile) {
-                                    errorMessage.text = "Failed to create profile. User may already exist."
-                                    return
-                                }
-                            }
-
-                            root.showAddEditForm = false
-                            root.isEditing = false
-                            fullNameField.field.text = ""
-                            emailField.field.text = ""
-                            errorMessage.text = ""
+                        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                        if (!emailRegex.test(emailField.field.text.trim())) {
+                            errorMessage.text = "Please enter a valid email address"
+                            return
                         }
+
+                        if (root.isEditing) {
+                            // Edit existing profile
+                            let profile = root.userProfileController.findProfileById(root.editingProfileId)
+                            if (profile) {
+                                profile.email = emailField.field.text.trim()
+                                userProfileController.edit(root.editingProfileId, profile)
+                            }
+                        } else {
+                            let userProfile = userProfileController.createUserProfile(
+                                fullNameField.field.text.trim(),
+                                "",
+                                emailField.field.text.trim(),
+                                Config.App
+                            )
+                            if (!userProfile) {
+                                errorMessage.text = "Failed to create profile. User may already exist."
+                                return
+                            }
+                        }
+
+                        root.showAddEditForm = false
+                        root.isEditing = false
+                        fullNameField.field.text = ""
+                        emailField.field.text = ""
+                        errorMessage.text = ""
                     }
                 }
             }
