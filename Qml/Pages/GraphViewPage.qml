@@ -475,128 +475,95 @@ DockAblePage {
         }
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 0
-        Rectangle {
-            id: commitGraphDock
-            Layout.fillWidth: true
-            Layout.minimumHeight: root.height / 2
-            Layout.maximumHeight: root.height / 2
-            color: "transparent"
-            
-            CommitGraphDock {
-                id: commitGraph
-                anchors.fill: parent
-                repositoryController: root.repositoryController
-                appModel: root.appModel
-                branchController: root.branchController
-                commitController: root.commitController
-                
+    CommitGraphDock {
+        id: commitGraph
+        height: root.height / 2
+        width: root.width
+        repositoryController: root.repositoryController
+        appModel: root.appModel
+        branchController: root.branchController
+        commitController: root.commitController
 
-                onCommitClicked: function(commitId) {
-                    root.selectedCommit = commitId
-                }
 
-                onIsDraggingChanged: {
-                    root.showDropZone = commitGraphDock.isDragging
-                    root.activeDraggingDock = commitGraphDock.isDragging ? commitGraphDock : null
-                    commitGraphDock.parent = root
-                }
+        onCommitClicked: function(commitId) {
+            root.selectedCommit = commitId
+        }
 
-                onDockPositionChanged: {
-                    root.moveDock(commitGraph.dockId)
-                }
+        onIsDraggingChanged: {
+            root.showDropZone = commitGraph.isDragging
+            root.activeDraggingDock = commitGraph.isDragging ? commitGraph : null
+            commitGraph.parent = root
+        }
 
-                onCloseRequested: {
-                    root.closeDock(commitGraph.dockId)
-                }
+        onDockPositionChanged: {
+            root.moveDock(commitGraph.dockId)
+        }
 
-                Component.onCompleted: {
-                    root.docks = root.docks.concat([commitGraph])
-                }
-            }
+        onCloseRequested: {
+            root.closeDock(commitGraph.dockId)
+        }
+
+        Component.onCompleted: {
+            root.docks = root.docks.concat([commitGraph])
         }
     }
 
-    Rectangle {
-        Layout.fillWidth: true
-        Layout.minimumHeight: root.height / 2
-        Layout.maximumHeight: root.height / 2
-        color: "transparent"
+    FileChangesDock {
+        id: fileChangesDock
+        height: root.height / 2
+        width: root.width / 2
 
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: 8
-            anchors.topMargin: 32
-            spacing: 12
+        repositoryController : root.repositoryController
+        statusController: root.statusController
+        commitHash : root.selectedCommit
 
-            Rectangle {
-                Layout.preferredWidth: root.width / 2
-                Layout.fillHeight: true
-                color: "transparent"
+        onFileSelected: function(filePath){
+            root.selectedFilePath = filePath
+            let parentHash = root.commitController.getParentHash(root.selectedCommit)
+            let res = root.statusController.getDiff(parentHash, root.selectedCommit, root.selectedFilePath)
 
-                FileChangesDock {
-                    id: fileChangesDock
-                    anchors.fill: parent
-
-                    repositoryController : root.repositoryController
-                    statusController: root.statusController
-                    commitHash : root.selectedCommit
-
-                    onFileSelected: function(filePath){
-                        root.selectedFilePath = filePath
-                        let parentHash = root.commitController.getParentHash(root.selectedCommit)
-                        let res = root.statusController.getDiff(parentHash, root.selectedCommit, root.selectedFilePath)
-
-                        if (res.success) {
-                            diffView.diffData = res.data
-                        }
-                    }
-
-                    onIsDraggingChanged: {
-                        root.showDropZone = isDragging
-                        root.activeDraggingDock = isDragging ? diffView : null
-                        diffView.parent = root
-                    }
-
-                    onDockPositionChanged: {
-                        root.moveDock(fileChangesDock.dockId)
-                    }
-
-                    onCloseRequested: {
-                        root.closeDock(fileChangesDock.dockId)
-                    }
-
-                    Component.onCompleted: {
-                        root.docks = root.docks.concat([fileChangesDock])
-                    }
-                }
+            if (res.success) {
+                diffView.diffData = res.data
             }
+        }
 
-            Rectangle {
-                Layout.preferredWidth: root.width / 2
-                Layout.fillHeight: true
-                color: "transparent"
+        onIsDraggingChanged: {
+            root.showDropZone = isDragging
+            root.activeDraggingDock = isDragging ? diffView : null
+            diffView.parent = root
+        }
 
-                DiffView {
-                    id: diffView
-                    anchors.fill: parent
-                    readOnly: true
-                    onIsDraggingChanged: {
-                        root.showDropZone = isDragging
-                        diffView.parent = root
-                    }
+        onDockPositionChanged: {
+            root.moveDock(fileChangesDock.dockId)
+        }
 
-                    onDockPositionChanged: {
-                        root.moveDock(diffView.dockId)
-                    }
+        onCloseRequested: {
+            root.closeDock(fileChangesDock.dockId)
+        }
 
-                    Component.onCompleted: {
-                        root.docks = root.docks.concat([diffView])
-                    }
-                }
-            }
+        Component.onCompleted: {
+            root.docks = root.docks.concat([fileChangesDock])
+        }
+    }
+
+
+    DiffView {
+        id: diffView
+        height: root.height / 2
+        width: root.width / 2
+
+        readOnly: true
+        onIsDraggingChanged: {
+            root.showDropZone = isDragging
+            diffView.parent = root
+        }
+
+        onDockPositionChanged: {
+            root.moveDock(diffView.dockId)
+        }
+
+        Component.onCompleted: {
+            root.docks = root.docks.concat([diffView])
         }
     }
 }

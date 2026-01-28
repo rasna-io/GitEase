@@ -33,6 +33,7 @@ SimpleDock {
     
     // Minimum widths for each column
     readonly property int minColWidth: root.width / 7
+    enabled: false
 
     /* Object Properties
      * ****************************************************************************************/

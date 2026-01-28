@@ -45,7 +45,7 @@ Item {
         color: Style.colors.primaryBackground
         radius: 6
         border.color: root.isFloating ? "#c9c9c9" : "transparent"
-        border.width: root.isDragging ? 1.8 : 1
+        border.width: root.enabled ? (root.isDragging ? 1.8 : 1) : 0
         opacity: root.isDragging ? 0.8 : 1
 
         Behavior on opacity {
@@ -79,6 +79,7 @@ Item {
                 z: 2
                 color: dragArea.containsMouse ? Qt.darker("#F9F9F9", 1.1) : "#F9F9F9"
                 radius: 6
+                visible: root.enabled
 
                 Behavior on color {
                     ColorAnimation {
@@ -141,7 +142,8 @@ Item {
                     id: dragArea
                     anchors.fill: parent
                     anchors.rightMargin: 25
-                    hoverEnabled: true
+                    hoverEnabled: root.enabled
+                    enabled: root.enabled
                     cursorShape: root.isDragging ? Qt.ClosedHandCursor :
                                                    dragArea.containsMouse? Qt.SizeAllCursor : Qt.ArrowCursor
                     acceptedButtons: Qt.LeftButton
@@ -201,7 +203,7 @@ Item {
         thickness: root.resizeHandleSize
         handle: ResizeHandle.Right
         minWidth: root.minFloatingWidth
-        enabled: root.isFloating && !root.isDragging
+        enabled: root.isFloating && !root.isDragging && root.enabled
     }
 
     // Bottom edge
@@ -213,7 +215,7 @@ Item {
         thickness: root.resizeHandleSize
         handle: ResizeHandle.Bottom
         minHeight: root.minFloatingHeight
-        enabled: root.isFloating && !root.isDragging
+        enabled: root.isFloating && !root.isDragging && root.enabled
     }
 
     // Bottom-right corner
@@ -225,7 +227,7 @@ Item {
         handle: ResizeHandle.BottomRight
         minWidth: root.minFloatingWidth
         minHeight: root.minFloatingHeight
-        enabled: root.isFloating && !root.isDragging
+        enabled: root.isFloating && !root.isDragging && root.enabled
     }
 
     // Left edge
@@ -237,7 +239,7 @@ Item {
         thickness: root.resizeHandleSize
         handle: ResizeHandle.Left
         minWidth: root.minFloatingWidth
-        enabled: root.isFloating && !root.isDragging
+        enabled: root.isFloating && !root.isDragging && root.enabled
     }
 
     // Top edge
@@ -249,7 +251,7 @@ Item {
         thickness: root.resizeHandleSize
         handle: ResizeHandle.Top
         minHeight: root.minFloatingHeight
-        enabled: root.isFloating && !root.isDragging
+        enabled: root.isFloating && !root.isDragging && root.enabled
     }
 
     // Top-left corner
@@ -261,7 +263,7 @@ Item {
         handle: ResizeHandle.TopLeft
         minWidth: root.minFloatingWidth
         minHeight: root.minFloatingHeight
-        enabled: root.isFloating && !root.isDragging
+        enabled: root.isFloating && !root.isDragging && root.enabled
     }
 
     // Top-right corner
@@ -273,7 +275,7 @@ Item {
         handle: ResizeHandle.TopRight
         minWidth: root.minFloatingWidth
         minHeight: root.minFloatingHeight
-        enabled: root.isFloating && !root.isDragging
+        enabled: root.isFloating && !root.isDragging && root.enabled
     }
 
     // Bottom-left corner
@@ -285,7 +287,7 @@ Item {
         handle: ResizeHandle.BottomLeft
         minWidth: root.minFloatingWidth
         minHeight: root.minFloatingHeight
-        enabled: root.isFloating && !root.isDragging
+        enabled: root.isFloating && !root.isDragging && root.enabled
     }
 
     /* Functions

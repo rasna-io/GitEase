@@ -117,24 +117,24 @@ Rectangle {
                                 if (item.hasOwnProperty("repositoryController")) {
                                     item.repositoryController = Qt.binding(function() { return root.uiSession?.repositoryController })
                                 }
+                                if (item.hasOwnProperty("remoteController")) {
+                                    item.remoteController = Qt.binding(function() { return root.uiSession?.remoteController })
+                                }
+                                if (item.hasOwnProperty("userProfileController")) {
+                                    item.userProfileController = Qt.binding(function() { return root.uiSession?.userProfileController })
+                                }
+                                if (item.hasOwnProperty("bundleController")) {
+                                    item.bundleController = Qt.binding(function() { return root.uiSession?.bundleController })
+                                }
+                                if (item.hasOwnProperty("userAuthenticationPopup")) {
+                                    item.userAuthenticationPopup = Qt.binding(function() { return root.uiSession?.popups?.userAuthenticationPopup })
+                                }
                             }
 
                             onStatusChanged: {
                                 if (status === Loader.Error)
                                     console.error("[MainWindow] Failed to load page:", source)
                             }
-                        }
-                        if (item.hasOwnProperty("remoteController")) {
-                            item.remoteController = Qt.binding(function() { return root.uiSession?.remoteController })
-                        }
-                        if (item.hasOwnProperty("userProfileController")) {
-                            item.userProfileController = Qt.binding(function() { return root.uiSession?.userProfileController })
-                        }
-                        if (item.hasOwnProperty("bundleController")) {
-                            item.bundleController = Qt.binding(function() { return root.uiSession?.bundleController })
-                        }
-                        if (item.hasOwnProperty("userAuthenticationPopup")) {
-                            item.userAuthenticationPopup = Qt.binding(function() { return root.uiSession?.popups?.userAuthenticationPopup })
                         }
                     }
 
