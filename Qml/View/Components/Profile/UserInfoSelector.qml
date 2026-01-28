@@ -36,6 +36,22 @@ Item {
             spacing: 10
 
             Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: !root.showAddEditForm
+                text: Style.icons.info
+                font.pixelSize: 16
+                font.family: Style.fontTypes.font6Pro
+                color: Style.colors.foreground
+                verticalAlignment: Text.AlignVCenter
+
+                HoverHandler {
+                    id: hoverHandler
+                    cursorShape: Qt.WhatsThisCursor
+                }
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
                 text: !root.showAddEditForm ? "User Profiles" :
                                               root.isEditing ? "Edit User Profile" : "Add New User Profile"
                 font.pixelSize: 15
@@ -43,6 +59,51 @@ Item {
                 font.weight: 600
                 color: Style.colors.foreground
                 verticalAlignment: Text.AlignVCenter
+            }
+
+            ToolTip {
+                parent: root
+                visible: hoverHandler.hovered
+                delay: 100
+                timeout: 3000
+
+                x: (root.width - width) / 2
+                y: -height
+
+                padding: 10
+
+                contentItem: ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 2
+                    spacing: 0
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "💡 Select a profile to apply it to the repository's .git/config."
+                        font.pixelSize: 11
+                        font.family: Style.fontTypes.roboto
+                        color: "#ffffff"
+                        wrapMode: Text.WordWrap
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "💡 Click the star ⭐ to set it as your default app user."
+                        font.pixelSize: 11
+                        font.family: Style.fontTypes.roboto
+                        color: "#ffffff"
+                        wrapMode: Text.WordWrap
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+
+                background: Rectangle {
+                    radius: 6
+                    color: Qt.rgba(0, 0, 0, 0.85)
+                    border.color: Qt.rgba(1, 1, 1, 0.12)
+                    border.width: 1
+                }
             }
 
             Item { Layout.fillWidth: true }
@@ -268,43 +329,6 @@ Item {
                         emailField.field.text = ""
                         errorMessage.text = ""
                     }
-                }
-            }
-        }
-
-        // Info Banner for Git Configs
-        Rectangle {
-            visible: !root.showAddEditForm
-            Layout.fillWidth: true
-            Layout.preferredHeight: 35
-            radius: 5
-            color: Style.colors.hintBackground
-            border.color: Style.colors.primaryBorder
-            border.width: 1
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 2
-                spacing: 0
-
-                Text {
-                    Layout.fillWidth: true
-                    text: "💡 Select a profile to apply it to the repository's .git/config."
-                    font.pixelSize: 10
-                    font.family: Style.fontTypes.roboto
-                    color: Style.colors.hintText
-                    wrapMode: Text.WordWrap
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                Text {
-                    Layout.fillWidth: true
-                    text: "💡 Click the star ⭐ to set it as your default app user."
-                    font.pixelSize: 10
-                    font.family: Style.fontTypes.roboto
-                    color: Style.colors.hintText
-                    wrapMode: Text.WordWrap
-                    verticalAlignment: Text.AlignVCenter
                 }
             }
         }
