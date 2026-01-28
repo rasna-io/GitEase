@@ -47,6 +47,16 @@ Item {
     /* Children
      * ****************************************************************************************/
 
+    Timer {
+        id: updateTimer
+        interval: 2500
+        running: root.visible
+        repeat: true
+        onTriggered: {
+            update()
+        }
+    }
+
     Connections {
         target: userAuthenticationPopup
 
