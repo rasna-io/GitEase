@@ -33,7 +33,7 @@ Rectangle {
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillWidth: true
-    Layout.preferredHeight: 62
+    Layout.preferredHeight: 55
     color: {
         if(hoverHandler.hovered){
             if(isSelected){
@@ -72,7 +72,10 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 10
+        anchors.leftMargin: 10
+        anchors.topMargin: 5
+        anchors.rightMargin: 10
+        anchors.bottomMargin: 5
         spacing: 10
 
         // User Icon
