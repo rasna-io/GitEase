@@ -361,14 +361,9 @@ Item {
                             username: modelData.username
                             email: modelData.email
                             levels: modelData.levels
-                            isDefault: modelData.isDefault
                             isSelected: {
                                 return modelData.username === root.selectedProfile?.username 
                                     && modelData.email === root.selectedProfile?.email
-                            }
-
-                            onSelectAsDefault: function(username, email) {
-                                root.userProfileController.edit(username, email, username, email, true)
                             }
 
                             onEditUser: function(username, email) {
