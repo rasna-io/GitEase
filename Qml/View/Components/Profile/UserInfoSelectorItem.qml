@@ -9,7 +9,7 @@ import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * UserInfoSelectorItem
- * Modern user profile list item with actions: select as default, edit, delete
+ * Modern user profile list item with actions: select, edit, delete
  * ************************************************************************************************/
 Rectangle {
     id: root
@@ -19,12 +19,10 @@ Rectangle {
     property string username:       ""
     property string email:          ""
     property var    levels:         []
-    property bool   isDefault:      false
     property bool   isSelected:     false
 
     /* Signals
      * ****************************************************************************************/
-    signal selectAsDefault(string username, string email)
     signal editUser(string username, string email)
     signal deleteUser(string username, string email)
     signal selectForRepository(string username, string email)
@@ -36,13 +34,13 @@ Rectangle {
     color: {
         if(hoverHandler.hovered){
             if(isSelected){
-                 return Style.colors.accentHover
+                 return Qt.darker(Style.colors.userInfoSelectectedItem, 1.5)
             }else {
                 return Style.colors.surfaceLight
             }
         }else{
             if(isSelected){
-                 return Style.colors.accent
+                 return Style.colors.userInfoSelectectedItem
             }else {
                 return Style.colors.secondaryBackground
             }
@@ -50,8 +48,8 @@ Rectangle {
     }
 
     radius: 6
-    border.color: root.isDefault ? Style.colors.warning : Style.colors.primaryBorder
-    border.width: (root.isSelected || root.isDefault) ? 2 : 1
+    border.color: root.isSelected ? Style.colors.accent : Style.colors.primaryBorder
+    border.width: root.isSelected ? 2 : 1
 
     /* Children
      * ****************************************************************************************/
@@ -83,16 +81,14 @@ Rectangle {
             Layout.preferredHeight: 42
             Layout.alignment: Qt.AlignVCenter
             radius: 21
-            color: root.isSelected ?
-                       Style.colors.accent : (root.isDefault ? Style.colors.defaultBackground : Style.colors.surfaceMuted)
+            color: Style.colors.surfaceMuted
 
             Text {
                 anchors.centerIn: parent
                 text: Style.icons.user
                 font.family: Style.fontTypes.font6ProSolid
                 font.pixelSize: 18
-                color: root.isSelected ?
-                           Style.colors.primaryBackground : (root.isDefault ? Style.colors.iconOnDefault : Style.colors.iconOnSurface)
+                color: Style.colors.iconOnSurface
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
@@ -112,29 +108,8 @@ Rectangle {
                     font.pixelSize: 13
                     font.family: Style.fontTypes.roboto
                     font.weight: 600
-                    color: root.isSelected ? Style.colors.selectedText : Style.colors.foreground
+                    color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
-                }
-
-                Rectangle {
-                    visible: root.isDefault
-                    Layout.preferredHeight: 16
-                    Layout.preferredWidth: defaultText.implicitWidth + 10
-                    Layout.alignment: Qt.AlignVCenter
-                    radius: 8
-                    color: Style.colors.warning
-
-                    Text {
-                        id: defaultText
-                        anchors.centerIn: parent
-                        text: "Default"
-                        font.pixelSize: 9
-                        font.family: Style.fontTypes.roboto
-                        font.weight: 600
-                        color: Style.colors.onWarningText
-                        verticalAlignment: Text.AlignVCenter
-                        horizontalAlignment: Text.AlignHCenter
-                    }
                 }
 
                 // Level Badges
@@ -167,7 +142,7 @@ Rectangle {
                 text: root.email
                 font.pixelSize: 11
                 font.family: Style.fontTypes.roboto
-                color: root.isSelected ? Style.colors.selectedText : Style.colors.mutedText
+                color: Style.colors.mutedText
                 elide: Text.ElideRight
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true
@@ -178,25 +153,12 @@ Rectangle {
         RowLayout {
             Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
             spacing: 4
-            visible: hoverHandler.hovered || root.isDefault || root.isSelected
-
-            ActionIconButton {
-                iconText: Style.icons.star
-                tooltip: root.isDefault ? "Default app user" : "Set as default app user"
-                textColor: root.isDefault ?
-                               Style.colors.warning : root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
-                backgroundColor: root.isDefault ? Qt.rgba(1, 0.8, 0.4, 0.15) : "transparent"
-                borderColor: root.isDefault ? Style.colors.warning : Style.colors.primaryBorder
-                hoverBackgroundColor: Style.colors.iconOnSurface
-                borderWidth: 1
-
-                onClicked: root.selectAsDefault(root.username, root.email)
-            }
+            visible: hoverHandler.hovered || root.isSelected
 
             ActionIconButton {
                 iconText: Style.icons.penToSquare
                 tooltip: "Edit profile"
-                textColor: root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
+                textColor: Style.colors.foreground
                 hoverBackgroundColor: Style.colors.iconOnSurface
                 borderColor: Style.colors.primaryBorder
                 borderWidth: 1

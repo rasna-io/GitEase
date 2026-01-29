@@ -18,5 +18,4 @@ QtObject {
 
     property string email:     ""
     property var    levels:    []
-    property bool   isDefault: false
 }

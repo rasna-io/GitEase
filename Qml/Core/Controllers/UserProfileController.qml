@@ -34,11 +34,10 @@ QtObject {
         loadGitConfigProfiles()
 
         let localProfile = root.appModel.userProfiles.find(p => p.levels.includes(Config.Local))
-        if(!localProfile){
-            localProfile = root.appModel.userProfiles.find(p => p.isDefault === true)
+        if(localProfile){
+            root.appModel.currentUserProfile = localProfile
         }
 
-        root.appModel.currentUserProfile = localProfile || null
     }
 
     function loadGitConfigProfiles() {
@@ -77,19 +76,6 @@ QtObject {
                     profiles[i].email,
                     profiles[i].levels
                 )
-                // Restore isDefault state
-                if (userProfile) {
-                    if (profiles[i].isDefault === true) {
-                        for (let j = 0; j < root.appModel.userProfiles.length; j++) {
-                            if (root.appModel.userProfiles[j] !== userProfile) {
-                                root.appModel.userProfiles[j].isDefault = false
-                            }
-                        }
-                        userProfile.isDefault = true
-                    } else {
-                        userProfile.isDefault = false
-                    }
-                }
             }
         }
     }
@@ -201,16 +187,15 @@ QtObject {
         root.appModel.userProfiles = root.appModel.userProfiles.slice(0, idx).concat(root.appModel.userProfiles.slice(idx + 1))
 
         let localProfile = root.appModel.userProfiles.find(p => p.levels.includes(Config.Local))
-        if(!localProfile){
-            localProfile = root.appModel.userProfiles.find(p => p.isDefault === true)
+        if(localProfile){
+            root.appModel.currentUserProfile = localProfile
         }
 
-        root.appModel.currentUserProfile = localProfile || null
 
         root.appModel.save()
     }
 
-    function edit(oldUsername, oldEmail, newUsername, newEmail, setAsDefault) {
+    function edit(oldUsername, oldEmail, newUsername, newEmail) {
         if(oldUsername === "" || oldEmail === "")
             return
 
@@ -228,17 +213,6 @@ QtObject {
             }
             profile.username = newUsername
             profile.email = newEmail
-        }
-
-        if (setAsDefault !== undefined && setAsDefault !== null) {
-            if (setAsDefault === true) {
-                for (let i = 0; i < root.appModel.userProfiles.length; i++) {
-                    root.appModel.userProfiles[i].isDefault = false
-                }
-                profile.isDefault = true
-            } else {
-                profile.isDefault = false
-            }
         }
 
         for (let i = 0; i < profile.levels.length; i++) {
