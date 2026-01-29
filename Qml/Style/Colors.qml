@@ -74,4 +74,6 @@ QtObject{
     
     property color iconOnSurface:           "#9D9D9D"
     property color iconOnDefault:           "#8B6914"
+
+    property color userInfoSelectectedItem: "#44074E96"
 }
