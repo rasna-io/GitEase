@@ -17,11 +17,11 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var    selectedProfile: userProfileController?.appModel?.currentUserProfile
+    property var    selectedProfile: root.userProfileController?.appModel?.currentUserProfile
     property bool   showAddEditForm: false
     property bool   isEditing:       false
-    property string editingProfileId: ""
-    property var    sortedProfiles:  getSortedProfiles()
+    property string editingUsername: ""
+    property string editingEmail:    ""
 
     /* Children
      * ****************************************************************************************/
@@ -304,12 +304,13 @@ Item {
                         }
 
                         if (root.isEditing) {
-                            // Edit existing profile
-                            let profile = root.userProfileController.findProfileById(root.editingProfileId)
-                            if (profile) {
-                                profile.email = emailField.field.text.trim()
-                                userProfileController.edit(root.editingProfileId, profile)
-                            }
+                            // Edit existing profile - pass new values to edit function
+                            userProfileController.edit(
+                                root.editingUsername, 
+                                root.editingEmail,
+                                fullNameField.field.text.trim(),
+                                emailField.field.text.trim()
+                            )
                         } else {
                             let userProfile = userProfileController.createUserProfile(
                                 fullNameField.field.text.trim(),
@@ -325,6 +326,8 @@ Item {
 
                         root.showAddEditForm = false
                         root.isEditing = false
+                        root.editingUsername = ""
+                        root.editingEmail = ""
                         fullNameField.field.text = ""
                         emailField.field.text = ""
                         errorMessage.text = ""
@@ -350,33 +353,30 @@ Item {
                     spacing: 6
 
                     Repeater {
-                        model: root.sortedProfiles
+                        model: root.userProfileController?.appModel?.userProfiles
 
                         delegate: UserInfoSelectorItem {
                             property var parentRoot: root
                             
-                            profileId: modelData.profileId
                             username: modelData.username
                             email: modelData.email
-                            level: modelData.level
+                            levels: modelData.levels
                             isDefault: modelData.isDefault
                             isSelected: {
-                                return modelData.profileId === root.selectedProfile?.profileId
+                                return modelData.username === root.selectedProfile?.username 
+                                    && modelData.email === root.selectedProfile?.email
                             }
 
-                            onSelectAsDefault: function(profileId) {
-                                let profile = root.userProfileController.findProfileById(profileId)
-                                if (profile) {
-                                    profile.isDefault = true
-                                    root.userProfileController.edit(profileId, profile)
-                                }
+                            onSelectAsDefault: function(username, email) {
+                                root.userProfileController.edit(username, email, username, email, true)
                             }
 
-                            onEditUser: function(profileId) {
-                                let profile = parentRoot.userProfileController.findProfileById(profileId)
+                            onEditUser: function(username, email) {
+                                let profile = parentRoot.userProfileController.findProfileByKey(username, email)
                                 if (profile) {
                                     parentRoot.isEditing = true
-                                    parentRoot.editingProfileId = profileId
+                                    parentRoot.editingUsername = username
+                                    parentRoot.editingEmail = email
                                     fullNameField.field.text = profile.username
                                     emailField.field.text = profile.email
                                     errorMessage.text = ""
@@ -384,12 +384,12 @@ Item {
                                 }
                             }
 
-                            onDeleteUser: function(profileId) {
-                                parentRoot.userProfileController.remove(profileId)
+                            onDeleteUser: function(username, email) {
+                                parentRoot.userProfileController.remove(username, email)
                             }
 
-                            onSelectForRepository: function(profileId) {
-                                parentRoot.userProfileController.applyUserToRepository(profileId)
+                            onSelectForRepository: function(username, email) {
+                                parentRoot.userProfileController.applyUserToRepository(username, email)
                             }
                         }
                     }
@@ -399,7 +399,7 @@ Item {
 
         // Empty State
         Item {
-            visible: !root.showAddEditForm && (!root.sortedProfiles || root.sortedProfiles.length === 0)
+            visible: !root.showAddEditForm && userProfileController?.appModel?.userProfiles?.length === 0
             Layout.fillWidth: true
             Layout.fillHeight: true
 
@@ -443,40 +443,5 @@ Item {
 
     /* Functions
      * ****************************************************************************************/
-    function getSortedProfiles() {
-        if (!userProfileController?.appModel?.userProfiles) {
-            return []
-        }
-        
-        let profiles = userProfileController.appModel.userProfiles.slice(0)
-        
-        profiles.sort(function(a, b) {
-            if (a.level === Config.Local && b.level !== Config.Local) {
-                return -1
-            }
-
-            if (a.level !== Config.Local && b.level === Config.Local) {
-                return 1
-            }
-            
-            const levelPriority = {}
-            levelPriority[Config.Local] = 0
-            levelPriority[Config.Global] = 1
-            levelPriority[Config.System] = 2
-            levelPriority[Config.Worktree] = 3
-            levelPriority[Config.App] = 4
-            
-            return (levelPriority[a.level] || 999) - (levelPriority[b.level] || 999)
-        })
-        
-        return profiles
-    }
-    
-    Connections {
-        target: userProfileController?.appModel
-        function onUserProfilesChanged() {
-            root.sortedProfiles = getSortedProfiles()
-        }
-    }
 }
 

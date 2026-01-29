@@ -16,19 +16,18 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string profileId:      ""
     property string username:       ""
     property string email:          ""
-    property int    level:          -1
+    property var    levels:         []
     property bool   isDefault:      false
     property bool   isSelected:     false
 
     /* Signals
      * ****************************************************************************************/
-    signal selectAsDefault(string profileId)
-    signal editUser(string profileId)
-    signal deleteUser(string profileId)
-    signal selectForRepository(string profileId)
+    signal selectAsDefault(string username, string email)
+    signal editUser(string username, string email)
+    signal deleteUser(string username, string email)
+    signal selectForRepository(string username, string email)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -66,7 +65,7 @@ Rectangle {
         hoverEnabled: false
         cursorShape: Qt.PointingHandCursor
         onClicked: {
-            root.selectForRepository(root.profileId)
+            root.selectForRepository(root.username, root.email)
         }
     }
 
@@ -138,24 +137,28 @@ Rectangle {
                     }
                 }
 
-                // Level Badge
-                Rectangle {
-                    Layout.preferredHeight: 16
-                    Layout.preferredWidth: levelText.implicitWidth + 10
-                    Layout.alignment: Qt.AlignVCenter
-                    radius: 8
-                    color: getLevelColor(root.level)
+                // Level Badges
+                Repeater {
+                    model: root.levels
+                    
+                    Rectangle {
+                        Layout.preferredHeight: 16
+                        Layout.preferredWidth: levelText.implicitWidth + 10
+                        Layout.alignment: Qt.AlignVCenter
+                        radius: 2
+                        color: getLevelColor(modelData)
 
-                    Text {
-                        id: levelText
-                        anchors.centerIn: parent
-                        text: getLevelName(root.level)
-                        font.pixelSize: 9
-                        font.family: Style.fontTypes.roboto
-                        font.weight: 300
-                        color: Style.colors.secondaryForeground
-                        verticalAlignment: Text.AlignVCenter
-                        horizontalAlignment: Text.AlignHCenter
+                        Text {
+                            id: levelText
+                            anchors.centerIn: parent
+                            text: getLevelName(modelData)
+                            font.pixelSize: 9
+                            font.family: Style.fontTypes.roboto
+                            font.weight: 300
+                            color: Style.colors.secondaryForeground
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
+                        }
                     }
                 }
             }
@@ -187,7 +190,7 @@ Rectangle {
                 hoverBackgroundColor: Style.colors.iconOnSurface
                 borderWidth: 1
 
-                onClicked: root.selectAsDefault(root.profileId)
+                onClicked: root.selectAsDefault(root.username, root.email)
             }
 
             ActionIconButton {
@@ -198,7 +201,7 @@ Rectangle {
                 borderColor: Style.colors.primaryBorder
                 borderWidth: 1
 
-                onClicked: root.editUser(root.profileId)
+                onClicked: root.editUser(root.username, root.email)
             }
 
             ActionIconButton {
@@ -208,7 +211,7 @@ Rectangle {
                 borderColor: Style.colors.primaryBorder
                 borderWidth: 1
 
-                onClicked: root.deleteUser(root.profileId)
+                onClicked: root.deleteUser(root.username, root.email)
             }
         }
     }
