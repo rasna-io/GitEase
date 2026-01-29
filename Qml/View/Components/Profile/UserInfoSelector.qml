@@ -50,15 +50,37 @@ Item {
                 }
             }
 
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: !root.showAddEditForm ? "User Profiles" :
-                                              root.isEditing ? "Edit User Profile" : "Add New User Profile"
-                font.pixelSize: 15
-                font.family: Style.fontTypes.roboto
-                font.weight: 600
-                color: Style.colors.foreground
-                verticalAlignment: Text.AlignVCenter
+            ColumnLayout {
+                Text {
+                    // anchors.verticalCenter: parent.verticalCenter
+                    text: !root.showAddEditForm ? "User Profiles" :
+                                                  root.isEditing ? "Edit User Profile" : "Add New User Profile"
+                    font.pixelSize: 15
+                    font.family: Style.fontTypes.roboto
+                    font.weight: 600
+                    color: Style.colors.foreground
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                Rectangle {
+                    Layout.preferredHeight: 16
+                    Layout.preferredWidth: currentUsernameText.implicitWidth + 10
+                    Layout.alignment: Qt.AlignVCenter
+                    radius: 2
+                    color: Style.colors.hintBackground
+
+                    Text {
+                        id: currentUsernameText
+                        anchors.centerIn: parent
+                        text: "Current username : " + root.selectedProfile?.username ?? "empty"
+                        font.pixelSize: 10
+                        font.family: Style.fontTypes.roboto
+                        font.weight: 300
+                        color: Style.colors.foreground
+                        verticalAlignment: Text.AlignVCenter
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                }
             }
 
             ToolTip {
