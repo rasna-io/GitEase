@@ -182,23 +182,35 @@ Rectangle {
      * ****************************************************************************************/
     function getLevelName(level) {
         switch(level) {
-            case Config.System:   return "System"
-            case Config.Global:   return "Global"
-            case Config.Local:    return "Local"
-            case Config.Worktree: return "Worktree"
-            case Config.App:      return "App"
-            default:              return "Unknown"
+            case Config.System:
+                return "System"
+            case Config.Global:
+                return "Global"
+            case Config.Local:
+                return "Local"
+            case Config.Worktree:
+                return "Worktree"
+            case Config.App:
+                return "App"
+            default:
+                return "Unknown"
         }
     }
 
     function getLevelColor(level) {
         switch(level) {
-            case Config.System:   return Qt.darker(Style.colors.addedFile, 1.3)        // System - Green
-            case Config.Global:   return Qt.darker(Style.colors.renamedFile, 1.3)      // Global - Cyan
-            case Config.Local:    return Qt.darker(Style.colors.modifiediedFile, 1.3)  // Local - Yellow
-            case Config.Worktree: return Qt.darker(Style.colors.deletededFile, 1.3)    // Worktree - Red
-            case Config.App:      return Qt.darker(Style.colors.untrackedFile, 1.3)    // App - Blue
-            default:              return Style.colors.surfaceMuted
+            case Config.System:
+                return Style.colors.levelSystemBadge
+            case Config.Global:
+                return Style.colors.levelGlobalBadge
+            case Config.Local:
+                return Style.colors.levelLocalBadge
+            case Config.Worktree:
+                return Style.colors.levelWorktreeBadge
+            case Config.App:
+                return Style.colors.levelAppBadge
+            default:
+                return Style.colors.surfaceMuted
         }
     }
 }

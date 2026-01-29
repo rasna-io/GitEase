@@ -86,6 +86,12 @@ QtObject {
         
         iconOnSurface:           "#B0B0B0"
         iconOnDefault:           "#FFD966"
+        
+        levelSystemBadge:        "#4DB85D"
+        levelGlobalBadge:        "#4DB8B8"
+        levelLocalBadge:         "#D4BC4D"
+        levelWorktreeBadge:      "#D44D4D"
+        levelAppBadge:           "#4D4DD4"
     }
 
     property           string       currentTheme:               "Modern Light"
