@@ -27,11 +27,17 @@ Item {
 
     property real horizontalOffset: 0
 
+    property int chunkStart: -1
+    property int chunkEnd: -1
+    property int chunkIndex: -1
+
     readonly property bool isAdd: diffType === GitDiff.Added
     readonly property bool isDel: diffType === GitDiff.Deleted
     readonly property bool isMod: diffType === GitDiff.Modified
     readonly property bool isUnchanged: diffType === GitDiff.Context
-    readonly property bool hasAction: !readOnly && !isUnchanged && (index === 0 || fileModel.get(index - 1).type === GitDiff.Context)
+    readonly property bool isSeparator: diffType === -1
+    readonly property bool isChunkHeader: diffType === -2
+    readonly property bool hasAction: !readOnly && !isUnchanged && !isSeparator && !isChunkHeader && (index === 0 || fileModel.get(index - 1).type === GitDiff.Context)
 
 
     /* Signals
@@ -42,12 +48,14 @@ Item {
     signal requestFocusPrev()
     signal requestStage(int start, int end, int type)
     signal requestRevert(int start, int end, int type)
+    signal requestStageChunk(int chunkStart, int chunkEnd)
+    signal requestRevertChunk(int chunkStart, int chunkEnd)
 
     /* Object Properties
      * ****************************************************************************************/
 
     // Auto-height based on content
-    height: Math.max(hasAction ? 50 : 24, Math.max(leftTextMetrics.height, rightTextEdit.contentHeight + 4))
+    height: isSeparator ? 35 : isChunkHeader ? 40 : Math.max(hasAction ? 50 : 24, Math.max(leftTextMetrics.height, rightTextEdit.contentHeight + 4))
 
     onIsCurrentItemChanged: {
         if (isCurrentItem && !isDel) {
@@ -60,9 +68,163 @@ Item {
     /* Children
      * ****************************************************************************************/
 
+    // Chunk header view with stage/revert buttons
+    Rectangle {
+        anchors.fill: parent
+        visible: isChunkHeader
+        color: Style.colors.surfaceLight
+        border.width: 1
+        border.color: Style.colors.surfaceMuted
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 6
+            spacing: 8
+
+            Text {
+                text: "Chunk " + (chunkIndex + 1)
+                color: Style.colors.foreground
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 11
+                font.weight: Font.Medium
+            }
+
+            Text {
+                text: "(Lines " + chunkStart + " - " + chunkEnd + ")"
+                color: Style.colors.mutedText
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 10
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            // Stage chunk button
+            Rectangle {
+                visible: !readOnly
+                Layout.preferredHeight: 28
+                Layout.preferredWidth: 85
+                color: stageButtonMa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.accent, 1.2)
+                radius: 4
+                border.width: 1
+                border.color: Style.colors.accent
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 6
+                    
+                    Text {
+                        text: Style.icons.plus
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: 11
+                        color: Style.colors.secondaryForeground
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    
+                    Text {
+                        text: "Stage"
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
+                        color: Style.colors.secondaryForeground
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                MouseArea {
+                    id: stageButtonMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        requestStageChunk(chunkStart, chunkEnd)
+                    }
+                }
+            }
+
+            // Revert chunk button
+            Rectangle {
+                visible: !readOnly
+                Layout.preferredHeight: 28
+                Layout.preferredWidth: 85
+                color: revertButtonMa.containsMouse ? Qt.lighter(Style.colors.error, 1.1) : Style.colors.error
+                radius: 4
+                border.width: 1
+                border.color: Qt.darker(Style.colors.error, 1.1)
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 6
+                    
+                    Text {
+                        text: Style.icons.trash
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: 11
+                        color: Style.colors.secondaryForeground
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    
+                    Text {
+                        text: "Discard"
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
+                        color: Style.colors.secondaryForeground
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                MouseArea {
+                    id: revertButtonMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        requestRevertChunk(chunkStart, chunkEnd)
+                    }
+                }
+            }
+        }
+    }
+
+    // Separator view for chunk breaks
+    Rectangle {
+        anchors.fill: parent
+        visible: isSeparator
+        color: Style.colors.primaryBackground
+
+        Row {
+            anchors.centerIn: parent
+            spacing: 8
+
+            Rectangle {
+                width: 30
+                height: 1
+                anchors.verticalCenter: parent.verticalCenter
+                color: Style.colors.surfaceMuted
+            }
+
+            Text {
+                text: "⋯"
+                color: Style.colors.mutedText
+                font.pixelSize: 16
+                font.bold: true
+            }
+
+            Rectangle {
+                width: 30
+                height: 1
+                anchors.verticalCenter: parent.verticalCenter
+                color: Style.colors.surfaceMuted
+            }
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
+        visible: !isSeparator && !isChunkHeader
 
         /**
           * Left Pane
