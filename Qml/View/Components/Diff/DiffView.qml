@@ -4,6 +4,7 @@ import QtQuick.Layouts
 
 import GitEase
 import GitEase_Style
+import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * DiffView
@@ -18,6 +19,8 @@ Item {
 
     property bool readOnly: false
 
+    property int contextLines: -1  // -1 = show full file, 0 = changes only, N = changes + N lines context
+
     /* Signals
      * ****************************************************************************************/
     signal requestStage(int start, int end, int type)
@@ -31,25 +34,103 @@ Item {
     }
 
     onDiffDataChanged: {
+        rebuildModel();
+    }
+
+    onContextLinesChanged: {
+        rebuildModel();
+    }
+
+    function rebuildModel() {
         fileModel.clear()
 
-        for(var i = 0; i < diffData.length; i++) {
-            var diff = diffData[i];
-
-            var left = diff.content;
-            var right = (diff.type === GitDiff.Modified) ? diff.newContent : diff.content;
-
-            // Visual "Gaps"
-            if (diff.type === GitDiff.Added)
-                left = "";
-            if (diff.type === GitDiff.Deleted)
-                right = "";
-
-            appendRow(diff.type, left, right, diff.oldLine, diff.newLine);
-
-            updateMaxContentWidth(left);
-            updateMaxContentWidth(right);
+        if (contextLines === -1) {
+            // Show full file
+            for(var i = 0; i < diffData.length; i++) {
+                var diff = diffData[i];
+                addDiffLine(diff, -1, -1, -1);
+            }
+        } else {
+            // Show changes in chunks with N context lines
+            var chunks = buildChunks(diffData, contextLines);
+            
+            for(var c = 0; c < chunks.length; c++) {
+                var chunk = chunks[c];
+                
+                if (c > 0) {
+                    appendSeparator();
+                }
+                
+                appendChunkHeader(chunk.start, chunk.end, c);
+                
+                for(var i = chunk.start; i <= chunk.end; i++) {
+                    addDiffLine(diffData[i], chunk.start, chunk.end, c);
+                }
+            }
         }
+    }
+
+    function addDiffLine(diff, chunkStart, chunkEnd, chunkIndex) {
+        var left = diff.content;
+        var right = (diff.type === GitDiff.Modified) ? diff.newContent : diff.content;
+
+        // Visual "Gaps"
+        if (diff.type === GitDiff.Added)
+            left = "";
+        if (diff.type === GitDiff.Deleted)
+            right = "";
+
+        appendRow(diff.type, left, right, diff.oldLine, diff.newLine, chunkStart, chunkEnd, chunkIndex);
+
+        updateMaxContentWidth(left);
+        updateMaxContentWidth(right);
+    }
+
+    function buildChunks(data, context) {
+        if (data.length === 0) return [];
+        
+        var chunks = [];
+        var i = 0;
+        
+        while (i < data.length) {
+            while (i < data.length && data[i].type === GitDiff.Context) {
+                i++;
+            }
+            
+            if (i >= data.length) break;
+            
+            var changeStart = i;
+            var changeEnd = i;
+            
+            while (changeEnd < data.length && data[changeEnd].type !== GitDiff.Context) {
+                changeEnd++;
+            }
+            changeEnd--;
+            
+            var chunkStart = Math.max(0, changeStart - context);
+            var chunkEnd = Math.min(data.length - 1, changeEnd + context);
+            if (chunks.length > 0) {
+                var prevChunk = chunks[chunks.length - 1];
+                if (chunkStart <= prevChunk.end + 1) {
+                    prevChunk.end = chunkEnd;
+                    i = chunkEnd + 1;
+                    continue;
+                }
+            }
+            
+            chunks.push({start: chunkStart, end: chunkEnd});
+            i = chunkEnd + 1;
+        }
+        
+        return chunks;
+    }
+
+    function appendSeparator() {
+        appendRow(-1, "...", "...", -1, -1, -1, -1, -1);
+    }
+
+    function appendChunkHeader(chunkStart, chunkEnd, chunkIndex) {
+        appendRow(-2, "", "", -1, -1, chunkStart, chunkEnd, chunkIndex);
     }
 
 
@@ -70,12 +151,69 @@ Item {
         color: Style.colors.editorBackgroound
         visible: root.diffData && root.diffData.length > 0
 
+        RowLayout {
+            id: toolBar
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: 40
+            spacing: 10
+            z: 10
+
+            Label {
+                Layout.leftMargin: 10
+                text: "Lines of context:"
+                color: Style.colors.foreground
+                font.pixelSize: 13
+            }
+
+            ComboBox {
+                id: contextCombo
+                Layout.preferredWidth: 120
+                model: ["Full File", "0", "1", "2", "5", "10", "25"]
+                currentIndex: 0
+                minHeight: 26
+                borderWidth: 0
+                focusBorderWidth: 1
+                font.family: Style.fontTypes.roboto
+                font.weight: 400
+                font.pixelSize: 10
+
+                Material.background: Style.colors.secondaryBackground
+                Material.foreground: Style.colors.secondaryText
+                
+                onCurrentIndexChanged: {
+                    if (currentIndex === 0) {
+                        root.contextLines = -1;  // Full file
+                    } else {
+                        root.contextLines = parseInt(model[currentIndex]);
+                    }
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
+        }
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: toolBar.bottom
+            height: 1
+            color: Style.colors.surfaceMuted
+        }
+
         ListView {
             id: diffListView
             property real horizontalScrollOffset: 0
             property real maxContentWidth: 0
 
-            anchors.fill: parent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: toolBar.bottom
+            anchors.topMargin: 1
+            anchors.bottom: parent.bottom
             clip: true
             model: fileModel
 
@@ -93,6 +231,9 @@ Item {
                 rightContent: model.rightText
                 leftLineNum: model.oldLineNum
                 rightLineNum: model.newLineNum
+                chunkStart: model.chunkStart
+                chunkEnd: model.chunkEnd
+                chunkIndex: model.chunkIndex
                 fileModel: diffListView.model
                 onRequestSplit: (pos, txt) => root.splitLine(index, pos, txt)
                 onRequestMergeUp: root.mergeLineUp(index)
@@ -106,6 +247,12 @@ Item {
                 }
                 onRequestRevert: function (start, end, type) {
                     root.requestRevert(start, end, type)
+                }
+                onRequestStageChunk: function (chunkStart, chunkEnd) {
+                    root.stageChunk(chunkStart, chunkEnd)
+                }
+                onRequestRevertChunk: function (chunkStart, chunkEnd) {
+                    root.revertChunk(chunkStart, chunkEnd)
                 }
             }
         }
@@ -129,13 +276,16 @@ Item {
 
     /* Functions
      * ****************************************************************************************/
-    function appendRow(type, lTxt, rTxt, lNum, rNum) {
+    function appendRow(type, lTxt, rTxt, lNum, rNum, chunkStart, chunkEnd, chunkIndex) {
         fileModel.append({
                              "type": type,
                              "leftText": lTxt,
                              "rightText": rTxt,
                              "oldLineNum": lNum,
-                             "newLineNum": rNum
+                             "newLineNum": rNum,
+                             "chunkStart": chunkStart !== undefined ? chunkStart : -1,
+                             "chunkEnd": chunkEnd !== undefined ? chunkEnd : -1,
+                             "chunkIndex": chunkIndex !== undefined ? chunkIndex : -1
                          })
     }
 
@@ -211,6 +361,120 @@ Item {
         if (measuredWidth > diffListView.maxContentWidth) {
             diffListView.maxContentWidth = measuredWidth;
         }
+    }
+
+    function stageChunk(chunkStart, chunkEnd) {
+        var minOldLine = -1;
+        var maxOldLine = -1;
+        var minNewLine = -1;
+        var maxNewLine = -1;
+        var hasChanges = false;
+
+        for (var i = 0; i < diffData.length; i++) {
+            if (i >= chunkStart && i <= chunkEnd) {
+                var diff = diffData[i];
+                
+                if (diff.type !== GitDiff.Context) {
+                    hasChanges = true;
+                    
+                    if (diff.oldLine !== -1) {
+                        if (minOldLine === -1 || diff.oldLine < minOldLine) {
+                            minOldLine = diff.oldLine;
+                        }
+                        if (maxOldLine === -1 || diff.oldLine > maxOldLine) {
+                            maxOldLine = diff.oldLine;
+                        }
+                    }
+                    
+                    if (diff.newLine !== -1) {
+                        if (minNewLine === -1 || diff.newLine < minNewLine) {
+                            minNewLine = diff.newLine;
+                        }
+                        if (maxNewLine === -1 || diff.newLine > maxNewLine) {
+                            maxNewLine = diff.newLine;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!hasChanges) {
+            console.log("No changes to stage in chunk");
+            return;
+        }
+
+        var startLine = minOldLine !== -1 ? minOldLine : minNewLine;
+        var endLine = maxOldLine !== -1 ? maxOldLine : maxNewLine;
+        
+        if (minOldLine === -1) {
+            startLine = minNewLine;
+            endLine = maxNewLine;
+        } else if (minNewLine === -1) {
+            startLine = minOldLine;
+            endLine = maxOldLine;
+        } else {
+            startLine = Math.min(minOldLine, minNewLine);
+            endLine = Math.max(maxOldLine, maxNewLine);
+        }
+
+        requestStage(startLine, endLine, GitDiff.Modified);
+    }
+
+    function revertChunk(chunkStart, chunkEnd) {
+        var minOldLine = -1;
+        var maxOldLine = -1;
+        var minNewLine = -1;
+        var maxNewLine = -1;
+        var hasChanges = false;
+
+        for (var i = 0; i < diffData.length; i++) {
+            if (i >= chunkStart && i <= chunkEnd) {
+                var diff = diffData[i];
+                
+                if (diff.type !== GitDiff.Context) {
+                    hasChanges = true;
+                    
+                    if (diff.oldLine !== -1) {
+                        if (minOldLine === -1 || diff.oldLine < minOldLine) {
+                            minOldLine = diff.oldLine;
+                        }
+                        if (maxOldLine === -1 || diff.oldLine > maxOldLine) {
+                            maxOldLine = diff.oldLine;
+                        }
+                    }
+                    
+                    if (diff.newLine !== -1) {
+                        if (minNewLine === -1 || diff.newLine < minNewLine) {
+                            minNewLine = diff.newLine;
+                        }
+                        if (maxNewLine === -1 || diff.newLine > maxNewLine) {
+                            maxNewLine = diff.newLine;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!hasChanges) {
+            console.log("No changes to revert in chunk");
+            return;
+        }
+
+        var startLine = minOldLine !== -1 ? minOldLine : minNewLine;
+        var endLine = maxOldLine !== -1 ? maxOldLine : maxNewLine;
+        
+        if (minOldLine === -1) {
+            startLine = minNewLine;
+            endLine = maxNewLine;
+        } else if (minNewLine === -1) {
+            startLine = minOldLine;
+            endLine = maxOldLine;
+        } else {
+            startLine = Math.min(minOldLine, minNewLine);
+            endLine = Math.max(maxOldLine, maxNewLine);
+        }
+
+        requestRevert(startLine, endLine, GitDiff.Modified);
     }
 
 }
