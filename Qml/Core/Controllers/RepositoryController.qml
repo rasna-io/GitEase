@@ -77,7 +77,7 @@ GitRepository {
     function cloneRepository(path, url) : bool {
         let repoName = extractRepoName(url)
 
-        var result = clone(url, path + "/" + repoName)
+        var result = clone(url, path + "/" + repoName, "https")
 
         if(result.success){
             createRepositoryComponent(path + "/" + repoName, repoName)

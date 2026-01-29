@@ -3,7 +3,10 @@
 #include <QObject>
 #include "GitResult.h"
 #include "IGitController.h"
+#include "Auth/IGitAuth.h"
 
+#include "Auth/GitSshAuth.h"
+#include "Auth/GitHttpsAuth.h"
 
 class GitRepository : public IGitController
 {
@@ -40,7 +43,13 @@ public:
      * \param localPath Local path where to clone
      * \return GitResult
      */
-    Q_INVOKABLE GitResult clone(const QString &url, const QString &localPath);
+    Q_INVOKABLE GitResult clone(const QString& url,
+                                const QString& localPath,
+                                const QString& authType,
+                                const QString& username = "",
+                                const QString& password = "",
+                                const QString& privateKeyPath = "");
+
 
 
 signals:
