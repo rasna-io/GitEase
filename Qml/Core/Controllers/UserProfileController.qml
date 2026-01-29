@@ -33,7 +33,7 @@ QtObject {
 
         loadGitConfigProfiles()
 
-        let localProfile = root.appModel.userProfiles.find(p => p.level === Config.Local)
+        let localProfile = root.appModel.userProfiles.find(p => p.levels.includes(Config.Local))
         if(!localProfile){
             localProfile = root.appModel.userProfiles.find(p => p.isDefault === true)
         }
@@ -75,16 +75,19 @@ QtObject {
                     profiles[i].username,
                     profiles[i].password,
                     profiles[i].email,
-                    profiles[i].level,
+                    profiles[i].levels
                 )
-                // Restore profileId and isDefault state
+                // Restore isDefault state
                 if (userProfile) {
-                    // Restore the saved profileId if it exists, otherwise keep the generated one
-                    if (profiles[i].profileId) {
-                        userProfile.profileId = profiles[i].profileId
-                    }
-                    if (profiles[i].isDefault) {
+                    if (profiles[i].isDefault === true) {
+                        for (let j = 0; j < root.appModel.userProfiles.length; j++) {
+                            if (root.appModel.userProfiles[j] !== userProfile) {
+                                root.appModel.userProfiles[j].isDefault = false
+                            }
+                        }
                         userProfile.isDefault = true
+                    } else {
+                        userProfile.isDefault = false
                     }
                 }
             }
@@ -92,25 +95,58 @@ QtObject {
     }
 
 
-    function generateProfileId() {
-        return "profile_" + Date.now() + "_" + Math.floor(Math.random() * 1000000)
-    }
-
-    function findProfile(username, email, level) {
+    function findProfileByKey(username, email) {
         return root.appModel.userProfiles.find(profile => profile
                                                && profile.username === username
-                                               && profile.email === email
-                                               && profile.level === level) || null
+                                               && profile.email === email) || null
     }
 
-    function findProfileById(profileId) {
-        return root.appModel.userProfiles.find(profile => profile
-                                               && profile.profileId === profileId) || null
+    function removeLevelFromOtherProfiles(level, exceptUsername, exceptEmail) {
+        if (level === Config.App) {
+            return
+        }
+
+        for (let i = 0; i < root.appModel.userProfiles.length; i++) {
+            let profile = root.appModel.userProfiles[i]
+            if (profile.username === exceptUsername && profile.email === exceptEmail) {
+                continue
+            }
+
+            let levelIndex = profile.levels.indexOf(level)
+            if (levelIndex !== -1) {
+                profile.levels.splice(levelIndex, 1)
+                profile.levels = profile.levels.slice(0)
+            }
+        }
+        
+        root.appModel.userProfiles = root.appModel.userProfiles.slice(0)
     }
 
-    function createUserProfile(username : string, password : string, email : string, level : int){
-        const existing = findProfile(username, email, level)
+    function createUserProfile(username : string, password : string, email : string, level){
+        let levelsArray = []
+        if (typeof level === 'number') {
+            levelsArray = [level]
+        } else if (Array.isArray(level)) {
+            levelsArray = level
+        }
+
+        const existing = findProfileByKey(username, email)
         if (existing) {
+            for (let i = 0; i < levelsArray.length; i++) {
+                let levelToAdd = levelsArray[i]
+                if (!existing.levels.includes(levelToAdd)) {
+                    if (levelToAdd !== Config.App) {
+                        removeLevelFromOtherProfiles(levelToAdd, username, email)
+                    }
+                    
+                    existing.levels.push(levelToAdd)
+                }
+            }
+            existing.levels = existing.levels.slice(0)
+            
+            if(levelsArray.includes(Config.App))
+                root.appModel.save()
+                
             return existing
         }
 
@@ -120,44 +156,51 @@ QtObject {
             return null
         }
 
+        for (let i = 0; i < levelsArray.length; i++) {
+            if (levelsArray[i] !== Config.App) {
+                removeLevelFromOtherProfiles(levelsArray[i], username, email)
+            }
+        }
+
         var userProfile = userProfileComponent.createObject(root, {
-            profileId: generateProfileId(),
             username: username,
             password: password,
             email: email,
-            level: level
+            levels: levelsArray
         })
 
         root.appModel.userProfiles.push(userProfile)
         root.appModel.userProfiles = root.appModel.userProfiles.slice(0)
 
-        if(level === Config.App)
+        if(levelsArray.includes(Config.App))
             root.appModel.save()
 
         return userProfile
     }
 
-    function remove(profileId) {
-        if(profileId === "")
+    function remove(username, email) {
+        if(username === "" || email === "")
             return
 
-        const idx = root.appModel.userProfiles.findIndex(profile => profile && profile.profileId === profileId)
+        const idx = root.appModel.userProfiles.findIndex(profile => profile && profile.username === username && profile.email === email)
         if (idx < 0)
             return
 
         const profile = root.appModel.userProfiles[idx]
 
-        if(profile.level !== Config.App){
-            var result = configController.setConfig(profile.level, "", "")
-            if (!result.success) {
-                console.error("[UserProfileController] Failed to update git config:", result.errorMessage)
-                return
+        for (let i = 0; i < profile.levels.length; i++) {
+            if(profile.levels[i] !== Config.App){
+                var result = configController.setConfig(profile.levels[i], "", "")
+                if (!result.success) {
+                    console.error("[UserProfileController] Failed to update git config:", result.errorMessage)
+                    return
+                }
             }
         }
 
         root.appModel.userProfiles = root.appModel.userProfiles.slice(0, idx).concat(root.appModel.userProfiles.slice(idx + 1))
 
-        let localProfile = root.appModel.userProfiles.find(p => p.level === Config.Local)
+        let localProfile = root.appModel.userProfiles.find(p => p.levels.includes(Config.Local))
         if(!localProfile){
             localProfile = root.appModel.userProfiles.find(p => p.isDefault === true)
         }
@@ -167,39 +210,64 @@ QtObject {
         root.appModel.save()
     }
 
-    function edit(profileId, newProfile) {
-        if(profileId === "")
+    function edit(oldUsername, oldEmail, newUsername, newEmail, setAsDefault) {
+        if(oldUsername === "" || oldEmail === "")
             return
 
-        const idx = root.appModel.userProfiles.findIndex(profile => profile && profile.profileId === profileId)
+        const idx = root.appModel.userProfiles.findIndex(profile => profile && profile.username === oldUsername && profile.email === oldEmail)
         if (idx < 0)
             return
 
-        if(newProfile.level !== Config.App){
-            var result = configController.setConfig(newProfile.level, newProfile.username, newProfile.email)
-            if (!result.success) {
-                console.error("[UserProfileController] Failed to update git config:", result.errorMessage)
+        const profile = root.appModel.userProfiles[idx]
+        
+        if (oldUsername !== newUsername || oldEmail !== newEmail) {
+            const existingProfile = findProfileByKey(newUsername, newEmail)
+            if (existingProfile && existingProfile !== profile) {
+                console.error("[UserProfileController] Cannot update profile: username/email combination already exists")
                 return
+            }
+            profile.username = newUsername
+            profile.email = newEmail
+        }
+
+        if (setAsDefault !== undefined && setAsDefault !== null) {
+            if (setAsDefault === true) {
+                for (let i = 0; i < root.appModel.userProfiles.length; i++) {
+                    root.appModel.userProfiles[i].isDefault = false
+                }
+                profile.isDefault = true
+            } else {
+                profile.isDefault = false
             }
         }
 
-        if(newProfile.isDefault)
-            for(let i = 0; i < root.appModel.userProfiles.length; ++i){
-                if(i !== idx)
-                    root.appModel.userProfiles[i].isDefault = false
+        for (let i = 0; i < profile.levels.length; i++) {
+            if(profile.levels[i] !== Config.App){
+                removeLevelFromOtherProfiles(profile.levels[i], newUsername, newEmail)
+                var result = configController.setConfig(profile.levels[i], newUsername, newEmail)
+                if (!result.success) {
+                    console.error("[UserProfileController] Failed to update git config:", result.errorMessage)
+                    return
+                }
             }
+        }
 
-        root.appModel.userProfiles[idx] = newProfile
         root.appModel.userProfiles = root.appModel.userProfiles.slice(0)
+
+        if(root.appModel.currentUserProfile && 
+           root.appModel.currentUserProfile.username === oldUsername && 
+           root.appModel.currentUserProfile.email === oldEmail){
+            root.appModel.currentUserProfile = profile
+        }
 
         root.appModel.save()
     }
 
-    function applyUserToRepository(profileId){
-        const profile = findProfileById(profileId)
+    function applyUserToRepository(username, email){
+        const profile = findProfileByKey(username, email)
         
         if (!profile) {
-            console.warn("Profile with ID '" + profileId + "' not found. Please select a valid profile.")
+            console.warn("Profile with username '" + username + "' and email '" + email + "' not found. Please select a valid profile.")
             return
         }
 

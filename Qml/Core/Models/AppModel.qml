@@ -48,8 +48,10 @@ Item {
         let profilesSerialized = []
         for(let i = 0 ; i < root.userProfiles.length ; ++i){
             let profile = root.userProfiles[i]
-            if(profile.level === Config.App || profile.isDefault === true) {
-                profile.level = Config.App
+            if(profile.levels.includes(Config.App) || profile.isDefault === true) {
+                if (!profile.levels.includes(Config.App)) {
+                    profile.levels.push(Config.App)
+                }
                 profilesSerialized.push(profile)
             }
         }
