@@ -22,7 +22,7 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: 350
+    width: 400
     height: parent.height / 2
     padding: 20
 
