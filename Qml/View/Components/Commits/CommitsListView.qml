@@ -53,7 +53,9 @@ Item {
     }
 
     function setContentY(y) {
+        commitsListView.syncScroll = true
         commitsListView.contentY = y
+        commitsListView.syncScroll = false
     }
 
     function positionViewAtIndex(index, mode) {
@@ -330,6 +332,7 @@ Item {
                                          || commitMouseArea.pressed
                                          || (root.hoveredCommitHash === commitData.hash)
                 property bool isSelected: root.selectedCommitHash === commitData.hash
+                property color branchColor: root.commitColor(commitData)
 
                 color: {
                     if (isSelected) {
@@ -373,10 +376,7 @@ Item {
                                 Layout.preferredHeight: root.commitItemHeight * 0.8
                                 Layout.alignment: Qt.AlignVCenter
                                 radius: 6
-
-                                color: {
-                                    return root.commitColor(commitData)
-                                }
+                                color: branchColor
                             }
 
                             Label {

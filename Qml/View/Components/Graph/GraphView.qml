@@ -69,7 +69,9 @@ Item {
     }
 
     function setContentY(y) {
+        graphFlickable.syncScroll = true
         graphFlickable.contentY = y
+        graphFlickable.syncScroll = false
     }
 
     /* Connections & Event Handlers
@@ -92,12 +94,11 @@ Item {
         let newHeight = Math.max(graphFlickable.height, root.commits.length * (root.commitItemHeight + (root.commitItemSpacing * 2)))
         graphCanvas.height = newHeight
         graphFlickable.contentHeight = newHeight
-        graphCanvas.requestPaint()
-
-        graphFlickable.contentWidth = Qt.binding(function() {
-            if (root.commits.length === 0)
-                return graphFlickable.width
-
+        
+        // Calculate contentWidth once instead of binding
+        if (root.commits.length === 0) {
+            graphFlickable.contentWidth = graphFlickable.width
+        } else {
             let maxCols = 0
             for (let i = 0; i < root.commits.length; i++) {
                 let commit = root.commits[i]
@@ -107,8 +108,10 @@ Item {
                 }
             }
             let minWidth = 40 + (maxCols + 1) * root.columnSpacing + 300
-            return Math.max(graphFlickable.width, minWidth)
-        })
+            graphFlickable.contentWidth = Math.max(graphFlickable.width, minWidth)
+        }
+        
+        graphCanvas.requestPaint()
     }
 
     onSelectedCommitHashChanged: graphCanvas.requestPaint()
@@ -255,19 +258,7 @@ Item {
                 anchors.fill: parent
                 clip: true
                 
-                contentWidth: {
-                    if (root.commits.length === 0) return width
-                    let maxCols = 0
-                    for (let i = 0; i < root.commits.length; i++) {
-                        let commit = root.commits[i]
-                        let pos = root.commitPositions[commit.hash]
-                        if (pos && pos.column > maxCols) {
-                            maxCols = pos.column
-                        }
-                    }
-                    let minWidth = 40 + (maxCols + 1) * root.columnSpacing + 300
-                    return Math.max(width, minWidth)
-                }
+                contentWidth: width  // Will be set in onCommitsChanged
                 contentHeight: Math.max(height, root.commits.length * (root.commitItemHeight + (root.commitItemSpacing * 2)))
                 boundsBehavior: Flickable.StopAtBounds
 

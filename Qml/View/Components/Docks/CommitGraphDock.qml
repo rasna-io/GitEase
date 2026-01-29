@@ -436,9 +436,7 @@ Item {
                     }
 
                     // Sync with commits list - use absolute position, not ratio
-                    commitsListView.syncScroll = true
                     commitsListView.setContentY(contentY)
-                    commitsListView.syncScroll = false
                 }
 
                 onGraphWidthResized: function(newGraphWidth, newBranchTagWidth) {
