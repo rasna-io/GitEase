@@ -584,16 +584,6 @@ Item {
     }
 
     Connections {
-        target: root
-        function onCommitsChanged() {
-            graphView.requestPaint()
-        }
-        function onSelectedCommitChanged() {
-            graphView.requestPaint()
-        }
-    }
-
-    Connections {
         target: appModel?.appSettings?.generalSettings ?? null
         function onShowAvatarChanged() {
             graphView.requestPaint()
@@ -880,6 +870,10 @@ Item {
     }
 
     onRepositoryControllerChanged: reloadAll();
+
+    onCommitsChanged : graphView.requestPaint()
+
+    onSelectedCommitHashChanged : graphView.requestPaint()
 
     onAllCommitsChanged: {
         root.allCommitsHash = {}
