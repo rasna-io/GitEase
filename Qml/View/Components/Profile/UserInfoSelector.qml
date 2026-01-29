@@ -76,7 +76,7 @@ Item {
                         font.pixelSize: 10
                         font.family: Style.fontTypes.roboto
                         font.weight: 300
-                        color: Style.colors.foreground
+                        color: Style.colors.hintText
                         verticalAlignment: Text.AlignVCenter
                         horizontalAlignment: Text.AlignHCenter
                     }
