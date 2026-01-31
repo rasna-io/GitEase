@@ -9,6 +9,7 @@ QtObject{
     property color accent:              "#074E96"
     property color accentHover:         "#0C64BE"
     property color error:               "#DC3545"
+    property color warning:             "#FFA500"
     property color disabledButton:      "#9D9D9D"
 
     property color navButton:           "#F3F3F3"
@@ -59,4 +60,27 @@ QtObject{
     // Header indicator
     property color resizeHandle:        "#E8E8E8"
     property color resizeHandlePressed: "#A0a0a0"
+
+    property color selectedText:            "#FFFFFF"
+    property color onAccentText:            "#FFFFFF"
+    property color onWarningText:           "#363636"
+    property color onSuccessText:           "#363636"
+    property color onErrorText:             "#363636"
+    property color onInfoText:              "#363636"
+    property color onBadgeText:             "#363636"
+    
+    property color defaultBackground:       "#FFF4D9"
+    property color defaultHoverBackground:  "#FFE8B3"
+    
+    property color iconOnSurface:           "#9D9D9D"
+    property color iconOnDefault:           "#8B6914"
+
+    property color userInfoSelectectedItem: "#44074E96"
+    
+    // User Profile Level Badge Colors (darker shades for white text readability in light mode)
+    property color levelSystemBadge:        "#2D8B3D"
+    property color levelGlobalBadge:        "#2D8B8B"
+    property color levelLocalBadge:         "#B89A2D"
+    property color levelWorktreeBadge:      "#B83D3D"
+    property color levelAppBadge:           "#3D3DB8"
 }

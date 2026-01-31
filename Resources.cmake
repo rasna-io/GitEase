@@ -23,6 +23,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/CommitController.qml
     Qml/Core/Controllers/StatusController.qml
     Qml/Core/Controllers/BundleController.qml
+    Qml/Core/Controllers/ConfigController.qml       # Git Config Controller
     Qml/Core/Controllers/UserProfileController.qml  # User Profile Controller
     Qml/Core/Controllers/ShellController.qml        # Shell Commands (rightClick Actions) Controller
 
@@ -42,14 +43,16 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/ProgressButton.qml
 
     # Base Components - Fundamental UI building blocks
-    Qml/View/Components/Base/PageHeader.qml              # Standard page header component
-    Qml/View/Components/Base/FormInputField.qml          # Form input field with validation
-    Qml/View/Components/Base/TabbedView.qml              # Tabbed interface component
-    Qml/View/Components/Base/RepositoryListItem.qml      # Repository list item display
-    Qml/View/Components/Base/EmptyStateView.qml          # Items Empty State View
+    Qml/View/Components/Base/PageHeader.qml                    # Standard page header component
+    Qml/View/Components/Base/FormInputField.qml                # Form input field with validation
+    Qml/View/Components/Base/TabbedView.qml                    # Tabbed interface component
+    Qml/View/Components/Base/RepositoryListItem.qml            # Repository list item display
+    Qml/View/Components/Base/EmptyStateView.qml                # Items Empty State View
 
     # Profile Components - User profile management
-    Qml/View/Components/Profile/SetupProfileForm.qml     # Profile setup/editing form
+    Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
+    Qml/View/Components/Profile/UserInfoSelector.qml           # Profile Selector
+    Qml/View/Components/Profile/UserInfoSelectorItem.qml       # Profile Selector Item
 
     # Repository Components - Git repository management
     Qml/View/Components/Repository/RecentRepositoriesList.qml   # Recent repositories list
@@ -110,7 +113,8 @@ set(RESOURCES_UICORE
 # Define Popups Resources
 set(RESOURCES_POPUPS
     # Popup components will be added here as they are created
-    Qml/View/Popups/UserAuthenticationPopup.qml       # enter user password popup
+    Qml/View/Popups/UserInfoSelectionPopup.qml      # Show users list with action
+    Qml/View/Popups/UserAuthenticationPopup.qml     # enter user password popup
     Qml/View/Popups/RepositorySelectorPopup.qml
     Qml/View/Popups/ItemSelectorPopup.qml           # Select Item popup
     Qml/View/Popups/SettingsPopup.qml

@@ -13,8 +13,9 @@ QtObject {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string username: ""
-    property string password: ""
+    property string username:  ""
+    property string password:  ""
 
-    property string    email: ""
+    property string email:     ""
+    property var    levels:    []
 }

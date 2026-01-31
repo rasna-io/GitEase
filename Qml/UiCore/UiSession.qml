@@ -11,16 +11,7 @@ QtObject {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property AppModel             appModel:             AppModel {
-        onProfilesLoaded: {
-            for(let i = 0; i < profiles.length; ++i) {
-                userProfileController.createUserProfile(
-                    profiles[i].username,
-                    profiles[i].password,
-                    profiles[i].email)
-            }
-        }
-    }
+    property AppModel             appModel:             AppModel {}
 
     property PageController       pageController:       PageController {
         appModel: root.appModel
@@ -34,6 +25,7 @@ QtObject {
             commitController.currentRepo = currentRepo
             statusController.currentRepo = currentRepo
             bundleController.currentRepo = currentRepo
+            configController.currentRepo = currentRepo
         }
     }
 
@@ -47,9 +39,11 @@ QtObject {
 
     property BundleController bundleController: BundleController {}
 
+    property ConfigController configController: ConfigController {}
+
     property UserProfileController userProfileController: UserProfileController {
-        userProfiles: root.appModel.userProfiles
-        currentUserProfile: root.appModel.currentUserProfile
+        appModel: root.appModel
+        configController: root.configController
     }
 
     property ShellController shellController: ShellController {

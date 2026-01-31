@@ -55,11 +55,18 @@ Rectangle {
                     popup.appModel = Qt.binding(function () {return uiSession.appModel})
                     popup.open()
                 }
+
                 onOpenSettingsRequested: {
                     let settingsPopup = root.uiSession?.popups?.settingsPopup
                     settingsPopup.appModel = root.uiSession.appModel
                     settingsPopup.fileIO = root.uiSession.appModel.fileIO
                     settingsPopup.open()
+                }
+
+                onOpenUserSelectionRequested: {
+                    let userInfoSelectionPopup = root.uiSession?.popups?.userInfoSelectionPopup
+                    userInfoSelectionPopup.userProfileController = root.uiSession.userProfileController
+                    userInfoSelectionPopup.open()
                 }
             }
 

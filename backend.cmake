@@ -12,12 +12,14 @@ set(SOURCES_BACKEND
     Src/Git/GitStatus.cpp
     Src/Git/GitRemote.cpp
     Src/Git/GitBundle.cpp
+    Src/Git/GitConfig.cpp
 
     Src/Git/Models/Remote.cpp
     Src/Git/Models/Commit.cpp
     Src/Git/Models/GitDiff.cpp
     Src/Git/Models/GitFileStatus.cpp
     Src/Git/Models/Repository.cpp
+    Src/Git/Models/Config.cpp
 )
 
 set(HEADERS_BACKEND
@@ -35,12 +37,14 @@ set(HEADERS_BACKEND
     Src/Git/GitStatus.h
     Src/Git/GitRemote.h
     Src/Git/GitBundle.h
+    Src/Git/GitConfig.h
 
     Src/Git/Models/Remote.h
     Src/Git/Models/Commit.h
     Src/Git/Models/GitDiff.h
     Src/Git/Models/GitFileStatus.h
     Src/Git/Models/Repository.h
+    Src/Git/Models/Config.h
 
 )
 
