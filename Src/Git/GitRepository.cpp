@@ -7,6 +7,8 @@
 #include <git2.h>
 
 
+
+
 GitRepository::GitRepository(QObject *parent)
     : IGitController{parent}
 {
@@ -88,46 +90,107 @@ GitResult GitRepository::open(const QString &path)
     return GitResult(true, path);
 }
 
-
+GitResult GitRepository::clone(const QString& url,
+                               const QString& localPath)
+{
+    return cloneInternal(url, localPath, new GitSshAuth());
+}
 
 GitResult GitRepository::clone(const QString& url,
                                const QString& localPath,
-                               const QString& authType,
-                               const QString& username,
-                               const QString& password,
-                               const QString& privateKeyPath)
+                               const QString& token)
 {
-    IGitAuth* auth = nullptr;
-
-    if (authType.toLower() == "ssh")
-        auth = new GitSshAuth(privateKeyPath, this);
-
-    else if (authType.toLower() == "https")
-        auth = new GitHttpsAuth(username, password, this);
-
-    else
-        return GitResult(false, {}, "Unknown auth type");
-
-    git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
-    opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
-
-    if (auth)
-        auth->apply(opts.fetch_opts);
-
-    git_repository* repo = nullptr;
-    int rc = git_clone(&repo,
-                       url.toUtf8().constData(),
-                       localPath.toUtf8().constData(),
-                       &opts);
-
-    if (rc != 0) {
-        const git_error* err = giterr_last();
-        return GitResult(false, {}, err ? err->message : "Clone failed");
-    }
-
-    git_repository_free(repo);
-    return GitResult(true, {}, "Clone success");
+    return cloneInternal(url, localPath, new GitHttpsAuth(token));
 }
+
+GitResult GitRepository::cloneInternal(const QString& url,
+                                       const QString& localPath,
+                                       IGitAuth* auth)
+{
+    if (url.isEmpty() || localPath.isEmpty())
+        return GitResult(false, {}, "URL and local path cannot be empty");
+
+    if (QDir(localPath).exists())
+        return GitResult(false, {}, "Directory already exists");
+
+
+    const QString safeUrl = url;
+    const QString safePath = localPath;
+
+    auto future = QtConcurrent::run([=]() -> QVariantMap {
+
+        std::unique_ptr<IGitAuth> authGuard(auth);
+
+        GitClonePayload payload {
+            this,
+            authGuard.get()
+        };
+
+
+        auto progressCallback = [](const git_indexer_progress *stats, void *p) -> int {
+            auto *data = static_cast<GitClonePayload*>(p);
+
+            if (stats->total_objects > 0) {
+                int percent = static_cast<int>(
+                    (100.0 * stats->received_objects) / stats->total_objects
+                    );
+
+                QMetaObject::invokeMethod(
+                    data->parentThread,
+                    "cloneProgress",
+                    Qt::QueuedConnection,
+                    Q_ARG(int, percent)
+                    );
+            }
+            return 0;
+        };
+
+
+        git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
+        opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
+
+        opts.fetch_opts.callbacks.transfer_progress = progressCallback;
+        opts.fetch_opts.callbacks.payload = &payload;
+
+        authGuard->apply(opts.fetch_opts);
+
+        git_repository* repo = nullptr;
+        int result = git_clone(
+            &repo,
+            safeUrl.toUtf8().constData(),
+            safePath.toUtf8().constData(),
+            &opts
+            );
+
+        if (result != 0) {
+            const git_error *err = git_error_last();
+            QString msg = err ? err->message : "Unknown git error";
+            return QVariantMap { {"success", false}, {"error", msg} };
+        }
+
+        git_repository_free(repo);
+        return QVariantMap { {"success", true}, {"data", safePath} };
+    });
+
+    auto* watcher = new QFutureWatcher<QVariantMap>(this);
+
+    connect(watcher, &QFutureWatcher<QVariantMap>::finished,
+            this, [=]() {
+
+                QVariantMap result = watcher->result();
+
+                if (result["success"].toBool())
+                    m_currentRepoPath = safePath;
+
+                emit cloneFinished(result);
+                watcher->deleteLater();
+            });
+
+    watcher->setFuture(future);
+
+    return GitResult(true, {}, "Clone started");
+}
+
 
 GitResult GitRepository::close()
 {
