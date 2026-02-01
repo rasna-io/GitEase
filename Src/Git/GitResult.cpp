@@ -15,8 +15,6 @@ GitResult::GitResult(bool success, const QVariant &data, const QString &errorMes
     } else if (!m_success && !m_errorMessage.isEmpty()) {
         m_errorMessage.append(" | " + GitUtils::getLastError());
     }
-
-    qDebug()<< success << data << errorMessage;
 }
 
 bool GitResult::success() const
