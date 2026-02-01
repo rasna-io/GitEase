@@ -33,7 +33,7 @@ private:
      */
     GitResult cloneInternal(const QString& url,
                             const QString& localPath,
-                            IGitAuth* auth);
+                            std::unique_ptr<IGitAuth> auth);
 
 public:
 

@@ -93,19 +93,19 @@ GitResult GitRepository::open(const QString &path)
 GitResult GitRepository::clone(const QString& url,
                                const QString& localPath)
 {
-    return cloneInternal(url, localPath, new GitSshAuth());
+    return cloneInternal(url, localPath, std::make_unique<GitSshAuth>());
 }
 
 GitResult GitRepository::clone(const QString& url,
                                const QString& localPath,
                                const QString& token)
 {
-    return cloneInternal(url, localPath, new GitHttpsAuth(token));
+    return cloneInternal(url, localPath, std::make_unique<GitHttpsAuth>(token));
 }
 
 GitResult GitRepository::cloneInternal(const QString& url,
                                        const QString& localPath,
-                                       IGitAuth* auth)
+                                       std::unique_ptr<IGitAuth> auth)
 {
     if (url.isEmpty() || localPath.isEmpty())
         return GitResult(false, {}, "URL and local path cannot be empty");
@@ -113,19 +113,19 @@ GitResult GitRepository::cloneInternal(const QString& url,
     if (QDir(localPath).exists())
         return GitResult(false, {}, "Directory already exists");
 
-
     const QString safeUrl = url;
     const QString safePath = localPath;
 
-    auto future = QtConcurrent::run([=]() -> QVariantMap {
-
-        std::unique_ptr<IGitAuth> authGuard(auth);
+    auto future = QtConcurrent::run(
+        [this,
+         safeUrl,
+         safePath,
+         auth = std::move(auth)]() mutable -> QVariantMap {
 
         GitClonePayload payload {
             this,
-            authGuard.get()
+            auth.get()
         };
-
 
         auto progressCallback = [](const git_indexer_progress *stats, void *p) -> int {
             auto *data = static_cast<GitClonePayload*>(p);
@@ -145,14 +145,13 @@ GitResult GitRepository::cloneInternal(const QString& url,
             return 0;
         };
 
-
         git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
         opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
 
         opts.fetch_opts.callbacks.transfer_progress = progressCallback;
         opts.fetch_opts.callbacks.payload = &payload;
 
-        authGuard->apply(opts.fetch_opts);
+        auth->apply(opts.fetch_opts);
 
         git_repository* repo = nullptr;
         int result = git_clone(
@@ -190,7 +189,6 @@ GitResult GitRepository::cloneInternal(const QString& url,
 
     return GitResult(true, {}, "Clone started");
 }
-
 
 GitResult GitRepository::close()
 {
