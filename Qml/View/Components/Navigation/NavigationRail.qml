@@ -34,6 +34,8 @@ Rectangle {
 
     signal openSettingsRequested()
 
+    signal openUserSelectionRequested()
+
 
     // HoverHandler reliably tracks hover even with complex children.
     HoverHandler {
@@ -231,7 +233,7 @@ Rectangle {
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    text: root.userProfileController?.currentUserProfile?.username ?? "username"
+                    text: root.appModel?.currentUserProfile?.username ?? "username"
                     visible: root.expanded
                     font.family: Style.fontTypes.roboto
                     font.weight: 400
@@ -254,7 +256,7 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
                 hoverEnabled: true
 
-                // onClicked: // TODO
+                onClicked: root.openUserSelectionRequested()
                 onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
                 onExited: parent.color = "transparent"
             }

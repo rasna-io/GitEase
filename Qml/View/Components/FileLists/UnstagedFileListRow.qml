@@ -46,23 +46,25 @@ FileListRow {
             }
 
             ActionIconButton {
-                role: ActionIconButton.Role.Stage
                 iconText: Style.icons.plus
                 tooltip: "Stage"
+                textColor: Style.theme == Style.Light ?
+                            Qt.darker(Style.colors.addedFile, 1.5) :
+                            Qt.lighter(Style.colors.addedFile, 1.5)
                 onClicked: root.stageRequested(root.filePath)
             }
 
             ActionIconButton {
-                role: ActionIconButton.Role.Discard
                 iconText: Style.icons.trash
                 tooltip: "Discard"
+                textColor: Style.colors.error
                 onClicked: root.discardRequested(root.filePath)
             }
 
             ActionIconButton {
-                role: ActionIconButton.Role.Open
                 iconText: Style.icons.file
                 tooltip: "Open"
+                textColor: Style.colors.secondaryText
                 onClicked: root.openRequested(root.filePath)
             }
         }

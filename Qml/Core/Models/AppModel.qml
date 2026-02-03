@@ -35,7 +35,6 @@ Item {
 
     /* Signals
      * ****************************************************************************************/
-    signal profilesLoaded(var profiles)
 
     /* Functions
      * ****************************************************************************************/
@@ -46,9 +45,20 @@ Item {
     function save() {
         console.log("[Config] Saving configuration to:", fileIO.configFilePath + "/" + root.fileName);
 
+        let profilesSerialized = []
+        for(let i = 0 ; i < root.userProfiles.length ; ++i){
+            let profile = root.userProfiles[i]
+            if(profile.levels.includes(Config.App)) {
+                if (!profile.levels.includes(Config.App)) {
+                    profile.levels.push(Config.App)
+                }
+                profilesSerialized.push(profile)
+            }
+        }
+
         let config = {
             recentRepositories: root.recentRepositories,
-            userProfiles: root.userProfiles,
+            userProfiles: profilesSerialized,
             settings: root.appSettings.serialize()
         }
 
@@ -83,8 +93,6 @@ Item {
 
         root.recentRepositories = jsonContent.recentRepositories
         root.appSettings.deserialize(jsonContent.settings)
-
-        root.profilesLoaded(jsonContent.userProfiles)
 
         console.info("[Config] Configuration successfully loaded.");
     }
