@@ -4,6 +4,7 @@
 #include <git2/types.h>
 #include "GitResult.h"
 #include "IGitController.h"
+#include <QQmlEngine>
 
 /**
  * \brief Structure to hold stash information

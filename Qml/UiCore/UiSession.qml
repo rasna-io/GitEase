@@ -2,6 +2,7 @@ import QtQuick
 
 import GitEase
 
+import "../Core/Controllers"
 /*! ***********************************************************************************************
  * UiSession
  * Main UI session manager that coordinates application controllers and models
@@ -26,6 +27,7 @@ QtObject {
             statusController.currentRepo = currentRepo
             bundleController.currentRepo = currentRepo
             configController.currentRepo = currentRepo
+            stashController.currentRepo = currentRepo
         }
     }
 
@@ -40,6 +42,8 @@ QtObject {
     property BundleController bundleController: BundleController {}
 
     property ConfigController configController: ConfigController {}
+
+    property StashController  stashController : StashController  {}
 
     property UserProfileController userProfileController: UserProfileController {
         appModel: root.appModel
