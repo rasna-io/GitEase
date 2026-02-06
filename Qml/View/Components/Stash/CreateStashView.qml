@@ -99,14 +99,21 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
+
                 }
             }
 
-            onClicked: {
-                let message = stashMessageField.text.trim()
-                let result = stashController.save(message)
-                if (result.success) {
-                    stashMessageField.text = ""
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+
+                onClicked: {
+                    let message = stashMessageField.text.trim()
+                    let result = stashController.save(message)
+                    if (result.success) {
+                        stashMessageField.text = ""
+                    }
                 }
             }
         }

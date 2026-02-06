@@ -74,6 +74,8 @@ Item {
             Layout.fillHeight: true
             clip: true
 
+            rightPadding: 14
+
             ColumnLayout {
                 width: parent.width
                 spacing: 8
@@ -126,7 +128,7 @@ Item {
 
                                     Text {
                                         text: qsTr("Apply")
-                                        color: Style.colors.link || "#3b82f6"   // fallback blue
+                                        color: Style.colors.link || "#3b82f6"
                                         font.family: Style.fontTypes.roboto
                                         font.pixelSize: 7
                                         font.weight: Font.Medium
@@ -140,9 +142,6 @@ Item {
                                                 let result = stashController.apply(modelData.index, true)
                                                 if (result.success) {
                                                     loadStashes()
-                                                    root.stashApplied()
-                                                } else {
-                                                    console.error("Failed to apply stash:", result.errorMessage)
                                                 }
                                             }
 
@@ -168,9 +167,6 @@ Item {
                                                 let result = stashController.remove(modelData.index)
                                                 if (result.success) {
                                                     loadStashes()
-                                                    root.stashRemoved()
-                                                } else {
-                                                    console.error("Failed to drop stash:", result.errorMessage)
                                                 }
                                             }
 

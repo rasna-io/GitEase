@@ -93,7 +93,20 @@ Rectangle {
                     checked: root.currentIndex === 0
                     ButtonGroup.group: headerButtonGroup
 
-                    onClicked: root.currentIndex = 0
+                    background: Rectangle {
+                        radius: viewControl.radius
+                        color: createBtn.checked ? Style.colors.primaryBackground : "transparent"
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: root.currentIndex = 0
+                    }
+
+
 
                     contentItem: Row {
                         spacing: 8
@@ -114,11 +127,6 @@ Rectangle {
                             color: Style.colors.foreground
                         }
                     }
-
-                    background: Rectangle {
-                        radius: viewControl.radius
-                        color: createBtn.checked ? Style.colors.primaryBackground : "transparent"
-                    }
                 }
 
                 Button {
@@ -134,7 +142,20 @@ Rectangle {
                     checked: root.currentIndex === 1
                     ButtonGroup.group: headerButtonGroup
 
-                    onClicked: root.currentIndex = 1
+                    background: Rectangle {
+                        radius: viewControl.radius
+                        color: manageBtn.checked ? Style.colors.primaryBackground : "transparent"
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: root.currentIndex = 1
+                    }
+
+
 
                     contentItem: Row {
                         spacing: 8
@@ -154,11 +175,6 @@ Rectangle {
                             font.pixelSize: Style.appFont.h3Pt
                             color: Style.colors.foreground
                         }
-                    }
-
-                    background: Rectangle {
-                        radius: viewControl.radius
-                        color: manageBtn.checked ? Style.colors.primaryBackground : "transparent"
                     }
                 }
             }

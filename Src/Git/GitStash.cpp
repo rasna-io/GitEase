@@ -62,6 +62,8 @@ GitResult GitStash::list()
 
             QVariantMap stash;
 
+            stash["index"] = static_cast<int>(index);
+
             stash["message"] = message
                                    ? QString::fromUtf8(message).trimmed()
                                    : QStringLiteral("WIP");
