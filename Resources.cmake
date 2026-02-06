@@ -48,6 +48,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/TabbedView.qml                    # Tabbed interface component
     Qml/View/Components/Base/RepositoryListItem.qml            # Repository list item display
     Qml/View/Components/Base/EmptyStateView.qml                # Items Empty State View
+    Qml/View/Components/Base/UtilitiesCard.qml
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
@@ -99,6 +100,8 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/ImportExport/ImportView.qml
     Qml/View/Components/ImportExport/ExportView.qml
 
+    Qml/View/Components/Remotes/RemoteView.qml
+
     # DockPanel Docks
     Qml/View/Components/Docks/ImportExportBundleDock.qml       # Import Export git Bundle Dock
 )
@@ -119,6 +122,8 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/ItemSelectorPopup.qml           # Select Item popup
     Qml/View/Popups/SettingsPopup.qml
     Qml/View/Popups/IPopup.qml
+    Qml/View/Popups/AddEditRemotePopup.qml
+
 )
 
 

@@ -49,6 +49,20 @@ public:
      */
     Q_INVOKABLE GitResult removeRemote(const QString &name);
 
+
+    /**
+    * @brief Updates an existing remote's configuration.
+    * * This method handles both renaming the remote and updating its URL.
+    * If newName is identical to oldName or empty, the rename step is skipped.
+    * * @param oldName The current identifier of the remote (e.g., "origin").
+    * @param newName The desired new name.
+    * @param newUrl  The new repository URL.
+    * @return GitResult indicating success or a detailed error message on failure.
+    */
+    Q_INVOKABLE GitResult editRemote(const QString &oldName,
+                                     const QString &newName,
+                                     const QString &newUrl);
+
     /**
     * \brief Retrieves the name of the tracked upstream branch.
     * \param localBranchName The name of the local branch to check.
