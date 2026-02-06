@@ -12,58 +12,30 @@ import GitEase
  * Import and Export git bundle
  * ************************************************************************************************/
 
-Rectangle {
+UtilitiesCard {
     id: root
 
-    property BranchController branchController: null
-    property BundleController bundleController: null
 
     /* Property Declarations
      * ****************************************************************************************/
     property int currentIndex: 0
 
+    property BranchController branchController: null
+
+    property BundleController bundleController: null
+
     /* Object Properties
      * ****************************************************************************************/
-    color: Style.colors.primaryBackground
-    radius: 7
-    border.width: 1
-    border.color: Style.colors.primaryBorder
 
-    /* Signals
-     * ****************************************************************************************/
+    title: "Export / Import Project"
+    icon: Style.icons.arowLeftRight
 
-    /* Children
-     * ****************************************************************************************/
-    ButtonGroup {
-        id: headerButtonGroup
-        exclusive: true
-    }
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 16
-        spacing: 16
+    content: ColumnLayout {
 
-        // Header
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 20
-            spacing: 10
-
-            Label {
-                text: Style.icons.arowLeftRight
-                color: Style.colors.accent
-                font.family: Style.fontTypes.font6Pro
-                font.pixelSize: 15
-            }
-
-            Label {
-                text: "Export / Import Project"
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
-                font.bold: true
-            }
+        ButtonGroup {
+            id: headerButtonGroup
+            exclusive: true
         }
 
         // View Control

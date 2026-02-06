@@ -30,6 +30,7 @@ QtObject{
     property string plus:              "\uf067" // plus
     property string minus:             "\uf068" // minus
     property string trash:             "\uf1f8" // trash
+    property string edit:              "\uf044"
     property string file:              "\uf15b" // file
     property string archive:           "\uf187" // archive
     property string penToSquare:       "\uf044" // edit

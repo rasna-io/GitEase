@@ -20,4 +20,6 @@ Item {
     property UserAuthenticationPopup    userAuthenticationPopup:    UserAuthenticationPopup {}
 
     property UserInfoSelectionPopup     userInfoSelectionPopup:     UserInfoSelectionPopup {}
+
+    property AddEditRemotePopup         addEditRemotePopup:         AddEditRemotePopup {}
 }

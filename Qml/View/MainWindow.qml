@@ -126,6 +126,9 @@ Rectangle {
                         if (item.hasOwnProperty("userAuthenticationPopup")) {
                             item.userAuthenticationPopup = Qt.binding(function() { return root.uiSession?.popups?.userAuthenticationPopup })
                         }
+                        if (item.hasOwnProperty("uiSessionPopups")) {
+                            item.uiSessionPopups = Qt.binding(function() { return root.uiSession?.popups })
+                        }
                     }
 
                     onStatusChanged: {

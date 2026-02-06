@@ -20,6 +20,8 @@ Item {
 
     property BranchController branchController: null
     property BundleController bundleController: null
+    property RemoteController remoteController: null
+    property UiSessionPopups  uiSessionPopups: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -27,39 +29,42 @@ Item {
 
     /* Children
      * ****************************************************************************************/
-    RowLayout {
+
+    GridLayout {
         anchors.fill: parent
-        anchors.margins: 5
-        anchors.topMargin: 5
-        spacing: 12
+        columns: 3
+        rows: 2
+        columnSpacing: 5
+        rowSpacing: 5
 
-        // Left Top: Import Export bundle
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: 12
+        ImportExportBundleDock {
+            Layout.preferredHeight: 370
+            Layout.preferredWidth: 261
+            Layout.fillWidth: false
 
-            Rectangle {
-                Layout.preferredHeight: 370
-                Layout.preferredWidth: 261
-                color: "transparent"
+            branchController: root.branchController
+            bundleController: root.bundleController
+        }
 
-                ImportExportBundleDock {
-                    anchors.fill: parent
+        RemoteView {
+            Layout.preferredHeight: 370
+            Layout.preferredWidth: 310
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignTop
 
-                    branchController: root.branchController
-                    bundleController: root.bundleController
-                }
-            }
+            remoteController: root.remoteController
+            addEditRemotePopup: uiSessionPopups.addEditRemotePopup
+        }
 
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-            }
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 370
         }
 
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.columnSpan: 3
         }
     }
 }
