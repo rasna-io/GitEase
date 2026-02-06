@@ -6,7 +6,6 @@ import GitEase_Style
 import GitEase_Style_Impl
 import GitEase
 
-import "../View/Components/Docks"
 /*! ***********************************************************************************************
  * UtilitiesPage
  * Utilities Page : import export git bundle and etc.
@@ -67,25 +66,21 @@ Item {
             addBranchPopup: uiSessionPopups.addBranchPopup
         }
 
+        StashManagerDock {
+            Layout.preferredHeight: 370
+            Layout.preferredWidth: 261
+            Layout.fillWidth: false
+
+            stashController: root.stashController
+        }
+
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 370
-            Rectangle {
-                Layout.preferredHeight: 370
-                Layout.preferredWidth: 261
-                color: "transparent"
+            Layout.preferredWidth: 261
+            Layout.fillWidth: false
 
-                StashManagerDock {
-                    anchors.fill: parent
-
-                    stashController: root.stashController
-                }
-            }
-
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-            }
+            stashController: root.stashController
         }
 
         Item {

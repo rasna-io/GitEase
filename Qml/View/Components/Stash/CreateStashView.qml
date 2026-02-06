@@ -29,8 +29,8 @@ Item {
      * ****************************************************************************************/
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 16
-        spacing: 16
+        // anchors.margins: 16
+        spacing: 10
 
         Text {
             text: "Create a new stash to save your current changes"
@@ -63,6 +63,10 @@ Item {
                 border.width: parent.activeFocus ? 2 : 1
                 border.color: parent.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
             }
+        }
+
+        Item {
+            Layout.fillHeight: true
         }
 
         Button {
