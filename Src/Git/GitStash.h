@@ -19,6 +19,14 @@ struct StashEntry
     int index;             ///< Stash index (0 = most recent)
 };
 
+// struct StashPayload {
+//     QList<StashEntry> *stashes;
+// };
+struct StashPayload {
+    QVariantList* list;
+    git_repository* repo;
+};
+
 class GitStash : public IGitController
 {
     Q_OBJECT
