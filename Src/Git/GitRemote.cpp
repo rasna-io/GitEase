@@ -253,6 +253,54 @@ GitResult GitRemote::removeRemote(const QString &name)
     return GitResult(true, name);
 }
 
+GitResult GitRemote::editRemote(const QString &oldName, const QString &newName, const QString &newUrl)
+{
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "Repository context is invalid or not initialized.");
+    }
+
+    if (oldName.isEmpty()) {
+        return GitResult(false, QVariant(), "Current remote name must be provided for the update operation.");
+    }
+
+    int result = GIT_OK;
+    QString activeRemoteName = oldName;
+
+    // Handle Remote Renaming
+    if (!newName.isEmpty() && newName != oldName) {
+        git_strarray problems = {0};
+        result = git_remote_rename(&problems, m_currentRepo->repo,
+                                   oldName.toUtf8().constData(),
+                                   newName.toUtf8().constData());
+
+        git_strarray_free(&problems);
+
+        if (result != GIT_OK) {
+            const git_error* err = giterr_last();
+            return GitResult(false, QVariant(),
+                             QString("Failed to rename remote: %1").arg(err ? err->message : "Internal Git error"));
+        }
+
+        // Update the active name for the subsequent URL update step
+        activeRemoteName = newName;
+    }
+
+    // Handle URL Update
+    if (!newUrl.isEmpty()) {
+        result = git_remote_set_url(m_currentRepo->repo,
+                                    activeRemoteName.toUtf8().constData(),
+                                    newUrl.toUtf8().constData());
+
+        if (result != GIT_OK) {
+            const git_error* err = giterr_last();
+            return GitResult(false, QVariant(),
+                             QString("Failed to update remote URL: %1").arg(err ? err->message : "Internal Git error"));
+        }
+    }
+    
+    return GitResult(true, activeRemoteName, "Remote configuration updated successfully.");
+}
+
 GitResult GitRemote::getUpstreamName(const QString &localBranchName)
 {
     if (!m_currentRepo || !m_currentRepo->repo) {
