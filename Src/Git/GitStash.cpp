@@ -1,13 +1,5 @@
 #include "GitStash.h"
 
-#include <git2/stash.h>
-#include <git2/commit.h>
-#include <git2/signature.h>
-#include <git2/refs.h>
-#include <git2/errors.h>
-#include <QDateTime>
-#include <QList>
-
 GitStash::GitStash(QObject *parent)
     : IGitController{parent}
 {}
@@ -56,25 +48,37 @@ GitResult GitStash::list()
 
     QVariantList resultList;
 
+
+    ListPayload payload { m_currentRepo->repo, &resultList };
+
     int result = git_stash_foreach(
         m_currentRepo->repo,
         [](size_t index,
            const char* message,
            const git_oid* stash_id,
-           void* payload) -> int
+           void* data) -> int
         {
-            auto* list = static_cast<QVariantList*>(payload);
+            auto* payload = static_cast<ListPayload*>(data);
 
-            QVariantMap m;
-            m["index"] = static_cast<int>(index);
-            m["message"] = message
-                               ? QString::fromUtf8(message).trimmed()
-                               : QStringLiteral("WIP");
+            QVariantMap stash;
 
-            list->append(m);
+            stash["message"] = message
+                                   ? QString::fromUtf8(message).trimmed()
+                                   : QStringLiteral("WIP");
+
+
+            git_commit* commit = nullptr;
+            if (git_commit_lookup(&commit, payload->repo, stash_id) == GIT_OK) {
+                const git_signature* author = git_commit_author(commit);
+                if (author)
+                    stash["dateTime"] = QDateTime::fromSecsSinceEpoch(author->when.time);
+                git_commit_free(commit);
+            }
+
+            payload->list->append(stash);
             return 0;
         },
-        &resultList
+        &payload
         );
 
     if (result != GIT_OK) {
@@ -145,15 +149,4 @@ GitResult GitStash::pop(int index, bool reinstateIndex)
     }
 
     return GitResult(true, QVariant(), "Stash popped successfully.");
-}
-
-QString GitStash::oidToString(const git_oid *oid)
-{
-    if (!oid) return QString();
-
-    char hash[GIT_OID_HEXSZ + 1];
-    git_oid_fmt(hash, oid);
-    hash[GIT_OID_HEXSZ] = '\0';
-
-    return QString(hash);
 }

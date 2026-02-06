@@ -2,30 +2,15 @@
 
 #include <QObject>
 #include <git2/types.h>
+#include <QQmlEngine>
+#include <git2/stash.h>
+#include <git2/commit.h>
+#include <git2/signature.h>
+#include <git2/errors.h>
+#include <QDateTime>
+
 #include "GitResult.h"
 #include "IGitController.h"
-#include <QQmlEngine>
-
-/**
- * \brief Structure to hold stash information
- */
-struct StashEntry
-{
-    QString message;        ///< Stash message
-    QString hash;          ///< Stash commit hash
-    QString author;        ///< Author name
-    QString email;         ///< Author email
-    QDateTime dateTime;    ///< When stash was created
-    int index;             ///< Stash index (0 = most recent)
-};
-
-// struct StashPayload {
-//     QList<StashEntry> *stashes;
-// };
-struct StashPayload {
-    QVariantList* list;
-    git_repository* repo;
-};
 
 class GitStash : public IGitController
 {
@@ -73,10 +58,9 @@ public:
     Q_INVOKABLE GitResult pop(int index = 0, bool reinstateIndex = true);
 
 private:
-    /**
-     * \brief Convert git_oid to QString hash
-     * \param oid Git OID
-     * \return QString hash
-     */
-    QString oidToString(const git_oid *oid);
+    // Payload passed to the foreach callback
+    struct ListPayload {
+        git_repository* repo;
+        QVariantList* list;
+    };
 };
