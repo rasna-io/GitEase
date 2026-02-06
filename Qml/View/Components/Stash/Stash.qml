@@ -7,7 +7,7 @@ import GitEase_Style_Impl
 import GitEase_Style
 import GitEase
 
-import "../Stash"
+// import "../Stash"
 
 /*! ***********************************************************************************************
  * StashManager
@@ -22,7 +22,6 @@ Rectangle {
     /* Property Declarations
      * ****************************************************************************************/
     property int currentIndex: 0
-    property var stashes: []
 
     /* Object Properties
      * ****************************************************************************************/
@@ -173,51 +172,12 @@ Rectangle {
 
             CreateStashView {
                 stashController: root.stashController
-
-                onStashCreated: {
-                    root.refreshStashes()
-                    successDialog.text = "Stash created successfully!"
-                    successDialog.open()
-                }
             }
 
             ManageStashesView {
                 stashController: root.stashController
-                stashes: root.stashes
-
-                onRefreshRequested: {
-                    root.refreshStashes()
-                }
-
-                onStashApplied: {
-                    successDialog.text = "Stash applied successfully!"
-                    successDialog.open()
-                }
-
-                onStashPopped: {
-                    successDialog.text = "Stash popped successfully!"
-                    successDialog.open()
-                }
-
-                onStashRemoved: {
-                    successDialog.text = "Stash removed successfully!"
-                    successDialog.open()
-                }
             }
         }
-    }
-
-    /* Functions
-     * ****************************************************************************************/
-    function refreshStashes() {
-        let result = stashController.list()
-        if (result.success) {
-            stashes = result.data
-        }
-    }
-
-    Component.onCompleted: {
-        refreshStashes()
     }
 }
 
