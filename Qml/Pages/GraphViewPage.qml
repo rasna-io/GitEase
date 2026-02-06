@@ -492,6 +492,7 @@ Item {
                 appModel: root.appModel
                 branchController: root.branchController
                 commitController: root.commitController
+                statusController: root.statusController
 
                 onCommitClicked: function(commitId) {
                     root.selectedCommit = commitId

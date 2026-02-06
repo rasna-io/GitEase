@@ -22,6 +22,8 @@ Item {
 
     property BranchController branchController: null
 
+    property StatusController statusController: null
+
     property CommitController commitController: null
 
     property RepositoryController repositoryController: null
@@ -33,6 +35,7 @@ Item {
     property var commits: []
     property var selectedCommit: null
     property var allCommitsHash: ({})
+    property string headHash: ""
 
     // navigation state
     // navigationRule: one of ["Author Email", "Author", "Parent 1", "Branch"]
@@ -1094,7 +1097,7 @@ Item {
                                     for (var hbi = 0; hbi < headBranchesForThisCommit.length; hbi++) {
                                         var headBranchName = headBranchesForThisCommit[hbi];
                                         allLabels.push({
-                                            text: headBranchName + " (HEAD)",
+                                            text: headBranchName, //+ " (HEAD)",
                                             color: laneLabelColor
                                         });
                                     }
@@ -1195,10 +1198,13 @@ Item {
                                         }
                                     }
                                     var isSelected = root.selectedCommit && root.selectedCommit.hash === commit3.hash;
-
+                                    let isHead = commit3.hash === root.headHash
                                     // Highlight selected commit row
                                     if (isSelected) {
                                         ctx.fillStyle = "#6088B2DF";
+                                        ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + (root.commitItemSpacing * 2));
+                                    } else if (isHead) {
+                                        ctx.fillStyle = "#40FFA500";
                                         ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + (root.commitItemSpacing * 2));
                                     }
 
@@ -1273,18 +1279,22 @@ Item {
                     }
 
                     delegate: Rectangle {
+                        id: commitItem
                         width: ListView.view.width
                         height: root.commitItemHeight + commitItemSpacing + commitItemSpacing
 
                         property var commitData: modelData
                         property bool isHovered: false
                         property bool isSelected: root.selectedCommit && root.selectedCommit.hash === commitData.hash
+                        property bool isHead: modelData.hash === root.headHash
 
                         color: {
                             if (isSelected) {
                                 return "#6088B2DF";
                             } else if (isHovered) {
                                 return Style.colors.hoverTitle;
+                            } else if (isHead) {
+                                return "#40FFA500";
                             } else {
                                 return Style.colors.primaryBackground;
                             }
@@ -1336,7 +1346,7 @@ Item {
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
                                         font.family: Style.fontTypes.roboto
-                                        font.weight: 400
+                                        font.weight: commitItem.isHead ? 900 : 400
                                         font.letterSpacing: 0.2
                                         Layout.fillWidth: true
                                         Layout.leftMargin: 6
@@ -1667,6 +1677,7 @@ Item {
         hasMoreCommits = true
         isLoadingMore = false
 
+        root.headHash = statusController.getHeadHash()
         let allBranches = branchController.getBranches();
         let commitRes = commitController.getCommits(pageSize, commitsOffset);
 

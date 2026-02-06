@@ -130,6 +130,36 @@ GitResult GitStatus::status()
     return GitResult(true, QVariant::fromValue(fileInfos));
 }
 
+QString GitStatus::getHeadHash()
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return QString();
+
+    git_reference *head_ref = nullptr;
+    // Get the HEAD reference (points to a branch or a specific commit)
+    int error = git_repository_head(&head_ref, m_currentRepo->repo);
+
+    if (error != GIT_OK) {
+        return QString();
+    }
+
+    // Get the OID (Object ID) from the reference
+    const git_oid *oid = git_reference_target(head_ref);
+    if (!oid) {
+        git_reference_free(head_ref);
+        return QString();
+    }
+
+    // Convert OID to hex string
+    char oid_str[GIT_OID_HEXSZ + 1];
+    git_oid_tostr(oid_str, sizeof(oid_str), oid);
+
+    QString hash = QString::fromLatin1(oid_str);
+
+    git_reference_free(head_ref);
+    return hash;
+}
+
 GitResult GitStatus::getStagedFiles()
 {
     GitResult statusResult = status();
