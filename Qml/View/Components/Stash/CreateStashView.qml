@@ -65,6 +65,42 @@ Item {
             }
         }
 
+        CheckBox {
+            id: keepIndexCheckBox
+            Layout.fillWidth: true
+            text: "Keep staged changes in index"
+            font.family: Style.fontTypes.roboto
+            font.pixelSize: 12
+            checked: false
+
+            indicator: Rectangle {
+                implicitWidth: 16
+                implicitHeight: 16
+                x: keepIndexCheckBox.leftPadding
+                y: parent.height / 2 - height / 2
+                radius: 3
+                border.color: keepIndexCheckBox.down ? Style.colors.accent : Style.colors.primaryBorder
+
+                Rectangle {
+                    width: 8
+                    height: 8
+                    x: 4
+                    y: 4
+                    radius: 2
+                    color: Style.colors.accent
+                    visible: keepIndexCheckBox.checked
+                }
+            }
+
+            contentItem: Text {
+                text: keepIndexCheckBox.text
+                font: keepIndexCheckBox.font
+                color: Style.colors.foreground
+                verticalAlignment: Text.AlignVCenter
+                leftPadding: keepIndexCheckBox.indicator.width + keepIndexCheckBox.spacing
+            }
+        }
+
         Item {
             Layout.fillHeight: true
         }
@@ -114,9 +150,11 @@ Item {
 
                 onClicked: {
                     let message = stashMessageField.text.trim()
-                    let result = stashController.save(message)
+                    let keepIndex = keepIndexCheckBox.checked
+                    let result = stashController.save(message, keepIndex)
                     if (result.success) {
                         stashMessageField.text = ""
+                        keepIndexCheckBox.checked = false
                     }
                 }
             }

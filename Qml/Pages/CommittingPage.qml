@@ -30,6 +30,8 @@ Item {
 
     property UserProfileController   userProfileController:   null
 
+    property StashController          stashController:        null
+
     property UserAuthenticationPopup userAuthenticationPopup: null
 
     property string                  selectedFilePath:        ""
@@ -336,16 +338,15 @@ Item {
                         }
 
                         onStashAllRequested: function(section) {
-                            if (section === "unstaged") {
-                                fileListsPanel.unstagedChanges = []
-                            }
+                            let message = section === "unstaged" ? "Stash unstaged changes" : "Stash staged changes";
+                            let keepIndex = section === "staged";
+                            let result = stashController.save(message, keepIndex);
 
-                            if (section === "staged") {
-                                fileListsPanel.stagedChanges = []
+                            if (result.success) {
+                                root.update();
+                            } else {
+                                errorMessageLabel.text = result.errorMessage ?? "Stash failed";
                             }
-
-                            if (root.selectedFilePath !== "" && root.selectedFilePath !== null)
-                                root.selectedFilePath = ""
                         }
                     }
                 }
