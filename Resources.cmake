@@ -111,10 +111,6 @@ set(RESOURCES_COMPONENTS
     # DockPanel Docks
     Qml/View/Components/Docks/ImportExportBundleDock.qml       # Import Export git Bundle Dock
 
-    # Stash Components
-    Qml/View/Components/Stash/Stash.qml
-    Qml/View/Components/Stash/CreateStashView.qml
-    Qml/View/Components/Stash/ManageStashesView.qml
 )
 
 
@@ -135,6 +131,8 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/IPopup.qml
     Qml/View/Popups/AddEditRemotePopup.qml
     Qml/View/Popups/AddBranchPopup.qml
+    Qml/View/Popups/AddStashPopup.qml
+
 )
 
 
