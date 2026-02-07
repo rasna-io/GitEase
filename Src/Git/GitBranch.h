@@ -44,6 +44,8 @@ public:
     */
     Q_INVOKABLE GitResult checkoutBranch(const QString &branchName);
 
+    Q_INVOKABLE GitResult checkoutCommit(const QString &commitHash);
+
     /**
     * \brief Renames an existing local branch.
     * \param oldName The current name of the branch.

@@ -1417,9 +1417,17 @@ Item {
                             id: commitMouseArea
                             anchors.fill: parent
                             hoverEnabled: true
-                            onClicked: {
-                                root.selectedCommit = commitData
-                                root.commitClicked(commitData.hash)
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                            onClicked: (mouse) => {
+                                if (mouse.button === Qt.RightButton) {
+                                    contextMenu.x = mouse.x;
+                                    contextMenu.y = mouse.y;
+                                    contextMenu.open();
+                                } else {
+                                    root.selectedCommit = commitData;
+                                    root.commitClicked(commitData.hash);
+                                }
                             }
                             onEntered: {
                                 isHovered = true
@@ -1427,6 +1435,22 @@ Item {
                             onExited: {
                                 isHovered = false
                             }
+                        }
+
+                        ContextMenu {
+                            id: contextMenu
+                            menuModel: [
+                                {
+                                    text: "Checkout Commit",
+                                    icon: Style.icons.gitBranch,
+                                    enabled: commitData.hash !== root.currentHeadHash,
+                                    action: function() {
+                                        branchController.checkoutCommit(commitData.hash);
+                                        root.selectedCommit = ""
+                                        root.reloadAll()
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1727,6 +1751,10 @@ Item {
         commitsListView.contentY = currentContentY;
 
         isLoadingMore = false
+    }
+
+    function update() {
+        graphCanvas.requestPaint()
     }
 
     onRepositoryControllerChanged: reloadAll();

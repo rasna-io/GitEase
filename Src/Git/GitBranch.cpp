@@ -229,6 +229,44 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
     return GitResult(true, QVariant(), QString("Successfully checked out branch '%1'.").arg(branchName));
 }
 
+GitResult GitBranch::checkoutCommit(const QString &commitHash)
+{
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "Repository is not open.");
+    }
+
+    git_oid oid;
+    if (git_oid_fromstr(&oid, commitHash.toUtf8().constData()) != 0) {
+        return GitResult(false, QVariant(), "Invalid commit hash.");
+    }
+
+    git_object *targetCommit = nullptr;
+    if (git_object_lookup(&targetCommit, m_currentRepo->repo, &oid, GIT_OBJECT_COMMIT) != 0) {
+        return GitResult(false, QVariant(), "Commit not found.");
+    }
+
+    // Checkout the tree of the commit
+    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+    opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+
+    int error = git_checkout_tree(m_currentRepo->repo, targetCommit, &opts);
+    if (error != GIT_OK) {
+        git_object_free(targetCommit);
+        return GitResult(false, QVariant(), "Failed to checkout tree. Check for local changes.");
+    }
+
+    // Set HEAD to the specific commit (Detached HEAD state)
+    error = git_repository_set_head_detached(m_currentRepo->repo, &oid);
+
+    git_object_free(targetCommit);
+
+    if (error != GIT_OK) {
+        return GitResult(false, QVariant(), "Failed to detach HEAD to commit.");
+    }
+
+    return GitResult(true, QVariant(), QString("Checked out commit %1").arg(commitHash.left(8)));
+}
+
 GitResult GitBranch::renameBranch(const QString &oldName, const QString &newName)
 {
     if (!m_currentRepo || !m_currentRepo->repo) {
