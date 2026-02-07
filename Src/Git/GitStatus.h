@@ -159,6 +159,7 @@ public:
      */
     Q_INVOKABLE GitResult revertAll();
 
+    Q_INVOKABLE QString getHeadHash();
 private:
     /**
      * @brief Get unstaged diff view (index to workdir).
