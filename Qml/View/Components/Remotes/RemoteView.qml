@@ -75,7 +75,6 @@ UtilitiesCard {
 
                         Text {
                             text: remote.name
-                            font.bold: true
                             color: Style.colors.foreground
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 12

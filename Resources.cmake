@@ -26,6 +26,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/ConfigController.qml       # Git Config Controller
     Qml/Core/Controllers/UserProfileController.qml  # User Profile Controller
     Qml/Core/Controllers/ShellController.qml        # Shell Commands (rightClick Actions) Controller
+    Qml/Core/Controllers/StashController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
@@ -77,6 +78,8 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/CommitGraphDock.qml       # CommitGraphDock : show Commits and Graph
     Qml/View/Components/Docks/CommitGraphSimulator.qml  # GraphDummyDataGenerator
 
+    Qml/View/Components/Docks/StashManagerDock.qml
+
     # File list components (commit UI)
     Qml/View/Components/FileLists/UnstagedFileListSection.qml  # Unstaged File Status Section
     Qml/View/Components/FileLists/UnstagedFileListRow.qml      # Unstaged File Status Section Row Item
@@ -107,6 +110,7 @@ set(RESOURCES_COMPONENTS
 
     # DockPanel Docks
     Qml/View/Components/Docks/ImportExportBundleDock.qml       # Import Export git Bundle Dock
+
 )
 
 
@@ -127,6 +131,8 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/IPopup.qml
     Qml/View/Popups/AddEditRemotePopup.qml
     Qml/View/Popups/AddBranchPopup.qml
+    Qml/View/Popups/AddStashPopup.qml
+
 )
 
 

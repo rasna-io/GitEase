@@ -66,23 +66,27 @@ UtilitiesCard {
 
                     onClicked: root.currentIndex = 0
 
-                    contentItem: Row {
-                        spacing: 8
-                        anchors.centerIn: parent
+                    contentItem: Item {
+                        anchors.fill: parent
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: Style.icons.download
-                            font.family: Style.fontTypes.font6Pro
-                            font.pixelSize: 12
-                            color: Style.colors.foreground
-                        }
+                        RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 8
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Export"
-                            font.pixelSize: Style.appFont.h3Pt
-                            color: Style.colors.foreground
+                            Text {
+                                text: Style.icons.download
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 12
+                                color: Style.colors.foreground
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+
+                            Text {
+                                text: "Export"
+                                font.pixelSize: Style.appFont.h3Pt
+                                color: Style.colors.foreground
+                                Layout.alignment: Qt.AlignVCenter
+                            }
                         }
                     }
 
@@ -107,23 +111,27 @@ UtilitiesCard {
 
                     onClicked: root.currentIndex = 1
 
-                    contentItem: Row {
-                        spacing: 8
-                        anchors.centerIn: parent
+                    contentItem: Item {
+                        anchors.fill: parent
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: Style.icons.upload
-                            font.family: Style.fontTypes.font6Pro
-                            font.pixelSize: 12
-                            color: Style.colors.foreground
-                        }
+                        RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 8
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Import"
-                            font.pixelSize: Style.appFont.h3Pt
-                            color: Style.colors.foreground
+                            Text {
+                                text: Style.icons.upload
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 12
+                                color: Style.colors.foreground
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+
+                            Text {
+                                text: "Import"
+                                font.pixelSize: Style.appFont.h3Pt
+                                color: Style.colors.foreground
+                                Layout.alignment: Qt.AlignVCenter
+                            }
                         }
                     }
 

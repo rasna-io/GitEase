@@ -24,4 +24,6 @@ Item {
     property AddEditRemotePopup         addEditRemotePopup:         AddEditRemotePopup {}
 
     property AddBranchPopup             addBranchPopup:             AddBranchPopup {}
+
+    property AddStashPopup              addStashPopup:              AddStashPopup {}
 }

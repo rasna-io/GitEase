@@ -41,6 +41,7 @@ QtObject{
     property string info:              "\uf05a" // info
     property string check:             "\uf00c"
     property string copy:              "\uf0c5"
+    property string undo:              "\uf0E2"
 
     property string palette:           "\uf53f"
     property string terminal:          "\uf120"
