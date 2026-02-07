@@ -71,7 +71,6 @@ UtilitiesCard {
 
                         Text {
                             text: modelData.message || qsTr("WIP on %1").arg(modelData.author || "unknown")
-                            font.bold: true
                             color: Style.colors.foreground
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 12
