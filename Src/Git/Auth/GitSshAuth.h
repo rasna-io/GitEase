@@ -33,12 +33,19 @@ private:
                                    unsigned int allowed_types,
                                    void* payload);
 
+
+    static bool ensureAgentRunning();
+
+    static bool isSshAgentRunning();
+    static bool enableSshAgentAutoStart();
+    static bool startSshAgent();
+
 public:
 
     /**
      * @brief Construct SSH authentication handler.
      */
-    GitSshAuth() = default;
+    GitSshAuth();
 
 
     /**
@@ -71,3 +78,5 @@ public:
     void applyPush(git_push_options& opts) override;
 
 };
+
+
