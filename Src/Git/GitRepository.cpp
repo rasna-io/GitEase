@@ -113,6 +113,20 @@ GitResult GitRepository::cloneInternal(const QString& url,
     if (QDir(localPath).exists())
         return GitResult(false, {}, "Directory already exists");
 
+    // SSH agent pre check
+    if (dynamic_cast<GitSshAuth*>(auth.get()))
+    {
+        if (!GitSshAuth::isAgentReady())
+        {
+            return GitResult(
+                false,
+                QVariant(),
+                "SSH authentication agent is not running."
+                "run the application as Administrator once."
+                );
+        }
+    }
+
     const QString safeUrl = url;
     const QString safePath = localPath;
 
