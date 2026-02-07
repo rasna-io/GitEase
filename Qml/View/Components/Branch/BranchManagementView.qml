@@ -50,7 +50,7 @@ UtilitiesCard {
                 width: listView.width
                 height: 38
                 radius: 6
-                color: Style.colors.surfaceLight
+                color: Style.colors.secondaryBackground
                 border.color: branch.name === root.currentBranch ? Style.colors.accent : "transparent"
                 border.width: 1
 
@@ -75,6 +75,7 @@ UtilitiesCard {
                         font.pixelSize: 12
                         font.bold: branch.name === root.currentBranch
                         color: Style.colors.foreground
+                        elide: Text.ElideMiddle
                     }
 
                     RowLayout {
