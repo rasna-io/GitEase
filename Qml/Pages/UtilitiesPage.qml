@@ -61,6 +61,7 @@ Item {
             Layout.preferredWidth: 350
             Layout.fillWidth: false
             branchController: root.branchController
+            addBranchPopup: uiSessionPopups.addBranchPopup
         }
 
         Item {

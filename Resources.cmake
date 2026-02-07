@@ -126,7 +126,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/SettingsPopup.qml
     Qml/View/Popups/IPopup.qml
     Qml/View/Popups/AddEditRemotePopup.qml
-
+    Qml/View/Popups/AddBranchPopup.qml
 )
 
 
