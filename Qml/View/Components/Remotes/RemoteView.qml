@@ -61,9 +61,8 @@ UtilitiesCard {
 
                 width: listView.width
                 height: 60
-                color: "#f8f8f8"
-                border.color: "#eeeeee"
-                radius: 8
+                color: Style.colors.secondaryBackground
+                radius: 5
 
                 Row {
                     anchors.fill: parent

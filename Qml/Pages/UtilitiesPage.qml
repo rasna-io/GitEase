@@ -58,7 +58,7 @@ Item {
 
         BranchManagementView {
             Layout.preferredHeight: 370
-            Layout.preferredWidth: 310
+            Layout.preferredWidth: 350
             Layout.fillWidth: false
             branchController: root.branchController
         }
