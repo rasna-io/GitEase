@@ -65,7 +65,7 @@ UtilitiesCard {
                     anchors.margins: 10
 
                     ColumnLayout {
-                        width: parent.width * 0.85
+                        width: parent.width * 0.8
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
 
@@ -90,8 +90,19 @@ UtilitiesCard {
 
                     Row {
                         spacing: 4
-                        width: parent.width * 0.15
+                        width: parent.width * 0.2
                         anchors.verticalCenter: parent.verticalCenter
+                        ActionIconButton {
+                            iconText: Style.icons.undo
+                            tooltip: "Pop"
+                            textColor: Style.colors.mutedText
+                            onClicked: {
+                                let result = stashController.pop(modelData.index, true)
+                                if (result.success) {
+                                    content.update()
+                                }
+                            }
+                        }
                         ActionIconButton {
                             iconText: Style.icons.check
                             tooltip: "Apply"
