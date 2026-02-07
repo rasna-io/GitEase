@@ -16,8 +16,9 @@ UtilitiesCard {
      * ****************************************************************************************/
     property BranchController branchController: null
 
-    property string           currentBranch:    ""
+    property AddBranchPopup   addBranchPopup: null
 
+    property string           currentBranch:    ""
 
     /* Object Properties
      * ****************************************************************************************/
@@ -32,6 +33,15 @@ UtilitiesCard {
         Connections {
             target: root
             onBranchControllerChanged: {
+                content.update()
+            }
+        }
+
+
+        Connections {
+            target: root.addBranchPopup
+
+            function onAboutToHide() {
                 content.update()
             }
         }
@@ -198,7 +208,7 @@ UtilitiesCard {
             }
 
             onClicked: {
-                openAddEditPopup()
+                openAddBranchPopup()
             }
         }
 
@@ -209,5 +219,13 @@ UtilitiesCard {
                 listView.model = res
             }
         }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+
+    function openAddBranchPopup() {
+        addBranchPopup.branchController = root.branchController
+        addBranchPopup.open()
     }
 }

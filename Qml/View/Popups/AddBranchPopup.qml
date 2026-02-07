@@ -1,0 +1,118 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+
+import GitEase
+import GitEase_Style
+import GitEase_Style_Impl
+
+/*! ***********************************************************************************************
+ * AddBranchPopup
+ * ************************************************************************************************/
+IPopup {
+    id: root
+
+    /* Property Declarations
+     * ****************************************************************************************/
+    property BranchController branchController
+
+    readonly property bool    isNameValid: nameInput.text.trim().length > 0
+
+    readonly property bool    canAccept:   isNameValid
+
+    /* Object Properties
+     * ****************************************************************************************/
+
+    width: 360
+    height: 220
+    padding: 20
+
+    contentItem: Rectangle {
+        color: Style.colors.primaryBackground
+        radius: 16
+        clip: true
+        border.color: Style.colors.accent
+        border.width: 1
+
+        ColumnLayout {
+            spacing: 20
+            anchors.fill: parent
+            anchors.margins: 20
+
+            Text {
+                text: "Create Branch"
+                color: Style.colors.foreground
+                font.family: Style.fontTypes.roboto
+                font.bold: true
+                font.pixelSize: 16
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            ColumnLayout {
+                spacing: 12
+                Layout.fillWidth: true
+
+                // Name Input
+                TextField {
+                    id: nameInput
+                    placeholderText: "Branch Name "
+                    Layout.fillWidth: true
+                    selectByMouse: true
+
+                    background: Rectangle {
+                        implicitHeight: 40
+                        color: Style.colors.secondaryBackground
+                        radius: 5
+                        border.color: nameInput.activeFocus ? Style.colors.accent : "transparent"
+                    }
+                }
+            }
+
+            RowLayout {
+                spacing: 8
+                Layout.fillWidth: true
+
+                Button {
+                    text: "Cancel"
+                    Layout.preferredWidth: parent.width * 0.3
+                    onClicked: root.close()
+
+                    background: Rectangle {
+                        implicitHeight: 35
+                        color: parent.hovered ? "#33ffffff" : "transparent"
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+                }
+
+                Button {
+                    id: actionBtn
+                    text: "Create"
+                    Layout.fillWidth: true
+                    enabled: root.canAccept
+
+                    opacity: enabled ? 1.0 : 0.5
+
+                    background: Rectangle {
+                        implicitHeight: 35
+                        color: (actionBtn.hovered && actionBtn.enabled) ? Style.colors.accent : Style.colors.secondaryBackground
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+
+                    onClicked: {
+                        let res = root.branchController.createBranch(nameInput.text)
+
+                        if (res.success) {
+                            root.close();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    onAboutToHide: {
+        nameInput.text = "";
+    }
+}

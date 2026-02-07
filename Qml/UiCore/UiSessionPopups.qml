@@ -22,4 +22,6 @@ Item {
     property UserInfoSelectionPopup     userInfoSelectionPopup:     UserInfoSelectionPopup {}
 
     property AddEditRemotePopup         addEditRemotePopup:         AddEditRemotePopup {}
+
+    property AddBranchPopup             addBranchPopup:             AddBranchPopup {}
 }
