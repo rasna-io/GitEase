@@ -103,6 +103,8 @@ set(RESOURCES_COMPONENTS
 
     Qml/View/Components/Remotes/RemoteView.qml
 
+    Qml/View/Components/Branch/BranchManagementView.qml
+
     # DockPanel Docks
     Qml/View/Components/Docks/ImportExportBundleDock.qml       # Import Export git Bundle Dock
 )

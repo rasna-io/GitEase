@@ -32,7 +32,7 @@ Item {
 
     GridLayout {
         anchors.fill: parent
-        columns: 3
+        columns: 4
         rows: 2
         columnSpacing: 5
         rowSpacing: 5
@@ -54,6 +54,13 @@ Item {
 
             remoteController: root.remoteController
             addEditRemotePopup: uiSessionPopups.addEditRemotePopup
+        }
+
+        BranchManagementView {
+            Layout.preferredHeight: 370
+            Layout.preferredWidth: 310
+            Layout.fillWidth: false
+            branchController: root.branchController
         }
 
         Item {

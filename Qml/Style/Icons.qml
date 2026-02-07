@@ -39,6 +39,8 @@ QtObject{
     property string circleExclamation: "\uf06a" // exclamation-circle
     property string users:             "\uf0c0" // users
     property string info:              "\uf05a" // info
+    property string check:             "\uf00c"
+    property string copy:              "\uf0c5"
 
     property string palette:           "\uf53f"
     property string terminal:          "\uf120"
