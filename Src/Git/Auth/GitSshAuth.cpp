@@ -4,7 +4,7 @@
 
 GitSshAuth::GitSshAuth()
 {
-    // ensureAgentRunning();
+    ensureAgentRunning();
 }
 
 bool GitSshAuth::ensureAgentRunning()
@@ -64,11 +64,17 @@ bool GitSshAuth::startSshAgent()
                              });
     proc.waitForFinished();
 
-    qDebug() << "exitCode:" << proc.exitCode();
-    qDebug() << "stderr:" << proc.readAllStandardError();
-    qDebug() << "stdout:" << proc.readAllStandardOutput();
-
     return proc.exitStatus() == QProcess::NormalExit && proc.exitCode() == 0;
+}
+
+bool GitSshAuth::isAgentReady()
+{
+    return isSshAgentRunning();
+}
+
+void GitSshAuth::apply(git_fetch_options& fetchOpts)
+{
+    fetchOpts.callbacks.credentials = &GitSshAuth::credentialsCallback;
 }
 
 int GitSshAuth::credentialsCallback(git_cred** out,

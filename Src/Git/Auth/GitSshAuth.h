@@ -34,10 +34,42 @@ private:
                                    void* payload);
 
 
+    /**
+     * @brief Ensure the OpenSSH agent service is running.
+     *
+     * Checks whether the ssh-agent service is running and, if not,
+     * attempts to enable and start it.
+     *
+     * @note Enabling or starting the service may require
+     * administrator privileges.
+     *
+     * @return true if the agent is running or was started successfully,
+     *         false otherwise
+     */
     static bool ensureAgentRunning();
 
+    /**
+     * @brief Check whether the ssh-agent service is currently running.
+     *
+     * @return true if the service is running, false otherwise
+     */
     static bool isSshAgentRunning();
+
+    /**
+     * @brief Enable automatic startup for the ssh-agent service.
+     *
+     * Sets the service startup type to Automatic.
+     *
+     * @return true on success, false on failure (e.g. insufficient privileges)
+     */
     static bool enableSshAgentAutoStart();
+
+    /**
+     * @brief Start the ssh-agent service.
+     *
+     * @return true if the service was started successfully,
+     *         false otherwise
+     */
     static bool startSshAgent();
 
 public:
@@ -76,7 +108,18 @@ public:
      * @param opts libgit2 push options to modify
      */
     void applyPush(git_push_options& opts) override;
-
+    
+    /**
+     * @brief Check whether the SSH authentication agent is ready for use.
+     *
+     * Verifies that the system OpenSSH Authentication Agent (`ssh-agent`)
+     * is available and running. This function does not attempt to start
+     * or modify the agent service.
+     *
+     * @return true if the SSH agent is running and ready for authentication,
+     *         false otherwise
+     */
+    static bool isAgentReady();
 };
 
 
