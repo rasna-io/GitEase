@@ -22,6 +22,8 @@ Item {
 
     property BranchController branchController: null
 
+    property AddBranchPopup addBranchPopup: null
+
     property StatusController statusController: null
 
     property CommitController commitController: null
@@ -381,6 +383,15 @@ Item {
         target: Style
         function onCurrentThemeChanged(){
             graphCanvas.requestPaint()
+        }
+    }
+
+    Connections {
+        target: addBranchPopup
+
+        function onBranchCreatedSuccessfully() {
+            root.selectedCommit = ""
+            root.reloadAll()
         }
     }
 
@@ -1448,6 +1459,16 @@ Item {
                                         branchController.checkoutCommit(commitData.hash);
                                         root.selectedCommit = ""
                                         root.reloadAll()
+                                    }
+                                },
+                                {
+                                    text: "New Branch from here",
+                                    icon: Style.icons.branchPlus,
+                                    enabled: true,
+                                    action: function() {
+                                        addBranchPopup.branchController = root.branchController
+                                        addBranchPopup.targetHash = commitData.hash
+                                        addBranchPopup.open()
                                     }
                                 }
                             ]
