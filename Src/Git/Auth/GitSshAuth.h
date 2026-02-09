@@ -2,6 +2,11 @@
 
 #include "IGitAuth.h"
 #include "QString"
+#include "QProcess"
+#include "QStandardPaths"
+#include "QDir"
+#include "QFile"
+#include "QThread"
 
 
 /**
@@ -14,6 +19,8 @@ class GitSshAuth : public IGitAuth
 {
 
 private:
+    QString m_setupError;  // Stores setup error message, empty if setup successful
+
     /**
      * @brief libgit2 credentials callback for SSH authentication.
      *
@@ -93,15 +100,6 @@ private:
     static bool loadDefaultSshKeys();
 
     /**
-     * @brief Enable automatic startup for the ssh-agent service.
-     *
-     * Sets the service startup type to Automatic.
-     *
-     * @return true on success, false on failure (e.g. insufficient privileges)
-     */
-    static bool enableSshAgentAutoStart();
-
-    /**
      * @brief Start the ssh-agent service.
      *
      * @return true if the service was started successfully,
@@ -115,6 +113,13 @@ public:
      * @brief Construct SSH authentication handler.
      */
     GitSshAuth();
+
+    /**
+     * @brief Check if SSH agent setup was successful and get error message if not.
+     *
+     * @return Empty string if setup was successful, error message otherwise.
+     */
+    QString getSetupError() const;
 
 
     /**

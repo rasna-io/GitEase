@@ -114,18 +114,15 @@ GitResult GitRepository::cloneInternal(const QString& url,
         return GitResult(false, {}, "Directory already exists");
 
     // SSH agent pre check
-    if (dynamic_cast<GitSshAuth*>(auth.get()))
+    if (auto sshAuth = dynamic_cast<GitSshAuth*>(auth.get()))
     {
-        if (!GitSshAuth::isAgentReady())
+        QString setupError = sshAuth->getSetupError();
+        if (!setupError.isEmpty())
         {
             return GitResult(
                 false,
                 QVariant(),
-                "SSH authentication agent is not accessible. "
-                "Please ensure the OpenSSH Authentication Agent service is running "
-                "and you have SSH keys loaded. You may need to run the application "
-                "as Administrator once to start the service, or manually start the "
-                "SSH agent service and load your SSH keys."
+                setupError
                 );
         }
     }
