@@ -16,9 +16,15 @@ IPopup {
      * ****************************************************************************************/
     property BranchController branchController
 
+    property string targetHash: ""
+
     readonly property bool    isNameValid: nameInput.text.trim().length > 0
 
     readonly property bool    canAccept:   isNameValid
+
+    /* Signals
+     * ****************************************************************************************/
+    signal branchCreatedSuccessfully()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -74,7 +80,7 @@ IPopup {
 
                 Button {
                     text: "Cancel"
-                    Layout.preferredWidth: parent.width * 0.3
+                    Layout.preferredWidth: parent.width * 0.4
                     onClicked: root.close()
 
                     background: Rectangle {
@@ -101,10 +107,20 @@ IPopup {
                     }
 
                     onClicked: {
-                        let res = root.branchController.createBranch(nameInput.text)
+                        let res;
 
-                        if (res.success) {
+                        if (root.targetHash === "") {
+                            res = root.branchController.createBranch(nameInput.text);
+                        } else {
+                            res = root.branchController.createBranch(root.targetHash, nameInput.text);
+                            root.branchController.checkoutBranch(nameInput.text);
+                        }
+
+                        if (res && res.success) {
+                            root.branchCreatedSuccessfully()
                             root.close();
+                        } else {
+                            console.error("Error creating branch:", res.message);
                         }
                     }
                 }
@@ -114,5 +130,6 @@ IPopup {
 
     onAboutToHide: {
         nameInput.text = "";
+        targetHash = "";
     }
 }
