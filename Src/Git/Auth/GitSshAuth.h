@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IGitAuth.h"
+#include "QString"
 
 
 /**
@@ -54,6 +55,42 @@ private:
      * @return true if the service is running, false otherwise
      */
     static bool isSshAgentRunning();
+
+    /**
+     * @brief Check whether the SSH agent is actually accessible and functional.
+     *
+     * Tests connectivity to the SSH agent by attempting to list keys.
+     *
+     * @return true if the agent is accessible, false otherwise
+     */
+    static bool isSshAgentAccessible();
+
+    /**
+     * @brief Manually setup SSH environment variables for agent communication.
+     *
+     * Attempts to locate and set the correct SSH_AUTH_SOCK environment variable
+     * for connecting to the SSH agent on Windows.
+     *
+     * @return true if environment was successfully setup, false otherwise
+     */
+    static bool setupSshEnvironment();
+
+    /**
+     * @brief Check whether any SSH keys are currently loaded in the agent.
+     *
+     * @return true if keys are loaded, false otherwise
+     */
+    static bool hasSshKeysLoaded();
+
+    /**
+     * @brief Attempt to load default SSH keys into the agent.
+     *
+     * Tries to load common SSH key files (id_rsa, id_ed25519, id_ecdsa)
+     * from the user's .ssh directory.
+     *
+     * @return true if at least one key was loaded successfully, false otherwise
+     */
+    static bool loadDefaultSshKeys();
 
     /**
      * @brief Enable automatic startup for the ssh-agent service.

@@ -121,8 +121,11 @@ GitResult GitRepository::cloneInternal(const QString& url,
             return GitResult(
                 false,
                 QVariant(),
-                "SSH authentication agent is not running."
-                "run the application as Administrator once."
+                "SSH authentication agent is not accessible. "
+                "Please ensure the OpenSSH Authentication Agent service is running "
+                "and you have SSH keys loaded. You may need to run the application "
+                "as Administrator once to start the service, or manually start the "
+                "SSH agent service and load your SSH keys."
                 );
         }
     }
