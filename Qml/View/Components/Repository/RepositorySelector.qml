@@ -265,7 +265,7 @@ Item {
                 root.busy = res.success
 
                 if (!res.success) {
-                    root.errorMessage = res.error
+                    root.errorMessage = res.errorMessage
                 }
 
                 return false;
