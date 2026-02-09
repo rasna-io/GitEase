@@ -29,6 +29,8 @@ Item {
 
     property RepositoryController repositoryController: null
 
+    property UiSessionPopups  uiSessionPopups: null
+
     readonly property var currentRepo: appModel?.currentRepository ?? null
 
     property string selectedCommit: ""
@@ -491,6 +493,7 @@ Item {
                 repositoryController: root.repositoryController
                 appModel: root.appModel
                 branchController: root.branchController
+                addBranchPopup: uiSessionPopups.addBranchPopup
                 commitController: root.commitController
                 statusController: root.statusController
 
