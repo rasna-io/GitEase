@@ -15,6 +15,13 @@ GitRepository {
     required property AppModel appModel
     property int maxRecentLength: 10
 
+    enum GitProtocol {
+        Unknown,
+        SSH,
+        HTTP,
+        HTTPS
+    }
+
     /* Signals
      * ****************************************************************************************/
     signal repositorySelected(Repository repo)
@@ -76,8 +83,19 @@ GitRepository {
      */
     function cloneRepository(path, url) : bool {
         let repoName = extractRepoName(url)
+        let protocol = detectGitProtocol(url)
 
-        var result = clone(url, path + "/" + repoName)
+        if (protocol === RepositoryController.GitProtocol.Unknown) {
+            console.warn("Unsupported Git URL:", url)
+            return false
+        }
+        let result
+
+        if (protocol === RepositoryController.GitProtocol.SSH)
+            result = clone(url, path + "/" + repoName)
+        else if (protocol === RepositoryController.GitProtocol.HTTP || protocol === RepositoryController.GitProtocol.HTTPS) {
+            result = clone(url, path + "/" + repoName, "")
+        }
 
         if(result.success){
             createRepositoryComponent(path + "/" + repoName, repoName)
@@ -176,5 +194,24 @@ GitRepository {
 
         // handle both / and : (for SSH)
         return url.split(/[\/:]/).pop();
+    }
+
+    function detectGitProtocol(repoUrl: string): int {
+        if (!repoUrl)
+            return GitProtocol.Unknown
+
+        // SSH
+        if (/^git@.+:.+/.test(repoUrl) || /^ssh:\/\//i.test(repoUrl))
+            return RepositoryController.GitProtocol.SSH
+
+        // HTTPS
+        if (/^https:\/\//i.test(repoUrl))
+            return RepositoryController.GitProtocol.HTTPS
+
+        // HTTP
+        if (/^http:\/\//i.test(repoUrl))
+            return RepositoryController.GitProtocol.HTTP
+
+        return RepositoryController.GitProtocol.Unknown
     }
 }
