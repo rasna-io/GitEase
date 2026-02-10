@@ -52,4 +52,21 @@ public:
      * @param fetchOpts libgit2 fetch options to modify
      */
     void apply(git_fetch_options& fetchOpts) override;
+
+    /**
+     * @brief applyFetch HTTPS authentication callbacks to fetch options.
+     *
+     * @param fetchOpts libgit2 fetch options to modify
+     */
+    void applyFetch(git_fetch_options& fetchOpts) override;
+
+    /**
+     * @brief Apply HTTPS authentication settings to libgit2 push options.
+     *
+     * Implementations should register the appropriate credentials
+     * callback for push operations.
+     *
+     * @param pushOpts libgit2 push options to modify
+     */
+    void applyPush(git_push_options& opts) override;
 };

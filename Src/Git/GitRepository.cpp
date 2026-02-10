@@ -122,13 +122,13 @@ GitResult GitRepository::cloneInternal(const QString& url,
          safePath,
          auth = std::move(auth)]() mutable -> QVariantMap {
 
-        GitClonePayload payload {
+        GitPayload payload {
             this,
             auth.get()
         };
 
         auto progressCallback = [](const git_indexer_progress *stats, void *p) -> int {
-            auto *data = static_cast<GitClonePayload*>(p);
+            auto *data = static_cast<GitPayload*>(p);
 
             if (stats->total_objects > 0) {
                 int percent = static_cast<int>(

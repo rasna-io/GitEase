@@ -254,9 +254,36 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     onClicked: {
-                                        userAuthenticationPopup.open()
+                                        let res = remoteController.getRemoteUrl("origin")
+
+                                        if (!res.success) {
+                                            errorMessageLabel.text = res.errorMessage ?? "Failed to get remote URL"
+                                            return
+                                        }
+
+                                        let url = res.data.url
+                                        let protocol = repositoryController.detectGitProtocol(url)
+
+                                        switch(protocol) {
+                                        case RepositoryController.GitProtocol.SSH: {
+                                            let branchName = branchController.getCurrentBranchName()
+                                            let remoteRes = remoteController.push("origin", branchName, false)
+                                            if (!remoteRes.success) {
+                                                errorMessageLabel.text = remoteRes.errorMessage ?? "Push error"
+                                            } else {
+                                                commitTextArea.text = ""
+                                            }
+                                        }
+                                        break;
+
+                                        case RepositoryController.GitProtocol.HTTPS:
+                                        case RepositoryController.GitProtocol.HTTP:
+                                            userAuthenticationPopup.open()
+                                            break;
+                                        }
                                     }
                                 }
+
                             }
                         }
 

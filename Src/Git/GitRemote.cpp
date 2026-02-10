@@ -1,4 +1,6 @@
 #include "GitRemote.h"
+#include "Auth/GitHttpsAuth.h"
+#include "Auth/GitSshAuth.h"
 #include "GitResult.h"
 #include "Remote.h"
 
@@ -10,8 +12,27 @@ GitRemote::GitRemote(QObject *parent)
     : IGitController{parent}
 {}
 
-GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
-                          const QString &username, const QString &password, bool force)
+GitResult GitRemote::push(const QString& remote,
+                          const QString& branch,
+                          bool force)
+{
+    return pushInternal(remote, branch,
+                        std::make_unique<GitSshAuth>(), force);
+}
+
+GitResult GitRemote::push(const QString& remote,
+                          const QString& branch,
+                          const QString& token,
+                          bool force)
+{
+    return pushInternal(remote, branch,
+                        std::make_unique<GitHttpsAuth>(token), force);
+}
+
+GitResult GitRemote::pushInternal(const QString& remoteName,
+                                  const QString& branchName,
+                                  std::unique_ptr<IGitAuth> auth,
+                                  bool force)
 {
     if (remoteName.isEmpty()) {
         return GitResult(false, QVariant(), "Remote name cannot be empty");
@@ -27,96 +48,40 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
     }
 
     git_remote* remote = nullptr;
-    int result = git_remote_lookup(&remote, m_currentRepo->repo, remoteName.toUtf8().constData());
+    int result = git_remote_lookup(&remote,
+                                   m_currentRepo->repo,
+                                   remoteName.toUtf8().constData());
 
     if (result != GIT_OK) {
-        if (result == GIT_ENOTFOUND) {
-            return GitResult(false, QVariant(),
-                             QString("Remote '%1' not found. Use addRemote() to add it first.").arg(remoteName));
-        }
-
-        return GitResult(false, QVariant(), "Failed to lookup remote");
+        if (result == GIT_ENOTFOUND)
+            return GitResult(false, {}, "Remote not found");
+        return GitResult(false, {}, "Failed to lookup remote");
     }
 
-    // Get remote URL and detect type
-    const char* urlCStr = git_remote_url(remote);
-    if (!urlCStr) {
-        git_remote_free(remote);
-        return GitResult(false, QVariant(), "Remote URL is empty");
-    }
+    git_push_options opts;
+    git_push_options_init(&opts, GIT_PUSH_OPTIONS_VERSION);
 
-    QString remoteUrl = QString::fromUtf8(urlCStr);
-    bool isHttps = remoteUrl.startsWith("https://");
-    bool isSsh   = remoteUrl.startsWith("git@") || remoteUrl.startsWith("ssh://");
-
-    if (isSsh) {
-        git_remote_free(remote);
-        return GitResult(false, QVariant(), "SSH remote detected; username/password cannot be used for push");
-    }
-
-    // Prepare push options
-    git_push_options push_opts;
-    result = git_push_options_init(&push_opts, GIT_PUSH_OPTIONS_VERSION);
-    if (result != GIT_OK) {
-        git_remote_free(remote);
-        return GitResult(false, QVariant(), "Failed to initialize push options");
-    }
-
-    // Define a struct to hold credentials
-    struct CredentialsPayload {
-        QString username;
-        QString token;
+    GitRepository::GitPayload payload {
+        this,
+        auth.get()
     };
 
-    // Create payload on heap (will be freed later)
-    CredentialsPayload* credentialsPayload = new CredentialsPayload{username, password};
+    opts.callbacks.payload = &payload;
+    auth->applyPush(opts);
 
-    // Set the callback as a static function
-    push_opts.callbacks.credentials = [](git_credential **out,
-                                         const char *url,
-                                         const char *username_from_url,
-                                         unsigned int allowed_types,
-                                         void *payload) -> int {
+    QByteArray refspec = force
+                             ? QByteArray("+refs/heads/" + branchName.toUtf8() +
+                                          ":refs/heads/" + branchName.toUtf8())
+                             : QByteArray("refs/heads/" + branchName.toUtf8() +
+                                          ":refs/heads/" + branchName.toUtf8());
 
-        CredentialsPayload* creds = static_cast<CredentialsPayload*>(payload);
+    char* refspecs[] = { refspec.data() };
+    git_strarray array { refspecs, 1 };
 
-        // Check if credentials are provided
-        if (creds->username.isEmpty() || creds->token.isEmpty()) {
-            qDebug() << "GitWrapperCPP: No credentials provided in payload";
-            return GIT_EUSER;
-        }
+    result = git_remote_push(remote, &array, &opts);
 
-        // HTTPS authentication
-        if (allowed_types & GIT_CREDENTIAL_USERPASS_PLAINTEXT) {
-            return git_credential_userpass_plaintext_new(out,
-                                                         creds->username.toUtf8().constData(),
-                                                         creds->token.toUtf8().constData());
-        }
-        return GIT_EUSER;
-    };
-
-    push_opts.callbacks.payload = credentialsPayload;
-
-    QString refspec = force ?
-                          QString("+refs/heads/%1:refs/heads/%1").arg(branchName) :
-                          QString("refs/heads/%1:refs/heads/%1").arg(branchName);
-
-    char* refspec_cstr = new char[refspec.length() + 1];
-    strcpy(refspec_cstr, refspec.toUtf8().constData());
-
-    git_strarray refspecs;
-    refspecs.strings = &refspec_cstr;
-    refspecs.count = 1;
-
-    // Perform the push
-    result = git_remote_push(remote, &refspecs, &push_opts);
-
-    // Cleanup
-    delete credentialsPayload;
-    delete[] refspec_cstr;
     git_remote_free(remote);
 
-    // Handle result
     if (result != GIT_OK) {
         if (result == GIT_EUSER) {
             return GitResult(false, QVariant(),
@@ -150,6 +115,53 @@ GitResult GitRemote::push(const QString &remoteName, const QString &branchName,
 
     return GitResult(true, pushResult);
 }
+
+GitResult GitRemote::getRemoteUrl(const QString& remoteName)
+{
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (remoteName.isEmpty()) {
+        return GitResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
+    git_remote* remote = nullptr;
+    int result = git_remote_lookup(&remote,
+                                   m_currentRepo->repo,
+                                   remoteName.toUtf8().constData());
+
+    if (result != GIT_OK || !remote) {
+        return GitResult(false, QVariant(),
+                         QString("Remote '%1' not found").arg(remoteName));
+    }
+
+    const char* fetchUrl = git_remote_url(remote);
+    const char* pushUrl  = git_remote_pushurl(remote);
+
+    // If push URL is empty, fall back to fetch URL
+    QString finalUrl;
+    if (pushUrl && strlen(pushUrl) > 0) {
+        finalUrl = QString::fromUtf8(pushUrl);
+    } else if (fetchUrl && strlen(fetchUrl) > 0) {
+        finalUrl = QString::fromUtf8(fetchUrl);
+    } else {
+        finalUrl = ""; // remote exists but has no URL
+    }
+
+    QVariantMap data;
+    data["remote"] = remoteName;
+    data["fetchUrl"] = fetchUrl ? QString::fromUtf8(fetchUrl) : "";
+    data["pushUrl"]  = pushUrl  ? QString::fromUtf8(pushUrl)  : "";
+    data["url"]      = finalUrl;
+
+    git_remote_free(remote);
+    qDebug() << data;
+
+    return GitResult(true, data);
+}
+
+
 
 GitResult GitRemote::getRemotes()
 {

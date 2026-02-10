@@ -11,13 +11,23 @@ void GitHttpsAuth::apply(git_fetch_options& fetchOpts)
     fetchOpts.callbacks.credentials = &GitHttpsAuth::credentialsCallback;
 }
 
+void GitHttpsAuth::applyFetch(git_fetch_options& fetchOpts)
+{
+    fetchOpts.callbacks.credentials = &GitHttpsAuth::credentialsCallback;
+}
+
+void GitHttpsAuth::applyPush(git_push_options &pushopts)
+{
+    pushopts.callbacks.credentials = &GitHttpsAuth::credentialsCallback;
+}
+
 int GitHttpsAuth::credentialsCallback(git_cred** out,
                                         const char*,
                                         const char* username_from_url,
                                         unsigned int allowed_types,
                                         void* payload)
 {
-    GitRepository::GitClonePayload* paylaod = static_cast<GitRepository::GitClonePayload*>(payload);
+    GitRepository::GitPayload* paylaod = static_cast<GitRepository::GitPayload*>(payload);
 
     GitHttpsAuth* httpsAuth  = static_cast<GitHttpsAuth*>(paylaod->auth);
 

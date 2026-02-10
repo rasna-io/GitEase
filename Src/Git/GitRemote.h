@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Auth/IGitAuth.h"
 #include "IGitController.h"
 #include "Repository.h"
 #include <QObject>
@@ -13,19 +14,38 @@ public:
     explicit GitRemote(QObject *parent = nullptr);
 
     /**
-     * \brief Push commits to a remote repository
-     * \param remoteName Name of the remote (default: "origin")
-     * \param branchName Branch to push (default: current branch)
-     * \param username GitHub username (required for HTTPS)
-     * \param password GitHub Personal Access Token (required for HTTPS)
-     * \param force Whether to force push (default: false)
-     * \return GitResult with operation result
+     * @brief Push commits to a remote using SSH authentication.
+     *
+     * Uses the system SSH agent or default SSH keys to authenticate
+     * the push operation.
+     *
+     * @param remote Name of the remote (default: "origin")
+     * @param branch Name of the branch to push
+     * @param force  Whether to force push (default: false)
+     *
+     * @return GitResult with operation result
      */
-    Q_INVOKABLE GitResult push(const QString &remoteName = "origin",
-                                 const QString &branchName = "",
-                                 const QString &username = "",
-                                 const QString &password = "",
-                                 bool force = false);
+    Q_INVOKABLE GitResult push(const QString& remote,
+                               const QString& branch,
+                               bool force = false);
+
+    /**
+     * @brief Push commits to a remote using HTTPS authentication.
+     *
+     * Uses a personal access token to authenticate the push
+     * operation over HTTPS.
+     *
+     * @param remote Name of the remote (default: "origin")
+     * @param branch Name of the branch to push
+     * @param token  Personal access token
+     * @param force  Whether to force push (default: false)
+     *
+     * @return GitResult with operation result
+     */
+    Q_INVOKABLE GitResult push(const QString& remote,
+                               const QString& branch,
+                               const QString& token,
+                               bool force = false);
 
     /**
      * \brief Get list of remotes for the repository
@@ -69,5 +89,42 @@ public:
     * \return The upstream branch name (e.g., "origin/main") or an empty QString if no upstream is set.
     */
     Q_INVOKABLE GitResult getUpstreamName(const QString &localBranchName);
+
+    /**
+    * \brief Retrieves the URLs of a specified remote.
+    *
+    * This method looks up the given remote name in the current repository and
+    * returns both the fetch and push URLs. If the remote does not exist, an
+    * error message is returned.
+    *
+    * \param remoteName The name of the remote (e.g., "origin").
+    * \return GitResult containing a QVariantMap with:
+    *         - "remote": The remote name
+    *         - "fetchUrl": The fetch URL of the remote
+    *         - "pushUrl": The push URL of the remote (may be empty if not set)
+    *         or an error message if the operation failed.
+    */
+    Q_INVOKABLE GitResult getRemoteUrl(const QString &remoteName);
+private:
+
+    /**
+     * @brief Internal implementation for pushing commits to a remote.
+     *
+     * Performs a git push operation using the provided authentication
+     * strategy. This method is shared by both SSH and HTTPS push
+     * entry points.
+     *
+     * @param remoteName Name of the remote (e.g. "origin")
+     * @param branchName Name of the branch to push
+     * @param auth       Authentication strategy (ownership transferred)
+     * @param force      Whether to force push
+     *
+     * @return GitResult containing the push result
+     */
+    GitResult pushInternal(const QString& remoteName,
+                           const QString& branchName,
+                           std::unique_ptr<IGitAuth> auth,
+                           bool force);
+
 };
 
