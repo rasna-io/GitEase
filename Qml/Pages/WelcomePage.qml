@@ -88,7 +88,12 @@ Rectangle {
                     showDescription: true
                     descriptionText: "Choose how you want to get started with your Git repository"
                     recentRepositories: appModel.recentRepositories
-                    onCloneFinished:  root.controller.completeWelcomeFlow()
+                    onCloneFinished: function (res) {
+                        if (res.success) {
+                            root.repositoryController.openRepository(res.path)
+                            root.controller.completeWelcomeFlow()
+                        }
+                    }
                     repositoryController: root.repositoryController
                     defaultPath: appModel.appSettings.generalSettings.defaultPath
                 }

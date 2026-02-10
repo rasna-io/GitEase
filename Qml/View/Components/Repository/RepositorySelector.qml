@@ -43,7 +43,7 @@ Item {
 
     /* Signals
      * ****************************************************************************************/
-    signal cloneFinished()
+    signal cloneFinished(var result)
 
     /* Children
      * ****************************************************************************************/
@@ -242,10 +242,10 @@ Item {
     Connections {
         target: root.repositoryController
 
-        function onCloneFinished() {
+        function onCloneFinished(res) {
             root.busy = false
             root.progress = 0
-            root.cloneFinished()
+            root.cloneFinished(res)
         }
 
         function onCloneProgress (progress){

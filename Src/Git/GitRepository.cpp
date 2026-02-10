@@ -192,8 +192,10 @@ GitResult GitRepository::cloneInternal(const QString& url,
 
                 QVariantMap result = watcher->result();
 
-                if (result["success"].toBool())
+                if (result["success"].toBool()) {
+                    result["path"] = safePath;
                     m_currentRepoPath = safePath;
+                }
 
                 emit cloneFinished(result);
                 watcher->deleteLater();
