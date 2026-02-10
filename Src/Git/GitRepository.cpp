@@ -113,6 +113,20 @@ GitResult GitRepository::cloneInternal(const QString& url,
     if (QDir(localPath).exists())
         return GitResult(false, {}, "Directory already exists");
 
+    // SSH agent pre check
+    if (auto sshAuth = dynamic_cast<GitSshAuth*>(auth.get()))
+    {
+        QString setupError = sshAuth->getSetupError();
+        if (!setupError.isEmpty())
+        {
+            return GitResult(
+                false,
+                QVariant(),
+                setupError
+                );
+        }
+    }
+
     const QString safeUrl = url;
     const QString safePath = localPath;
 
@@ -178,8 +192,10 @@ GitResult GitRepository::cloneInternal(const QString& url,
 
                 QVariantMap result = watcher->result();
 
-                if (result["success"].toBool())
+                if (result["success"].toBool()) {
+                    result["path"] = safePath;
                     m_currentRepoPath = safePath;
+                }
 
                 emit cloneFinished(result);
                 watcher->deleteLater();
