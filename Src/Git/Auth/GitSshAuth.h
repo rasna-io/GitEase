@@ -49,4 +49,25 @@ public:
      * @param fetchOpts libgit2 fetch options to modify
      */
     void apply(git_fetch_options& fetchOpts) override;
+
+    /**
+     * @brief applyFetch SSH authentication callbacks to fetch options.
+     *
+     * Registers the SSH credentials callback with libgit2 fetch options.
+     *
+     * @param fetchOpts libgit2 fetch options to modify
+     */
+    void applyFetch(git_fetch_options& fetchOpts) override;
+
+    /**
+     * @brief Apply SSH authentication callbacks to push options.
+     *
+     * Registers the SSH credentials callback used during push
+     * operations. Authentication is performed via the system
+     * SSH agent.
+     *
+     * @param opts libgit2 push options to modify
+     */
+    void applyPush(git_push_options& opts) override;
+
 };

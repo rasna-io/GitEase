@@ -46,8 +46,8 @@ public:
      * access to both the owning GitRepository (for UI updates) and the
      * authentication strategy (for credentials).
      */
-    struct GitClonePayload {
-        GitRepository* parentThread;    ///< Owner repository (UI + signals)
+    struct GitPayload {
+        QObject* parentThread;    ///< Owner repository (UI + signals)
         IGitAuth* auth;                 ///< Authentication strategy
     };
 
