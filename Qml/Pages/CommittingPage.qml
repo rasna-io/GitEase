@@ -32,6 +32,8 @@ Item {
 
     property StashController          stashController:        null
 
+    property NotificationController  notificationController:  null
+
     property UserAuthenticationPopup userAuthenticationPopup: null
 
     property string                  selectedFilePath:        ""
@@ -225,6 +227,7 @@ Item {
 
                                         if(res.success){
                                             commitTextArea.text = ""
+                                            root.notificationController.success("committing is success", "Commit", 5000)
                                         }else{
                                             errorMessageLabel.text = res.errorMessage ?? "commit error"
                                         }
