@@ -29,6 +29,14 @@ QtObject {
             configController.currentRepo = currentRepo
             stashController.currentRepo = currentRepo
         }
+
+        onRepositorySelected: function(repo) {
+            if (repo && repo.name) {
+                root.notificationController.currentRepositoryKey = repo.name
+            } else {
+                root.notificationController.currentRepositoryKey = ""
+            }
+        }
     }
 
     property BranchController branchController: BranchController {}
@@ -55,7 +63,9 @@ QtObject {
         repositoryController : root.repositoryController
     }
 
-    property NotificationController notificationController: NotificationController {}
+    property NotificationController notificationController: NotificationController {
+        fileIO: root.appModel.fileIO
+    }
 
     property UiSessionPopups      popups
 }
