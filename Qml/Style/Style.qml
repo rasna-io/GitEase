@@ -92,6 +92,27 @@ QtObject {
         levelLocalBadge:         "#D4BC4D"
         levelWorktreeBadge:      "#D44D4D"
         levelAppBadge:           "#4D4DD4"
+
+        notificationInfo:            "#12324A"
+        notificationInfoBorder:      "#2B6AA3"
+        notificationInfoIcon:        "#7AB9FF"
+
+        notificationSuccess:         "#123824"
+        notificationSuccessBorder:   "#2E7D32"
+        notificationSuccessIcon:     "#7EE082"
+
+        notificationWarning:         "#3A2A12"
+        notificationWarningBorder:   "#F57C00"
+        notificationWarningIcon:     "#FFCC80"
+
+        notificationError:           "#3A1216"
+        notificationErrorBorder:     "#D32F2F"
+        notificationErrorIcon:       "#FF8A80"
+
+        notificationInfoText:        "#EAF4FF"
+        notificationSuccessText:     "#E8FFF0"
+        notificationWarningText:     "#FFF3E0"
+        notificationErrorText:       "#FFEBEE"
     }
 
     property           string       currentTheme:               "Modern Light"
