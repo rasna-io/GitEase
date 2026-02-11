@@ -111,6 +111,8 @@ set(RESOURCES_COMPONENTS
     # DockPanel Docks
     Qml/View/Components/Docks/ImportExportBundleDock.qml       # Import Export git Bundle Dock
 
+    # Notifications
+    Qml/View/Components/Notification/NotificationItem.qml
 )
 
 
