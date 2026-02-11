@@ -105,4 +105,7 @@ QtObject{
     property color notificationSuccessText:     "#0F2E17"
     property color notificationWarningText:     "#3A2300"
     property color notificationErrorText:       "#4D0D12"
+
+    property color notificationBadge:           "#ef4444"
+    property color notificationBadgeText:       "#FFFFFF"
 }
