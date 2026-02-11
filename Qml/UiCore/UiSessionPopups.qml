@@ -26,4 +26,6 @@ Item {
     property AddBranchPopup             addBranchPopup:             AddBranchPopup {}
 
     property AddStashPopup              addStashPopup:              AddStashPopup {}
+
+    property NotificationCenterPopup    notificationCenterPopup:    NotificationCenterPopup {}
 }
