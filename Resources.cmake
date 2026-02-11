@@ -136,6 +136,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/AddEditRemotePopup.qml
     Qml/View/Popups/AddBranchPopup.qml
     Qml/View/Popups/AddStashPopup.qml
+    Qml/View/Popups/NotificationCenterPopup.qml
 
 )
 
