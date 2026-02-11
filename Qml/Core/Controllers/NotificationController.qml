@@ -15,6 +15,12 @@ QtObject {
     property var activeNotifications: []      // Currently visible notification windows
     property var queuedNotifications: []      // Queued notifications waiting to be shown
     property var closeAllHeader: null         // The "Close All" header window
+    property var notificationHistory: []      // All notifications history
+    property int unreadCount: 0               // Count of unread notifications
+    
+    /* Signals
+     * ****************************************************************************************/
+    signal historyUpdated()
     
     /* Private Properties
      * ****************************************************************************************/
@@ -48,8 +54,12 @@ QtObject {
             "title": title,
             "type": type,
             "duration": duration,
-            "timestamp": new Date()
+            "timestamp": new Date(),
+            "read": false
         }
+        
+        notificationHistory.push(notificationData)
+        unreadCount++
         
         // Check if we can show it now or need to queue
         if (activeNotifications.length >= maxVisibleNotifications) {
@@ -109,6 +119,33 @@ QtObject {
                 window.close()
             }
         }
+    }
+    
+    function markAllAsRead() {
+        for (var i = 0; i < notificationHistory.length; i++) {
+            notificationHistory[i].read = true
+        }
+        unreadCount = 0
+    }
+    
+    function clearHistory() {
+        notificationHistory = []
+        unreadCount = 0
+        historyUpdated()
+    }
+    
+    function getLatestNotificationType() {
+        if (unreadCount === 0 || notificationHistory.length === 0) {
+            return ""
+        }
+        
+        // Find the most recent unread notification
+        for (var i = notificationHistory.length - 1; i >= 0; i--) {
+            if (!notificationHistory[i].read) {
+                return notificationHistory[i].type
+            }
+        }
+        return ""
     }
 
     function createNotificationWindow(notificationData) {
