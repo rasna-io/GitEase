@@ -156,4 +156,5 @@ set(RESOURCES_SERVICES
 # Define View Resources
 set(RESOURCES_VIEW
     Qml/View/MainWindow.qml
+    Qml/View/FloatingNotificationWindow.qml     # show notifications
 )
