@@ -30,6 +30,12 @@ ApplicationWindow {
     visible: true
     color: Style.colors.primaryBackground
     title: qsTr("GitEase")
+    
+    /* Event Handlers
+     * ****************************************************************************************/
+    onClosing: {
+        uiSession?.notificationController?.saveNotifications()
+    }
 
 
     /* Fonts
