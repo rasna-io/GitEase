@@ -55,6 +55,8 @@ QtObject {
         repositoryController : root.repositoryController
     }
 
+    property NotificationController notificationController: NotificationController {}
+
     property UiSessionPopups      popups
 }
 
