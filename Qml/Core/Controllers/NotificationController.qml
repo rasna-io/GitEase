@@ -1,5 +1,7 @@
 ﻿import QtQuick
 
+import GitEase
+
 /*! ***********************************************************************************************
  * NotificationController
  * Manages application-wide notifications using floating window
@@ -7,10 +9,13 @@
 QtObject {
     id: root
 
+    required property FileIO fileIO
+
     /* Property Declarations
      * ****************************************************************************************/
     property int maxVisibleNotifications: 5
     property int defaultDuration: 3000
+    property string currentRepositoryKey: ""
     
     property var activeNotifications: []      // Currently visible notification windows
     property var queuedNotifications: []      // Queued notifications waiting to be shown
@@ -29,6 +34,28 @@ QtObject {
     property int rightMargin: 16
     property int bottomMargin: 16
     property int notificationSpacing: 5
+    readonly property string baseFilePath: fileIO.configFilePath + "/notifications"
+    
+    /* Signal Handlers
+     * ****************************************************************************************/
+    onCurrentRepositoryKeyChanged: {
+        if (root.notificationHistory.length > 0) {
+            saveNotifications()
+        }
+
+        root.notificationHistory = []
+        root.unreadCount = 0
+
+        loadNotifications()
+        historyUpdated()
+    }
+    
+    function getNotificationFilePath() {
+        if (root.currentRepositoryKey && root.currentRepositoryKey !== "") {
+            return root.baseFilePath + "_" + root.currentRepositoryKey + ".json"
+        }
+        return root.baseFilePath + ".json"  // Default global notifications
+    }
 
     /* Functions
      * ****************************************************************************************/
@@ -55,7 +82,8 @@ QtObject {
             "type": type,
             "duration": duration,
             "timestamp": new Date(),
-            "read": false
+            "read": false,
+            "repositoryKey": currentRepositoryKey
         }
         
         notificationHistory.push(notificationData)
@@ -146,6 +174,78 @@ QtObject {
             }
         }
         return ""
+    }
+    
+    function saveNotifications() {
+        var filePath = getNotificationFilePath()
+        
+        var data = {
+            "repositoryKey": root.currentRepositoryKey,
+            "notifications": [],
+            "unreadCount": root.unreadCount
+        }
+        
+        for (var i = 0; i < root.notificationHistory.length; i++) {
+            var notif = root.notificationHistory[i]
+            data.notifications.push({
+                "id": notif.id,
+                "message": notif.message,
+                "title": notif.title,
+                "type": notif.type,
+                "duration": notif.duration,
+                "timestamp": notif.timestamp.toISOString(),
+                "read": notif.read,
+                "repositoryKey": notif.repositoryKey || ""
+            })
+        }
+        
+        fileIO.fileName = filePath
+        fileIO.fileContent = JSON.stringify(data, null, 2)
+        fileIO.write()
+    }
+    
+    function loadNotifications() {
+        var filePath = getNotificationFilePath()
+        if (!fileIO.isFileExist(filePath)) {
+            console.log("[NotificationController] No saved notifications file found for repository:", currentRepositoryKey)
+            return
+        }
+                
+        fileIO.fileName = filePath
+        fileIO.read()
+        
+        var jsonString = fileIO.fileContent
+        if (!jsonString || jsonString.trim() === "") {
+            console.warn("[NotificationController] Empty notifications file")
+            return
+        }
+        
+        try {
+            var data = JSON.parse(jsonString)
+
+            if (data.notifications && Array.isArray(data.notifications)) {
+                root.notificationHistory = []
+                for (var i = 0; i < data.notifications.length; i++) {
+                    var notifData = data.notifications[i]
+                    root.notificationHistory.push({
+                        "id": notifData.id,
+                        "message": notifData.message,
+                        "title": notifData.title,
+                        "type": notifData.type,
+                        "duration": notifData.duration,
+                        "timestamp": new Date(notifData.timestamp),
+                        "read": notifData.read,
+                        "repositoryKey": notifData.repositoryKey || ""
+                    })
+                }
+            }
+            
+            if (data.unreadCount !== undefined) {
+                unreadCount = data.unreadCount
+            }
+        } catch (e) {
+            console.error("[NotificationController] Failed to parse notifications JSON:", e)
+        }
     }
 
     function createNotificationWindow(notificationData) {
@@ -265,5 +365,7 @@ QtObject {
         }
         
         closeAllHeader.closeAllRequested.connect(clearAllNotifications)
+        
+        loadNotifications()
     }
 }
