@@ -10,12 +10,15 @@ QtObject {
     id: root
 
     required property FileIO fileIO
+    required property var    appSettings
 
     /* Property Declarations
      * ****************************************************************************************/
-    property int maxVisibleNotifications: 5
-    property int defaultDuration: 3000
-    property string currentRepositoryKey: ""
+    property int    maxVisibleNotifications:      appSettings?.notificationSettings?.maxVisibleNotifications ?? 5
+    property int    defaultDuration:              3000
+    property string currentRepositoryKey:         ""
+    property string notificationPosition:         appSettings?.notificationSettings?.notificationPosition ?? "right-bottom"
+    property bool   displayRealtimeNotifications: appSettings?.notificationSettings?.displayRealtimeNotifications ?? true
     
     property var activeNotifications: []      // Currently visible notification windows
     property var queuedNotifications: []      // Queued notifications waiting to be shown
@@ -33,6 +36,7 @@ QtObject {
     property int screenHeight: 0
     property int rightMargin: 16
     property int bottomMargin: 16
+    property int topMargin: 16
     property int notificationSpacing: 5
     readonly property string baseFilePath: fileIO.configFilePath + "/notifications"
     
@@ -88,6 +92,11 @@ QtObject {
         
         notificationHistory.push(notificationData)
         unreadCount++
+        
+        if (!root.displayRealtimeNotifications) {
+            historyUpdated()
+            return
+        }
         
         // Check if we can show it now or need to queue
         if (activeNotifications.length >= maxVisibleNotifications) {
@@ -258,7 +267,8 @@ QtObject {
         var window = component.createObject(root, {
                                                 "notification": notificationData,
                                                 "notificationIndex": activeNotifications.length,
-                                                "notificationController": root
+                                                "notificationController": root,
+                                                "notificationPosition": root.notificationPosition
                                             })
 
         if (!window) {
@@ -322,8 +332,27 @@ QtObject {
         }
         
         if (closeAllHeader && closeAllHeader.visible) {
-            closeAllHeader.x = screenWidth - closeAllHeader.width - rightMargin
-            closeAllHeader.y = screenHeight - bottomMargin - closeAllHeader.height - totalHeight - (totalHeight > 0 ? notificationSpacing : 0)
+            var headerMargin = 16
+
+            switch(root.notificationPosition) {
+                case "right-top":
+                    closeAllHeader.x = screenWidth - closeAllHeader.width - rightMargin
+                    closeAllHeader.y = topMargin + totalHeight + (totalHeight > 0 ? notificationSpacing : 0)
+                    break
+                case "left-bottom":
+                    closeAllHeader.x = headerMargin
+                    closeAllHeader.y = screenHeight - bottomMargin - closeAllHeader.height - totalHeight - (totalHeight > 0 ? notificationSpacing : 0)
+                    break
+                case "left-top":
+                    closeAllHeader.x = headerMargin
+                    closeAllHeader.y = topMargin + totalHeight + (totalHeight > 0 ? notificationSpacing : 0)
+                    break
+                case "right-bottom":
+                default:
+                    closeAllHeader.x = screenWidth - closeAllHeader.width - rightMargin
+                    closeAllHeader.y = screenHeight - bottomMargin - closeAllHeader.height - totalHeight - (totalHeight > 0 ? notificationSpacing : 0)
+                    break
+            }
         }
         
         for (var j = 0; j < activeNotifications.length; j++) {

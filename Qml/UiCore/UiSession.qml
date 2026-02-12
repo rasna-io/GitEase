@@ -65,6 +65,7 @@ QtObject {
 
     property NotificationController notificationController: NotificationController {
         fileIO: root.appModel.fileIO
+        appSettings: root.appModel.appSettings
     }
 
     property UiSessionPopups      popups
