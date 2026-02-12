@@ -60,6 +60,7 @@ IPopup {
                         {id: 0, title: "General", icon: Style.icons.slider},
                         {id: 1, title: "SSH", icon: Style.icons.terminal},
                         {id: 2, title: "Appearence", icon: Style.icons.palette},
+                        {id: 3, title: "Notifications", icon: Style.icons.bell},
                     ]
                     expanded: true
                     onClicked: (modelData) => {
@@ -158,6 +159,56 @@ IPopup {
 
                         }
 
+                        Item {
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.topMargin: 10
+                                anchors.leftMargin: 20
+                                anchors.rightMargin: 20
+
+                                spacing: 20
+
+                                CheckboxItem {
+                                    id: displayRealtimeNotifications
+                                    Layout.fillWidth: true
+                                    title: "Display Real-time Notifications"
+                                    description: "Show notifications as floating windows. If disabled, notifications are only shown in the notification center"
+                                    checked: root.appSettings?.notificationSettings?.displayRealtimeNotifications ?? true
+                                }
+
+                                SpinboxItem {
+                                    id: maxVisibleNotifications
+                                    Layout.fillWidth: true
+                                    title: "Maximum Visible Notifications"
+                                    description: "Number of notifications displayed at once"
+                                    spinBox.from: 1
+                                    spinBox.to: 10
+                                    spinBox.value: 5
+                                }
+
+                                ComboboxItem {
+                                    id: notificationPosition
+                                    Layout.fillWidth: true
+                                    title: "Notification Position"
+                                    description: "Where to display notifications on screen"
+                                    cmb.model: ["Right Bottom", "Right Top", "Left Bottom", "Left Top"]
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Qt.darker(settingsContainer.color, 1.2)
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                }
+
+                            }
+                        }
+
                     }
                 }
             }
@@ -212,6 +263,16 @@ IPopup {
         root.appSettings.generalSettings.showAvatar = displayAvatar.checked
         root.appSettings.generalSettings.defaultPath = defaultPath.text
         root.appSettings.appearanceSettings.currentTheme = theme.cmb.displayText
+        root.appSettings.notificationSettings.displayRealtimeNotifications = displayRealtimeNotifications.checked
+        root.appSettings.notificationSettings.maxVisibleNotifications = maxVisibleNotifications.spinBox.value
+        
+        let positionMap = {
+            "Right Bottom": "right-bottom",
+            "Right Top": "right-top",
+            "Left Bottom": "left-bottom",
+            "Left Top": "left-top"
+        }
+        root.appSettings.notificationSettings.notificationPosition = positionMap[notificationPosition.cmb.displayText] || "right-bottom"
 
         root.appModel.save()
     }
@@ -221,6 +282,18 @@ IPopup {
         defaultPath.text = root.appSettings.generalSettings.defaultPath
 
         theme.cmb.currentIndex = theme.cmb.model.indexOf(root.appSettings.appearanceSettings.currentTheme)
+        
+        displayRealtimeNotifications.checked = root.appSettings?.notificationSettings?.displayRealtimeNotifications ?? true
+        maxVisibleNotifications.spinBox.value = root.appSettings?.notificationSettings?.maxVisibleNotifications ?? 5
+        
+        let positionMap = {
+            "right-bottom": "Right Bottom",
+            "right-top": "Right Top",
+            "left-bottom": "Left Bottom",
+            "left-top": "Left Top"
+        }
+        let positionDisplay = positionMap[root.appSettings?.notificationSettings?.notificationPosition] || "Right Bottom"
+        notificationPosition.cmb.currentIndex = notificationPosition.cmb.model.indexOf(positionDisplay)
     }
 
 }
