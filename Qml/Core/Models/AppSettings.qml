@@ -20,13 +20,16 @@ QtObject {
 
     property AppearanceSettings appearanceSettings: AppearanceSettings {}
 
+    property NotificationSettings notificationSettings: NotificationSettings {}
+
     /* Functions
      * ****************************************************************************************/
     function serialize() {
         let data = {
             hasCompletedWelcome: root.hasCompletedWelcome,
             general: root.generalSettings.serialize(),
-            appearance: root.appearanceSettings.serialize()
+            appearance: root.appearanceSettings.serialize(),
+            notifications: root.notificationSettings.serialize()
         }
 
         return data;
@@ -37,6 +40,7 @@ QtObject {
 
         root.generalSettings.deserialize(data?.general ?? {})
         root.appearanceSettings.deserialize(data?.appearance ?? {})
+        root.notificationSettings.deserialize(data?.notifications ?? {})
     }
 
 }
