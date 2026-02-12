@@ -20,7 +20,10 @@ Window {
     property int spacing: 5
     property int rightMargin: 16
     property int bottomMargin: 16
+    property int leftMargin: 16
+    property int topMargin: 16
     property int headerHeight: 0
+    property string notificationPosition: "right-bottom"
 
     /* Object Properties
      * ****************************************************************************************/
@@ -98,8 +101,26 @@ Window {
         let screenWidth = primaryScreen.width
         let screenHeight = primaryScreen.height
         
-        root.x = screenWidth - width - rightMargin
-        root.y = screenHeight - bottomMargin - headerHeight - height - (notificationIndex * (height + spacing))
+        // Calculate position based on notificationPosition setting
+        switch(notificationPosition) {
+            case "right-top":
+                root.x = screenWidth - width - rightMargin
+                root.y = topMargin + headerHeight + (notificationIndex * (height + spacing))
+                break
+            case "left-bottom":
+                root.x = leftMargin
+                root.y = screenHeight - bottomMargin - headerHeight - height - (notificationIndex * (height + spacing))
+                break
+            case "left-top":
+                root.x = leftMargin
+                root.y = topMargin + headerHeight + (notificationIndex * (height + spacing))
+                break
+            case "right-bottom":
+            default:
+                root.x = screenWidth - width - rightMargin
+                root.y = screenHeight - bottomMargin - headerHeight - height - (notificationIndex * (height + spacing))
+                break
+        }
     }
     
     function dismiss() {
