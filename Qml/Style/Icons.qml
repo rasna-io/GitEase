@@ -28,6 +28,7 @@ QtObject{
     property string upload:            "\ue09a" // upload
     property string gear:              "\uf013" // gear (settings)
     property string plus:              "\uf067" // plus
+    property string branchPlus:        "\uf65e" // branchPlus
     property string minus:             "\uf068" // minus
     property string trash:             "\uf1f8" // trash
     property string edit:              "\uf044"
