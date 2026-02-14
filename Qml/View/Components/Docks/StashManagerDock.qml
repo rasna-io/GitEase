@@ -13,86 +13,101 @@ import GitEase
 UtilitiesCard {
     id: root
 
-
     /* Property Declarations
      * ****************************************************************************************/
-    property StashController stashController: null
-
-    property AddStashPopup   addStashPopup: null
-    
+    property StashController        stashController:        null
+    property CommitController       commitController:       null
+    property StatusController       statusController:       null
+    property AddStashPopup          addStashPopup:          null
     property NotificationController notificationController: null
+
+    property AddStashPopup          addStashPopup:          null
+    
+    property var                    stashes:                []
+    property var                    selectedStash:          null
+    property var                    stashFiles:             []
+    property var                    stashDiffData:          []
+    property string                 selectedFilePath:       ""
+
+    property var previewStash: null
 
     /* Object Properties
      * ****************************************************************************************/
     title: "Stash Manager"
     icon: Style.icons.archive
 
-
+    /* Children
+     * ****************************************************************************************/
     content: ColumnLayout {
         id: content
-
         anchors.fill: parent
-        spacing: 16
+        spacing: 8
 
         Connections {
             target: root
-            onStashControllerChanged: {
-                content.update()
+            function onStashControllerChanged() {
+                root.updateStashes(true)
             }
         }
 
         Connections {
             target: root.addStashPopup
-
             function onAboutToHide() {
-                content.update()
+                root.updateStashes()
             }
         }
 
         ListView {
-            id: listView
+            id: stashListView
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 8
+            spacing: 6
             clip: true
+            model: root.stashes
 
             delegate: Rectangle {
-                width: listView.width
-                height: 60
-                color: Style.colors.secondaryBackground
+                width: stashListView.width
+                height: 50
                 radius: 5
+                property bool selected: root.selectedStash && root.selectedStash.index === modelData.index
+                color: selected ? Style.colors.hoverTitle : Style.colors.secondaryBackground
 
-                Row {
+                RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 10
+                    anchors.margins: 8
+                    spacing: 6
 
                     ColumnLayout {
-                        width: parent.width * 0.8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 2
-
+                        Layout.fillWidth: true
+                        spacing: 1
                         Text {
+                            Layout.fillWidth: true
                             text: modelData.message || qsTr("WIP on %1").arg(modelData.author || "unknown")
                             color: Style.colors.foreground
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
+                            font.pixelSize: 11
                             elide: Text.ElideMiddle
-                            Layout.fillWidth: true
                         }
                         Text {
-                            text: modelData.dateTime ? Qt.formatDateTime(modelData.dateTime, "MMM dd, yyyy 'at' hh:mm") : ""
+                            Layout.fillWidth: true
+                            text: modelData.dateTime ? Qt.formatDateTime(modelData.dateTime, "MMM dd, yyyy hh:mm") : ""
                             color: Style.colors.mutedText
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 10
-                            Layout.fillWidth: true
+                            font.pixelSize: 9
                             elide: Text.ElideRight
                         }
                     }
 
                     Row {
-                        spacing: 4
-                        width: parent.width * 0.2
-                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 2
+
+                        ActionIconButton {
+                            iconText: Style.icons.file
+                            tooltip: "Open"
+                            textColor: Style.colors.mutedText
+                            onClicked: root.openPreview(modelData)
+                        }
+
                         ActionIconButton {
                             iconText: Style.icons.undo
                             tooltip: "Pop"
@@ -111,6 +126,7 @@ UtilitiesCard {
                                 }
                             }
                         }
+
                         ActionIconButton {
                             iconText: Style.icons.check
                             tooltip: "Apply"
@@ -129,6 +145,7 @@ UtilitiesCard {
                                 }
                             }
                         }
+
                         ActionIconButton {
                             iconText: Style.icons.trash
                             tooltip: "Remove"
@@ -150,12 +167,11 @@ UtilitiesCard {
                     }
                 }
             }
-
         }
 
         Button {
             Layout.fillWidth: true
-            implicitHeight: 44
+            implicitHeight: 38
 
             background: Rectangle {
                 radius: 8
@@ -164,7 +180,6 @@ UtilitiesCard {
 
             contentItem: Item {
                 anchors.fill: parent
-
                 Row {
                     spacing: 10
                     anchors.centerIn: parent
@@ -175,8 +190,6 @@ UtilitiesCard {
                         font.family: Style.fontTypes.font6Pro
                         font.pixelSize: 12
                         color: Style.colors.secondaryForeground
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
                     }
 
                     Text {
@@ -184,43 +197,278 @@ UtilitiesCard {
                         text: "Stash"
                         color: Style.colors.secondaryForeground
                         font.pixelSize: 13
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
                     }
                 }
             }
 
-            onClicked: {
-                openAddEditPopup()
-            }
+            onClicked: root.openAddEditPopup()
+        }
+    }
+
+    Popup {
+        id: stashPreviewPopup
+        parent: Overlay.overlay
+        modal: true
+        focus: true
+        width: 640
+        height: 520
+        padding: 12
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        x: Overlay.overlay ? Math.round((Overlay.overlay.width - width) / 2) : 0
+        y: Overlay.overlay ? Math.round((Overlay.overlay.height - height) / 2) : 0
+
+        background: Rectangle {
+            radius: 8
+            color: Style.colors.primaryBackground
+            border.width: 1
+            border.color: Style.colors.primaryBorder
         }
 
-        function update() {
-            if (!stashController)
-                return
+        contentItem: ColumnLayout {
+            spacing: 10
 
-            let result = stashController.list()
-            if (result.success) {
-                listView.model = result.data
-            } else {
-                listView.model = []
-                if (root.notificationController && result.errorMessage) {
-                    root.notificationController.error(result.errorMessage, "Stash List Error", 5000)
+            Text {
+                Layout.fillWidth: true
+                text: root.previewStash
+                      ? ("stash@{" + root.previewStash.index + "}  " + (root.previewStash.message || "WIP"))
+                      : "Stash"
+                color: Style.colors.foreground
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 12
+                font.bold: true
+                elide: Text.ElideRight
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                radius: 6
+                color: Style.colors.secondaryBackground
+                border.width: 1
+                border.color: Style.colors.primaryBorder
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 8
+
+                    ListView {
+                        Layout.preferredWidth: 220
+                        Layout.fillHeight: true
+                        clip: true
+                        model: root.stashFiles
+
+                        delegate: Rectangle {
+                            width: parent.width
+                            height: 22
+                            radius: 3
+                            color: (root.selectedFilePath === modelData.path) ? Style.colors.hoverTitle : "transparent"
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 4
+                                anchors.rightMargin: 4
+                                spacing: 6
+
+                                Text {
+                                    text: root.statusLabel(modelData.deltaStatus)
+                                    color: Style.colors.mutedText
+                                    font.pixelSize: 9
+                                    Layout.preferredWidth: 18
+                                }
+
+                                Text {
+                                    text: modelData.path || ""
+                                    color: Style.colors.foreground
+                                    font.family: Style.fontTypes.roboto
+                                    font.pixelSize: 9
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideMiddle
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: root.selectStashFile(modelData.path)
+                            }
+                        }
+                    }
+
+                    DiffView {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        readOnly: true
+                        diffData: root.stashDiffData
+                    }
+                }
+            }
+
+            CheckBox {
+                id: reinstateIndexCheck
+                Layout.fillWidth: true
+                checked: true
+                text: "Restore staged/index state"
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                Button {
+                    text: "Close"
+                    Layout.fillWidth: true
+                    onClicked: stashPreviewPopup.close()
+                }
+
+                Button {
+                    text: "Pop"
+                    Layout.fillWidth: true
+                    onClicked: {
+                        root.executeStashAction("pop", root.previewStash, reinstateIndexCheck.checked)
+                        stashPreviewPopup.close()
+                    }
+                }
+
+                Button {
+                    text: "Apply"
+                    Layout.fillWidth: true
+                    onClicked: {
+                        root.executeStashAction("apply", root.previewStash, reinstateIndexCheck.checked)
+                        stashPreviewPopup.close()
+                    }
+                }
+
+                Button {
+                    text: "Remove"
+                    Layout.fillWidth: true
+                    onClicked: {
+                        root.executeStashAction("remove", root.previewStash, false)
+                        stashPreviewPopup.close()
+                    }
                 }
             }
         }
-
     }
 
     /* Functions
      * ****************************************************************************************/
-
     function openAddEditPopup() {
-        addStashPopup.stashController = root.stashController
-        addStashPopup.open()
+        if (!root.addStashPopup)
+            return
+
+        root.addStashPopup.stashController = root.stashController
+        root.addStashPopup.statusController = root.statusController
+        root.addStashPopup.open()
     }
 
+    function updateStashes() {
+        if (!root.stashController) {
+            root.stashes = []
+            root.selectedStash = null
+            root.stashFiles = []
+            root.stashDiffData = []
+            return
+        }
+
+        let result = root.stashController.list()
+        if (!result.success) {
+            root.stashes = []
+            root.selectedStash = null
+            root.stashFiles = []
+            root.stashDiffData = []
+            return
+        }
+
+        root.stashes = result.data
+
+        root.selectedStash = null
+        root.previewStash = null
+        root.stashFiles = []
+        root.stashDiffData = []
+    }
+
+    function selectStash(stashEntry) {
+        root.selectedStash = stashEntry
+        root.selectedFilePath = ""
+        root.stashDiffData = []
+        root.loadSelectedStashFiles()
+    }
+
+    function loadSelectedStashFiles() {
+        root.stashFiles = []
+        if (!root.selectedStash || !root.statusController || !root.selectedStash.id)
+            return
+
+        let res = root.statusController.getCommitFileChanges(root.selectedStash.id)
+        if (!res.success)
+            return
+
+        root.stashFiles = res.data
+        if (root.stashFiles.length > 0) {
+            root.selectStashFile(root.stashFiles[0].path)
+        }
+    }
+
+    function selectStashFile(filePath) {
+        root.selectedFilePath = filePath
+        root.loadSelectedDiff()
+    }
+
+    function loadSelectedDiff() {
+        root.stashDiffData = []
+        if (!root.selectedStash || !root.selectedFilePath || !root.statusController)
+            return
+
+        const parentHash = root.selectedStash.parentId
+                           || (root.commitController ? root.commitController.getParentHash(root.selectedStash.id) : "")
+
+        if (!parentHash)
+            return
+
+        let res = root.statusController.getDiff(parentHash, root.selectedStash.id, root.selectedFilePath)
+        if (res.success) {
+            root.stashDiffData = res.data
+        }
+    }
+
+    function openPreview(stashEntry) {
+        root.previewStash = stashEntry
+        root.selectStash(stashEntry)
+        stashPreviewPopup.open()
+    }
+
+    function executeStashAction(action, stashEntry, reinstateIndex) {
+        if (!stashEntry || !root.stashController)
+            return
+
+        let result = ({ success: false })
+        if (action === "apply") {
+            result = root.stashController.apply(stashEntry.index, reinstateIndex)
+        } else if (action === "pop") {
+            result = root.stashController.pop(stashEntry.index, reinstateIndex)
+        } else if (action === "remove") {
+            result = root.stashController.remove(stashEntry.index)
+        }
+
+        if (result.success) {
+            root.updateStashes()
+        }
+    }
+
+    function statusLabel(deltaStatus) {
+        switch (deltaStatus) {
+        case GitFileStatus.ADDED:
+            return "A"
+        case GitFileStatus.DELETED:
+            return "D"
+        case GitFileStatus.MODIFIED:
+            return "M"
+        case GitFileStatus.RENAMED:
+            return "R"
+        default:
+            return "?"
+        }
+    }
+
+    Component.onCompleted: updateStashes()
 }
-
-
-

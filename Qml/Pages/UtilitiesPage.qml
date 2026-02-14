@@ -21,6 +21,8 @@ Item {
     property BranchController branchController: null
     property BundleController bundleController: null
     property RemoteController remoteController: null
+    property CommitController commitController: null
+    property StatusController statusController: null
     property UiSessionPopups  uiSessionPopups: null
 
     property StashController  stashController   : null
@@ -79,6 +81,8 @@ Item {
                 width: 330
                 height: 390
                 stashController: root.stashController
+                commitController: root.commitController
+                statusController: root.statusController
                 addStashPopup: uiSessionPopups.addStashPopup
 
                 notificationController: root.notificationController

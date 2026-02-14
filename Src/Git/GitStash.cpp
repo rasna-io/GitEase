@@ -63,6 +63,7 @@ GitResult GitStash::list()
             QVariantMap stash;
 
             stash["index"] = static_cast<int>(index);
+            stash["id"] = QString::fromLatin1(git_oid_tostr_s(stash_id));
 
             stash["message"] = message
                                    ? QString::fromUtf8(message).trimmed()
@@ -72,8 +73,15 @@ GitResult GitStash::list()
             git_commit* commit = nullptr;
             if (git_commit_lookup(&commit, payload->repo, stash_id) == GIT_OK) {
                 const git_signature* author = git_commit_author(commit);
-                if (author)
+                if (author) {
+                    stash["author"] = QString::fromUtf8(author->name ? author->name : "");
                     stash["dateTime"] = QDateTime::fromSecsSinceEpoch(author->when.time);
+                }
+
+                const git_oid* parentOid = git_commit_parent_id(commit, 0);
+                if (parentOid) {
+                    stash["parentId"] = QString::fromLatin1(git_oid_tostr_s(parentOid));
+                }
                 git_commit_free(commit);
             }
 
