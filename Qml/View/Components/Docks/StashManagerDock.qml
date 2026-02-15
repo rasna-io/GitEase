@@ -30,6 +30,8 @@ UtilitiesCard {
 
     property var previewStash: null
 
+    property bool canStash: false
+
     /* Object Properties
      * ****************************************************************************************/
     title: "Stash Manager"
@@ -60,6 +62,13 @@ UtilitiesCard {
             target: root.manageStashPopup
             function onAboutToHide() {
                 root.updateStashes()
+            }
+        }
+
+        Connections {
+            target: root.statusController
+            function onStatusChanged() {
+                root.updateCanStash()
             }
         }
 
@@ -177,7 +186,9 @@ UtilitiesCard {
 
         Button {
             Layout.fillWidth: true
-            implicitHeight: 38
+            implicitHeight: 44
+
+            enabled: root.canStash
 
             background: Rectangle {
                 radius: 8
@@ -213,6 +224,26 @@ UtilitiesCard {
 
     /* Functions
      * ****************************************************************************************/
+    function updateCanStash() {
+        root.canStash = false
+
+        if (!root.statusController)
+            return
+
+        let res = root.statusController.status()
+        if (!res.success)
+            return
+
+        for (let i = 0; i < res.data.length; ++i) {
+            let file = res.data[i]
+            if (file.isStaged || file.isUnstaged || file.isUntracked) {
+                root.canStash = true
+                return
+            }
+        }
+    }
+
+
     function openAddEditPopup() {
         if (!root.addStashPopup)
             return
@@ -239,6 +270,8 @@ UtilitiesCard {
             root.selectedStash = null
             root.stashFiles = []
             root.stashDiffData = []
+
+            root.updateCanStash()
             return
         }
 
@@ -248,6 +281,8 @@ UtilitiesCard {
             root.selectedStash = null
             root.stashFiles = []
             root.stashDiffData = []
+
+            root.updateCanStash()
             return
         }
 
@@ -257,6 +292,8 @@ UtilitiesCard {
         root.previewStash = null
         root.stashFiles = []
         root.stashDiffData = []
+
+        root.updateCanStash()
     }
 
     function selectStash(stashEntry) {
