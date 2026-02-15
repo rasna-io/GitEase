@@ -159,9 +159,9 @@ IPopup {
                                     Layout.fillWidth: true
                                     title: "Maximum Visible Notifications"
                                     description: "Number of notifications displayed at once"
-                                    spinBox.from: 1
-                                    spinBox.to: 10
-                                    spinBox.value: 5
+                                    from: 1
+                                    to: 10
+                                    value: 5
                                 }
 
                                 ComboboxItem {
@@ -244,7 +244,7 @@ IPopup {
         root.appSettings.generalSettings.defaultPath = defaultPath.text
         root.appSettings.appearanceSettings.currentTheme = theme.cmb.displayText
         root.appSettings.notificationSettings.displayRealtimeNotifications = displayRealtimeNotifications.checked
-        root.appSettings.notificationSettings.maxVisibleNotifications = maxVisibleNotifications.spinBox.value
+        root.appSettings.notificationSettings.maxVisibleNotifications = maxVisibleNotifications.value
         
         let positionMap = {
             "Right Bottom": "right-bottom",
@@ -264,7 +264,7 @@ IPopup {
         theme.cmb.currentIndex = theme.cmb.model.indexOf(root.appSettings.appearanceSettings.currentTheme)
         
         displayRealtimeNotifications.checked = root.appSettings?.notificationSettings?.displayRealtimeNotifications ?? true
-        maxVisibleNotifications.spinBox.value = root.appSettings?.notificationSettings?.maxVisibleNotifications ?? 5
+        maxVisibleNotifications.value = root.appSettings?.notificationSettings?.maxVisibleNotifications ?? 5
         
         let positionMap = {
             "right-bottom": "Right Bottom",

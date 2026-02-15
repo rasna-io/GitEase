@@ -14,11 +14,11 @@ RowLayout {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property     string            title:       ""
-
-    property     string            description: ""
-
-    property     alias             spinBox:     spb
+    property string title:       ""
+    property string description: ""
+    property alias  from:        spinBox.from
+    property alias  to:          spinBox.to
+    property alias  value:       spinBox.value
 
     /* Children
      * ****************************************************************************************/
@@ -41,13 +41,11 @@ RowLayout {
     }
 
     SpinBox {
-        id: spb
-        Material.accent: Style.colors.accent
-        Material.background: Style.colors.surfaceLight
-        Material.foreground: Style.colors.foreground
+        id: spinBox
         from: 1
         to: 10
         value: 5
+        editable: false
     }
 }
 
