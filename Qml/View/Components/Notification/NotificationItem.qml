@@ -85,6 +85,30 @@ Rectangle {
             Item {
                 Layout.fillWidth: true
             }
+            
+            Text {
+                text: {
+                    if (!notification?.timestamp)
+                        return ""
+
+                    var date = notification.timestamp
+                    if (typeof date === 'string') date = new Date(date)
+                    
+                    var year = date.getFullYear()
+                    var month = String(date.getMonth() + 1).padStart(2, '0')
+                    var day = String(date.getDate()).padStart(2, '0')
+                    var hours = String(date.getHours()).padStart(2, '0')
+                    var minutes = String(date.getMinutes()).padStart(2, '0')
+                    
+                    return year + "/" + month + "/" + day + " " + hours + ":" + minutes
+                }
+                visible: !root.autoHide
+                font.family: Style.fontTypes.roboto
+                font.weight: 300
+                font.pixelSize: 9
+                color: Style.colors.mutedText
+                opacity: 0.7
+            }
         }
 
         RowLayout {
