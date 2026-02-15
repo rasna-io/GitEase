@@ -60,7 +60,6 @@ IPopup {
                         {id: 0, title: "General", icon: Style.icons.slider},
                         {id: 1, title: "SSH", icon: Style.icons.terminal},
                         {id: 2, title: "Appearence", icon: Style.icons.palette},
-                        {id: 3, title: "Notifications", icon: Style.icons.bell},
                     ]
                     expanded: true
                     onClicked: (modelData) => {
@@ -140,33 +139,12 @@ IPopup {
                                     cmb.model: ["Modern Light", "Modern Dark"]
                                 }
 
-
-
-
                                 Rectangle {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 2
                                     Layout.alignment: Qt.AlignHCenter
                                     color: Qt.darker(settingsContainer.color, 1.2)
                                 }
-
-                                Item {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                }
-
-                            }
-
-                        }
-
-                        Item {
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.topMargin: 10
-                                anchors.leftMargin: 20
-                                anchors.rightMargin: 20
-
-                                spacing: 20
 
                                 CheckboxItem {
                                     id: displayRealtimeNotifications
@@ -207,7 +185,9 @@ IPopup {
                                 }
 
                             }
+
                         }
+
 
                     }
                 }
