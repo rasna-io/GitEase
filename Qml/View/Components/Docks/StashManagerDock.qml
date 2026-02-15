@@ -303,12 +303,16 @@ UtilitiesCard {
                 }
             }
 
-            CheckBox {
+            CheckboxItem {
                 id: reinstateIndexCheck
                 Layout.fillWidth: true
+
+                title: "Restore Staged / Index State"
+                description: "Reapply the stash including staged changes"
+
                 checked: true
-                text: "Restore staged/index state"
             }
+
 
             RowLayout {
                 Layout.fillWidth: true
