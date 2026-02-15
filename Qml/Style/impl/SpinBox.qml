@@ -1,23 +1,23 @@
 import QtQuick
 import QtQuick.Templates as T
+import QtQuick.Controls
 import QtQuick.Controls.Material
-import QtQuick.Controls.Material.impl
+import QtQuick.Layouts
+
+import GitEase_Style
 
 T.SpinBox {
     id: control
 
-    // Note: the width of the indicators are calculated into the padding
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             contentItem.implicitWidth + leftPadding + rightPadding)
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding,
                              up.implicitIndicatorHeight, down.implicitIndicatorHeight)
 
-    spacing: 6
-    topPadding: Material.textFieldVerticalPadding
-    bottomPadding: Material.textFieldVerticalPadding
-    leftPadding: control.mirrored ? (up.indicator ? up.indicator.width : 0) : (down.indicator ? down.indicator.width : 0)
-    rightPadding: control.mirrored ? (down.indicator ? down.indicator.width : 0) : (up.indicator ? up.indicator.width : 0)
+    spacing: 4
+    leftPadding: (control.mirrored ? (up.indicator ? up.indicator.width : 0) : (down.indicator ? down.indicator.width : 0)) + spacing
+    rightPadding: (control.mirrored ? (down.indicator ? down.indicator.width : 0) : (up.indicator ? up.indicator.width : 0)) + spacing
 
     validator: IntValidator {
         locale: control.locale.name
@@ -25,93 +25,83 @@ T.SpinBox {
         top: Math.max(control.from, control.to)
     }
 
-    contentItem: TextInput {
-        text: control.displayText
+    // Content item (value display in the center)
+    contentItem: Item {
+        implicitWidth: 60
+        
+        TextInput {
+            anchors.fill: parent
+            anchors.leftMargin: control.spacing
+            anchors.rightMargin: control.spacing
+            z: 2
+            text: control.displayText
+            opacity: control.enabled ? 1 : 0.3
+            color: Style.colors.foreground
+            selectionColor: Style.colors.accent
+            selectedTextColor: Style.colors.secondaryForeground
+            horizontalAlignment: Qt.AlignHCenter
+            verticalAlignment: Qt.AlignVCenter
+            readOnly: !control.editable
+            validator: control.validator
+            inputMethodHints: control.inputMethodHints
+            font.pointSize: Style.appFont.h4Pt
+            font.bold: true
 
-        font: control.font
-        color: enabled ? control.Material.foreground : control.Material.hintTextColor
-        selectionColor: control.Material.textSelectionColor
-        selectedTextColor: control.Material.foreground
-        horizontalAlignment: Qt.AlignHCenter
-        verticalAlignment: Qt.AlignVCenter
-
-        cursorDelegate: CursorDelegate { }
-
-        readOnly: !control.editable
-        validator: control.validator
-        inputMethodHints: control.inputMethodHints
-        clip: width < implicitWidth
-    }
-
-    up.indicator: Item {
-        x: control.mirrored ? 0 : control.width - width
-        implicitWidth: control.Material.touchTarget
-        implicitHeight: control.Material.touchTarget
-        height: control.height
-        width: height
-
-        Ripple {
-            clipRadius: 2
-            x: control.spacing
-            y: control.spacing
-            width: parent.width - 2 * control.spacing
-            height: parent.height - 2 * control.spacing
-            pressed: control.up.pressed
-            active: control.up.pressed || control.up.hovered || control.visualFocus
-            color: control.Material.rippleColor
-        }
-
-        Rectangle {
-            x: (parent.width - width) / 2
-            y: (parent.height - height) / 2
-            width: Math.min(parent.width / 3, parent.height / 3)
-            height: 2
-            color: enabled ? control.Material.foreground : control.Material.spinBoxDisabledIconColor
-        }
-        Rectangle {
-            x: (parent.width - width) / 2
-            y: (parent.height - height) / 2
-            width: 2
-            height: Math.min(parent.width / 3, parent.height / 3)
-            color: enabled ? control.Material.foreground : control.Material.spinBoxDisabledIconColor
+            Rectangle {
+                anchors.fill: parent
+                z: -1
+                radius: 4
+                color: Style.colors.primaryBackground
+                border.width: 1
+                border.color: Style.colors.primaryBorder
+            }
         }
     }
 
-    down.indicator: Item {
-        x: control.mirrored ? control.width - width : 0
-        implicitWidth: control.Material.touchTarget
-        implicitHeight: control.Material.touchTarget
-        height: control.height
-        width: height
+    // Decrease button (left)
+    down.indicator: Rectangle {
+        x: control.mirrored ? parent.width - width - control.spacing : control.spacing
+        height: parent.height
+        implicitWidth: 36
+        implicitHeight: 36
+        radius: 4
+        color: control.down.pressed ? Style.colors.accent : Style.colors.primaryBackground
+        border.width: 1
+        border.color: Style.colors.primaryBorder
 
-        Ripple {
-            clipRadius: 2
-            x: control.spacing
-            y: control.spacing
-            width: parent.width - 2 * control.spacing
-            height: parent.height - 2 * control.spacing
-            pressed: control.down.pressed
-            active: control.down.pressed || control.down.hovered || control.visualFocus
-            color: control.Material.rippleColor
-        }
-
-        Rectangle {
-            x: (parent.width - width) / 2
-            y: (parent.height - height) / 2
-            width: parent.width / 3
-            height: 2
-            color: enabled ? control.Material.foreground : control.Material.spinBoxDisabledIconColor
+        Text {
+            anchors.centerIn: parent
+            text: Style.icons.minus
+            font.family: Style.fontTypes.font6ProSolid
+            font.pixelSize: 14
+            color: control.down.pressed ? Style.colors.secondaryForeground : Style.colors.foreground
+            opacity: control.down.indicator.enabled ? 1 : 0.3
         }
     }
 
-    background: MaterialTextContainer {
-        implicitWidth: 140
-        implicitHeight: control.Material.textFieldHeight
+    // Increase button (right)
+    up.indicator: Rectangle {
+        x: control.mirrored ? control.spacing : parent.width - width - control.spacing
+        height: parent.height
+        implicitWidth: 36
+        implicitHeight: 36
+        radius: 4
+        color: control.up.pressed ? Style.colors.accent : Style.colors.primaryBackground
+        border.width: 1
+        border.color: Style.colors.primaryBorder
 
-        outlineColor: (enabled && control.hovered) ? control.Material.primaryTextColor : control.Material.hintTextColor
-        focusedOutlineColor: control.Material.accentColor
-        controlHasActiveFocus: control.activeFocus
-        controlHasText: true
-        horizontalPadding: control.Material.textFieldHorizontalPadding
+        Text {
+            anchors.centerIn: parent
+            text: Style.icons.plus
+            font.family: Style.fontTypes.font6ProSolid
+            font.pixelSize: 14
+            color: control.up.pressed ? Style.colors.secondaryForeground : Style.colors.foreground
+            opacity: control.up.indicator.enabled ? 1 : 0.3
+        }
+    }
+
+    background: Rectangle {
+        implicitWidth: 128
+        color: "transparent"
     }
 }
