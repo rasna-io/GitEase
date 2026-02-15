@@ -1,5 +1,6 @@
 ﻿import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 
 import GitEase_Style
@@ -16,6 +17,8 @@ Rectangle {
     property var notification: null
     property bool dismissible: true
     property bool autoHide: notification?.autoHide ?? true
+    property int elapsedMs: 0
+    property int totalDuration: notification?.duration ?? 3000
 
     /* Signals
      * ****************************************************************************************/
@@ -24,75 +27,195 @@ Rectangle {
     /* Object Properties
      * ****************************************************************************************/
     width: 320
-    height: contentColumn.height + 24
-    radius: 4
-    color: {
-        if (!notification)
-            return Style.colors.cardBackground
-        
-        switch (notification.type) {
-            case "success":
-                return Style.colors.notificationSuccess
-            case "warning":
-                return Style.colors.notificationWarning
-            case "error":
-                return Style.colors.notificationError
-            case "info":
-            default:
-                return Style.colors.notificationInfo
-        }
-    }
-
-    border.width: 1
-    border.color: {
-        if (!notification)
-            return Style.colors.primaryBorder
-        
-        switch (notification.type) {
-            case "success":
-                return Style.colors.notificationSuccessBorder
-            case "warning":
-                return Style.colors.notificationWarningBorder
-            case "error":
-                return Style.colors.notificationErrorBorder
-            case "info":
-            default:
-                return Style.colors.notificationInfoBorder
-        }
-    }
+    height: contentColumn.implicitHeight
+    radius: 5
+    color: Style.colors.secondaryBackground
 
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
         id: contentColumn
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.margins: 12
-        spacing: 8
+        anchors.fill: parent
+        spacing: 0
 
-        RowLayout {
+        Rectangle {
             Layout.fillWidth: true
-            spacing: 8
-
-            Image {
-                Layout.preferredWidth: 50
-                Layout.preferredHeight: 14
-                source: "qrc:/GitEase/Resources/Images/Logo.svg"
-                fillMode: Image.PreserveAspectFit
+            Layout.preferredHeight: 35
+            color: Style.colors.primaryBackground
+            radius: 8
+            
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: 5
+                color: Style.colors.primaryBackground
             }
+            
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 10
+                
+                // Icon
+                Text {
+                    Layout.preferredWidth: 20
+                    Layout.preferredHeight: 20
+                    text: {
+                        if (!notification)
+                            return Style.icons.info
+                        
+                        switch (notification.type) {
+                            case "success":
+                                return Style.icons.check
+                            case "warning":
+                                return Style.icons.warning
+                            case "error":
+                                return Style.icons.circleExclamation
+                            case "info":
+                            default:
+                                return Style.icons.info
+                        }
+                    }
+                    font.family: Style.fontTypes.font6ProSolid
+                    font.pixelSize: 18
+                    color: {
+                        if (!notification)
+                            return Style.colors.notificationInfoIcon
+                        
+                        switch (notification.type) {
+                            case "success":
+                                return Style.colors.notificationSuccessIcon
+                            case "warning":
+                                return Style.colors.notificationWarningIcon
+                            case "error":
+                                return Style.colors.notificationErrorIcon
+                            case "info":
+                            default:
+                                return Style.colors.notificationInfoIcon
+                        }
+                    }
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                
+                // Title
+                Text {
+                    Layout.fillWidth: true
+                    text: notification?.title ?? ""
+                    font.family: Style.fontTypes.roboto
+                    font.weight: 600
+                    font.pixelSize: 14
+                    color: Style.colors.foreground
+                    elide: Text.ElideRight
+                    verticalAlignment: Text.AlignVCenter
+                }
+                
+                // Close button
+                Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: 20
+                    Layout.preferredHeight: 20
+                    radius: 4
+                    color: closeMouseArea.containsMouse ? "red" : "transparent"
+                    visible: root.dismissible
 
-            Item {
-                Layout.fillWidth: true
+                    Rectangle {
+                        width: 12
+                        height: 2
+                        radius: 1
+                        color: Style.colors.foreground
+                        anchors.centerIn: parent
+                        rotation: 45
+                    }
+
+                    Rectangle {
+                        width: 12
+                        height: 2
+                        radius: 1
+                        color: Style.colors.foreground
+                        anchors.centerIn: parent
+                        rotation: -45
+                    }
+
+                    MouseArea {
+                        id: closeMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.closeRequested()
+                    }
+                }
+            }
+        }
+
+        Text {
+            Layout.fillWidth: true
+            Layout.margins: 12
+            text: notification?.message ?? ""
+            font.family: Style.fontTypes.roboto
+            font.weight: 400
+            font.pixelSize: 11
+            color: Style.colors.foreground
+            wrapMode: Text.WordWrap
+        }
+        
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 24
+            Layout.topMargin: 0
+            Layout.bottomMargin: 0
+            
+            Rectangle {
+                visible: root.autoHide
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: 4
+                color: Style.colors.secondaryBackground
+                radius: 8
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom                    
+                    width: {
+                        if (root.totalDuration <= 0)
+                            return 0
+                        return parent.width * (root.elapsedMs / root.totalDuration)
+                    }
+                    radius: 8
+                    color: {
+                        if (!notification)
+                            return Style.colors.notificationInfoIcon
+                        
+                        switch (notification.type) {
+                            case "success":
+                                return Style.colors.notificationSuccessIcon
+                            case "warning":
+                                return Style.colors.notificationWarningIcon
+                            case "error":
+                                return Style.colors.notificationErrorIcon
+                            case "info":
+                            default:
+                                return Style.colors.notificationInfoIcon
+                        }
+                    }
+                }
             }
             
             Text {
+                visible: !root.autoHide
+                anchors.left: parent.left
+                anchors.leftMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
                 text: {
                     if (!notification?.timestamp)
                         return ""
 
                     var date = notification.timestamp
-                    if (typeof date === 'string') date = new Date(date)
+                    if (typeof date === 'string')
+                        date = new Date(date)
                     
                     var year = date.getFullYear()
                     var month = String(date.getMonth() + 1).padStart(2, '0')
@@ -102,177 +225,8 @@ Rectangle {
                     
                     return year + "/" + month + "/" + day + " " + hours + ":" + minutes
                 }
-                visible: !root.autoHide
-                font.family: Style.fontTypes.roboto
-                font.weight: 300
                 font.pixelSize: 9
                 color: Style.colors.mutedText
-                opacity: 0.7
-            }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 12
-
-            // Icon
-            Text {
-                Layout.alignment: Qt.AlignVCenter
-                text: {
-                    if (!notification)
-                        return Style.icons.info
-                    
-                    switch (notification.type) {
-                        case "success":
-                            return Style.icons.check
-                        case "warning":
-                            return Style.icons.warning
-                        case "error":
-                            return Style.icons.circleExclamation
-                        case "info":
-                        default:
-                            return Style.icons.info
-                    }
-                }
-                font.family: Style.fontTypes.font6ProSolid
-                font.pixelSize: 18
-                color: {
-                    if (!notification)
-                        return Style.colors.foreground
-                    
-                    switch (notification.type) {
-                        case "success":
-                            return Style.colors.notificationSuccessIcon
-                        case "warning":
-                            return Style.colors.notificationWarningIcon
-                        case "error":
-                            return Style.colors.notificationErrorIcon
-                        case "info":
-                        default:
-                            return Style.colors.notificationInfoIcon
-                    }
-                }
-            }
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 4
-
-                Text {
-                    Layout.fillWidth: true
-                    text: notification?.title ?? ""
-                    visible: text.length > 0
-                    font.family: Style.fontTypes.roboto
-                    font.weight: 600
-                    font.pixelSize: 14
-                    color: {
-                        if (!notification)
-                            return Style.colors.foreground
-
-                        switch (notification.type) {
-                            case "success":
-                                return Style.colors.notificationSuccessText
-                            case "warning":
-                                return Style.colors.notificationWarningText
-                            case "error":
-                                return Style.colors.notificationErrorText
-                            case "info":
-                            default:
-                                return Style.colors.notificationInfoText
-                        }
-                    }
-                    wrapMode: Text.WordWrap
-                }
-
-                Text {
-                    Layout.fillWidth: true
-                    text: notification?.message ?? ""
-                    font.family: Style.fontTypes.roboto
-                    font.weight: 400
-                    font.pixelSize: 11
-                    color: {
-                        if (!notification)
-                            return Style.colors.foreground
-
-                        switch (notification.type) {
-                            case "success":
-                                return Style.colors.notificationSuccessText
-                            case "warning":
-                                return Style.colors.notificationWarningText
-                            case "error":
-                                return Style.colors.notificationErrorText
-                            case "info":
-                            default:
-                                return Style.colors.notificationInfoText
-                        }
-                    }
-                    wrapMode: Text.WordWrap
-                }
-            }
-
-            Rectangle {
-                Layout.alignment: Qt.AlignTop
-                Layout.preferredWidth: 20
-                Layout.preferredHeight: 20
-                radius: 4
-                color: closeMouseArea.containsMouse ? "red" : "transparent"
-                visible: root.dismissible
-
-                Rectangle {
-                    width: 12
-                    height: 2
-                    radius: 1
-                    color: {
-                        if (!notification)
-                            return Style.colors.foreground
-
-                        switch (notification.type) {
-                            case "success":
-                                return Style.colors.notificationSuccessText
-                            case "warning":
-                                return Style.colors.notificationWarningText
-                            case "error":
-                                return Style.colors.notificationErrorText
-                            case "info":
-                            default:
-                                return Style.colors.notificationInfoText
-                        }
-                    }
-                    anchors.centerIn: parent
-                    rotation: 45
-                }
-
-                Rectangle {
-                    width: 12
-                    height: 2
-                    radius: 1
-                    color: {
-                        if (!notification)
-                            return Style.colors.foreground
-
-                        switch (notification.type) {
-                            case "success":
-                                return Style.colors.notificationSuccessText
-                            case "warning":
-                                return Style.colors.notificationWarningText
-                            case "error":
-                                return Style.colors.notificationErrorText
-                            case "info":
-                            default:
-                                return Style.colors.notificationInfoText
-                        }
-                    }
-                    anchors.centerIn: parent
-                    rotation: -45
-                }
-
-                MouseArea {
-                    id: closeMouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.closeRequested()
-                }
             }
         }
     }
