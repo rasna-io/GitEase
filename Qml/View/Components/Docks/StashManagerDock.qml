@@ -148,7 +148,7 @@ UtilitiesCard {
 
                         ActionIconButton {
                             iconText: Style.icons.trash
-                            tooltip: "Remove"
+                            tooltip: "Drop"
                             textColor: Style.colors.deletededFile
                             onClicked: {
                                 let result = stashController.remove(modelData.index)
@@ -315,14 +315,65 @@ UtilitiesCard {
                 spacing: 8
 
                 Button {
-                    text: "Close"
                     Layout.fillWidth: true
+                    implicitHeight: 38
+
+                    background: Rectangle {
+                        radius: 8
+                        color: Style.colors.accent
+                    }
+
+                    contentItem: Item {
+                        anchors.fill: parent
+                        Row {
+                            spacing: 10
+                            anchors.centerIn: parent
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Cancel"
+                                color: Style.colors.secondaryForeground
+                                font.pixelSize: 13
+                            }
+                        }
+                    }
+
                     onClicked: stashPreviewPopup.close()
                 }
 
                 Button {
-                    text: "Pop"
                     Layout.fillWidth: true
+                    implicitHeight: 38
+
+                    background: Rectangle {
+                        radius: 8
+                        color: enabled ? Style.colors.accent
+                                       : Style.colors.disabledButton
+                    }
+
+                    contentItem: Item {
+                        anchors.fill: parent
+                        Row {
+                            spacing: 10
+                            anchors.centerIn: parent
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: Style.icons.undo
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 12
+                                color: Style.colors.secondaryForeground
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Pop"
+                                color: Style.colors.secondaryForeground
+                                font.pixelSize: 13
+                            }
+                        }
+                    }
+
                     onClicked: {
                         root.executeStashAction("pop", root.previewStash, reinstateIndexCheck.checked)
                         stashPreviewPopup.close()
@@ -330,8 +381,38 @@ UtilitiesCard {
                 }
 
                 Button {
-                    text: "Apply"
                     Layout.fillWidth: true
+                    implicitHeight: 38
+
+                    background: Rectangle {
+                        radius: 8
+                        color: enabled ? Style.colors.accent
+                                       : Style.colors.disabledButton
+                    }
+
+                    contentItem: Item {
+                        anchors.fill: parent
+                        Row {
+                            spacing: 10
+                            anchors.centerIn: parent
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: Style.icons.check
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 12
+                                color: Style.colors.secondaryForeground
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Apply"
+                                color: Style.colors.secondaryForeground
+                                font.pixelSize: 13
+                            }
+                        }
+                    }
+
                     onClicked: {
                         root.executeStashAction("apply", root.previewStash, reinstateIndexCheck.checked)
                         stashPreviewPopup.close()
@@ -339,14 +420,45 @@ UtilitiesCard {
                 }
 
                 Button {
-                    text: "Remove"
                     Layout.fillWidth: true
+                    implicitHeight: 38
+
+                    background: Rectangle {
+                        radius: 8
+                        color: enabled ? Style.colors.deletededFile
+                                       : Style.colors.disabledButton
+                    }
+
+                    contentItem: Item {
+                        anchors.fill: parent
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 10
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: Style.icons.trash
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 12
+                                color: Style.colors.secondaryForeground
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Drop"
+                                color: Style.colors.secondaryForeground
+                                font.pixelSize: 13
+                            }
+                        }
+                    }
+
                     onClicked: {
                         root.executeStashAction("remove", root.previewStash, false)
                         stashPreviewPopup.close()
                     }
                 }
             }
+
         }
     }
 
