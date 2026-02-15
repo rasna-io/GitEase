@@ -233,24 +233,7 @@ Rectangle {
                         font.family: notificationButtonMouse.containsMouse ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
                         font.weight: 400
                         font.pixelSize: 14
-                        color: {
-                            if (!root.notificationController || root.notificationController.unreadCount === 0) {
-                                return Style.colors.foreground
-                            }
-                            
-                            var type = root.notificationController.getLatestNotificationType()
-                            switch(type) {
-                                case "error":
-                                    return Style.colors.notificationErrorIcon
-                                case "warning":
-                                    return Style.colors.notificationWarningIcon
-                                case "success":
-                                    return Style.colors.notificationSuccessIcon
-                                case "info":
-                                default:
-                                    return Style.colors.notificationInfoIcon
-                            }
-                        }
+                        color: Style.colors.foreground
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
