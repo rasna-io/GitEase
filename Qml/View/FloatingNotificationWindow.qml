@@ -44,6 +44,7 @@ Window {
      * ****************************************************************************************/
     property int remainingMs: 0
     property double timerStartMs: 0
+    property int totalElapsed: 0
 
     /* Functions
      * ****************************************************************************************/
@@ -59,6 +60,7 @@ Window {
             let dur = notificationObject.duration
             remainingMs = dur
             if (dur > 0) {
+                resetTimer()
                 startTimer(remainingMs)
             }
         }
@@ -74,13 +76,19 @@ Window {
         timerStartMs = Date.now()
         autoDismissTimer.start()
     }
+    
+    function resetTimer() {
+        totalElapsed = 0
+        timerStartMs = Date.now()
+    }
 
     function pauseAutoDismiss() {
         if (!autoDismissTimer.running)
             return
 
         let elapsed = Date.now() - timerStartMs
-        remainingMs = Math.max(0, remainingMs - elapsed)
+        totalElapsed += elapsed
+        remainingMs = Math.max(0, autoDismissTimer.interval - elapsed)
         autoDismissTimer.stop()
     }
 
@@ -91,6 +99,7 @@ Window {
         if (autoDismissTimer.running)
             return
 
+        timerStartMs = Date.now()
         startTimer(remainingMs)
     }
     
@@ -153,6 +162,17 @@ Window {
 
             notification: notificationObject
             dismissible: true
+            elapsedMs: {
+                if (!notificationObject.autoHide)
+                    return 0
+                
+                if (autoDismissTimer.running) {
+                    let currentElapsed = Date.now() - root.timerStartMs
+                    return Math.min(notificationObject.duration, root.totalElapsed + currentElapsed)
+                }
+                
+                return Math.min(notificationObject.duration, root.totalElapsed)
+            }
 
             onCloseRequested: {
                 root.dismiss()
@@ -223,6 +243,26 @@ Window {
         onTriggered: {
             remainingMs = 0
             root.dismiss()
+        }
+    }
+    
+    Timer {
+        id: progressTimer
+        interval: 5
+        repeat: true
+        running: (autoDismissTimer.running || totalElapsed > 0) && notificationObject.autoHide
+        onTriggered: {
+            notificationItem.elapsedMs = Qt.binding(function() {
+                if (!notificationObject.autoHide)
+                    return 0
+                
+                if (autoDismissTimer.running) {
+                    let currentElapsed = Date.now() - root.timerStartMs
+                    return Math.min(notificationObject.duration, root.totalElapsed + currentElapsed)
+                }
+                
+                return Math.min(notificationObject.duration, root.totalElapsed)
+            })
         }
     }
 
