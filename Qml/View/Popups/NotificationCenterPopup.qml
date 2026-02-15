@@ -98,9 +98,7 @@ IPopup {
                             Text {
                                 Layout.fillWidth: true
                                 text: "Notifications"
-                                font.family: Style.fontTypes.roboto
-                                font.weight: 700
-                                font.pixelSize: 17
+                                font.pointSize: Style.appFont.h4Pt
                                 color: Style.colors.foreground
                             }
 
@@ -108,13 +106,14 @@ IPopup {
                                 flat: true
                                 text: "Mark all read"
                                 visible: root.notificationController && root.notificationController.unreadCount > 0
+                                font.pointSize: Style.appFont.secondaryPt
                                 Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                                 background: Rectangle {
                                     color: parent.hovered ? Style.colors.accent : Style.colors.primaryBackground
                                     border.color: Style.colors.accent
                                     radius: 5
                                     implicitWidth: 120
-                                    implicitHeight: 36
+                                    implicitHeight: 30
                                 }
 
                                 onClicked: {
@@ -127,13 +126,14 @@ IPopup {
                             Button {
                                 flat: true
                                 text: "Clear all"
+                                font.pointSize: Style.appFont.secondaryPt
                                 Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                                 background: Rectangle {
                                     color: parent.hovered ? Style.colors.accent : Style.colors.primaryBackground
                                     border.color: Style.colors.accent
                                     radius: 5
                                     implicitWidth: 100
-                                    implicitHeight: 36
+                                    implicitHeight: 30
                                 }
 
                                 onClicked: {
@@ -186,21 +186,11 @@ IPopup {
                                         id: notifCard
                                         anchors.left: parent.left
                                         anchors.right: parent.right
-                                        height: contentCol.height + 18
-                                        radius: 6
+                                        height: contentCol.height + 12
+                                        radius: 5
                                         color: modelData.read ? Style.colors.primaryBackground : Qt.alpha(Style.colors.accent, 0.03)
-                                        border.width: modelData.read ? 1 : 2
+                                        border.width: 1
                                         border.color: modelData.read ? Style.colors.primaryBorder : Qt.alpha(Style.colors.accent, 0.3)
-                                        
-                                        // Subtle shadow effect
-                                        layer.enabled: true
-                                        layer.effect: DropShadow {
-                                            horizontalOffset: 0
-                                            verticalOffset: 1
-                                            radius: 3
-                                            samples: 7
-                                            color: Qt.rgba(0, 0, 0, 0.08)
-                                        }
 
                                         // Type indicator bar
                                         Rectangle {
@@ -208,8 +198,8 @@ IPopup {
                                             anchors.top: parent.top
                                             anchors.bottom: parent.bottom
                                             anchors.leftMargin: 0
-                                            width: modelData.read ? 3 : 4
-                                            radius: 6
+                                            width: 3
+                                            radius: 5
                                             color: {
                                                 switch(modelData.type) {
                                                     case "error":
@@ -230,17 +220,19 @@ IPopup {
                                             anchors.left: parent.left
                                             anchors.right: parent.right
                                             anchors.top: parent.top
-                                            anchors.margins: 9
-                                            anchors.leftMargin: 14
-                                            spacing: 4
+                                            anchors.margins: 6
+                                            anchors.leftMargin: 10
+                                            spacing: 3
 
                                             // Header row: icon, title, time
                                             RowLayout {
                                                 Layout.fillWidth: true
-                                                spacing: 10
+                                                spacing: 6
 
                                                 // Icon
                                                 Text {
+                                                    Layout.preferredWidth: 14
+                                                    Layout.preferredHeight: 14
                                                     text: {
                                                         switch(modelData.type) {
                                                             case "error":
@@ -255,7 +247,9 @@ IPopup {
                                                         }
                                                     }
                                                     font.family: Style.fontTypes.font6ProSolid
-                                                    font.pixelSize: 14
+                                                    font.pixelSize: 12
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    verticalAlignment: Text.AlignVCenter
                                                     color: {
                                                         switch(modelData.type) {
                                                             case "error":
@@ -275,19 +269,17 @@ IPopup {
                                                 Text {
                                                     Layout.fillWidth: true
                                                     text: modelData.title
-                                                    font.family: Style.fontTypes.roboto
-                                                    font.weight: 600
-                                                    font.pixelSize: 13
+                                                    font.pixelSize: 12
+                                                    font.weight: Font.Medium
                                                     color: Style.colors.foreground
                                                     elide: Text.ElideRight
                                                 }
 
                                                 // Time
                                                 Text {
+                                                    Layout.rightMargin: 10
                                                     text: root.getRelativeTime(modelData.timestamp)
-                                                    font.family: Style.fontTypes.roboto
-                                                    font.weight: 500
-                                                    font.pixelSize: 11
+                                                    font.pixelSize: 10
                                                     color: modelData.read ? Style.colors.mutedText : Style.colors.accent
                                                 }
                                             }
@@ -296,13 +288,11 @@ IPopup {
                                             Text {
                                                 Layout.fillWidth: true
                                                 text: modelData.message
-                                                font.family: Style.fontTypes.roboto
-                                                font.weight: 400
-                                                font.pixelSize: 12
-                                                lineHeight: 1.4
+                                                font.pixelSize: 11
+                                                lineHeight: 1.3
                                                 color: Style.colors.mutedText
                                                 wrapMode: Text.Wrap
-                                                maximumLineCount: 3
+                                                maximumLineCount: 2
                                                 elide: Text.ElideRight
                                             }
                                         }
@@ -327,6 +317,7 @@ IPopup {
                 Button {
                     flat: true
                     text: "Close"
+                    font.pointSize: Style.appFont.secondaryPt
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
