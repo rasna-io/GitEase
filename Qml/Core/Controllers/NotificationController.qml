@@ -152,8 +152,10 @@ QtObject {
     function clearAllNotifications() {
         queuedNotifications = []
         
-        for (var i = 0; i < activeNotifications.length; i++) {
-            var window = activeNotifications[i]
+        var notificationsToClose = activeNotifications.slice()
+        
+        for (var i = 0; i < notificationsToClose.length; i++) {
+            var window = notificationsToClose[i]
             if (window) {
                 window.close()
             }
