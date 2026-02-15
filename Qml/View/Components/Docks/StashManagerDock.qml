@@ -210,8 +210,8 @@ UtilitiesCard {
         parent: Overlay.overlay
         modal: true
         focus: true
-        width: 640
-        height: 520
+        width: 800
+        height: 650
         padding: 12
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         x: Overlay.overlay ? Math.round((Overlay.overlay.width - width) / 2) : 0
@@ -273,7 +273,7 @@ UtilitiesCard {
                                 Text {
                                     text: root.statusLabel(modelData.deltaStatus)
                                     color: Style.colors.mutedText
-                                    font.pixelSize: 9
+                                    font.pixelSize: 11
                                     Layout.preferredWidth: 18
                                 }
 
@@ -281,7 +281,7 @@ UtilitiesCard {
                                     text: modelData.path || ""
                                     color: Style.colors.foreground
                                     font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 9
+                                    font.pixelSize: 15
                                     Layout.fillWidth: true
                                     elide: Text.ElideMiddle
                                 }
