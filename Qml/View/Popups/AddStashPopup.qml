@@ -68,7 +68,7 @@ IPopup {
                 Text {
                     text: "Stash Message (Optional)"
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 11
+                    font.pixelSize: 13
                     font.bold: true
                     color: Style.colors.foreground
                 }
@@ -86,14 +86,6 @@ IPopup {
                         border.width: parent.activeFocus ? 2 : 1
                         border.color: parent.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
                     }
-                }
-
-                CheckboxItem {
-                    id: keepIndexCheckBox
-                    Layout.fillWidth: true
-                    title: "Keep staged changes in index"
-                    description: ""
-                    checked: true
                 }
             }
 
@@ -161,6 +153,14 @@ IPopup {
                         diffData: root.stashDiffData
                     }
                 }
+            }
+
+            CheckboxItem {
+                id: keepIndexCheckBox
+                Layout.fillWidth: false
+                title: "Keep staged changes in index"
+                description: "Preserves staged changes and stashes only working directory modifications."
+                checked: false
             }
 
             RowLayout {

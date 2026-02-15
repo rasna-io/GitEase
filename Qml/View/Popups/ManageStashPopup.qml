@@ -148,7 +148,7 @@ IPopup {
 
             CheckboxItem {
                 id: reinstateIndexCheck
-                Layout.fillWidth: true
+                Layout.fillWidth: false
                 title: "Restore Staged / Index State"
                 description: "Reapply the stash including staged changes"
                 checked: true
@@ -346,11 +346,20 @@ IPopup {
 
     function statusLabel(fileOrDelta) {
         switch (fileOrDelta) {
-        case GitFileStatus.ADDED: return "A"
-        case GitFileStatus.DELETED: return "D"
-        case GitFileStatus.MODIFIED: return "M"
-        case GitFileStatus.RENAMED: return "R"
-        default: return "?"
+            case GitFileStatus.ADDED:
+                return "A"
+
+            case GitFileStatus.DELETED:
+                return "D"
+
+            case GitFileStatus.MODIFIED:
+                return "M"
+
+            case GitFileStatus.RENAMED:
+                return "R"
+
+            default:
+                return "?"
         }
     }
 }
