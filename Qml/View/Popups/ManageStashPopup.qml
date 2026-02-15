@@ -41,9 +41,9 @@ IPopup {
         }
 
         // Load the list of files for this stash
-        let res = statusController.getCommitFileChanges(stashEntry.id)
-        if (res.success) {
-            stashFiles = res.data
+        let loadFiles = statusController.getCommitFileChanges(stashEntry.id)
+        if (loadFiles.success) {
+            stashFiles = loadFiles.data
 
             // Automatically select the first file
             if (stashFiles.length > 0) {
@@ -191,8 +191,7 @@ IPopup {
 
                     background: Rectangle {
                         radius: 8
-                        color: enabled ? Style.colors.accent
-                                       : Style.colors.disabledButton
+                        color: Style.colors.accent
                     }
 
                     contentItem: Item {
@@ -230,8 +229,7 @@ IPopup {
 
                     background: Rectangle {
                         radius: 8
-                        color: enabled ? Style.colors.accent
-                                       : Style.colors.disabledButton
+                        color: Style.colors.accent
                     }
 
                     contentItem: Item {
@@ -269,8 +267,7 @@ IPopup {
 
                     background: Rectangle {
                         radius: 8
-                        color: enabled ? Style.colors.deletededFile
-                                       : Style.colors.disabledButton
+                        color: Style.colors.deletededFile
                     }
 
                     contentItem: Item {
@@ -347,8 +344,8 @@ IPopup {
         }
     }
 
-    function statusLabel(deltaStatus) {
-        switch (deltaStatus) {
+    function statusLabel(fileOrDelta) {
+        switch (fileOrDelta) {
         case GitFileStatus.ADDED: return "A"
         case GitFileStatus.DELETED: return "D"
         case GitFileStatus.MODIFIED: return "M"
