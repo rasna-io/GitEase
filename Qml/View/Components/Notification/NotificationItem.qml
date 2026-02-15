@@ -15,6 +15,7 @@ Rectangle {
      * ****************************************************************************************/
     property var notification: null
     property bool dismissible: true
+    property bool autoHide: notification?.autoHide ?? true
 
     /* Signals
      * ****************************************************************************************/

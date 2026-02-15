@@ -54,10 +54,13 @@ Window {
         positionWindow()
         fadeInAnimation.start()
 
-        let dur = notificationObject.duration
-        remainingMs = dur
-        if (dur > 0) {
-            startTimer(remainingMs)
+        let autoHide = notificationObject.autoHide ?? true
+        if (autoHide) {
+            let dur = notificationObject.duration
+            remainingMs = dur
+            if (dur > 0) {
+                startTimer(remainingMs)
+            }
         }
     }
 
@@ -136,6 +139,7 @@ Window {
         property string title:     (root.notification && root.notification.title) || "notification title"
         property string type:      (root.notification && root.notification.type) || "info"
         property int    duration:  (root.notification && root.notification.duration) || 3000
+        property bool   autoHide:  (root.notification && root.notification.autoHide !== undefined) ? root.notification.autoHide : true
         property var    timestamp: (root.notification && root.notification.timestamp) || new Date()
     }
     

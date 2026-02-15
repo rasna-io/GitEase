@@ -67,10 +67,11 @@ QtObject {
     /**
      * Show a notification message
      */
-    function showNotification(title, message, type, duration) {
+    function showNotification(title, message, type, duration, autoHide) {
         type = type || "info"
         duration = duration !== undefined ? duration : defaultDuration
         title = title || ""
+        autoHide = autoHide !== undefined ? autoHide : true
         
         // Update screen dimensions
         if (Qt.application.screens.length > 0) {
@@ -85,6 +86,7 @@ QtObject {
             "title": title,
             "type": type,
             "duration": duration,
+            "autoHide": autoHide,
             "timestamp": new Date(),
             "read": false,
             "repositoryKey": currentRepositoryKey
@@ -108,25 +110,25 @@ QtObject {
         createNotificationWindow(notificationData)
     }
     
-    function info(message, title, duration) {
+    function info(message, title, duration, autoHide) {
         title = title || "GitEase"
-        showNotification(title, message, "info", duration)
+        showNotification(title, message, "info", duration, autoHide)
     }
     
-    function success(message, title, duration) {
+    function success(message, title, duration, autoHide) {
         title = title || "Success"
-        showNotification(title, message, "success", duration)
+        showNotification(title, message, "success", duration, autoHide)
     }
     
-    function warning(message, title, duration) {
+    function warning(message, title, duration, autoHide) {
         title = title || "Warning"
-        showNotification(title, message, "warning", duration)
+        showNotification(title, message, "warning", duration, autoHide)
     }
     
-    function error(message, title, duration) {
+    function error(message, title, duration, autoHide) {
         title = title || "Error"
         duration = duration !== undefined ? duration : 5000
-        showNotification(title, message, "error", duration)
+        showNotification(title, message, "error", duration, autoHide)
     }
     
     function pauseAllNotifications() {
@@ -202,6 +204,7 @@ QtObject {
                 "title": notif.title,
                 "type": notif.type,
                 "duration": notif.duration,
+                "autoHide": notif.autoHide ?? true,
                 "timestamp": notif.timestamp.toISOString(),
                 "read": notif.read,
                 "repositoryKey": notif.repositoryKey || ""
@@ -242,6 +245,7 @@ QtObject {
                         "title": notifData.title,
                         "type": notifData.type,
                         "duration": notifData.duration,
+                        "autoHide": notifData.autoHide ?? true,
                         "timestamp": new Date(notifData.timestamp),
                         "read": notifData.read,
                         "repositoryKey": notifData.repositoryKey || ""
@@ -256,6 +260,7 @@ QtObject {
             console.error("[NotificationController] Failed to parse notifications JSON:", e)
         }
     }
+    
 
     function createNotificationWindow(notificationData) {
         var component = Qt.createComponent("qrc:/GitEase/Qml/View/FloatingNotificationWindow.qml")
@@ -296,6 +301,21 @@ QtObject {
         var index = activeNotifications.indexOf(window)
         if (index !== -1) {
             activeNotifications.splice(index, 1)
+        }
+        
+        var notifId = window.notification?.id
+        if (notifId) {
+            for (var i = 0; i < notificationHistory.length; i++) {
+                if (notificationHistory[i].id === notifId) {
+                    notificationHistory[i].read = true
+                    if (unreadCount > 0) {
+                        unreadCount--
+                    }
+                    saveNotifications()
+                    historyUpdated()
+                    break
+                }
+            }
         }
         
         window.destroy()
