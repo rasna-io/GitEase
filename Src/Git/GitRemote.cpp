@@ -3,6 +3,7 @@
 #include "Auth/GitSshAuth.h"
 #include "GitResult.h"
 #include "Remote.h"
+#include "Utilities/GitProtocolDetector.h"
 
 #include <git2.h>
 #include <QVariant>
@@ -340,4 +341,129 @@ GitResult GitRemote::getUpstreamName(const QString &localBranchName)
         git_reference_free(localRef);
 
     return GitResult(true, result);
+}
+
+GitResult GitRemote::fetch(const QString& remote)
+{
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (remote.isEmpty()) {
+        return GitResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
+    // Get the remote URL to detect protocol
+    auto urlResult = getRemoteUrl(remote);
+    if (!urlResult.success()) {
+        return urlResult;
+    }
+
+    QString remoteUrl = urlResult.data().toMap()["url"].toString();
+    if (remoteUrl.isEmpty()) {
+        return GitResult(false, QVariant(), "Remote has no URL configured");
+    }
+
+    // Detect protocol and use appropriate authentication
+    GitProtocolDetector::GitProtocol protocol = GitProtocolDetector::detectProtocol(remoteUrl);
+
+    std::unique_ptr<IGitAuth> auth;
+    switch (protocol) {
+        case GitProtocolDetector::GitProtocol::SSH:
+            auth = std::make_unique<GitSshAuth>();
+            break;
+        case GitProtocolDetector::GitProtocol::HTTPS:
+        case GitProtocolDetector::GitProtocol::HTTP:
+            // For HTTPS/HTTP, use empty token (relies on system credentials)
+            auth = std::make_unique<GitHttpsAuth>("");
+            break;
+        case GitProtocolDetector::GitProtocol::Unknown:
+        default:
+            return GitResult(false, QVariant(),
+                           QString("Unsupported protocol for remote URL: %1").arg(remoteUrl));
+    }
+
+    // Check SSH auth setup if needed
+    if (auto sshAuth = dynamic_cast<GitSshAuth*>(auth.get())) {
+        QString setupError = sshAuth->getSetupError();
+        if (!setupError.isEmpty()) {
+            return GitResult(false, QVariant(), setupError);
+        }
+    }
+
+    return fetchInternal(remote, std::move(auth));
+}
+
+GitResult GitRemote::fetchWithToken(const QString& remote, const QString& token)
+{
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (remote.isEmpty()) {
+        return GitResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
+    return fetchInternal(remote, std::make_unique<GitHttpsAuth>(token));
+}
+
+GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IGitAuth> auth)
+{
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    git_remote* remote = nullptr;
+    int result = git_remote_lookup(&remote,
+                                   m_currentRepo->repo,
+                                   remoteName.toUtf8().constData());
+
+    if (result != GIT_OK) {
+        if (result == GIT_ENOTFOUND)
+            return GitResult(false, QVariant(), "Remote not found");
+        return GitResult(false, QVariant(), "Failed to lookup remote");
+    }
+
+    git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
+
+    GitRepository::GitPayload payload {
+        this,
+        auth.get()
+    };
+
+    opts.callbacks.payload = &payload;
+    auth->applyFetch(opts);
+
+    result = git_remote_fetch(remote, nullptr, &opts, nullptr);
+
+    git_remote_free(remote);
+
+    if (result != GIT_OK) {
+        if (result == GIT_EUSER) {
+            return GitResult(false, QVariant(),
+                           "Authentication failed. Check your credentials or SSH keys.");
+        } else if (result == GIT_EEXISTS) {
+            return GitResult(false, QVariant(),
+                           "Fetch conflict: Unable to update refs");
+        } else if (result == GIT_EUNBORNBRANCH) {
+            return GitResult(false, QVariant(),
+                           "Cannot fetch: repository has no commits");
+        }
+
+        // Get libgit2 error message if available
+        const git_error* error = giterr_last();
+        QString errorMsg = "Fetch failed";
+        if (error && error->message) {
+            errorMsg += QString(": %1").arg(error->message);
+        }
+
+        return GitResult(false, QVariant(), errorMsg);
+    }
+
+    QVariantMap fetchResult;
+    fetchResult["remote"] = remoteName;
+    fetchResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    fetchResult["status"] = "Successfully fetched from remote";
+
+    return GitResult(true, fetchResult);
 }

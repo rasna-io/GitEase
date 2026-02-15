@@ -24,6 +24,10 @@ UtilitiesCard {
     
     property NotificationController notificationController: null
 
+    /* Signal Declarations
+     * ****************************************************************************************/
+    signal fetchSuccess(string remoteName)
+    signal fetchError(string remoteName, string errorMessage)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -58,6 +62,54 @@ UtilitiesCard {
             }
         }
 
+        Connections {
+            target: root
+            
+            function onFetchSuccess(remoteName) {
+                messageLabel.messageText = "Successfully fetched from " + remoteName
+                messageLabel.messageType = "success"
+                messageClearTimer.restart()
+            }
+            
+            function onFetchError(remoteName, errorMessage) {
+                messageLabel.messageText = "Failed to fetch from " + remoteName + ": " + errorMessage
+                messageLabel.messageType = "error"
+                messageClearTimer.restart()
+            }
+        }
+
+        Timer {
+            id: messageClearTimer
+            interval: 5000
+            onTriggered: messageLabel.messageText = ""
+        }
+
+        Rectangle {
+            id: messageLabel
+            property string messageText: ""
+            property string messageType: ""
+            
+            Layout.fillWidth: true
+            implicitHeight: messageText !== "" ? 40 : 0
+            color: messageType === "error" ? Qt.rgba(Style.colors.error.r, Style.colors.error.g, Style.colors.error.b, 0.15) : Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.15)
+            radius: 4
+            visible: messageText !== ""
+            clip: true
+            border.color: messageType === "error" ? Style.colors.error : Style.colors.accent
+            border.width: 1
+            
+            Text {
+                anchors.centerIn: parent
+                text: messageLabel.messageText
+                color: messageType === "error" ? Style.colors.error : Style.colors.accent
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 11
+                wrapMode: Text.Wrap
+                anchors.margins: 8
+                width: parent.width - 16
+            }
+        }
+
         ListView {
             id: listView
             Layout.fillWidth: true
@@ -68,6 +120,7 @@ UtilitiesCard {
             delegate: Rectangle {
 
                 property Remote remote: modelData
+                property bool isFetching: false
 
                 width: listView.width
                 height: 60
@@ -79,7 +132,7 @@ UtilitiesCard {
                     anchors.margins: 10
 
                     ColumnLayout {
-                        width: parent.width * 0.85
+                        width: parent.width * 0.70
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
 
@@ -100,8 +153,28 @@ UtilitiesCard {
 
                     Row {
                         spacing: 4
-                        width: parent.width * 0.15
+                        width: parent.width * 0.30
                         anchors.verticalCenter: parent.verticalCenter
+                        
+                        ActionIconButton {
+                            iconText: isFetching ? "↻" : Style.icons.download
+                            tooltip: isFetching ? "Fetching..." : "Fetch"
+                            textColor: isFetching ? Style.colors.accent : Style.colors.mutedText
+                            enabled: !isFetching
+                            onClicked: {
+                                isFetching = true
+                                let res = root.remoteController.fetch(remote.name)
+                                isFetching = false
+                                
+                                if (res.success) {
+                                    root.fetchSuccess(remote.name)
+                                } else {
+                                    root.fetchError(remote.name, res.errorMessage)
+                                }
+                                content.update()
+                            }
+                        }
+                        
                         ActionIconButton {
                             iconText: Style.icons.edit
                             tooltip: "Edit"
