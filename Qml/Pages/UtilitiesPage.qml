@@ -84,6 +84,7 @@ Item {
                 commitController: root.commitController
                 statusController: root.statusController
                 addStashPopup: uiSessionPopups.addStashPopup
+                manageStashPopup: uiSessionPopups.manageStashPopup
 
                 notificationController: root.notificationController
             }

@@ -37,4 +37,6 @@ Item {
     }
 
     property NotificationCenterPopup    notificationCenterPopup:    NotificationCenterPopup {}
+
+    property ManageStashPopup           manageStashPopup:           ManageStashPopup {}
 }

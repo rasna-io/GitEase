@@ -20,8 +20,7 @@ UtilitiesCard {
     property StatusController       statusController:       null
     property AddStashPopup          addStashPopup:          null
     property NotificationController notificationController: null
-
-    property AddStashPopup          addStashPopup:          null
+    property ManageStashPopup       manageStashPopup:       null
     
     property var                    stashes:                []
     property var                    selectedStash:          null
@@ -52,6 +51,13 @@ UtilitiesCard {
 
         Connections {
             target: root.addStashPopup
+            function onAboutToHide() {
+                root.updateStashes()
+            }
+        }
+
+        Connections {
+            target: root.manageStashPopup
             function onAboutToHide() {
                 root.updateStashes()
             }
@@ -205,267 +211,6 @@ UtilitiesCard {
         }
     }
 
-    Popup {
-        id: stashPreviewPopup
-        parent: Overlay.overlay
-        modal: true
-        focus: true
-        width: 800
-        height: 650
-        padding: 12
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        x: Overlay.overlay ? Math.round((Overlay.overlay.width - width) / 2) : 0
-        y: Overlay.overlay ? Math.round((Overlay.overlay.height - height) / 2) : 0
-
-        background: Rectangle {
-            radius: 8
-            color: Style.colors.primaryBackground
-            border.width: 1
-            border.color: Style.colors.primaryBorder
-        }
-
-        contentItem: ColumnLayout {
-            spacing: 10
-
-            Text {
-                Layout.fillWidth: true
-                text: root.previewStash
-                      ? ("stash@{" + root.previewStash.index + "}  " + (root.previewStash.message || "WIP"))
-                      : "Stash"
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
-                font.bold: true
-                elide: Text.ElideRight
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                radius: 6
-                color: Style.colors.secondaryBackground
-                border.width: 1
-                border.color: Style.colors.primaryBorder
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 8
-
-                    ListView {
-                        Layout.preferredWidth: 220
-                        Layout.fillHeight: true
-                        clip: true
-                        model: root.stashFiles
-
-                        delegate: Rectangle {
-                            width: parent.width
-                            height: 22
-                            radius: 3
-                            color: (root.selectedFilePath === modelData.path) ? Style.colors.hoverTitle : "transparent"
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 4
-                                anchors.rightMargin: 4
-                                spacing: 6
-
-                                Text {
-                                    text: root.statusLabel(modelData.deltaStatus)
-                                    color: Style.colors.mutedText
-                                    font.pixelSize: 11
-                                    Layout.preferredWidth: 18
-                                }
-
-                                Text {
-                                    text: modelData.path || ""
-                                    color: Style.colors.foreground
-                                    font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 15
-                                    Layout.fillWidth: true
-                                    elide: Text.ElideMiddle
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: root.selectStashFile(modelData.path)
-                            }
-                        }
-                    }
-
-                    DiffView {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        readOnly: true
-                        diffData: root.stashDiffData
-                    }
-                }
-            }
-
-            CheckboxItem {
-                id: reinstateIndexCheck
-                Layout.fillWidth: true
-
-                title: "Restore Staged / Index State"
-                description: "Reapply the stash including staged changes"
-
-                checked: true
-            }
-
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 8
-
-                Button {
-                    Layout.fillWidth: true
-                    implicitHeight: 38
-
-                    background: Rectangle {
-                        radius: 8
-                        color: Style.colors.accent
-                    }
-
-                    contentItem: Item {
-                        anchors.fill: parent
-                        Row {
-                            spacing: 10
-                            anchors.centerIn: parent
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Cancel"
-                                color: Style.colors.secondaryForeground
-                                font.pixelSize: 13
-                            }
-                        }
-                    }
-
-                    onClicked: stashPreviewPopup.close()
-                }
-
-                Button {
-                    Layout.fillWidth: true
-                    implicitHeight: 38
-
-                    background: Rectangle {
-                        radius: 8
-                        color: enabled ? Style.colors.accent
-                                       : Style.colors.disabledButton
-                    }
-
-                    contentItem: Item {
-                        anchors.fill: parent
-                        Row {
-                            spacing: 10
-                            anchors.centerIn: parent
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: Style.icons.undo
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 12
-                                color: Style.colors.secondaryForeground
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Pop"
-                                color: Style.colors.secondaryForeground
-                                font.pixelSize: 13
-                            }
-                        }
-                    }
-
-                    onClicked: {
-                        root.executeStashAction("pop", root.previewStash, reinstateIndexCheck.checked)
-                        stashPreviewPopup.close()
-                    }
-                }
-
-                Button {
-                    Layout.fillWidth: true
-                    implicitHeight: 38
-
-                    background: Rectangle {
-                        radius: 8
-                        color: enabled ? Style.colors.accent
-                                       : Style.colors.disabledButton
-                    }
-
-                    contentItem: Item {
-                        anchors.fill: parent
-                        Row {
-                            spacing: 10
-                            anchors.centerIn: parent
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: Style.icons.check
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 12
-                                color: Style.colors.secondaryForeground
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Apply"
-                                color: Style.colors.secondaryForeground
-                                font.pixelSize: 13
-                            }
-                        }
-                    }
-
-                    onClicked: {
-                        root.executeStashAction("apply", root.previewStash, reinstateIndexCheck.checked)
-                        stashPreviewPopup.close()
-                    }
-                }
-
-                Button {
-                    Layout.fillWidth: true
-                    implicitHeight: 38
-
-                    background: Rectangle {
-                        radius: 8
-                        color: enabled ? Style.colors.deletededFile
-                                       : Style.colors.disabledButton
-                    }
-
-                    contentItem: Item {
-                        anchors.fill: parent
-                        Row {
-                            anchors.centerIn: parent
-                            spacing: 10
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: Style.icons.trash
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 12
-                                color: Style.colors.secondaryForeground
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Drop"
-                                color: Style.colors.secondaryForeground
-                                font.pixelSize: 13
-                            }
-                        }
-                    }
-
-                    onClicked: {
-                        root.executeStashAction("remove", root.previewStash, false)
-                        stashPreviewPopup.close()
-                    }
-                }
-            }
-
-        }
-    }
-
     /* Functions
      * ****************************************************************************************/
     function openAddEditPopup() {
@@ -475,6 +220,17 @@ UtilitiesCard {
         root.addStashPopup.stashController = root.stashController
         root.addStashPopup.statusController = root.statusController
         root.addStashPopup.open()
+    }
+
+    function openPreview(stashEntry) {
+        if (!root.manageStashPopup)
+            return
+
+        root.manageStashPopup.stashController = root.stashController
+        root.manageStashPopup.statusController = root.statusController
+        root.manageStashPopup.commitController = root.commitController
+        root.manageStashPopup.stashEntry = stashEntry
+        root.manageStashPopup.open()
     }
 
     function updateStashes() {
@@ -545,12 +301,6 @@ UtilitiesCard {
         if (res.success) {
             root.stashDiffData = res.data
         }
-    }
-
-    function openPreview(stashEntry) {
-        root.previewStash = stashEntry
-        root.selectStash(stashEntry)
-        stashPreviewPopup.open()
     }
 
     function executeStashAction(action, stashEntry, reinstateIndex) {
