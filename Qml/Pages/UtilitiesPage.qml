@@ -62,6 +62,7 @@ Item {
                 height: 390
                 remoteController: root.remoteController
                 addEditRemotePopup: uiSessionPopups.addEditRemotePopup
+                notificationController: root.notificationController
             }
 
 

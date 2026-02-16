@@ -21,6 +21,8 @@ UtilitiesCard {
     property RemoteController remoteController: null
 
     property AddEditRemotePopup addEditRemotePopup: null
+    
+    property NotificationController notificationController: null
 
 
     /* Object Properties
@@ -106,7 +108,16 @@ UtilitiesCard {
                             tooltip: "Remove"
                             textColor: Style.colors.deletededFile
                             onClicked: {
-                                root.remoteController.removeRemote(remote.name)
+                                let res = root.remoteController.removeRemote(remote.name)
+                                if (res.success) {
+                                    if (root.notificationController) {
+                                        root.notificationController.success("Remote '" + remote.name + "' removed successfully", "Remote", 3000)
+                                    }
+                                } else {
+                                    if (root.notificationController) {
+                                        root.notificationController.error(res.errorMessage || "Failed to remove remote", "Remote Error", 5000)
+                                    }
+                                }
                                 content.update()
                             }
                         }
