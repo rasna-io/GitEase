@@ -12,6 +12,7 @@ import GitEase
 Item {
     id: root
 
+    property NotificationController notificationController: null
 
     property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {}
 
