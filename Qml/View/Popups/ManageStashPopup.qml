@@ -70,16 +70,97 @@ IPopup {
             anchors.fill: parent
             anchors.margins: 20
 
-            Text {
-                Layout.fillWidth: true
-                text: root.stashEntry
-                      ? ("stash@{" + root.stashEntry.index + "}  " + (root.stashEntry.message || "WIP"))
-                      : "Stash"
-                color: Style.colors.foreground
+            // Close Button
+            WindowsButton {
+                id: closeButton
+                onClicked: WindowController.closeWindow()
+                Material.accent: Style.colors.windowsClose
+                content: Item {
+                    anchors.centerIn: parent
+                    width: 10
+                    height: 10
+
+                    Rectangle {
+                        width: 12
+                        height: 2
+                        radius: 1
+                        color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                        anchors.centerIn: parent
+                        rotation: 45
+                    }
+
+                    Rectangle {
+                        width: 12
+                        height: 2
+                        radius: 1
+                        color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                        anchors.centerIn: parent
+                        rotation: -45
+                    }
+                }
+            }
+
+            RowLayout{
+                Text {
+                    Layout.fillWidth: true
+                    text: root.stashEntry
+                          ? ("stash@{" + root.stashEntry.index + "}  " + (root.stashEntry.message || "WIP"))
+                          : "Stash"
+                    color: Style.colors.foreground
+                    font.family: Style.fontTypes.roboto
+                    font.bold: true
+                    font.pixelSize: 16
+                    Layout.alignment: Qt.AlignHCenter
+                }
+
+                ActionIconButton {
+                    iconText: Style.icons.trash
+                    tooltip: "Drop"
+                    textColor: Style.colors.deletededFile
+
+                    onClicked: {
+                        root.executeAction("remove")
+                        root.close()
+                    }
+                }
+
+                ActionIconButton {
+                    iconText: Style.icons.undo
+                    tooltip: "Pop"
+                    textColor: Style.colors.mutedText
+
+                    onClicked: {
+                        root.executeAction("pop")
+                        root.close()
+                    }
+                }
+
+                ActionIconButton {
+                    iconText: Style.icons.check
+                    tooltip: "Apply"
+                    textColor: Style.colors.mutedText
+
+                    onClicked: {
+                        root.executeAction("apply")
+                        root.close()
+                    }
+                }
+            }
+
+            CheckBox {
+                id: reinstateIndexCheck
+                Layout.fillWidth: false
+                text: "Restore Staged / Index State"
+                checked: true
+
                 font.family: Style.fontTypes.roboto
-                font.bold: true
-                font.pixelSize: 16
-                Layout.alignment: Qt.AlignHCenter
+                font.pixelSize: 12
+
+                Material.accent: Style.colors.accent
+
+                palette {
+                    text: Style.colors.foreground
+                }
             }
 
             Rectangle {
@@ -142,160 +223,6 @@ IPopup {
                         Layout.fillHeight: true
                         readOnly: true
                         diffData: root.stashDiffData
-                    }
-                }
-            }
-
-            CheckboxItem {
-                id: reinstateIndexCheck
-                Layout.fillWidth: false
-                title: "Restore Staged / Index State"
-                description: "Reapply the stash including staged changes"
-                checked: true
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 8
-
-                Button {
-                    Layout.fillWidth: true
-                    implicitHeight: 38
-
-                    background: Rectangle {
-                        radius: 8
-                        color: Style.colors.accent
-                    }
-
-                    contentItem: Item {
-                        anchors.fill: parent
-                        Row {
-                            spacing: 10
-                            anchors.centerIn: parent
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Cancel"
-                                color: Style.colors.secondaryForeground
-                                font.pixelSize: 13
-                            }
-                        }
-                    }
-
-                    onClicked: root.close()
-                }
-
-                Button {
-                    Layout.fillWidth: true
-                    implicitHeight: 38
-
-                    background: Rectangle {
-                        radius: 8
-                        color: Style.colors.accent
-                    }
-
-                    contentItem: Item {
-                        anchors.fill: parent
-                        Row {
-                            spacing: 10
-                            anchors.centerIn: parent
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: Style.icons.undo
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 12
-                                color: Style.colors.secondaryForeground
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Pop"
-                                color: Style.colors.secondaryForeground
-                                font.pixelSize: 13
-                            }
-                        }
-                    }
-
-                    onClicked: {
-                        root.executeAction("pop")
-                        root.close()
-                    }
-                }
-
-                Button {
-                    Layout.fillWidth: true
-                    implicitHeight: 38
-
-                    background: Rectangle {
-                        radius: 8
-                        color: Style.colors.accent
-                    }
-
-                    contentItem: Item {
-                        anchors.fill: parent
-                        Row {
-                            spacing: 10
-                            anchors.centerIn: parent
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: Style.icons.check
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 12
-                                color: Style.colors.secondaryForeground
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Apply"
-                                color: Style.colors.secondaryForeground
-                                font.pixelSize: 13
-                            }
-                        }
-                    }
-
-                    onClicked: {
-                        root.executeAction("apply")
-                        root.close()
-                    }
-                }
-
-                Button {
-                    Layout.fillWidth: true
-                    implicitHeight: 38
-
-                    background: Rectangle {
-                        radius: 8
-                        color: Style.colors.deletededFile
-                    }
-
-                    contentItem: Item {
-                        anchors.fill: parent
-                        Row {
-                            anchors.centerIn: parent
-                            spacing: 10
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: Style.icons.trash
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 12
-                                color: Style.colors.secondaryForeground
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Drop"
-                                color: Style.colors.secondaryForeground
-                                font.pixelSize: 13
-                            }
-                        }
-                    }
-
-                    onClicked: {
-                        root.executeAction("remove")
-                        root.close()
                     }
                 }
             }
