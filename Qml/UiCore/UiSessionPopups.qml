@@ -16,7 +16,9 @@ Item {
 
     property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {}
 
-    property SettingsPopup              settingsPopup:              SettingsPopup {}
+    property SettingsPopup              settingsPopup:              SettingsPopup {
+        notificationController: root.notificationController
+    }
 
     property UserAuthenticationPopup    userAuthenticationPopup:    UserAuthenticationPopup {}
 

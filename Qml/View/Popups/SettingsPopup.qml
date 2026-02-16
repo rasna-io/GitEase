@@ -14,13 +14,15 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property AppModel              appModel
+    property AppModel               appModel
 
-    property AppSettings           appSettings: appModel?.appSettings ?? null
+    property AppSettings            appSettings:            appModel?.appSettings ?? null
 
-    property FileIO                fileIO
+    property FileIO                 fileIO
 
-    property int                   currentPage: 0
+    property int                    currentPage:            0
+    
+    property NotificationController notificationController: null
 
 
     /* Object Properties
@@ -255,6 +257,10 @@ IPopup {
         root.appSettings.notificationSettings.notificationPosition = positionMap[notificationPosition.cmb.displayText] || "right-bottom"
 
         root.appModel.save()
+        
+        if (notificationController) {
+            notificationController.success("Settings saved successfully", "Settings", 3000)
+        }
     }
 
     function load() {
