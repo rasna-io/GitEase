@@ -14,6 +14,7 @@ QtObject {
      * ****************************************************************************************/
     required property            AppModel                         appModel
     required property            ConfigController                 configController
+    property                     NotificationController           notificationController: null
 
     /* Signals
      * ****************************************************************************************/

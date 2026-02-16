@@ -56,6 +56,7 @@ QtObject {
     property UserProfileController userProfileController: UserProfileController {
         appModel: root.appModel
         configController: root.configController
+        notificationController: root.notificationController
     }
 
     property ShellController shellController: ShellController {
