@@ -66,39 +66,9 @@ IPopup {
         border.width: 1
 
         ColumnLayout {
-            spacing: 20
+            spacing: 8
             anchors.fill: parent
             anchors.margins: 20
-
-            // Close Button
-            WindowsButton {
-                id: closeButton
-                onClicked: WindowController.closeWindow()
-                Material.accent: Style.colors.windowsClose
-                content: Item {
-                    anchors.centerIn: parent
-                    width: 10
-                    height: 10
-
-                    Rectangle {
-                        width: 12
-                        height: 2
-                        radius: 1
-                        color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                        anchors.centerIn: parent
-                        rotation: 45
-                    }
-
-                    Rectangle {
-                        width: 12
-                        height: 2
-                        radius: 1
-                        color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                        anchors.centerIn: parent
-                        rotation: -45
-                    }
-                }
-            }
 
             RowLayout{
                 Text {
@@ -110,7 +80,62 @@ IPopup {
                     font.family: Style.fontTypes.roboto
                     font.bold: true
                     font.pixelSize: 16
-                    Layout.alignment: Qt.AlignHCenter
+                }
+
+                // Close Button
+                WindowsButton {
+                    id: closeButton
+
+                    Material.accent: Style.colors.windowsClose
+                    content: Item {
+                        anchors.centerIn: parent
+                        width: 10
+                        height: 10
+
+                        Rectangle {
+                            width: 12
+                            height: 2
+                            radius: 1
+                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                            anchors.centerIn: parent
+                            rotation: 45
+                        }
+
+                        Rectangle {
+                            width: 12
+                            height: 2
+                            radius: 1
+                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                            anchors.centerIn: parent
+                            rotation: -45
+                        }
+                    }
+                    onClicked: root.close()
+                }
+            }
+
+            RowLayout{
+                Layout.fillWidth: true
+                spacing: 8
+
+                CheckBox {
+                    id: reinstateIndexCheck
+                    Layout.fillWidth: false
+                    text: "Restore Staged / Index State"
+                    checked: true
+
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: 12
+
+                    Material.accent: Style.colors.accent
+
+                    palette {
+                        text: Style.colors.foreground
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
                 }
 
                 ActionIconButton {
@@ -147,23 +172,8 @@ IPopup {
                 }
             }
 
-            CheckBox {
-                id: reinstateIndexCheck
-                Layout.fillWidth: false
-                text: "Restore Staged / Index State"
-                checked: true
-
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
-
-                Material.accent: Style.colors.accent
-
-                palette {
-                    text: Style.colors.foreground
-                }
-            }
-
             Rectangle {
+                Layout.topMargin: 10
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: 6
@@ -177,14 +187,14 @@ IPopup {
                     spacing: 8
 
                     ListView {
-                        Layout.preferredWidth: 220
+                        Layout.preferredWidth: 240
                         Layout.fillHeight: true
                         clip: true
                         model: root.stashFiles
 
                         delegate: Rectangle {
                             width: parent.width
-                            height: 22
+                            height: 24
                             radius: 3
                             color: (root.selectedFilePath === modelData.path) ? Style.colors.hoverTitle : "transparent"
 
@@ -197,15 +207,17 @@ IPopup {
                                 Text {
                                     text: root.statusLabel(modelData.deltaStatus)
                                     color: Style.colors.mutedText
-                                    font.pixelSize: 11
-                                    Layout.preferredWidth: 18
+                                    font.pixelSize: 8
+                                    Layout.preferredWidth: 14
+                                    horizontalAlignment: Text.AlignHCenter
+                                    font.bold: true
                                 }
 
                                 Text {
                                     text: modelData.path || ""
                                     color: Style.colors.foreground
                                     font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 15
+                                    font.pixelSize: 13
                                     Layout.fillWidth: true
                                     elide: Text.ElideMiddle
                                 }
