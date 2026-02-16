@@ -24,7 +24,9 @@ Item {
 
     property UserInfoSelectionPopup     userInfoSelectionPopup:     UserInfoSelectionPopup {}
 
-    property AddEditRemotePopup         addEditRemotePopup:         AddEditRemotePopup {}
+    property AddEditRemotePopup         addEditRemotePopup:         AddEditRemotePopup {
+        notificationController: root.notificationController
+    }
 
     property AddBranchPopup             addBranchPopup:             AddBranchPopup {}
 
