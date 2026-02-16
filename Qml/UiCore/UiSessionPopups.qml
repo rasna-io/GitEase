@@ -28,7 +28,9 @@ Item {
 
     property AddBranchPopup             addBranchPopup:             AddBranchPopup {}
 
-    property AddStashPopup              addStashPopup:              AddStashPopup {}
+    property AddStashPopup              addStashPopup:              AddStashPopup {
+        notificationController: root.notificationController
+    }
 
     property NotificationCenterPopup    notificationCenterPopup:    NotificationCenterPopup {}
 }

@@ -15,7 +15,8 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property StashController stashController: null
+    property StashController        stashController:        null
+    property NotificationController notificationController: null
 
     readonly property bool    isNameValid: true
 
@@ -154,10 +155,17 @@ IPopup {
                         let keepIndex = keepIndexCheckBox.checked
                         let result = stashController.save(message, keepIndex)
                         if (result.success) {
+                            if (notificationController) {
+                                notificationController.success("Changes stashed successfully", "Stash", 3000)
+                            }
                             stashMessageField.text = ""
                             keepIndexCheckBox.checked = false
                             root.close()
 
+                        } else {
+                            if (notificationController) {
+                                notificationController.error(result.errorMessage || "Failed to stash changes", "Stash Error", 5000)
+                            }
                         }
 
                     }
