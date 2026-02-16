@@ -19,6 +19,8 @@ UtilitiesCard {
     property StashController stashController: null
 
     property AddStashPopup   addStashPopup: null
+    
+    property NotificationController notificationController: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -98,7 +100,14 @@ UtilitiesCard {
                             onClicked: {
                                 let result = stashController.pop(modelData.index, true)
                                 if (result.success) {
+                                    if (root.notificationController) {
+                                        root.notificationController.success("Stash popped successfully", "Stash", 3000)
+                                    }
                                     content.update()
+                                } else {
+                                    if (root.notificationController) {
+                                        root.notificationController.error(result.errorMessage || "Failed to pop stash", "Stash Error", 5000)
+                                    }
                                 }
                             }
                         }
@@ -109,7 +118,14 @@ UtilitiesCard {
                             onClicked: {
                                 let result = stashController.apply(modelData.index, true)
                                 if (result.success) {
+                                    if (root.notificationController) {
+                                        root.notificationController.success("Stash applied successfully", "Stash", 3000)
+                                    }
                                     content.update()
+                                } else {
+                                    if (root.notificationController) {
+                                        root.notificationController.error(result.errorMessage || "Failed to apply stash", "Stash Error", 5000)
+                                    }
                                 }
                             }
                         }
@@ -120,7 +136,14 @@ UtilitiesCard {
                             onClicked: {
                                 let result = stashController.remove(modelData.index)
                                 if (result.success) {
+                                    if (root.notificationController) {
+                                        root.notificationController.success("Stash removed successfully", "Stash", 3000)
+                                    }
                                     content.update()
+                                } else {
+                                    if (root.notificationController) {
+                                        root.notificationController.error(result.errorMessage || "Failed to remove stash", "Stash Error", 5000)
+                                    }
                                 }
                             }
                         }
@@ -181,6 +204,9 @@ UtilitiesCard {
                 listView.model = result.data
             } else {
                 listView.model = []
+                if (root.notificationController && result.errorMessage) {
+                    root.notificationController.error(result.errorMessage, "Stash List Error", 5000)
+                }
             }
         }
 

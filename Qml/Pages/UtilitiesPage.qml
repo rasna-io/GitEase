@@ -80,6 +80,7 @@ Item {
                 stashController: root.stashController
                 addStashPopup: uiSessionPopups.addStashPopup
 
+                notificationController: root.notificationController
             }
         }
     }
