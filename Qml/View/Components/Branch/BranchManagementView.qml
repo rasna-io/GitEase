@@ -19,6 +19,8 @@ UtilitiesCard {
     property AddBranchPopup   addBranchPopup: null
 
     property string           currentBranch:    ""
+    
+    property NotificationController notificationController: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -112,13 +114,25 @@ UtilitiesCard {
 
                                         if (res.success) {
                                             // Checkout the newly created local branch
-                                            root.branchController.checkoutBranch(localName);
+                                            let checkoutRes = root.branchController.checkoutBranch(localName);
+                                            if (checkoutRes.success && root.notificationController) {
+                                                root.notificationController.success("Checked out branch '" + localName + "'", "Checkout", 3000)
+                                            } else if (!checkoutRes.success && root.notificationController) {
+                                                root.notificationController.error(checkoutRes.errorMessage || "Failed to checkout branch", "Checkout Error", 5000)
+                                            }
                                         } else {
-                                            console.error("Failed to track remote branch:", res.message);
+                                            if (root.notificationController) {
+                                                root.notificationController.error(res.errorMessage || "Failed to track remote branch", "Branch Error", 5000)
+                                            }
                                         }
                                     } else {
                                         // Normal local checkout
-                                        root.branchController.checkoutBranch(branch.name);
+                                        let res = root.branchController.checkoutBranch(branch.name);
+                                        if (res.success && root.notificationController) {
+                                            root.notificationController.success("Checked out branch '" + branch.name + "'", "Checkout", 3000)
+                                        } else if (!res.success && root.notificationController) {
+                                            root.notificationController.error(res.errorMessage || "Failed to checkout branch", "Checkout Error", 5000)
+                                        }
                                     }
 
                                     content.update();
@@ -160,7 +174,14 @@ UtilitiesCard {
                                 let res = root.branchController.deleteBranch(branch.name)
 
                                 if (res.success) {
+                                    if (root.notificationController) {
+                                        root.notificationController.success("Branch '" + branch.name + "' deleted successfully", "Branch", 3000)
+                                    }
                                     content.update();
+                                } else {
+                                    if (root.notificationController) {
+                                        root.notificationController.error(res.errorMessage || "Failed to delete branch", "Branch Error", 5000)
+                                    }
                                 }
                             }
                         }

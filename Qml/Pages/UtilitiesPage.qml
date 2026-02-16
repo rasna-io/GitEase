@@ -71,6 +71,7 @@ Item {
                 height: 390
                 branchController: root.branchController
                 addBranchPopup: uiSessionPopups.addBranchPopup
+                notificationController: root.notificationController
             }
 
 
