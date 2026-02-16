@@ -28,6 +28,8 @@ Item {
     property StatusController statusController: null
 
     property RepositoryController repositoryController: null
+    
+    property NotificationController notificationController: null
 
     property UiSessionPopups  uiSessionPopups: null
 

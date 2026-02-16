@@ -24,6 +24,8 @@ Item {
     property UiSessionPopups  uiSessionPopups: null
 
     property StashController  stashController   : null
+    
+    property NotificationController notificationController: null
 
     /* Object Properties
      * ****************************************************************************************/
