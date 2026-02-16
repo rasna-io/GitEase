@@ -498,6 +498,7 @@ Item {
                 addBranchPopup: uiSessionPopups.addBranchPopup
                 commitController: root.commitController
                 statusController: root.statusController
+                notificationController: root.notificationController
 
                 onCommitClicked: function(commitId) {
                     root.selectedCommit = commitId
