@@ -45,7 +45,6 @@ T.SpinBox {
             validator: control.validator
             inputMethodHints: control.inputMethodHints
             font.pointSize: Style.appFont.h4Pt
-            font.bold: true
 
             Rectangle {
                 anchors.fill: parent
