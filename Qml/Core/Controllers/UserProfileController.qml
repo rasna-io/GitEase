@@ -14,6 +14,7 @@ QtObject {
      * ****************************************************************************************/
     required property            AppModel                         appModel
     required property            ConfigController                 configController
+    property                     NotificationController           notificationController: null
 
     /* Signals
      * ****************************************************************************************/
@@ -193,6 +194,10 @@ QtObject {
 
 
         root.appModel.save()
+        
+        if (notificationController) {
+            notificationController.success("User profile '" + username + "' deleted successfully", "Profile", 3000)
+        }
     }
 
     function edit(oldUsername, oldEmail, newUsername, newEmail) {
@@ -235,6 +240,10 @@ QtObject {
         }
 
         root.appModel.save()
+        
+        if (notificationController) {
+            notificationController.success("User profile updated successfully", "Profile", 3000)
+        }
     }
 
     function applyUserToRepository(username, email){
@@ -249,8 +258,14 @@ QtObject {
         
         if (result.success) {
             loadAllProfiles()
+            if (notificationController) {
+                notificationController.success("User profile '" + username + "' applied to repository", "Profile", 3000)
+            }
         } else {
             console.error("[UserProfileController] Failed to apply user to repository:", result.errorMessage)
+            if (notificationController) {
+                notificationController.error(result.errorMessage || "Failed to apply user to repository", "Profile Error", 5000)
+            }
         }
     }
 }

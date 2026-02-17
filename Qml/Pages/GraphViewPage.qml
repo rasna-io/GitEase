@@ -28,6 +28,8 @@ Item {
     property StatusController statusController: null
 
     property RepositoryController repositoryController: null
+    
+    property NotificationController notificationController: null
 
     property UiSessionPopups  uiSessionPopups: null
 
@@ -496,6 +498,7 @@ Item {
                 addBranchPopup: uiSessionPopups.addBranchPopup
                 commitController: root.commitController
                 statusController: root.statusController
+                notificationController: root.notificationController
 
                 onCommitClicked: function(commitId) {
                     root.selectedCommit = commitId

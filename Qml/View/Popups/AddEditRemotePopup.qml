@@ -15,7 +15,8 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property RemoteController remoteController
+    property RemoteController       remoteController
+    property NotificationController notificationController: null
 
     property var              oldRemote:    null
 
@@ -149,7 +150,16 @@ IPopup {
                         }
 
                         if (res.success) {
+                            if (notificationController) {
+                                let action = root.isEdit ? "updated" : "added"
+                                notificationController.success("Remote '" + nameInput.text + "' " + action + " successfully", "Remote", 3000)
+                            }
                             root.close();
+                        } else {
+                            if (notificationController) {
+                                let action = root.isEdit ? "update" : "add"
+                                notificationController.error(res.errorMessage || "Failed to " + action + " remote", "Remote Error", 5000)
+                            }
                         }
                     }
                 }

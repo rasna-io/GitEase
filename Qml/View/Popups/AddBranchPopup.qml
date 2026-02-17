@@ -14,7 +14,8 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property BranchController branchController
+    property BranchController       branchController
+    property NotificationController notificationController: null
 
     property string targetHash: ""
 
@@ -118,9 +119,11 @@ IPopup {
 
                         if (res && res.success) {
                             root.branchCreatedSuccessfully()
+                            notificationController.success("Branch '" + nameInput.text + "' created successfully", "Branch", 3000)
                             root.close();
                         } else {
                             console.error("Error creating branch:", res.message);
+                            notificationController.error(res.errorMessage || "Failed to create branch", "Branch Error", 5000)
                         }
                     }
                 }

@@ -83,4 +83,29 @@ QtObject{
     property color levelLocalBadge:         "#B89A2D"
     property color levelWorktreeBadge:      "#B83D3D"
     property color levelAppBadge:           "#3D3DB8"
+    
+    // Notification colors (light theme)
+    property color notificationInfo:            "#E3F2FD"
+    property color notificationInfoBorder:      "#90CAF9"
+    property color notificationInfoIcon:        "#1976D2"
+
+    property color notificationSuccess:         "#E8F5E9"
+    property color notificationSuccessBorder:   "#81C784"
+    property color notificationSuccessIcon:     "#388E3C"
+
+    property color notificationWarning:         "#FFF3E0"
+    property color notificationWarningBorder:   "#FFB74D"
+    property color notificationWarningIcon:     "#F57C00"
+
+    property color notificationError:           "#FFEBEE"
+    property color notificationErrorBorder:     "#E57373"
+    property color notificationErrorIcon:       "#D32F2F"
+
+    property color notificationInfoText:        "#0D2A4D"
+    property color notificationSuccessText:     "#0F2E17"
+    property color notificationWarningText:     "#3A2300"
+    property color notificationErrorText:       "#4D0D12"
+
+    property color notificationBadge:           "#ef4444"
+    property color notificationBadgeText:       "#FFFFFF"
 }

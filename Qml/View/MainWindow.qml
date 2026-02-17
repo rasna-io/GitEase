@@ -48,6 +48,8 @@ Rectangle {
                 pageController: root.uiSession?.pageController
                 repositoryController: root.uiSession?.repositoryController
                 userProfileController: root.uiSession?.userProfileController
+                notificationController: root.uiSession?.notificationController
+                
                 onNewRepositoryRequested: function () {
                     let popup = root.uiSession?.popups?.repositorySelectorPopup
                     popup.repositoryController = Qt.binding(function () {return uiSession.repositoryController})
@@ -67,6 +69,14 @@ Rectangle {
                     let userInfoSelectionPopup = root.uiSession?.popups?.userInfoSelectionPopup
                     userInfoSelectionPopup.userProfileController = root.uiSession.userProfileController
                     userInfoSelectionPopup.open()
+                }
+                
+                onOpenNotificationsRequested: {
+                    let notificationPopup = root.uiSession?.popups?.notificationCenterPopup
+                    if (notificationPopup) {
+                        notificationPopup.notificationController = root.uiSession.notificationController
+                        notificationPopup.open()
+                    }
                 }
             }
 
@@ -125,6 +135,9 @@ Rectangle {
                         }
                         if (item.hasOwnProperty("stashController")) {
                             item.stashController = Qt.binding(function() { return root.uiSession?.stashController })
+                        }
+                        if (item.hasOwnProperty("notificationController")) {
+                            item.notificationController = Qt.binding(function() { return root.uiSession?.notificationController })
                         }
                         if (item.hasOwnProperty("userAuthenticationPopup")) {
                             item.userAuthenticationPopup = Qt.binding(function() { return root.uiSession?.popups?.userAuthenticationPopup })

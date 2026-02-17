@@ -11,6 +11,7 @@ set(RESOURCES_CORE
     Qml/Core/Models/Repository.qml
     Qml/Core/Models/Page.qml
     Qml/Core/Models/UserProfile.qml           # user profile model
+    Qml/Core/Models/NotificationSettings.qml
 
     # Controllers
     Qml/Core/Controllers/WelcomeController.qml      # Welcome page controller
@@ -27,6 +28,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/UserProfileController.qml  # User Profile Controller
     Qml/Core/Controllers/ShellController.qml        # Shell Commands (rightClick Actions) Controller
     Qml/Core/Controllers/StashController.qml
+    Qml/Core/Controllers/NotificationController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
@@ -98,6 +100,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Settings/PathSelectorItem.qml
     Qml/View/Components/Settings/TextFieldItem.qml
     Qml/View/Components/Settings/ComboboxItem.qml
+    Qml/View/Components/Settings/SpinboxItem.qml
 
     # Import Export Bundle Components
     Qml/View/Components/ImportExport/ImportExportBundle.qml
@@ -111,6 +114,9 @@ set(RESOURCES_COMPONENTS
     # DockPanel Docks
     Qml/View/Components/Docks/ImportExportBundleDock.qml       # Import Export git Bundle Dock
 
+    # Notifications
+    Qml/View/Components/Notification/NotificationItem.qml
+    Qml/View/Components/Notification/NotificationCloseAllHeader.qml
 )
 
 
@@ -132,6 +138,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/AddEditRemotePopup.qml
     Qml/View/Popups/AddBranchPopup.qml
     Qml/View/Popups/AddStashPopup.qml
+    Qml/View/Popups/NotificationCenterPopup.qml
 
 )
 
@@ -153,4 +160,5 @@ set(RESOURCES_SERVICES
 # Define View Resources
 set(RESOURCES_VIEW
     Qml/View/MainWindow.qml
+    Qml/View/FloatingNotificationWindow.qml     # show notifications
 )

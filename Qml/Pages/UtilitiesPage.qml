@@ -24,6 +24,8 @@ Item {
     property UiSessionPopups  uiSessionPopups: null
 
     property StashController  stashController   : null
+    
+    property NotificationController notificationController: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -60,6 +62,7 @@ Item {
                 height: 390
                 remoteController: root.remoteController
                 addEditRemotePopup: uiSessionPopups.addEditRemotePopup
+                notificationController: root.notificationController
             }
 
 
@@ -68,6 +71,7 @@ Item {
                 height: 390
                 branchController: root.branchController
                 addBranchPopup: uiSessionPopups.addBranchPopup
+                notificationController: root.notificationController
             }
 
 
@@ -77,6 +81,7 @@ Item {
                 stashController: root.stashController
                 addStashPopup: uiSessionPopups.addStashPopup
 
+                notificationController: root.notificationController
             }
         }
     }

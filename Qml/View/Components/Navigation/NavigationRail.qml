@@ -18,10 +18,11 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property AppModel              appModel
-    required property PageController        pageController
-    required property RepositoryController  repositoryController
-    required property UserProfileController userProfileController
+    required property AppModel               appModel
+    required property PageController         pageController
+    required property RepositoryController   repositoryController
+    required property UserProfileController  userProfileController
+    required property NotificationController notificationController
 
     property real                          collapsedWidth:       50
     property real                          expandedWidth:        125
@@ -35,6 +36,8 @@ Rectangle {
     signal openSettingsRequested()
 
     signal openUserSelectionRequested()
+    
+    signal openNotificationsRequested()
 
 
     // HoverHandler reliably tracks hover even with complex children.
@@ -190,6 +193,102 @@ Rectangle {
                 hoverEnabled: true
 
                 onClicked: root.openSettingsRequested()
+                onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
+                onExited: parent.color = "transparent"
+            }
+        }
+
+        // Notification button (Bottom section)
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.leftMargin: 6
+            Layout.rightMargin: 6
+            Layout.topMargin: 3
+            Layout.bottomMargin: 3
+            Layout.preferredHeight: 33
+            radius: 6
+            color: "transparent"
+
+            Behavior on color { ColorAnimation { duration: 120 } }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                anchors.topMargin: 4
+                anchors.bottomMargin: 4
+                spacing: 8
+
+                Item {
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                    Layout.preferredWidth: 20
+                    Layout.minimumWidth: 20
+                    Layout.maximumWidth: 20
+                    Layout.preferredHeight: 20
+
+                    Text {
+                        id: notificationIcon
+                        anchors.centerIn: parent
+                        text: Style.icons.bell
+                        font.family: notificationButtonMouse.containsMouse ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
+                        font.weight: 400
+                        font.pixelSize: 14
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    
+                    // Badge for unread count
+                    Rectangle {
+                        visible: root.notificationController && root.notificationController.unreadCount > 0
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.topMargin: -2
+                        anchors.rightMargin: -2
+                        width: Math.max(10, badgeText.width + 6)
+                        height: 10
+                        radius: 8
+                        color: Style.colors.notificationBadge
+                        
+                        Text {
+                            id: badgeText
+                            anchors.centerIn: parent
+                            text: root.notificationController ? Math.min(root.notificationController.unreadCount, 99) : 0
+                            font.family: Style.fontTypes.roboto
+                            font.weight: 700
+                            font.pixelSize: 9
+                            color: Style.colors.notificationBadgeText
+                        }
+                    }
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Notification"
+                    visible: root.expanded
+                    font.family: Style.fontTypes.roboto
+                    font.weight: 400
+                    font.pixelSize: 14
+                    elide: Text.ElideRight
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    visible: root.expanded
+                }
+            }
+
+            MouseArea {
+                id: notificationButtonMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+
+                onClicked: root.openNotificationsRequested()
                 onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
                 onExited: parent.color = "transparent"
             }

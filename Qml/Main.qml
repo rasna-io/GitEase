@@ -30,6 +30,12 @@ ApplicationWindow {
     visible: true
     color: Style.colors.primaryBackground
     title: qsTr("GitEase")
+    
+    /* Event Handlers
+     * ****************************************************************************************/
+    onClosing: {
+        uiSession?.notificationController?.saveNotifications()
+    }
 
 
     /* Fonts
@@ -51,6 +57,7 @@ ApplicationWindow {
         id: uiSessionPopups
         width: window.width
         height: window.height
+        notificationController: uiSession.notificationController
     }
 
     // Main content loader - switches between welcome flow and main application

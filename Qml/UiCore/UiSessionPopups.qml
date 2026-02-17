@@ -12,18 +12,29 @@ import GitEase
 Item {
     id: root
 
+    property NotificationController notificationController: null
 
     property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {}
 
-    property SettingsPopup              settingsPopup:              SettingsPopup {}
+    property SettingsPopup              settingsPopup:              SettingsPopup {
+        notificationController: root.notificationController
+    }
 
     property UserAuthenticationPopup    userAuthenticationPopup:    UserAuthenticationPopup {}
 
     property UserInfoSelectionPopup     userInfoSelectionPopup:     UserInfoSelectionPopup {}
 
-    property AddEditRemotePopup         addEditRemotePopup:         AddEditRemotePopup {}
+    property AddEditRemotePopup         addEditRemotePopup:         AddEditRemotePopup {
+        notificationController: root.notificationController
+    }
 
-    property AddBranchPopup             addBranchPopup:             AddBranchPopup {}
+    property AddBranchPopup             addBranchPopup:             AddBranchPopup {
+        notificationController: root.notificationController
+    }
 
-    property AddStashPopup              addStashPopup:              AddStashPopup {}
+    property AddStashPopup              addStashPopup:              AddStashPopup {
+        notificationController: root.notificationController
+    }
+
+    property NotificationCenterPopup    notificationCenterPopup:    NotificationCenterPopup {}
 }

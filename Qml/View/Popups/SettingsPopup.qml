@@ -14,13 +14,15 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property AppModel              appModel
+    property AppModel               appModel
 
-    property AppSettings           appSettings: appModel?.appSettings ?? null
+    property AppSettings            appSettings:            appModel?.appSettings ?? null
 
-    property FileIO                fileIO
+    property FileIO                 fileIO
 
-    property int                   currentPage: 0
+    property int                    currentPage:            0
+    
+    property NotificationController notificationController: null
 
 
     /* Object Properties
@@ -139,8 +141,38 @@ IPopup {
                                     cmb.model: ["Modern Light", "Modern Dark"]
                                 }
 
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Qt.darker(settingsContainer.color, 1.2)
+                                }
 
+                                CheckboxItem {
+                                    id: displayRealtimeNotifications
+                                    Layout.fillWidth: true
+                                    title: "Display Real-time Notifications"
+                                    description: "Show notifications as floating windows. If disabled, notifications are only shown in the notification center"
+                                    checked: root.appSettings?.notificationSettings?.displayRealtimeNotifications ?? true
+                                }
 
+                                SpinboxItem {
+                                    id: maxVisibleNotifications
+                                    Layout.fillWidth: true
+                                    title: "Maximum Visible Notifications"
+                                    description: "Number of notifications displayed at once"
+                                    from: 1
+                                    to: 10
+                                    value: 5
+                                }
+
+                                ComboboxItem {
+                                    id: notificationPosition
+                                    Layout.fillWidth: true
+                                    title: "Notification Position"
+                                    description: "Where to display notifications on screen"
+                                    cmb.model: ["Right Bottom", "Right Top", "Left Bottom", "Left Top"]
+                                }
 
                                 Rectangle {
                                     Layout.fillWidth: true
@@ -157,6 +189,7 @@ IPopup {
                             }
 
                         }
+
 
                     }
                 }
@@ -212,8 +245,22 @@ IPopup {
         root.appSettings.generalSettings.showAvatar = displayAvatar.checked
         root.appSettings.generalSettings.defaultPath = defaultPath.text
         root.appSettings.appearanceSettings.currentTheme = theme.cmb.displayText
+        root.appSettings.notificationSettings.displayRealtimeNotifications = displayRealtimeNotifications.checked
+        root.appSettings.notificationSettings.maxVisibleNotifications = maxVisibleNotifications.value
+        
+        let positionMap = {
+            "Right Bottom": "right-bottom",
+            "Right Top": "right-top",
+            "Left Bottom": "left-bottom",
+            "Left Top": "left-top"
+        }
+        root.appSettings.notificationSettings.notificationPosition = positionMap[notificationPosition.cmb.displayText] || "right-bottom"
 
         root.appModel.save()
+        
+        if (notificationController) {
+            notificationController.success("Settings saved successfully", "Settings", 3000)
+        }
     }
 
     function load() {
@@ -221,6 +268,18 @@ IPopup {
         defaultPath.text = root.appSettings.generalSettings.defaultPath
 
         theme.cmb.currentIndex = theme.cmb.model.indexOf(root.appSettings.appearanceSettings.currentTheme)
+        
+        displayRealtimeNotifications.checked = root.appSettings?.notificationSettings?.displayRealtimeNotifications ?? true
+        maxVisibleNotifications.value = root.appSettings?.notificationSettings?.maxVisibleNotifications ?? 5
+        
+        let positionMap = {
+            "right-bottom": "Right Bottom",
+            "right-top": "Right Top",
+            "left-bottom": "Left Bottom",
+            "left-top": "Left Top"
+        }
+        let positionDisplay = positionMap[root.appSettings?.notificationSettings?.notificationPosition] || "Right Bottom"
+        notificationPosition.cmb.currentIndex = notificationPosition.cmb.model.indexOf(positionDisplay)
     }
 
 }

@@ -32,6 +32,8 @@ Item {
 
     property StashController          stashController:        null
 
+    property NotificationController  notificationController:  null
+
     property UserAuthenticationPopup userAuthenticationPopup: null
 
     property string                  selectedFilePath:        ""
@@ -55,6 +57,7 @@ Item {
         function onPasswordConfirm(password){
             let branchName = branchController.getCurrentBranchName()
             if(branchName.length === 0){
+                root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
                 errorMessageLabel.text = "current Branch Name invalid!"
             }else{
                let remoteRes = remoteController.push(
@@ -64,8 +67,10 @@ Item {
                     password)
 
                 if(!remoteRes.success){
+                    root.notificationController.error(remoteRes.errorMessage || "Push failed", "Push Error", 5000)
                     errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
                 }else{
+                    root.notificationController.success("Changes pushed successfully", "Push", 3000)
                     commitTextArea.text = ""
                 }
             }
@@ -225,7 +230,9 @@ Item {
 
                                         if(res.success){
                                             commitTextArea.text = ""
+                                            root.notificationController.success("Commit successful", "Commit", 3000)
                                         }else{
+                                            root.notificationController.error(res.errorMessage || "Commit failed", "Commit Error", 5000)
                                             errorMessageLabel.text = res.errorMessage ?? "commit error"
                                         }
 
@@ -327,17 +334,28 @@ Item {
                         }
 
                         onStageFileRequested: function(filePath) {
-                            statusController.stageFile(filePath)
+                            let res = statusController.stageFile(filePath)
+                            if (!res.success) {
+                                root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
+                            }
                             root.update()
                         }
 
                         onUnstageFileRequested: function(filePath) {
-                            statusController.unstageFile(filePath)
+                            let res = statusController.unstageFile(filePath)
+                            if (!res.success) {
+                                root.notificationController.error(res.errorMessage || "Failed to unstage file", "Unstage Error", 5000)
+                            }
                             root.update()
                         }
 
                         onDiscardFileRequested: function(filePath) {
-                            statusController.revertFile(filePath)
+                            let res = statusController.revertFile(filePath)
+                            if (res.success) {
+                                root.notificationController.success("File changes discarded successfully", "Discard", 3000)
+                            } else {
+                                root.notificationController.error(res.errorMessage || "Failed to discard file changes", "Discard Error", 5000)
+                            }
                             root.update()
                         }
 
@@ -347,20 +365,38 @@ Item {
                         }
 
                         onStageAllRequested: function() {
-                            statusController.stageAll()
+                            let res = statusController.stageAll()
+                            if (res.success) {
+                                root.notificationController.success("All files staged successfully", "Stage All", 3000)
+                            } else {
+                                root.notificationController.error(res.errorMessage || "Failed to stage all files", "Stage Error", 5000)
+                            }
                             root.update()
                         }
 
                         onUnstageAllRequested: function() {
-
+                            let failedFiles = []
                             fileListsPanel.stagedChanges.forEach((file)=>{
-                                statusController.unstageFile(file.path)
+                                let res = statusController.unstageFile(file.path)
+                                if (!res.success) {
+                                    failedFiles.push(file.path)
+                                }
                             })
+                            if (failedFiles.length > 0) {
+                                root.notificationController.error("Failed to unstage some files", "Unstage Error", 5000)
+                            } else if (fileListsPanel.stagedChanges.length > 0) {
+                                root.notificationController.success("All files unstaged successfully", "Unstage All", 3000)
+                            }
                             root.update()
                         }
 
                         onDiscardAllRequested: function() {
-                            statusController.revertAll()
+                            let res = statusController.revertAll()
+                            if (res.success) {
+                                root.notificationController.success("All changes discarded successfully", "Discard All", 3000)
+                            } else {
+                                root.notificationController.error(res.errorMessage || "Failed to discard all changes", "Discard Error", 5000)
+                            }
                             root.update()
                         }
 
@@ -370,8 +406,10 @@ Item {
                             let result = stashController.save(message, keepIndex);
 
                             if (result.success) {
+                                root.notificationController.success("Changes stashed successfully", "Stash", 3000)
                                 root.update();
                             } else {
+                                root.notificationController.error(result.errorMessage || "Stash failed", "Stash Error", 5000)
                                 errorMessageLabel.text = result.errorMessage ?? "Stash failed";
                             }
                         }
@@ -390,12 +428,22 @@ Item {
                 id: diffView
                 anchors.fill: parent
                 onRequestStage: function (start, end, type) {
-                    root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
+                    let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
+                    if (res.success) {
+                        root.notificationController.success("Selected lines staged", "Stage", 2000)
+                    } else {
+                        root.notificationController.error(res.errorMessage || "Failed to stage selected lines", "Stage Error", 5000)
+                    }
                     root.update()
                 }
 
                 onRequestRevert: function (start, end, type) {
-                    root.statusController.revertSelectedLines(root.selectedFilePath, start, end, type)
+                    let res = root.statusController.revertSelectedLines(root.selectedFilePath, start, end, type)
+                    if (res.success) {
+                        root.notificationController.success("Selected lines reverted", "Revert", 2000)
+                    } else {
+                        root.notificationController.error(res.errorMessage || "Failed to revert selected lines", "Revert Error", 5000)
+                    }
                     root.update()
                 }
             }

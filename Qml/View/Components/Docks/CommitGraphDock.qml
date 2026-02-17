@@ -29,6 +29,8 @@ Item {
     property CommitController commitController: null
 
     property RepositoryController repositoryController: null
+    
+    property NotificationController notificationController: null
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -1456,7 +1458,16 @@ Item {
                                     icon: Style.icons.gitBranch,
                                     enabled: commitData.hash !== root.currentHeadHash,
                                     action: function() {
-                                        branchController.checkoutCommit(commitData.hash);
+                                        let res = branchController.checkoutCommit(commitData.hash);
+                                        if (res.success) {
+                                            if (root.notificationController) {
+                                                root.notificationController.success("Checked out commit " + commitData.shortHash, "Checkout", 3000)
+                                            }
+                                        } else {
+                                            if (root.notificationController) {
+                                                root.notificationController.error(res.errorMessage || "Failed to checkout commit", "Checkout Error", 5000)
+                                            }
+                                        }
                                         root.selectedCommit = ""
                                         root.reloadAll()
                                     }
