@@ -18,10 +18,10 @@ GitRepository {
     property int maxRecentLength: 10
 
     enum GitProtocol {
-        Unknown,
-        SSH,
-        HTTP,
-        HTTPS
+        Unknown = 0,
+        SSH = 1,
+        HTTP = 2,
+        HTTPS = 3
     }
 
     /* Signals
@@ -221,24 +221,5 @@ GitRepository {
 
         // handle both / and : (for SSH)
         return url.split(/[\/:]/).pop();
-    }
-
-    function detectGitProtocol(repoUrl: string): int {
-        if (!repoUrl)
-            return GitProtocol.Unknown
-
-        // SSH
-        if (/^git@.+:.+/.test(repoUrl) || /^ssh:\/\//i.test(repoUrl))
-            return RepositoryController.GitProtocol.SSH
-
-        // HTTPS
-        if (/^https:\/\//i.test(repoUrl))
-            return RepositoryController.GitProtocol.HTTPS
-
-        // HTTP
-        if (/^http:\/\//i.test(repoUrl))
-            return RepositoryController.GitProtocol.HTTP
-
-        return RepositoryController.GitProtocol.Unknown
     }
 }
