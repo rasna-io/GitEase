@@ -236,7 +236,22 @@ Item {
         }
     }
 
+    Connections {
+        target: root.branchController
+
+        function onCurrentRepoChanged() {
+            updateBranches()
+        }
+    }
+
     onBranchControllerChanged: {
+        updateBranches()
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+
+    function updateBranches() {
         if(!branchController)
             return
 
