@@ -38,6 +38,20 @@ Item {
     property string selectedCommit: ""
     property string selectedFilePath: ""
 
+    onSelectedCommitChanged: {
+        fileChangesDock.commitHash = root.selectedCommit
+    }
+
+    Connections {
+        target: repositoryController
+
+        function onRepositorySelected() {
+            root.selectedCommit = ""
+            root.selectedFilePath = ""
+            diffView.diffData = null
+        }
+    }
+
     // Exposed to MainWindow's header area (see MainWindow.qml)
     property Component headerContent: Component {
         RowLayout {
@@ -524,11 +538,11 @@ Item {
                     color: "transparent"
 
                     FileChangesDock {
+                        id: fileChangesDock
                         anchors.fill: parent
 
                         repositoryController : root.repositoryController
                         statusController: root.statusController
-                        commitHash : root.selectedCommit
 
                         onFileSelected: function(filePath){
                             root.selectedFilePath = filePath
