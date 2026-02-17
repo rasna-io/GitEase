@@ -17,6 +17,7 @@ QtObject {
     property int    maxVisibleNotifications:      appSettings?.notificationSettings?.maxVisibleNotifications ?? 5
     property int    defaultDuration:              3000
     property string currentRepositoryKey:         ""
+    property string previousRepositoryKey:        ""
     property string notificationPosition:         appSettings?.notificationSettings?.notificationPosition ?? "right-bottom"
     property bool   displayRealtimeNotifications: appSettings?.notificationSettings?.displayRealtimeNotifications ?? true
     
@@ -44,9 +45,10 @@ QtObject {
      * ****************************************************************************************/
     onCurrentRepositoryKeyChanged: {
         if (root.notificationHistory.length > 0) {
-            saveNotifications()
+            saveNotificationsForRepository(root.previousRepositoryKey)
         }
 
+        root.previousRepositoryKey = root.currentRepositoryKey
         root.notificationHistory = []
         root.unreadCount = 0
 
@@ -55,10 +57,14 @@ QtObject {
     }
     
     function getNotificationFilePath() {
-        if (root.currentRepositoryKey && root.currentRepositoryKey !== "") {
-            return root.baseFilePath + "_" + root.currentRepositoryKey + ".json"
+        return getNotificationFilePathForRepository(root.currentRepositoryKey)
+    }
+    
+    function getNotificationFilePathForRepository(repositoryKey) {
+        if (repositoryKey && repositoryKey !== "") {
+            return root.baseFilePath + "_" + repositoryKey + ".json"
         }
-        return root.baseFilePath + ".json"  // Default global notifications
+        return root.baseFilePath + ".json"
     }
 
     /* Functions
@@ -190,10 +196,14 @@ QtObject {
     }
     
     function saveNotifications() {
-        var filePath = getNotificationFilePath()
+        saveNotificationsForRepository(root.currentRepositoryKey)
+    }
+    
+    function saveNotificationsForRepository(repositoryKey) {
+        var filePath = getNotificationFilePathForRepository(repositoryKey)
         
         var data = {
-            "repositoryKey": root.currentRepositoryKey,
+            "repositoryKey": repositoryKey,
             "notifications": [],
             "unreadCount": root.unreadCount
         }
