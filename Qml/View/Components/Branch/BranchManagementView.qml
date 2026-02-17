@@ -39,6 +39,14 @@ UtilitiesCard {
             }
         }
 
+        Connections {
+            target: root.branchController
+
+            function onCurrentRepoChanged() {
+                content.update()
+            }
+        }
+
 
         Connections {
             target: root.addBranchPopup
