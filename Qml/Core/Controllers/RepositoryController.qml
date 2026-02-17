@@ -150,6 +150,9 @@ GitRepository {
                 var result = open(repo.path)
                 
                 if (!result.success) {
+                    if(notificationController){
+                        notificationController.error(result.errorMessage || "Failed to repository changes", "Repository Error", 5000)
+                    }
                     return
                 }
                 
@@ -162,6 +165,14 @@ GitRepository {
             updateRecentRepositories(repo)
             appModel.recentRepositories = appModel.recentRepositories.slice()
             appModel.save()
+
+            if(notificationController && root.appModel.repositories.length > 1){
+                notificationController.success("Changes Repository successfully", "Repository", 3000)
+            }
+        }else{
+            if(notificationController){
+                notificationController.error("Failed to repository changes", "Repository Error", 5000)
+            }
         }
     }
 
