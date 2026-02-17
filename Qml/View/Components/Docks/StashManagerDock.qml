@@ -60,6 +60,14 @@ UtilitiesCard {
         }
 
         Connections {
+            target: root.stashController
+
+            function onCurrentRepoChanged() {
+                content.update()
+            }
+        }
+
+        Connections {
             target: root.addStashPopup
             function onAboutToHide() {
                 root.updateStashes()
