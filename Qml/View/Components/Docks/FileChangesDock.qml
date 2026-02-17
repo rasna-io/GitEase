@@ -40,6 +40,16 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    Connections {
+        target: repositoryController
+
+        function onCurrentRepoChanged() {
+            root.files = []
+            root.selectedFile = null
+            root.commitHash = ""
+        }
+    }
+
     EmptyStateView {
         title: "No files to show"
         details: "Select a commit to view the file changes"
