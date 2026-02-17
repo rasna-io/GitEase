@@ -53,18 +53,11 @@ IPopup {
             anchors.margins: 20
 
             RowLayout{
-                Text {
-                    text: "Stash Message (Optional)"
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 13
-                    font.bold: true
-                    color: Style.colors.foreground
-                }
 
                 TextField {
                     id: stashMessageField
-                    Layout.preferredWidth: 200
-                    placeholderText: "Enter a description for this stash..."
+                    Layout.preferredWidth: 400
+                    placeholderText: "Stash Message (Optional)"
                     font.family: Style.fontTypes.roboto
                     font.pixelSize: 12
 
@@ -108,7 +101,7 @@ IPopup {
                             rotation: -45
                         }
                     }
-                    onClicked: root.close()
+                    onClicked: closePopUp()
                 }
             }
 
@@ -136,28 +129,32 @@ IPopup {
                     Layout.fillWidth: true
                 }
 
-                ActionIconButton {
-                    iconText: Style.icons.plus
-                    tooltip: "Create"
-                    textColor: Style.colors.accent
 
-                    onClicked: {
-                        let message = stashMessageField.text.trim()
-                        let keepIndex = keepIndexCheckBox.checked
-                        let result = stashController.save(message, keepIndex)
-                        if (result.success) {
-                            stashMessageField.text = ""
-                            keepIndexCheckBox.checked = false
-                            selectedFilePath = ""
-                            stashDiffData = []
-                            stashFiles = []
-                            root.close()
+                Row {
+                    spacing: 8
+                    Layout.alignment: Qt.AlignRight
+
+                    Button {
+                        flat: true
+                        text: "Create Stash"
+                        Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                        background: Rectangle {
+                            color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                            border.color: Style.colors.accent
+                            radius: 5
+                        }
+                        onClicked: {
+                            let message = stashMessageField.text.trim()
+                            let keepIndex = keepIndexCheckBox.checked
+                            let result = stashController.save(message, keepIndex)
+                            if (result.success) {
+                                closePopUp()
+
+                            }
 
                         }
-
                     }
                 }
-
             }
 
             Rectangle {
@@ -271,6 +268,15 @@ IPopup {
         if (res.success) {
             stashDiffData = res.data.lines  // Use the lines for DiffView
         }
+    }
+
+    function closePopUp(){
+        stashMessageField.text = ""
+        keepIndexCheckBox.checked = false
+        selectedFilePath = ""
+        stashDiffData = []
+        stashFiles = []
+        root.close()
     }
 
 
