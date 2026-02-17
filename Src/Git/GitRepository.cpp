@@ -68,24 +68,37 @@ GitResult GitRepository::open(const QString &path)
     }
 
     // Close current repository if open
-    if (m_currentRepo)
+    if (m_currentRepo && m_currentRepo->repo)
     {
         git_repository_free(m_currentRepo->repo);
+        m_currentRepo->repo = nullptr;
     }
 
+    Repository *newRepo = new Repository(this);
 
     // Convert path to UTF-8
     QByteArray pathUtf8 = path.toUtf8();
 
     // Open repository
-    int result = git_repository_open(&m_currentRepo->repo, pathUtf8.constData());
+    int result = git_repository_open(&newRepo->repo, pathUtf8.constData());
 
     if (result != 0)
+    {
+        delete newRepo;
         return GitResult(false, QVariant(), "Failed to open repository");
+    }
 
+    Repository *oldRepo = m_currentRepo;
+    m_currentRepo = newRepo;
+    
     // Store path and emit signal
     m_currentRepoPath = path;
     emit currentRepoChanged();
+
+    if (oldRepo)
+    {
+        oldRepo->deleteLater();
+    }
 
     return GitResult(true, path);
 }
