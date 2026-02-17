@@ -12,7 +12,9 @@ GitRepository {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property AppModel appModel
+    required property            AppModel                         appModel
+    property                     NotificationController           notificationController: null
+
     property int maxRecentLength: 10
 
     enum GitProtocol {
