@@ -341,7 +341,8 @@ Item {
 
                         onFileSelected: function(filePath) {
                             root.selectedFilePath = filePath
-                            root.updateDiff()
+                            let isStaged = fileListsPanel.stagedChanges.some(file => file.path === filePath)
+                            root.updateDiff(isStaged)
                         }
 
                         onStageFileRequested: function(filePath) {
