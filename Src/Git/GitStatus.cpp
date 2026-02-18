@@ -801,8 +801,10 @@ std::vector<QString> GitStatus::applySelectedFromPatch(const std::vector<QString
                 }
             }
             else if (origin == GIT_DIFF_LINE_ADDITION) {
-                bool stageAdd = (line->new_lineno >= startLine && line->new_lineno <= endLine) ||
-                                (lastLineWasStagedDeletion);
+                bool isWithinRange = (line->new_lineno >= startLine && line->new_lineno <= endLine) ||
+                                     (line->old_lineno >= startLine && line->old_lineno <= endLine && line->old_lineno != 0);
+
+                bool stageAdd = isWithinRange || lastLineWasStagedDeletion;
 
                 if (stageAdd) {
                     QString add = QString::fromUtf8(line->content, (int)line->content_len);
