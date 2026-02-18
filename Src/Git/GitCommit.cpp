@@ -108,6 +108,8 @@ GitResult GitCommit::getCommits(int limit, int offset)
         return GitResult(false, QVariant(), "No commits found.");
     }
 
+    emitGitCommand(QString("git log --max-count=%1 --skip=%2").arg(limit).arg(offset));
+
     return GitResult(true, QVariant::fromValue(commits), QString("Retrieved %1 commits").arg(commits.size()));
 }
 
@@ -166,6 +168,8 @@ GitResult GitCommit::getCommit(const QString &commitHash)
 
     git_commit_free(gitCommit);
 
+    emitGitCommand(QString("git show %1").arg(quoteCommandArg(commitHash)));
+
     return GitResult(true, QVariant::fromValue(commit));
 }
 
@@ -196,6 +200,11 @@ QString GitCommit::getParentHash(const QString &commitHash, int index)
     }
 
     git_commit_free(commit);
+
+    emitGitCommand(QString("git rev-parse %1^%2")
+                       .arg(quoteCommandArg(commitHash))
+                       .arg(index + 1));
+
     return parentHash;
 }
 
@@ -268,6 +277,15 @@ GitResult GitCommit::commit(const QString& message,
 
     cleanupCommitResources(author, tree, parents);
 
+    QString command = "git commit";
+    if (amend) {
+        command += " --amend";
+    }
+    if (allowEmpty) {
+        command += " --allow-empty";
+    }
+    command += " -m " + quoteCommandArg(message.trimmed());
+    emitGitCommand(command);
 
     return GitResult(true, QVariant::fromValue(data));
 }
@@ -497,7 +515,12 @@ GitResult GitCommit::revertCommit(const QString &commitHash)
                           .arg(commitHash.left(7))
                           .arg(commitHash);
 
-    return commit(message, false, false); // Don't amend, don't allow empty
+    GitResult commitResult = commit(message, false, false); // Don't amend, don't allow empty
+    if (commitResult.success()) {
+        emitGitCommand(QString("git revert %1").arg(quoteCommandArg(commitHash)));
+    }
+
+    return commitResult;
 }
 
 void GitCommit::freeParentCommits(ParentCommits& parents)
