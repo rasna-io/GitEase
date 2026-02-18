@@ -133,7 +133,7 @@ UtilitiesCard {
                                     if (root.notificationController) {
                                         root.notificationController.success("Stash popped successfully", "Stash", 3000)
                                     }
-                                    content.update()
+                                    root.updateStashes()
                                 } else {
                                     if (root.notificationController) {
                                         root.notificationController.error(result.errorMessage || "Failed to pop stash", "Stash Error", 5000)
@@ -152,7 +152,7 @@ UtilitiesCard {
                                     if (root.notificationController) {
                                         root.notificationController.success("Stash applied successfully", "Stash", 3000)
                                     }
-                                    content.update()
+                                    root.updateStashes()
                                 } else {
                                     if (root.notificationController) {
                                         root.notificationController.error(result.errorMessage || "Failed to apply stash", "Stash Error", 5000)
@@ -171,7 +171,7 @@ UtilitiesCard {
                                     if (root.notificationController) {
                                         root.notificationController.success("Stash removed successfully", "Stash", 3000)
                                     }
-                                    content.update()
+                                    root.updateStashes()
                                 } else {
                                     if (root.notificationController) {
                                         root.notificationController.error(result.errorMessage || "Failed to remove stash", "Stash Error", 5000)
@@ -337,24 +337,6 @@ UtilitiesCard {
         let res = root.statusController.getDiff(parentHash, root.selectedStash.id, root.selectedFilePath)
         if (res.success) {
             root.stashDiffData = res.data
-        }
-    }
-
-    function executeStashAction(action, stashEntry, reinstateIndex) {
-        if (!stashEntry || !root.stashController)
-            return
-
-        let result = ({ success: false })
-        if (action === "apply") {
-            result = root.stashController.apply(stashEntry.index, reinstateIndex)
-        } else if (action === "pop") {
-            result = root.stashController.pop(stashEntry.index, reinstateIndex)
-        } else if (action === "remove") {
-            result = root.stashController.remove(stashEntry.index)
-        }
-
-        if (result.success) {
-            root.updateStashes()
         }
     }
 
