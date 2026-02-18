@@ -1,4 +1,4 @@
-﻿import QtQuick
+import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -48,6 +48,10 @@ Item {
         contentWidth: flow.width
         contentHeight: flow.implicitHeight
 
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded
+        }
+
         Flow {
             id: flow
             width: flick.width
@@ -92,9 +96,5 @@ Item {
                 notificationController: root.notificationController
             }
         }
-    }
-
-    ScrollBar.vertical: ScrollBar {
-        policy: ScrollBar.AsNeeded
     }
 }
