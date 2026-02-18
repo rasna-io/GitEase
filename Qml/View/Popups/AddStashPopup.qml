@@ -54,18 +54,19 @@ IPopup {
 
             RowLayout{
 
-                TextField {
-                    id: stashMessageField
-                    Layout.preferredWidth: 400
-                    placeholderText: "Stash Message (Optional)"
+                CheckBox {
+                    id: keepIndexCheckBox
+                    Layout.fillWidth: false
+                    text: "Keep staged changes in index"
+                    checked: true
+
                     font.family: Style.fontTypes.roboto
                     font.pixelSize: 12
 
-                    background: Rectangle {
-                        radius: 4
-                        color: Style.colors.secondaryBackground
-                        border.width: parent.activeFocus ? 2 : 1
-                        border.color: parent.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
+                    Material.accent: Style.colors.accent
+
+                    palette {
+                        text: Style.colors.foreground
                     }
                 }
 
@@ -109,48 +110,40 @@ IPopup {
                 Layout.fillWidth: true
                 spacing: 8
 
-                CheckBox {
-                    id: keepIndexCheckBox
-                    Layout.fillWidth: false
-                    text: "Keep staged changes in index"
-                    checked: true
 
+                TextField {
+                    id: stashMessageField
+                    Layout.fillWidth: true
+                    placeholderText: "Stash Message (Optional)"
                     font.family: Style.fontTypes.roboto
                     font.pixelSize: 12
 
-                    Material.accent: Style.colors.accent
-
-                    palette {
-                        text: Style.colors.foreground
+                    background: Rectangle {
+                        radius: 4
+                        color: Style.colors.secondaryBackground
+                        border.width: parent.activeFocus ? 2 : 1
+                        border.color: parent.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
                     }
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                }
 
-
-                Row {
-                    spacing: 8
+                Button {
+                    flat: true
+                    text: "Create Stash"
                     Layout.alignment: Qt.AlignRight
-
-                    Button {
-                        flat: true
-                        text: "Create Stash"
-                        Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                        background: Rectangle {
-                            color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                            border.color: Style.colors.accent
-                            radius: 5
-                        }
-                        onClicked: {
-                            let message = stashMessageField.text.trim()
-                            let keepIndex = keepIndexCheckBox.checked
-                            let result = stashController.save(message, keepIndex)
-                            if (result.success) {
-                                closePopUp()
-
-                            }
+                    Layout.preferredHeight: 50
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+                    onClicked: {
+                        let message = stashMessageField.text.trim()
+                        let keepIndex = keepIndexCheckBox.checked
+                        let result = stashController.save(message, keepIndex)
+                        if (result.success) {
+                            closePopUp()
 
                         }
                     }
