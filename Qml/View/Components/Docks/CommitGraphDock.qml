@@ -1476,37 +1476,79 @@ Item {
 
                         ContextMenu {
                             id: contextMenu
-                            menuModel: [
-                                {
-                                    text: "Checkout Commit",
-                                    icon: Style.icons.gitBranch,
-                                    enabled: commitData.hash !== root.currentHeadHash,
+
+                            onAboutToShow: {
+                                var branches = commitData.branchNames || [];
+                                var shortHash = commitData.shortHash || commitData.hash.substring(0, 7);
+                                var isCurrentHead = (commitData.hash === root.currentHeadHash);
+
+                                var checkoutSubMenu = [];
+                                branches.forEach(function(bName) {
+                                    checkoutSubMenu.push({
+                                        text: bName,
+                                        icon: Style.icons.gitBranch,
+                                        action: function() {
+                                            let res = branchController.checkoutBranch(bName);
+                                            handleResponse(res, "Checked out branch " + bName);
+                                        }
+                                    });
+                                });
+
+                                checkoutSubMenu.push({
+                                    text: "Checkout " + shortHash + " (Detached)",
+                                    icon: Style.icons.hash,
                                     action: function() {
                                         let res = branchController.checkoutCommit(commitData.hash);
-                                        if (res.success) {
-                                            if (root.notificationController) {
-                                                root.notificationController.success("Checked out commit " + commitData.shortHash, "Checkout", 3000)
-                                            }
-                                        } else {
-                                            if (root.notificationController) {
-                                                root.notificationController.error(res.errorMessage || "Failed to checkout commit", "Checkout Error", 5000)
-                                            }
-                                        }
-                                        root.selectedCommit = ""
-                                        root.reloadAll()
+                                        handleResponse(res, "Checked out commit " + shortHash);
                                     }
-                                },
-                                {
+                                });
+
+                                var finalModel = [];
+
+                                if (branches.length > 0) {
+                                    finalModel.push({
+                                        text: "Checkout",
+                                        icon: Style.icons.gitBranch,
+                                        enabled: !isCurrentHead,
+                                        subItems: checkoutSubMenu
+                                    });
+                                } else {
+                                    finalModel.push({
+                                        text: "Checkout Commit " + shortHash,
+                                        icon: Style.icons.hash,
+                                        enabled: !isCurrentHead,
+                                        action: function() {
+                                            let res = branchController.checkoutCommit(commitData.hash);
+                                            handleResponse(res, "Checked out commit " + shortHash);
+                                        }
+                                    });
+                                }
+
+                                finalModel.push({
                                     text: "New Branch from here",
                                     icon: Style.icons.branchPlus,
                                     enabled: true,
                                     action: function() {
-                                        addBranchPopup.branchController = root.branchController
-                                        addBranchPopup.targetHash = commitData.hash
-                                        addBranchPopup.open()
+                                        addBranchPopup.branchController = root.branchController;
+                                        addBranchPopup.targetHash = commitData.hash;
+                                        addBranchPopup.open();
                                     }
+                                });
+
+                                menuModel = finalModel;
+                            }
+
+                            function handleResponse(res, successMsg) {
+                                if (res.success) {
+                                    if (root.notificationController) {
+                                        root.notificationController.success(successMsg, "Checkout", 3000);
+                                    }
+                                } else if (root.notificationController) {
+                                    root.notificationController.error(res.errorMessage || "Failed to checkout", "Checkout Error", 5000);
                                 }
-                            ]
+                                root.selectedCommit = "";
+                                root.reloadAll();
+                            }
                         }
                     }
                 }
