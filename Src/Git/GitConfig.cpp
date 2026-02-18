@@ -52,6 +52,8 @@ GitResult GitConfig::getAllConfigs()
 
     git_config_free(cfg);
 
+    emitGitCommand("git config --list --show-origin");
+
     return GitResult(true, configList);
 }
 
@@ -81,6 +83,11 @@ GitResult GitConfig::getConfig(int level)
 
     Config config = getConfigAtLevel(cfg, configLevel);
     git_config_free(cfg);
+
+    const QString levelFlag = configLevelFlag(configLevel);
+    emitGitCommand(levelFlag.isEmpty()
+                       ? "git config user.name && git config user.email"
+                       : QString("git config %1 user.name && git config %1 user.email").arg(levelFlag));
 
     return GitResult(true, QVariant::fromValue(config));
 }
@@ -158,29 +165,24 @@ GitResult GitConfig::setConfig(int level, const QString &name, const QString &em
     git_config_free(levelCfg);
     git_config_free(cfg);
 
+    const QString levelFlag = configLevelFlag(configLevel);
+    emitGitCommand(levelFlag.isEmpty()
+                       ? QString("git config user.name %1 && git config user.email %2")
+                             .arg(quoteCommandArg(name), quoteCommandArg(email))
+                       : QString("git config %1 user.name %2 && git config %1 user.email %3")
+                             .arg(levelFlag, quoteCommandArg(name), quoteCommandArg(email)));
+
     return GitResult(true, QVariant(), "Config set successfully");
 }
 
 GitResult GitConfig::getUserName(int level)
 {
-    GitResult result = getConfig(level);
-    if (!result.success()) {
-        return result;
-    }
-
-    Config config = result.data().value<Config>();
-    return GitResult(true, config.name());
+    return getValue(level, "user.name");
 }
 
 GitResult GitConfig::getUserEmail(int level)
 {
-    GitResult result = getConfig(level);
-    if (!result.success()) {
-        return result;
-    }
-
-    Config config = result.data().value<Config>();
-    return GitResult(true, config.email());
+    return getValue(level, "user.email");
 }
 
 Config GitConfig::getConfigAtLevel(git_config *cfg, Config::ConfigLevel level)
@@ -297,6 +299,12 @@ GitResult GitConfig::setValue(int level, const QString &key, const QString &valu
     git_config_free(levelCfg);
     git_config_free(cfg);
 
+    const QString levelFlag = configLevelFlag(configLevel);
+    emitGitCommand(levelFlag.isEmpty()
+                       ? QString("git config %1 %2").arg(quoteCommandArg(key), quoteCommandArg(value))
+                       : QString("git config %1 %2 %3")
+                             .arg(levelFlag, quoteCommandArg(key), quoteCommandArg(value)));
+
     return GitResult(true, QVariant(), QString("Successfully set %1 to %2").arg(key, value));
 }
 
@@ -362,5 +370,27 @@ GitResult GitConfig::getValue(int level, const QString &key)
         return GitResult(false, QVariant(), QString("Config key '%1' not found at specified level").arg(key));
     }
 
+    const QString levelFlag = configLevelFlag(configLevel);
+    emitGitCommand(levelFlag.isEmpty()
+                       ? QString("git config --get %1").arg(quoteCommandArg(key))
+                       : QString("git config %1 --get %2").arg(levelFlag, quoteCommandArg(key)));
+
     return GitResult(true, value, QString("Successfully retrieved %1").arg(key));
+}
+
+QString GitConfig::configLevelFlag(Config::ConfigLevel level)
+{
+    switch (level)
+    {
+        case Config::ConfigLevel::System:
+            return "--system";
+        case Config::ConfigLevel::Global:
+            return "--global";
+        case Config::ConfigLevel::Local:
+            return "--local";
+        case Config::ConfigLevel::Worktree:
+            return "--worktree";
+        default:
+            return "";
+    }
 }
