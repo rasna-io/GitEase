@@ -36,6 +36,15 @@ GitResult GitStash::save(const QString &message, bool keepIndex)
     if (result != GIT_OK)
         return GitResult(false, {}, git_error_last()->message);
 
+    QString command = "git stash push";
+    if (keepIndex) {
+        command += " --keep-index";
+    }
+    if (!message.trimmed().isEmpty()) {
+        command += " -m " + quoteCommandArg(message.trimmed());
+    }
+    emitGitCommand(command);
+
     return GitResult(true, {}, "Stash saved successfully.");
 }
 
@@ -47,7 +56,6 @@ GitResult GitStash::list()
     }
 
     QVariantList resultList;
-
 
     ListPayload payload { m_currentRepo->repo, &resultList };
 
@@ -95,6 +103,8 @@ GitResult GitStash::list()
         return GitResult(false, {}, git_error_last()->message);
     }
 
+    emitGitCommand("git stash list");
+
     return GitResult(
         true,
         resultList,
@@ -121,6 +131,12 @@ GitResult GitStash::apply(int index, bool reinstateIndex)
         return GitResult(false, QVariant(), QString("Failed to apply stash: %1").arg(git_error_last()->message));
     }
 
+    QString command = QString("git stash apply stash@{%1}").arg(index);
+    if (reinstateIndex) {
+        command += " --index";
+    }
+    emitGitCommand(command);
+
     return GitResult(true, QVariant(), "Stash applied successfully.");
 }
 
@@ -135,6 +151,8 @@ GitResult GitStash::remove(int index)
     if (result != GIT_OK) {
         return GitResult(false, QVariant(), QString("Failed to remove stash: %1").arg(git_error_last()->message));
     }
+
+    emitGitCommand(QString("git stash drop stash@{%1}").arg(index));
 
     return GitResult(true, QVariant(), "Stash removed successfully.");
 }
@@ -157,6 +175,12 @@ GitResult GitStash::pop(int index, bool reinstateIndex)
     if (result != GIT_OK) {
         return GitResult(false, QVariant(), QString("Failed to pop stash: %1").arg(git_error_last()->message));
     }
+
+    QString command = QString("git stash pop stash@{%1}").arg(index);
+    if (reinstateIndex) {
+        command += " --index";
+    }
+    emitGitCommand(command);
 
     return GitResult(true, QVariant(), "Stash popped successfully.");
 }
