@@ -50,6 +50,16 @@ QtObject {
         if(root.arguments["page"]) {
             pageController.switchToPage(root.arguments["page"])
         }
+
+        // Handle stash commands
+        if (root.arguments["stash-pop"])
+            repositoryController?.gitStash?.pop(0)
+
+        if (root.arguments["stash-apply"])
+            repositoryController?.gitStash?.apply(0)
+
+        if (root.arguments["stash-drop"])
+            repositoryController?.gitStash?.remove(0)
     }
 
     /* Functions
