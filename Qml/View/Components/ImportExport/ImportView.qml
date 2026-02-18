@@ -21,9 +21,8 @@ Item {
     property BundleController   bundleController:     null
     property string             selectedFile:         ""
 
-    /* Object Properties
+    /* Object Properties (sized by parent layout when used in StackLayout)
      * ****************************************************************************************/
-    anchors.fill: parent
 
     /* Children
      * ****************************************************************************************/

@@ -66,7 +66,7 @@ UtilitiesCard {
 
         Connections {
             target: root
-            onRemoteControllerChanged: {
+            function onRemoteControllerChanged() {
                 content.update()
             }
         }
