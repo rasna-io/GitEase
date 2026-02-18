@@ -1024,41 +1024,65 @@ Item {
                                     var fromPos = edge.fromPos;
                                     var toPos = edge.toPos;
                                     
-                                    var fromX = centerOffset + fromPos.column * root.columnSpacing + root.columnSpacing / 2;
-                                    var fromY = fromPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
-                                    var toX = centerOffset + toPos.column * root.columnSpacing + root.columnSpacing / 2;
-                                    var toY = toPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
+                                    // Calculate node center positions
+                                    let fromCenterX = centerOffset + fromPos.column * root.columnSpacing + root.columnSpacing / 2;
+                                    let fromCenterY = fromPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
+                                    let toCenterX = centerOffset + toPos.column * root.columnSpacing + root.columnSpacing / 2;
+                                    let toCenterY = toPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
+
+                                    let startX = edge.isMerge ? fromCenterX : toCenterX
+                                    let startY = edge.isMerge ? fromCenterY : toCenterY
+                                    let endX = edge.isMerge ? toCenterX : fromCenterX
+                                    let endY = edge.isMerge ? toCenterY : fromCenterY
                                     
                                     // Color edge by the originating commit's lane/graph color
                                     var edgeColorVal = edgeColor(edge, commitByHash)
+                                    let deltaX = endX - startX;
+                                    let deltaY = endY - startY;
+                                    let horizontalDistance = Math.abs(deltaX);
                                     
+                                    let curveRadius = Math.min(horizontalDistance * 0.5, root.commitItemHeight);
+                                    curveRadius = Math.max(curveRadius, 8);
+                                                                        
                                     ctx.save();
                                     ctx.strokeStyle = edgeColorVal;
                                     ctx.globalAlpha = 0.85;
                                     ctx.lineWidth = 2.5;
                                     
                                     ctx.beginPath();
+                                    ctx.moveTo(startX, startY);
                                     
-                                    // Draw smooth Bezier curve for diagonal connection
-                                    ctx.moveTo(fromX, fromY);
+                                    // Calculate curve radius based on distance
+                                    curveRadius = Math.min(Math.abs(deltaX) / 2, root.commitItemHeight, Math.abs(deltaY) / 2);
+                                    curveRadius = Math.max(curveRadius, 8); // Minimum radius for smooth curves
                                     
-                                    // Calculate control points for smooth curve
-                                    var verticalDistance = Math.abs(toY - fromY);
-                                    var horizontalDistance = Math.abs(toX - fromX);
-                                    
-                                    // Use bezier curve for smooth diagonal lines
-                                    // Control points are offset to create a natural curve
-                                    var controlOffset = Math.min(verticalDistance * 0.6, 40);
-                                    
-                                    let isUpside = toY < fromY
-
-                                    if (isUpside) {
-                                        ctx.bezierCurveTo(fromX, toY + 5, fromX - 2, toY, fromX - 20, toY);
-                                        ctx.lineTo(toX, toY);
+                                    if (deltaX === 0) {
+                                        ctx.lineTo(endX, endY);
+                                    } else if (deltaX > 0) {
+                                        let horizontalEndX = endX - curveRadius;
+                                        if (deltaY > 0) {
+                                            let verticalStartY = startY + curveRadius;
+                                            ctx.lineTo(horizontalEndX, startY);
+                                            ctx.quadraticCurveTo(endX, startY, endX, verticalStartY);
+                                            ctx.lineTo(endX, endY);
+                                        } else {
+                                            let verticalStartY = startY - curveRadius;
+                                            ctx.lineTo(horizontalEndX, startY);
+                                            ctx.quadraticCurveTo(endX, startY, endX, verticalStartY);
+                                            ctx.lineTo(endX, endY);
+                                        }
                                     } else {
-                                        ctx.lineTo(fromX, toY - 20);
-                                        ctx.bezierCurveTo(fromX, toY - 20, fromX - 2, toY, fromX - 20, toY);
-                                        ctx.lineTo(toX, toY);
+                                        if (deltaY > 0) {
+                                            let verticalEndY = endY - curveRadius;
+                                            ctx.lineTo(startX, verticalEndY);
+                                            ctx.quadraticCurveTo(startX, endY, startX - curveRadius, endY);
+                                            ctx.lineTo(endX, endY);
+                                        } else {
+                                            let verticalEndY = endY + curveRadius;
+                                            ctx.lineTo(startX, verticalEndY);
+                                            ctx.quadraticCurveTo(startX, endY, startX - curveRadius, endY);
+                                            ctx.lineTo(endX, endY);
+                                        }
                                     }
                                     
                                     ctx.stroke();
