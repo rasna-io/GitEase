@@ -114,6 +114,11 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
     pushResult["force"] = force;
     pushResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
+    emitGitCommand(QString("git push %1%2 %3")
+                       .arg(force ? "--force " : "",
+                            quoteCommandArg(remoteName),
+                            quoteCommandArg(branchName)));
+
     return GitResult(true, pushResult);
 }
 
@@ -157,12 +162,11 @@ GitResult GitRemote::getRemoteUrl(const QString& remoteName)
     data["url"]      = finalUrl;
 
     git_remote_free(remote);
-    qDebug() << data;
+
+    emitGitCommand(QString("git remote get-url %1").arg(quoteCommandArg(remoteName)));
 
     return GitResult(true, data);
 }
-
-
 
 GitResult GitRemote::getRemotes()
 {
@@ -199,7 +203,8 @@ GitResult GitRemote::getRemotes()
         git_strarray_free(&remote_list);
     }
 
-    qDebug() << "GitWrapperCPP: Retrieved" << remotes.size() << "remotes";
+    emitGitCommand("git remote -v");
+
     return GitResult(true, QVariant::fromValue(remotes));
 }
 
@@ -235,7 +240,9 @@ GitResult GitRemote::addRemote(const QString &name, const QString &url)
 
     git_remote_free(remote);
 
-    qDebug() << "GitWrapperCPP: Added remote" << name << "with URL" << url;
+    emitGitCommand(QString("git remote add %1 %2")
+                       .arg(quoteCommandArg(name), quoteCommandArg(url)));
+
     return GitResult(true, QVariant::fromValue(remoteInfo));
 }
 
@@ -262,7 +269,8 @@ GitResult GitRemote::removeRemote(const QString &name)
                          QString("Failed to remove remote '%1'").arg(name));
     }
 
-    qDebug() << "GitWrapperCPP: Removed remote" << name;
+    emitGitCommand(QString("git remote remove %1").arg(quoteCommandArg(name)));
+
     return GitResult(true, name);
 }
 
@@ -310,6 +318,17 @@ GitResult GitRemote::editRemote(const QString &oldName, const QString &newName, 
                              QString("Failed to update remote URL: %1").arg(err ? err->message : "Internal Git error"));
         }
     }
+
+    if (!newName.isEmpty() && newName != oldName) {
+        emitGitCommand(QString("git remote rename %1 %2")
+                           .arg(quoteCommandArg(oldName), quoteCommandArg(newName)));
+    }
+
+    const QString effectiveName = (!newName.isEmpty() && newName != oldName) ? newName : oldName;
+    if (!newUrl.isEmpty()) {
+        emitGitCommand(QString("git remote set-url %1 %2")
+                           .arg(quoteCommandArg(effectiveName), quoteCommandArg(newUrl)));
+    }
     
     return GitResult(true, activeRemoteName, "Remote configuration updated successfully.");
 }
@@ -339,6 +358,9 @@ GitResult GitRemote::getUpstreamName(const QString &localBranchName)
         git_reference_free(upstreamRef);
     if (localRef)
         git_reference_free(localRef);
+
+    emitGitCommand(QString("git rev-parse --abbrev-ref %1@{upstream}")
+                       .arg(localBranchName));
 
     return GitResult(true, result);
 }
