@@ -293,10 +293,14 @@ GitResult GitStatus::getDiff(const QString &oldCommitHash, const QString &newCom
     git_tree *newTree = nullptr;
     git_diff *diff = nullptr;
 
-    // Parse the old commit object using the commit hash
-    int resultCode = git_revparse_single(&oldCommitObj,  m_currentRepo->repo, oldCommitHash.toUtf8().constData());
-    if (resultCode != 0)
-        return GitResult(false, QVariant(), "Failed to retrieve the old commit.");
+    bool isInitialCommit = oldCommitHash.isEmpty();
+
+    int resultCode = 0;
+    if (!isInitialCommit) {
+        resultCode = git_revparse_single(&oldCommitObj,  m_currentRepo->repo, oldCommitHash.toUtf8().constData());
+        if (resultCode != 0)
+            return GitResult(false, QVariant(), "Failed to retrieve the old commit.");
+    }
 
     // Parse the new commit object using the commit hash
     resultCode = git_revparse_single(&newCommitObj,  m_currentRepo->repo, newCommitHash.toUtf8().constData());
@@ -306,10 +310,19 @@ GitResult GitStatus::getDiff(const QString &oldCommitHash, const QString &newCom
     }
 
     // Retrieve the trees for both commits (i.e., the snapshots of the commit's file system)
-    resultCode = git_commit_tree(&oldTree, reinterpret_cast<git_commit*>(oldCommitObj));
-    resultCode |= git_commit_tree(&newTree, reinterpret_cast<git_commit*>(newCommitObj));
+    // For initial commit, oldTree remains nullptr
+    if (!isInitialCommit) {
+        resultCode = git_commit_tree(&oldTree, reinterpret_cast<git_commit*>(oldCommitObj));
+        if (resultCode != 0) {
+            git_object_free(oldCommitObj);
+            git_object_free(newCommitObj);
+            return GitResult(false, QVariant(), "Failed to retrieve tree for the old commit.");
+        }
+    }
 
+    resultCode = git_commit_tree(&newTree, reinterpret_cast<git_commit*>(newCommitObj));
     if (resultCode != 0) {
+        git_tree_free(oldTree);
         git_object_free(oldCommitObj);
         git_object_free(newCommitObj);
         return GitResult(false, QVariant(), "Failed to retrieve trees for the commits.");

@@ -55,7 +55,15 @@ UtilitiesCard {
             target: root.stashController
 
             function onCurrentRepoChanged() {
-                content.update()
+                root.updateStashes()
+            }
+        }
+
+        Connections {
+            target: root.stashController
+
+            function onCurrentRepoChanged() {
+                root.updateStashes()
             }
         }
 
