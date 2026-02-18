@@ -47,8 +47,8 @@ GitResult GitRepository::init(const QString &path)
 
     // Store path and emit signal
     m_currentRepoPath = path;
+    emitGitCommand(QString("git init %1").arg(quoteCommandArg(path)));
 
-    qDebug() << "GitWrapperCPP: Repository initialized at" << path;
     return GitResult(true, path);
 }
 
@@ -94,6 +94,7 @@ GitResult GitRepository::open(const QString &path)
     // Store path and emit signal
     m_currentRepoPath = path;
     emit currentRepoChanged();
+    emitGitCommand(QString("git -C %1 rev-parse --git-dir").arg(quoteCommandArg(path)));
 
     if (oldRepo)
     {
@@ -216,6 +217,9 @@ GitResult GitRepository::cloneInternal(const QString& url,
 
     watcher->setFuture(future);
 
+    emitGitCommand(QString("git clone %1 %2")
+                       .arg(quoteCommandArg(url), quoteCommandArg(localPath)));
+
     return GitResult(true, {}, "Clone started");
 }
 
@@ -229,8 +233,6 @@ GitResult GitRepository::close()
     git_repository_free(m_currentRepo->repo);
     m_currentRepo = nullptr;
     m_currentRepoPath.clear();
-
-    qDebug() << "GitWrapperCPP: Repository closed";
 
     return GitResult(true);
 }
