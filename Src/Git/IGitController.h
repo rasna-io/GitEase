@@ -21,6 +21,10 @@ public:
 
 signals:
     void currentRepoChanged();
+    void gitCommandGenerated(const QString &command);
 protected:
+    void emitGitCommand(const QString &command);
+    static QString quoteCommandArg(const QString &argument);
+
     Repository *m_currentRepo = nullptr;
 };
