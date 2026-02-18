@@ -205,6 +205,15 @@ Item {
         }
     }
 
+    Connections {
+        target: root.branchController
+
+        function onCurrentRepoChanged() {
+            root.selectedFile = ""
+            branchTXF.text = ""
+        }
+    }
+
     onSelectedFileChanged: fileLabel.text = root.selectedFile
 
     /* Functions

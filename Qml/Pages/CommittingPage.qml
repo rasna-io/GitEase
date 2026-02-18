@@ -42,6 +42,7 @@ Item {
 
     onStatusControllerChanged: {
         update()
+        branchController.getCurrentBranchName()
     }
 
     /* Object Properties
@@ -50,6 +51,15 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+
+    Connections {
+        target: repositoryController
+
+        function onCurrentRepoChanged() {
+            root.update()
+            currentBranchNameText.text = branchController.getCurrentBranchName()
+        }
+    }
 
     Connections {
         target: userAuthenticationPopup
@@ -183,6 +193,7 @@ Item {
                                             color: Style.colors.placeholderText
                                         }
                                         Text {
+                                            id: currentBranchNameText
                                             text: branchController.getCurrentBranchName()
                                             font.family: Style.fontTypes.roboto
                                             font.pixelSize: 10

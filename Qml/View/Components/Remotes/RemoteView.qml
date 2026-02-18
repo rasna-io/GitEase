@@ -43,6 +43,14 @@ UtilitiesCard {
         }
 
         Connections {
+            target: root.remoteController
+
+            function onCurrentRepoChanged() {
+                content.update()
+            }
+        }
+
+        Connections {
             target: root.addEditRemotePopup
 
             function onAboutToHide() {

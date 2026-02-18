@@ -20,6 +20,9 @@ QtObject {
 
     property RepositoryController repositoryController: RepositoryController {
         appModel: root.appModel
+
+        notificationController: root.notificationController
+
         onCurrentRepoChanged: {
             branchController.currentRepo = currentRepo
             remoteController.currentRepo = currentRepo
