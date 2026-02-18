@@ -141,6 +141,8 @@ GitResult GitBundle::buildCompleteBundle(const QString &resolvedBranchName,
 
     cleanupBundleResources(nullptr, nullptr, walker, packbuilder);
 
+    emitGitCommand(QString("git bundle create %1 %2")
+                       .arg(quoteCommandArg(context.bundlePath), quoteCommandArg(resolvedBranchName)));
 
     return GitResult(result.success());
 }
@@ -202,6 +204,11 @@ GitResult GitBundle::buildDiffBundle(const QString &baseRef, const QString &targ
     GitResult result = writeBundleFile(packbuilder, context);
 
     cleanupBundleResources(nullptr, nullptr, walker, packbuilder);
+
+    emitGitCommand(QString("git bundle create %1 %2 ^%3")
+                       .arg(quoteCommandArg(context.bundlePath),
+                            quoteCommandArg(targetRef),
+                            quoteCommandArg(baseRef)));
 
     return result;
 }
@@ -415,6 +422,8 @@ GitResult GitBundle::unbundleWithCli(const QString &bundlePath)
         QVariantMap data;
         data["SHA"] =outputSplited[0];
 
+        emitGitCommand(QString("git bundle unbundle %1").arg(quoteCommandArg(bundlePath)));
+
         return GitResult(true, data);
     }
 
@@ -475,6 +484,8 @@ GitResult GitBundle::unbundle(const QString &bundlePath)
         return GitResult(false, QVariant(), errorMsg);
     }
     git_object_free(commit_obj);
+
+    emitGitCommand(QString("git bundle unbundle %1").arg(quoteCommandArg(bundlePath)));
 
     QVariantMap data;
     data["SHA"] = commitSha;
