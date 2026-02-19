@@ -146,6 +146,9 @@ Rectangle {
                         if (item.hasOwnProperty("uiSessionPopups")) {
                             item.uiSessionPopups = Qt.binding(function() { return root.uiSession?.popups })
                         }
+                        if (item.hasOwnProperty("activityController")) {
+                            item.activityController = Qt.binding(function() { return root.uiSession?.activityController })
+                        }
                     }
 
                     onStatusChanged: {

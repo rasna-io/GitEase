@@ -42,7 +42,7 @@ QtObject {
         }
     }
 
-    property BranchController branchController: BranchController {}
+
 
     property RemoteController remoteController: RemoteController {}
 
@@ -55,6 +55,8 @@ QtObject {
     property ConfigController configController: ConfigController {}
 
     property StashController  stashController : StashController  {}
+
+    property ActivityController activityController: ActivityController {}
 
     property UserProfileController userProfileController: UserProfileController {
         appModel: root.appModel
@@ -73,5 +75,14 @@ QtObject {
     }
 
     property UiSessionPopups      popups
+
+    property BranchController branchController: BranchController {
+
+        onGitCommandGenerated: function(command){
+            console.log(command)
+            activityController.addActivity(command, "Branch")
+        }
+    }
+
 }
 
