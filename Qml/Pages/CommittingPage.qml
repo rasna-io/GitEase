@@ -36,6 +36,10 @@ Item {
 
     property UserAuthenticationPopup userAuthenticationPopup: null
 
+    property bool                    isFetching:             false
+    property string                  authPurpose:            "push"  // "push" | "fetch"
+    property var                     pendingFetchRemoteNames: []    // HTTP/HTTPS remotes to fetch with token
+
     property string                  selectedFilePath:        ""
 
     property var                     actionResult:            ({})
@@ -65,6 +69,32 @@ Item {
         target: userAuthenticationPopup
 
         function onPasswordConfirm(password){
+            if (root.authPurpose === "fetch") {
+                let failed = []
+                let succeeded = []
+                for (let i = 0; i < root.pendingFetchRemoteNames.length; i++) {
+                    let name = root.pendingFetchRemoteNames[i]
+                    let res = root.remoteController.fetchWithToken(name, password)
+                    if (res.success)
+                        succeeded.push(name)
+                    else
+                        failed.push({ name: name, message: res.errorMessage || "Unknown error" })
+                }
+                if (root.notificationController) {
+                    if (failed.length === 0)
+                        root.notificationController.success("Fetched from all remotes: " + succeeded.join(", "), "Fetch", 5000)
+                    else if (succeeded.length === 0)
+                        root.notificationController.error("Fetch failed for: " + failed.map(f => f.name + " (" + f.message + ")").join("; "), "Fetch Error", 7000)
+                    else
+                        root.notificationController.error("Fetch failed for: " + failed.map(f => f.name + " (" + f.message + ")").join("; "), "Fetch Error", 7000)
+                }
+                root.isFetching = false
+                root.authPurpose = "push"
+                root.pendingFetchRemoteNames = []
+                root.update()
+                return
+            }
+
             let branchName = branchController.getCurrentBranchName()
             if(branchName.length === 0){
                 root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
@@ -86,6 +116,14 @@ Item {
             }
 
             root.update()
+        }
+
+        function onRejected() {
+            if (root.authPurpose === "fetch") {
+                root.isFetching = false
+                root.authPurpose = "push"
+                root.pendingFetchRemoteNames = []
+            }
         }
     }
 
@@ -130,14 +168,92 @@ Item {
 
                             Item { Layout.fillWidth: true }
 
-                            // RowLayout {
-                            //     spacing: 6
-                            //     Text {
-                            //         text: "Amend"
-                            //         font.pixelSize: 11
-                            //         color: Style.colors.secondaryText
-                            //     }
-                            // }
+                            Button {
+                                id: commitOptionsButton
+                                Layout.alignment: Qt.AlignVCenter
+                                implicitWidth: 28
+                                implicitHeight: 28
+                                flat: true
+                                hoverEnabled: true
+
+                                contentItem: Text {
+                                    text: "\u22EE"
+                                    font.pixelSize: 20
+                                    color: commitOptionsButton.hovered ? Style.colors.foreground : Style.colors.secondaryText
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle {
+                                    color: commitOptionsButton.hovered ? Style.colors.surfaceLight : "transparent"
+                                    radius: 4
+                                }
+                                onClicked: {
+                                    var pos = commitOptionsButton.mapToItem(commitPanel, 0, commitOptionsButton.height)
+                                    commitOptionsMenu.x = Math.min(pos.x, commitPanel.width - commitOptionsMenu.implicitWidth - 8)
+                                    commitOptionsMenu.y = pos.y + 4
+                                    commitOptionsMenu.open()
+                                }
+                            }
+
+                            ContextMenu {
+                                id: commitOptionsMenu
+                                parent: commitPanel
+                                menuModel: [
+                                    {
+                                        text: "Fetch",
+                                        icon: Style.icons.download,
+                                        enabled: !root.isFetching,
+                                        action: function() {
+                                            let remotesRes = remoteController.getRemotes()
+                                            if (!remotesRes.success || !remotesRes.data || remotesRes.data.length === 0) {
+                                                if (notificationController)
+                                                    notificationController.error("No remotes configured", "Fetch", 5000)
+                                                return
+                                            }
+                                            let httpsRemotes = []
+                                            let sshFailed = []
+                                            root.isFetching = true
+                                            for (let i = 0; i < remotesRes.data.length; i++) {
+                                                let remote = remotesRes.data[i]
+                                                let urlRes = remoteController.getRemoteUrl(remote.name)
+                                                if (!urlRes.success) {
+                                                    sshFailed.push({ name: remote.name, message: urlRes.errorMessage || "No URL" })
+                                                    continue
+                                                }
+                                                let url = urlRes.data.url
+                                                let protocol = repositoryController.detectGitProtocol(url)
+                                                switch (protocol) {
+                                                case RepositoryController.GitProtocol.SSH: {
+                                                    let res = remoteController.fetch(remote.name)
+                                                    if (!res.success)
+                                                        sshFailed.push({ name: remote.name, message: res.errorMessage || "Fetch failed" })
+                                                    break
+                                                }
+                                                case RepositoryController.GitProtocol.HTTPS:
+                                                case RepositoryController.GitProtocol.HTTP:
+                                                    httpsRemotes.push(remote.name)
+                                                    break
+                                                default:
+                                                    sshFailed.push({ name: remote.name, message: "Unsupported protocol" })
+                                                }
+                                            }
+                                            if (sshFailed.length > 0 && notificationController) {
+                                                let msg = sshFailed.map(f => f.name + ": " + f.message).join("; ")
+                                                notificationController.error(msg, "Fetch Error", 7000)
+                                            } else if (httpsRemotes.length === 0 && notificationController)
+                                                notificationController.success("Fetched from all remotes", "Fetch", 5000)
+                                            if (httpsRemotes.length > 0) {
+                                                root.pendingFetchRemoteNames = httpsRemotes
+                                                root.authPurpose = "fetch"
+                                                userAuthenticationPopup.open()
+                                            } else {
+                                                root.isFetching = false
+                                            }
+                                            root.update()
+                                        }
+                                    }
+                                ]
+                            }
                         }
 
                         // Modern Input Area
