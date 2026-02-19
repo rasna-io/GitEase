@@ -16,7 +16,7 @@ UtilitiesCard {
 
     content: ColumnLayout {
         anchors.fill: parent
-        spacing: 10
+        spacing: 16
 
         Rectangle {
             Layout.fillWidth: true
@@ -34,7 +34,7 @@ UtilitiesCard {
 
                 delegate: Rectangle {
                     width: listView.width
-                    height: 50
+                    height: 60
                     radius: 5
                     color: Style.colors.primaryBackground
 
@@ -45,7 +45,7 @@ UtilitiesCard {
 
                         Text {
                             Layout.fillWidth: true
-                            text: modelData.command
+                            text: "$ " + modelData.command
                             color: Style.colors.foreground
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 11
@@ -54,7 +54,7 @@ UtilitiesCard {
 
                         Text {
                             Layout.fillWidth: true
-                            text: Qt.formatDateTime(modelData.time, "MMM dd, yyyy hh:mm:ss") + " - " + modelData.source
+                            text: Qt.formatDateTime(modelData.time, "MMM dd, yyyy hh:mm:ss")
                             color: Style.colors.mutedText
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 10
@@ -72,27 +72,6 @@ UtilitiesCard {
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 11
             }
-        }
-
-        Button {
-            Layout.fillWidth: true
-            implicitHeight: 38
-            enabled: activityController.activities.length > 0
-
-            background: Rectangle {
-                radius: 8
-                color: enabled ? Style.colors.accent : Style.colors.disabledButton
-            }
-
-            contentItem: Text {
-                text: "Clear"
-                color: Style.colors.secondaryForeground
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                font.pixelSize: 12
-            }
-
-            onClicked: activityController.activities = []
         }
     }
 }
