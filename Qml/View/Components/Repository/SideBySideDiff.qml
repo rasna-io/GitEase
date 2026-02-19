@@ -318,21 +318,26 @@ Item {
         let startIdx = index;
         let endIdx = index;
 
-        // Look ahead to find the end of the consecutive change block
-        for (var i = index; i < fileModel.count; i++) {
-            if (fileModel.get(i).type !== GitDiff.Context) {
-                endIdx = i;
-            } else {
-                break;
-            }
+        for (let i = index; i < fileModel.count; i++) {
+            let item = fileModel.get(i);
+            if (!item || item.type === GitDiff.Context) break;
+            endIdx = i;
         }
 
         let firstItem = fileModel.get(startIdx);
         let lastItem = fileModel.get(endIdx);
 
-        let gitStart = firstItem.oldLineNum > 0 ? firstItem.oldLineNum : firstItem.newLineNum;
-        let gitEnd = lastItem.oldLineNum > 0 ? lastItem.oldLineNum : lastItem.newLineNum;
+        if (!firstItem || !lastItem) return { start: 0, end: 0, type: 0 };
 
-        return {start : gitStart, end: gitEnd, type: firstItem.type}
+        let gitStart = firstItem.oldLineNum > 0 ? firstItem.oldLineNum : firstItem.newLineNum;
+        let gitEnd = Math.max(lastItem.oldLineNum, lastItem.newLineNum);
+
+        if (firstItem.type === GitDiff.Deleted) {
+            gitStart = firstItem.oldLineNum;
+        } else if (firstItem.type === GitDiff.Added) {
+            gitStart = firstItem.newLineNum;
+        }
+
+        return { start: gitStart, end: gitEnd, type: firstItem.type };
     }
 }
