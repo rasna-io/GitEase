@@ -81,7 +81,7 @@ IPopup {
 
                 Button {
                     text: "Cancel"
-                    Layout.preferredWidth: parent.width * 0.4
+                    Layout.preferredWidth: 120
                     onClicked: root.close()
 
                     background: Rectangle {
