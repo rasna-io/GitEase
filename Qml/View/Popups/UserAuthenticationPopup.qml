@@ -18,6 +18,7 @@ IPopup {
     /* Signals
      * ****************************************************************************************/
     signal passwordConfirm(string password)
+    signal rejected()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -85,9 +86,9 @@ IPopup {
                 }
 
                 onClicked: {
+                    root.close()
                     root.passwordConfirm(textField.text)
                     textField.field.text = ""
-                    root.close()
                 }
             }
 
@@ -115,6 +116,7 @@ IPopup {
 
                 onClicked: {
                     textField.field.text = ""
+                    root.rejected()
                     root.close()
                 }
             }

@@ -234,3 +234,8 @@ GitResult GitRepository::close()
 
     return GitResult(true);
 }
+
+int GitRepository::detectGitProtocol(const QString& url) const
+{
+    return static_cast<int>(GitProtocolDetector::detectProtocol(url));
+}

@@ -7,8 +7,7 @@
 #include "Auth/IGitAuth.h"
 #include "Auth/GitSshAuth.h"
 #include "Auth/GitHttpsAuth.h"
-
-
+#include "Utilities/GitProtocolDetector.h"
 
 class GitRepository : public IGitController
 {
@@ -103,6 +102,23 @@ public:
                                 const QString& localPath,
                                 const QString& token);                  // HTTPS
 
+    /**
+     * @brief Git protocol types (matches GitProtocolDetector::GitProtocol).
+     */
+    enum GitProtocol {
+        Unknown = 0,
+        SSH = 1,
+        HTTP = 2,
+        HTTPS = 3
+    };
+    Q_ENUM(GitProtocol)
+
+    /**
+     * @brief Detect the protocol used in a Git repository URL.
+     * @param url The Git repository URL
+     * @return GitProtocol value (Unknown, SSH, HTTP, HTTPS)
+     */
+    Q_INVOKABLE int detectGitProtocol(const QString& url) const;
 
 signals:
     void cloneFinished(QVariantMap result);

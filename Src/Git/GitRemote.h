@@ -48,6 +48,33 @@ public:
                                bool force = false);
 
     /**
+     * @brief Fetch changes from a remote repository.
+     *
+     * Automatically detects the protocol (SSH or HTTPS) from the remote URL
+     * and uses the appropriate authentication method. For SSH remotes, uses
+     * the system SSH agent. For HTTPS remotes, uses an empty token (relies on
+     * system credentials or SSH agent forwarding).
+     *
+     * @param remote Name of the remote (default: "origin")
+     *
+     * @return GitResult with operation result
+     */
+    Q_INVOKABLE GitResult fetch(const QString& remote = "origin");
+
+    /**
+     * @brief Fetch changes from a remote repository using HTTPS with a token.
+     *
+     * Explicitly uses HTTPS authentication with a provided personal access token.
+     * This method is useful when you want to use a specific token for authentication.
+     *
+     * @param remote Name of the remote (default: "origin")
+     * @param token  Personal access token or password for HTTPS authentication
+     *
+     * @return GitResult with operation result
+     */
+    Q_INVOKABLE GitResult fetchWithToken(const QString& remote, const QString& token);
+
+    /**
      * \brief Get list of remotes for the repository
      * \return QVariantList with remote information
      */
@@ -125,6 +152,21 @@ private:
                            const QString& branchName,
                            std::unique_ptr<IGitAuth> auth,
                            bool force);
+
+    /**
+     * @brief Internal implementation for fetching from a remote.
+     *
+     * Performs a git fetch operation using the provided authentication
+     * strategy. This method is shared by both SSH and HTTPS fetch
+     * entry points.
+     *
+     * @param remoteName Name of the remote (e.g. "origin")
+     * @param auth       Authentication strategy (ownership transferred)
+     *
+     * @return GitResult containing the fetch result
+     */
+    GitResult fetchInternal(const QString& remoteName,
+                            std::unique_ptr<IGitAuth> auth);
 
 };
 

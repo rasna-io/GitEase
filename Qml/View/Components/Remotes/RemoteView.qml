@@ -20,16 +20,45 @@ UtilitiesCard {
 
     property RemoteController remoteController: null
 
+    property RepositoryController repositoryController: null
+
+    property UserAuthenticationPopup userAuthenticationPopup: null
+
     property AddEditRemotePopup addEditRemotePopup: null
-    
+
     property NotificationController notificationController: null
 
+    property bool isFetching: false
+
+    property Remote remote: null
+
+    /* Signal Declarations
+     * ****************************************************************************************/
+    signal fetchSuccess(string remoteName)
+    signal fetchError(string remoteName, string errorMessage)
 
     /* Object Properties
      * ****************************************************************************************/
 
     title: "Remotes"
     icon: Style.icons.upload
+
+    Connections {
+        target: userAuthenticationPopup
+
+        function onPasswordConfirm(password){
+            root.isFetching = true
+            let res = root.remoteController.fetchWithToken(remote.name, password)
+            if (res.success)
+                root.fetchSuccess(remote.name)
+            else
+                root.fetchError(remote.name, res.errorMessage)
+            root.isFetching = false
+        }
+        function onRejected() {
+            root.isFetching = false
+        }
+    }
 
     content: ColumnLayout {
         id: content
@@ -58,75 +87,128 @@ UtilitiesCard {
             }
         }
 
-        ListView {
-            id: listView
+        Connections {
+            target: root
+            
+            function onFetchSuccess(remoteName) {
+                if (notificationController) {
+                    notificationController.success("Successfully fetched from " + remoteName, "Fetch", 5000)
+                }
+            }
+            
+            function onFetchError(remoteName, errorMessage) {
+                if (notificationController) {
+                    notificationController.error("Failed to fetch from " + remoteName + ": " + errorMessage, "Fetch Error", 7000)
+                }
+            }
+        }
+
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 8
-            clip: true
 
-            delegate: Rectangle {
+            ListView {
+                id: listView
+                anchors.fill: parent
+                spacing: 8
+                clip: true
 
-                property Remote remote: modelData
+                delegate: Rectangle {
 
-                width: listView.width
-                height: 60
-                color: Style.colors.secondaryBackground
-                radius: 5
+                    property Remote currentRemote: modelData
 
-                Row {
-                    anchors.fill: parent
-                    anchors.margins: 10
+                    width: listView.width
+                    height: 60
+                    color: Style.colors.secondaryBackground
+                    radius: 5
 
-                    ColumnLayout {
-                        width: parent.width * 0.85
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 2
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 8
 
-                        Text {
-                            text: remote.name
-                            color: Style.colors.foreground
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
-                        }
-                        Text {
-                            text: remote.url
-                            color: Style.colors.mutedText
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 10
-                            elide: Text.ElideRight
-                        }
-                    }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: parent.width * 0.70 - parent.spacing
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 2
+                            clip: true
 
-                    Row {
-                        spacing: 4
-                        width: parent.width * 0.15
-                        anchors.verticalCenter: parent.verticalCenter
-                        ActionIconButton {
-                            iconText: Style.icons.edit
-                            tooltip: "Edit"
-                            textColor: Style.colors.mutedText
-                            onClicked: {
-                                addEditRemotePopup.oldRemote = remote
-                                openAddEditPopup()
+                            Text {
+                                Layout.fillWidth: true
+                                text: currentRemote.name
+                                color: Style.colors.foreground
+                                font.family: Style.fontTypes.roboto
+                                font.pixelSize: 12
+                                elide: Text.ElideRight
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: currentRemote.url
+                                color: Style.colors.mutedText
+                                font.family: Style.fontTypes.roboto
+                                font.pixelSize: 10
+                                elide: Text.ElideRight
                             }
                         }
-                        ActionIconButton {
-                            iconText: Style.icons.trash
-                            tooltip: "Remove"
-                            textColor: Style.colors.deletededFile
-                            onClicked: {
-                                let res = root.remoteController.removeRemote(remote.name)
-                                if (res.success) {
-                                    if (root.notificationController) {
-                                        root.notificationController.success("Remote '" + remote.name + "' removed successfully", "Remote", 3000)
+
+                        Row {
+                            spacing: 4
+                            Layout.preferredWidth: parent.width * 0.30
+                            Layout.minimumWidth: 1
+                            Layout.alignment: Qt.AlignVCenter
+
+                            ActionIconButton {
+                                iconText: Style.icons.download
+                                tooltip: root.isFetching ? "Fetching..." : "Fetch"
+                                textColor: root.isFetching ? Style.colors.accent : Style.colors.mutedText
+                                enabled: !root.isFetching
+                                onClicked: {
+                                    root.remote = currentRemote
+                                    let res = remoteController.getRemoteUrl(currentRemote.name)
+
+                                    if (!res.success) {
+                                        return
                                     }
-                                } else {
-                                    if (root.notificationController) {
-                                        root.notificationController.error(res.errorMessage || "Failed to remove remote", "Remote Error", 5000)
+
+                                    let url = res.data.url
+                                    let protocol = repositoryController.detectGitProtocol(url)
+                                    switch(protocol) {
+                                    case RepositoryController.GitProtocol.SSH:
+                                        root.isFetching = true
+                                        res = root.remoteController.fetch(currentRemote.name)
+                                        if (res.success) {
+                                            root.fetchSuccess(currentRemote.name)
+                                        } else {
+                                            root.fetchError(currentRemote.name, res.errorMessage)
+                                        }
+                                        root.isFetching = false
+                                        content.update()
+                                        break;
+                                    case RepositoryController.GitProtocol.HTTPS:
+                                    case RepositoryController.GitProtocol.HTTP:
+                                        userAuthenticationPopup.open()
+                                        break;
                                     }
                                 }
-                                content.update()
+                            }
+                            ActionIconButton {
+                                iconText: Style.icons.edit
+                                tooltip: "Edit"
+                                textColor: Style.colors.mutedText
+                                onClicked: {
+                                    addEditRemotePopup.oldRemote = currentRemote
+                                    openAddEditPopup()
+                                }
+                            }
+                            ActionIconButton {
+                                iconText: Style.icons.trash
+                                tooltip: "Remove"
+                                textColor: Style.colors.deletededFile
+                                onClicked: {
+                                    root.remoteController.removeRemote(currentRemote.name)
+                                    content.update()
+                                }
                             }
                         }
                     }

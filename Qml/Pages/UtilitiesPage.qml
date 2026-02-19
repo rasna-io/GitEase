@@ -23,8 +23,9 @@ Item {
     property RemoteController remoteController: null
     property CommitController commitController: null
     property StatusController statusController: null
+    property RepositoryController repositoryController: null
+    property UserAuthenticationPopup userAuthenticationPopup: null
     property UiSessionPopups  uiSessionPopups: null
-
     property StashController  stashController   : null
     
     property NotificationController notificationController: null
@@ -63,6 +64,8 @@ Item {
                 width: 330
                 height: 390
                 remoteController: root.remoteController
+                repositoryController: root.repositoryController
+                userAuthenticationPopup: root.userAuthenticationPopup
                 addEditRemotePopup: uiSessionPopups.addEditRemotePopup
                 notificationController: root.notificationController
             }
