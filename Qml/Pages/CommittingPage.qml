@@ -480,12 +480,12 @@ Item {
     function updateStatus() {
         let res = statusController.status()
 
-        if (!res.success)
-            return;
+        if (!res.success) return;
+
         fileListsPanel.unstagedChanges = []
         fileListsPanel.stagedChanges = []
 
-        res.data.forEach((file)=>{
+        res.data.forEach((file) => {
             if (file.isStaged) {
                 fileListsPanel.stagedChanges.push(file)
             }
@@ -496,6 +496,17 @@ Item {
 
         fileListsPanel.unstagedChanges = fileListsPanel.unstagedChanges.slice(0)
         fileListsPanel.stagedChanges = fileListsPanel.stagedChanges.slice(0)
+
+        let totalFiles = fileListsPanel.stagedChanges.length + fileListsPanel.unstagedChanges.length;
+
+        if (totalFiles === 1 && root.selectedFilePath === "") {
+            let firstFile = fileListsPanel.unstagedChanges.length > 0
+                            ? fileListsPanel.unstagedChanges[0]
+                            : fileListsPanel.stagedChanges[0];
+
+            root.selectedFilePath = firstFile.path;
+            diffView.readOnly = firstFile.isStaged && !firstFile.isUnstaged;
+        }
     }
 
     function update() {
