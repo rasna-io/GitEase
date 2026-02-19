@@ -31,7 +31,15 @@ Item {
     readonly property bool isDel: diffType === GitDiff.Deleted
     readonly property bool isMod: diffType === GitDiff.Modified
     readonly property bool isUnchanged: diffType === GitDiff.Context
-    readonly property bool hasAction: !readOnly && !isUnchanged && (index === 0 || fileModel.get(index - 1).type === GitDiff.Context)
+    readonly property bool hasAction: {
+        if (readOnly || isUnchanged)
+            return false;
+        if (index === 0)
+            return true;
+
+        let prevItem = fileModel.get(index - 1);
+        return prevItem ? prevItem.type === GitDiff.Context : false;
+    }
 
 
     /* Signals
