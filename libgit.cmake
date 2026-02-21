@@ -43,21 +43,25 @@ if (MINGW)
     )
 elseif(UNIX)
     target_link_libraries(libgit2 INTERFACE
-        libssh2
-        "${SSL_LIBRARY}"
-        "${CRYPTO_LIBRARY}"
-        "${ZLIB_LIBRARY}"
+        libssh2              
+        "${SSL_LIBRARY}"      
+        "${CRYPTO_LIBRARY}"   
+        "${ZLIB_LIBRARY}"     
         gssapi_krb5
         krb5
         k5crypto
         com_err
-        pthread
+        pthread               
         dl
+        rt
+        m
     )
 endif()
 
 # Status Messages for Debugging
-message(STATUS "Libgit2 Linux Path: ${LIBGIT2_LIBRARY}")
-message(STATUS "Libssh2 Linux Path: ${LIBSSH2_LIBRARY}")
+message(STATUS "--- GitEase Dependency Info ---")
+message(STATUS "Libgit2 path: ${LIBGIT2_LIBRARY}")
+message(STATUS "Libssh2 path: ${LIBSSH2_LIBRARY}")
+message(STATUS "OpenSSL path: ${SSL_LIBRARY}")
 
 # ========== END SETUP ==========
