@@ -30,6 +30,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/StashController.qml
     Qml/Core/Controllers/NotificationController.qml
     Qml/Core/Controllers/ActivityController.qml
+    Qml/Core/Controllers/SshKeyController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
@@ -105,6 +106,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Settings/TextFieldItem.qml
     Qml/View/Components/Settings/ComboboxItem.qml
     Qml/View/Components/Settings/SpinboxItem.qml
+    Qml/View/Components/Settings/SshKeyCard.qml
 
     # Import Export Bundle Components
     Qml/View/Components/ImportExport/ImportExportBundle.qml
