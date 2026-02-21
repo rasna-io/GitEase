@@ -3,6 +3,7 @@
 
 GitSshAuth::GitSshAuth()
 {
+#ifdef Q_OS_WIN
     if (ensureAgentRunning()) {
         // Agent is accessible, check if keys are loaded
         if (!hasSshKeysLoaded()) {
@@ -15,6 +16,9 @@ GitSshAuth::GitSshAuth()
         m_setupError = "Failed to start or connect to SSH authentication agent. "
                       "Please ensure the OpenSSH Authentication Agent service is running.";
     }
+#else
+    m_setupError = "";
+#endif
 }
 
 QString GitSshAuth::getSetupError() const
@@ -50,6 +54,10 @@ bool GitSshAuth::ensureAgentRunning()
 void GitSshAuth::apply(git_fetch_options& fetchOpts)
 {
     fetchOpts.callbacks.credentials = &GitSshAuth::credentialsCallback;
+
+    fetchOpts.callbacks.certificate_check = [](git_cert*, int, const char*, void*) -> int {
+        return 1;
+    };
 }
 
 void GitSshAuth::applyFetch(git_fetch_options& fetchOpts)
@@ -162,20 +170,30 @@ int GitSshAuth::credentialsCallback(git_cred** out,
     if (allowed_types & GIT_CREDTYPE_SSH_KEY)
     {
         // First verify agent is accessible
-        if (!isSshAgentAccessible()) {
-            return GIT_EAUTH;
+        const char* user = username_from_url ? username_from_url : "git";
+
+#ifdef Q_OS_LINUX
+        QString privKey = QDir::homePath() + "/.ssh/id_ed25519";
+        QString pubKey = privKey + ".pub";
+
+        if (!QFile::exists(privKey)) {
+            privKey = QDir::homePath() + "/.ssh/id_rsa";
+            pubKey = privKey + ".pub";
         }
 
-        // Check if keys are loaded
-        if (!hasSshKeysLoaded()) {
+        return git_credential_ssh_key_new(
+            out,
+            user,
+            pubKey.toUtf8().constData(),
+            privKey.toUtf8().constData(),
+            nullptr
+            );
+#else
+        if (!isSshAgentAccessible() || !hasSshKeysLoaded()) {
             return GIT_EAUTH;
         }
-
-        const char* user =
-            username_from_url ? username_from_url : "git";
-
-        int result = git_cred_ssh_key_from_agent(out, user);
-        return result;
+        return git_cred_ssh_key_from_agent(out, user);
+#endif
     }
 
     return GIT_PASSTHROUGH;
