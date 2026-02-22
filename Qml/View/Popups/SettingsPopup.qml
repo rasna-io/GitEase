@@ -135,6 +135,7 @@ IPopup {
                                 anchors.rightMargin: 20
                                 sshKeyController: root.sshKeyController ?? sshKeyFallback
                                 notificationController: root.notificationController
+                                currentUserProfile: root.appModel?.currentUserProfile ?? null
                             }
                         }
 

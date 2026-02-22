@@ -11,7 +11,7 @@
 // Constants
 // ---------------------------------------------------------------------------
 
-static constexpr const char* KEY_COMMENT = "gitease-key";
+static constexpr const char* DEFAULT_KEY_COMMENT = "gitease-key";
 
 // ---------------------------------------------------------------------------
 // Construction
@@ -160,7 +160,7 @@ QString SshKeyManager::runSshKeygenFingerprint(const QString &pubPath) const
 // Public API
 // ---------------------------------------------------------------------------
 
-GitResult SshKeyManager::generateKey()
+GitResult SshKeyManager::generateKey(const QString &keyComment)
 {
     if (m_isGenerating)
         return GitResult(false, QVariant(), "Key generation already in progress.");
@@ -182,10 +182,13 @@ GitResult SshKeyManager::generateKey()
     // Generate a unique key name
     QString keyName = generateUniqueKeyName();
     QString privPath = sshDir() + "/" + keyName;
+    const QString finalComment = keyComment.trimmed().isEmpty()
+                                 ? QString::fromUtf8(DEFAULT_KEY_COMMENT)
+                                 : keyComment.trimmed();
 
     QStringList args;
     args << "-t" << "ed25519"
-         << "-C" << KEY_COMMENT
+         << "-C" << finalComment
          << "-f" << QDir::toNativeSeparators(privPath)
          << "-N" << "";  // No passphrase
 

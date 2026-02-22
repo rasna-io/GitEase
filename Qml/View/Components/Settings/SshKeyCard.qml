@@ -15,9 +15,15 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property SshKeyController sshKeyController
+    required property SshKeyController       sshKeyController
 
-    property NotificationController notificationController: null
+    property          NotificationController notificationController:   null
+
+    property          UserProfile            currentUserProfile:       null
+
+
+    /* Object Properties
+     * ****************************************************************************************/
 
     implicitHeight: content.implicitHeight
 
@@ -34,97 +40,25 @@ Item {
         anchors.fill: parent
         spacing: 4
 
-        RowLayout {
+
+        ButtonItem {
+            id: generateBtn
             Layout.fillWidth: true
-            spacing: 10
+            title: "SSH Key"
+            description: "Generate and manage your SSH key pair for authenticating with remote Git hosts."
+            enabled: !root.sshKeyController.isGenerating
+            buttonTitle: {
+                if (root.sshKeyController.isGenerating)
+                    return "Generating…"
+                return "Generate New Key"
+            }
+            busy: root.sshKeyController.isGenerating
+            onClicked:  {
+                let keyComment = root.currentUserProfile?.email ?? ""
 
-            Rectangle {
-                width: 36
-                height: 36
-                radius: 8
-                color: Style.colors.accent
-
-                Text {
-                    anchors.centerIn: parent
-                    text: Style.icons.terminal
-                    font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: 18
-                    color: "#ffffff"
-                }
+                doGenerateKey(keyComment)
             }
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 2
-                Text {
-                    text: "SSH Key Management"
-                    font.pointSize: Style.appFont.h4Pt
-                    font.bold: true
-                    color: Style.colors.foreground
-                    Layout.fillWidth: true
-                }
-
-                Text {
-                    text: "Generate and manage your SSH key pair for authenticating with remote Git hosts."
-                    font.pointSize: Style.appFont.secondaryPt
-                    color: Style.colors.mutedText
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-            }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 10
-            Item { Layout.fillWidth: true }
-
-            // Generate new key
-            Button {
-                id: generateBtn
-                flat: true
-                text: {
-                    if (root.sshKeyController.isGenerating)
-                        return "Generating…"
-                    return "Generate New Key"
-                }
-                enabled: !root.sshKeyController.isGenerating
-                opacity: enabled ? 1.0 : 0.6
-
-                background: Rectangle {
-                    implicitHeight: 34
-                    radius: 5
-                    color: generateBtn.hovered && generateBtn.enabled
-                           ? Style.colors.accent
-                           : Style.colors.secondaryBackground
-                    border.color: Style.colors.accent
-                    border.width: 1
-                }
-
-                contentItem: RowLayout {
-                    spacing: 6
-
-                    BusyIndicator {
-                        visible: root.sshKeyController.isGenerating
-                        running: root.sshKeyController.isGenerating
-                        implicitWidth: 18
-                        implicitHeight: 18
-                        Material.accent: "#ffffff"
-                    }
-
-                    Text {
-                        text: generateBtn.text
-                        font: generateBtn.font
-                        color: generateBtn.hovered && generateBtn.enabled
-                               ? "#ffffff" : Style.colors.foreground
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        Layout.fillWidth: true
-                    }
-                }
-
-                onClicked: doGenerateKey()
-            }
         }
 
         Text {
@@ -392,8 +326,8 @@ Item {
 
     /* Functions
      * ****************************************************************************************/
-    function doGenerateKey() {
-        const result = root.sshKeyController.generateKey()
+    function doGenerateKey(keyComment) {
+        const result = root.sshKeyController.generateKey(keyComment)
         if (result.success) {
             if (root.notificationController)
                 root.notificationController.success(

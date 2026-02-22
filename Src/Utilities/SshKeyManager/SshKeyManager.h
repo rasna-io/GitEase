@@ -35,11 +35,12 @@ public:
 
     /**
      * @brief Generate a new ED25519 SSH key with an auto-generated unique name.
-     * 
+     *
      * Generates a key without passphrase protection.
+     * If @p keyComment is empty, a default comment is used.
      * Emits keysChanged signal when complete.
      */
-    Q_INVOKABLE GitResult generateKey();
+    Q_INVOKABLE GitResult generateKey(const QString &keyComment = QString());
 
     /**
      * @brief Delete an SSH key by name (both private and public files).
