@@ -74,4 +74,6 @@ public:
 private:
     Config getConfigAtLevel(git_config *cfg, Config::ConfigLevel level);
     QString getConfigValue(git_config *cfg, const QString &key);
+
+    QString configLevelFlag(Config::ConfigLevel level);
 };

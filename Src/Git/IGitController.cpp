@@ -29,3 +29,19 @@ QString IGitController::gitOidToString(const git_oid *oid)
 
     return QString::fromUtf8(oidStr, GIT_OID_HEXSZ);
 }
+
+void IGitController::emitGitCommand(const QString &command)
+{
+    const QString trimmedCommand = command.trimmed();
+    if (!trimmedCommand.isEmpty()) {
+        emit gitCommandGenerated(trimmedCommand);
+    }
+}
+
+QString IGitController::quoteCommandArg(const QString &argument)
+{
+    QString escaped = argument;
+    escaped.replace("\\", "\\\\");
+    escaped.replace("\"", "\\\"");
+    return "\"" + escaped + "\"";
+}

@@ -18,6 +18,8 @@ QtObject {
         appModel: root.appModel
     }
 
+    property ActivityController activityController: ActivityController {}
+
     property RepositoryController repositoryController: RepositoryController {
         appModel: root.appModel
 
@@ -42,19 +44,47 @@ QtObject {
         }
     }
 
-    property BranchController branchController: BranchController {}
+    property BranchController branchController: BranchController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
 
-    property RemoteController remoteController: RemoteController {}
+    property RemoteController remoteController: RemoteController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
 
-    property CommitController commitController: CommitController {}
+    property CommitController commitController: CommitController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
 
-    property StatusController statusController: StatusController {}
+    property StatusController statusController: StatusController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
 
-    property BundleController bundleController: BundleController {}
+    property BundleController bundleController: BundleController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
 
-    property ConfigController configController: ConfigController {}
+    property ConfigController configController: ConfigController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
 
-    property StashController  stashController : StashController  {}
+    property StashController  stashController : StashController  {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
 
     property UserProfileController userProfileController: UserProfileController {
         appModel: root.appModel

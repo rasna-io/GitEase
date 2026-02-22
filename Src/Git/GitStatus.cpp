@@ -14,7 +14,12 @@ GitResult GitStatus::stageFile(const QString &filePath)
     if (filePath.isEmpty())
         return GitResult(false, QVariant(), "File path cannot be empty");
 
-    return addToIndex(filePath);  // Stage the file
+    GitResult result = addToIndex(filePath);  // Stage the file
+    if (result.success()) {
+        emitGitCommand(QString("git add -- %1").arg(quoteCommandArg(filePath)));
+    }
+
+    return result;
 }
 
 
@@ -31,7 +36,11 @@ GitResult GitStatus::unstageFile(const QString &filePath)
     int error = git_revparse_single(&head_obj, m_currentRepo->repo, "HEAD");
     if (error != GIT_OK) {
         // If there is no HEAD (empty repo), we just remove the path from the index
-        return addToIndex(filePath, true);
+        GitResult removeResult = addToIndex(filePath, true);
+        if (removeResult.success()) {
+            emitGitCommand(QString("git rm --cached -- %1").arg(quoteCommandArg(filePath)));
+        }
+        return removeResult;
     }
 
     QByteArray pathUtf8 = filePath.toUtf8();
@@ -45,6 +54,8 @@ GitResult GitStatus::unstageFile(const QString &filePath)
     if (error != GIT_OK) {
         return GitResult(false, QVariant(), "Failed to reset index for file.");
     }
+
+    emitGitCommand(QString("git reset HEAD -- %1").arg(quoteCommandArg(filePath)));
 
     return GitResult(true, filePath, "File unstaged successfully.");
 }
@@ -89,6 +100,8 @@ GitResult GitStatus::stageAll(bool includeUntrackedFiles)
     resultData["count"] = stagedCount;
     resultData["files"] = stagedFiles;
 
+    emitGitCommand(includeUntrackedFiles ? "git add -A" : "git add -u");
+
     return GitResult(true, resultData, "All files staged successfully.");
 }
 
@@ -127,6 +140,8 @@ GitResult GitStatus::status()
         git_status_list_free(status_list);
     }
 
+    emitGitCommand("git status --short");
+
     return GitResult(true, QVariant::fromValue(fileInfos));
 }
 
@@ -157,6 +172,7 @@ QString GitStatus::getHeadHash()
     QString hash = QString::fromLatin1(oid_str);
 
     git_reference_free(head_ref);
+    emitGitCommand("git rev-parse HEAD");
     return hash;
 }
 
@@ -176,6 +192,7 @@ GitResult GitStatus::getStagedFiles()
             stagedFiles.append(file);
         }
     }
+    emitGitCommand("git diff --name-only --cached");
     return GitResult(true, QVariant::fromValue(stagedFiles), "All files unstaged successfully.");
 }
 
@@ -276,6 +293,8 @@ GitResult GitStatus::getDiff(const QString &filePath)
 
     if (diff)
         git_diff_free(diff);
+
+    emitGitCommand(QString("git diff -- %1").arg(quoteCommandArg(filePath)));
 
     return GitResult(true, QVariant::fromValue(result));
 }
@@ -384,6 +403,11 @@ GitResult GitStatus::getDiff(const QString &oldCommitHash, const QString &newCom
     git_object_free(oldCommitObj);
     git_object_free(newCommitObj);
 
+    emitGitCommand(QString("git diff %1 %2 -- %3")
+                       .arg(quoteCommandArg(oldCommitHash),
+                            quoteCommandArg(newCommitHash),
+                            quoteCommandArg(filePath)));
+
     // Return the result with the diff lines
     return GitResult(true, QVariant::fromValue(result), "Commit diff retrieved successfully.");
 }
@@ -448,6 +472,8 @@ GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
     git_tree_free(commitTree);
     git_tree_free(parentTree);
     git_object_free(commitObj);
+
+    emitGitCommand(QString("git show --name-status --stat %1").arg(quoteCommandArg(commitHash)));
 
     return GitResult(true, QVariant::fromValue(fileChanges), "File changes retrieved successfully.");
 }
@@ -649,6 +675,8 @@ GitResult GitStatus::getStagedDiff(const QString &filePath)
     if (headTree) git_tree_free(headTree);
     if (headObj) git_object_free(headObj);
 
+    emitGitCommand(QString("git diff --cached -- %1").arg(quoteCommandArg(filePath)));
+
     return GitResult(true, QVariant::fromValue(result));
 }
 
@@ -697,7 +725,12 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
     stagedText.replace("\n", "\r\n");
     #endif
 
-    return writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
+    GitResult writeResult = writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
+    if (writeResult.success()) {
+        emitGitCommand(QString("git add -p -- %1").arg(quoteCommandArg(filePath)));
+    }
+
+    return writeResult;
 }
 
 GitResult GitStatus::writeIndexFromBuffer(git_repository* repo,
@@ -944,6 +977,8 @@ GitResult GitStatus::revertFile(const QString &filePath)
         return GitResult(false, QVariant(), "Failed to revert file: " + errorMsg);
     }
 
+    emitGitCommand(QString("git checkout -- %1").arg(quoteCommandArg(filePath)));
+
     return GitResult(true, filePath, "File reverted successfully to index state.");
 }
 
@@ -1048,6 +1083,7 @@ GitResult GitStatus::revertSelectedLines(const QString &filePath, int startLine,
     if (f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
         f.write(joinLines(out).toUtf8());
         f.close();
+        emitGitCommand(QString("git checkout -p -- %1").arg(quoteCommandArg(filePath)));
         return GitResult(true, filePath, "Selected lines reverted.");
     }
 
@@ -1075,6 +1111,8 @@ GitResult GitStatus::revertAll()
         return GitResult(false, QVariant(),
                          QString("Failed to revert all changes: %1").arg(e ? e->message : "Unknown error"));
     }
+
+    emitGitCommand("git reset --hard HEAD");
 
     return GitResult(true, QVariant(), "All changes discarded.");
 }

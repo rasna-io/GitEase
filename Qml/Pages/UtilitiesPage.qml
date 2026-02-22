@@ -30,6 +30,8 @@ Item {
     
     property NotificationController notificationController: null
 
+    property ActivityController activityController: null
+
     /* Object Properties
      * ****************************************************************************************/
     anchors.fill: parent
@@ -94,6 +96,12 @@ Item {
                 manageStashPopup: uiSessionPopups.manageStashPopup
 
                 notificationController: root.notificationController
+            }
+
+            RecentActivityDock {
+                width: 330
+                height: 390
+                activityController: root.activityController
             }
         }
     }

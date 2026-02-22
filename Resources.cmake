@@ -29,6 +29,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/ShellController.qml        # Shell Commands (rightClick Actions) Controller
     Qml/Core/Controllers/StashController.qml
     Qml/Core/Controllers/NotificationController.qml
+    Qml/Core/Controllers/ActivityController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
@@ -81,6 +82,9 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/CommitGraphSimulator.qml  # GraphDummyDataGenerator
 
     Qml/View/Components/Docks/StashManagerDock.qml
+    Qml/View/Components/Docks/RecentActivityDock.qml
+
+    Qml/View/Components/Docks/RecentActivityDock.qml
 
     # File list components (commit UI)
     Qml/View/Components/FileLists/UnstagedFileListSection.qml  # Unstaged File Status Section

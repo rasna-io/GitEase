@@ -78,8 +78,7 @@ QVariantList GitBranch::getBranches()
         git_reference_free(head);
     }
 
-
-    qDebug() << "GitWrapperCPP: Retrieved" << branches.size() << "branches";
+    emitGitCommand("git branch -a");
     return branches;
 }
 
@@ -106,6 +105,8 @@ GitResult GitBranch::createBranch(const QString &branchName)
     if (new_branch_ref) {
         git_reference_free(new_branch_ref);
     }
+
+    emitGitCommand(QString("git branch %1").arg(quoteCommandArg(branchName)));
 
     return GitResult(true, QVariant(), QString("Branch created successfully: %1").arg(branchName));
 }
@@ -153,6 +154,9 @@ GitResult GitBranch::createBranch(const QString &commitSha, const QString &branc
                          QString("Failed to create branch '%1'").arg(branchName));
     }
 
+    emitGitCommand(QString("git branch %1 %2")
+                       .arg(quoteCommandArg(branchName), quoteCommandArg(commitSha)));
+
     return GitResult(true);
 }
 
@@ -177,6 +181,8 @@ GitResult GitBranch::deleteBranch(const QString &branchName)
     if (branchRef) {
         git_reference_free(branchRef);
     }
+
+    emitGitCommand(QString("git branch -d %1").arg(quoteCommandArg(branchName)));
 
     return GitResult(true, QVariant(), QString("Successfully deleted branch: %1").arg(branchName));
 }
@@ -226,6 +232,8 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
     git_object_free(targetCommit);
     git_reference_free(targetRef);
 
+    emitGitCommand(QString("git checkout %1").arg(quoteCommandArg(branchName)));
+
     return GitResult(true, QVariant(), QString("Successfully checked out branch '%1'.").arg(branchName));
 }
 
@@ -264,6 +272,8 @@ GitResult GitBranch::checkoutCommit(const QString &commitHash)
         return GitResult(false, QVariant(), "Failed to detach HEAD to commit.");
     }
 
+    emitGitCommand(QString("git checkout --detach %1").arg(quoteCommandArg(commitHash)));
+
     return GitResult(true, QVariant(), QString("Checked out commit %1").arg(commitHash.left(8)));
 }
 
@@ -293,6 +303,9 @@ GitResult GitBranch::renameBranch(const QString &oldName, const QString &newName
     // Clean up references
     git_reference_free(newRef);
     git_reference_free(branchRef);
+
+    emitGitCommand(QString("git branch -m %1 %2")
+                       .arg(quoteCommandArg(oldName), quoteCommandArg(newName)));
 
     return GitResult(true, QVariant(), QString("Successfully renamed branch '%1' to '%2'.").arg(oldName).arg(newName));
 }
@@ -359,6 +372,8 @@ GitResult GitBranch::getBranchLineage(const QString &branchName)
 
     git_branch_iterator_free(iterator);
 
+    emitGitCommand(QString("git branch --merged %1").arg(quoteCommandArg(branchName)));
+
     return GitResult(true, lineage, QString("Successfully retrieved lineage for '%1'.").arg(branchName));
 }
 
@@ -390,6 +405,8 @@ QString GitBranch::getCurrentBranchName()
     {
         branchName = "Detached HEAD";
     }
+
+    emitGitCommand("git rev-parse --abbrev-ref HEAD");
 
     return branchName;  // "main", "master", or Detached HEAD if detached
 }
