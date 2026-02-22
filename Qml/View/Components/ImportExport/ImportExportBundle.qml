@@ -150,11 +150,15 @@ UtilitiesCard {
             currentIndex: root.currentIndex
 
             ExportView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
                 branchController: root.branchController
                 bundleController: root.bundleController
             }
 
             ImportView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
                 branchController: root.branchController
                 bundleController: root.bundleController
             }

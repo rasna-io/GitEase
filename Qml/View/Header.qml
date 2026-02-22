@@ -8,68 +8,66 @@ import GitEase
 
 /*! ***********************************************************************************************
  * Header
+ * Root is an Item with a ColumnLayout and a MouseArea (dragArea) that acts as the window
+ * handle when the header is dragged or double-clicked.
  * ************************************************************************************************/
-ColumnLayout {
+Item {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
     property Component content
 
-
-    /* Object Properties
-     * ****************************************************************************************/
-    spacing: 0
-
-
     /* Children
      * ****************************************************************************************/
-    RowLayout {
-        Layout.fillWidth: true
-        Layout.preferredHeight: 50
+    MouseArea {
+
+        id: dragArea
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onPressed: WindowController.startSystemMove()
+        onDoubleClicked: WindowController.toggleMaxRestore()
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
         spacing: 0
-        
-        Item {
-            Layout.preferredWidth: 120
-            
-            Image {
-                anchors.centerIn: parent
-                width: 99
-                height: 28
-                fillMode: Image.PreserveAspectFit
-                source: "qrc:/GitEase/Resources/Images/Logo.svg"
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 50
+            spacing: 0
+
+            Item {
+                Layout.preferredWidth: 120
+
+                Image {
+                    anchors.centerIn: parent
+                    width: 99
+                    height: 28
+                    fillMode: Image.PreserveAspectFit
+                    source: "qrc:/GitEase/Resources/Images/Logo.svg"
+                }
+            }
+
+            Loader {
+                Layout.fillWidth: true
+                sourceComponent: root.content
+            }
+
+            WindowsHeader {
+                Layout.preferredWidth: 120
             }
         }
-        
-        MouseArea {
-            id: dragArea
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton
-            onPressed: WindowController.startSystemMove()
-            onDoubleClicked: WindowController.toggleMaxRestore()
-        }
 
-
-        Loader {
+        Rectangle {
             Layout.fillWidth: true
-            sourceComponent: root.content
-        }
+            Layout.preferredHeight: 2
+            Layout.rightMargin: 4
+            Layout.leftMargin: 4
 
-        
-        // Windows Header
-        WindowsHeader {
-            Layout.preferredWidth: 120
+            color: Style.colors.accent
+            radius: 3
         }
-    }
-    
-    //Line Seperator
-    Rectangle {
-        Layout.fillWidth: true
-        Layout.preferredHeight: 2
-        Layout.rightMargin: 4
-        Layout.leftMargin: 4
-        
-        color: Style.colors.accent
-        radius: 3
     }
 }

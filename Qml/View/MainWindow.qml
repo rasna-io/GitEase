@@ -29,7 +29,8 @@ Rectangle {
 
         //Header
         Header {
-            Layout.fillHeight: true
+            Layout.minimumHeight: 50
+            Layout.maximumHeight: 50
             Layout.fillWidth: true
 
             content: (pageLoader.item && pageLoader.item.hasOwnProperty("headerContent")) ? pageLoader.item.headerContent : null

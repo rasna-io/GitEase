@@ -34,7 +34,7 @@ UtilitiesCard {
 
         Connections {
             target: root
-            onBranchControllerChanged: {
+            function onBranchControllerChanged() {
                 content.update()
             }
         }

@@ -45,7 +45,8 @@ RowLayout {
     
     TextField {
         id: txf
-        Layout.preferredWidth: parent.width * 0.4
+        Layout.preferredWidth: 200
+        Layout.fillWidth: false
     }
     
     Button {
