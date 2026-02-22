@@ -25,6 +25,7 @@ set(SOURCES_BACKEND
     Src/Git/Auth/GitSshAuth.cpp
     Src/Git/Auth/GitHttpsAuth.cpp
     Src/Git/Utilities/GitProtocolDetector.cpp
+    Src/Utilities/SshKeyManager/SshKeyManager.cpp
 )
 
 set(HEADERS_BACKEND
@@ -57,6 +58,7 @@ set(HEADERS_BACKEND
     Src/Git/Auth/GitHttpsAuth.h
 
     Src/Git/Utilities/GitProtocolDetector.h
+    Src/Utilities/SshKeyManager/SshKeyManager.h
 )
 
 set(INCLUDE_DIRS_BACKEND
@@ -64,6 +66,7 @@ set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Git/Utilities
     ${CMAKE_SOURCE_DIR}/Src/Utilities/FileManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/SshKeyManager/
     ${CMAKE_SOURCE_DIR}/Src
     ${CMAKE_SOURCE_DIR}/Src/Git/
 )

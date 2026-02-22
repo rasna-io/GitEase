@@ -24,6 +24,8 @@ IPopup {
     
     property NotificationController notificationController: null
 
+    property SshKeyController       sshKeyController:       null
+
 
     /* Object Properties
      * ****************************************************************************************/
@@ -121,7 +123,20 @@ IPopup {
 
                             }
                         }
+
                         Item {
+                            SshKeyController { id: sshKeyFallback }
+
+                            SshKeyCard {
+                                id: sshScrollView
+                                anchors.fill: parent
+                                anchors.topMargin: 10
+                                anchors.leftMargin: 20
+                                anchors.rightMargin: 20
+                                sshKeyController: root.sshKeyController ?? sshKeyFallback
+                                notificationController: root.notificationController
+                                currentUserProfile: root.appModel?.currentUserProfile ?? null
+                            }
                         }
 
                         Item {
