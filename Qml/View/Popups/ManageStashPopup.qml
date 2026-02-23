@@ -71,6 +71,7 @@ IPopup {
             anchors.margins: 20
 
             RowLayout{
+                Layout.fillWidth: true
                 Text {
                     Layout.fillWidth: true
                     text: root.stashEntry
@@ -79,7 +80,8 @@ IPopup {
                     color: Style.colors.foreground
                     font.family: Style.fontTypes.roboto
                     font.bold: true
-                    font.pixelSize: 16
+                    elide: Text.ElideLeft
+                    font.pixelSize: 11
                 }
 
                 // Close Button
@@ -128,6 +130,7 @@ IPopup {
                     font.pixelSize: 12
 
                     Material.accent: Style.colors.accent
+                    Material.foreground: Style.colors.foreground
 
                     palette {
                         text: Style.colors.foreground
