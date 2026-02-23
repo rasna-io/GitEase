@@ -3,6 +3,9 @@
 A desktop Git client built with Qt/QML + C++ and powered by libgit2.
 
 GitEase focuses on day-to-day repository operations in a native UI: repository onboarding, commit workflows, branch and remote management, stash handling, diff review, and commit graph exploration.
+## UI Preview
+
+![GitEase Light and Dark Mode Preview](https://github.com/user-attachments/assets/ab70008c-5a81-4930-9cb0-266d20e57389)
 
 ## Project Status
 
