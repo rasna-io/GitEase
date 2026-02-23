@@ -3,7 +3,7 @@
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QGuiApplication>
+#include <QIcon>
 
 #include <QtQml/QQmlContext>
 #include <QtQuick/QQuickWindow>
@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
 
+    app.setWindowIcon(QIcon(":/GitEase/Resources/Images/Logo.png"));
 
     QQmlApplicationEngine engine;
 
@@ -30,6 +31,8 @@ int main(int argc, char *argv[])
     auto* win = qobject_cast<QQuickWindow*>(engine.rootObjects().value(0));
     if (!win)
         return -1;
+
+    win->setIcon(app.windowIcon());
 
     auto controller = WindowController(win, &app);
     engine.rootContext()->setContextProperty(QStringLiteral("WindowController"), &controller);
