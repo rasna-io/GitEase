@@ -237,7 +237,7 @@ UtilitiesCard {
                         text: Style.icons.plus
                         font.family: Style.fontTypes.font6Pro
                         font.pixelSize: 12
-                        color: Style.colors.foreground
+                        color: Style.colors.textButton
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -245,7 +245,7 @@ UtilitiesCard {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Add New Remote"
-                        color: Style.colors.foreground
+                        color: Style.colors.textButton
                         font.pixelSize: 13
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter

@@ -14,6 +14,7 @@ QtObject{
 
     property color navButton:           "#F3F3F3"
     property color hoverTitle:          "#E8E8E8"
+    property color textButton:          "#FDFDFD"
 
     
     // Files Status

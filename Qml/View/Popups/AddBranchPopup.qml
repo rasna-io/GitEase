@@ -98,13 +98,14 @@ IPopup {
                     text: "Create"
                     Layout.fillWidth: true
                     enabled: root.canAccept
-                    Material.foreground: Style.colors.foreground
+                    Material.foreground: Style.colors.textButton
 
                     opacity: enabled ? 1.0 : 0.5
 
                     background: Rectangle {
                         implicitHeight: 35
-                        color: (actionBtn.hovered && actionBtn.enabled) ? Style.colors.accent : Style.colors.secondaryBackground
+                        color: actionBtn.enabled ? (actionBtn.hovered) ? Style.colors.accentHover : Style.colors.accent
+                                                    : (Style.colors.disabledButton)
                         border.color: Style.colors.accent
                         radius: 5
                     }

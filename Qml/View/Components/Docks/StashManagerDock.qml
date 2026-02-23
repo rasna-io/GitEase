@@ -186,6 +186,7 @@ UtilitiesCard {
         }
 
         Button {
+            id: actionBtn
             Layout.fillWidth: true
             implicitHeight: 44
 
@@ -193,7 +194,8 @@ UtilitiesCard {
 
             background: Rectangle {
                 radius: 8
-                color: enabled ? Style.colors.accent : Style.colors.disabledButton
+                color: actionBtn.enabled ? (actionBtn.hovered) ? Style.colors.accentHover : Style.colors.accent
+                                            : (Style.colors.disabledButton)
             }
 
             contentItem: Item {
@@ -207,13 +209,13 @@ UtilitiesCard {
                         text: Style.icons.plus
                         font.family: Style.fontTypes.font6Pro
                         font.pixelSize: 12
-                        color: Style.colors.foreground
+                        color: Style.colors.textButton
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Stash"
-                        color: Style.colors.foreground
+                        color: Style.colors.textButton
                         font.pixelSize: 13
                     }
                 }
