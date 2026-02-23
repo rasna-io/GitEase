@@ -38,9 +38,23 @@ set_source_files_properties(
 
 
 # Executable Definition
-qt_add_executable(${MAIN_TARGET_NAME}
-    Src/main.cpp
-)
+if (WIN32)
+    qt_add_executable(${MAIN_TARGET_NAME}
+        WIN32
+        Src/main.cpp
+    )
+
+    # Embed .ico into the executable so Windows shortcuts use the app icon.
+    set(WINDOWS_APP_ICON_RC "${CMAKE_SOURCE_DIR}/Res/Images/Logo.rc")
+    set(WINDOWS_APP_ICON_ICO "${CMAKE_SOURCE_DIR}/Res/Images/Logo.ico")
+    if (EXISTS "${WINDOWS_APP_ICON_RC}" AND EXISTS "${WINDOWS_APP_ICON_ICO}")
+        target_sources(${MAIN_TARGET_NAME} PRIVATE "${WINDOWS_APP_ICON_RC}")
+    endif()
+else()
+    qt_add_executable(${MAIN_TARGET_NAME}
+        Src/main.cpp
+    )
+endif()
 
 
 target_link_libraries(GitEase PRIVATE Qt6::Core)
