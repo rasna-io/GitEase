@@ -64,6 +64,7 @@ IPopup {
                     font.pixelSize: 12
 
                     Material.accent: Style.colors.accent
+                    Material.foreground: Style.colors.foreground
 
                     palette {
                         text: Style.colors.foreground

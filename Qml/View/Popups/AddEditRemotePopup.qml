@@ -117,6 +117,7 @@ IPopup {
                     text: "Cancel"
                     Layout.preferredWidth: 100
                     onClicked: root.close()
+                    Material.foreground: Style.colors.foreground
 
                     background: Rectangle {
                         implicitHeight: 35
@@ -133,6 +134,7 @@ IPopup {
                     enabled: root.canAccept
 
                     opacity: enabled ? 1.0 : 0.5
+                    Material.foreground: Style.colors.foreground
 
                     background: Rectangle {
                         implicitHeight: 35
