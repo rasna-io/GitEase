@@ -1,0 +1,180 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+
+import GitEase
+import GitEase_Style
+import GitEase_Style_Impl
+
+/*! ***********************************************************************************************
+ * TagManagementView
+ * ************************************************************************************************/
+UtilitiesCard {
+    id: root
+
+    /* Property Declarations */
+    property TagController tagController: null
+    property var           addTagPopup:   null
+    property NotificationController notificationController: null
+    property var           tagListModel:  []
+
+    title: "Tag Management"
+    icon:  Style.icons.tag
+
+    /* Logic */
+    function update() {
+        let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
+
+        if (ctrl) {
+            let res = ctrl.list();
+            if (res && res.success) {
+                root.tagListModel = res.data;
+                console.log("GitEase: Tag list updated.");
+            }
+        }
+    }
+
+    content: ColumnLayout {
+        anchors.fill: parent
+        spacing: 12
+
+        ListView {
+            id: internalListView
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 8
+            clip: true
+            model: root.tagListModel
+
+            delegate: Rectangle {
+                id: tagDelegate
+                width: internalListView.width
+                height: 48
+                radius: 6
+                color: Style.colors.secondaryBackground
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 8
+                    spacing: 10
+
+                    // 1. Tag Icon
+                    Text {
+                        text: Style.icons.tag || "#"
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: 14
+                        color: modelData.isAnnotated ? Style.colors.accent : Style.colors.secondaryForeground
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    // 2. Text Column (Flexible Space)
+                    ColumnLayout {
+                        spacing: 2
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Text {
+                            text: modelData.name
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 12
+                            font.bold: true
+                            color: Style.colors.foreground
+
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            text: modelData.commitId.substring(0, 7)
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 10
+                            color: Style.colors.secondaryForeground
+
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    // 3. Delete Action (Fixed Position)
+                    ActionIconButton {
+                        iconText: Style.icons.trash
+                        textColor: Style.colors.deletededFile
+                        tooltip: "Delete Tag"
+                        Layout.preferredWidth: 28
+                        Layout.preferredHeight: 28
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+
+                        onClicked: {
+                            let ctrl = root.tagController || uiSession.tagController;
+                            let res = ctrl.remove(modelData.name);
+                            if (res.success) {
+                                if (root.notificationController)
+                                    root.notificationController.success("Tag deleted", "Tag", 2000);
+                                root.update();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Empty State
+            Label {
+                anchors.centerIn: parent
+                text: "No tags available"
+                color: Style.colors.secondaryForeground
+                visible: internalListView.count === 0
+                font.pixelSize: 12
+            }
+        }
+
+        // Add Tag Button
+        Button {
+            id: addTagBtn
+            Layout.fillWidth: true
+            implicitHeight: 40
+            background: Rectangle {
+                radius: 6
+                color: addTagBtn.enabled ? (addTagBtn.hovered ? Style.colors.accentHover : Style.colors.accent) : Style.colors.disabledButton
+            }
+            contentItem: Row {
+                spacing: 8
+                anchors.centerIn: parent
+                Text {
+                    text: Style.icons.plus
+                    font.family: Style.fontTypes.font6Pro
+                    color: Style.colors.textButton
+                    font.pixelSize: 12
+                }
+                Text {
+                    text: "Add New Tag"
+                    color: Style.colors.textButton
+                    font.bold: true
+                    font.pixelSize: 12
+                }
+            }
+            onClicked: {
+                if (root.addTagPopup) {
+                    root.addTagPopup.tagController = root.tagController || uiSession.tagController;
+                    root.addTagPopup.open();
+                }
+            }
+        }
+    }
+
+    /* Event Handling */
+    Connections {
+        target: (typeof uiSession !== "undefined") ? uiSession : null
+        function onTagControllerChanged() { root.update() }
+    }
+
+    Timer {
+        id: initTimer
+        interval: 500
+        running: true
+        repeat: false
+        onTriggered: root.update()
+    }
+
+    Component.onCompleted: root.update()
+}
