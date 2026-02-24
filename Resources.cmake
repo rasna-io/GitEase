@@ -128,6 +128,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Remotes/RemoteView.qml
 
     Qml/View/Components/Branch/BranchManagementView.qml
+    Qml/View/Components/Tag/TagManagementView.qml
 
     # DockPanel Docks
     Qml/View/Components/Docks/ImportExportBundleDock.qml       # Import Export git Bundle Dock
@@ -170,6 +171,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/ConflictPopup.qml
     Qml/View/Popups/MergeMethodPopup.qml
 
+    Qml/View/Popups/AddTagPopup.qml
 )
 
 
