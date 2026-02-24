@@ -28,6 +28,8 @@ Item {
     property UserAuthenticationPopup    userAuthenticationPopup     : null
     property UiSessionPopups            uiSessionPopups             : null
     property StashController            stashController             : null
+    property TagController              tagController               : null
+
     
     property NotificationController     notificationController      : null
 
@@ -100,6 +102,14 @@ Item {
                 addStashPopup: uiSessionPopups.addStashPopup
                 manageStashPopup: uiSessionPopups.manageStashPopup
 
+                notificationController: root.notificationController
+            }
+
+            TagManagementView {
+                width: 330
+                height: 390
+                tagController: root.tagController
+                addTagPopup: uiSessionPopups.addTagPopup
                 notificationController: root.notificationController
             }
 
