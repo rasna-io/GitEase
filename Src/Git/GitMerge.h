@@ -50,6 +50,12 @@ private:
                                 git_commit* sourceCommit,
                                 git_index* index);
 
+    GitResult handleMergeConflicts(git_reference* sourceRef);
+
+    GitResult finalizeAutomaticMerge(git_reference* sourceRef,
+                                     git_annotated_commit* annotated,
+                                     git_index* index);
+
 
     git_signature* createSignature() const;
 
@@ -85,4 +91,11 @@ public:
      * @return true if a merge was started but not yet committed.
      */
     Q_INVOKABLE bool isMergeInProgress() const;
+
+signals:
+    /**
+     * @brief Emitted whenever the merge state changes (start, conflict, resolution, completion).
+     */
+    void mergeStateChanged();
+
 };

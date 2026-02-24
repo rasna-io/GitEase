@@ -98,33 +98,23 @@ GitResult GitMerge::analyzeAndPerformMerge(git_commit* targetCommit,
 
 GitResult GitMerge::performFastForward(git_commit* sourceCommit)
 {
+    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+    opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+    int error = git_checkout_tree(m_currentRepo->repo, (git_object*)sourceCommit, &opts);
+    if (error != GIT_OK)
+        return GitResult(false, QVariant(), "Checkout failed during fast-forward.");
+
     git_reference* headRef = nullptr;
     if (git_repository_head(&headRef, m_currentRepo->repo) != GIT_OK)
         return GitResult(false, QVariant(), "Failed to get HEAD.");
 
     git_reference* newRef = nullptr;
-    if (git_reference_set_target(
-            &newRef,
-            headRef,
-            git_commit_id(sourceCommit),
-            "Fast-forward") != GIT_OK)
-    {
-        git_reference_free(headRef);
-        return GitResult(false, QVariant(), "Failed to move branch reference.");
-    }
-
-    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
-    opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
-
-    if (git_checkout_head(m_currentRepo->repo, &opts) != GIT_OK)
-    {
-        git_reference_free(newRef);
-        git_reference_free(headRef);
-        return GitResult(false, QVariant(), "Checkout failed.");
-    }
-
-    git_reference_free(newRef);
+    error = git_reference_set_target(&newRef, headRef, git_commit_id(sourceCommit), "Fast-forward");
     git_reference_free(headRef);
+    git_reference_free(newRef);
+
+    if (error != GIT_OK)
+        return GitResult(false, QVariant(), "Failed to update branch reference.");
 
     return GitResult(true, QVariant(), "Fast-forward merge completed.");
 }
@@ -132,9 +122,8 @@ GitResult GitMerge::performFastForward(git_commit* sourceCommit)
 GitResult GitMerge::performNormalMerge(git_reference* sourceRef)
 {
     git_annotated_commit* annotated = nullptr;
-    if (git_annotated_commit_from_ref(&annotated, m_currentRepo->repo, sourceRef) != GIT_OK) {
+    if (git_annotated_commit_from_ref(&annotated, m_currentRepo->repo, sourceRef) != GIT_OK)
         return GitResult(false, QVariant(), "Failed to create annotated commit for merge.");
-    }
 
     const git_annotated_commit* heads[] = { annotated };
 
@@ -142,9 +131,7 @@ GitResult GitMerge::performNormalMerge(git_reference* sourceRef)
     git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
     checkoutOpts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_ALLOW_CONFLICTS;
 
-    int error = git_merge(m_currentRepo->repo, heads, 1, &mergeOpts, &checkoutOpts);
-
-    if (error != GIT_OK) {
+    if (git_merge(m_currentRepo->repo, heads, 1, &mergeOpts, &checkoutOpts) != GIT_OK) {
         git_annotated_commit_free(annotated);
         return GitResult(false, QVariant(), "Merge operation failed.");
     }
@@ -155,65 +142,89 @@ GitResult GitMerge::performNormalMerge(git_reference* sourceRef)
         return GitResult(false, QVariant(), "Failed to read index after merge.");
     }
 
-    bool hasConflicts = git_index_has_conflicts(index);
+    GitResult result;
 
-    if (hasConflicts) {
-        const git_oid* sourceOid = git_reference_target(sourceRef);
-        char sourceHash[GIT_OID_HEXSZ + 1] = {0};
-        git_oid_tostr(sourceHash, sizeof(sourceHash), sourceOid);
-        m_pendingSourceHash = QString::fromUtf8(sourceHash);
+    if (git_index_has_conflicts(index))
+        result = handleMergeConflicts(sourceRef);
+    else
+        result = finalizeAutomaticMerge(sourceRef, annotated, index);
 
-        // Get target commit SHA (current HEAD)
-        git_reference* headRef = nullptr;
-        if (git_repository_head(&headRef, m_currentRepo->repo) == GIT_OK) {
-            const git_oid* targetOid = git_reference_target(headRef);
-            char targetHash[GIT_OID_HEXSZ + 1] = {0};
-            git_oid_tostr(targetHash, sizeof(targetHash), targetOid);
-            m_pendingTargetHash = QString::fromUtf8(targetHash);
-            git_reference_free(headRef);
-        }
+    git_index_free(index);
+    git_annotated_commit_free(annotated);
 
-        // Get branch names
-        const char* sourceName = nullptr;
-        git_branch_name(&sourceName, sourceRef);
-        m_pendingSourceName = sourceName ? QString::fromUtf8(sourceName) : QString();
-        m_pendingTargetName = currentBranchName();
+    return result;
+}
 
-        // Build default merge message
-        m_pendingMergeMessage = QString("Merge branch '%1' into '%2'")
-                                    .arg(m_pendingSourceName, m_pendingTargetName);
+GitResult GitMerge::handleMergeConflicts(git_reference* sourceRef)
+{
+    // Store source commit SHA
+    const git_oid* sourceOid = git_reference_target(sourceRef);
+    char sourceHash[GIT_OID_HEXSZ + 1] = {0};
+    git_oid_tostr(sourceHash, sizeof(sourceHash), sourceOid);
+    m_pendingSourceHash = QString::fromUtf8(sourceHash);
 
-        m_mergeInProgress = true;
-
-        git_index_free(index);
-        git_annotated_commit_free(annotated);
-        return GitResult(false, QVariant(), "Merge conflicts detected. Resolve them then continue.");
-    }
-
-    git_commit* targetCommit = nullptr;
-    git_commit* sourceCommit = nullptr;
+    // Store target commit SHA
     git_reference* headRef = nullptr;
     if (git_repository_head(&headRef, m_currentRepo->repo) == GIT_OK) {
-        git_reference_peel((git_object**)&targetCommit, headRef, GIT_OBJECT_COMMIT);
+        const git_oid* targetOid = git_reference_target(headRef);
+        char targetHash[GIT_OID_HEXSZ + 1] = {0};
+        git_oid_tostr(targetHash, sizeof(targetHash), targetOid);
+        m_pendingTargetHash = QString::fromUtf8(targetHash);
         git_reference_free(headRef);
     }
-    git_commit_lookup(&sourceCommit, m_currentRepo->repo, git_annotated_commit_id(annotated));
 
-    QString current = currentBranchName();
-
+    // Store branch names
     const char* sourceName = nullptr;
     git_branch_name(&sourceName, sourceRef);
+    m_pendingSourceName = sourceName ? QString::fromUtf8(sourceName) : QString();
+    m_pendingTargetName = currentBranchName();
 
+    // Default message
+    m_pendingMergeMessage = QString("Merge branch '%1' into '%2'")
+                                .arg(m_pendingSourceName, m_pendingTargetName);
+
+    m_mergeInProgress = true;
+    emit mergeStateChanged();
+
+    return GitResult(false, QVariant(),
+                     "Merge conflicts detected. Resolve them then continue.");
+}
+
+GitResult GitMerge::finalizeAutomaticMerge(git_reference* sourceRef,
+                                           git_annotated_commit* annotated,
+                                           git_index* index)
+{
+    git_commit* targetCommit = nullptr;
+    git_commit* sourceCommit = nullptr;
+
+    git_reference* headRef = nullptr;
+    if (git_repository_head(&headRef, m_currentRepo->repo) != GIT_OK) {
+        return GitResult(false, QVariant(), "Failed to get HEAD.");
+    }
+    if (git_reference_peel((git_object**)&targetCommit, headRef, GIT_OBJECT_COMMIT) != GIT_OK) {
+        git_reference_free(headRef);
+        return GitResult(false, QVariant(), "Failed to peel HEAD to commit.");
+    }
+    git_reference_free(headRef);
+
+    // Get source commit from annotated commit
+    if (git_commit_lookup(&sourceCommit, m_currentRepo->repo,
+                          git_annotated_commit_id(annotated)) != GIT_OK) {
+        git_commit_free(targetCommit);
+        return GitResult(false, QVariant(), "Failed to lookup source commit.");
+    }
+
+    // Build merge message
+    const char* sourceName = nullptr;
+    git_branch_name(&sourceName, sourceRef);
     QString message = QString("Merge branch '%1' into '%2'")
                           .arg(QString::fromUtf8(sourceName),
-                               current);
+                               currentBranchName());
 
     GitResult result = createMergeCommit(message, targetCommit, sourceCommit, index);
 
     git_commit_free(targetCommit);
     git_commit_free(sourceCommit);
-    git_index_free(index);
-    git_annotated_commit_free(annotated);
 
     return result;
 }
@@ -379,4 +390,5 @@ void GitMerge::resetMergeState()
     m_pendingSourceName.clear();
     m_pendingTargetName.clear();
     m_pendingMergeMessage.clear();
+    emit mergeStateChanged();
 }
