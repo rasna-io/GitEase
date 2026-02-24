@@ -1,5 +1,7 @@
 #include "GitTag.h"
 
+#include <algorithm>
+
 GitTag::GitTag(QObject *parent)
     : IGitController(parent)
 {
@@ -7,8 +9,9 @@ GitTag::GitTag(QObject *parent)
 
 GitResult GitTag::list()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository not open");
+    }
 
     QVariantList tagList;
     TagPayload payload;
@@ -17,8 +20,14 @@ GitResult GitTag::list()
 
     int error = git_tag_foreach(m_currentRepo->repo, tagForeachCallback, &payload);
 
-    if (error < 0)
-        return GitResult(false);
+    if (error < 0) {
+        return GitResult(false, QVariant(), "Failed to iterate tags");
+    }
+
+    // Sort the list alphabetically by tag name
+    std::sort(tagList.begin(), tagList.end(), [](const QVariant &a, const QVariant &b) {
+        return a.toMap()["name"].toString() < b.toMap()["name"].toString();
+    });
 
     return GitResult(true, tagList);
 }
