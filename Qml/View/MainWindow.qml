@@ -137,6 +137,9 @@ Rectangle {
                         if (item.hasOwnProperty("stashController")) {
                             item.stashController = Qt.binding(function() { return root.uiSession?.stashController })
                         }
+                        if (item.hasOwnProperty("tagController")) {
+                            item.tagController = Qt.binding(function() { return root.uiSession?.tagController })
+                        }
                         if (item.hasOwnProperty("notificationController")) {
                             item.notificationController = Qt.binding(function() { return root.uiSession?.notificationController })
                         }
