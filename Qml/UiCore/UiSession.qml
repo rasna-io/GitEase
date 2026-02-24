@@ -37,6 +37,7 @@ QtObject {
             rebaseController.currentRepo = currentRepo
             cherryPickController.currentRepo = currentRepo
             conflictController.currentRepo = currentRepo
+            tagController.currentRepo = currentRepo
         }
 
         onRepositorySelected: function(repo) {
@@ -85,6 +86,12 @@ QtObject {
     }
 
     property StashController  stashController : StashController  {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
+
+    property TagController tagController: TagController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
         }
