@@ -29,6 +29,8 @@ Item {
 
     property AddBranchPopup addBranchPopup: null
 
+    property AddTagPopup addTagPopup: null
+
     property StatusController statusController: null
 
     property CommitController commitController: null
@@ -1875,6 +1877,18 @@ Item {
                                     }
                                 });
 
+                                finalModel.push({
+                                    text: "Create Tag here",
+                                    icon: Style.icons.tag,
+                                    enabled: true,
+                                    action: function() {
+                                        addTagPopup.tagController = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
+                                        addTagPopup.targetHash = commitData.hash;
+                                        addTagPopup.open();
+                                    }
+                                });
+
+                                // Merge
                                 var currentBranch = root.branchController
                                         ? root.branchController.getCurrentBranchName()
                                         : "";
