@@ -514,6 +514,7 @@ Item {
                 rebaseController: root.rebaseController
                 cherryPickController: root.cherryPickController
                 addBranchPopup: uiSessionPopups.addBranchPopup
+                addTagPopup: uiSessionPopups.addTagPopup
                 commitController: root.commitController
                 statusController: root.statusController
                 notificationController: root.notificationController
