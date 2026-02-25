@@ -132,25 +132,36 @@ UtilitiesCard {
         Button {
             id: addTagBtn
             Layout.fillWidth: true
-            implicitHeight: 40
+            implicitHeight: 44
+
             background: Rectangle {
-                radius: 6
-                color: addTagBtn.enabled ? (addTagBtn.hovered ? Style.colors.accentHover : Style.colors.accent) : Style.colors.disabledButton
+                radius: 8
+                color: addTagBtn.enabled ? Style.colors.accent : Style.colors.disabledButton
             }
-            contentItem: Row {
-                spacing: 8
-                anchors.centerIn: parent
-                Text {
-                    text: Style.icons.plus
-                    font.family: Style.fontTypes.font6Pro
-                    color: Style.colors.textButton
-                    font.pixelSize: 12
-                }
-                Text {
-                    text: "Add New Tag"
-                    color: Style.colors.textButton
-                    font.bold: true
-                    font.pixelSize: 12
+            contentItem: Item {
+                anchors.fill: parent
+
+                Row {
+                    spacing: 10
+                    anchors.centerIn: parent
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Style.icons.plus
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: 12
+                        color: Style.colors.textButton
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Add New Tag"
+                        color: Style.colors.textButton
+                        font.pixelSize: 13
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
             }
             onClicked: {
