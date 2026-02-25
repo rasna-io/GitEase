@@ -84,6 +84,21 @@ GitResult GitTag::remove(const QString &name)
     return GitResult(true);
 }
 
+int credentials_cb(git_credential **out, const char *url, const char *user_from_url,
+                   unsigned int allowed_types, void *payload)
+{
+    if (allowed_types & GIT_CREDENTIAL_SSH_KEY) {
+        int error = git_credential_ssh_key_from_agent(out, user_from_url);
+        if (error == 0) return 0;
+    }
+
+    if (allowed_types & GIT_CREDENTIAL_USERNAME) {
+        return git_credential_username_new(out, user_from_url);
+    }
+
+    return git_credential_userpass_plaintext_new(out, user_from_url, "");
+}
+
 GitResult GitTag::pushTag(const QString &name)
 {
     if (!m_currentRepo || !m_currentRepo->repo)
@@ -100,6 +115,8 @@ GitResult GitTag::pushTag(const QString &name)
 
     git_push_options options;
     git_push_init_options(&options, GIT_PUSH_OPTIONS_VERSION);
+
+    options.callbacks.credentials = credentials_cb;
 
     int error = git_remote_upload(remote, &array, &options);
 
