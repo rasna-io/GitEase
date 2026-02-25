@@ -120,11 +120,14 @@ GitResult GitTag::pushTag(const QString &name)
 
     int error = git_remote_upload(remote, &array, &options);
 
+    if (error != 0) {
+        const git_error *lastError = git_error_last();
+        QString errorDetail = lastError ? QString::fromUtf8(lastError->message) : "Unknown error";
+        git_remote_free(remote);
+        return GitResult(false, "Push failed: " + errorDetail);
+    }
+
     git_remote_free(remote);
-
-    if (error != 0)
-        return GitResult(false, "Failed to push tag to GitHub");
-
     return GitResult(true);
 }
 
