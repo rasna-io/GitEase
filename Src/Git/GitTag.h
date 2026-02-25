@@ -8,7 +8,7 @@
 #include "GitResult.h"
 #include "IGitController.h"
 
-/**`
+/**
  * @class GitTag
  * @brief Manages Git tagging operations, providing integration for both
  * the Utility Page and the Graph View.
@@ -46,6 +46,13 @@ public:
      * @return GitResult indicating success or failure
      */
     Q_INVOKABLE GitResult remove(const QString &name);
+
+    /**
+     * @brief Pushes a specific tag to the remote repository (origin).
+     * @param name The name of the tag to push
+     * @return GitResult indicating success or failure
+     */
+    Q_INVOKABLE GitResult pushTag(const QString &name);
 
 signals:
     /**

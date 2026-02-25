@@ -84,6 +84,33 @@ GitResult GitTag::remove(const QString &name)
     return GitResult(true);
 }
 
+GitResult GitTag::pushTag(const QString &name)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, "Repository not open");
+
+    git_remote *remote = nullptr;
+    if (git_remote_lookup(&remote, m_currentRepo->repo, "origin") != 0)
+        return GitResult(false, "Remote 'origin' not found");
+
+    QString refSpec = QString("refs/tags/%1:refs/tags/%1").arg(name);
+    QByteArray refByte = refSpec.toUtf8();
+    const char *spec = refByte.constData();
+    git_strarray array = { (char **)&spec, 1 };
+
+    git_push_options options;
+    git_push_init_options(&options, GIT_PUSH_OPTIONS_VERSION);
+
+    int error = git_remote_upload(remote, &array, &options);
+
+    git_remote_free(remote);
+
+    if (error != 0)
+        return GitResult(false, "Failed to push tag to GitHub");
+
+    return GitResult(true);
+}
+
 int GitTag::tagForeachCallback(const char *name, git_oid *oid, void *payload)
 {
     TagPayload *p = static_cast<TagPayload*>(payload);
