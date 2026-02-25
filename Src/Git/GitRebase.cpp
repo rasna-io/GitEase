@@ -462,7 +462,7 @@ bool GitRebase::isRebaseInProgress() const
         return false;
     }
 
-    const git_repository_state_t state = git_repository_state(m_currentRepo->repo);
+    const git_repository_state_t state = static_cast<git_repository_state_t>(git_repository_state(m_currentRepo->repo));
     return state == GIT_REPOSITORY_STATE_REBASE ||
            state == GIT_REPOSITORY_STATE_REBASE_INTERACTIVE ||
            state == GIT_REPOSITORY_STATE_REBASE_MERGE;

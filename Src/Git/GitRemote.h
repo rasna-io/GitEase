@@ -74,6 +74,35 @@ public:
      * @return GitResult with operation result
      */
     Q_INVOKABLE GitResult fetchWithToken(const QString& remote, const QString& token);
+    
+    /**
+     * @brief Start pull asynchronously from a remote branch into the current branch.
+     *
+     * Performs fetch + merge analysis. If a fast-forward is possible, it updates
+     * the current branch. If already up to date, returns success with that status.
+     * Non-fast-forward pulls are rejected to avoid implicit merge commits.
+     *
+     * @param remote Name of the remote (default: "origin")
+     * @param branch Branch to pull from. If empty, uses current local branch name.
+     *
+     * @return GitResult immediate start status (final result is emitted via pullFinished)
+     */
+    Q_INVOKABLE GitResult pull(const QString& remote = "origin",
+                               const QString& branch = QString());
+
+    /**
+     * @brief Start pull asynchronously using HTTPS token authentication.
+     *
+     * @param remote Name of the remote
+     * @param branch Branch to pull from. If empty, uses current local branch name.
+     * @param token  Personal access token
+     *
+     * @return GitResult immediate start status (final result is emitted via pullFinished)
+     */
+    Q_INVOKABLE GitResult pull(const QString& remote,
+                               const QString& branch,
+                               const QString& token);
+
 
     /**
      * \brief Get list of remotes for the repository
@@ -186,4 +215,32 @@ private:
      */
     GitResult startAsyncFetch(const QString& remoteName,
                               std::unique_ptr<IGitAuth> auth);
+                
+
+     /**                         
+     * @brief Internal implementation for pull.
+     *
+     * Pull is implemented as fetch + merge analysis + fast-forward update.
+     * Non-fast-forward pulls are rejected.
+     *
+     * @param remoteName Name of remote
+     * @param branchName Branch to pull (empty => current branch)
+     * @param auth       Authentication strategy
+     *
+     * @return GitResult with operation result
+     */
+    GitResult pullInternal(const QString& remoteName,
+                           const QString& branchName,
+                           std::unique_ptr<IGitAuth> auth);
+
+    GitResult pullStartAsyncInternal(const QString& remoteName,
+                                     const QString& branchName,
+                                     std::unique_ptr<IGitAuth> auth);
+
+signals:
+    void pullFinished(QVariantMap result);
+
+private:
+    bool m_pullInProgress = false;
+
 };

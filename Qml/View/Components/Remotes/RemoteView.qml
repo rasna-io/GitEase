@@ -33,6 +33,7 @@ UtilitiesCard {
     property bool isFetching: false
     property var activeFetchRemotes: []
     property var fetchBatchResults: []
+    property string authPurpose: "fetch" // "fetch" | "pull"
 
     property Remote remote: null
 
@@ -40,6 +41,8 @@ UtilitiesCard {
      * ****************************************************************************************/
     signal fetchSuccess(string remoteName)
     signal fetchError(string remoteName, string errorMessage)
+    signal pullSuccess(string remoteName)
+    signal pullError(string remoteName, string errorMessage)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -51,24 +54,39 @@ UtilitiesCard {
         target: userAuthenticationPopup
 
         function onPasswordConfirm(password){
-            root.isFetching = true
-            let res = root.remoteController.fetchWithToken(remote.name, password)
-            if (res.success) {
-                if (root.activeFetchRemotes.indexOf(remote.name) === -1)
-                    root.activeFetchRemotes.push(remote.name)
+            if (root.authPurpose === "pull") {
+                let startRes = root.remoteController.pull(remote.name, "", password)
+                if (!startRes.success) {
+                    root.pullError(remote.name, startRes.errorMessage)
+                    root.isFetching = false
+                    root.authPurpose = "fetch"
+                    return
+                }
+                root.isFetching = true
             } else {
-                root.fetchBatchResults.push({
-                    remote: remote.name,
-                    success: false,
-                    errorMessage: res.errorMessage || "Unknown error",
-                    data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                })
-                root.fetchError(remote.name, res.errorMessage)
-                root.isFetching = root.activeFetchRemotes.length > 0
-                root.openFetchSummaryIfReady()
+                root.isFetching = true
+                let res = root.remoteController.fetchWithToken(remote.name, password)
+                if (res.success) {
+                    if (root.activeFetchRemotes.indexOf(remote.name) === -1)
+                        root.activeFetchRemotes.push(remote.name)
+                }
+                else {
+                    root.fetchBatchResults.push({
+                        remote: remote.name,
+                        success: false,
+                        errorMessage: res.errorMessage || "Unknown error",
+                        data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
+                    })
+                    root.fetchError(remote.name, res.errorMessage)
+                    root.isFetching = root.activeFetchRemotes.length > 0
+                    root.openFetchSummaryIfReady()
+                }
             }
+            root.authPurpose = "fetch"
         }
+
         function onRejected() {
+            root.authPurpose = "fetch"
             root.isFetching = root.activeFetchRemotes.length > 0
         }
     }
@@ -88,6 +106,22 @@ UtilitiesCard {
             target: root.remoteController
 
             function onCurrentRepoChanged() {
+                content.update()
+            }
+
+            function onPullFinished(result) {
+                if (!root.isFetching || !root.remote || !result)
+                    return
+
+                if (result.remote !== root.remote.name)
+                    return
+
+                if (result.success)
+                    root.pullSuccess(root.remote.name)
+                else
+                    root.pullError(root.remote.name, result.errorMessage || "Pull failed")
+
+                root.isFetching = false
                 content.update()
             }
         }
@@ -140,6 +174,18 @@ UtilitiesCard {
             function onFetchError(remoteName, errorMessage) {
                 if (notificationController) {
                     notificationController.error("Failed to fetch from " + remoteName + ": " + errorMessage, "Fetch Error", 7000)
+                }
+            }
+
+            function onPullSuccess(remoteName) {
+                if (notificationController) {
+                    notificationController.success("Successfully pulled from " + remoteName, "Pull", 5000)
+                }
+            }
+
+            function onPullError(remoteName, errorMessage) {
+                if (notificationController) {
+                    notificationController.error("Failed to pull from " + remoteName + ": " + errorMessage, "Pull Error", 7000)
                 }
             }
         }
@@ -238,8 +284,43 @@ UtilitiesCard {
                                     case RepositoryController.GitProtocol.HTTPS:
                                     case RepositoryController.GitProtocol.HTTP:
                                         root.isFetching = true
+                                        root.authPurpose = "fetch"
                                         userAuthenticationPopup.open()
                                         break;
+                                    }
+                                }
+                            }
+                            ActionIconButton {
+                                iconText: Style.icons.arrowDown
+                                tooltip: root.isFetching ? "Pulling..." : "Pull"
+                                textColor: root.isFetching ? Style.colors.accent : Style.colors.mutedText
+                                enabled: !root.isFetching
+                                onClicked: {
+                                    root.remote = currentRemote
+                                    let res = remoteController.getRemoteUrl(currentRemote.name)
+
+                                    if (!res.success) {
+                                        return
+                                    }
+
+                                    let url = res.data.url
+                                    let protocol = repositoryController.detectGitProtocol(url)
+                                    switch(protocol) {
+                                    case RepositoryController.GitProtocol.SSH:
+                                        let startRes = root.remoteController.pull(currentRemote.name)
+                                        if (!startRes.success) {
+                                            root.pullError(currentRemote.name, startRes.errorMessage || "Failed to start pull")
+                                            root.isFetching = false
+                                            content.update()
+                                            return
+                                        }
+                                        root.isFetching = true
+                                        break
+                                    case RepositoryController.GitProtocol.HTTPS:
+                                    case RepositoryController.GitProtocol.HTTP:
+                                        root.authPurpose = "pull"
+                                        userAuthenticationPopup.open()
+                                        break
                                     }
                                 }
                             }

@@ -96,6 +96,28 @@ Item {
                     popup.open()
                 }
             }
+            root.update()
+        }
+
+        function onPullFinished(result) {
+            if (root.authPurpose !== "pull_async_origin")
+                return
+
+            if (!result || result.remote !== "origin")
+                return
+
+            root.isFetching = false
+            root.authPurpose = "push"
+
+            if (result.success) {
+                if (root.notificationController)
+                    root.notificationController.success("Pull completed", "Pull", 3000)
+                errorMessageLabel.text = ""
+            } else {
+                errorMessageLabel.text = result.errorMessage ?? "Pull error"
+                if (root.notificationController)
+                    root.notificationController.error(errorMessageLabel.text, "Pull Error", 5000)
+            }
 
             root.update()
         }
@@ -137,7 +159,49 @@ Item {
                 root.isFetching = root.activeFetchRemotes.length > 0
                 root.authPurpose = "push"
                 root.pendingFetchRemoteNames = []
+                root.pendingPullRemoteNames = []
                 root.update()
+                return
+            }
+
+            if (root.authPurpose === "pull") {
+                let failed = []
+                let succeeded = []
+                for (let i = 0; i < root.pendingPullRemoteNames.length; i++) {
+                    let name = root.pendingPullRemoteNames[i]
+                    let res = root.remoteController.pull(name, "", password)
+                    if (res.success)
+                        succeeded.push(name)
+                    else
+                        failed.push({ name: name, message: res.errorMessage || "Unknown error" })
+                }
+                if (root.notificationController) {
+                    if (failed.length === 0)
+                        root.notificationController.success("Pulled from remotes: " + succeeded.join(", "), "Pull", 5000)
+                    else if (succeeded.length === 0)
+                        root.notificationController.error("Pull failed for: " + failed.map(f => f.name + " (" + f.message + ")").join("; "), "Pull Error", 7000)
+                    else
+                        root.notificationController.error("Pull partial failure: " + failed.map(f => f.name + " (" + f.message + ")").join("; "), "Pull Error", 7000)
+                }
+                root.isFetching = false
+                root.authPurpose = "push"
+                root.pendingFetchRemoteNames = []
+                root.pendingPullRemoteNames = []
+                root.update()
+                return
+            }
+
+            if (root.authPurpose === "pull_async_origin") {
+                let startRes = root.remoteController.pull("origin", "", password)
+                if (!startRes.success) {
+                    root.isFetching = false
+                    root.authPurpose = "push"
+                    errorMessageLabel.text = startRes.errorMessage ?? "Failed to start pull"
+                    if (root.notificationController)
+                        root.notificationController.error(errorMessageLabel.text, "Pull Error", 5000)
+                    return
+                }
+                root.isFetching = true
                 return
             }
 
@@ -165,10 +229,12 @@ Item {
         }
 
         function onRejected() {
-            if (root.authPurpose === "fetch") {
+            if (root.authPurpose === "fetch" || root.authPurpose === "pull" || root.authPurpose === "pull_async_origin") {
                 root.isFetching = root.activeFetchRemotes.length > 0
+                root.isFetching = false
                 root.authPurpose = "push"
                 root.pendingFetchRemoteNames = []
+                root.pendingPullRemoteNames = []
             }
         }
     }
@@ -309,6 +375,60 @@ Item {
                                                 root.isFetching = false
                                             root.update()
                                         }
+                                    },
+                                    {
+                                        text: "Pull",
+                                        icon: Style.icons.arrowDown,
+                                        enabled: !root.isFetching,
+                                        action: function() {
+                                            let remotesRes = remoteController.getRemotes()
+                                            if (!remotesRes.success || !remotesRes.data || remotesRes.data.length === 0) {
+                                                if (notificationController)
+                                                    notificationController.error("No remotes configured", "Pull", 5000)
+                                                return
+                                            }
+                                            let httpsRemotes = []
+                                            let pullFailed = []
+                                            root.isFetching = true
+                                            for (let i = 0; i < remotesRes.data.length; i++) {
+                                                let remote = remotesRes.data[i]
+                                                let urlRes = remoteController.getRemoteUrl(remote.name)
+                                                if (!urlRes.success) {
+                                                    pullFailed.push({ name: remote.name, message: urlRes.errorMessage || "No URL" })
+                                                    continue
+                                                }
+                                                let url = urlRes.data.url
+                                                let protocol = repositoryController.detectGitProtocol(url)
+                                                switch (protocol) {
+                                                case RepositoryController.GitProtocol.SSH: {
+                                                    let res = remoteController.pull(remote.name)
+                                                    if (!res.success)
+                                                        pullFailed.push({ name: remote.name, message: res.errorMessage || "Pull failed" })
+                                                    break
+                                                }
+                                                case RepositoryController.GitProtocol.HTTPS:
+                                                case RepositoryController.GitProtocol.HTTP:
+                                                    httpsRemotes.push(remote.name)
+                                                    break
+                                                default:
+                                                    pullFailed.push({ name: remote.name, message: "Unsupported protocol" })
+                                                }
+                                            }
+                                            if (pullFailed.length > 0 && notificationController) {
+                                                let msg = pullFailed.map(f => f.name + ": " + f.message).join("; ")
+                                                notificationController.error(msg, "Pull Error", 7000)
+                                            } else if (httpsRemotes.length === 0 && notificationController) {
+                                                notificationController.success("Pulled from remotes", "Pull", 5000)
+                                            }
+                                            if (httpsRemotes.length > 0) {
+                                                root.pendingPullRemoteNames = httpsRemotes
+                                                root.authPurpose = "pull"
+                                                userAuthenticationPopup.open()
+                                            } else {
+                                                root.isFetching = false
+                                            }
+                                            root.update()
+                                        }
                                     }
                                 ]
                             }
@@ -427,6 +547,60 @@ Item {
                             }
 
                             Rectangle {
+                                id: pullBtn
+                                Layout.preferredWidth: 30
+                                Layout.preferredHeight: 30
+                                color: Style.colors.primaryBackground
+                                radius: 4
+                                border.color: Style.colors.foreground
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    font.family: Style.fontTypes.font6Pro
+                                    text: Style.icons.arrowDown
+                                    color: Style.colors.foreground
+                                    font.pixelSize: 16
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    enabled: !root.isFetching
+                                    onClicked: {
+                                        let res = remoteController.getRemoteUrl("origin")
+                                        if (!res.success) {
+                                            errorMessageLabel.text = res.errorMessage ?? "Failed to get remote URL"
+                                            return
+                                        }
+
+                                        let url = res.data.url
+                                        let protocol = repositoryController.detectGitProtocol(url)
+                                        switch(protocol) {
+                                        case RepositoryController.GitProtocol.SSH: {
+                                            let startRes = remoteController.pull("origin")
+                                            if (!startRes.success) {
+                                                errorMessageLabel.text = startRes.errorMessage ?? "Failed to start pull"
+                                                if (root.notificationController)
+                                                    root.notificationController.error(errorMessageLabel.text, "Pull Error", 5000)
+                                            } else {
+                                                root.isFetching = true
+                                                root.authPurpose = "pull_async_origin"
+                                            }
+                                        }
+                                        break
+
+                                        case RepositoryController.GitProtocol.HTTPS:
+                                        case RepositoryController.GitProtocol.HTTP:
+                                            root.authPurpose = "pull_async_origin"
+                                            userAuthenticationPopup.open()
+                                            break
+                                        }
+                                        root.update()
+                                    }
+                                }
+                            }
+
+                            Rectangle {
                                 id: pushBtn
                                 Layout.preferredWidth: 30
                                 Layout.preferredHeight: 30
@@ -470,6 +644,7 @@ Item {
 
                                         case RepositoryController.GitProtocol.HTTPS:
                                         case RepositoryController.GitProtocol.HTTP:
+                                            root.authPurpose = "push"
                                             userAuthenticationPopup.open()
                                             break;
                                         }
