@@ -64,7 +64,7 @@ IPopup {
                     background: Rectangle {
                         implicitHeight: 40
                         color: Style.colors.secondaryBackground
-                        radius: 6
+                        radius: 5
                         border.color: nameInput.activeFocus ? Style.colors.accent : "transparent"
                     }
                 }
@@ -80,7 +80,7 @@ IPopup {
                     background: Rectangle {
                         implicitHeight: 40
                         color: Style.colors.secondaryBackground
-                        radius: 6
+                        radius: 5
                         border.color: messageInput.activeFocus ? Style.colors.accent : "transparent"
                     }
                 }
@@ -89,7 +89,7 @@ IPopup {
             // Target Info (Visual hint of what we are tagging)
             Text {
                 text: root.targetHash !== "" ? "Target: " + root.targetHash.substring(0, 8) : "Target: HEAD"
-                color: Style.colors.secondaryForeground
+                color: "#949494"
                 font.pixelSize: 11
                 Layout.fillWidth: true
             }
