@@ -7,6 +7,9 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
+/*! ***********************************************************************************************
+ * AddTagPopup
+ * ************************************************************************************************/
 IPopup {
     id: root
 
@@ -132,12 +135,23 @@ IPopup {
 
                         if (!ctrl) return;
 
+                        let tagName = nameInput.text.trim();
                         let commitToTag = root.targetHash === "" ? "HEAD" : root.targetHash;
-                        let res = ctrl.create(nameInput.text.trim(), commitToTag, messageInput.text.trim());
+
+                        let res = ctrl.create(tagName, commitToTag, messageInput.text.trim());
 
                         if (res && res.success) {
+                            if (notif) notif.info("Pushing tag to GitHub...", "Tag", 1500);
+
+                            let pushRes = ctrl.pushTag(tagName);
+
+                            if (pushRes && pushRes.success) {
+                                if (notif) notif.success("Tag '" + tagName + "' created and pushed", "Success", 3000);
+                            } else {
+                                if (notif) notif.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+                            }
+
                             root.tagCreatedSuccessfully();
-                            if (notif) notif.success("Tag '" + nameInput.text + "' created", "Tag", 3000);
                             root.close();
                         } else {
                             if (notif) notif.error(res.errorMessage || "Failed to create tag", "Tag Error", 5000);
