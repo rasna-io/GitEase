@@ -1710,6 +1710,32 @@ Item {
                                     }
                                 });
 
+                                var currentBranch = root.branchController
+                                        ? root.branchController.getCurrentBranchName()
+                                        : "";
+
+                                if (branches && branches.length > 0 && currentBranch) {
+
+                                    branches.forEach(function(bName) {
+
+                                        if (bName !== currentBranch) {
+
+                                            finalModel.push({
+                                                text: "Merge '" + bName + "' into '" + currentBranch + "'",
+                                                icon: Style.icons.arrowLeftRight,
+                                                enabled: !isCurrentHead,
+                                                action: function() {
+                                                    let res = branchController.mergeBranchIntoCurrent(bName);
+                                                    handleResponse(res, "Merged " + bName + " into " + currentBranch);
+                                                }
+                                            });
+
+                                        }
+
+                                    });
+                                }
+
+
                                 menuModel = finalModel;
                             }
 
