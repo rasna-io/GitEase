@@ -1710,31 +1710,11 @@ Item {
                                     }
                                 });
 
+                                // Merge
                                 var currentBranch = root.branchController
                                         ? root.branchController.getCurrentBranchName()
                                         : "";
-
-                                if (branches && branches.length > 0 && currentBranch) {
-
-                                    branches.forEach(function(bName) {
-
-                                        if (bName !== currentBranch) {
-
-                                            finalModel.push({
-                                                text: "Merge '" + bName + "' into '" + currentBranch + "'",
-                                                icon: Style.icons.arrowLeftRight,
-                                                enabled: !isCurrentHead,
-                                                action: function() {
-                                                    let res = branchController.mergeBranchIntoCurrent(bName);
-                                                    handleResponse(res, "Merged " + bName + " into " + currentBranch);
-                                                }
-                                            });
-
-                                        }
-
-                                    });
-                                }
-
+                                addMergeEntries(finalModel, branches, currentBranch, isCurrentHead);
 
                                 menuModel = finalModel;
                             }
@@ -2151,6 +2131,37 @@ Item {
 
     function update() {
         graphCanvas.requestPaint()
+    }
+
+    function addMergeEntries(finalModel, branches, currentBranch, isCurrentHead) {
+
+        if (!branches || branches.length === 0)
+            return;
+
+        if (!currentBranch)
+            return;
+
+        branches.forEach(function(bName) {
+
+            // Skip current branch itself
+            if (bName === currentBranch)
+                return;
+
+            // Skip Remote branches
+            if (bName.startsWith("origin/"))
+                return;
+
+            finalModel.push({
+                text: "Merge '" + bName + "' into '" + currentBranch + "'",
+                icon: Style.icons.arrowLeftRight,
+                enabled: !isCurrentHead,
+                action: function() {
+                    let res = branchController.mergeBranchIntoCurrent(bName);
+                    handleResponse(res, "Merged " + bName + " into " + currentBranch);
+                }
+            });
+
+        });
     }
 
     onRepositoryControllerChanged: reloadAll();
