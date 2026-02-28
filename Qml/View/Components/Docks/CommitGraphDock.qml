@@ -1466,6 +1466,75 @@ Item {
                                     root.commitClicked(commitData.hash);
                                 }
                             }
+
+                            onDoubleClicked: (mouse) => {
+                                if (mouse.button !== Qt.LeftButton)
+                                    return;
+
+                                let isCurrentHead = (commitData.hash === root.headHash);
+                                if (isCurrentHead)
+                                    return;
+
+                                let branches = commitData.branchNames || [];
+                                let shortHash = commitData.shortHash || commitData.hash.substring(0, 7);
+
+                                if (branches.length === 0) {
+                                    let res = branchController.checkoutCommit(commitData.hash);
+                                    contextMenu.handleResponse(res, "Checked out commit " + shortHash);
+                                } else {
+                                    let allBranches = branchController.getBranches();
+                                    let localNames = {};
+                                    for (let bi = 0; bi < allBranches.length; bi++) {
+                                        let b = allBranches[bi];
+                                        if (b && b.isLocal)
+                                            localNames[b.name] = true;
+                                    }
+
+                                    let seen = {};
+                                    let dedupedBranches = [];
+                                    for (let i = 0; i < branches.length; i++) {
+                                        let name = branches[i];
+                                        let baseName = name.replace(/^[^/]+\//, "");
+                                        if (!seen[baseName]) {
+                                            seen[baseName] = true;
+                                            dedupedBranches.push(localNames[baseName] ? baseName : name);
+                                        }
+                                    }
+
+                                    if (dedupedBranches.length === 1) {
+                                        checkoutBranchOrCreate(dedupedBranches[0], commitData.hash);
+                                    } else {
+                                        checkoutBranchSelector.commitHash = commitData.hash;
+                                        checkoutBranchSelector.branches = dedupedBranches;
+                                        checkoutBranchSelector.open();
+                                    }
+                                }
+                            }
+
+                            function checkoutBranchOrCreate(branchName, commitHash) {
+                                let allBranches = branchController.getBranches();
+                                let localBranchNames = {};
+                                for (let bi = 0; bi < allBranches.length; bi++) {
+                                    let b = allBranches[bi];
+                                    if (b && b.isLocal)
+                                        localBranchNames[b.name] = true;
+                                }
+
+                                if (localBranchNames[branchName]) {
+                                    let res = branchController.checkoutBranch(branchName);
+                                    contextMenu.handleResponse(res, "Checked out branch " + branchName);
+                                } else {
+                                    let localName = branchName.replace(/^[^/]+\//, "");
+                                    let createRes = branchController.createBranch(commitHash, localName);
+                                    if (!createRes.success) {
+                                        contextMenu.handleResponse(createRes, "");
+                                    } else {
+                                        let checkoutRes = branchController.checkoutBranch(localName);
+                                        contextMenu.handleResponse(checkoutRes, "Created and checked out branch " + localName);
+                                    }
+                                }
+                            }
+
                             onEntered: {
                                 isHovered = true
                             }
@@ -1548,6 +1617,16 @@ Item {
                                 }
                                 root.selectedCommit = "";
                                 root.reloadAll();
+                            }
+                        }
+
+                        CheckoutBranchSelectorPopup {
+                            id: checkoutBranchSelector
+
+                            property string commitHash: ""
+
+                            onBranchSelected: function(branchName) {
+                                commitMouseArea.checkoutBranchOrCreate(branchName, commitHash);
                             }
                         }
                     }
