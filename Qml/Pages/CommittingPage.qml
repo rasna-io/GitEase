@@ -211,10 +211,9 @@ Item {
                 errorMessageLabel.text = "current Branch Name invalid!"
             }else{
                 let isForce = root.authPurpose === "pushForce"
-               let remoteRes = remoteController.push(
+                let remoteRes = remoteController.push(
                     "origin",
                     branchName,
-                    userProfileController.currentUserProfile.username,
                     password,
                     isForce)
 
