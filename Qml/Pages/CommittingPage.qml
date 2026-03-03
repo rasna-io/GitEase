@@ -57,7 +57,7 @@ Item {
             anchors.rightMargin: parent.width < Style.appHeight ? 4 : 5
             spacing: parent.width < Style.appHeight ? 6 : 10
 
-            readonly property bool compact: parent.width < 650
+            readonly property bool compact: parent.width < 550
 
             ToolButton {
                 id: branchChip
@@ -955,18 +955,30 @@ Item {
                             }
                         }
 
-                        RowLayout {
+                        Rectangle {
+                            id: commitBtn
                             Layout.fillWidth: true
-                            spacing: 1
+                            Layout.preferredHeight: 30
+                            radius: 4
+                            color: commitEnabled ? Style.colors.accent : Style.colors.disabledButton
 
-                            Rectangle {
-                                id: commitBtn
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 30
-                                color: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
-                                        ? Style.colors.accent : Style.colors.disabledButton
-                                radius: 1
+                            readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
 
+                            MouseArea {
+                                id: commitBtnMouse
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                width: parent.width - 29
+                                hoverEnabled: true
+                                cursorShape: commitBtn.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                enabled: commitBtn.commitEnabled
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: 4
+                                    color: commitBtnMouse.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
+                                }
 
                                 Text {
                                     anchors.centerIn: parent
@@ -976,24 +988,16 @@ Item {
                                     font.pixelSize: 12
                                 }
 
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
-                                    onClicked: {
-                                        let res = commitController.commit(commitTextArea.text, false, false)
-
-                                        if(res.success){
-                                            commitTextArea.text = ""
-                                            root.notificationController.success("Commit successful", "Commit", 3000)
-                                        }else{
-                                            root.notificationController.error(res.errorMessage || "Commit failed", "Commit Error", 5000)
-                                            errorMessageLabel.text = res.errorMessage ?? "commit error"
-                                        }
-
-                                        root.update()
+                                onClicked: {
+                                    let res = commitController.commit(commitTextArea.text, false, false)
+                                    if (res.success) {
+                                        commitTextArea.text = ""
+                                        root.notificationController.success("Commit successful", "Commit", 3000)
+                                    } else {
+                                        root.notificationController.error(res.errorMessage || "Commit failed", "Commit Error", 5000)
+                                        errorMessageLabel.text = res.errorMessage ?? "commit error"
                                     }
+                                    root.update()
                                 }
                             }
 
@@ -1061,47 +1065,83 @@ Item {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    font.family: Style.fontTypes.font6Pro
-                                    text: Style.icons.arrowUp
-                                    color: Style.colors.foreground
-                                    font.pixelSize: 16
+                                    text: Style.icons.caretDown
+                                    font.family: Style.fontTypes.font6ProSolid
+                                    font.pixelSize: 11
+                                    color: Style.colors.secondaryForeground
                                 }
 
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        let res = remoteController.getRemoteUrl("origin")
+                                onClicked: {
+                                    var pos = commitDropMouse.mapToItem(commitPanel, 0, commitDropMouse.height)
+                                    commitDropMenu.x = Math.min(pos.x, commitPanel.width - commitDropMenu.implicitWidth - 16)
+                                    commitDropMenu.y = pos.y + 4
+                                    commitDropMenu.open()
+                                }
+                            }
 
-                                        if (!res.success) {
-                                            errorMessageLabel.text = res.errorMessage ?? "Failed to get remote URL"
-                                            return
-                                        }
-
-                                        let url = res.data.url
-                                        let protocol = repositoryController.detectGitProtocol(url)
-
-                                        switch(protocol) {
-                                        case RepositoryController.GitProtocol.SSH: {
-                                            let branchName = branchController.getCurrentBranchName()
-                                            let remoteRes = remoteController.push("origin", branchName, false)
-                                            if (!remoteRes.success) {
-                                                errorMessageLabel.text = remoteRes.errorMessage ?? "Push error"
-                                            } else {
+                            ContextMenu {
+                                id: commitDropMenu
+                                parent: commitPanel
+                                menuModel: [
+                                        {
+                                            text: "Commit Amend",
+                                            icon: Style.icons.penToSquare,
+                                            action: function() {
+                                                let res = commitController.commit(commitTextArea.text, true, false)
+                                                if (res.success) {
+                                                    commitTextArea.text = ""
+                                                    root.notificationController.success("Commit amended successfully", "Commit Amend", 3000)
+                                                } else {
+                                                    root.notificationController.error(res.errorMessage || "Amend failed", "Commit Amend Error", 5000)
+                                                    errorMessageLabel.text = res.errorMessage ?? "amend error"
+                                                }
+                                                root.update()
+                                            }
+                                        },
+                                        {
+                                            text: "Commit && Push",
+                                            icon: Style.icons.arrowUp,
+                                            action: function() {
+                                                let commitRes = commitController.commit(commitTextArea.text, false, false)
+                                                if (!commitRes.success) {
+                                                    root.notificationController.error(commitRes.errorMessage || "Commit failed", "Commit Error", 5000)
+                                                    errorMessageLabel.text = commitRes.errorMessage ?? "commit error"
+                                                    return
+                                                }
                                                 commitTextArea.text = ""
+                                                root.notificationController.success("Commit successful", "Commit", 3000)
+                                                root.update()
+
+                                                let urlRes = remoteController.getRemoteUrl("origin")
+                                                if (!urlRes.success) {
+                                                    root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", "Push Error", 5000)
+                                                    return
+                                                }
+                                                let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
+                                                switch (protocol) {
+                                                case RepositoryController.GitProtocol.SSH: {
+                                                    let branchName = branchController.getCurrentBranchName()
+                                                    let pushRes = remoteController.push("origin", branchName, false)
+                                                    if (!pushRes.success) {
+                                                        root.notificationController.error(pushRes.errorMessage || "Push failed", "Push Error", 5000)
+                                                        errorMessageLabel.text = pushRes.errorMessage ?? "push error"
+                                                    } else {
+                                                        root.notificationController.success("Changes pushed successfully", "Push", 3000)
+                                                    }
+                                                    break
+                                                }
+                                                case RepositoryController.GitProtocol.HTTPS:
+                                                case RepositoryController.GitProtocol.HTTP:
+                                                    root.authPurpose = "push"
+                                                    userAuthenticationPopup.open()
+                                                    break
+                                                default:
+                                                    root.notificationController.error("Unsupported protocol", "Push Error", 5000)
+                                                }
+                                                root.update()
                                             }
                                         }
-                                        break;
-
-                                        case RepositoryController.GitProtocol.HTTPS:
-                                        case RepositoryController.GitProtocol.HTTP:
-                                            root.authPurpose = "push"
-                                            userAuthenticationPopup.open()
-                                            break;
-                                        }
-                                    }
-                                }
-
+                                    ]
                             }
                         }
 
