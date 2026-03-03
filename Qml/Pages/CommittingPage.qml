@@ -463,6 +463,7 @@ Item {
         function onCurrentRepoChanged() {
             root.update()
             currentBranchNameText.text = branchController.getCurrentBranchName()
+            commitPanelBranchText.text = branchController ? branchController.getCurrentBranchName() : ""
         }
     }
 
@@ -654,9 +655,9 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 5
-        anchors.topMargin: 5
-        spacing: 12
+        anchors.margins: 8
+        anchors.topMargin: 8
+        spacing: 8
 
         // Left panel: two stacked placeholders
         Rectangle {
@@ -666,61 +667,21 @@ Item {
 
             ColumnLayout {
                 anchors.fill: parent
-                spacing: 12
+                spacing: 8
 
                 Rectangle {
                     id: commitPanel
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 260
+                    Layout.preferredHeight: 140
                     color: Style.colors.secondaryBackground
                     radius: 2
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 16
-                        spacing: 12
+                        anchors.margins: 12
+                        spacing: 10
 
-                        // Header Section
-                        RowLayout {
-                            Layout.fillWidth: true
-
-                            Text {
-                                text: "COMMIT"
-                                font.family: Style.fontTypes.roboto
-                                font.pixelSize: 12
-                                color: Style.colors.secondaryText
-                            }
-
-                            Item { Layout.fillWidth: true }
-
-                            Button {
-                                id: commitOptionsButton
-                                Layout.alignment: Qt.AlignVCenter
-                                implicitWidth: 28
-                                implicitHeight: 28
-                                flat: true
-                                hoverEnabled: true
-
-                                contentItem: Text {
-                                    text: "\u22EE"
-                                    font.pixelSize: 20
-                                    color: commitOptionsButton.hovered ? Style.colors.foreground : Style.colors.secondaryText
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-                                background: Rectangle {
-                                    color: commitOptionsButton.hovered ? Style.colors.surfaceLight : "transparent"
-                                    radius: 4
-                                }
-                                onClicked: {
-                                    var pos = commitOptionsButton.mapToItem(commitPanel, 0, commitOptionsButton.height)
-                                    commitOptionsMenu.x = Math.min(pos.x, commitPanel.width - commitOptionsMenu.implicitWidth - 8)
-                                    commitOptionsMenu.y = pos.y + 4
-                                    commitOptionsMenu.open()
-                                }
-                            }
-
-                            ContextMenu {
+                        ContextMenu {
                                 id: commitOptionsMenu
                                 parent: commitPanel
                                 menuModel: [
@@ -882,7 +843,6 @@ Item {
                                         }
                                     }
                                 ]
-                            }
                         }
 
                         // Modern Input Area
@@ -890,7 +850,7 @@ Item {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             color: Style.colors.primaryBackground
-                            radius: 6
+                            radius: 4
                             border.width: 1
                             border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
 
@@ -931,19 +891,6 @@ Item {
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.leftMargin: 12; anchors.rightMargin: 12
-                                        Text {
-                                            text: Style.icons.branch
-                                            font.family: Style.fontTypes.font6Pro
-                                            font.pixelSize: 10
-                                            color: Style.colors.placeholderText
-                                        }
-                                        Text {
-                                            id: currentBranchNameText
-                                            text: branchController.getCurrentBranchName()
-                                            font.family: Style.fontTypes.roboto
-                                            font.pixelSize: 10
-                                            color: Style.colors.placeholderText
-                                        }
                                         Item { Layout.fillWidth: true }
                                         Text {
                                             text: commitTextArea.text.length + " characters"
@@ -955,51 +902,11 @@ Item {
                             }
                         }
 
-                        Rectangle {
-                            id: commitBtn
+                        RowLayout {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 30
-                            radius: 4
-                            color: commitEnabled ? Style.colors.accent : Style.colors.disabledButton
+                            spacing: 6
 
                             readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
-
-                            MouseArea {
-                                id: commitBtnMouse
-                                anchors.left: parent.left
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                width: parent.width - 29
-                                hoverEnabled: true
-                                cursorShape: commitBtn.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                enabled: commitBtn.commitEnabled
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: 4
-                                    color: commitBtnMouse.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "Commit"
-                                    color: Style.colors.secondaryForeground
-                                    font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 12
-                                }
-
-                                onClicked: {
-                                    let res = commitController.commit(commitTextArea.text, false, false)
-                                    if (res.success) {
-                                        commitTextArea.text = ""
-                                        root.notificationController.success("Commit successful", "Commit", 3000)
-                                    } else {
-                                        root.notificationController.error(res.errorMessage || "Commit failed", "Commit Error", 5000)
-                                        errorMessageLabel.text = res.errorMessage ?? "commit error"
-                                    }
-                                    root.update()
-                                }
-                            }
 
                             Rectangle {
                                 id: pullBtn
@@ -1069,20 +976,45 @@ Item {
                                     font.family: Style.fontTypes.font6ProSolid
                                     font.pixelSize: 11
                                     color: Style.colors.secondaryForeground
+                                    opacity: 0.35
                                 }
 
-                                onClicked: {
-                                    var pos = commitDropMouse.mapToItem(commitPanel, 0, commitDropMouse.height)
-                                    commitDropMenu.x = Math.min(pos.x, commitPanel.width - commitDropMenu.implicitWidth - 16)
-                                    commitDropMenu.y = pos.y + 4
-                                    commitDropMenu.open()
-                                }
-                            }
+                                MouseArea {
+                                    id: commitCaretZone
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    width: 28
+                                    hoverEnabled: true
+                                    cursorShape: parent.parent.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: parent.parent.commitEnabled
 
-                            ContextMenu {
-                                id: commitDropMenu
-                                parent: commitPanel
-                                menuModel: [
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: 4
+                                        color: commitCaretZone.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
+                                    }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: Style.icons.caretDown
+                                        font.family: Style.fontTypes.font6ProSolid
+                                        font.pixelSize: 11
+                                        color: Style.colors.secondaryForeground
+                                    }
+
+                                    onClicked: {
+                                        var pos = commitCaretZone.mapToItem(commitPanel, 0, commitBtn.height)
+                                        commitDropMenu.x = Math.min(pos.x, commitPanel.width - commitDropMenu.implicitWidth - 48)
+                                        commitDropMenu.y = pos.y + 4
+                                        commitDropMenu.open()
+                                    }
+                                }
+
+                                ContextMenu {
+                                    id: commitDropMenu
+                                    parent: commitPanel
+                                    menuModel: [
                                         {
                                             text: "Commit Amend",
                                             icon: Style.icons.penToSquare,
@@ -1111,7 +1043,6 @@ Item {
                                                 commitTextArea.text = ""
                                                 root.notificationController.success("Commit successful", "Commit", 3000)
                                                 root.update()
-
                                                 let urlRes = remoteController.getRemoteUrl("origin")
                                                 if (!urlRes.success) {
                                                     root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", "Push Error", 5000)
@@ -1142,6 +1073,38 @@ Item {
                                             }
                                         }
                                     ]
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.preferredWidth: 30
+                                Layout.preferredHeight: 30
+                                radius: 4
+                                color: commitOptionsDotMouse.containsMouse ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                                border.color: Style.colors.primaryBorder
+                                border.width: 1
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\u22EE"
+                                    font.pixelSize: 16
+                                    color: commitOptionsDotMouse.containsMouse ? Style.colors.foreground : Style.colors.secondaryText
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                MouseArea {
+                                    id: commitOptionsDotMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        var pos = parent.mapToItem(commitPanel, 0, parent.height)
+                                        commitOptionsMenu.x = Math.min(pos.x, commitPanel.width - commitOptionsMenu.implicitWidth - 12)
+                                        commitOptionsMenu.y = pos.y + 4
+                                        commitOptionsMenu.open()
+                                    }
+                                }
                             }
                         }
 
