@@ -13,12 +13,15 @@ QtObject {
 
     property                bool              showAvatar:               true
 
+    property                bool              showStashNodes:           false
+
     /* Functions
      * ****************************************************************************************/
     function serialize() {
         let data = {
             defaultPath: root.defaultPath,
-            showAvatar: root.showAvatar
+            showAvatar: root.showAvatar,
+            showStashNodes: root.showStashNodes
         }
 
         return data;
@@ -27,6 +30,7 @@ QtObject {
     function deserialize(data : var) {
         root.defaultPath = data.defaultPath ?? ""
         root.showAvatar = data.showAvatar ?? true
+        root.showStashNodes = data.showStashNodes ?? false
     }
 }
 
