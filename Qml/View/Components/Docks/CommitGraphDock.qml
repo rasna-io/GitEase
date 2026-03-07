@@ -2159,7 +2159,13 @@ Item {
                 enabled: !isCurrentHead,
                 action: function() {
                     let res = mergeController.mergeBranchIntoCurrent(bName);
-                    handleResponse(res, "Merged " + bName + " into " + currentBranch);
+                    if (res.success) {
+                        if (notificationController)
+                            notificationController.success("Merge started", "Merge", 3000)
+                    } else if (notificationController) {
+                        const isConflict = res.errorMessage && res.errorMessage.toLowerCase().includes("conflict")
+                        notificationController[isConflict ? "warning" : "error"](res.errorMessage || "Merge failed", "Merge", 5000)
+                    }
                 }
             });
 
