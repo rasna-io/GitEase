@@ -31,6 +31,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/NotificationController.qml
     Qml/Core/Controllers/ActivityController.qml
     Qml/Core/Controllers/SshKeyController.qml
+    Qml/Core/Controllers/MergeController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js

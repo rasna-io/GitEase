@@ -33,6 +33,7 @@ QtObject {
             bundleController.currentRepo = currentRepo
             configController.currentRepo = currentRepo
             stashController.currentRepo = currentRepo
+            mergeController.currentRepo = currentRepo
         }
 
         onRepositorySelected: function(repo) {
@@ -100,6 +101,12 @@ QtObject {
     property NotificationController notificationController: NotificationController {
         fileIO: root.appModel.fileIO
         appSettings: root.appModel.appSettings
+    }
+
+    property MergeController mergeController: MergeController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
     }
 
     property UiSessionPopups      popups

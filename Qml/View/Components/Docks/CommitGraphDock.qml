@@ -22,6 +22,8 @@ Item {
 
     property BranchController branchController: null
 
+    property MergeController mergeController: null
+
     property AddBranchPopup addBranchPopup: null
 
     property StatusController statusController: null
@@ -2156,7 +2158,7 @@ Item {
                 icon: Style.icons.arrowLeftRight,
                 enabled: !isCurrentHead,
                 action: function() {
-                    let res = branchController.mergeBranchIntoCurrent(bName);
+                    let res = mergeController.mergeBranchIntoCurrent(bName);
                     handleResponse(res, "Merged " + bName + " into " + currentBranch);
                 }
             });
