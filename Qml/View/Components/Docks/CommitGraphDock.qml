@@ -2167,7 +2167,7 @@ Item {
                 icon: Style.icons.arrowLeftRight,
                 enabled: !isCurrentHead,
                 action: function() {
-                    let res = branchController.mergeBranchIntoCurrent(bName);
+                    let res = mergeController.mergeBranchIntoCurrent(bName);
                     handleResponse(res, "Merged " + bName + " into " + currentBranch);
                 }
             });
