@@ -101,6 +101,14 @@ IPopup {
                                     checked: root.appSettings?.generalSettings?.showAvatar ?? false
                                 }
 
+                                CheckboxItem {
+                                    id: displayStashNodes
+                                    Layout.fillWidth: true
+                                    title: "Display Stash"
+                                    description: "Show stash nodes on graph view"
+                                    checked: root.appSettings?.generalSettings?.showStashNodes ?? false
+                                }
+
                                 PathSelectorItem {
                                     id: defaultPath
                                     Layout.fillWidth: true
@@ -258,6 +266,7 @@ IPopup {
 
     function apply() {
         root.appSettings.generalSettings.showAvatar = displayAvatar.checked
+        root.appSettings.generalSettings.showStashNodes = displayStashNodes.checked
         root.appSettings.generalSettings.defaultPath = defaultPath.text
         root.appSettings.appearanceSettings.currentTheme = theme.cmb.displayText
         root.appSettings.notificationSettings.displayRealtimeNotifications = displayRealtimeNotifications.checked
@@ -280,6 +289,7 @@ IPopup {
 
     function load() {
         displayAvatar.checked = root.appSettings?.generalSettings?.showAvatar
+        displayStashNodes.checked = root.appSettings?.generalSettings?.showStashNodes
         defaultPath.text = root.appSettings.generalSettings.defaultPath
 
         theme.cmb.currentIndex = theme.cmb.model.indexOf(root.appSettings.appearanceSettings.currentTheme)

@@ -32,6 +32,8 @@ Item {
     
     property NotificationController notificationController: null
 
+    property StashController stashController: null
+
     /* Property Declarations
      * ****************************************************************************************/
     // Full data set (unfiltered) vs displayed set (filtered)
@@ -308,9 +310,19 @@ Item {
             return
         }
 
-        var compiled = compileGraphCommits(page, allBranches);
-        var commits = root.allCommits.concat(compiled)
-        root.commitsOffset = commits.length
+        var stashes = []
+        if (root.stashController) {
+            var stashRes = root.stashController.list()
+            if (stashRes.success && stashRes.data)
+                stashes = stashRes.data
+        }
+
+        var compiled = compileGraphCommits(page, allBranches, stashes);
+        var existingWithoutStashes = root.allCommits.filter(function(c) {
+            return !c.isStash
+        })
+        var commits = existingWithoutStashes.concat(compiled)
+        root.commitsOffset = page.length + (root.commitsOffset)
         root.hasMoreCommits = (page.length === root.pageSize)
 
         root.allCommits = commits.slice(0)
@@ -323,6 +335,30 @@ Item {
         root.isLoadingMore = false
         
         root.applyFilter(currentText, currentStartDate, currentEndDate, currentModes)
+    }
+
+    /**
+     * Refreshes stash nodes in the existing commit list without re-fetching all commits.
+     * Called when stashController becomes available after the initial load, or when
+     * stashes change (save/pop/drop).
+     */
+    function refreshStashNodes() {
+        if (!root.stashController)
+            return
+
+        var stashRes = root.stashController.list()
+        var stashes = (stashRes.success && stashRes.data) ? stashRes.data : []
+
+        var baseCommits = root.allCommits.filter(function(c) {
+            return !c.isStash
+        })
+
+        var allBranches = root.branchController ? root.branchController.getBranches() : []
+
+        var recompiled = compileGraphCommits(baseCommits, allBranches, stashes)
+
+        root.allCommits = recompiled.slice(0)
+        root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
     }
 
     function clearFilter() {
@@ -1245,32 +1281,59 @@ Item {
                                         ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + (root.commitItemSpacing * 2));
                                     }
 
-                                    var avatarSize = showAvatar ? root.commitItemHeight : 10;
-                                    var avatarRadius = avatarSize / 2;
-
-                                    // All commits: Circle with avatar (same style)
                                     ctx.save();
                                     ctx.strokeStyle = isSelected ? GraphUtils.darkenColor(branchColor3, 0.2): GraphUtils.lightenColor(branchColor3, 0.3);
                                     ctx.lineWidth = isSelected ? 4 : 2.5;
 
-                                    ctx.beginPath();
-                                    ctx.arc(centerX2, centerY2, avatarRadius, 0, 2 * Math.PI);
-                                    ctx.fillStyle = showAvatar ? "#D9D9D9" : GraphUtils.lightenColor(branchColor3, 0.3);
-                                    ctx.fill();
-                                    ctx.stroke();
+                                    var avatarSize = showAvatar ? root.commitItemHeight : 10;
+                                    var avatarRadius = avatarSize / 2;
 
-                                    if (showAvatar) {
-                                        // Draw avatar icon
-                                        ctx.fillStyle = "#ffffff";
-                                        ctx.font = (avatarSize * 0.8) + "px Arial";
-                                        ctx.textAlign = "center";
-                                        ctx.textBaseline = "middle";
+                                    var isStashNode = commit3.isStash === true;
 
-                                        var drawX = centerX2 - svgImage.width / 2;
-                                        var drawY = centerY2 - svgImage.height / 2;
-                                        ctx.drawImage(svgImage, drawX, drawY);
+                                    if (isStashNode) {
+                                        var sqSize = avatarRadius;
+                                        var sqRadius = 2;
+
+                                        ctx.beginPath();
+                                        ctx.moveTo(centerX2 - sqSize + sqRadius, centerY2 - sqSize);
+                                        ctx.arcTo(centerX2 + sqSize, centerY2 - sqSize, centerX2 + sqSize, centerY2 + sqSize, sqRadius);
+                                        ctx.arcTo(centerX2 + sqSize, centerY2 + sqSize, centerX2 - sqSize, centerY2 + sqSize, sqRadius);
+                                        ctx.arcTo(centerX2 - sqSize, centerY2 + sqSize, centerX2 - sqSize, centerY2 - sqSize, sqRadius);
+                                        ctx.arcTo(centerX2 - sqSize, centerY2 - sqSize, centerX2 + sqSize, centerY2 - sqSize, sqRadius);
+                                        ctx.closePath();
+
+                                        ctx.fillStyle = branchColor3;
+                                        ctx.fill();
+                                        ctx.stroke();
+
+                                        if (showAvatar) {
+                                            ctx.fillStyle = "#ffffff";
+                                            ctx.textAlign = "center";
+                                            ctx.textBaseline = "middle";
+                                            ctx.fillText(Style.icons.archive, centerX2, centerY2);
+                                        }
+
+                                        ctx.restore();
+                                    } else {
+                                        ctx.beginPath();
+                                        ctx.arc(centerX2, centerY2, avatarRadius, 0, 2 * Math.PI);
+                                        ctx.fillStyle = showAvatar ? "#D9D9D9" : GraphUtils.lightenColor(branchColor3, 0.3);
+                                        ctx.fill();
+                                        ctx.stroke();
+
+                                        if (showAvatar) {
+                                            // Draw avatar icon
+                                            ctx.fillStyle = "#ffffff";
+                                            ctx.font = (avatarSize * 0.8) + "px Arial";
+                                            ctx.textAlign = "center";
+                                            ctx.textBaseline = "middle";
+
+                                            var drawX = centerX2 - svgImage.width / 2;
+                                            var drawY = centerY2 - svgImage.height / 2;
+                                            ctx.drawImage(svgImage, drawX, drawY);
+                                        }
+                                        ctx.restore();
                                     }
-                                    ctx.restore();
                                 }
 
                             }
@@ -1325,6 +1388,8 @@ Item {
                         property bool isSelected: root.selectedCommit && root.selectedCommit.hash === commitData.hash
                         property bool isHead: modelData.hash === root.headHash
 
+                        property bool isStash: modelData.isStash === true
+
                         color: {
                             if (isSelected) {
                                 return "#6088B2DF";
@@ -1374,6 +1439,44 @@ Item {
                                         // Color indicator by graph lane/column (same color as the drawn graph line)
                                         color: {
                                             return commitColor(commitData)
+                                        }
+                                    }
+
+                                    // Stash badge (only visible for stash nodes)
+                                    Rectangle {
+                                        visible: commitItem.isStash
+                                        Layout.preferredWidth: stashBadgeRow.implicitWidth + 10
+                                        Layout.preferredHeight: 17
+                                        Layout.alignment: Qt.AlignVCenter
+                                        Layout.leftMargin: 4
+                                        radius: 2
+                                        color:  {
+                                            return commitColor(commitData)
+                                        }
+
+                                        Row {
+                                            id: stashBadgeRow
+                                            anchors.centerIn: parent
+                                            spacing: 3
+
+                                            Text {
+                                                text: Style.icons.archive
+                                                font.family: Style.fontTypes.font6ProSolid
+                                                font.pixelSize: 9
+                                                color: {
+                                                    return GraphUtils.getContrastColor(commitColor(commitData))
+                                                }
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                            Text {
+                                                text: commitData.stashLabel || "stash"
+                                                font.family: Style.fontTypes.roboto
+                                                font.pixelSize: 9
+                                                color: {
+                                                    return GraphUtils.getContrastColor(commitColor(commitData))
+                                                }
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
                                         }
                                     }
 
@@ -1466,6 +1569,78 @@ Item {
                                     root.commitClicked(commitData.hash);
                                 }
                             }
+
+                            onDoubleClicked: (mouse) => {
+                                if (mouse.button !== Qt.LeftButton)
+                                    return;
+
+                                if (commitData.isStash)
+                                    return;
+
+                                let isCurrentHead = (commitData.hash === root.headHash);
+                                if (isCurrentHead)
+                                    return;
+
+                                let branches = commitData.branchNames || [];
+                                let shortHash = commitData.shortHash || commitData.hash.substring(0, 7);
+
+                                if (branches.length === 0) {
+                                    let res = branchController.checkoutCommit(commitData.hash);
+                                    contextMenu.handleResponse(res, "Checked out commit " + shortHash);
+                                } else {
+                                    let allBranches = branchController.getBranches();
+                                    let localNames = {};
+                                    for (let bi = 0; bi < allBranches.length; bi++) {
+                                        let b = allBranches[bi];
+                                        if (b && b.isLocal)
+                                            localNames[b.name] = true;
+                                    }
+
+                                    let seen = {};
+                                    let dedupedBranches = [];
+                                    for (let i = 0; i < branches.length; i++) {
+                                        let name = branches[i];
+                                        let baseName = name.replace(/^[^/]+\//, "");
+                                        if (!seen[baseName]) {
+                                            seen[baseName] = true;
+                                            dedupedBranches.push(localNames[baseName] ? baseName : name);
+                                        }
+                                    }
+
+                                    if (dedupedBranches.length === 1) {
+                                        checkoutBranchOrCreate(dedupedBranches[0], commitData.hash);
+                                    } else {
+                                        checkoutBranchSelector.commitHash = commitData.hash;
+                                        checkoutBranchSelector.branches = dedupedBranches;
+                                        checkoutBranchSelector.open();
+                                    }
+                                }
+                            }
+
+                            function checkoutBranchOrCreate(branchName, commitHash) {
+                                let allBranches = branchController.getBranches();
+                                let localBranchNames = {};
+                                for (let bi = 0; bi < allBranches.length; bi++) {
+                                    let b = allBranches[bi];
+                                    if (b && b.isLocal)
+                                        localBranchNames[b.name] = true;
+                                }
+
+                                if (localBranchNames[branchName]) {
+                                    let res = branchController.checkoutBranch(branchName);
+                                    contextMenu.handleResponse(res, "Checked out branch " + branchName);
+                                } else {
+                                    let localName = branchName.replace(/^[^/]+\//, "");
+                                    let createRes = branchController.createBranch(commitHash, localName);
+                                    if (!createRes.success) {
+                                        contextMenu.handleResponse(createRes, "");
+                                    } else {
+                                        let checkoutRes = branchController.checkoutBranch(localName);
+                                        contextMenu.handleResponse(checkoutRes, "Created and checked out branch " + localName);
+                                    }
+                                }
+                            }
+
                             onEntered: {
                                 isHovered = true
                             }
@@ -1550,6 +1725,16 @@ Item {
                                 root.reloadAll();
                             }
                         }
+
+                        CheckoutBranchSelectorPopup {
+                            id: checkoutBranchSelector
+
+                            property string commitHash: ""
+
+                            onBranchSelected: function(branchName) {
+                                commitMouseArea.checkoutBranchOrCreate(branchName, commitHash);
+                            }
+                        }
                     }
                 }
             }
@@ -1563,7 +1748,7 @@ Item {
     // - getCommits(): list of commits (hash, summary, author, ...)
     // - getCommit(hash): per-commit details (parentHashes, etc)
     // - getBranches(): to attach branch name labels to tip commits (targetHash)
-    function compileGraphCommits(rawCommits, rawBranches) {
+    function compileGraphCommits(rawCommits, rawBranches, rawStashes) {
         if (!rawCommits) return []
 
         // tip commit hash -> [branchName,...]
@@ -1581,11 +1766,69 @@ Item {
             }
         }
 
+        var commitHashSet = {}
+        for (var ci = 0; ci < rawCommits.length; ci++) {
+            if (rawCommits[ci] && rawCommits[ci].hash)
+                commitHashSet[rawCommits[ci].hash] = true
+        }
+
+        var showStashes = root.appModel?.appSettings?.generalSettings?.showStashNodes ?? false
+
+        var stashNodes = {}        // id -> stash node obj
+        var stashNodeList = []
+        if (showStashes && rawStashes && rawStashes.length) {
+            for (var stashIdx = 0; stashIdx < rawStashes.length; stashIdx++) {
+                var stash = rawStashes[stashIdx]
+                if (!stash || !stash.id)
+                    continue
+
+                if (stashNodes[stash.id])
+                    continue
+
+                stashNodes[stash.id] = true
+
+                var stashParentHashes = stash.parentId ? [stash.parentId] : []
+                var stashLabel = "stash@{" + stash.index + "}"
+                var stashObj = {
+                    hash: stash.id,
+                    shortHash: stash.id.substring(0, 7),
+                    message: stash.message || stashLabel,
+                    summary: stash.message || stashLabel,
+                    author: stash.author || "",
+                    authorEmail: "",
+                    authorDate: stash.dateTime || "",
+
+                    parentHashes: stashParentHashes,
+                    commitType: "stash",
+
+                    branchNames: [stashLabel],
+                    tagNames: [],
+                    colorKey: "",
+
+                    isStash: true,
+                    stashIndex: stash.index,
+                    stashLabel: stashLabel,
+                    stashParentId: stash.parentId || ""
+                }
+                stashNodeList.push(stashObj)
+            }
+        }
+
         // Build commits
         var compiled = []
 
+        var stashInserted = {}
+
         for (var c = 0; c < rawCommits.length; c++) {
             var commit = rawCommits[c]
+
+            for (var sj = 0; sj < stashNodeList.length; sj++) {
+                var sn = stashNodeList[sj]
+                if (!stashInserted[sn.hash] && sn.stashParentId === commit.hash) {
+                    compiled.push(sn)
+                    stashInserted[sn.hash] = true
+                }
+            }
 
             var parentHashes = []
             var details = commit
@@ -1610,10 +1853,21 @@ Item {
                 tagNames: [],
 
                 // assigned in loadData() after layout (lane -> category)
-                colorKey: ""
+                colorKey: "",
+
+                isStash: false,
+                stashIndex: -1,
+                stashLabel: "",
+                stashParentId: ""
             }
 
             compiled.push(obj)
+        }
+
+        // Append any stashes whose parent wasn't found in the commit list (edge case)
+        for (var sk = 0; sk < stashNodeList.length; sk++) {
+            if (!stashInserted[stashNodeList[sk].hash])
+                compiled.push(stashNodeList[sk])
         }
 
         return compiled
@@ -1807,8 +2061,15 @@ Item {
             return;
         let page = commitRes.data;
 
-        var commits = compileGraphCommits(page, allBranches);
-        commitsOffset = commits.length
+        var stashes = []
+        if (root.stashController) {
+            var stashRes = root.stashController.list()
+            if (stashRes.success && stashRes.data)
+                stashes = stashRes.data
+        }
+
+        var commits = compileGraphCommits(page, allBranches, stashes);
+        commitsOffset = page ? page.length : 0
         hasMoreCommits = (page && page.length === pageSize)
 
         // Store full dataset and apply current filter
@@ -1837,10 +2098,21 @@ Item {
             return
         }
 
-        var compiled = compileGraphCommits(page, allBranches);
+        var stashes = []
+        if (root.stashController) {
+            var stashRes = root.stashController.list()
+            if (stashRes.success && stashRes.data)
+                stashes = stashRes.data
+        }
 
-        var commits = root.allCommits.concat(compiled)
-        commitsOffset = commits.length
+        var compiled = compileGraphCommits(page, allBranches, stashes);
+
+        var existingWithoutStashes = root.allCommits.filter(function(c) {
+            return !c.isStash
+        })
+
+        var commits = existingWithoutStashes.concat(compiled)
+        commitsOffset = page.length + commitsOffset
         hasMoreCommits = (page.length === pageSize)
 
         root.allCommits = commits.slice(0)
@@ -1856,6 +2128,12 @@ Item {
     }
 
     onRepositoryControllerChanged: reloadAll();
+
+    onStashControllerChanged: {
+        if (root.stashController && root.allCommits && root.allCommits.length > 0) {
+            root.refreshStashNodes()
+        }
+    }
 
     onAllCommitsChanged: {
         root.allCommitsHash = {}
@@ -1874,6 +2152,10 @@ Item {
         target: appModel?.appSettings?.generalSettings ?? null
         function onShowAvatarChanged() {
             graphCanvas.requestPaint()
+        }
+
+        function onShowStashNodesChanged() {
+            root.refreshStashNodes()
         }
     }
 }
