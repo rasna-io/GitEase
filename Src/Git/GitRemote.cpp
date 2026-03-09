@@ -7,6 +7,7 @@
 
 #include <git2.h>
 #include <QVariant>
+#include <QVariantList>
 #include <qdatetime.h>
 #include <QFutureWatcher>
 #include <QtConcurrent>
@@ -523,6 +524,91 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
     fetchResult["remote"] = remoteName;
     fetchResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     fetchResult["status"] = "Successfully fetched from remote";
+
+    // Collect fetched heads with before/after info 
+    QVariantList fetchedHeads;
+    QStringList logLines;
+    struct FetchHeadPayload {
+        git_repository* repo;
+        QVariantList* heads;
+        QString remoteName;
+        QStringList* logs;
+    } headPayload { m_currentRepo->repo, &fetchedHeads, remoteName, &logLines };
+
+    auto fetchHeadCb = [](const char* ref_name,
+                          const char* remote_url,
+                          const git_oid* oid,
+                          unsigned int is_merge,
+                          void* payload) -> int {
+        auto* data = static_cast<FetchHeadPayload*>(payload);
+        auto* repo = data->repo;
+        auto* heads = data->heads;
+        auto* logs = data->logs;
+        const QString remoteName = data->remoteName;
+
+        QVariantMap entry;
+        QString refStr = ref_name ? QString::fromUtf8(ref_name) : "";
+        entry["ref"] = refStr;
+        entry["remoteUrl"] = remote_url ? QString::fromUtf8(remote_url) : "";
+        entry["commit"] = oid ? QString::fromLatin1(git_oid_tostr_s(oid)) : "";
+        entry["isMerge"] = static_cast<bool>(is_merge);
+
+        // Derive branch name (refs/heads/<branch>)
+        QString branchName = refStr.startsWith("refs/heads/") ? refStr.mid(QString("refs/heads/").size()) : refStr;
+        entry["branch"] = branchName;
+
+        // Compute tracking ref and reflog delta to mimic git fetch output
+        QString trackingRef = QString("refs/remotes/%1/%2").arg(remoteName, branchName);
+        entry["trackingRef"] = trackingRef;
+
+        git_reflog* log = nullptr;
+        if (git_reflog_read(&log, repo, trackingRef.toUtf8().constData()) == 0 && log) {
+            size_t count = git_reflog_entrycount(log);
+            if (count > 0) {
+                const git_reflog_entry* latest = git_reflog_entry_byindex(log, 0);
+                const git_oid* oldOid = git_reflog_entry_id_old(latest);
+                const git_oid* newOid = git_reflog_entry_id_new(latest);
+                char bufOld[GIT_OID_HEXSZ + 1] = {0};
+                char bufNew[GIT_OID_HEXSZ + 1] = {0};
+                if (oldOid) git_oid_tostr(bufOld, sizeof(bufOld), oldOid);
+                if (newOid) git_oid_tostr(bufNew, sizeof(bufNew), newOid);
+                entry["oldCommit"] = QString::fromLatin1(bufOld);
+                entry["newCommit"] = QString::fromLatin1(bufNew);
+                QString shortOld = entry["oldCommit"].toString().left(7);
+                QString shortNew = entry["newCommit"].toString().left(7);
+                QString summary;
+                if (shortOld.isEmpty() || shortOld == "0000000") {
+                    summary = QString(" * [new branch]     %1 -> %2/%1 (%3)")
+                                  .arg(branchName,
+                                       remoteName,
+                                       shortNew.isEmpty() ? "0000000" : shortNew);
+                } else if (shortOld == shortNew) {
+                    summary = QString(" = up to date       %1 (%2)")
+                                  .arg(branchName,
+                                       shortNew.isEmpty() ? "0000000" : shortNew);
+                } else {
+                    summary = QString("   %1..%2  %3 -> %4/%3")
+                                  .arg(shortOld.isEmpty() ? "0000000" : shortOld,
+                                       shortNew.isEmpty() ? "0000000" : shortNew,
+                                       branchName,
+                                       remoteName);
+                }
+                entry["summary"] = summary;
+                if (logs) logs->append(summary);
+            }
+            git_reflog_free(log);
+        }
+
+        heads->append(entry);
+        return 0;
+    };
+
+    git_repository_fetchhead_foreach(m_currentRepo->repo, fetchHeadCb, &headPayload);
+    fetchResult["heads"] = fetchedHeads;
+    if (!logLines.isEmpty())
+        fetchResult["log"] = logLines;
+    if (!fetchedHeads.isEmpty())
+        fetchResult["branch"] = fetchedHeads.first().toMap().value("branch");
 
     return GitResult(true, fetchResult);
 }

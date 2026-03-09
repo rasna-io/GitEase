@@ -35,11 +35,14 @@ Item {
     property NotificationController  notificationController:  null
 
     property UserAuthenticationPopup userAuthenticationPopup: null
+    
+    property UiSessionPopups         uiSessionPopups:         null
 
     property bool                    isFetching:             false
     property var                     activeFetchRemotes:     []
     property string                  authPurpose:            "push"  // "push" | "fetch"
     property var                     pendingFetchRemoteNames: []    // HTTP/HTTPS remotes to fetch with token
+    property var                     fetchBatchResults:      []
 
     property string                  selectedFilePath:        ""
 
@@ -75,6 +78,7 @@ Item {
 
             const remoteName = result.remote
             root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
+            root.fetchBatchResults.push(result)
 
             if (notificationController) {
                 if (result.success)
@@ -84,7 +88,24 @@ Item {
             }
 
             root.isFetching = root.activeFetchRemotes.length > 0 || root.pendingFetchRemoteNames.length > 0
+            if (root.activeFetchRemotes.length === 0 && root.pendingFetchRemoteNames.length === 0 && root.fetchBatchResults.length > 0) {
+                let popup = root.uiSessionPopups?.fetchSummaryPopup
+                if (popup) {
+                    popup.results = []
+                    popup.results = root.fetchBatchResults
+                    popup.open()
+                }
+            }
+
             root.update()
+        }
+    }
+
+    Connections {
+        target: root.uiSessionPopups ? root.uiSessionPopups.fetchSummaryPopup : null
+
+        function onClosed() {
+            root.fetchBatchResults = []
         }
     }
 
@@ -100,8 +121,15 @@ Item {
                     if (res.success) {
                         if (root.activeFetchRemotes.indexOf(name) === -1)
                             root.activeFetchRemotes.push(name)
-                    } else
+                    } else {
                         failed.push({ name: name, message: res.errorMessage || "Unknown error" })
+                        root.fetchBatchResults.push({
+                            remote: name,
+                            success: false,
+                            errorMessage: res.errorMessage || "Unknown error",
+                            data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
+                        })
+                    }
                 }
                 if (failed.length > 0 && root.notificationController) {
                     root.notificationController.error("Fetch failed for: " + failed.map(function(f){ return f.name + " (" + f.message + ")" }).join("; "), "Fetch Error", 7000)
@@ -228,6 +256,7 @@ Item {
                                                     notificationController.error("No remotes configured", "Fetch", 5000)
                                                 return
                                             }
+                                            root.fetchBatchResults = []
                                             let httpsRemotes = []
                                             let sshFailed = []
                                             root.activeFetchRemotes = []
@@ -247,8 +276,16 @@ Item {
                                                     if (res.success) {
                                                         if (root.activeFetchRemotes.indexOf(remote.name) === -1)
                                                             root.activeFetchRemotes.push(remote.name)
-                                                    } else
-                                                        sshFailed.push({ name: remote.name, message: res.errorMessage || "Fetch failed" })
+                                                    } else {
+                                                        let msg = res.errorMessage || "Fetch failed"
+                                                        sshFailed.push({ name: remote.name, message: msg })
+                                                        root.fetchBatchResults.push({
+                                                            remote: remote.name,
+                                                            success: false,
+                                                            errorMessage: msg,
+                                                            data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
+                                                        })
+                                                    }
                                                     break
                                                 }
                                                 case RepositoryController.GitProtocol.HTTPS:
