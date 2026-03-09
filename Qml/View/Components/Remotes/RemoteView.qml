@@ -24,12 +24,15 @@ UtilitiesCard {
 
     property UserAuthenticationPopup userAuthenticationPopup: null
 
+    property UiSessionPopups uiSessionPopups: null
+
     property AddEditRemotePopup addEditRemotePopup: null
 
     property NotificationController notificationController: null
 
     property bool isFetching: false
     property var activeFetchRemotes: []
+    property var fetchBatchResults: []
 
     property Remote remote: null
 
@@ -54,8 +57,15 @@ UtilitiesCard {
                 if (root.activeFetchRemotes.indexOf(remote.name) === -1)
                     root.activeFetchRemotes.push(remote.name)
             } else {
+                root.fetchBatchResults.push({
+                    remote: remote.name,
+                    success: false,
+                    errorMessage: res.errorMessage || "Unknown error",
+                    data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
+                })
                 root.fetchError(remote.name, res.errorMessage)
                 root.isFetching = root.activeFetchRemotes.length > 0
+                root.openFetchSummaryIfReady()
             }
         }
         function onRejected() {
@@ -90,12 +100,23 @@ UtilitiesCard {
                     return
 
                 root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== result.remote })
+                root.fetchBatchResults.push(result)
                 root.isFetching = root.activeFetchRemotes.length > 0
 
                 if (result.success)
                     root.fetchSuccess(result.remote)
                 else
                     root.fetchError(result.remote, result.errorMessage || "Unknown error")
+
+                root.openFetchSummaryIfReady()
+            }
+        }
+
+        Connections {
+            target: root.uiSessionPopups ? root.uiSessionPopups.fetchSummaryPopup : null
+
+            function onClosed() {
+                root.fetchBatchResults = []
             }
         }
 
@@ -185,6 +206,7 @@ UtilitiesCard {
                                 enabled: !root.isFetching
                                 onClicked: {
                                     root.remote = currentRemote
+                                    root.fetchBatchResults = []
                                     let res = remoteController.getRemoteUrl(currentRemote.name)
 
                                     if (!res.success) {
@@ -201,9 +223,16 @@ UtilitiesCard {
                                             if (root.activeFetchRemotes.indexOf(currentRemote.name) === -1)
                                                 root.activeFetchRemotes.push(currentRemote.name)
                                         } else {
+                                            root.fetchBatchResults.push({
+                                                remote: currentRemote.name,
+                                                success: false,
+                                                errorMessage: res.errorMessage || "Fetch failed",
+                                                data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
+                                            })
                                             root.fetchError(currentRemote.name, res.errorMessage)
                                         }
                                         root.isFetching = root.activeFetchRemotes.length > 0
+                                        root.openFetchSummaryIfReady()
                                         content.update()
                                         break;
                                     case RepositoryController.GitProtocol.HTTPS:
@@ -297,6 +326,19 @@ UtilitiesCard {
     function openAddEditPopup() {
         addEditRemotePopup.remoteController = root.remoteController
         addEditRemotePopup.open()
+    }
+
+    function openFetchSummaryIfReady() {
+        if (root.activeFetchRemotes.length > 0 || root.fetchBatchResults.length === 0)
+            return
+
+        let popup = root.uiSessionPopups?.fetchSummaryPopup
+        if (!popup)
+            return
+
+        popup.results = []
+        popup.results = root.fetchBatchResults
+        popup.open()
     }
 
 

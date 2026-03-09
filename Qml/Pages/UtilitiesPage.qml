@@ -72,6 +72,7 @@ Item {
                 remoteController: root.remoteController
                 repositoryController: root.repositoryController
                 userAuthenticationPopup: root.userAuthenticationPopup
+                uiSessionPopups: root.uiSessionPopups
                 addEditRemotePopup: uiSessionPopups.addEditRemotePopup
                 notificationController: root.notificationController
             }

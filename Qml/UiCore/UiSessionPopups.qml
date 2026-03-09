@@ -44,4 +44,6 @@ Item {
     property NotificationCenterPopup    notificationCenterPopup:    NotificationCenterPopup {}
 
     property ManageStashPopup           manageStashPopup:           ManageStashPopup {}
+
+    property FetchSummaryPopup          fetchSummaryPopup:          FetchSummaryPopup {}
 }
