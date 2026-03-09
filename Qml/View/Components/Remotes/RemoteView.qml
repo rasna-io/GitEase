@@ -29,6 +29,7 @@ UtilitiesCard {
     property NotificationController notificationController: null
 
     property bool isFetching: false
+    property var activeFetchRemotes: []
 
     property Remote remote: null
 
@@ -49,14 +50,16 @@ UtilitiesCard {
         function onPasswordConfirm(password){
             root.isFetching = true
             let res = root.remoteController.fetchWithToken(remote.name, password)
-            if (res.success)
-                root.fetchSuccess(remote.name)
-            else
+            if (res.success) {
+                if (root.activeFetchRemotes.indexOf(remote.name) === -1)
+                    root.activeFetchRemotes.push(remote.name)
+            } else {
                 root.fetchError(remote.name, res.errorMessage)
-            root.isFetching = false
+                root.isFetching = root.activeFetchRemotes.length > 0
+            }
         }
         function onRejected() {
-            root.isFetching = false
+            root.isFetching = root.activeFetchRemotes.length > 0
         }
     }
 
@@ -76,6 +79,23 @@ UtilitiesCard {
 
             function onCurrentRepoChanged() {
                 content.update()
+            }
+        }
+
+        Connections {
+            target: root.remoteController
+
+            function onFetchFinished(result) {
+                if (!result || !result.remote)
+                    return
+
+                root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== result.remote })
+                root.isFetching = root.activeFetchRemotes.length > 0
+
+                if (result.success)
+                    root.fetchSuccess(result.remote)
+                else
+                    root.fetchError(result.remote, result.errorMessage || "Unknown error")
             }
         }
 
@@ -178,15 +198,17 @@ UtilitiesCard {
                                         root.isFetching = true
                                         res = root.remoteController.fetch(currentRemote.name)
                                         if (res.success) {
-                                            root.fetchSuccess(currentRemote.name)
+                                            if (root.activeFetchRemotes.indexOf(currentRemote.name) === -1)
+                                                root.activeFetchRemotes.push(currentRemote.name)
                                         } else {
                                             root.fetchError(currentRemote.name, res.errorMessage)
                                         }
-                                        root.isFetching = false
+                                        root.isFetching = root.activeFetchRemotes.length > 0
                                         content.update()
                                         break;
                                     case RepositoryController.GitProtocol.HTTPS:
                                     case RepositoryController.GitProtocol.HTTP:
+                                        root.isFetching = true
                                         userAuthenticationPopup.open()
                                         break;
                                     }
