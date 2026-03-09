@@ -4,6 +4,7 @@
 #include "IGitController.h"
 #include "Repository.h"
 #include <QObject>
+#include <QVariantMap>
 
 class GitResult;
 class GitRemote : public IGitController
@@ -132,6 +133,18 @@ public:
     *         or an error message if the operation failed.
     */
     Q_INVOKABLE GitResult getRemoteUrl(const QString &remoteName);
+
+signals:
+    /**
+     * @brief Emitted when an asynchronous fetch finishes.
+     *
+     * Payload keys:
+     *  - "remote": QString remote name
+     *  - "success": bool
+     *  - "errorMessage": QString (only on failure)
+     *  - "data": QVariant (result payload from Git)
+     */
+    void fetchFinished(QVariantMap result);
 private:
 
     /**
@@ -168,5 +181,9 @@ private:
     GitResult fetchInternal(const QString& remoteName,
                             std::unique_ptr<IGitAuth> auth);
 
+    /**
+     * @brief Launch asynchronous fetch and wire completion signal.
+     */
+    GitResult startAsyncFetch(const QString& remoteName,
+                              std::unique_ptr<IGitAuth> auth);
 };
-

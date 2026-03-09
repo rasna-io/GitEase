@@ -37,6 +37,7 @@ Item {
     property UserAuthenticationPopup userAuthenticationPopup: null
 
     property bool                    isFetching:             false
+    property var                     activeFetchRemotes:     []
     property string                  authPurpose:            "push"  // "push" | "fetch"
     property var                     pendingFetchRemoteNames: []    // HTTP/HTTPS remotes to fetch with token
 
@@ -66,29 +67,46 @@ Item {
     }
 
     Connections {
+        target: remoteController
+
+        function onFetchFinished(result) {
+            if (!result || !result.remote)
+                return
+
+            const remoteName = result.remote
+            root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
+
+            if (notificationController) {
+                if (result.success)
+                    notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
+                else
+                    notificationController.error("Fetch failed for " + remoteName + ": " + (result.errorMessage || "Unknown error"), "Fetch Error", 7000)
+            }
+
+            root.isFetching = root.activeFetchRemotes.length > 0 || root.pendingFetchRemoteNames.length > 0
+            root.update()
+        }
+    }
+
+    Connections {
         target: userAuthenticationPopup
 
         function onPasswordConfirm(password){
             if (root.authPurpose === "fetch") {
                 let failed = []
-                let succeeded = []
                 for (let i = 0; i < root.pendingFetchRemoteNames.length; i++) {
                     let name = root.pendingFetchRemoteNames[i]
                     let res = root.remoteController.fetchWithToken(name, password)
-                    if (res.success)
-                        succeeded.push(name)
-                    else
+                    if (res.success) {
+                        if (root.activeFetchRemotes.indexOf(name) === -1)
+                            root.activeFetchRemotes.push(name)
+                    } else
                         failed.push({ name: name, message: res.errorMessage || "Unknown error" })
                 }
-                if (root.notificationController) {
-                    if (failed.length === 0)
-                        root.notificationController.success("Fetched from all remotes: " + succeeded.join(", "), "Fetch", 5000)
-                    else if (succeeded.length === 0)
-                        root.notificationController.error("Fetch failed for: " + failed.map(f => f.name + " (" + f.message + ")").join("; "), "Fetch Error", 7000)
-                    else
-                        root.notificationController.error("Fetch failed for: " + failed.map(f => f.name + " (" + f.message + ")").join("; "), "Fetch Error", 7000)
+                if (failed.length > 0 && root.notificationController) {
+                    root.notificationController.error("Fetch failed for: " + failed.map(function(f){ return f.name + " (" + f.message + ")" }).join("; "), "Fetch Error", 7000)
                 }
-                root.isFetching = false
+                root.isFetching = root.activeFetchRemotes.length > 0
                 root.authPurpose = "push"
                 root.pendingFetchRemoteNames = []
                 root.update()
@@ -120,7 +138,7 @@ Item {
 
         function onRejected() {
             if (root.authPurpose === "fetch") {
-                root.isFetching = false
+                root.isFetching = root.activeFetchRemotes.length > 0
                 root.authPurpose = "push"
                 root.pendingFetchRemoteNames = []
             }
@@ -212,6 +230,7 @@ Item {
                                             }
                                             let httpsRemotes = []
                                             let sshFailed = []
+                                            root.activeFetchRemotes = []
                                             root.isFetching = true
                                             for (let i = 0; i < remotesRes.data.length; i++) {
                                                 let remote = remotesRes.data[i]
@@ -225,7 +244,10 @@ Item {
                                                 switch (protocol) {
                                                 case RepositoryController.GitProtocol.SSH: {
                                                     let res = remoteController.fetch(remote.name)
-                                                    if (!res.success)
+                                                    if (res.success) {
+                                                        if (root.activeFetchRemotes.indexOf(remote.name) === -1)
+                                                            root.activeFetchRemotes.push(remote.name)
+                                                    } else
                                                         sshFailed.push({ name: remote.name, message: res.errorMessage || "Fetch failed" })
                                                     break
                                                 }
@@ -240,15 +262,14 @@ Item {
                                             if (sshFailed.length > 0 && notificationController) {
                                                 let msg = sshFailed.map(f => f.name + ": " + f.message).join("; ")
                                                 notificationController.error(msg, "Fetch Error", 7000)
-                                            } else if (httpsRemotes.length === 0 && notificationController)
-                                                notificationController.success("Fetched from all remotes", "Fetch", 5000)
+                                            }
                                             if (httpsRemotes.length > 0) {
                                                 root.pendingFetchRemoteNames = httpsRemotes
                                                 root.authPurpose = "fetch"
                                                 userAuthenticationPopup.open()
-                                            } else {
-                                                root.isFetching = false
                                             }
+                                            if (httpsRemotes.length === 0 && root.activeFetchRemotes.length === 0)
+                                                root.isFetching = false
                                             root.update()
                                         }
                                     }
