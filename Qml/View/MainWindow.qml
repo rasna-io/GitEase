@@ -158,6 +158,9 @@ Rectangle {
                         if (item.hasOwnProperty("conflictController")) {
                             item.conflictController = Qt.binding(function() { return root.uiSession?.conflictController })
                         }
+                        if (item.hasOwnProperty("conflictController")) {
+                            item.conflictController = Qt.binding(function() { return root.uiSession?.conflictController })
+                        }
                     }
 
                     onStatusChanged: {

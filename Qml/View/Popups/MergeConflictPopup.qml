@@ -353,7 +353,6 @@ IPopup {
     Component {
         id: contextLineComponent
         Item {
-            id: contextLineRoot
             property int lineNumber: 0
             property string originalText: ""
 
@@ -364,29 +363,14 @@ IPopup {
                 id: textInput
                 anchors.fill: parent
                 anchors.margins: 2
+                text: root.contextLineText(lineNumber)
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 13
                 color: Style.colors.editorForeground
                 selectByMouse: true
                 verticalAlignment: TextInput.AlignTop
                 wrapMode: TextInput.NoWrap
-
-                function syncFromModel() {
-                    let nextText = root.contextLineText(contextLineRoot.lineNumber)
-                    if (text !== nextText)
-                        text = nextText
-                }
-
-                Component.onCompleted: syncFromModel()
-                onTextEdited: root.setContextLineText(contextLineRoot.lineNumber, text)
-            }
-
-            Connections {
-                target: contextLineRoot
-
-                function onLineNumberChanged() {
-                    textInput.syncFromModel()
-                }
+                onTextChanged: root.setContextLineText(lineNumber, text)
             }
 
             MouseArea {
@@ -402,17 +386,15 @@ IPopup {
     Component {
         id: blockLineComponent
         Item {
-            id: blockLineRoot
             property int blockIndex: 0
             property var lineData: null
 
             implicitHeight: textInput.implicitHeight + 4
             implicitWidth: Math.max(textInput.implicitWidth + 20, 100)
 
-            readonly property bool isMarker: lineData &&
-                                             (lineData.role === "marker-start" ||
-                                              lineData.role === "separator" ||
-                                              lineData.role === "marker-end")
+            readonly property bool isMarker: lineData.role === "marker-start" ||
+                                             lineData.role === "separator" ||
+                                             lineData.role === "marker-end"
 
             Rectangle {
                 anchors.fill: parent
@@ -420,8 +402,6 @@ IPopup {
                 z: -1
                 radius: 2
                 color: {
-                    if (!lineData)
-                        return "transparent"
                     if (lineData.role === "marker-start")
                         return Style.colors.conflictMarkerStartBg
                     if (lineData.role === "ours")
@@ -440,6 +420,7 @@ IPopup {
                 id: textInput
                 anchors.fill: parent
                 anchors.margins: 2
+                text: root.blockLineText(blockIndex, lineData.number)
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 13
                 color: isMarker ? Style.colors.conflictMarkerText : Style.colors.editorForeground
@@ -447,38 +428,17 @@ IPopup {
                 readOnly: isMarker
                 verticalAlignment: TextInput.AlignTop
                 wrapMode: TextInput.NoWrap
-                
-                function syncFromModel() {
-                    let lineNumber = blockLineRoot.lineData ? blockLineRoot.lineData.number : -1
-                    let nextText = root.blockLineText(blockLineRoot.blockIndex, lineNumber)
-                    if (text !== nextText)
-                        text = nextText
+                onTextChanged: {
+                    if (!isMarker)
+                        root.setBlockLineText(blockIndex, lineData.number, text)
                 }
 
-                Component.onCompleted: syncFromModel()
-                onTextEdited: {
-                    if (!blockLineRoot.isMarker && blockLineRoot.lineData)
-                        root.setBlockLineText(blockLineRoot.blockIndex, blockLineRoot.lineData.number, text)
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.IBeamCursor
+                    hoverEnabled: true
+                    acceptedButtons: Qt.NoButton
                 }
-            }
-
-            Connections {
-                target: blockLineRoot
-
-                function onBlockIndexChanged() {
-                    textInput.syncFromModel()
-                }
-
-                function onLineDataChanged() {
-                    textInput.syncFromModel()
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.IBeamCursor
-                hoverEnabled: true
-                acceptedButtons: Qt.NoButton
             }
         }
     }
@@ -646,19 +606,14 @@ IPopup {
     }
 
     function contextLineText(lineNumber) {
-        if (!selectedConflict || !selectedConflict.lines)
-            return ""
 
         // Check if this line has been edited
         return contextEdits[lineNumber] !== undefined
             ? contextEdits[lineNumber]              // Use edited version
-            : (selectedConflict.lines[lineNumber - 1] || "")  // Use original
+            : selectedConflict.lines[lineNumber-1]  // Use original
     }
 
     function blockLineText(blockIndex, lineNumber) {
-        if (!selectedConflict || !selectedConflict.blocks || lineNumber < 0)
-            return ""
-
         let key = blockIndex + ":" + lineNumber
 
         // Check if this line has been edited
@@ -719,8 +674,8 @@ IPopup {
 
     function updateContentWidth() {
         var maxWidth = 0
-        for (var i = 0; i < listView.count; i++) {
-            var item = listView.itemAtIndex(i)
+        for (var i = 0; i < count; i++) {
+            var item = itemAtIndex(i)
             if (item) {
                 maxWidth = Math.max(maxWidth, item.width)
             }
