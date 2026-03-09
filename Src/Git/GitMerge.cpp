@@ -231,8 +231,8 @@ GitResult GitMerge::finalizeAutomaticMerge(git_reference* sourceRef,
 
 GitResult GitMerge::continueMerge(const QString& commitMessage)
 {
-    if (!m_mergeInProgress)
-        return GitResult(false, QVariant(), "No merge is currently in progress.");
+    // if (!m_mergeInProgress)
+    //     return GitResult(false, QVariant(), "No merge is currently in progress.");
 
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository is not open.");
