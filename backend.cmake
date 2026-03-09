@@ -11,6 +11,7 @@ set(SOURCES_BACKEND
     Src/Git/GitCommit.cpp
     Src/Git/GitStatus.cpp
     Src/Git/GitRemote.cpp
+    Src/Git/GitRebase.cpp
     Src/Git/GitBundle.cpp
     Src/Git/GitConfig.cpp
     Src/Git/GitStash.cpp
@@ -42,6 +43,7 @@ set(HEADERS_BACKEND
     Src/Git/GitCommit.h
     Src/Git/GitStatus.h
     Src/Git/GitRemote.h
+    Src/Git/GitRebase.h
     Src/Git/GitBundle.h
     Src/Git/GitConfig.h
     Src/Git/GitStash.h
