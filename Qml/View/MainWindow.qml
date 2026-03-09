@@ -155,6 +155,9 @@ Rectangle {
                         if (item.hasOwnProperty("repoForestPopup")) {
                             item.repoForestPopup = Qt.binding(function() { return root.uiSession?.popups?.repoForestPopup })
                         }
+                        if (item.hasOwnProperty("conflictController")) {
+                            item.conflictController = Qt.binding(function() { return root.uiSession?.conflictController })
+                        }
                     }
 
                     onStatusChanged: {

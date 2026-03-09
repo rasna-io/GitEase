@@ -9,7 +9,6 @@ import GitEase
 import "qrc:/GitEase/Qml/Core/Scripts/GraphLayout.js" as GraphLayout
 import "qrc:/GitEase/Qml/Core/Scripts/GraphUtils.js" as GraphUtils
 
-
 /*! ***********************************************************************************************
  * CommitGraphDock
  * show graph and commits
@@ -24,6 +23,8 @@ Item {
 
     property MergeController mergeController: null
 
+    property ConflictController conflictController: null
+
     property AddBranchPopup addBranchPopup: null
 
     property StatusController statusController: null
@@ -35,6 +36,13 @@ Item {
     property NotificationController notificationController: null
 
     property StashController stashController: null
+    MergeConflictPopup {
+        id: mergeConflictPopup
+
+        mergeController: root.mergeController
+        conflictController: root.conflictController
+        notificationController: root.notificationController
+    }
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -2159,13 +2167,39 @@ Item {
                 enabled: !isCurrentHead,
                 action: function() {
                     let res = mergeController.mergeBranchIntoCurrent(bName);
-                    if (res.success) {
+
+                    if (mergeController.hasMergeConflicts()) {
+
+                        mergeConflictPopup.open()
+
                         if (notificationController)
-                            notificationController.success("Merge started", "Merge", 3000)
-                    } else if (notificationController) {
-                        const isConflict = res.errorMessage && res.errorMessage.toLowerCase().includes("conflict")
-                        notificationController[isConflict ? "warning" : "error"](res.errorMessage || "Merge failed", "Merge", 5000)
+                            notificationController.warning(
+                                "Merge conflicts detected. Please resolve them.",
+                                "Merge",
+                                4000
+                            )
+
+                        return
                     }
+
+                    if (!res.success) {
+
+                        if (notificationController)
+                            notificationController.error(
+                                res.errorMessage || "Merge failed",
+                                "Merge",
+                                5000
+                            );
+
+                        return;
+                    }
+
+                    if (notificationController)
+                        notificationController.success(
+                            "Merge completed successfully",
+                            "Merge",
+                            3000
+                        );
                 }
             });
 
