@@ -114,10 +114,6 @@ Item {
                 visible: !headerRow.compact
             }
 
-            Item {
-                Layout.fillWidth: true
-            }
-
             ToolButton {
                 id: pullBtn
                 Layout.preferredWidth: headerRow.compact ? 26 : 70
@@ -193,6 +189,87 @@ Item {
                 ToolTip.visible: pullBtn.hovered
                 ToolTip.text: "Pull from origin"
                 ToolTip.delay: 600
+            }
+
+            ToolButton {
+                id: pushBtnHeader
+                Layout.preferredWidth: headerRow.compact ? 26 : 68
+                Layout.preferredHeight: 26
+                hoverEnabled: true
+
+                text: Style.icons.arrowUp
+                font.family: Style.fontTypes.font6ProSolid
+                font.pixelSize: 13
+
+                contentItem: Item {
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text {
+                            text: pushBtnHeader.text
+                            font: pushBtnHeader.font
+                            color: Style.colors.foreground
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Text {
+                            text: "Push"
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            color: Style.colors.foreground
+                            visible: !headerRow.compact
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+
+                background: Rectangle {
+                    radius: 5
+                    color: !pushBtnHeader.enabled ? Style.colors.primaryBackground :
+                           pushBtnHeader.down ? Style.colors.surfaceMuted :
+                           pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
+
+                onClicked: {
+                    let res = remoteController.getRemoteUrl("origin")
+                    if (!res.success) {
+                        if (notificationController)
+                            notificationController.error(res.errorMessage || "Failed to get remote URL", "Push Error", 5000)
+                        return
+                    }
+                    let url = res.data.url
+                    let protocol = repositoryController.detectGitProtocol(url)
+                    switch (protocol) {
+                    case RepositoryController.GitProtocol.SSH: {
+                        let branchName = branchController.getCurrentBranchName()
+                        let remoteRes = remoteController.push("origin", branchName, false)
+                        if (!remoteRes.success) {
+                            if (notificationController)
+                                notificationController.error(remoteRes.errorMessage || "Push failed", "Push Error", 5000)
+                        } else {
+                            if (notificationController)
+                                notificationController.success("Changes pushed successfully", "Push", 3000)
+                        }
+                        break
+                    }
+                    case RepositoryController.GitProtocol.HTTPS:
+                    case RepositoryController.GitProtocol.HTTP:
+                        root.authPurpose = "push"
+                        userAuthenticationPopup.open()
+                        break
+                    default:
+                        if (notificationController)
+                            notificationController.error("Unsupported protocol", "Push Error", 5000)
+                    }
+                }
+
+                ToolTip.visible: pushBtnHeader.hovered
+                ToolTip.text: "Push to origin"
+                ToolTip.delay: 600
+            }
+
+            Item {
+                Layout.fillWidth: true
             }
 
             ToolButton {
@@ -286,83 +363,6 @@ Item {
 
                 ToolTip.visible: fetchBtnHeader.hovered
                 ToolTip.text: root.isFetching ? "Fetching…" : "Fetch all remotes"
-                ToolTip.delay: 600
-            }
-
-            ToolButton {
-                id: pushBtnHeader
-                Layout.preferredWidth: headerRow.compact ? 26 : 68
-                Layout.preferredHeight: 26
-                hoverEnabled: true
-
-                text: Style.icons.arrowUp
-                font.family: Style.fontTypes.font6ProSolid
-                font.pixelSize: 13
-
-                contentItem: Item {
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 5
-                        Text {
-                            text: pushBtnHeader.text
-                            font: pushBtnHeader.font
-                            color: Style.colors.foreground
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: "Push"
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
-                            color: Style.colors.foreground
-                            visible: !headerRow.compact
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-                }
-
-                background: Rectangle {
-                    radius: 5
-                    color: !pushBtnHeader.enabled ? Style.colors.primaryBackground :
-                           pushBtnHeader.down ? Style.colors.surfaceMuted :
-                           pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                }
-
-                onClicked: {
-                    let res = remoteController.getRemoteUrl("origin")
-                    if (!res.success) {
-                        if (notificationController)
-                            notificationController.error(res.errorMessage || "Failed to get remote URL", "Push Error", 5000)
-                        return
-                    }
-                    let url = res.data.url
-                    let protocol = repositoryController.detectGitProtocol(url)
-                    switch (protocol) {
-                    case RepositoryController.GitProtocol.SSH: {
-                        let branchName = branchController.getCurrentBranchName()
-                        let remoteRes = remoteController.push("origin", branchName, false)
-                        if (!remoteRes.success) {
-                            if (notificationController)
-                                notificationController.error(remoteRes.errorMessage || "Push failed", "Push Error", 5000)
-                        } else {
-                            if (notificationController)
-                                notificationController.success("Changes pushed successfully", "Push", 3000)
-                        }
-                        break
-                    }
-                    case RepositoryController.GitProtocol.HTTPS:
-                    case RepositoryController.GitProtocol.HTTP:
-                        root.authPurpose = "push"
-                        userAuthenticationPopup.open()
-                        break
-                    default:
-                        if (notificationController)
-                            notificationController.error("Unsupported protocol", "Push Error", 5000)
-                    }
-                }
-
-                ToolTip.visible: pushBtnHeader.hovered
-                ToolTip.text: "Push to origin"
                 ToolTip.delay: 600
             }
 
