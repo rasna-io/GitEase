@@ -28,6 +28,8 @@ Item {
     readonly property var           currentRepo: appModel?.currentRepository ?? null
     property string                 selectedCommit: ""
     property string                 selectedFilePath: ""
+    property ConflictController conflictController: null
+    property MergeController mergeController: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -35,32 +37,6 @@ Item {
 
     /* Children
      * ****************************************************************************************/
-    // Provided by MainWindow Loader (current Page model)
-    property var page: null
-
-    // Provided by MainWindow Loader (UiSession context)
-    property AppModel appModel: null
-
-    property BranchController branchController: null
-
-    property MergeController mergeController: null
-
-    property ConflictController conflictController: null
-
-    property CommitController commitController: null
-
-    property StatusController statusController: null
-
-    property RepositoryController repositoryController: null
-    
-    property NotificationController notificationController: null
-
-    property UiSessionPopups  uiSessionPopups: null
-
-    readonly property var currentRepo: appModel?.currentRepository ?? null
-
-    property string selectedCommit: ""
-    property string selectedFilePath: ""
 
     onSelectedCommitChanged: {
         fileChangesDock.commitHash = root.selectedCommit
