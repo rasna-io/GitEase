@@ -160,7 +160,7 @@ IPopup {
                     Layout.fillHeight: true
 
                     radius: 4
-                    color: Style.colors.primaryBackground
+                    color: Style.colors.editorBackgroound
                     border.width: 1
                     border.color: Style.colors.primaryBorder
 
@@ -168,7 +168,7 @@ IPopup {
                         anchors.fill: parent
                         model: displayRows
                         clip: true
-                        spacing: 1
+                        spacing: 5
 
                         delegate: RowLayout {
                             width: parent.width
@@ -259,7 +259,7 @@ IPopup {
                 text: root.contextLineText(lineNumber)
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 12
-                color: Style.colors.foreground
+                color: Style.colors.secondaryText
                 selectByMouse: true
                 verticalAlignment: TextInput.AlignTop
 
@@ -283,9 +283,12 @@ IPopup {
                 anchors.fill: parent
                 anchors.margins: -2
                 z: -1
+                opacity: .5
                 color: {
-                    if (lineData.role === "ours") return "#2d5a3a"
-                    if (lineData.role === "theirs") return "#1e4a6f"
+                    if (lineData.role === "marker-start") return "#50A168"
+                    if (lineData.role === "ours") return "#3D7A4F"
+                    if (lineData.role === "theirs") return "#255C8A"
+                    if (lineData.role === "marker-end") return "#3077B3"
                     return "transparent"
                 }
                 radius: 2
@@ -297,7 +300,7 @@ IPopup {
                 text: root.blockLineText(blockIndex, lineData.number)
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 12
-                color: isMarker ? "#6e7681" : Style.colors.foreground
+                color: Style.colors.secondaryText
                 selectByMouse: true
                 readOnly: isMarker
                 verticalAlignment: TextInput.AlignTop
@@ -310,54 +313,47 @@ IPopup {
         id: blockButtonComponent
         Item {
             property int blockIndex: 0
-            implicitHeight: 28
+            implicitHeight: current.implicitHeight
 
             RowLayout {
                 anchors.fill: parent
-                spacing: 8
+                spacing:2
+                Layout.alignment: Qt.AlignVCenter
 
-                Button {
-                    text: "Accept Current"
-                    flat: true
-                    onClicked: root.acceptBlock(blockIndex, "ours")
-                    background: Rectangle {
-                        color: parent.hovered ? "#3a3d41" : "transparent"
-                        radius: 2
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: "#75beff"
-                        font.pixelSize: 12
+                Text {
+                    id: current
+                    text: "Accept Current | "
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Style.colors.mutedText
+                    font.pixelSize: 10
+                    MouseArea{
+                        anchors.fill: parent
+                        onClicked: root.acceptBlock(blockIndex, "ours")
+                        cursorShape: Qt.PointingHandCursor
                     }
                 }
 
-                Button {
-                    text: "Accept Incoming"
-                    flat: true
-                    onClicked: root.acceptBlock(blockIndex, "theirs")
-                    background: Rectangle {
-                        color: parent.hovered ? "#3a3d41" : "transparent"
-                        radius: 2
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: "#75beff"
-                        font.pixelSize: 12
+                Text {
+                    text: "Accept Incoming | "
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Style.colors.mutedText
+                    font.pixelSize: 10
+                    MouseArea{
+                        anchors.fill: parent
+                        onClicked: root.acceptBlock(blockIndex, "theirs")
+                        cursorShape: Qt.PointingHandCursor
                     }
                 }
 
-                Button {
+                Text {
                     text: "Accept Both"
-                    flat: true
-                    onClicked: root.acceptBlock(blockIndex, "both")
-                    background: Rectangle {
-                        color: parent.hovered ? "#3a3d41" : "transparent"
-                        radius: 2
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: "#75beff"
-                        font.pixelSize: 12
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Style.colors.mutedText
+                    font.pixelSize: 10
+                    MouseArea{
+                        anchors.fill: parent
+                        onClicked: root.acceptBlock(blockIndex, "both")
+                        cursorShape: Qt.PointingHandCursor
                     }
                 }
 
