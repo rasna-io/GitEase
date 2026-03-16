@@ -11,7 +11,6 @@ import GitEase_Style_Impl
  * ************************************************************************************************/
 
 IPopup {
-
     id: root
 
     /* Property Declarations
@@ -22,7 +21,7 @@ IPopup {
 
     property var conflicts: []
     property var selectedConflict: null
-    property string selectedFilePath: ""
+    property string selectedPath: ""
 
     /* Object Properties
      * ****************************************************************************************/
@@ -31,13 +30,23 @@ IPopup {
     height: 650
     padding: 12
 
-    readonly property bool canContinueMerge: conflicts.length === 0
+    // modal: true
+    // focus: true
+    // closePolicy: Popup.CloseOnEscape
+
+
+
+    // Flat list of rows to display in the editor
+    property var displayRows: []
+
+    // Edit buffers
+    property var contextEdits: ({})
+    property var blockEdits: ({})
 
     onOpened: loadConflicts()
 
-    /* Children
-     * ****************************************************************************************/
     contentItem: Rectangle {
+
         color: Style.colors.primaryBackground
         radius: 16
         clip: true
@@ -49,16 +58,18 @@ IPopup {
             anchors.fill: parent
             anchors.margins: 20
 
-            RowLayout {
-
+            // Header
+            RowLayout{
                 Layout.fillWidth: true
 
                 Text {
                     Layout.fillWidth: true
                     text: "Merge Conflicts"
                     color: Style.colors.foreground
+                    font.family: Style.fontTypes.roboto
                     font.bold: true
-                    font.pixelSize: 12
+                    elide: Text.ElideLeft
+                    font.pixelSize: 11
                 }
 
                 // Close Button
@@ -93,244 +104,401 @@ IPopup {
                 }
             }
 
-            Rectangle {
-
+            // Content
+            RowLayout{
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                spacing: 8
 
-                radius: 6
-                color: Style.colors.secondaryBackground
-                border.width: 1
-                border.color: Style.colors.primaryBorder
+                // Left panel: file list
+                Rectangle{
+                    Layout.preferredWidth: 240
+                    Layout.fillHeight: true
 
-                RowLayout {
+                    radius: 4
+                    color: Style.colors.primaryBackground
+                    border.width: 1
+                    border.color: Style.colors.primaryBorder
 
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 8
-
-                    Rectangle{
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-
-                        radius: 4
-                        color: Style.colors.primaryBackground
-                        border.width: 1
-                        border.color: Style.colors.primaryBorder
-
-                        ColumnLayout{
-                            anchors.fill: parent
-                            anchors.margins: 6
-
-                            Text {
-                                text: "Conflicted files"
-                                font.bold: true
-                                color: Style.colors.foreground
-                            }
-
-                            ListView {
-                                id: listView
-                                Layout.preferredWidth: 240
-                                Layout.fillHeight: true
-
-                                model: root.conflicts
-
-                                delegate: Rectangle {
-                                    width: parent.width
-                                    height: 24
-                                    radius: 3
-                                    color: root.selectedFilePath === modelData.path
-                                           ? Style.colors.hoverTitle
-                                           : "transparent"
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 6
-                                        Layout.fillWidth: true
-
-                                        text: listView.currentIndex + 1 + ") " + modelData.path || ""
-                                        font.family: Style.fontTypes.roboto
-                                        color: Style.colors.foreground
-                                        font.pixelSize: 13
-                                        elide: Text.ElideMiddle
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: root.selectFile(modelData)
-                                    }
-                                }
-                            }
+                    ListView {
+                        anchors.fill: parent
+                        model: conflicts
+                        spacing: 1
+                        currentIndex: {
+                            for (let i = 0; i < conflicts.length; ++i)
+                                if (conflicts[i].path === selectedPath) return i
+                            return -1
                         }
-                    }
 
-                    /* OURS PANEL */
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-
-                        radius: 4
-                        color: Style.colors.primaryBackground
-                        border.width: 1
-                        border.color: Style.colors.primaryBorder
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 6
+                        delegate: Rectangle {
+                            width: parent.width
+                            height: 24
+                            radius: 3
+                            color: ListView.isCurrentItem ? Style.colors.hoverTitle : "transparent"
 
                             Text {
-                                text: "Current (ours)"
-                                font.bold: true
+                                anchors.left: parent.left
+                                anchors.leftMargin: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: modelData.path || ""
+                                font.family: Style.fontTypes.roboto
                                 color: Style.colors.foreground
+                                font.pixelSize: 13
+                                elide: Text.ElideMiddle
                             }
 
-                            ScrollView {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-
-                                TextArea {
-
-                                    readOnly: true
-                                    wrapMode: TextEdit.NoWrap
-                                    text: root.selectedConflict
-                                          ? root.selectedConflict.ourContent
-                                          : ""
-                                }
-                            }
-
-                            Button {
-                                text: "Use Current"
-                                flat: true
-                                Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                                background: Rectangle {
-                                    color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                                    border.color: Style.colors.accent
-                                    radius: 5
-                                }
-
-                                onClicked: {
-                                    if (!root.selectedConflict)
-                                        return
-
-                                    conflictController.acceptConflictOurs(
-                                                root.selectedConflict.path
-                                                )
-
-                                    root.loadConflicts()
-                                }
-                            }
-                        }
-                    }
-
-                    /* THEIRS PANEL */
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-
-                        radius: 4
-                        color: Style.colors.primaryBackground
-                        border.width: 1
-                        border.color: Style.colors.primaryBorder
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 6
-
-                            Text {
-                                text: "Incoming (theirs)"
-                                font.bold: true
-                                color: Style.colors.foreground
-                            }
-
-                            ScrollView {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-
-                                TextArea {
-
-                                    readOnly: true
-                                    wrapMode: TextEdit.NoWrap
-                                    text: root.selectedConflict
-                                          ? root.selectedConflict.theirContent
-                                          : ""
-                                }
-                            }
-
-                            Button {
-                                text: "Use Incoming"
-                                flat: true
-                                Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                                background: Rectangle {
-                                    color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                                    border.color: Style.colors.accent
-                                    radius: 5
-                                }
-
-                                onClicked: {
-                                    if (!root.selectedConflict)
-                                        return
-
-                                    conflictController.acceptConflictTheirs(
-                                                root.selectedConflict.path
-                                                )
-
-                                    root.loadConflicts()
-                                }
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: root.selectFile(modelData.path)
                             }
                         }
                     }
                 }
-            }
 
-            /* Bottom Actions */
-            RowLayout {
-                Item {
+                Rectangle{
+
                     Layout.fillWidth: true
-                }
+                    Layout.fillHeight: true
 
-                Button {
-                    text: "Continue Merge"
-                    enabled: root.canContinueMerge
+                    radius: 4
+                    color: Style.colors.primaryBackground
+                    border.width: 1
+                    border.color: Style.colors.primaryBorder
 
-                    flat: true
-                    Material.foreground: hovered & enabled ? Style.colors.secondaryForeground : Style.colors.foreground
-                    background: Rectangle {
-                        color: parent.hovered & enabled ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
-                    }
+                    ListView {
+                        anchors.fill: parent
+                        model: displayRows
+                        clip: true
+                        spacing: 1
 
-                    onClicked: {
-                        let res = mergeController.continueMerge()
+                        delegate: RowLayout {
+                            width: parent.width
+                            spacing: 0
 
-                        if (res.success)
-                            root.close()
+                            // Line number column
+                            Rectangle {
+                                Layout.preferredWidth: 50
+                                Layout.fillHeight: true
+                                color: "transparent"
+
+                                Text {
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 8
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Style.colors.foreground
+                                    font.family: "Courier New"
+                                    font.pixelSize: 12
+                                    visible: text !== ""
+
+                                    text: {
+                                        if (modelData.type === "contextLine")
+                                            return modelData.lineNumber
+                                        if (modelData.type === "blockLine")
+                                            return modelData.line.number
+                                        return ""
+                                    }
+                                }
+                            }
+
+                            // Separator
+                            Rectangle {
+                                Layout.preferredWidth: 1
+                                Layout.fillHeight: true
+                                color: "#3c3c3c"
+                            }
+
+                            // Content
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                implicitHeight: loader.implicitHeight
+
+                                Loader {
+                                    id: loader
+                                    anchors.fill: parent
+                                    anchors.margins: 2
+                                    sourceComponent: {
+                                        if (modelData.type === "contextLine")
+                                            return contextLineComponent
+                                        if (modelData.type === "blockLine")
+                                            return blockLineComponent
+                                        if (modelData.type === "blockButton")
+                                            return blockButtonComponent
+                                        return null
+                                    }
+                                    onLoaded: {
+                                        if (modelData.type === "contextLine") {
+                                            item.lineNumber = modelData.lineNumber
+                                            item.originalText = modelData.text
+                                        } else if (modelData.type === "blockLine") {
+                                            item.blockIndex = modelData.blockIndex
+                                            item.lineData = modelData.line
+                                        } else if (modelData.type === "blockButton") {
+                                            item.blockIndex = modelData.blockIndex
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    /* Functions
-     * ****************************************************************************************/
+    // Context line component
+    Component {
+        id: contextLineComponent
+        Item {
+            property int lineNumber: 0
+            property string originalText: ""
+            implicitHeight: textInput.implicitHeight
+
+            TextInput {
+                id: textInput
+                anchors.fill: parent
+                text: root.contextLineText(lineNumber)
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 12
+                color: Style.colors.foreground
+                selectByMouse: true
+                verticalAlignment: TextInput.AlignTop
+
+            }
+        }
+    }
+
+    // Block line component (a line inside a conflict block)
+    Component {
+        id: blockLineComponent
+        Item {
+            property int blockIndex: 0
+            property var lineData: null
+            implicitHeight: textInput.implicitHeight
+
+            readonly property bool isMarker: lineData.role === "marker-start" ||
+                                             lineData.role === "separator" ||
+                                             lineData.role === "marker-end"
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: -2
+                z: -1
+                color: {
+                    if (lineData.role === "ours") return "#2d5a3a"
+                    if (lineData.role === "theirs") return "#1e4a6f"
+                    return "transparent"
+                }
+                radius: 2
+            }
+
+            TextInput {
+                id: textInput
+                anchors.fill: parent
+                text: root.blockLineText(blockIndex, lineData.number)
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 12
+                color: isMarker ? "#6e7681" : Style.colors.foreground
+                selectByMouse: true
+                readOnly: isMarker
+                verticalAlignment: TextInput.AlignTop
+            }
+        }
+    }
+
+    // Block button component (appears before each conflict block)
+    Component {
+        id: blockButtonComponent
+        Item {
+            property int blockIndex: 0
+            implicitHeight: 28
+
+            RowLayout {
+                anchors.fill: parent
+                spacing: 8
+
+                Button {
+                    text: "Accept Current"
+                    flat: true
+                    onClicked: root.acceptBlock(blockIndex, "ours")
+                    background: Rectangle {
+                        color: parent.hovered ? "#3a3d41" : "transparent"
+                        radius: 2
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: "#75beff"
+                        font.pixelSize: 12
+                    }
+                }
+
+                Button {
+                    text: "Accept Incoming"
+                    flat: true
+                    onClicked: root.acceptBlock(blockIndex, "theirs")
+                    background: Rectangle {
+                        color: parent.hovered ? "#3a3d41" : "transparent"
+                        radius: 2
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: "#75beff"
+                        font.pixelSize: 12
+                    }
+                }
+
+                Button {
+                    text: "Accept Both"
+                    flat: true
+                    onClicked: root.acceptBlock(blockIndex, "both")
+                    background: Rectangle {
+                        color: parent.hovered ? "#3a3d41" : "transparent"
+                        radius: 2
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: "#75beff"
+                        font.pixelSize: 12
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+            }
+        }
+    }
+
 
     function loadConflicts() {
         if (!conflictController)
             return
 
         let res = conflictController.getMergeConflicts()
-
         if (!res.success) {
             if (notificationController)
                 notificationController.error(res.errorMessage, "Conflicts", 4000)
             return
         }
+
         conflicts = res.data || []
+        if (conflicts.length > 0) {
+            selectFile(conflicts[0].path)
+        } else {
+            selectedConflict = null
+            selectedPath = ""
+            displayRows = []
+        }
     }
 
-    function selectFile(conflictEntry) {
-        root.selectedConflict = conflictEntry
-        root.selectedFilePath = conflictEntry.path
+    function selectFile(path) {
+        for (let i = 0; i < conflicts.length; ++i) {
+            if (conflicts[i].path === path) {
+
+                contextEdits = {}
+                blockEdits = {}
+
+                selectedConflict = conflicts[i]
+                selectedPath = path
+                buildDisplayRows()
+                break
+            }
+        }
     }
+
+    function buildDisplayRows() {
+        if (!selectedConflict) {
+            displayRows = []
+            return
+        }
+
+        let lines = selectedConflict.lines || []        // full file
+        let blocks = selectedConflict.blocks || []      // conflict metadata
+        let blockMap = {}
+        for (let b of blocks)
+            blockMap[b.startLine] = b
+
+        let rows = []
+        let i = 0
+        while (i < lines.length) {
+            let lineNumber = i + 1
+            if (blockMap[lineNumber]) {
+                let block = blockMap[lineNumber]
+                // Button row
+                rows.push({
+                    type: "blockButton",
+                    blockIndex: block.index,
+                    block: block
+                })
+                // All lines of the block
+                for (let j = 0; j < block.lines.length; ++j) {
+                    rows.push({
+                        type: "blockLine",
+                        blockIndex: block.index,
+                        line: block.lines[j]
+                    })
+                }
+                i = block.endLine  // past block
+            } else {
+                rows.push({
+                    type: "contextLine",
+                    lineNumber: lineNumber,
+                    text: lines[i]
+                })
+                i++
+            }
+        }
+        displayRows = rows
+    }
+
+    function contextLineText(lineNumber) {
+        return contextEdits[lineNumber] !== undefined ? contextEdits[lineNumber] : selectedConflict.lines[lineNumber-1]
+    }
+
+
+
+    function blockLineText(blockIndex, lineNumber) {
+        let key = blockIndex + ":" + lineNumber
+        if (blockEdits[key] !== undefined)
+            return blockEdits[key]
+        // fallback: find original line text
+        for (let b of selectedConflict.blocks) {
+            if (b.index === blockIndex) {
+                for (let l of b.lines) {
+                    if (l.number === lineNumber)
+                        return l.text
+                }
+            }
+        }
+        return ""
+    }
+
+    function acceptBlock(blockIndex, mode) {
+        if (!selectedPath || !conflictController) return
+        let res
+        if (mode === "ours")
+            res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
+        else if (mode === "theirs")
+            res = conflictController.acceptBlockTheirs(selectedPath, blockIndex)
+        else if (mode === "both")
+            res = conflictController.acceptBlockBoth(selectedPath, blockIndex)
+        else return
+
+        if (!res.success) {
+            if (notificationController)
+                notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
+        } else {
+            loadConflicts()
+            selectFile(selectedPath)
+        }
+    }
+
+    function continueMerge() {
+        if (!mergeController) return
+        let res = mergeController.continueMerge()
+        if (res.success) {
+            close()
+        } else {
+            if (notificationController)
+                notificationController.error(res.errorMessage, "Merge", 4000)
+        }
+    }
+
 }

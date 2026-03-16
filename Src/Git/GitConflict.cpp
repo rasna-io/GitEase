@@ -2,7 +2,7 @@
 #include <git2.h>
 #include <QFile>
 #include <QDir>
-#include <QFileInfo>
+#include <QTextStream>
 
 GitConflict::GitConflict(QObject* parent)
     : IGitController(parent)
@@ -21,19 +21,12 @@ GitResult GitConflict::getMergeConflicts()
     QVariantList conflicts;
 
     if (git_index_has_conflicts(index)) {
-
         git_index_conflict_iterator* iter = nullptr;
-
         if (git_index_conflict_iterator_new(&iter, index) == 0) {
-
-            const git_index_entry* ancestor = nullptr;
-            const git_index_entry* ours = nullptr;
-            const git_index_entry* theirs = nullptr;
-
+            const git_index_entry *ancestor, *ours, *theirs;
             while (git_index_conflict_next(&ancestor, &ours, &theirs, iter) == 0) {
-
+                // Determine file path
                 QString path;
-
                 if (ours && ours->path)
                     path = QString::fromUtf8(ours->path);
                 else if (theirs && theirs->path)
@@ -44,118 +37,215 @@ GitResult GitConflict::getMergeConflicts()
                 if (path.isEmpty())
                     continue;
 
+                // Read working file lines
+                QStringList lines = readWorkdirLines(path);
+                if (lines.isEmpty())
+                    continue; // Should not happen, but skip if file missing
+
+                // Parse conflict blocks
+                QVariantList blocks = parseConflictBlocks(lines);
+
                 QVariantMap entry;
-
                 entry["path"] = path;
-                entry["baseContent"] = readBlobContent(ancestor);
-                entry["ourContent"] = readBlobContent(ours);
-                entry["theirContent"] = readBlobContent(theirs);
-
+                entry["lines"] = lines;
+                entry["blocks"] = blocks;
                 conflicts.append(entry);
             }
-
             git_index_conflict_iterator_free(iter);
         }
     }
 
     git_index_free(index);
-
     return GitResult(true, conflicts);
 }
 
-GitResult GitConflict::acceptConflictOurs(const QString& filePath)
+
+QStringList GitConflict::readWorkdirLines(const QString& filePath) const
 {
-    return writeConflictFromStage(filePath, 2); // stage 2 = ours
-}
-
-GitResult GitConflict::acceptConflictTheirs(const QString& filePath)
-{
-    return writeConflictFromStage(filePath, 3); // stage 3 = theirs
-}
-
-GitResult GitConflict::writeConflictFromStage(const QString& filePath, int stage)
-{
-    if (!m_currentRepo || !m_currentRepo->repo)
-        return GitResult(false, QVariant(), "Repository is not open.");
-
-    if (filePath.isEmpty())
-        return GitResult(false, QVariant(), "File path cannot be empty.");
-
-    // Get the working directory path
     const char* workdir = git_repository_workdir(m_currentRepo->repo);
     if (!workdir)
-        return GitResult(false, QVariant(), "Cannot modify file in a bare repository.");
+        return QStringList();
 
-    git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK)
-        return GitResult(false, QVariant(), "Failed to open repository index.");
-
-    // Retrieve the index entry for the requested stage
-    const git_index_entry* entry = git_index_get_bypath(index,
-                                                        filePath.toUtf8().constData(),
-                                                        stage);
-    if (!entry) {
-        git_index_free(index);
-        return GitResult(false, QVariant(), QString("No entry found for stage %1.").arg(stage));
-    }
-
-    // Read blob content
-    git_blob* blob = nullptr;
-    if (git_blob_lookup(&blob, m_currentRepo->repo, &entry->id) != GIT_OK) {
-        git_index_free(index);
-        return GitResult(false, QVariant(), "Failed to read blob content.");
-    }
-
-    QByteArray content(reinterpret_cast<const char*>(git_blob_rawcontent(blob)),
-                       static_cast<int>(git_blob_rawsize(blob)));
-    git_blob_free(blob);
-
-    // Construct absolute file path
-    QString fullPath = QString::fromUtf8(workdir) + QDir::separator() + filePath;
-    QFileInfo fileInfo(fullPath);
-    // Ensure directory exists
-    fileInfo.dir().mkpath(".");
-
+    QString fullPath = QDir(QString::fromUtf8(workdir)).filePath(filePath);
     QFile file(fullPath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        git_index_free(index);
-        return GitResult(false, QVariant(), "Failed to write file to working directory.");
-    }
-    file.write(content);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return QStringList();
+
+    QTextStream stream(&file);
+    QString content = stream.readAll();
     file.close();
 
-    // Stage the resolved file (this removes conflict markers in the index)
-    if (git_index_add_bypath(index, filePath.toUtf8().constData()) != GIT_OK) {
-        git_index_free(index);
-        return GitResult(false, QVariant(), "Failed to stage the resolved file.");
-    }
-
-    if (git_index_write(index) != GIT_OK) {
-        git_index_free(index);
-        return GitResult(false, QVariant(), "Failed to write index.");
-    }
-
-    git_index_free(index);
-
-    // Emit command for logging
-    QString flag = (stage == 2) ? "--ours" : "--theirs";
-    emitGitCommand(QString("git checkout %1 %2").arg(flag, quoteCommandArg(filePath)));
-
-    return GitResult(true, QVariant(), QString("Applied '%1' version for %2.")
-                                           .arg(stage == 2 ? "ours" : "theirs", filePath));
+    // Normalize line endings
+    content.replace("\r\n", "\n");
+    content.replace('\r', '\n');
+    return content.split('\n', Qt::KeepEmptyParts);
 }
 
-QString GitConflict::readBlobContent(const git_index_entry* entry) const
+QVariantList GitConflict::parseConflictBlocks(const QStringList& lines) const
 {
-    if (!entry || !m_currentRepo || !m_currentRepo->repo)
-        return QString();
+    QVariantList blocks;
+    enum State
+    {
+        Neutral, InOurs, InTheirs
+    } state = Neutral;
 
-    git_blob* blob = nullptr;
-    if (git_blob_lookup(&blob, m_currentRepo->repo, &entry->id) != GIT_OK)
-        return QString();
+    int blockIndex = 0;         // unique conflict id
+    int startLine = 0;          // where conflict begins
+    QStringList oursLines, theirsLines;  // collected HEAD lines // collected incoming lines
+    QVariantList blockLines; // for debug/display
 
-    QString content = QString::fromUtf8(reinterpret_cast<const char*>(git_blob_rawcontent(blob)),
-                                        static_cast<int>(git_blob_rawsize(blob)));
-    git_blob_free(blob);
-    return content;
+    for (int i = 0; i < lines.size(); ++i) {
+        const QString& line = lines[i];
+        int lineNumber = i + 1;
+
+        if (line.startsWith("<<<<<<<")) {
+            // Start of a new conflict block
+            if (state != Neutral) {
+                // Malformed, skip
+            }
+            state = InOurs;
+            startLine = lineNumber;
+            blockIndex++;
+            oursLines.clear();
+            theirsLines.clear();
+            blockLines.clear();
+            blockLines.append(QVariantMap{{"number", lineNumber}, {"text", line}, {"role", "marker-start"}});
+            continue;
+        }
+
+        if (line.startsWith("=======")) {
+            if (state == InOurs) {
+                state = InTheirs;
+                blockLines.append(QVariantMap{{"number", lineNumber}, {"text", line}, {"role", "separator"}});
+            } else {
+                // Malformed, reset
+                state = Neutral;
+            }
+            continue;
+        }
+
+        if (line.startsWith(">>>>>>>")) {
+            if (state == InTheirs) {
+                // End of block
+                blockLines.append(QVariantMap{{"number", lineNumber}, {"text", line}, {"role", "marker-end"}});
+
+                QVariantMap block;
+                block["index"] = blockIndex;
+                block["startLine"] = startLine;
+                block["endLine"] = lineNumber;
+                block["currentText"] = oursLines.join("\n");
+                block["incomingText"] = theirsLines.join("\n");
+                block["lines"] = blockLines;
+                blocks.append(block);
+
+                state = Neutral;
+            } else {
+                state = Neutral;
+            }
+            continue;
+        }
+
+        if (state == InOurs) {
+            oursLines.append(line);
+            blockLines.append(QVariantMap{{"number", lineNumber}, {"text", line}, {"role", "ours"}});
+        } else if (state == InTheirs) {
+            theirsLines.append(line);
+            blockLines.append(QVariantMap{{"number", lineNumber}, {"text", line}, {"role", "theirs"}});
+        }
+        // else: context lines; they are handled by the UI via the full lines list
+    }
+
+    return blocks;
+}
+
+GitResult GitConflict::acceptBlockOurs(const QString& filePath, int blockIndex)
+{
+    return replaceBlock(filePath, blockIndex, true, false, false);
+}
+
+GitResult GitConflict::acceptBlockTheirs(const QString& filePath, int blockIndex)
+{
+    return replaceBlock(filePath, blockIndex, false, true, false);
+}
+
+GitResult GitConflict::acceptBlockBoth(const QString& filePath, int blockIndex)
+{
+    return replaceBlock(filePath, blockIndex, false, false, true);
+}
+
+GitResult GitConflict::replaceBlock(const QString& filePath, int blockIndex,
+                                    bool useOurs, bool useTheirs, bool useBoth)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "Repository not open.");
+
+    // Read current file
+    QStringList lines = readWorkdirLines(filePath);
+    if (lines.isEmpty())
+        return GitResult(false, QVariant(), "Failed to read file.");
+
+    // Re-parse blocks to get accurate positions (in case file was edited)
+    QVariantList blocks = parseConflictBlocks(lines);
+    QVariantMap targetBlock;
+    for (const QVariant& b : blocks) {
+        QVariantMap block = b.toMap();
+        if (block.value("index").toInt() == blockIndex) {
+            targetBlock = block;
+            break;
+        }
+    }
+    if (targetBlock.isEmpty())
+        return GitResult(false, QVariant(), "Block not found.");
+
+    int startLine = targetBlock.value("startLine").toInt();
+    int endLine = targetBlock.value("endLine").toInt();
+
+    QString replacement;
+    if (useOurs)
+        replacement = targetBlock.value("currentText").toString();
+    else if (useTheirs)
+        replacement = targetBlock.value("incomingText").toString();
+    else if (useBoth) {
+        QString ours = targetBlock.value("currentText").toString();
+        QString theirs = targetBlock.value("incomingText").toString();
+        if (!ours.isEmpty() && !theirs.isEmpty())
+            replacement = ours + "\n" + theirs;
+        else if (!ours.isEmpty())
+            replacement = ours;
+        else
+            replacement = theirs;
+    }
+
+    // Build new file content
+    QStringList prefix = lines.mid(0, startLine - 1);
+    QStringList suffix = lines.mid(endLine); // lines after the block
+    QStringList replacementLines;
+    if (!replacement.isEmpty())
+        replacementLines = replacement.split('\n', Qt::KeepEmptyParts);
+
+    QStringList newLines = prefix + replacementLines + suffix;
+    QString newContent = newLines.join('\n');
+
+    // Write to working directory
+    if (!writeFile(filePath, newContent))
+        return GitResult(false, QVariant(), "Failed to write file.");
+
+    return GitResult(true);
+}
+
+bool GitConflict::writeFile(const QString& filePath, const QString& content) const
+{
+    const char* workdir = git_repository_workdir(m_currentRepo->repo);
+    if (!workdir)
+        return false;
+
+    QString fullPath = QDir(QString::fromUtf8(workdir)).filePath(filePath);
+    QFile file(fullPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        return false;
+
+    QByteArray data = content.toUtf8();
+    file.write(data);
+    file.close();
+    return true;
 }
