@@ -53,6 +53,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/TabbedView.qml                    # Tabbed interface component
     Qml/View/Components/Base/RepositoryListItem.qml            # Repository list item display
     Qml/View/Components/Base/EmptyStateView.qml                # Items Empty State View
+    Qml/View/Components/Base/BusyWaiter.qml                    # Items Busy Wait State View
     Qml/View/Components/Base/UtilitiesCard.qml
     Qml/View/Components/Base/ContextMenu.qml
 
