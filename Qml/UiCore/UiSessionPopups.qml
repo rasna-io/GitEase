@@ -50,4 +50,6 @@ Item {
     property ManageStashPopup           manageStashPopup:           ManageStashPopup {}
 
     property FetchSummaryPopup          fetchSummaryPopup:          FetchSummaryPopup {}
+
+    property RepoForestPopup            repoForestPopup:            RepoForestPopup {}
 }
