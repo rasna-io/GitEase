@@ -104,6 +104,12 @@ Item {
                 height: 390
                 activityController: root.activityController
             }
+
+            RepositoriesHistoryDock {
+                width: 330
+                height: 390
+                repositoryController: root.repositoryController
+            }
         }
     }
 }
