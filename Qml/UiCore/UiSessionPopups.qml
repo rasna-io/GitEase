@@ -12,6 +12,8 @@ import GitEase
 Item {
     id: root
 
+    property AppModel               appModel:               null
+
     property NotificationController notificationController: null
 
     SshKeyController {
