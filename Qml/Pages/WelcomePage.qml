@@ -94,6 +94,7 @@ Rectangle {
                             root.controller.completeWelcomeFlow()
                         }
                     }
+                    fileIO: root.appModel.fileIO
                     repositoryController: root.repositoryController
                     defaultPath: appModel.appSettings.generalSettings.defaultPath
                 }

@@ -20,7 +20,9 @@ Item {
         id: sshKeyCtrl
     }
 
-    property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {}
+    property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {
+        appModel: root.appModel
+    }
 
     property SettingsPopup              settingsPopup:              SettingsPopup {
         notificationController: root.notificationController

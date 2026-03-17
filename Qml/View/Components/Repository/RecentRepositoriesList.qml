@@ -15,7 +15,9 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property alias model: repositoryRepeater.model
+    property FileIO fileIO
+    property alias  model: repositoryRepeater.model
+
 
     property int  selectedIndex: -1
 
@@ -54,6 +56,7 @@ Item {
                     delegate: RepositoryListItem {
                         id: item
                         isSelected: root.selectedIndex === item.index
+                        isExists: root.fileIO.isFileExist(item.path)
 
                         onClicked: (index) => {
                             root.selectedIndex = index
