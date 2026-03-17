@@ -111,4 +111,19 @@ QtObject{
 
     property color notificationBadge:           "#ef4444"
     property color notificationBadgeText:       "#FFFFFF"
+
+    property color repoItemStatusPendingBg:     "#FEF3C7"
+    property color repoItemStatusPendingText:   "#92400E"
+    property color repoItemStatusFetchingBg:    "#DBEAFE"
+    property color repoItemStatusFetchingText:  "#1E40AF"
+    property color repoItemStatusPullingBg:     "#E0F2FE"
+    property color repoItemStatusPullingText:   "#0369A1"
+    property color repoItemStatusDoneBg:        "#DCFCE7"
+    property color repoItemStatusDoneText:      "#166534"
+    property color repoItemStatusDirtyBg:       "#FEF9C3"
+    property color repoItemStatusDirtyText:     "#78350F"
+    property color repoItemStatusConflictBg:    "#FEE2E2"
+    property color repoItemStatusConflictText:  "#991B1B"
+    property color repoItemStatusCanceledBg:    "#FEE2E2"
+    property color repoItemStatusCanceledText:  "#991B1B"
 }
