@@ -126,6 +126,9 @@ set(RESOURCES_COMPONENTS
     # Notifications
     Qml/View/Components/Notification/NotificationItem.qml
     Qml/View/Components/Notification/NotificationCloseAllHeader.qml
+
+    # Repo Forest
+    Qml/View/Components/RepoForest/RepoItem.qml
 )
 
 
