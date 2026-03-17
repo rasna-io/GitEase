@@ -77,6 +77,8 @@ QtObject{
     property color iconOnDefault:           "#8B6914"
 
     property color userInfoSelectectedItem: "#44074E96"
+
+    property color repoSelectectedItem:     "#44074E96"
     
     // User Profile Level Badge Colors (darker shades for white text readability in light mode)
     property color levelSystemBadge:        "#2D8B3D"
