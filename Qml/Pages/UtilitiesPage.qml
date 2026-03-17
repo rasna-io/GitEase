@@ -27,6 +27,7 @@ Item {
     property UserAuthenticationPopup userAuthenticationPopup: null
     property UiSessionPopups  uiSessionPopups: null
     property StashController  stashController   : null
+    property RepoForestPopup  repoForestPopup: null
     
     property NotificationController notificationController: null
 
@@ -109,6 +110,15 @@ Item {
                 width: 330
                 height: 390
                 repositoryController: root.repositoryController
+            }
+
+            RepoForestDock {
+                width: 330
+                height: 390
+                repositoryController: root.repositoryController
+                branchController: root.branchController
+                remoteController: root.remoteController
+                repoForestPopup: root.repoForestPopup
             }
         }
     }
