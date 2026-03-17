@@ -65,11 +65,11 @@ IPopup {
                 Text {
                     Layout.fillWidth: true
                     text: "Merge Conflicts"
-                    color: Style.colors.foreground
+                    color: Style.colors.titleText
                     font.family: Style.fontTypes.roboto
                     font.bold: true
                     elide: Text.ElideLeft
-                    font.pixelSize: 11
+                    font.pixelSize: 14
                 }
 
                 // Close Button
@@ -141,7 +141,7 @@ IPopup {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: modelData.path || ""
                                 font.family: Style.fontTypes.roboto
-                                color: Style.colors.foreground
+                                color: Style.colors.lineNumberColor
                                 font.pixelSize: 13
                                 elide: Text.ElideMiddle
                             }
@@ -154,13 +154,14 @@ IPopup {
                     }
                 }
 
+                // Right panel: conflict editor
                 Rectangle{
 
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
                     radius: 4
-                    color: Style.colors.editorBackgroound
+                    color: Style.colors.primaryBackground
                     border.width: 1
                     border.color: Style.colors.primaryBorder
 
@@ -168,7 +169,7 @@ IPopup {
                         anchors.fill: parent
                         model: displayRows
                         clip: true
-                        spacing: 5
+                        spacing: 0
 
                         delegate: RowLayout {
                             width: parent.width
@@ -185,7 +186,7 @@ IPopup {
                                     anchors.rightMargin: 8
                                     anchors.verticalCenter: parent.verticalCenter
                                     color: Style.colors.foreground
-                                    font.family: "Courier New"
+                                    font.family: Style.fontTypes.roboto
                                     font.pixelSize: 12
                                     visible: text !== ""
 
@@ -258,8 +259,8 @@ IPopup {
                 anchors.fill: parent
                 text: root.contextLineText(lineNumber)
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
-                color: Style.colors.secondaryText
+                font.pixelSize: 13
+                color: Style.colors.editorForeground
                 selectByMouse: true
                 verticalAlignment: TextInput.AlignTop
 
@@ -283,15 +284,20 @@ IPopup {
                 anchors.fill: parent
                 anchors.margins: -2
                 z: -1
-                opacity: .5
+                radius: 2
                 color: {
-                    if (lineData.role === "marker-start") return "#50A168"
-                    if (lineData.role === "ours") return "#3D7A4F"
-                    if (lineData.role === "theirs") return "#255C8A"
-                    if (lineData.role === "marker-end") return "#3077B3"
+                    if (lineData.role === "marker-start")
+                        return Style.colors.conflictMarkerStartBg
+                    if (lineData.role === "ours")
+                        return Style.colors.conflictOursBg
+                    if (lineData.role === "theirs")
+                        return Style.colors.conflictTheirsBg
+                    if (lineData.role === "marker-end")
+                        return Style.colors.conflictMarkerEndBg
+                    if (lineData.role === "separator")
+                        return Style.colors.conflictSeparatorBg
                     return "transparent"
                 }
-                radius: 2
             }
 
             TextInput {
@@ -299,8 +305,8 @@ IPopup {
                 anchors.fill: parent
                 text: root.blockLineText(blockIndex, lineData.number)
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
-                color: Style.colors.secondaryText
+                font.pixelSize: 13
+                color: isMarker ? Style.colors.conflictMarkerText : Style.colors.editorForeground
                 selectByMouse: true
                 readOnly: isMarker
                 verticalAlignment: TextInput.AlignTop
@@ -313,47 +319,60 @@ IPopup {
         id: blockButtonComponent
         Item {
             property int blockIndex: 0
-            implicitHeight: current.implicitHeight
+            implicitHeight: buttonRow.implicitHeight
 
             RowLayout {
+                id: buttonRow
                 anchors.fill: parent
                 spacing:2
                 Layout.alignment: Qt.AlignVCenter
 
                 Text {
                     id: current
-                    text: "Accept Current | "
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: Style.colors.mutedText
+                    text: "Accept Current |"
+                    Layout.alignment: Qt.AlignVCenter
+                    color: Style.colors.hintText
                     font.pixelSize: 10
                     MouseArea{
                         anchors.fill: parent
                         onClicked: root.acceptBlock(blockIndex, "ours")
                         cursorShape: Qt.PointingHandCursor
+
+                        hoverEnabled: true
+                        onEntered: parent.color = Style.colors.accentHover
+                        onExited: parent.color = Style.colors.hintText
                     }
                 }
 
                 Text {
-                    text: "Accept Incoming | "
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: Style.colors.mutedText
+                    text: "Accept Incoming |"
+                    Layout.alignment: Qt.AlignVCenter
+                    color: Style.colors.hintText
                     font.pixelSize: 10
                     MouseArea{
                         anchors.fill: parent
                         onClicked: root.acceptBlock(blockIndex, "theirs")
                         cursorShape: Qt.PointingHandCursor
+
+                        hoverEnabled: true
+                        onEntered: parent.color = Style.colors.accentHover
+                        onExited: parent.color = Style.colors.hintText
                     }
                 }
 
                 Text {
                     text: "Accept Both"
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: Style.colors.mutedText
+                    Layout.alignment: Qt.AlignVCenter
+                    color: Style.colors.hintText
                     font.pixelSize: 10
                     MouseArea{
                         anchors.fill: parent
                         onClicked: root.acceptBlock(blockIndex, "both")
                         cursorShape: Qt.PointingHandCursor
+
+                        hoverEnabled: true
+                        onEntered: parent.color = Style.colors.accentHover
+                        onExited: parent.color = Style.colors.hintText
                     }
                 }
 
@@ -447,8 +466,6 @@ IPopup {
     function contextLineText(lineNumber) {
         return contextEdits[lineNumber] !== undefined ? contextEdits[lineNumber] : selectedConflict.lines[lineNumber-1]
     }
-
-
 
     function blockLineText(blockIndex, lineNumber) {
         let key = blockIndex + ":" + lineNumber
