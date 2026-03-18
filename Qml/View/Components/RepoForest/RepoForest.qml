@@ -121,35 +121,36 @@ Rectangle {
             return
         }
 
-        let remote = remotesRes.data[0]
-        let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
+        remotesRes.data.forEach((remote, itemIndex) => {
+            let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
 
-        if(!remoteUrlRes.success) {
-            root.updateStatus(itemIndex, "Canceled")
-            processNextOperation()
-            return
-        }
-
-        let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
-        if (protocol === RepositoryController.GitProtocol.SSH) {
-            let onFetchFinished = (result) => {
-                root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
-                root.remoteController.fetchFinished.disconnect(onFetchFinished)
-                processNextOperation()
-            }
-
-            root.remoteController.fetchFinished.connect(onFetchFinished)
-
-            let fetchRes = root.remoteController.fetch(remote.name)
-            if(!fetchRes.success) {
+            if(!remoteUrlRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
-                root.remoteController.fetchFinished.disconnect(onFetchFinished)
+                processNextOperation()
+                return
+            }
+
+            let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
+            if (protocol === RepositoryController.GitProtocol.SSH) {
+                let onFetchFinished = (result) => {
+                    root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
+                    root.remoteController.fetchFinished.disconnect(onFetchFinished)
+                    processNextOperation()
+                }
+
+                root.remoteController.fetchFinished.connect(onFetchFinished)
+
+                let fetchRes = root.remoteController.fetch(remote.name)
+                if(!fetchRes.success) {
+                    root.updateStatus(itemIndex, "Canceled")
+                    root.remoteController.fetchFinished.disconnect(onFetchFinished)
+                    processNextOperation()
+                }
+            } else {
+                root.updateStatus(itemIndex, "Canceled")
                 processNextOperation()
             }
-        } else {
-            root.updateStatus(itemIndex, "Canceled")
-            processNextOperation()
-        }
+        })
     }
 
     function executePull(itemIndex: int) {
@@ -179,36 +180,37 @@ Rectangle {
             return
         }
 
-        let remote = remotesRes.data[0]
-        let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
+        let remote = remotesRes.data.forEach((remote, itemIndex) => {
+            let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
 
-        if(!remoteUrlRes.success) {
-            root.updateStatus(itemIndex, "Canceled")
-            processNextOperation()
-            return
-        }
-
-        let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
-
-        if (protocol === RepositoryController.GitProtocol.SSH) {
-            let onPullFinished = (result) => {
-                root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
-                root.remoteController.pullFinished.disconnect(onPullFinished)
-                processNextOperation()
-            }
-
-            root.remoteController.pullFinished.connect(onPullFinished)
-
-            let pullRes = root.remoteController.pull(remote.name)
-            if(!pullRes.success) {
+            if(!remoteUrlRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
-                root.remoteController.pullFinished.disconnect(onPullFinished)
+                processNextOperation()
+                return
+            }
+
+            let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
+
+            if (protocol === RepositoryController.GitProtocol.SSH) {
+                let onPullFinished = (result) => {
+                    root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
+                    root.remoteController.pullFinished.disconnect(onPullFinished)
+                    processNextOperation()
+                }
+
+                root.remoteController.pullFinished.connect(onPullFinished)
+
+                let pullRes = root.remoteController.pull(remote.name)
+                if(!pullRes.success) {
+                    root.updateStatus(itemIndex, "Canceled")
+                    root.remoteController.pullFinished.disconnect(onPullFinished)
+                    processNextOperation()
+                }
+            } else {
+                root.updateStatus(itemIndex, "Canceled")
                 processNextOperation()
             }
-        } else {
-            root.updateStatus(itemIndex, "Canceled")
-            processNextOperation()
-        }
+        })
     }
 
     function fetch(itemIndex: int) {
