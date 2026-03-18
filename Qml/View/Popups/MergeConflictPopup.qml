@@ -23,8 +23,6 @@ IPopup {
     property var selectedConflict: null
     property string selectedPath: ""
 
-    property int extraWidthSpace: 100
-
     /* Object Properties
      * ****************************************************************************************/
 
@@ -137,15 +135,29 @@ IPopup {
                             radius: 3
                             color: ListView.isCurrentItem ? Style.colors.hoverTitle : "transparent"
 
-                            Text {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 12
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: modelData.path || ""
-                                font.family: Style.fontTypes.roboto
-                                color: Style.colors.lineNumberColor
-                                font.pixelSize: 13
-                                elide: Text.ElideMiddle
+                            RowLayout{
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 8
+                                spacing: 8
+
+                                 // Number
+                                Text {
+                                    text: (index + 1) + "."
+                                    color: Style.colors.lineNumberColor
+                                    font.family: Style.fontTypes.roboto
+                                    font.pixelSize: 12
+                                    opacity: 0.7
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: modelData.path || ""
+                                    font.family: Style.fontTypes.roboto
+                                    color: Style.colors.lineNumberColor
+                                    font.pixelSize: 13
+                                    elide: Text.ElideMiddle
+                                }
                             }
 
                             MouseArea {
