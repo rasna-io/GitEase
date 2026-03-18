@@ -68,9 +68,10 @@ Rectangle {
         root.reposModel = root.reposModel.slice()
     }
 
-    function enqueueOperation(operation, itemIndex) {
-        root.operationQueue.push({ operation: operation, index: itemIndex })
+    function enqueueOperation(operation, itemIndex, pat) {
+        root.operationQueue.push({ operation: operation, index: itemIndex, pat: pat})
         root.operationQueue = root.operationQueue.slice()
+        root.updateStatus(itemIndex, "Pending")
 
         if (!root.isProcessingQueue) {
             processNextOperation()
@@ -88,13 +89,13 @@ Rectangle {
         root.operationQueue = root.operationQueue.slice()
 
         if (item.operation === "fetch") {
-            executeFetch(item.index)
+            executeFetch(item.index, item.pat)
         } else if (item.operation === "pull") {
-            executePull(item.index)
+            executePull(item.index, item.pat)
         }
     }
 
-    function executeFetch(itemIndex: int) {
+    function executeFetch(itemIndex: int, pat: string) {
         root.updateStatus(itemIndex, "Fetching")
 
         let repo = root.reposModel[itemIndex]
@@ -121,7 +122,7 @@ Rectangle {
             return
         }
 
-        remotesRes.data.forEach((remote, itemIndex) => {
+        remotesRes.data.forEach(remote => {
             let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
 
             if(!remoteUrlRes.success) {
@@ -131,29 +132,37 @@ Rectangle {
             }
 
             let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
+
+            if (protocol !== RepositoryController.GitProtocol.SSH && pat === "") {
+                root.updateStatus(itemIndex, "PAT waiting")
+                processNextOperation()
+                return
+            }
+
+            let onFetchFinished = (result) => {
+                root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
+                root.remoteController.fetchFinished.disconnect(onFetchFinished)
+                processNextOperation()
+            }
+
+            root.remoteController.fetchFinished.connect(onFetchFinished)
+
+            let fetchRes
             if (protocol === RepositoryController.GitProtocol.SSH) {
-                let onFetchFinished = (result) => {
-                    root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
-                    root.remoteController.fetchFinished.disconnect(onFetchFinished)
-                    processNextOperation()
-                }
+                fetchRes = root.remoteController.fetch(remote.name)
+            } else{
+                fetchRes = root.remoteController.fetchWithToken(remote.name, pat)
+            }
 
-                root.remoteController.fetchFinished.connect(onFetchFinished)
-
-                let fetchRes = root.remoteController.fetch(remote.name)
-                if(!fetchRes.success) {
-                    root.updateStatus(itemIndex, "Canceled")
-                    root.remoteController.fetchFinished.disconnect(onFetchFinished)
-                    processNextOperation()
-                }
-            } else {
+            if(!fetchRes || !fetchRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
+                root.remoteController.fetchFinished.disconnect(onFetchFinished)
                 processNextOperation()
             }
         })
     }
 
-    function executePull(itemIndex: int) {
+    function executePull(itemIndex: int, pat: string) {
         root.updateStatus(itemIndex, "Pulling")
 
         let repo = root.reposModel[itemIndex]
@@ -180,7 +189,7 @@ Rectangle {
             return
         }
 
-        let remote = remotesRes.data.forEach((remote, itemIndex) => {
+        let remote = remotesRes.data.forEach(remote => {
             let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
 
             if(!remoteUrlRes.success) {
@@ -207,29 +216,28 @@ Rectangle {
                     processNextOperation()
                 }
             } else {
-                root.updateStatus(itemIndex, "Canceled")
-                processNextOperation()
+                // TODO
             }
         })
     }
 
-    function fetch(itemIndex: int) {
-        enqueueOperation("fetch", itemIndex)
+    function fetch(itemIndex: int, pat: string) {
+        enqueueOperation("fetch", itemIndex, pat)
     }
 
-    function pull(itemIndex: int) {
-        enqueueOperation("pull", itemIndex)
+    function pull(itemIndex: int, pat: string) {
+        enqueueOperation("pull", itemIndex, pat)
     }
 
     function fetchSelectedIndexes() {
         root.selectedIndexes.forEach(index => {
-            root.fetch(index)
+            root.fetch(index, "")
         })
     }
 
     function pullSelectedIndexes() {
         root.selectedIndexes.forEach(index => {
-            root.pull(index)
+            root.pull(index, "")
         })
     }
 
@@ -514,8 +522,8 @@ Rectangle {
                         isSelected: root.selectedIndexes.indexOf(index) !== -1
 
                         onClicked: (i) => root.toggleSelection(i)
-                        onFetchRequested: (i) => root.fetch(i)
-                        onPullRequested: (i) => root.pull(i)
+                        onFetchRequested: (i, pat) => root.fetch(i, pat)
+                        onPullRequested: (i, pat) => root.pull(i, pat)
                     }
                 }
             }
