@@ -536,25 +536,32 @@ IPopup {
             return
         }
 
-        let lines = selectedConflict.lines || []        // full file
-        let blocks = selectedConflict.blocks || []      // conflict metadata
+        let lines = selectedConflict.lines || []        // All lines in the file
+        let blocks = selectedConflict.blocks || []      // Conflict blocks metadata
+
+        // Create a map for quick lookup: startLine → block
         let blockMap = {}
         for (let b of blocks)
             blockMap[b.startLine] = b
 
         let rows = []
         let i = 0
+
         while (i < lines.length) {
             let lineNumber = i + 1
+
+            // Check if this line starts a conflict block
             if (blockMap[lineNumber]) {
                 let block = blockMap[lineNumber]
-                // Button row
+
+                // 1. Add button row for this block
                 rows.push({
                               type: "blockButton",
                               blockIndex: block.index,
                               block: block
                           })
-                // All lines of the block
+
+                // 2. Add all lines inside the conflict block
                 for (let j = 0; j < block.lines.length; ++j) {
                     rows.push({
                                   type: "blockLine",
@@ -562,8 +569,11 @@ IPopup {
                                   line: block.lines[j]
                               })
                 }
+
                 i = block.endLine  // past block
-            } else {
+            }
+            else {
+                // Regular (non-conflict) line
                 rows.push({
                               type: "contextLine",
                               lineNumber: lineNumber,
@@ -572,18 +582,26 @@ IPopup {
                 i++
             }
         }
-        displayRows = rows
+
+        displayRows = rows  // Update the ListView model
     }
 
     function contextLineText(lineNumber) {
-        return contextEdits[lineNumber] !== undefined ? contextEdits[lineNumber] : selectedConflict.lines[lineNumber-1]
+
+        // Check if this line has been edited
+        return contextEdits[lineNumber] !== undefined
+            ? contextEdits[lineNumber]              // Use edited version
+            : selectedConflict.lines[lineNumber-1]  // Use original
     }
 
     function blockLineText(blockIndex, lineNumber) {
         let key = blockIndex + ":" + lineNumber
+
+        // Check if this line has been edited
         if (blockEdits[key] !== undefined)
             return blockEdits[key]
-        // fallback: find original line text
+
+        // Find original text from the block
         for (let b of selectedConflict.blocks) {
             if (b.index === blockIndex) {
                 for (let l of b.lines) {
@@ -596,7 +614,9 @@ IPopup {
     }
 
     function acceptBlock(blockIndex, mode) {
-        if (!selectedPath || !conflictController) return
+        if (!selectedPath || !conflictController)
+            return
+
         let res
         if (mode === "ours")
             res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
@@ -609,18 +629,22 @@ IPopup {
         if (!res.success) {
             if (notificationController)
                 notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
-        } else {
+        }
+        else {
             loadConflicts()
             selectFile(selectedPath)
         }
     }
 
     function continueMerge() {
-        if (!mergeController) return
+        if (!mergeController)
+            return
+
         let res = mergeController.continueMerge()
         if (res.success) {
             close()
-        } else {
+        }
+        else {
             if (notificationController)
                 notificationController.error(res.errorMessage, "Merge", 4000)
         }
