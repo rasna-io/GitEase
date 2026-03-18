@@ -128,6 +128,8 @@ QtObject {
         repoItemStatusConflictText:  "#FCA5A5"
         repoItemStatusCanceledBg:    "#450A0A"
         repoItemStatusCanceledText:  "#FCA5A5"
+        repoItemStatusPATBg:         "#43525D"
+        repoItemStatusPATText:       "#90CAF9"
     }
 
     property           string       currentTheme:               "Modern Light"

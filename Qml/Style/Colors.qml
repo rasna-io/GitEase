@@ -126,4 +126,6 @@ QtObject{
     property color repoItemStatusConflictText:  "#991B1B"
     property color repoItemStatusCanceledBg:    "#FEE2E2"
     property color repoItemStatusCanceledText:  "#991B1B"
+    property color repoItemStatusPATBg:         "#90CAF9"
+    property color repoItemStatusPATText:       "#43525D"
 }
