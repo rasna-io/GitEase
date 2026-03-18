@@ -65,7 +65,7 @@ IPopup {
                 Text {
                     Layout.fillWidth: true
                     text: "Merge Conflicts"
-                    color: Style.colors.titleText
+                    color: Style.colors.secondaryText
                     font.family: Style.fontTypes.roboto
                     font.bold: true
                     elide: Text.ElideLeft
@@ -155,8 +155,7 @@ IPopup {
                 }
 
                 // Right panel: conflict editor
-                Rectangle{
-
+                Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
@@ -165,76 +164,109 @@ IPopup {
                     border.width: 1
                     border.color: Style.colors.primaryBorder
 
-                    ListView {
+                    ScrollView {
+                        id: scrollArea
                         anchors.fill: parent
-                        model: displayRows
                         clip: true
-                        spacing: 0
 
-                        delegate: RowLayout {
-                            width: parent.width
-                            spacing: 0
+                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOn
+                        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
 
-                            // Line number column
-                            Rectangle {
-                                Layout.preferredWidth: 50
-                                Layout.fillHeight: true
-                                color: "transparent"
+                        Flickable {
+                            id: flickable
+                            contentWidth: contentColumn.width
+                            contentHeight: contentColumn.height
+                            boundsBehavior: Flickable.StopAtBounds
+                            clip: true
 
-                                Text {
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 8
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: Style.colors.foreground
-                                    font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 12
-                                    visible: text !== ""
+                            Column {
+                                id: contentColumn
+                                width: Math.max(flickable.width, listView.maxContentWidth)
 
-                                    text: {
-                                        if (modelData.type === "contextLine")
-                                            return modelData.lineNumber
-                                        if (modelData.type === "blockLine")
-                                            return modelData.line.number
-                                        return ""
-                                    }
-                                }
-                            }
+                                ListView {
+                                    id: listView
+                                    width: parent.width
+                                    height: contentHeight
+                                    model: displayRows
+                                    clip: true
+                                    spacing: 0
+                                    interactive: false
 
-                            // Separator
-                            Rectangle {
-                                Layout.preferredWidth: 1
-                                Layout.fillHeight: true
-                                color: "#3c3c3c"
-                            }
+                                    // Track the maximum content width
+                                    property real maxContentWidth: 0
 
-                            // Content
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                implicitHeight: loader.implicitHeight
+                                    delegate: RowLayout {
+                                        width: listView.width
+                                        spacing: 0
 
-                                Loader {
-                                    id: loader
-                                    anchors.fill: parent
-                                    anchors.margins: 2
-                                    sourceComponent: {
-                                        if (modelData.type === "contextLine")
-                                            return contextLineComponent
-                                        if (modelData.type === "blockLine")
-                                            return blockLineComponent
-                                        if (modelData.type === "blockButton")
-                                            return blockButtonComponent
-                                        return null
-                                    }
-                                    onLoaded: {
-                                        if (modelData.type === "contextLine") {
-                                            item.lineNumber = modelData.lineNumber
-                                            item.originalText = modelData.text
-                                        } else if (modelData.type === "blockLine") {
-                                            item.blockIndex = modelData.blockIndex
-                                            item.lineData = modelData.line
-                                        } else if (modelData.type === "blockButton") {
-                                            item.blockIndex = modelData.blockIndex
+                                        // Line number column
+                                        Rectangle {
+                                            Layout.preferredWidth: 50
+                                            Layout.fillHeight: true
+                                            color: "transparent"
+
+                                            Text {
+                                                anchors.right: parent.right
+                                                anchors.rightMargin: 8
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                color: Style.colors.foreground
+                                                font.family: Style.fontTypes.roboto
+                                                font.pixelSize: 12
+                                                visible: text !== ""
+
+                                                text: {
+                                                    if (modelData.type === "contextLine")
+                                                        return modelData.lineNumber
+                                                    if (modelData.type === "blockLine")
+                                                        return modelData.line.number
+                                                    return ""
+                                                }
+                                            }
+                                        }
+
+                                        // Separator
+                                        Rectangle {
+                                            Layout.preferredWidth: 1
+                                            Layout.fillHeight: true
+                                            color: "#3c3c3c"
+                                        }
+
+                                        // Content - This is where we need to handle width properly
+                                        Item {
+                                            Layout.fillWidth: true
+                                            Layout.fillHeight: true
+                                            implicitHeight: loader.implicitHeight
+
+                                            Loader {
+                                                id: loader
+                                                anchors.fill: parent
+                                                anchors.margins: 2
+                                                sourceComponent: {
+                                                    if (modelData.type === "contextLine")
+                                                        return contextLineComponent
+                                                    if (modelData.type === "blockLine")
+                                                        return blockLineComponent
+                                                    if (modelData.type === "blockButton")
+                                                        return blockButtonComponent
+                                                    return null
+                                                }
+                                                onLoaded: {
+                                                    if (modelData.type === "contextLine") {
+                                                        item.lineNumber = modelData.lineNumber
+                                                        item.originalText = modelData.text
+                                                    } else if (modelData.type === "blockLine") {
+                                                        item.blockIndex = modelData.blockIndex
+                                                        item.lineData = modelData.line
+                                                    } else if (modelData.type === "blockButton") {
+                                                        item.blockIndex = modelData.blockIndex
+                                                    }
+
+                                                    // Update max content width
+                                                    if (item && item.implicitWidth > listView.maxContentWidth) {
+                                                        listView.maxContentWidth = item.implicitWidth
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -242,6 +274,7 @@ IPopup {
                         }
                     }
                 }
+
             }
         }
     }
@@ -253,10 +286,10 @@ IPopup {
             property int lineNumber: 0
             property string originalText: ""
             implicitHeight: textInput.implicitHeight
+            implicitWidth:textInput.implicitWidth + 100
 
             TextInput {
                 id: textInput
-                anchors.fill: parent
                 text: root.contextLineText(lineNumber)
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 13
@@ -275,6 +308,7 @@ IPopup {
             property int blockIndex: 0
             property var lineData: null
             implicitHeight: textInput.implicitHeight
+            implicitWidth:textInput.implicitWidth + 100
 
             readonly property bool isMarker: lineData.role === "marker-start" ||
                                              lineData.role === "separator" ||
@@ -302,7 +336,6 @@ IPopup {
 
             TextInput {
                 id: textInput
-                anchors.fill: parent
                 text: root.blockLineText(blockIndex, lineData.number)
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 13
@@ -310,6 +343,10 @@ IPopup {
                 selectByMouse: true
                 readOnly: isMarker
                 verticalAlignment: TextInput.AlignTop
+                onTextChanged: {
+                    if (!isMarker)
+                        root.setBlockLineText(blockIndex, lineData.number, text)
+                }
             }
         }
     }
@@ -320,10 +357,11 @@ IPopup {
         Item {
             property int blockIndex: 0
             implicitHeight: buttonRow.implicitHeight
+            implicitWidth:buttonRow.implicitWidth + 100
 
             RowLayout {
                 id: buttonRow
-                anchors.fill: parent
+                // anchors.fill: parent
                 spacing:2
                 Layout.alignment: Qt.AlignVCenter
 
@@ -381,7 +419,8 @@ IPopup {
         }
     }
 
-
+    /* Functions
+     * ****************************************************************************************/
     function loadConflicts() {
         if (!conflictController)
             return
@@ -513,5 +552,4 @@ IPopup {
                 notificationController.error(res.errorMessage, "Merge", 4000)
         }
     }
-
 }
