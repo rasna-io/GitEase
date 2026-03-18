@@ -25,6 +25,8 @@ Rectangle {
     property   var                    reposModel:               []
     property   var                    selectedIndexes:          []
     property   bool                   isRunning:                false
+    property   var                    operationQueue:           []
+    property   bool                   isProcessingQueue:        false
 
     readonly property bool allSelected:     reposModel.length > 0 && selectedIndexes.length === reposModel.length
     readonly property bool noneSelected:    selectedIndexes.length === 0
@@ -66,7 +68,33 @@ Rectangle {
         root.reposModel = root.reposModel.slice()
     }
 
-    function fetch(itemIndex: int) {
+    function enqueueOperation(operation, itemIndex) {
+        root.operationQueue.push({ operation: operation, index: itemIndex })
+        root.operationQueue = root.operationQueue.slice()
+
+        if (!root.isProcessingQueue) {
+            processNextOperation()
+        }
+    }
+
+    function processNextOperation() {
+        if (root.operationQueue.length === 0) {
+            root.isProcessingQueue = false
+            return
+        }
+
+        root.isProcessingQueue = true
+        let item = root.operationQueue.shift()
+        root.operationQueue = root.operationQueue.slice()
+
+        if (item.operation === "fetch") {
+            executeFetch(item.index)
+        } else if (item.operation === "pull") {
+            executePull(item.index)
+        }
+    }
+
+    function executeFetch(itemIndex: int) {
         root.updateStatus(itemIndex, "Fetching")
 
         let repo = root.reposModel[itemIndex]
@@ -75,6 +103,7 @@ Rectangle {
 
         if(!openResult.success) {
             root.updateStatus(itemIndex, "Canceled")
+            processNextOperation()
             return
         }
 
@@ -82,51 +111,48 @@ Rectangle {
 
         if(!remotesRes.success) {
             root.updateStatus(itemIndex, "Canceled")
+            processNextOperation()
             return
         }
 
-        remotesRes.data.forEach((remote, remoteIndex) => {
+        if (remotesRes.data.length === 0) {
+            root.updateStatus(itemIndex, "Done")
+            processNextOperation()
+            return
+        }
 
-            let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
-            if(!remoteUrlRes.success) {
+        let remote = remotesRes.data[0]
+        let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
+
+        if(!remoteUrlRes.success) {
+            root.updateStatus(itemIndex, "Canceled")
+            processNextOperation()
+            return
+        }
+
+        let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
+        if (protocol === RepositoryController.GitProtocol.SSH) {
+            let onFetchFinished = (result) => {
+                root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
+                root.remoteController.fetchFinished.disconnect(onFetchFinished)
+                processNextOperation()
+            }
+
+            root.remoteController.fetchFinished.connect(onFetchFinished)
+
+            let fetchRes = root.remoteController.fetch(remote.name)
+            if(!fetchRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
-                return
+                root.remoteController.fetchFinished.disconnect(onFetchFinished)
+                processNextOperation()
             }
-
-            let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
-            switch(protocol) {
-                case RepositoryController.GitProtocol.SSH:
-                    let onFetchFinished = (result) => {
-                        if(!result.success) {
-                            root.updateStatus(itemIndex, "Canceled")
-                            return
-                        }
-
-                        root.updateStatus(itemIndex, "Done")
-
-                        root.remoteController.fetchFinished.disconnect(onFetchFinished)
-                    }
-
-                    root.remoteController.fetchFinished.connect(onFetchFinished)
-
-                    let fetchRes = root.remoteController.fetch(remote.name)
-                    if(!fetchRes.success) {
-                        root.updateStatus(itemIndex, "Canceled")
-                        return
-                    }
-
-                    break;
-                case RepositoryController.GitProtocol.HTTPS:
-                case RepositoryController.GitProtocol.HTTP:
-                    root.updateStatus(itemIndex, "Canceled")
-                    break;
-            }
-        })
-
-        root.reposModel = root.reposModel.slice()
+        } else {
+            root.updateStatus(itemIndex, "Canceled")
+            processNextOperation()
+        }
     }
 
-    function pull(itemIndex: int) {
+    function executePull(itemIndex: int) {
         root.updateStatus(itemIndex, "Pulling")
 
         let repo = root.reposModel[itemIndex]
@@ -135,6 +161,7 @@ Rectangle {
 
         if(!openResult.success) {
             root.updateStatus(itemIndex, "Canceled")
+            processNextOperation()
             return
         }
 
@@ -142,60 +169,66 @@ Rectangle {
 
         if(!remotesRes.success) {
             root.updateStatus(itemIndex, "Canceled")
+            processNextOperation()
             return
         }
 
-        remotesRes.data.forEach((remote, remoteIndex) => {
+        if (remotesRes.data.length === 0) {
+            root.updateStatus(itemIndex, "Done")
+            processNextOperation()
+            return
+        }
 
-            let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
-            if(!remoteUrlRes.success) {
+        let remote = remotesRes.data[0]
+        let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
+
+        if(!remoteUrlRes.success) {
+            root.updateStatus(itemIndex, "Canceled")
+            processNextOperation()
+            return
+        }
+
+        let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
+
+        if (protocol === RepositoryController.GitProtocol.SSH) {
+            let onPullFinished = (result) => {
+                root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
+                root.remoteController.pullFinished.disconnect(onPullFinished)
+                processNextOperation()
+            }
+
+            root.remoteController.pullFinished.connect(onPullFinished)
+
+            let pullRes = root.remoteController.pull(remote.name)
+            if(!pullRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
-                return
+                root.remoteController.pullFinished.disconnect(onPullFinished)
+                processNextOperation()
             }
+        } else {
+            root.updateStatus(itemIndex, "Canceled")
+            processNextOperation()
+        }
+    }
 
-            let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
-            switch(protocol) {
-                case RepositoryController.GitProtocol.SSH:
-                    let onPullFinished = (result) => {
-                        if(!result.success) {
-                            root.updateStatus(itemIndex, "Canceled")
-                            return
-                        }
+    function fetch(itemIndex: int) {
+        enqueueOperation("fetch", itemIndex)
+    }
 
-                        root.updateStatus(itemIndex, "Done")
-
-                        root.remoteController.pullFinished.disconnect(onPullFinished)
-                    }
-
-                    root.remoteController.pullFinished.connect(onPullFinished)
-
-                    let pullRes = root.remoteController.pull(remote.name)
-                    if(!pullRes.success) {
-                        root.updateStatus(itemIndex, "Canceled")
-                        return
-                    }
-
-                    break;
-                case RepositoryController.GitProtocol.HTTPS:
-                case RepositoryController.GitProtocol.HTTP:
-                    root.updateStatus(itemIndex, "Canceled")
-                    break;
-            }
-        })
-
-        root.reposModel = root.reposModel.slice()
+    function pull(itemIndex: int) {
+        enqueueOperation("pull", itemIndex)
     }
 
     function fetchSelectedIndexes() {
         root.selectedIndexes.forEach(index => {
-                                         root.fetch(index)
-                                     })
+            root.fetch(index)
+        })
     }
 
     function pullSelectedIndexes() {
         root.selectedIndexes.forEach(index => {
-                                         root.pull(index)
-                                     })
+            root.pull(index)
+        })
     }
 
     /* Children
@@ -292,7 +325,7 @@ Rectangle {
                 Layout.preferredWidth: 26
                 Layout.preferredHeight: 26
 
-                enabled: !root.noneSelected
+                enabled: !root.noneSelected && !root.isProcessingQueue
                 hoverEnabled: true
 
                 contentItem: Text {
@@ -345,7 +378,7 @@ Rectangle {
                 Layout.preferredWidth: 26
                 Layout.preferredHeight: 26
 
-                enabled: !root.noneSelected
+                enabled: !root.noneSelected && !root.isProcessingQueue
                 hoverEnabled: true
 
                 contentItem: Text {
