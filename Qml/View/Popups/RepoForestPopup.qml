@@ -30,6 +30,7 @@ IPopup {
     /* Children
      * ****************************************************************************************/
     contentItem: RepoForest {
+        id: repoForest
         repositoryController: root.repositoryController
         branchController: root.branchController
         remoteController: root.remoteController
@@ -39,9 +40,16 @@ IPopup {
         onCloseRequested: root.close()
     }
 
-    onAboutToHide: gitScanner.stop()
-    onClosed: gitScanner.stop()
+    onAboutToHide: root.resetRepoForest()
+    onClosed: root.resetRepoForest()
 
     /* Functions
      * ****************************************************************************************/
+    function resetRepoForest() {
+        repoForest.selectedIndexes = []
+        repoForest.isRunning = false
+        repoForest.operationQueue = []
+        repoForest.isProcessingQueue = false
+        gitScanner.stop()
+    }
 }
