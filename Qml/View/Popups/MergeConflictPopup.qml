@@ -23,6 +23,8 @@ IPopup {
     property var selectedConflict: null
     property string selectedPath: ""
 
+    property int extraWidthSpace: 100
+
     /* Object Properties
      * ****************************************************************************************/
 
@@ -46,7 +48,6 @@ IPopup {
     onOpened: loadConflicts()
 
     contentItem: Rectangle {
-
         color: Style.colors.primaryBackground
         radius: 16
         clip: true
@@ -125,7 +126,8 @@ IPopup {
                         spacing: 1
                         currentIndex: {
                             for (let i = 0; i < conflicts.length; ++i)
-                                if (conflicts[i].path === selectedPath) return i
+                                if (conflicts[i].path === selectedPath)
+                                    return i
                             return -1
                         }
 
@@ -149,6 +151,7 @@ IPopup {
                             MouseArea {
                                 anchors.fill: parent
                                 onClicked: root.selectFile(modelData.path)
+                                cursorShape: Qt.PointingHandCursor
                             }
                         }
                     }
@@ -165,39 +168,50 @@ IPopup {
                     border.color: Style.colors.primaryBorder
 
                     ScrollView {
-                        id: scrollArea
                         anchors.fill: parent
                         clip: true
 
                         ScrollBar.horizontal.policy: ScrollBar.AlwaysOn
                         ScrollBar.vertical.policy: ScrollBar.AlwaysOn
 
-                        Flickable {
+                        contentItem: Flickable {
                             id: flickable
-                            contentWidth: contentColumn.width
-                            contentHeight: contentColumn.height
-                            boundsBehavior: Flickable.StopAtBounds
                             clip: true
 
-                            Column {
-                                id: contentColumn
-                                width: Math.max(flickable.width, listView.maxContentWidth)
+                            // Track the maximum width needed
+                            property real maxContentWidth: 0
+
+                            Item {
+                                id: contentContainer
+                                width: Math.max(flickable.maxContentWidth, flickable.width)
+                                height: listView.contentHeight
 
                                 ListView {
                                     id: listView
-                                    width: parent.width
-                                    height: contentHeight
+                                    anchors.fill: parent
                                     model: displayRows
                                     clip: true
                                     spacing: 0
-                                    interactive: false
 
-                                    // Track the maximum content width
-                                    property real maxContentWidth: 0
+                                    onModelChanged: Qt.callLater(updateContentWidth)
+                                    onCountChanged: Qt.callLater(updateContentWidth)
 
                                     delegate: RowLayout {
-                                        width: listView.width
+                                        id: delegateRow
+                                        width: contentContainer.width
                                         spacing: 0
+
+                                        // Track our implicit width
+                                        property real rowImplicitWidth: 50 + 1 + contentLoader.implicitWidth + 4
+
+                                        Component.onCompleted: {
+                                            // Update max width if this row is wider
+                                            if (rowImplicitWidth > flickable.maxContentWidth) {
+                                                flickable.maxContentWidth = rowImplicitWidth
+                                                contentContainer.width = Math.max(flickable.maxContentWidth, flickable.width)
+                                                flickable.contentWidth = contentContainer.width
+                                            }
+                                        }
 
                                         // Line number column
                                         Rectangle {
@@ -231,52 +245,57 @@ IPopup {
                                             color: "#3c3c3c"
                                         }
 
-                                        // Content - This is where we need to handle width properly
-                                        Item {
+                                        // Content
+                                        Loader {
+                                            id: contentLoader
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
-                                            implicitHeight: loader.implicitHeight
+                                            Layout.minimumWidth: implicitWidth
 
-                                            Loader {
-                                                id: loader
-                                                anchors.fill: parent
-                                                anchors.margins: 2
-                                                sourceComponent: {
-                                                    if (modelData.type === "contextLine")
-                                                        return contextLineComponent
-                                                    if (modelData.type === "blockLine")
-                                                        return blockLineComponent
-                                                    if (modelData.type === "blockButton")
-                                                        return blockButtonComponent
-                                                    return null
+                                            sourceComponent: {
+                                                if (modelData.type === "contextLine")
+                                                    return contextLineComponent
+                                                if (modelData.type === "blockLine")
+                                                    return blockLineComponent
+                                                if (modelData.type === "blockButton")
+                                                    return blockButtonComponent
+                                                return null
+                                            }
+                                            onLoaded: {
+                                                if (modelData.type === "contextLine") {
+                                                    item.lineNumber = modelData.lineNumber
+                                                    item.originalText = modelData.text
+                                                } else if (modelData.type === "blockLine") {
+                                                    item.blockIndex = modelData.blockIndex
+                                                    item.lineData = modelData.line
+                                                } else if (modelData.type === "blockButton") {
+                                                    item.blockIndex = modelData.blockIndex
                                                 }
-                                                onLoaded: {
-                                                    if (modelData.type === "contextLine") {
-                                                        item.lineNumber = modelData.lineNumber
-                                                        item.originalText = modelData.text
-                                                    } else if (modelData.type === "blockLine") {
-                                                        item.blockIndex = modelData.blockIndex
-                                                        item.lineData = modelData.line
-                                                    } else if (modelData.type === "blockButton") {
-                                                        item.blockIndex = modelData.blockIndex
-                                                    }
 
-                                                    // Update max content width
-                                                    if (item && item.implicitWidth > listView.maxContentWidth) {
-                                                        listView.maxContentWidth = item.implicitWidth
+                                                // Update width after item loads
+                                                Qt.callLater(function() {
+                                                    delegateRow.rowImplicitWidth = 50 + 1 + item.implicitWidth + 4
+                                                    if (delegateRow.rowImplicitWidth > flickable.maxContentWidth) {
+                                                        flickable.maxContentWidth = delegateRow.rowImplicitWidth
+                                                        contentContainer.width = Math.max(flickable.maxContentWidth, flickable.width)
+                                                        flickable.contentWidth = contentContainer.width
                                                     }
-                                                }
+                                                })
                                             }
                                         }
                                     }
                                 }
                             }
+                            // Flickable properties
+                            contentWidth: contentContainer.width
+                            contentHeight: contentContainer.height
+                            boundsBehavior: Flickable.StopAtBounds
                         }
                     }
                 }
-
             }
 
+            // Footer buttons
             RowLayout{
                 Layout.fillWidth: true
 
@@ -320,18 +339,21 @@ IPopup {
         Item {
             property int lineNumber: 0
             property string originalText: ""
-            implicitHeight: textInput.implicitHeight
-            implicitWidth:textInput.implicitWidth + 100
+
+            implicitHeight: textInput.implicitHeight + 4
+            implicitWidth: Math.max(textInput.implicitWidth + 20, 100)
 
             TextInput {
                 id: textInput
+                anchors.fill: parent
+                anchors.margins: 2
                 text: root.contextLineText(lineNumber)
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 13
                 color: Style.colors.editorForeground
                 selectByMouse: true
                 verticalAlignment: TextInput.AlignTop
-
+                wrapMode: TextInput.NoWrap
             }
         }
     }
@@ -342,8 +364,9 @@ IPopup {
         Item {
             property int blockIndex: 0
             property var lineData: null
-            implicitHeight: textInput.implicitHeight
-            implicitWidth:textInput.implicitWidth + 100
+
+            implicitHeight: textInput.implicitHeight + 4
+            implicitWidth: Math.max(textInput.implicitWidth + 20, 100)
 
             readonly property bool isMarker: lineData.role === "marker-start" ||
                                              lineData.role === "separator" ||
@@ -371,6 +394,8 @@ IPopup {
 
             TextInput {
                 id: textInput
+                anchors.fill: parent
+                anchors.margins: 2
                 text: root.blockLineText(blockIndex, lineData.number)
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 13
@@ -378,6 +403,7 @@ IPopup {
                 selectByMouse: true
                 readOnly: isMarker
                 verticalAlignment: TextInput.AlignTop
+                wrapMode: TextInput.NoWrap
                 onTextChanged: {
                     if (!isMarker)
                         root.setBlockLineText(blockIndex, lineData.number, text)
@@ -391,21 +417,21 @@ IPopup {
         id: blockButtonComponent
         Item {
             property int blockIndex: 0
-            implicitHeight: buttonRow.implicitHeight
-            implicitWidth:buttonRow.implicitWidth + 100
+
+            implicitHeight: buttonRow.implicitHeight + 4
+            implicitWidth: buttonRow.implicitWidth + 20
 
             RowLayout {
                 id: buttonRow
-                // anchors.fill: parent
+                anchors.fill: parent
+                anchors.margins: 2
                 spacing:2
-                Layout.alignment: Qt.AlignVCenter
 
                 Text {
-                    id: current
                     text: "Accept Current |"
-                    Layout.alignment: Qt.AlignVCenter
                     color: Style.colors.hintText
                     font.pixelSize: 10
+
                     MouseArea{
                         anchors.fill: parent
                         onClicked: root.acceptBlock(blockIndex, "ours")
@@ -419,9 +445,9 @@ IPopup {
 
                 Text {
                     text: "Accept Incoming |"
-                    Layout.alignment: Qt.AlignVCenter
                     color: Style.colors.hintText
                     font.pixelSize: 10
+
                     MouseArea{
                         anchors.fill: parent
                         onClicked: root.acceptBlock(blockIndex, "theirs")
@@ -435,9 +461,9 @@ IPopup {
 
                 Text {
                     text: "Accept Both"
-                    Layout.alignment: Qt.AlignVCenter
                     color: Style.colors.hintText
                     font.pixelSize: 10
+
                     MouseArea{
                         anchors.fill: parent
                         onClicked: root.acceptBlock(blockIndex, "both")
@@ -512,25 +538,25 @@ IPopup {
                 let block = blockMap[lineNumber]
                 // Button row
                 rows.push({
-                    type: "blockButton",
-                    blockIndex: block.index,
-                    block: block
-                })
+                              type: "blockButton",
+                              blockIndex: block.index,
+                              block: block
+                          })
                 // All lines of the block
                 for (let j = 0; j < block.lines.length; ++j) {
                     rows.push({
-                        type: "blockLine",
-                        blockIndex: block.index,
-                        line: block.lines[j]
-                    })
+                                  type: "blockLine",
+                                  blockIndex: block.index,
+                                  line: block.lines[j]
+                              })
                 }
                 i = block.endLine  // past block
             } else {
                 rows.push({
-                    type: "contextLine",
-                    lineNumber: lineNumber,
-                    text: lines[i]
-                })
+                              type: "contextLine",
+                              lineNumber: lineNumber,
+                              text: lines[i]
+                          })
                 i++
             }
         }
@@ -586,5 +612,18 @@ IPopup {
             if (notificationController)
                 notificationController.error(res.errorMessage, "Merge", 4000)
         }
+    }
+
+    function updateContentWidth() {
+        var maxWidth = 0
+        for (var i = 0; i < count; i++) {
+            var item = itemAtIndex(i)
+            if (item) {
+                maxWidth = Math.max(maxWidth, item.width)
+            }
+        }
+        flickable.maxContentWidth = maxWidth
+        contentContainer.width = Math.max(flickable.maxContentWidth, flickable.width)
+        flickable.contentWidth = contentContainer.width
     }
 }
