@@ -118,7 +118,7 @@ Rectangle {
                     break;
                 case RepositoryController.GitProtocol.HTTPS:
                 case RepositoryController.GitProtocol.HTTP:
-                        root.updateStatus(itemIndex, "Canceled")
+                    root.updateStatus(itemIndex, "Canceled")
                     break;
             }
         })
@@ -126,8 +126,64 @@ Rectangle {
         root.reposModel = root.reposModel.slice()
     }
 
-    function pull(index: int) {
-        // TODO
+    function pull(itemIndex: int) {
+        root.updateStatus(itemIndex, "Pulling")
+
+        let repo = root.reposModel[itemIndex]
+
+        let openResult = root.repositoryController.open(repo.path)
+
+        if(!openResult.success) {
+            root.updateStatus(itemIndex, "Canceled")
+            return
+        }
+
+        let remotesRes = root.remoteController.getRemotes()
+
+        if(!remotesRes.success) {
+            root.updateStatus(itemIndex, "Canceled")
+            return
+        }
+
+        remotesRes.data.forEach((remote, remoteIndex) => {
+
+            let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
+            if(!remoteUrlRes.success) {
+                root.updateStatus(itemIndex, "Canceled")
+                return
+            }
+
+            let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
+            switch(protocol) {
+                case RepositoryController.GitProtocol.SSH:
+                    let onPullFinished = (result) => {
+                        if(!result.success) {
+                            root.updateStatus(itemIndex, "Canceled")
+                            return
+                        }
+
+                        root.updateStatus(itemIndex, "Done")
+
+                        root.remoteController.pullFinished.disconnect(onPullFinished)
+                    }
+
+                    root.remoteController.pullFinished.connect(onPullFinished)
+
+                    let pullRes = root.remoteController.pull(remote.name)
+                    if(!pullRes.success) {
+                        root.updateStatus(itemIndex, "Canceled")
+                        return
+                    }
+
+                    break;
+                case RepositoryController.GitProtocol.HTTPS:
+                case RepositoryController.GitProtocol.HTTP:
+                    root.updateStatus(itemIndex, "Canceled")
+                    break;
+            }
+        })
+
+        root.reposModel = root.reposModel.slice()
     }
 
     function fetchSelectedIndexes() {
