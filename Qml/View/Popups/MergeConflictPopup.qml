@@ -23,6 +23,9 @@ IPopup {
     property var selectedConflict: null
     property string selectedPath: ""
 
+
+    readonly property bool canContinueMerge: mergeController && conflicts.length === 0
+
     /* Object Properties
      * ****************************************************************************************/
 
@@ -331,7 +334,7 @@ IPopup {
                 Button {
                     flat: true
                     text: "Continue Merge"
-                    enabled: !displayRows.some(row => row.type === "blockButton")
+                    enabled: canContinueMerge
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
@@ -698,7 +701,7 @@ IPopup {
         selectFile(selectedPath)
     }
 
-    function buildFullContent() {   // Reconstructs the file.
+    function buildFullContent() {
         let lines = []
         for (let i = 0; i < displayRows.length; ++i) {
             let row = displayRows[i]
@@ -707,7 +710,6 @@ IPopup {
             } else if (row.type === "blockLine") {
                 lines.push(blockLineText(row.blockIndex, row.line.number))
             }
-            // button rows are skipped
         }
         return lines.join("\n")
     }
