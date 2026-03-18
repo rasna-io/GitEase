@@ -18,6 +18,7 @@ IPopup {
     property MergeController mergeController: null
     property ConflictController conflictController: null
     property NotificationController notificationController: null
+    property StatusController statusController: null
 
     property var conflicts: []
     property var selectedConflict: null
@@ -320,7 +321,7 @@ IPopup {
 
                 Button {
                     flat: true
-                    text: "Save"
+                    text: "Save & Stage"
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
@@ -328,7 +329,7 @@ IPopup {
                         radius: 5
                     }
 
-                    onClicked: saveChanges()
+                    onClicked: saveAndStage()
                 }
 
                 Button {
@@ -649,6 +650,7 @@ IPopup {
                 notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
         }
         else {
+            statusController.stageFile(selectedPath)
             loadConflicts()
             selectFile(selectedPath)
         }
@@ -681,7 +683,7 @@ IPopup {
         flickable.contentWidth = contentContainer.width
     }
 
-    function saveChanges() {
+    function saveAndStage() {
         if (!selectedPath || !conflictController)
             return
 
@@ -694,9 +696,15 @@ IPopup {
                 notificationController.error(res.errorMessage || "Failed to save file", "Conflict", 4000)
             return
         }
+
+        res = statusController.stageFile(selectedPath)
+        if (!res.success) {
+            if (notificationController)
+                notificationController.error(res.errorMessage || "Failed to stage file", "Conflict", 4000)
+            return
+        }
         if (notificationController)
             notificationController.success("File saved and staged", "Conflict", 2500)
-
         loadConflicts()
         selectFile(selectedPath)
     }
