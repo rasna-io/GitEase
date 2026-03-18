@@ -367,6 +367,13 @@ IPopup {
                 verticalAlignment: TextInput.AlignTop
                 wrapMode: TextInput.NoWrap
             }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.IBeamCursor
+                hoverEnabled: true
+                acceptedButtons: Qt.NoButton
+            }
         }
     }
 
@@ -419,6 +426,13 @@ IPopup {
                 onTextChanged: {
                     if (!isMarker)
                         root.setBlockLineText(blockIndex, lineData.number, text)
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.IBeamCursor
+                    hoverEnabled: true
+                    acceptedButtons: Qt.NoButton
                 }
             }
         }
