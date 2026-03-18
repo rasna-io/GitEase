@@ -317,7 +317,7 @@ IPopup {
 
                 Button {
                     flat: true
-                    text: "Save & Stage"
+                    text: "Save"
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
@@ -325,7 +325,7 @@ IPopup {
                         radius: 5
                     }
 
-                    onClicked: saveAndStage()
+                    onClicked: saveChanges()
                 }
 
                 Button {
@@ -366,6 +366,7 @@ IPopup {
                 selectByMouse: true
                 verticalAlignment: TextInput.AlignTop
                 wrapMode: TextInput.NoWrap
+                onTextChanged: root.setContextLineText(lineNumber, text)
             }
 
             MouseArea {
@@ -676,4 +677,56 @@ IPopup {
         contentContainer.width = Math.max(flickable.maxContentWidth, flickable.width)
         flickable.contentWidth = contentContainer.width
     }
+
+    function saveChanges() {
+        if (!selectedPath || !conflictController)
+            return
+
+        let content = buildFullContent()
+
+        let res = conflictController.writeWorkingFile(selectedPath, content)
+
+        if (!res.success) {
+            if (notificationController)
+                notificationController.error(res.errorMessage || "Failed to save file", "Conflict", 4000)
+            return
+        }
+        if (notificationController)
+            notificationController.success("File saved and staged", "Conflict", 2500)
+
+        loadConflicts()
+        selectFile(selectedPath)
+    }
+
+    function buildFullContent() {   // Reconstructs the file.
+        let lines = []
+        for (let i = 0; i < displayRows.length; ++i) {
+            let row = displayRows[i]
+            if (row.type === "contextLine") {
+                lines.push(contextLineText(row.lineNumber))
+            } else if (row.type === "blockLine") {
+                lines.push(blockLineText(row.blockIndex, row.line.number))
+            }
+            // button rows are skipped
+        }
+        return lines.join("\n")
+    }
+
+    function setContextLineText(lineNumber, text) {
+        if (contextEdits[lineNumber] !== text) {
+            let copy = Object.assign({}, contextEdits)
+            copy[lineNumber] = text
+            contextEdits = copy
+        }
+    }
+
+    function setBlockLineText(blockIndex, lineNumber, text) {
+        let key = blockIndex + ":" + lineNumber
+        if (blockEdits[key] !== text) {
+            let copy = Object.assign({}, blockEdits)
+            copy[key] = text
+            blockEdits = copy
+        }
+    }
+
 }
