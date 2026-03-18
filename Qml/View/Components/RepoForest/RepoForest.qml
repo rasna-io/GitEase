@@ -86,26 +86,41 @@ Rectangle {
         }
 
         remotesRes.data.forEach((remote, remoteIndex) => {
-            let fetchRes = root.remoteController.fetch(remote.name)
 
-            if(!fetchRes.success) {
+            let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
+            if(!remoteUrlRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
                 return
             }
 
-            let onFetchFinished = (result) => {
+            let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
+            switch(protocol) {
+                case RepositoryController.GitProtocol.SSH:
+                    let onFetchFinished = (result) => {
+                        if(!result.success) {
+                            root.updateStatus(itemIndex, "Canceled")
+                            return
+                        }
 
-                if(!result.success) {
-                    root.updateStatus(itemIndex, "Canceled")
-                    return
-                }
+                        root.updateStatus(itemIndex, "Done")
 
-                root.updateStatus(itemIndex, "Done")
+                        root.remoteController.fetchFinished.disconnect(onFetchFinished)
+                    }
 
-                root.remoteController.fetchFinished.disconnect(onFetchFinished)
+                    root.remoteController.fetchFinished.connect(onFetchFinished)
+
+                    let fetchRes = root.remoteController.fetch(remote.name)
+                    if(!fetchRes.success) {
+                        root.updateStatus(itemIndex, "Canceled")
+                        return
+                    }
+
+                    break;
+                case RepositoryController.GitProtocol.HTTPS:
+                case RepositoryController.GitProtocol.HTTP:
+                        root.updateStatus(itemIndex, "Canceled")
+                    break;
             }
-
-            root.remoteController.fetchFinished.connect(onFetchFinished)
         })
 
         root.reposModel = root.reposModel.slice()
