@@ -276,6 +276,41 @@ IPopup {
                 }
 
             }
+
+            RowLayout{
+                Layout.fillWidth: true
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Button {
+                    flat: true
+                    text: "Save & Stage"
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+
+                    onClicked: saveAndStage()
+                }
+
+                Button {
+                    flat: true
+                    text: "Continue Merge"
+                    enabled: !displayRows.some(row => row.type === "blockButton")
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+
+                    onClicked: continueMerge()
+                }
+            }
         }
     }
 
