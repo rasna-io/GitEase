@@ -63,6 +63,8 @@ private:
 
     void resetMergeState();
 
+    void storeMergeMetadata(git_reference* sourceRef);
+
 public:
     explicit GitMerge(QObject* parent = nullptr);
 

@@ -131,7 +131,11 @@ GitResult GitMerge::performNormalMerge(git_reference* sourceRef)
     git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
     checkoutOpts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_ALLOW_CONFLICTS;
 
-    if (git_merge(m_currentRepo->repo, heads, 1, &mergeOpts, &checkoutOpts) != GIT_OK) {
+    int mergeResult = git_merge(m_currentRepo->repo, heads, 1, &mergeOpts, &checkoutOpts);
+
+    // Check if merge started (even with conflicts)
+    if (mergeResult != GIT_OK && mergeResult != GIT_ECONFLICT) {
+        // Real failure - merge didn't start at all
         git_annotated_commit_free(annotated);
         return GitResult(false, QVariant(), "Merge operation failed.");
     }
@@ -144,10 +148,23 @@ GitResult GitMerge::performNormalMerge(git_reference* sourceRef)
 
     GitResult result;
 
-    if (git_index_has_conflicts(index))
-        result = handleMergeConflicts(sourceRef);
-    else
+    // Check if there are conflicts (either from git_merge return or index)
+    bool hasConflicts = (mergeResult == GIT_ECONFLICT) || (git_index_has_conflicts(index) == 1);
+
+    if (hasConflicts) {
+        // Store metadata BEFORE calling handleMergeConflicts
+        storeMergeMetadata(sourceRef);
+
+        // Set merge in progress flag
+        m_mergeInProgress = true;
+        emit mergeStateChanged();
+
+        result = GitResult(false, QVariant(),
+                           "Merge conflicts detected. Resolve them then continue.");
+    } else {
+        // No conflicts - automatically create merge commit
         result = finalizeAutomaticMerge(sourceRef, annotated, index);
+    }
 
     git_index_free(index);
     git_annotated_commit_free(annotated);
@@ -155,7 +172,7 @@ GitResult GitMerge::performNormalMerge(git_reference* sourceRef)
     return result;
 }
 
-GitResult GitMerge::handleMergeConflicts(git_reference* sourceRef)
+void GitMerge::storeMergeMetadata(git_reference* sourceRef)
 {
     // Store source commit SHA
     const git_oid* sourceOid = git_reference_target(sourceRef);
@@ -163,7 +180,7 @@ GitResult GitMerge::handleMergeConflicts(git_reference* sourceRef)
     git_oid_tostr(sourceHash, sizeof(sourceHash), sourceOid);
     m_pendingSourceHash = QString::fromUtf8(sourceHash);
 
-    // Store target commit SHA
+    // Store target commit SHA (current HEAD before merge)
     git_reference* headRef = nullptr;
     if (git_repository_head(&headRef, m_currentRepo->repo) == GIT_OK) {
         const git_oid* targetOid = git_reference_target(headRef);
@@ -182,12 +199,6 @@ GitResult GitMerge::handleMergeConflicts(git_reference* sourceRef)
     // Default message
     m_pendingMergeMessage = QString("Merge branch '%1' into '%2'")
                                 .arg(m_pendingSourceName, m_pendingTargetName);
-
-    m_mergeInProgress = true;
-    emit mergeStateChanged();
-
-    return GitResult(false, QVariant(),
-                     "Merge conflicts detected. Resolve them then continue.");
 }
 
 GitResult GitMerge::finalizeAutomaticMerge(git_reference* sourceRef,
@@ -226,13 +237,16 @@ GitResult GitMerge::finalizeAutomaticMerge(git_reference* sourceRef,
     git_commit_free(targetCommit);
     git_commit_free(sourceCommit);
 
+    if (result.success()) {
+        resetMergeState();
+    }
     return result;
 }
 
 GitResult GitMerge::continueMerge(const QString& commitMessage)
 {
-    // if (!m_mergeInProgress)
-    //     return GitResult(false, QVariant(), "No merge is currently in progress.");
+    if (!m_mergeInProgress)
+        return GitResult(false, QVariant(), "No merge is currently in progress.");
 
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository is not open.");
@@ -348,7 +362,19 @@ bool GitMerge::hasMergeConflicts() const
 
 bool GitMerge::isMergeInProgress() const
 {
-    return m_mergeInProgress;
+    // Check both our internal flag and Git's repository state
+    if (m_mergeInProgress) {
+        return true;
+    }
+
+    // Fallback: Check Git's repository state
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return false;
+    }
+
+    // Check if Git thinks we're in a merge
+    int state = git_repository_state(m_currentRepo->repo);
+    return (state == GIT_REPOSITORY_STATE_MERGE);
 }
 
 git_signature* GitMerge::createSignature() const
@@ -390,5 +416,5 @@ void GitMerge::resetMergeState()
     m_pendingSourceName.clear();
     m_pendingTargetName.clear();
     m_pendingMergeMessage.clear();
-    emit mergeStateChanged();
+    emit mergeStateChanged();  // CRITICAL: Add this line
 }
