@@ -42,6 +42,7 @@ Item {
         mergeController: root.mergeController
         conflictController: root.conflictController
         notificationController: root.notificationController
+        statusController: root.statusController
     }
 
     /* Property Declarations
