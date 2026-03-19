@@ -321,7 +321,7 @@ IPopup {
 
                 Button {
                     flat: true
-                    text: "Save & Stage"
+                    text: "Save and Stage"
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
