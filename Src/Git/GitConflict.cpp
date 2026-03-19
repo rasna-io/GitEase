@@ -59,6 +59,12 @@ GitResult GitConflict::getMergeConflicts()
     return GitResult(true, conflicts);
 }
 
+GitResult GitConflict::writeWorkingFile(const QString& filePath, const QString& content)
+{
+    if (!writeFile(filePath, content))
+        return GitResult(false, QVariant(), "Failed to write file.");
+    return GitResult(true);
+}
 
 QStringList GitConflict::readWorkdirLines(const QString& filePath) const
 {

@@ -662,6 +662,8 @@ IPopup {
 
         let res = mergeController.continueMerge()
         if (res.success) {
+            if (notificationController)
+                notificationController.success("merge was completed", "Conflict", 2500)
             close()
         }
         else {

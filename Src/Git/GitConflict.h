@@ -58,6 +58,14 @@ public:
      */
     Q_INVOKABLE GitResult acceptBlockBoth(const QString& filePath, int blockIndex);
 
+    /**
+     * @brief Writes arbitrary content to a working file (used for manual edits).
+     * @param filePath Path relative to repo root.
+     * @param content New file content.
+     * @return GitResult indicating success.
+     */
+    Q_INVOKABLE GitResult writeWorkingFile(const QString& filePath, const QString& content);
+
 private:
     // Reads the current working file content as lines
     QStringList readWorkdirLines(const QString& filePath) const;
