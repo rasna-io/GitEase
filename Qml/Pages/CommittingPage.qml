@@ -909,72 +909,58 @@ Item {
                             readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
 
                             Rectangle {
-                                id: pullBtn
-                                Layout.preferredWidth: 30
+                                id: commitBtn
+                                Layout.fillWidth: true
                                 Layout.preferredHeight: 30
-                                color: Style.colors.primaryBackground
                                 radius: 4
-                                border.color: Style.colors.foreground
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    font.family: Style.fontTypes.font6Pro
-                                    text: Style.icons.arrowDown
-                                    color: Style.colors.foreground
-                                    font.pixelSize: 16
-                                }
+                                color: parent.commitEnabled ? Style.colors.accent : Style.colors.disabledButton
 
                                 MouseArea {
-                                    anchors.fill: parent
+                                    id: commitBtnMouse
+                                    anchors.left: parent.left
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    width: parent.width - 29
                                     hoverEnabled: true
-                                    enabled: !root.isFetching
+                                    cursorShape: parent.parent.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: parent.parent.commitEnabled
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: 4
+                                        color: commitBtnMouse.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
+                                    }
+
+                                    Text {
+                                        id: commitBtnLabel
+                                        anchors.centerIn: parent
+                                        text: "Commit"
+                                        color: Style.colors.secondaryForeground
+                                        font.family: Style.fontTypes.roboto
+                                        font.pixelSize: 12
+                                    }
+
                                     onClicked: {
-                                        let res = remoteController.getRemoteUrl("origin")
-                                        if (!res.success) {
-                                            errorMessageLabel.text = res.errorMessage ?? "Failed to get remote URL"
-                                            return
-                                        }
-
-                                        let url = res.data.url
-                                        let protocol = repositoryController.detectGitProtocol(url)
-                                        switch(protocol) {
-                                        case RepositoryController.GitProtocol.SSH: {
-                                            let startRes = remoteController.pull("origin")
-                                            if (!startRes.success) {
-                                                errorMessageLabel.text = startRes.errorMessage ?? "Failed to start pull"
-                                                if (root.notificationController)
-                                                    root.notificationController.error(errorMessageLabel.text, "Pull Error", 5000)
-                                            } else {
-                                                root.isFetching = true
-                                                root.authPurpose = "pull_async_origin"
-                                            }
-                                        }
-                                        break
-
-                                        case RepositoryController.GitProtocol.HTTPS:
-                                        case RepositoryController.GitProtocol.HTTP:
-                                            root.authPurpose = "pull_async_origin"
-                                            userAuthenticationPopup.open()
-                                            break
+                                        let res = commitController.commit(commitTextArea.text, false, false)
+                                        if (res.success) {
+                                            commitTextArea.text = ""
+                                            root.notificationController.success("Commit successful", "Commit", 3000)
+                                        } else {
+                                            root.notificationController.error(res.errorMessage || "Commit failed", "Commit Error", 5000)
+                                            errorMessageLabel.text = res.errorMessage ?? "commit error"
                                         }
                                         root.update()
                                     }
                                 }
-                            }
 
-                            Rectangle {
-                                id: pushBtn
-                                Layout.preferredWidth: 30
-                                Layout.preferredHeight: 30
-                                color: Style.colors.primaryBackground
-                                radius: 4
-                                border.color: Style.colors.foreground
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: Style.icons.caretDown
-                                    font.family: Style.fontTypes.font6ProSolid
-                                    font.pixelSize: 11
+                                Rectangle {
+                                    id: caretDivider
+                                    anchors.right: commitCaretZone.left
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    anchors.topMargin: 7
+                                    anchors.bottomMargin: 7
+                                    width: 1
                                     color: Style.colors.secondaryForeground
                                     opacity: 0.35
                                 }
