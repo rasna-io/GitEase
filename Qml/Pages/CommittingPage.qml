@@ -48,6 +48,403 @@ Item {
 
     property var                     actionResult:            ({})
 
+    // Exposed to MainWindow's header area (see MainWindow.qml)
+    property Component headerContent: Component {
+        RowLayout {
+            id: headerRow
+            anchors.fill: parent
+            anchors.leftMargin: parent.width < Style.appHeight ? 8 : 20
+            anchors.rightMargin: parent.width < Style.appHeight ? 4 : 5
+            spacing: parent.width < Style.appHeight ? 6 : 10
+
+            readonly property bool compact: parent.width < 550
+
+            ToolButton {
+                id: branchChip
+                Layout.preferredWidth: branchChipContent.implicitWidth + 20
+                Layout.preferredHeight: 25
+                Layout.maximumWidth: 200
+                visible: !headerRow.compact
+                hoverEnabled: true
+
+                contentItem: Item {
+                    Row {
+                        id: branchChipContent
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text {
+                            text: Style.icons.branch
+                            font.family: Style.fontTypes.font6ProSolid
+                            font.pixelSize: 11
+                            color: Style.colors.foreground
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Text {
+                            id: headerBranchLabel
+                            text: branchController ? branchController.getCurrentBranchName() : ""
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            color: Style.colors.foreground
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Connections {
+                                target: repositoryController
+                                function onCurrentRepoChanged() {
+                                    headerBranchLabel.text = branchController ? branchController.getCurrentBranchName() : ""
+                                }
+                            }
+                        }
+                    }
+                }
+
+                background: Rectangle {
+                    radius: 5
+                    color: branchChip.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
+            }
+
+            // Separator
+            Rectangle {
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: 20
+                color: Style.colors.primaryBorder
+                visible: !headerRow.compact
+            }
+
+            ToolButton {
+                id: pullBtn
+                Layout.preferredWidth: headerRow.compact ? 26 : 70
+                Layout.preferredHeight: 26
+                hoverEnabled: true
+
+                text: Style.icons.arrowDown
+                font.family: Style.fontTypes.font6ProSolid
+                font.pixelSize: 13
+
+                contentItem: Item {
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text {
+                            text: pullBtn.text
+                            font: pullBtn.font
+                            color: Style.colors.foreground
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Text {
+                            text: "Pull"
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            color: Style.colors.foreground
+                            visible: !headerRow.compact
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+
+                background: Rectangle {
+                    radius: 5
+                    color: !pullBtn.enabled ? Style.colors.primaryBackground :
+                           pullBtn.down ? Style.colors.surfaceMuted :
+                           pullBtn.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
+
+                onClicked: {
+                    let res = remoteController.getRemoteUrl("origin")
+                    if (!res.success) {
+                        if (notificationController)
+                            notificationController.error(res.errorMessage || "Failed to get remote URL", "Pull Error", 5000)
+                        return
+                    }
+                    let url = res.data.url
+                    let protocol = repositoryController.detectGitProtocol(url)
+                    switch (protocol) {
+                    case RepositoryController.GitProtocol.SSH: {
+                        let pullRes = remoteController.fetch("origin")
+                        if (!pullRes.success) {
+                            if (notificationController)
+                                notificationController.error(pullRes.errorMessage || "Pull failed", "Pull Error", 5000)
+                        } else {
+                            if (notificationController)
+                                notificationController.success("Pulled successfully", "Pull", 3000)
+                            root.update()
+                        }
+                        break
+                    }
+                    case RepositoryController.GitProtocol.HTTPS:
+                    case RepositoryController.GitProtocol.HTTP:
+                        root.authPurpose = "pull"
+                        userAuthenticationPopup.open()
+                        break
+                    default:
+                        if (notificationController)
+                            notificationController.error("Unsupported protocol", "Pull Error", 5000)
+                    }
+                }
+
+                ToolTip.visible: pullBtn.hovered
+                ToolTip.text: "Pull from origin"
+                ToolTip.delay: 600
+            }
+
+            ToolButton {
+                id: pushBtnHeader
+                Layout.preferredWidth: headerRow.compact ? 26 : 68
+                Layout.preferredHeight: 26
+                hoverEnabled: true
+
+                text: Style.icons.arrowUp
+                font.family: Style.fontTypes.font6ProSolid
+                font.pixelSize: 13
+
+                contentItem: Item {
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text {
+                            text: pushBtnHeader.text
+                            font: pushBtnHeader.font
+                            color: Style.colors.foreground
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Text {
+                            text: "Push"
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            color: Style.colors.foreground
+                            visible: !headerRow.compact
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+
+                background: Rectangle {
+                    radius: 5
+                    color: !pushBtnHeader.enabled ? Style.colors.primaryBackground :
+                           pushBtnHeader.down ? Style.colors.surfaceMuted :
+                           pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
+
+                onClicked: {
+                    let res = remoteController.getRemoteUrl("origin")
+                    if (!res.success) {
+                        if (notificationController)
+                            notificationController.error(res.errorMessage || "Failed to get remote URL", "Push Error", 5000)
+                        return
+                    }
+                    let url = res.data.url
+                    let protocol = repositoryController.detectGitProtocol(url)
+                    switch (protocol) {
+                    case RepositoryController.GitProtocol.SSH: {
+                        let branchName = branchController.getCurrentBranchName()
+                        let remoteRes = remoteController.push("origin", branchName, false)
+                        if (!remoteRes.success) {
+                            if (notificationController)
+                                notificationController.error(remoteRes.errorMessage || "Push failed", "Push Error", 5000)
+                        } else {
+                            if (notificationController)
+                                notificationController.success("Changes pushed successfully", "Push", 3000)
+                        }
+                        break
+                    }
+                    case RepositoryController.GitProtocol.HTTPS:
+                    case RepositoryController.GitProtocol.HTTP:
+                        root.authPurpose = "push"
+                        userAuthenticationPopup.open()
+                        break
+                    default:
+                        if (notificationController)
+                            notificationController.error("Unsupported protocol", "Push Error", 5000)
+                    }
+                }
+
+                ToolTip.visible: pushBtnHeader.hovered
+                ToolTip.text: "Push to origin"
+                ToolTip.delay: 600
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            ToolButton {
+                id: fetchBtnHeader
+                Layout.preferredWidth: headerRow.compact ? 26 : 72
+                Layout.preferredHeight: 26
+                hoverEnabled: true
+                enabled: !root.isFetching
+                opacity: root.isFetching ? 0.5 : 1.0
+
+                text: Style.icons.download
+                font.family: Style.fontTypes.font6ProSolid
+                font.pixelSize: 13
+
+                contentItem: Item {
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text {
+                            text: fetchBtnHeader.text
+                            font: fetchBtnHeader.font
+                            color: Style.colors.foreground
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Text {
+                            text: "Fetch"
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            color: Style.colors.foreground
+                            visible: !headerRow.compact
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+
+                background: Rectangle {
+                    radius: 5
+                    color: !fetchBtnHeader.enabled ? Style.colors.primaryBackground :
+                           fetchBtnHeader.down ? Style.colors.surfaceMuted :
+                           fetchBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
+
+                onClicked: {
+                        let remotesRes = remoteController.getRemotes()
+                        if (!remotesRes.success || !remotesRes.data || remotesRes.data.length === 0) {
+                            if (notificationController)
+                                notificationController.error("No remotes configured", "Fetch", 5000)
+                            return
+                        }
+                        let httpsRemotes = []
+                        let sshFailed = []
+                        root.isFetching = true
+                        for (let i = 0; i < remotesRes.data.length; i++) {
+                            let remote = remotesRes.data[i]
+                            let urlRes = remoteController.getRemoteUrl(remote.name)
+                            if (!urlRes.success) {
+                                sshFailed.push({ name: remote.name, message: urlRes.errorMessage || "No URL" })
+                                continue
+                            }
+                            let url = urlRes.data.url
+                            let protocol = repositoryController.detectGitProtocol(url)
+                            switch (protocol) {
+                            case RepositoryController.GitProtocol.SSH: {
+                                let res = remoteController.fetch(remote.name)
+                                if (!res.success)
+                                    sshFailed.push({ name: remote.name, message: res.errorMessage || "Fetch failed" })
+                                break
+                            }
+                            case RepositoryController.GitProtocol.HTTPS:
+                            case RepositoryController.GitProtocol.HTTP:
+                                httpsRemotes.push(remote.name)
+                                break
+                            default:
+                                sshFailed.push({ name: remote.name, message: "Unsupported protocol" })
+                            }
+                        }
+                        if (sshFailed.length > 0 && notificationController)
+                            notificationController.error(sshFailed.map(f => f.name + ": " + f.message).join("; "), "Fetch Error", 7000)
+                        else if (httpsRemotes.length === 0 && notificationController)
+                            notificationController.success("Fetched from all remotes", "Fetch", 5000)
+                        if (httpsRemotes.length > 0) {
+                            root.pendingFetchRemoteNames = httpsRemotes
+                            root.authPurpose = "fetch"
+                            userAuthenticationPopup.open()
+                        } else {
+                            root.isFetching = false
+                        }
+                        root.update()
+                }
+
+                ToolTip.visible: fetchBtnHeader.hovered
+                ToolTip.text: root.isFetching ? "Fetching…" : "Fetch all remotes"
+                ToolTip.delay: 600
+            }
+
+            ToolButton {
+                id: pushForceBtnHeader
+                Layout.preferredWidth: headerRow.compact ? 26 : 96
+                Layout.preferredHeight: 26
+                hoverEnabled: true
+
+                text: Style.icons.arrowUp
+                font.family: Style.fontTypes.font6ProSolid
+                font.pixelSize: 13
+
+                contentItem: Item {
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text {
+                            text: pushForceBtnHeader.text
+                            font: pushForceBtnHeader.font
+                            color: Style.colors.foreground
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Text {
+                            text: "Push Force"
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            color: Style.colors.foreground
+                            visible: !headerRow.compact
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+
+                background: Rectangle {
+                    radius: 5
+                    color: !pushForceBtnHeader.enabled ? Style.colors.primaryBackground :
+                           pushForceBtnHeader.down ? Style.colors.surfaceMuted :
+                           pushForceBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
+
+                onClicked: {
+                    let res = remoteController.getRemoteUrl("origin")
+                    if (!res.success) {
+                        if (notificationController)
+                            notificationController.error(res.errorMessage || "Failed to get remote URL", "Push Force Error", 5000)
+                        return
+                    }
+                    let url = res.data.url
+                    let protocol = repositoryController.detectGitProtocol(url)
+                    switch (protocol) {
+                    case RepositoryController.GitProtocol.SSH: {
+                        let branchName = branchController.getCurrentBranchName()
+                        let remoteRes = remoteController.push("origin", branchName, true)
+                        if (!remoteRes.success) {
+                            if (notificationController)
+                                notificationController.error(remoteRes.errorMessage || "Push force failed", "Push Force Error", 5000)
+                        } else {
+                            if (notificationController)
+                                notificationController.success("Changes force pushed successfully", "Push Force", 3000)
+                        }
+                        break
+                    }
+                    case RepositoryController.GitProtocol.HTTPS:
+                    case RepositoryController.GitProtocol.HTTP:
+                        root.authPurpose = "pushForce"
+                        userAuthenticationPopup.open()
+                        break
+                    default:
+                        if (notificationController)
+                            notificationController.error("Unsupported protocol", "Push Force Error", 5000)
+                    }
+                }
+
+                ToolTip.visible: pushForceBtnHeader.hovered
+                ToolTip.text: "Force push to origin"
+                ToolTip.delay: 600
+            }
+        }
+    }
+
     onStatusControllerChanged: {
         update()
         branchController.getCurrentBranchName()
@@ -66,6 +463,7 @@ Item {
         function onCurrentRepoChanged() {
             root.update()
             currentBranchNameText.text = branchController.getCurrentBranchName()
+            commitPanelBranchText.text = branchController ? branchController.getCurrentBranchName() : ""
         }
     }
 
@@ -135,6 +533,20 @@ Item {
         target: userAuthenticationPopup
 
         function onPasswordConfirm(password){
+            if (root.authPurpose === "pull") {
+                let pullRes = remoteController.fetchWithToken("origin", password)
+                if (!pullRes.success) {
+                    if (root.notificationController)
+                        root.notificationController.error(pullRes.errorMessage || "Pull failed", "Pull Error", 5000)
+                } else {
+                    if (root.notificationController)
+                        root.notificationController.success("Pulled successfully", "Pull", 3000)
+                    root.update()
+                }
+                root.authPurpose = "push"
+                return
+            }
+
             if (root.authPurpose === "fetch") {
                 let failed = []
                 for (let i = 0; i < root.pendingFetchRemoteNames.length; i++) {
@@ -210,20 +622,22 @@ Item {
                 root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
                 errorMessageLabel.text = "current Branch Name invalid!"
             }else{
-               let remoteRes = remoteController.push(
+                let isForce = root.authPurpose === "pushForce"
+                let remoteRes = remoteController.push(
                     "origin",
                     branchName,
-                    userProfileController.currentUserProfile.username,
-                    password)
+                    password,
+                    isForce)
 
                 if(!remoteRes.success){
-                    root.notificationController.error(remoteRes.errorMessage || "Push failed", "Push Error", 5000)
+                    root.notificationController.error(remoteRes.errorMessage || "Push failed", isForce ? "Push Force Error" : "Push Error", 5000)
                     errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
                 }else{
-                    root.notificationController.success("Changes pushed successfully", "Push", 3000)
+                    root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
                     commitTextArea.text = ""
                 }
             }
+            root.authPurpose = "push"
 
             root.update()
         }
@@ -241,9 +655,9 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 5
-        anchors.topMargin: 5
-        spacing: 12
+        anchors.margins: 8
+        anchors.topMargin: 8
+        spacing: 8
 
         // Left panel: two stacked placeholders
         Rectangle {
@@ -253,64 +667,62 @@ Item {
 
             ColumnLayout {
                 anchors.fill: parent
-                spacing: 12
+                spacing: 8
 
                 Rectangle {
                     id: commitPanel
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 260
+                    Layout.preferredHeight: 140
                     color: Style.colors.secondaryBackground
                     radius: 2
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 16
-                        spacing: 12
+                        anchors.margins: 12
+                        spacing: 10
 
-                        // Header Section
-                        RowLayout {
-                            Layout.fillWidth: true
-
-                            Text {
-                                text: "COMMIT"
-                                font.family: Style.fontTypes.roboto
-                                font.pixelSize: 12
-                                color: Style.colors.secondaryText
-                            }
-
-                            Item { Layout.fillWidth: true }
-
-                            Button {
-                                id: commitOptionsButton
-                                Layout.alignment: Qt.AlignVCenter
-                                implicitWidth: 28
-                                implicitHeight: 28
-                                flat: true
-                                hoverEnabled: true
-
-                                contentItem: Text {
-                                    text: "\u22EE"
-                                    font.pixelSize: 20
-                                    color: commitOptionsButton.hovered ? Style.colors.foreground : Style.colors.secondaryText
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-                                background: Rectangle {
-                                    color: commitOptionsButton.hovered ? Style.colors.surfaceLight : "transparent"
-                                    radius: 4
-                                }
-                                onClicked: {
-                                    var pos = commitOptionsButton.mapToItem(commitPanel, 0, commitOptionsButton.height)
-                                    commitOptionsMenu.x = Math.min(pos.x, commitPanel.width - commitOptionsMenu.implicitWidth - 8)
-                                    commitOptionsMenu.y = pos.y + 4
-                                    commitOptionsMenu.open()
-                                }
-                            }
-
-                            ContextMenu {
+                        ContextMenu {
                                 id: commitOptionsMenu
                                 parent: commitPanel
                                 menuModel: [
+                                    {
+                                        text: "Push Force",
+                                        icon: Style.icons.arrowUp,
+                                        action: function() {
+                                            let res = remoteController.getRemoteUrl("origin")
+                                            if (!res.success) {
+                                                if (notificationController)
+                                                    notificationController.error(res.errorMessage || "Failed to get remote URL", "Push Force Error", 5000)
+                                                return
+                                            }
+                                            let url = res.data.url
+                                            let protocol = repositoryController.detectGitProtocol(url)
+                                            switch (protocol) {
+                                            case RepositoryController.GitProtocol.SSH: {
+                                                let branchName = branchController.getCurrentBranchName()
+                                                let remoteRes = remoteController.push("origin", branchName, true)
+                                                if (!remoteRes.success) {
+                                                    if (notificationController)
+                                                        notificationController.error(remoteRes.errorMessage || "Push force failed", "Push Force Error", 5000)
+                                                    errorMessageLabel.text = remoteRes.errorMessage ?? "push force error"
+                                                } else {
+                                                    if (notificationController)
+                                                        notificationController.success("Changes force pushed successfully", "Push Force", 3000)
+                                                }
+                                                break
+                                            }
+                                            case RepositoryController.GitProtocol.HTTPS:
+                                            case RepositoryController.GitProtocol.HTTP:
+                                                root.authPurpose = "pushForce"
+                                                userAuthenticationPopup.open()
+                                                break
+                                            default:
+                                                if (notificationController)
+                                                    notificationController.error("Unsupported protocol", "Push Force Error", 5000)
+                                            }
+                                            root.update()
+                                        }
+                                    },
                                     {
                                         text: "Fetch",
                                         icon: Style.icons.download,
@@ -431,7 +843,6 @@ Item {
                                         }
                                     }
                                 ]
-                            }
                         }
 
                         // Modern Input Area
@@ -439,7 +850,7 @@ Item {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             color: Style.colors.primaryBackground
-                            radius: 6
+                            radius: 4
                             border.width: 1
                             border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
 
@@ -480,19 +891,6 @@ Item {
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.leftMargin: 12; anchors.rightMargin: 12
-                                        Text {
-                                            text: Style.icons.branch
-                                            font.family: Style.fontTypes.font6Pro
-                                            font.pixelSize: 10
-                                            color: Style.colors.placeholderText
-                                        }
-                                        Text {
-                                            id: currentBranchNameText
-                                            text: branchController.getCurrentBranchName()
-                                            font.family: Style.fontTypes.roboto
-                                            font.pixelSize: 10
-                                            color: Style.colors.placeholderText
-                                        }
                                         Item { Layout.fillWidth: true }
                                         Text {
                                             text: commitTextArea.text.length + " characters"
@@ -506,151 +904,193 @@ Item {
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 1
+                            spacing: 6
+
+                            readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
 
                             Rectangle {
                                 id: commitBtn
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
-                                color: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
-                                        ? Style.colors.accent : Style.colors.disabledButton
-                                radius: 1
-
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "Commit"
-                                    color: Style.colors.secondaryForeground
-                                    font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 12
-                                }
+                                radius: 4
+                                color: parent.commitEnabled ? Style.colors.accent : Style.colors.disabledButton
 
                                 MouseArea {
-                                    anchors.fill: parent
+                                    id: commitBtnMouse
+                                    anchors.left: parent.left
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    width: parent.width - 29
                                     hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    enabled: (changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "")
+                                    cursorShape: parent.parent.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: parent.parent.commitEnabled
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: 4
+                                        color: commitBtnMouse.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
+                                    }
+
+                                    Text {
+                                        id: commitBtnLabel
+                                        anchors.centerIn: parent
+                                        text: "Commit"
+                                        color: Style.colors.secondaryForeground
+                                        font.family: Style.fontTypes.roboto
+                                        font.pixelSize: 12
+                                    }
+
                                     onClicked: {
                                         let res = commitController.commit(commitTextArea.text, false, false)
-
-                                        if(res.success){
+                                        if (res.success) {
                                             commitTextArea.text = ""
                                             root.notificationController.success("Commit successful", "Commit", 3000)
-                                        }else{
+                                        } else {
                                             root.notificationController.error(res.errorMessage || "Commit failed", "Commit Error", 5000)
                                             errorMessageLabel.text = res.errorMessage ?? "commit error"
                                         }
-
                                         root.update()
                                     }
                                 }
-                            }
 
-                            Rectangle {
-                                id: pullBtn
-                                Layout.preferredWidth: 30
-                                Layout.preferredHeight: 30
-                                color: Style.colors.primaryBackground
-                                radius: 4
-                                border.color: Style.colors.foreground
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    font.family: Style.fontTypes.font6Pro
-                                    text: Style.icons.arrowDown
-                                    color: Style.colors.foreground
-                                    font.pixelSize: 16
+                                Rectangle {
+                                    id: caretDivider
+                                    anchors.right: commitCaretZone.left
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    anchors.topMargin: 7
+                                    anchors.bottomMargin: 7
+                                    width: 1
+                                    color: Style.colors.secondaryForeground
+                                    opacity: 0.35
                                 }
 
                                 MouseArea {
-                                    anchors.fill: parent
+                                    id: commitCaretZone
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    width: 28
                                     hoverEnabled: true
-                                    enabled: !root.isFetching
-                                    onClicked: {
-                                        let res = remoteController.getRemoteUrl("origin")
-                                        if (!res.success) {
-                                            errorMessageLabel.text = res.errorMessage ?? "Failed to get remote URL"
-                                            return
-                                        }
+                                    cursorShape: parent.parent.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: parent.parent.commitEnabled
 
-                                        let url = res.data.url
-                                        let protocol = repositoryController.detectGitProtocol(url)
-                                        switch(protocol) {
-                                        case RepositoryController.GitProtocol.SSH: {
-                                            let startRes = remoteController.pull("origin")
-                                            if (!startRes.success) {
-                                                errorMessageLabel.text = startRes.errorMessage ?? "Failed to start pull"
-                                                if (root.notificationController)
-                                                    root.notificationController.error(errorMessageLabel.text, "Pull Error", 5000)
-                                            } else {
-                                                root.isFetching = true
-                                                root.authPurpose = "pull_async_origin"
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: 4
+                                        color: commitCaretZone.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
+                                    }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: Style.icons.caretDown
+                                        font.family: Style.fontTypes.font6ProSolid
+                                        font.pixelSize: 11
+                                        color: Style.colors.secondaryForeground
+                                    }
+
+                                    onClicked: {
+                                        var pos = commitCaretZone.mapToItem(commitPanel, 0, commitBtn.height)
+                                        commitDropMenu.x = Math.min(pos.x, commitPanel.width - commitDropMenu.implicitWidth - 48)
+                                        commitDropMenu.y = pos.y + 4
+                                        commitDropMenu.open()
+                                    }
+                                }
+
+                                ContextMenu {
+                                    id: commitDropMenu
+                                    parent: commitPanel
+                                    menuModel: [
+                                        {
+                                            text: "Commit Amend",
+                                            icon: Style.icons.penToSquare,
+                                            action: function() {
+                                                let res = commitController.commit(commitTextArea.text, true, false)
+                                                if (res.success) {
+                                                    commitTextArea.text = ""
+                                                    root.notificationController.success("Commit amended successfully", "Commit Amend", 3000)
+                                                } else {
+                                                    root.notificationController.error(res.errorMessage || "Amend failed", "Commit Amend Error", 5000)
+                                                    errorMessageLabel.text = res.errorMessage ?? "amend error"
+                                                }
+                                                root.update()
                                             }
-                                        }
-                                        break
-
-                                        case RepositoryController.GitProtocol.HTTPS:
-                                        case RepositoryController.GitProtocol.HTTP:
-                                            root.authPurpose = "pull_async_origin"
-                                            userAuthenticationPopup.open()
-                                            break
-                                        }
-                                        root.update()
-                                    }
-                                }
-                            }
-
-                            Rectangle {
-                                id: pushBtn
-                                Layout.preferredWidth: 30
-                                Layout.preferredHeight: 30
-                                color: Style.colors.primaryBackground
-                                radius: 4
-                                border.color: Style.colors.foreground
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    font.family: Style.fontTypes.font6Pro
-                                    text: Style.icons.arrowUp
-                                    color: Style.colors.foreground
-                                    font.pixelSize: 16
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        let res = remoteController.getRemoteUrl("origin")
-
-                                        if (!res.success) {
-                                            errorMessageLabel.text = res.errorMessage ?? "Failed to get remote URL"
-                                            return
-                                        }
-
-                                        let url = res.data.url
-                                        let protocol = repositoryController.detectGitProtocol(url)
-
-                                        switch(protocol) {
-                                        case RepositoryController.GitProtocol.SSH: {
-                                            let branchName = branchController.getCurrentBranchName()
-                                            let remoteRes = remoteController.push("origin", branchName, false)
-                                            if (!remoteRes.success) {
-                                                errorMessageLabel.text = remoteRes.errorMessage ?? "Push error"
-                                            } else {
+                                        },
+                                        {
+                                            text: "Commit && Push",
+                                            icon: Style.icons.arrowUp,
+                                            action: function() {
+                                                let commitRes = commitController.commit(commitTextArea.text, false, false)
+                                                if (!commitRes.success) {
+                                                    root.notificationController.error(commitRes.errorMessage || "Commit failed", "Commit Error", 5000)
+                                                    errorMessageLabel.text = commitRes.errorMessage ?? "commit error"
+                                                    return
+                                                }
                                                 commitTextArea.text = ""
+                                                root.notificationController.success("Commit successful", "Commit", 3000)
+                                                root.update()
+                                                let urlRes = remoteController.getRemoteUrl("origin")
+                                                if (!urlRes.success) {
+                                                    root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", "Push Error", 5000)
+                                                    return
+                                                }
+                                                let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
+                                                switch (protocol) {
+                                                case RepositoryController.GitProtocol.SSH: {
+                                                    let branchName = branchController.getCurrentBranchName()
+                                                    let pushRes = remoteController.push("origin", branchName, false)
+                                                    if (!pushRes.success) {
+                                                        root.notificationController.error(pushRes.errorMessage || "Push failed", "Push Error", 5000)
+                                                        errorMessageLabel.text = pushRes.errorMessage ?? "push error"
+                                                    } else {
+                                                        root.notificationController.success("Changes pushed successfully", "Push", 3000)
+                                                    }
+                                                    break
+                                                }
+                                                case RepositoryController.GitProtocol.HTTPS:
+                                                case RepositoryController.GitProtocol.HTTP:
+                                                    root.authPurpose = "push"
+                                                    userAuthenticationPopup.open()
+                                                    break
+                                                default:
+                                                    root.notificationController.error("Unsupported protocol", "Push Error", 5000)
+                                                }
+                                                root.update()
                                             }
                                         }
-                                        break;
+                                    ]
+                                }
+                            }
 
-                                        case RepositoryController.GitProtocol.HTTPS:
-                                        case RepositoryController.GitProtocol.HTTP:
-                                            root.authPurpose = "push"
-                                            userAuthenticationPopup.open()
-                                            break;
-                                        }
-                                    }
+                            Rectangle {
+                                Layout.preferredWidth: 30
+                                Layout.preferredHeight: 30
+                                radius: 4
+                                color: commitOptionsDotMouse.containsMouse ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                                border.color: Style.colors.primaryBorder
+                                border.width: 1
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\u22EE"
+                                    font.pixelSize: 16
+                                    color: commitOptionsDotMouse.containsMouse ? Style.colors.foreground : Style.colors.secondaryText
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
 
+                                MouseArea {
+                                    id: commitOptionsDotMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        var pos = parent.mapToItem(commitPanel, 0, parent.height)
+                                        commitOptionsMenu.x = Math.min(pos.x, commitPanel.width - commitOptionsMenu.implicitWidth - 12)
+                                        commitOptionsMenu.y = pos.y + 4
+                                        commitOptionsMenu.open()
+                                    }
+                                }
                             }
                         }
 

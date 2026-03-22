@@ -83,7 +83,11 @@ Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
+        anchors.topMargin: 4
+        anchors.rightMargin: 4
+        anchors.bottomMargin: 4
         width: 3
+        radius: 50
         color: root.indicatorColor
     }
 
