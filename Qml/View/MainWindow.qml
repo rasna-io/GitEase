@@ -149,6 +149,9 @@ Rectangle {
                         if (item.hasOwnProperty("activityController")) {
                             item.activityController = Qt.binding(function() { return root.uiSession?.activityController })
                         }
+                        if (item.hasOwnProperty("repoForestPopup")) {
+                            item.repoForestPopup = Qt.binding(function() { return root.uiSession?.popups?.repoForestPopup })
+                        }
                     }
 
                     onStatusChanged: {

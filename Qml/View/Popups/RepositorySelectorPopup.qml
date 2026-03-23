@@ -64,6 +64,7 @@ IPopup {
                 descriptionText: "Choose how you want to get started with your Git repository"
                 recentRepositories: root.recentRepositories
                 repositoryController: root.repositoryController
+                fileIO: root.appModel.fileIO
                 defaultPath: root.appModel?.appSettings?.generalSettings?.defaultPath ?? ""
                 onCloneFinished: root.close()
             }

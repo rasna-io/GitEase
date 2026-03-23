@@ -113,6 +113,23 @@ QtObject {
         notificationSuccessText:     "#E8FFF0"
         notificationWarningText:     "#FFF3E0"
         notificationErrorText:       "#FFEBEE"
+
+        repoItemStatusPendingBg:     "#3F2F0B"
+        repoItemStatusPendingText:   "#FCD34D"
+        repoItemStatusFetchingBg:    "#0B2545"
+        repoItemStatusFetchingText:  "#93C5FD"
+        repoItemStatusPullingBg:     "#082F49"
+        repoItemStatusPullingText:   "#7DD3FC"
+        repoItemStatusDoneBg:        "#052E16"
+        repoItemStatusDoneText:      "#86EFAC"
+        repoItemStatusDirtyBg:       "#422006"
+        repoItemStatusDirtyText:     "#FDE68A"
+        repoItemStatusConflictBg:    "#450A0A"
+        repoItemStatusConflictText:  "#FCA5A5"
+        repoItemStatusCanceledBg:    "#450A0A"
+        repoItemStatusCanceledText:  "#FCA5A5"
+        repoItemStatusPATBg:         "#43525D"
+        repoItemStatusPATText:       "#90CAF9"
     }
 
     property           string       currentTheme:               "Modern Light"

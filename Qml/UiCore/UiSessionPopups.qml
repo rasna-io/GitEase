@@ -12,13 +12,17 @@ import GitEase
 Item {
     id: root
 
+    property AppModel               appModel:               null
+
     property NotificationController notificationController: null
 
     SshKeyController {
         id: sshKeyCtrl
     }
 
-    property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {}
+    property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {
+        appModel: root.appModel
+    }
 
     property SettingsPopup              settingsPopup:              SettingsPopup {
         notificationController: root.notificationController
@@ -46,4 +50,6 @@ Item {
     property ManageStashPopup           manageStashPopup:           ManageStashPopup {}
 
     property FetchSummaryPopup          fetchSummaryPopup:          FetchSummaryPopup {}
+
+    property RepoForestPopup            repoForestPopup:            RepoForestPopup {}
 }

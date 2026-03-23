@@ -20,6 +20,8 @@ Item {
 
     property                var               recentRepositories:       []
 
+    property                var               repositoriesHistory:      []
+
     property                FileIO            fileIO:                   FileIO {}
 
     property                var               pages:                    []
@@ -58,6 +60,7 @@ Item {
 
         let config = {
             recentRepositories: root.recentRepositories,
+            repositoriesHistory: root.repositoriesHistory,
             userProfiles: profilesSerialized,
             settings: root.appSettings.serialize()
         }
@@ -92,6 +95,7 @@ Item {
         let jsonContent = JSON.parse(fileIO.fileContent)
 
         root.recentRepositories = jsonContent.recentRepositories
+        root.repositoriesHistory = jsonContent.repositoriesHistory ?? []
         root.appSettings.deserialize(jsonContent.settings)
 
         console.info("[Config] Configuration successfully loaded.");

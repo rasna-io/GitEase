@@ -53,6 +53,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/TabbedView.qml                    # Tabbed interface component
     Qml/View/Components/Base/RepositoryListItem.qml            # Repository list item display
     Qml/View/Components/Base/EmptyStateView.qml                # Items Empty State View
+    Qml/View/Components/Base/BusyWaiter.qml                    # Items Busy Wait State View
     Qml/View/Components/Base/UtilitiesCard.qml
     Qml/View/Components/Base/ContextMenu.qml
 
@@ -86,6 +87,10 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/RecentActivityDock.qml
 
     Qml/View/Components/Docks/RecentActivityDock.qml
+
+    Qml/View/Components/Docks/RepositoriesHistoryDock.qml       # All Repositories Dock
+
+    Qml/View/Components/Docks/RepoForestDock.qml                # Fetch/ Pull all Repositories
 
     # File list components (commit UI)
     Qml/View/Components/FileLists/UnstagedFileListSection.qml  # Unstaged File Status Section
@@ -124,6 +129,10 @@ set(RESOURCES_COMPONENTS
     # Notifications
     Qml/View/Components/Notification/NotificationItem.qml
     Qml/View/Components/Notification/NotificationCloseAllHeader.qml
+
+    # Repo Forest
+    Qml/View/Components/RepoForest/RepoForest.qml
+    Qml/View/Components/RepoForest/RepoItem.qml
 )
 
 
@@ -149,6 +158,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/NotificationCenterPopup.qml
     Qml/View/Popups/ManageStashPopup.qml
     Qml/View/Popups/FetchSummaryPopup.qml
+    Qml/View/Popups/RepoForestPopup.qml
 
 )
 

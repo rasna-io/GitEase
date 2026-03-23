@@ -67,10 +67,24 @@ public:
     Q_INVOKABLE GitResult open(const QString &path);
 
     /**
+     * \brief Open a repository handle without changing currentRepo
+     * \param path Path to the repository
+     * \return Detached repository handle or nullptr on failure
+     */
+    Q_INVOKABLE Repository *openDetached(const QString &path);
+
+    /**
      * \brief Close the currently open repository
      * \return QVariantMap with {"success": bool, "error": message}
      */
     Q_INVOKABLE GitResult close();
+
+    /**
+     * \brief Close and destroy a repository handle
+     * \param repository Repository handle to release
+     * \return Operation result
+     */
+    Q_INVOKABLE GitResult closeRepository(Repository *repository);
 
     /**
      * @brief Clone a repository using SSH authentication.

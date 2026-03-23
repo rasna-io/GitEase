@@ -19,6 +19,8 @@ Item {
      * ****************************************************************************************/
     property RepositoryController repositoryController
 
+    property FileIO               fileIO
+
     property var recentRepositories
 
     property alias currentTabIndex: tabbedView.currentIndex
@@ -95,6 +97,7 @@ Item {
                     id: recentRepositoriesList
                     anchors.fill: parent
                     model: recentRepositories
+                    fileIO: root.fileIO
                     onRepositoryClicked: function(name, path) {
                         root.selectedPath = path
                     }

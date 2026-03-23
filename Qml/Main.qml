@@ -57,6 +57,7 @@ ApplicationWindow {
         id: uiSessionPopups
         width: window.width
         height: window.height
+        appModel: uiSession.appModel
         notificationController: uiSession.notificationController
     }
 

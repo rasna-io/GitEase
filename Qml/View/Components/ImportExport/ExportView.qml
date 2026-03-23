@@ -70,7 +70,7 @@ Item {
                     if (branchesCombo.currentIndex < 0)
                         return;
                     let targetBranch = branchesCombo.model[branchesCombo.currentIndex].name
-                    console.log("Selecte Branch : ", targetBranch)
+                    console.log("Select Branch : ", targetBranch)
                     let res = branchController.getBranchLineage(targetBranch)
                     if (res.success)
                         baseBranchCombo.model = res.data

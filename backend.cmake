@@ -2,6 +2,7 @@ set(SOURCES_BACKEND
     # Src/Git/GitWrapperCPP.cpp
     Src/Utilities/windowsManager/borderlesswindowhelper.cpp
     Src/Utilities/FileManager/FileIO.cpp
+    Src/Utilities/GitScanner/GitScanner.cpp
 
     Src/Git/IGitController.cpp
     Src/Git/GitRepository.cpp
@@ -34,6 +35,7 @@ set(HEADERS_BACKEND
     Src/Utilities/windowsManager/windowcontroller.hpp
     Src/Utilities/windowsManager/borderlesswindowhelper.h
     Src/Utilities/FileManager/FileIO.hpp
+    Src/Utilities/GitScanner/GitScanner.hpp
 
     Src/Git/IGitController.h
     Src/Git/GitRepository.h
@@ -69,6 +71,7 @@ set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Utilities/FileManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/SshKeyManager/
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/GitScanner/
     ${CMAKE_SOURCE_DIR}/Src
     ${CMAKE_SOURCE_DIR}/Src/Git/
 )

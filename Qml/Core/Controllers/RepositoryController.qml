@@ -196,6 +196,12 @@ GitRepository {
 
         // add to end (newest last)
         appModel.recentRepositories.unshift(repo)
+        // add repo path in history
+        let exists = root.appModel.repositoriesHistory.indexOf(repo.path)
+        if(exists == -1) {
+            appModel.repositoriesHistory.unshift(repo.path)
+            appModel.repositoriesHistory = appModel.repositoriesHistory.slice()
+        }
 
         // trim to max length
         if (root.maxRecentLength && appModel.recentRepositories.length > root.maxRecentLength) {
