@@ -95,7 +95,7 @@ Item {
         let jsonContent = JSON.parse(fileIO.fileContent)
 
         root.recentRepositories = jsonContent.recentRepositories
-        root.repositoriesHistory = jsonContent.repositoriesHistory
+        root.repositoriesHistory = jsonContent.repositoriesHistory ?? []
         root.appSettings.deserialize(jsonContent.settings)
 
         console.info("[Config] Configuration successfully loaded.");

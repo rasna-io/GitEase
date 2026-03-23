@@ -27,6 +27,7 @@ Rectangle {
     property   bool                   isRunning:                false
     property   var                    operationQueue:           []
     property   bool                   isProcessingQueue:        false
+    property   var                    scannedRepositories:      []
 
     readonly property bool allSelected:     reposModel.length > 0 && selectedIndexes.length === reposModel.length
     readonly property bool noneSelected:    selectedIndexes.length === 0
@@ -65,6 +66,11 @@ Rectangle {
 
     function updateStatus(itemIndex: int, status: string) {
         root.reposModel[itemIndex].status = status
+
+        if (status === "Canceled" || status === "Done") {
+            repositoryController.closeRepository(root.reposModel[itemIndex].repo)
+        }
+
         root.reposModel = root.reposModel.slice()
     }
 
@@ -98,17 +104,19 @@ Rectangle {
     function executeFetch(itemIndex: int, pat: string) {
         root.updateStatus(itemIndex, "Fetching")
 
-        let repo = root.reposModel[itemIndex]
+        let repoItem = root.reposModel[itemIndex]
 
-        let openResult = root.repositoryController.open(repo.path)
 
-        if(!openResult.success) {
+
+        if(!repoItem.repo) {
             root.updateStatus(itemIndex, "Canceled")
             processNextOperation()
             return
         }
 
-        let remotesRes = root.remoteController.getRemotes()
+        scanRemoteController.currentRepo = repoItem.repo
+
+        let remotesRes = scanRemoteController.getRemotes()
 
         if(!remotesRes.success) {
             root.updateStatus(itemIndex, "Canceled")
@@ -123,7 +131,7 @@ Rectangle {
         }
 
         remotesRes.data.forEach(remote => {
-            let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
+            let remoteUrlRes = scanRemoteController.getRemoteUrl(remote.name)
 
             if(!remoteUrlRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
@@ -141,22 +149,22 @@ Rectangle {
 
             let onFetchFinished = (result) => {
                 root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
-                root.remoteController.fetchFinished.disconnect(onFetchFinished)
+                scanRemoteController.fetchFinished.disconnect(onFetchFinished)
                 processNextOperation()
             }
 
-            root.remoteController.fetchFinished.connect(onFetchFinished)
+           scanRemoteController.fetchFinished.connect(onFetchFinished)
 
             let fetchRes
             if (protocol === RepositoryController.GitProtocol.SSH) {
-                fetchRes = root.remoteController.fetch(remote.name)
+                fetchRes = scanRemoteController.fetch(remote.name)
             } else{
-                fetchRes = root.remoteController.fetchWithToken(remote.name, pat)
+                fetchRes = scanRemoteController.fetchWithToken(remote.name, pat)
             }
 
             if(!fetchRes || !fetchRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
-                root.remoteController.fetchFinished.disconnect(onFetchFinished)
+                scanBranchController.fetchFinished.disconnect(onFetchFinished)
                 processNextOperation()
             }
         })
@@ -167,15 +175,16 @@ Rectangle {
 
         let repo = root.reposModel[itemIndex]
 
-        let openResult = root.repositoryController.open(repo.path)
+        let repoItem = root.reposModel[itemIndex]
 
-        if(!openResult.success) {
+
+        if(!repoItem) {
             root.updateStatus(itemIndex, "Canceled")
             processNextOperation()
             return
         }
 
-        let remotesRes = root.remoteController.getRemotes()
+        let remotesRes =scanRemoteController.getRemotes()
 
         if(!remotesRes.success) {
             root.updateStatus(itemIndex, "Canceled")
@@ -190,7 +199,7 @@ Rectangle {
         }
 
         let remote = remotesRes.data.forEach(remote => {
-            let remoteUrlRes = root.remoteController.getRemoteUrl(remote.name)
+            let remoteUrlRes =scanRemoteController.getRemoteUrl(remote.name)
 
             if(!remoteUrlRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
@@ -203,16 +212,16 @@ Rectangle {
             if (protocol === RepositoryController.GitProtocol.SSH) {
                 let onPullFinished = (result) => {
                     root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
-                    root.remoteController.pullFinished.disconnect(onPullFinished)
+                   scanRemoteController.pullFinished.disconnect(onPullFinished)
                     processNextOperation()
                 }
 
-                root.remoteController.pullFinished.connect(onPullFinished)
+               scanRemoteController.pullFinished.connect(onPullFinished)
 
-                let pullRes = root.remoteController.pull(remote.name)
+                let pullRes =scanRemoteController.pull(remote.name)
                 if(!pullRes.success) {
                     root.updateStatus(itemIndex, "Canceled")
-                    root.remoteController.pullFinished.disconnect(onPullFinished)
+                   scanRemoteController.pullFinished.disconnect(onPullFinished)
                     processNextOperation()
                 }
             } else {
@@ -243,6 +252,14 @@ Rectangle {
 
     /* Children
     * ****************************************************************************************/
+    BranchController {
+        id: scanBranchController
+    }
+
+    RemoteController {
+        id: scanRemoteController
+    }
+
     Connections {
         target: gitScanner
 
@@ -252,35 +269,48 @@ Rectangle {
 
         function onScanFinished(paths) {
             root.isRunning = true
-            paths.forEach(path => {
-                let repoName = path.split('/').pop() || path.split('\\').pop() || "Repository"
-                let brancName = "none"
-                let remote = ""
+            root.scannedRepositories = []
 
-                busyWaiter.message = "open " + path
+            try {
+                paths.forEach(path => {
+                    let repoName = path.split('/').pop() || path.split('\\').pop() || "Repository"
+                    let brancName = "none"
+                    let remote = ""
 
-                let openRes = repositoryController.open(path)
+                    busyWaiter.message = "open " + path
 
-                if(openRes.success) {
-                    busyWaiter.message = "get " + path
-                    brancName = branchController.getCurrentBranchName()
+                    let repoHandle = repositoryController.openDetached(path)
 
-                    let remoteRes = remoteController.getRemotes()
-                    if(remoteRes.success){
+                    if(repoHandle) {
+                        root.scannedRepositories.push(repoHandle)
+                        scanBranchController.currentRepo = repoHandle
+                        scanRemoteController.currentRepo = repoHandle
 
-                        remoteRes.data.forEach(remoteItem => {
-                                               remote += remoteItem.url + ", "
-                                               })
+                        busyWaiter.message = "get " + path
+                        brancName = scanBranchController.getCurrentBranchName()
+
+                        let remoteRes = scanRemoteController.getRemotes()
+                        if(remoteRes.success){
+                            remote = remoteRes.data
+                                .map(remoteItem => remoteItem.url)
+                                .filter(url => url && url.length > 0)
+                                .join(", ")
+                        }
                     }
-                }
 
-                busyWaiter.message = "Done " + path
+                    busyWaiter.message = "Done " + path
 
-                root.reposModel.push({ name: repoName, path: path, branchName: brancName, remote: remote, status: "Pending"})
-            })
+                    root.reposModel.push({ repo: repoHandle, name: repoName, path: path, branchName: brancName, remote: remote, status: "Pending"})
+                })
+            } finally {
+                scanBranchController.currentRepo = null
+                scanRemoteController.currentRepo = null
 
-            root.reposModel = root.reposModel.slice()
-            root.isRunning = false
+
+                root.scannedRepositories = []
+                root.reposModel = root.reposModel.slice()
+                root.isRunning = false
+            }
         }
     }
 

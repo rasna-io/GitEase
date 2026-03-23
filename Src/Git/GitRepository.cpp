@@ -12,7 +12,7 @@
 GitRepository::GitRepository(QObject *parent)
     : IGitController{parent}
 {
-    m_currentRepo = new Repository();
+    m_currentRepo = new Repository(this);
 }
 
 GitResult GitRepository::init(const QString &path)
@@ -67,26 +67,14 @@ GitResult GitRepository::open(const QString &path)
         return GitResult(false, QVariant(), "Directory does not exist");
     }
 
-    // Close current repository if open
-    if (m_currentRepo && m_currentRepo->repo)
+    Repository *newRepo = openDetached(path);
+
+    if (!newRepo || !newRepo->repo)
     {
-        git_repository_free(m_currentRepo->repo);
-        m_currentRepo->repo = nullptr;
-    }
-
-    Repository *newRepo = new Repository(this);
-
-    // Convert path to UTF-8
-    QByteArray pathUtf8 = path.toUtf8();
-
-    // Open repository
-    int result = git_repository_open(&newRepo->repo, pathUtf8.constData());
-
-    if (result != 0)
-    {
-        delete newRepo;
         return GitResult(false, QVariant(), "Failed to open repository");
     }
+
+    newRepo->setParent(this);
 
     Repository *oldRepo = m_currentRepo;
     m_currentRepo = newRepo;
@@ -102,6 +90,33 @@ GitResult GitRepository::open(const QString &path)
     }
 
     return GitResult(true, path);
+}
+
+Repository *GitRepository::openDetached(const QString &path)
+{
+    if (path.isEmpty())
+    {
+        return nullptr;
+    }
+
+    QDir dir(path);
+    if (!dir.exists())
+    {
+        return nullptr;
+    }
+
+    Repository *repo = new Repository(this);
+    QByteArray pathUtf8 = path.toUtf8();
+
+    int result = git_repository_open(&repo->repo, pathUtf8.constData());
+
+    if (result != 0)
+    {
+        delete repo;
+        return nullptr;
+    }
+
+    return repo;
 }
 
 GitResult GitRepository::clone(const QString& url,
@@ -230,10 +245,26 @@ GitResult GitRepository::close()
         return GitResult(false, QVariant(), "No repository open");
     }
 
-    git_repository_free(m_currentRepo->repo);
+    m_currentRepo->deleteLater();
     m_currentRepo = nullptr;
     m_currentRepoPath.clear();
 
+    return GitResult(true);
+}
+
+GitResult GitRepository::closeRepository(Repository *repository)
+{
+    if (!repository)
+    {
+        return GitResult(false, QVariant(), "Repository handle is null");
+    }
+
+    if (repository == m_currentRepo)
+    {
+        return close();
+    }
+
+    repository->deleteLater();
     return GitResult(true);
 }
 
