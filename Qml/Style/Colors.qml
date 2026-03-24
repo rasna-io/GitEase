@@ -136,5 +136,7 @@ QtObject{
     property color conflictTheirsBg:        "#d9e8f5"
     property color conflictSeparatorBg:     "transparent"
     property color conflictMarkerText:      "#666666"
+    property color lineNumberColor:         "#6e7681"
+
 
 }
