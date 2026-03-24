@@ -31,6 +31,8 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/NotificationController.qml
     Qml/Core/Controllers/ActivityController.qml
     Qml/Core/Controllers/SshKeyController.qml
+    Qml/Core/Controllers/MergeController.qml
+    Qml/Core/Controllers/ConflictController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
@@ -159,6 +161,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/ManageStashPopup.qml
     Qml/View/Popups/FetchSummaryPopup.qml
     Qml/View/Popups/RepoForestPopup.qml
+    Qml/View/Popups/MergeConflictPopup.qml
 
 )
 

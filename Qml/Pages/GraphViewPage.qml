@@ -28,6 +28,8 @@ Item {
     readonly property var           currentRepo: appModel?.currentRepository ?? null
     property string                 selectedCommit: ""
     property string                 selectedFilePath: ""
+    property ConflictController conflictController: null
+    property MergeController mergeController: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -35,6 +37,7 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+
     onSelectedCommitChanged: {
         fileChangesDock.commitHash = root.selectedCommit
     }
@@ -506,11 +509,13 @@ Item {
                 repositoryController: root.repositoryController
                 appModel: root.appModel
                 branchController: root.branchController
+                mergeController: root.mergeController
                 addBranchPopup: uiSessionPopups.addBranchPopup
                 commitController: root.commitController
                 statusController: root.statusController
                 notificationController: root.notificationController
                 stashController: root.stashController
+                conflictController: root.conflictController
 
                 onCommitClicked: function(commitId) {
                     root.selectedCommit = commitId

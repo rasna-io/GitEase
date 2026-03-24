@@ -9,7 +9,6 @@ import GitEase
 import "qrc:/GitEase/Qml/Core/Scripts/GraphLayout.js" as GraphLayout
 import "qrc:/GitEase/Qml/Core/Scripts/GraphUtils.js" as GraphUtils
 
-
 /*! ***********************************************************************************************
  * CommitGraphDock
  * show graph and commits
@@ -22,6 +21,10 @@ Item {
 
     property BranchController branchController: null
 
+    property MergeController mergeController: null
+
+    property ConflictController conflictController: null
+
     property AddBranchPopup addBranchPopup: null
 
     property StatusController statusController: null
@@ -33,6 +36,14 @@ Item {
     property NotificationController notificationController: null
 
     property StashController stashController: null
+    MergeConflictPopup {
+        id: mergeConflictPopup
+
+        mergeController: root.mergeController
+        conflictController: root.conflictController
+        notificationController: root.notificationController
+        statusController: root.statusController
+    }
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -1710,6 +1721,12 @@ Item {
                                     }
                                 });
 
+                                // Merge
+                                var currentBranch = root.branchController
+                                        ? root.branchController.getCurrentBranchName()
+                                        : "";
+                                addMergeEntries(finalModel, branches, currentBranch, isCurrentHead);
+
                                 menuModel = finalModel;
                             }
 
@@ -2125,6 +2142,69 @@ Item {
 
     function update() {
         graphCanvas.requestPaint()
+    }
+
+    function addMergeEntries(finalModel, branches, currentBranch, isCurrentHead) {
+
+        if (!branches || branches.length === 0)
+            return;
+
+        if (!currentBranch)
+            return;
+
+        branches.forEach(function(bName) {
+
+            // Skip current branch itself
+            if (bName === currentBranch)
+                return;
+
+            // Skip Remote branches
+            if (bName.startsWith("origin/"))
+                return;
+
+            finalModel.push({
+                text: "Merge '" + bName + "' into '" + currentBranch + "'",
+                icon: Style.icons.arrowLeftRight,
+                enabled: !isCurrentHead,
+                action: function() {
+                    let res = mergeController.mergeBranchIntoCurrent(bName);
+
+                    if (mergeController.hasMergeConflicts()) {
+
+                        mergeConflictPopup.open()
+
+                        if (notificationController)
+                            notificationController.warning(
+                                "Merge conflicts detected. Please resolve them.",
+                                "Merge",
+                                4000
+                            )
+
+                        return
+                    }
+
+                    if (!res.success) {
+
+                        if (notificationController)
+                            notificationController.error(
+                                res.errorMessage || "Merge failed",
+                                "Merge",
+                                5000
+                            );
+
+                        return;
+                    }
+
+                    if (notificationController)
+                        notificationController.success(
+                            "Merge completed successfully",
+                            "Merge",
+                            3000
+                        );
+                }
+            });
+
+        });
     }
 
     onRepositoryControllerChanged: reloadAll();
