@@ -10,6 +10,7 @@
 #include <git2/signature.h>
 
 #include <QVariantList>
+#include <git2/branch.h>
 
 GitRebase::GitRebase(QObject* parent)
     : IGitController{parent}
@@ -23,7 +24,7 @@ GitResult GitRebase::rebase(const QString& upstream, const QString& branch)
 
 GitResult GitRebase::rebaseOnto(const QString& onto,
                                 const QString& upstream,
-                                const QString& branch)
+                                QString branch)
 {
     if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository not found.");
@@ -36,6 +37,23 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
     if (isRebaseInProgress()) {
         return GitResult(false, QVariant(),
                          "A rebase is already in progress. Continue or abort it first.");
+    }
+
+    QString originalBranch = branch;
+    bool hasBranch = !branch.trimmed().isEmpty();
+
+    // If a branch is provided, ensure it is checked out
+    if (hasBranch) {
+        QString currentBranch = getCurrentBranchName();
+        if (currentBranch != originalBranch) {
+            GitResult checkoutResult = checkoutBranch(branch);
+            if (!checkoutResult.success()) {
+                return checkoutResult;
+            }
+        }
+        // After checkout, we want to use the current HEAD, so we clear 'branch'
+        // to prevent creating a separate annotated commit for it.
+        branch = QString();
     }
 
     git_rebase* rebase = nullptr;
@@ -99,8 +117,8 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
             command += " --onto " + quoteCommandArg(onto);
         }
         command += " " + quoteCommandArg(upstream);
-        if (!branch.trimmed().isEmpty()) {
-            command += " " + quoteCommandArg(branch);
+        if (hasBranch) {
+            command += " " + quoteCommandArg(originalBranch);
         }
         emitGitCommand(command);
     }
@@ -466,4 +484,92 @@ bool GitRebase::isRebaseInProgress() const
     return state == GIT_REPOSITORY_STATE_REBASE ||
            state == GIT_REPOSITORY_STATE_REBASE_INTERACTIVE ||
            state == GIT_REPOSITORY_STATE_REBASE_MERGE;
+}
+
+GitResult GitRebase::checkoutBranch(const QString& branchName)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "Repository not open.");
+
+    git_reference* targetRef = nullptr;
+    git_object* targetCommit = nullptr;
+
+    int error = git_branch_lookup(&targetRef, m_currentRepo->repo,
+                                  branchName.toUtf8().constData(),
+                                  GIT_BRANCH_LOCAL);
+    if (error != GIT_OK) {
+        return GitResult(false, QVariant(),
+                         QString("Branch '%1' not found.").arg(branchName));
+    }
+
+    error = git_reference_peel(&targetCommit, targetRef, GIT_OBJ_COMMIT);
+    if (error != GIT_OK) {
+        git_reference_free(targetRef);
+        return GitResult(false, QVariant(),
+                         QString("Failed to peel reference for branch '%1'.").arg(branchName));
+    }
+
+    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+    opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+
+    error = git_checkout_tree(m_currentRepo->repo, targetCommit, &opts);
+    if (error != GIT_OK) {
+        git_object_free(targetCommit);
+        git_reference_free(targetRef);
+        return GitResult(false, QVariant(),
+                         QString("Failed to checkout branch '%1'.").arg(branchName));
+    }
+
+    error = git_repository_set_head(m_currentRepo->repo,
+                                    git_reference_name(targetRef));
+    if (error != GIT_OK) {
+        git_object_free(targetCommit);
+        git_reference_free(targetRef);
+        return GitResult(false, QVariant(),
+                         QString("Failed to set HEAD to branch '%1'.").arg(branchName));
+    }
+
+    git_object_free(targetCommit);
+    git_reference_free(targetRef);
+
+    emitGitCommand(QString("git checkout %1").arg(quoteCommandArg(branchName)));
+
+    return GitResult(true, QVariant(),
+                     QString("Checked out branch '%1'.").arg(branchName));
+}
+
+QString GitRebase::getCurrentBranchName()
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return "";
+
+    QString branchName;  // Empty string to start
+    git_reference* head = nullptr;  // libgit2 HEAD reference
+
+    int error = git_repository_head(&head, m_currentRepo->repo);
+
+    // Get HEAD reference (points to current branch)
+    if (error == GIT_OK)
+    {
+        const char* name = nullptr;  // Will store branch name
+
+        // Extract branch name from reference
+        if (git_branch_name(&name, head) == GIT_OK && name)
+        {
+            branchName = QString::fromUtf8(name);  // Convert C string to QString
+        }
+        git_reference_free(head);  // Clean up libgit2 object
+    }
+    else if (error == GIT_ENOTFOUND)
+    {
+        branchName = "initial/no-commits";
+    }
+    else
+    {
+        branchName = "Detached HEAD";
+    }
+
+    emitGitCommand("git rev-parse --abbrev-ref HEAD");
+
+    return branchName;  // "main", "master", or Detached HEAD if detached
 }

@@ -28,20 +28,32 @@ public:
     explicit GitRebase(QObject* parent = nullptr);
 
     /**
-     * @brief Start an interactive-less rebase of the current branch onto @p upstream.
-     * @param upstream Target ref/branch/commit to rebase onto (required).
-     * @param branch Optional branch to rebase; if empty, uses current branch.
+     * @brief Rebase a branch (or the current branch) onto an upstream.
+     *
+     * This is a convenience wrapper for `rebaseOnto` with an empty `onto`.
+     *
+     * @param upstream The target reference (branch, tag, or commit) to rebase onto.
+     * @param branch   Optional branch to rebase. If empty, the current HEAD branch is used.
+     *                 If provided, the branch will be checked out before the rebase.
+     * @return GitResult containing success status and data.
      */
     Q_INVOKABLE GitResult rebase(const QString& upstream, const QString& branch = QString());
+
     /**
-     * @brief Rebase with explicit onto target (equivalent to git rebase --onto).
-     * @param onto New base where commits should be replayed.
-     * @param upstream Upstream boundary (commits after this are replayed).
-     * @param branch Optional branch to rebase; if empty, uses current branch.
+     * @brief Rebase a branch with an explicit `--onto` target.
+     *
+     * Equivalent to `git rebase --onto <onto> <upstream> <branch>`.
+     *
+     * @param onto     New base for the commits (the commits after `upstream` will be replayed onto this).
+     *                 If empty, `upstream` serves as both the base and the boundary.
+     * @param upstream Upstream boundary (commits after this point are replayed).
+     * @param branch   Optional branch to rebase. If empty, the current HEAD branch is used.
+     *                 If provided, the branch will be checked out before the rebase.
+     * @return GitResult containing success status and data.
      */
     Q_INVOKABLE GitResult rebaseOnto(const QString& onto,
                                      const QString& upstream,
-                                     const QString& branch = QString());
+                                     QString branch = QString());
 
     /// Continue an in-progress rebase (`git rebase --continue`).
     Q_INVOKABLE GitResult continueRebase();
@@ -66,4 +78,8 @@ private:
     GitResult resetWorktreeToHead() const;
     bool repositoryHasConflicts() const;
     bool isRebaseInProgress() const;
+
+    // Helper to check out a branch
+    GitResult checkoutBranch(const QString& branchName);
+    QString getCurrentBranchName();
 };
