@@ -37,18 +37,19 @@ Item {
     property NotificationController notificationController: null
 
     property StashController stashController: null
-    MergeConflictPopup {
-        id: mergeConflictPopup
 
+    ConflictPopup {
+        id: mergeConflictPopup
+        isMerge: true
         mergeController: root.mergeController
         conflictController: root.conflictController
         notificationController: root.notificationController
         statusController: root.statusController
     }
 
-    RebaseConflictPopup {
+    ConflictPopup {
         id: rebaseConflictPopup
-
+        isMerge: false
         rebaseController: root.rebaseController
         conflictController: root.conflictController
         notificationController: root.notificationController

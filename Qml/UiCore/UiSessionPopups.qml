@@ -45,12 +45,7 @@ Item {
         notificationController: root.notificationController
     }
 
-
-    property MergeConflictPopup          mergeConflictPopup:         MergeConflictPopup {
-        notificationController: root.notificationController
-    }
-
-    property RebaseConflictPopup         rebaseConflictPopup:        RebaseConflictPopup {
+    property ConflictPopup                conflictPopup:             ConflictPopup{
         notificationController: root.notificationController
     }
 

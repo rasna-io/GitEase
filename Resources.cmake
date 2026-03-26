@@ -164,6 +164,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/RepoForestPopup.qml
     Qml/View/Popups/MergeConflictPopup.qml
     Qml/View/Popups/RebaseConflictPopup.qml
+    Qml/View/Popups/ConflictPopup.qml
 
 )
 
