@@ -33,6 +33,8 @@ Item {
 
     property ActivityController activityController: null
 
+    property RebaseController rebaseController: null
+
     /* Object Properties
      * ****************************************************************************************/
     anchors.fill: parent
@@ -119,6 +121,16 @@ Item {
                 branchController: root.branchController
                 remoteController: root.remoteController
                 repoForestPopup: root.repoForestPopup
+            }
+            
+            RebaseDock {
+                width: 330
+                height: 390
+                branchController: root.branchController
+                rebaseController: root.rebaseController
+                conflictPopup: uiSessionPopups.conflictPopup
+
+                notificationController: root.notificationController
             }
         }
     }

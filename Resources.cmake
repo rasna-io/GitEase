@@ -90,6 +90,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/RecentActivityDock.qml
 
     Qml/View/Components/Docks/RecentActivityDock.qml
+    Qml/View/Components/Docks/RebaseDock.qml
 
     Qml/View/Components/Docks/RepositoriesHistoryDock.qml       # All Repositories Dock
 
