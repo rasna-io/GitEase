@@ -45,10 +45,6 @@ Item {
         notificationController: root.notificationController
     }
 
-    property ConflictPopup                conflictPopup:             ConflictPopup{
-        notificationController: root.notificationController
-    }
-
     property NotificationCenterPopup    notificationCenterPopup:    NotificationCenterPopup {}
 
     property ManageStashPopup           manageStashPopup:           ManageStashPopup {}

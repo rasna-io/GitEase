@@ -175,7 +175,7 @@ UtilitiesCard {
                 }
             }
 
-            onClicked: startRebase()
+            onClicked: startRebase(upstreamInput.text, ontoInput.text, advancedToggle.checked, branchCombo.currentIndex)
         }
     }
 
@@ -214,11 +214,11 @@ UtilitiesCard {
     }
 
     // Perform the rebase
-    function startRebase() {
+    function startRebase(upstream, onto, advanced, currentIndexBranchCombo) {
         if (!rebaseController)
             return
 
-        var upstream = root.contentLayout.upstreamInput.text.trim()
+        upstream = upstream.trim()
         if (upstream.length === 0) {
             if (notificationController)
                 notificationController.error("Upstream is required.", "Rebase", 4000)
@@ -227,12 +227,12 @@ UtilitiesCard {
 
         var branchValue = ""
         if (branchModel.count > 0)
-            branchValue = branchModel.get(branchCombo.currentIndex).value
+            branchValue = branchModel.get(currentIndexBranchCombo).value
 
         var res
-        if (advancedToggle.checked) {
+        if (advanced) {
 
-            var onto = ontoInput.text.trim()
+            onto = onto.trim()
             if (onto.length === 0) {
                 if (notificationController)
                     notificationController.error("Onto is required in advanced mode.", "Rebase", 4000)
