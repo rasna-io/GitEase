@@ -60,7 +60,7 @@ UtilitiesCard {
             spacing: 2
 
             Text {
-                text: "Branch to rebase (optional)"
+                text: "Branch to rebase"
                 font.pixelSize: 12
                 color: Style.colors.mutedText
             }
@@ -225,9 +225,10 @@ UtilitiesCard {
             return
         }
 
-        var branchValue = ""
-        if (branchModel.count > 0)
-            branchValue = branchModel.get(currentIndexBranchCombo).value
+        if(!branchModel.count > 0)
+            return
+
+        var branchValue = branchModel.get(currentIndexBranchCombo).value
 
         var res
         if (advanced) {
@@ -248,7 +249,6 @@ UtilitiesCard {
         if (res && res.success) {
             if (notificationController)
                 notificationController.success("Rebase completed successfully", "Rebase", 3000)
-            // Optionally clear fields or keep them
             return
         }
 
