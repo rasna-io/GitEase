@@ -10,16 +10,13 @@ import GitEase_Style_Impl
  * ConflictPopup
  * ************************************************************************************************/
 
-
 IPopup {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-
-    property MergeController    mergeController : null
-    property RebaseController   rebaseController: null
-
+    property MergeController        mergeController         : null
+    property RebaseController       rebaseController        : null
     property ConflictController     conflictController      : null
     property StatusController       statusController        : null
     property NotificationController notificationController  : null
@@ -27,11 +24,6 @@ IPopup {
     property var    conflicts       : []
     property var    selectedConflict: null
     property string selectedPath    : ""
-
-    // Flat list of rows to display in the editor
-    property var displayRows: []
-    property var contextEdits: ({}) // lineNumber -> edited text
-    property var blockEdits: ({})   // "blockIndex:lineNumber" -> edited text
 
     property bool isMerge: false
 
@@ -47,14 +39,23 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-
     width: 800
     height: 650
     padding: 12
 
     onOpened: loadConflicts()
 
-    contentItem: Rectangle{
+    ListModel {
+        id: displayModel
+    }
+
+    TextMetrics {
+        id: widthCalculator
+        font.family: "Cascadia Mono"
+        font.pixelSize: 13
+    }
+
+    contentItem: Rectangle {
         color: Style.colors.primaryBackground
         radius: 16
         clip: true
@@ -76,7 +77,6 @@ IPopup {
                     color: Style.colors.secondaryText
                     font.family: Style.fontTypes.roboto
                     font.bold: true
-                    elide: Text.ElideLeft
                     font.pixelSize: 14
                 }
 
@@ -110,6 +110,7 @@ IPopup {
                     onClicked: root.close()
                 }
             }
+
             // Content
             RowLayout {
                 Layout.fillWidth: true
@@ -125,6 +126,7 @@ IPopup {
                     border.color: Style.colors.primaryBorder
 
                     ListView {
+                        id: fileListView
                         anchors.fill: parent
                         model: conflicts
                         spacing: 1
@@ -146,7 +148,6 @@ IPopup {
                                 anchors.leftMargin: 8
                                 anchors.rightMargin: 8
                                 spacing: 8
-
                                 Text {
                                     text: (index + 1) + "."
                                     color: Style.colors.lineNumberColor
@@ -154,7 +155,6 @@ IPopup {
                                     font.pixelSize: 12
                                     opacity: 0.7
                                 }
-
                                 Text {
                                     Layout.fillWidth: true
                                     text: modelData.path || ""
@@ -164,7 +164,6 @@ IPopup {
                                     elide: Text.ElideMiddle
                                 }
                             }
-
                             MouseArea {
                                 anchors.fill: parent
                                 onClicked: root.selectFile(modelData.path)
@@ -178,130 +177,210 @@ IPopup {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    radius: 4
-                    color: Style.colors.primaryBackground
+                    color: Style.colors.editorBackgroound
                     border.width: 1
                     border.color: Style.colors.primaryBorder
+                    radius: 4
 
-                    ScrollView {
+                    ListView {
+                        id: conflictListView
+                        property real horizontalScrollOffset: 0
+                        property real maxContentWidth: 0
+
                         anchors.fill: parent
                         clip: true
+                        model: displayModel
 
-                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOn
-                        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+                        cacheBuffer: 5000
+                        reuseItems: true
+                        anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
+                        ScrollBar.vertical: ScrollBar
+                        {
+                            active: true
+                        }
 
-                        contentItem: Flickable {
-                            id: flickable
-                            clip: true
+                        delegate: Item {
+                            id: rowRoot
+                            width: conflictListView.width
 
-                            property real maxContentWidth: 0
+                            readonly property bool isButtonRow: model.type === "blockButton"
+                            readonly property bool isBlockLine: model.type === "blockLine"
+                            readonly property bool isMarker: isBlockLine && (model.role === "marker-start" ||
+                                                                              model.role === "separator" ||
+                                                                              model.role === "marker-end")
+                            property bool isCurrentItem: ListView.isCurrentItem
 
-                            Item {
-                                id: contentContainer
-                                width: Math.max(flickable.maxContentWidth, flickable.width)
-                                height: listView.contentHeight
+                            height: Math.max(isButtonRow ? 32 : 24,
+                                             isButtonRow ? buttonRow.implicitHeight + 8 : lineEditor.contentHeight + 4)
 
-                                ListView {
-                                    id: listView
-                                    anchors.fill: parent
-                                    model: displayRows
+                            onIsCurrentItemChanged: {
+                                if (isCurrentItem && !isButtonRow && !isMarker)
+                                    lineEditor.forceActiveFocus()
+                            }
+
+                            Row {
+                                anchors.fill: parent
+                                spacing: 0
+
+                                // Line number panel
+                                Label {
+                                    width: 45
+                                    height: parent.height
+                                    text: isButtonRow ? "" : model.lineNumber
+                                    color: Style.colors.linePanelForeground
+                                    font.family: "Cascadia Mono"
+                                    font.pixelSize: 12
+                                    horizontalAlignment: Text.AlignRight
+                                    rightPadding: 10
+                                    topPadding: 4
+
+                                    background: Rectangle {
+                                        color: Style.colors.linePanelBackgroound
+                                    }
+                                }
+
+                                // Content panel
+                                Item {
+                                    id: contentPanel
+                                    height: parent.height
+                                    width: parent.width - 45
                                     clip: true
-                                    spacing: 0
 
-                                    onModelChanged: Qt.callLater(updateContentWidth)
-                                    onCountChanged: Qt.callLater(updateContentWidth)
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        z: -1
+                                        color: {
+                                            if (isButtonRow) return Style.colors.secondaryBackground
+                                            if (!isBlockLine) return "transparent"
 
-                                    delegate: RowLayout {
-                                        id: delegateRow
-                                        width: contentContainer.width
-                                        spacing: 0
+                                            if (model.role === "marker-start") return Style.colors.conflictMarkerStartBg
+                                            if (model.role === "ours") return Style.colors.conflictOursBg
+                                            if (model.role === "theirs") return Style.colors.conflictTheirsBg
+                                            if (model.role === "marker-end") return Style.colors.conflictMarkerEndBg
+                                            if (model.role === "separator") return Style.colors.conflictSeparatorBg
+                                            return "transparent"
+                                        }
+                                    }
 
-                                        property real rowImplicitWidth: 50 + 1 + contentLoader.implicitWidth + 4
+                                    TextArea {
+                                        id: lineEditor
+                                        visible: !isButtonRow
+                                        x: -conflictListView.horizontalScrollOffset
+                                        width: 2000
+                                        text: model.text
+                                        color: isMarker ? Style.colors.conflictMarkerText : Style.colors.editorForeground
+                                        font.family: "Cascadia Mono"
+                                        font.pixelSize: 13
+                                        padding: 0
+                                        leftPadding: 8
+                                        topPadding: 2
+                                        selectionColor: Style.colors.accent
+                                        selectedTextColor: Style.colors.secondaryForeground
+                                        background: null
+                                        selectByMouse: true
+                                        readOnly: isMarker
+                                        wrapMode: TextArea.NoWrap
 
-                                        Component.onCompleted: {
-                                            if (rowImplicitWidth > flickable.maxContentWidth) {
-                                                flickable.maxContentWidth = rowImplicitWidth
-                                                contentContainer.width = Math.max(flickable.maxContentWidth, flickable.width)
-                                                flickable.contentWidth = contentContainer.width
-                                            }
+                                        Material.accent: Style.colors.accent
+
+                                        onTextChanged: {
+                                            if (displayModel.get(index))
+                                                displayModel.setProperty(index, "text", text)
+
+                                            root.updateMaxContentWidth(text)
                                         }
 
-                                        // Line number column
-                                        Rectangle {
-                                            Layout.preferredWidth: 50
-                                            Layout.fillHeight: true
-                                            color: "transparent"
+                                        Keys.onPressed: (event) => {
+                                            if (readOnly)
+                                                return
 
-                                            Text {
-                                                anchors.right: parent.right
-                                                anchors.rightMargin: 8
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                color: Style.colors.foreground
-                                                font.family: Style.fontTypes.roboto
-                                                font.pixelSize: 12
-                                                visible: text !== ""
-
-                                                text: {
-                                                    if (modelData.type === "contextLine")
-                                                        return modelData.lineNumber
-                                                    if (modelData.type === "blockLine")
-                                                        return modelData.line.number
-                                                    return ""
+                                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                                event.accepted = true
+                                                root.splitLine(index, cursorPosition)
+                                            } else if (event.key === Qt.Key_Up) {
+                                                if (cursorRectangle.y <= topPadding + 2) {
+                                                    event.accepted = true
+                                                    conflictListView.currentIndex = Math.max(0, index - 1)
                                                 }
-                                            }
-                                        }
-
-                                        // Separator
-                                        Rectangle {
-                                            Layout.preferredWidth: 1
-                                            Layout.fillHeight: true
-                                            color: "#3c3c3c"
-                                        }
-
-                                        // Content
-                                        Loader {
-                                            id: contentLoader
-                                            Layout.fillWidth: true
-                                            Layout.fillHeight: true
-                                            Layout.minimumWidth: implicitWidth
-
-                                            sourceComponent: {
-                                                if (modelData.type === "contextLine")
-                                                    return contextLineComponent
-                                                if (modelData.type === "blockLine")
-                                                    return blockLineComponent
-                                                if (modelData.type === "blockButton")
-                                                    return blockButtonComponent
-                                                return null
-                                            }
-                                            onLoaded: {
-                                                if (modelData.type === "contextLine") {
-                                                    item.lineNumber = modelData.lineNumber
-                                                    item.originalText = modelData.text
-                                                } else if (modelData.type === "blockLine") {
-                                                    item.blockIndex = modelData.blockIndex
-                                                    item.lineData = modelData.line
-                                                } else if (modelData.type === "blockButton") {
-                                                    item.blockIndex = modelData.blockIndex
+                                            } else if (event.key === Qt.Key_Down) {
+                                                if (cursorRectangle.y + cursorRectangle.height >= height - bottomPadding) {
+                                                    event.accepted = true
+                                                    conflictListView.currentIndex = Math.min(displayModel.count - 1, index + 1)
                                                 }
-
-                                                Qt.callLater(function() {
-                                                    delegateRow.rowImplicitWidth = 50 + 1 + item.implicitWidth + 4
-                                                    if (delegateRow.rowImplicitWidth > flickable.maxContentWidth) {
-                                                        flickable.maxContentWidth = delegateRow.rowImplicitWidth
-                                                        contentContainer.width = Math.max(flickable.maxContentWidth, flickable.width)
-                                                        flickable.contentWidth = contentContainer.width
-                                                    }
-                                                })
+                                            } else if (event.key === Qt.Key_Backspace) {
+                                                if (cursorPosition === 0) {
+                                                    event.accepted = true
+                                                    root.mergeLineUp(index)
+                                                }
                                             }
                                         }
                                     }
+
+                                    RowLayout {
+                                        id: buttonRow
+                                        visible: isButtonRow
+                                        anchors.fill: parent
+                                        anchors.margins: 2
+                                        spacing: 8
+
+                                        Button {
+                                            text: "Accept Current"
+                                            flat: true
+                                            font.pixelSize: 10
+                                            font.family: Style.fontTypes.roboto
+                                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                                            background: Rectangle {
+                                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                                                border.color: Style.colors.accent
+                                                radius: 3
+                                            }
+                                            onClicked: root.acceptBlock(model.blockIndex, "ours")
+                                        }
+                                        Button {
+                                            text: "Accept Incoming"
+                                            flat: true
+                                            font.pixelSize: 10
+                                            font.family: Style.fontTypes.roboto
+                                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                                            background: Rectangle {
+                                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                                                border.color: Style.colors.accent
+                                                radius: 3
+                                            }
+                                            onClicked: root.acceptBlock(model.blockIndex, "theirs")
+                                        }
+                                        Button {
+                                            text: "Accept Both"
+                                            flat: true
+                                            font.pixelSize: 10
+                                            font.family: Style.fontTypes.roboto
+                                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                                            background: Rectangle {
+                                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                                                border.color: Style.colors.accent
+                                                radius: 3
+                                            }
+                                            onClicked: root.acceptBlock(model.blockIndex, "both")
+                                        }
+                                        Item { Layout.fillWidth: true }
+                                    }
                                 }
                             }
+                        }
+                    }
 
-                            contentWidth: contentContainer.width
-                            contentHeight: contentContainer.height
-                            boundsBehavior: Flickable.StopAtBounds
+                    ScrollBar {
+                        id: hScrollBar
+                        orientation: Qt.Horizontal
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        size: conflictListView.maxContentWidth === 0 ? 1 : (conflictListView.width * 0.5) / conflictListView.maxContentWidth
+                        active: true
+                        visible: size < 1.0
+
+                        onPositionChanged: {
+                            conflictListView.horizontalScrollOffset = position * conflictListView.maxContentWidth
                         }
                     }
                 }
@@ -310,9 +389,7 @@ IPopup {
             // Footer buttons
             RowLayout {
                 Layout.fillWidth: true
-
                 Item { Layout.fillWidth: true }
-
                 Button {
                     flat: true
                     text: "Save and Stage"
@@ -324,7 +401,6 @@ IPopup {
                     }
                     onClicked: saveAndStage()
                 }
-
                 Button {
                     flat: true
                     text: root.continueButtonText
@@ -337,168 +413,6 @@ IPopup {
                     }
                     onClicked: continueOperation()
                 }
-            }
-        }
-    }
-
-    // Context line component
-    Component {
-        id: contextLineComponent
-        Item {
-            property int lineNumber: 0
-            property string originalText: ""
-
-            implicitHeight: textInput.implicitHeight + 4
-            implicitWidth: Math.max(textInput.implicitWidth + 20, 100)
-
-            TextInput {
-                id: textInput
-                anchors.fill: parent
-                anchors.margins: 2
-                text: root.contextLineText(lineNumber)
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
-                color: Style.colors.editorForeground
-                selectByMouse: true
-                verticalAlignment: TextInput.AlignTop
-                wrapMode: TextInput.NoWrap
-                onTextChanged: root.setContextLineText(lineNumber, text)
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.IBeamCursor
-                hoverEnabled: true
-                acceptedButtons: Qt.NoButton
-            }
-        }
-    }
-
-    // Block line component
-    Component {
-        id: blockLineComponent
-        Item {
-            property int blockIndex: 0
-            property var lineData: null
-
-            implicitHeight: textInput.implicitHeight + 4
-            implicitWidth: Math.max(textInput.implicitWidth + 20, 100)
-
-            readonly property bool isMarker: lineData.role === "marker-start" ||
-                                             lineData.role === "separator" ||
-                                             lineData.role === "marker-end"
-
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: -2
-                z: -1
-                radius: 2
-                color: {
-                    if (lineData.role === "marker-start")
-                        return Style.colors.conflictMarkerStartBg
-                    if (lineData.role === "ours")
-                        return Style.colors.conflictOursBg
-                    if (lineData.role === "theirs")
-                        return Style.colors.conflictTheirsBg
-                    if (lineData.role === "marker-end")
-                        return Style.colors.conflictMarkerEndBg
-                    if (lineData.role === "separator")
-                        return Style.colors.conflictSeparatorBg
-                    return "transparent"
-                }
-            }
-
-            TextInput {
-                id: textInput
-                anchors.fill: parent
-                anchors.margins: 2
-                text: root.blockLineText(blockIndex, lineData.number)
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
-                color: isMarker ? Style.colors.conflictMarkerText : Style.colors.editorForeground
-                selectByMouse: true
-                readOnly: isMarker
-                verticalAlignment: TextInput.AlignTop
-                wrapMode: TextInput.NoWrap
-                onTextChanged: {
-                    if (!isMarker)
-                        root.setBlockLineText(blockIndex, lineData.number, text)
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.IBeamCursor
-                    hoverEnabled: true
-                    acceptedButtons: Qt.NoButton
-                }
-            }
-        }
-    }
-
-    // Block button component
-    Component {
-        id: blockButtonComponent
-        Item {
-            property int blockIndex: 0
-
-            implicitHeight: buttonRow.implicitHeight + 4
-            implicitWidth: buttonRow.implicitWidth + 20
-
-            RowLayout {
-                id: buttonRow
-                anchors.fill: parent
-                anchors.margins: 2
-                spacing: 2
-
-                Text {
-                    text: "Accept Current |"
-                    color: Style.colors.hintText
-                    font.pixelSize: 10
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: root.acceptBlock(blockIndex, "ours")
-                        cursorShape: Qt.PointingHandCursor
-
-                        hoverEnabled: true
-                        onEntered: parent.color = Style.colors.accentHover
-                        onExited: parent.color = Style.colors.hintText
-                    }
-                }
-
-                Text {
-                    text: "Accept Incoming |"
-                    color: Style.colors.hintText
-                    font.pixelSize: 10
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: root.acceptBlock(blockIndex, "theirs")
-                        cursorShape: Qt.PointingHandCursor
-
-                        hoverEnabled: true
-                        onEntered: parent.color = Style.colors.accentHover
-                        onExited: parent.color = Style.colors.hintText
-                    }
-                }
-
-                Text {
-                    text: "Accept Both"
-                    color: Style.colors.hintText
-                    font.pixelSize: 10
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: root.acceptBlock(blockIndex, "both")
-                        cursorShape: Qt.PointingHandCursor
-
-                        hoverEnabled: true
-                        onEntered: parent.color = Style.colors.accentHover
-                        onExited: parent.color = Style.colors.hintText
-                    }
-                }
-
-                Item { Layout.fillWidth: true }
             }
         }
     }
@@ -518,34 +432,33 @@ IPopup {
         }
 
         conflicts = res.data || []
-        if (conflicts.length > 0) {
+        if (conflicts.length > 0)
             selectFile(conflicts[0].path)
-        } else {
+
+        else {
             selectedConflict = null
             selectedPath = ""
-            displayRows = []
+            displayModel.clear()
         }
     }
 
     function selectFile(path) {
         for (let i = 0; i < conflicts.length; ++i) {
             if (conflicts[i].path === path) {
-                contextEdits = {}
-                blockEdits = {}
-
                 selectedConflict = conflicts[i]
                 selectedPath = path
-                buildDisplayRows()
+                buildDisplayModel()
                 break
             }
         }
     }
 
-    function buildDisplayRows() {
-        if (!selectedConflict) {
-            displayRows = []
+    function buildDisplayModel() {
+        displayModel.clear()
+        conflictListView.maxContentWidth = 0
+
+        if (!selectedConflict)
             return
-        }
 
         let lines = selectedConflict.lines || []        // All lines in the file
         let blocks = selectedConflict.blocks || []      // Conflict blocks metadata
@@ -555,8 +468,8 @@ IPopup {
         for (let b of blocks)
             blockMap[b.startLine] = b
 
-        let rows = []
         let i = 0
+        let runningLine = 1
 
         while (i < lines.length) {
             let lineNumber = i + 1
@@ -565,63 +478,106 @@ IPopup {
             if (blockMap[lineNumber]) {
                 let block = blockMap[lineNumber]
 
-                // 1. Add button row for this block
-                rows.push({
-                              type: "blockButton",
-                              blockIndex: block.index,
-                              block: block
-                          })
+                // 1. Add button row
+                displayModel.append({
+                    type: "blockButton",
+                    blockIndex: block.index
+                })
 
                 // 2. Add all lines inside the conflict block
                 for (let j = 0; j < block.lines.length; ++j) {
-                    rows.push({
-                                  type: "blockLine",
-                                  blockIndex: block.index,
-                                  line: block.lines[j]
-                              })
+                    let line = block.lines[j]
+                    displayModel.append({
+                        type: "blockLine",
+                        text: line.text,
+                        blockIndex: block.index,
+                        role: line.role,
+                        lineNumber: runningLine
+                    })
+                    updateMaxContentWidth(line.text)
+                    runningLine++
                 }
-
-                i = block.endLine  // past block
+                i = block.endLine
             }
+            // Regular (non-conflict) line
             else {
-                // Regular (non-conflict) line
-                rows.push({
-                              type: "contextLine",
-                              lineNumber: lineNumber,
-                              text: lines[i]
-                          })
+                displayModel.append({
+                    type: "contextLine",
+                    text: lines[i],
+                    lineNumber: runningLine
+                })
+                updateMaxContentWidth(lines[i])
+                runningLine++
                 i++
             }
         }
-
-        displayRows = rows  // Update the ListView model
     }
 
+    function updateMaxContentWidth(newText) {
+        if (newText === undefined || newText === null)
+            return
 
-    function contextLineText(lineNumber) {
-        // Check if this line has been edited
-        return contextEdits[lineNumber] !== undefined
-            ? contextEdits[lineNumber]              // Use edited version
-            : selectedConflict.lines[lineNumber-1]  // Use original
+        let visualText = newText.replace(/\t/g, "    ")
+        widthCalculator.text = visualText
+
+        var measuredWidth = widthCalculator.width + 200
+        if (measuredWidth > conflictListView.maxContentWidth)
+            conflictListView.maxContentWidth = measuredWidth
     }
 
-    function blockLineText(blockIndex, lineNumber) {
-        let key = blockIndex + ":" + lineNumber
+    function splitLine(rowIndex, cursorPos) {
+        var row = displayModel.get(rowIndex)
 
-        // Check if this line has been edited
-        if (blockEdits[key] !== undefined)
-            return blockEdits[key]
+        if (!row || row.type === "blockButton")
+            return
 
-        // Find original text from the block
-        for (let b of selectedConflict.blocks) {
-            if (b.index === blockIndex) {
-                for (let l of b.lines) {
-                    if (l.number === lineNumber)
-                        return l.text
-                }
-            }
+        if (row.type === "blockLine" && (row.role === "marker-start" || row.role === "separator" || row.role === "marker-end"))
+            return
+
+        var before = row.text.substring(0, cursorPos)
+        var after = row.text.substring(cursorPos)
+
+        displayModel.setProperty(rowIndex, "text", before)
+
+        var newRow = { type: row.type, text: after, lineNumber: row.lineNumber + 1 }
+        if (row.blockIndex !== undefined) newRow.blockIndex = row.blockIndex
+        if (row.role !== undefined) newRow.role = row.role
+
+        displayModel.insert(rowIndex + 1, newRow)
+        recomputeLineNumbers()
+        conflictListView.currentIndex = rowIndex + 1
+    }
+
+    function mergeLineUp(rowIndex) {
+        if (rowIndex === 0)
+            return
+
+        var current = displayModel.get(rowIndex)
+        var prev = displayModel.get(rowIndex - 1)
+        if (!current || !prev)
+            return
+
+        if (current.type !== prev.type)
+            return
+
+        if (current.type === "blockLine") {
+            if (current.blockIndex !== prev.blockIndex || current.role !== prev.role) return
+            if (current.role === "marker-start" || current.role === "separator" || current.role === "marker-end") return
         }
-        return ""
+        displayModel.setProperty(rowIndex - 1, "text", prev.text + current.text)
+        displayModel.remove(rowIndex)
+        recomputeLineNumbers()
+        conflictListView.currentIndex = rowIndex - 1
+    }
+
+    function recomputeLineNumbers() {
+        var lineNum = 1
+        for (var i = 0; i < displayModel.count; ++i) {
+            var row = displayModel.get(i)
+            if (row.type === "blockButton") continue
+            displayModel.setProperty(i, "lineNumber", lineNum)
+            lineNum++
+        }
     }
 
     function acceptBlock(blockIndex, mode) {
@@ -635,30 +591,20 @@ IPopup {
             res = conflictController.acceptBlockTheirs(selectedPath, blockIndex)
         else if (mode === "both")
             res = conflictController.acceptBlockBoth(selectedPath, blockIndex)
-        else return
+        else
+            return
 
         if (!res.success) {
             if (notificationController)
                 notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
         }
         else {
+            if (notificationController)
+                notificationController.success("Conflicts Resolved", "Conflict", 2500)
             statusController.stageFile(selectedPath)
             loadConflicts()
             selectFile(selectedPath)
         }
-    }
-
-    function updateContentWidth() {
-        var maxWidth = 0
-        for (var i = 0; i < listView.count; i++) {
-            var item = listView.itemAtIndex(i)
-            if (item) {
-                maxWidth = Math.max(maxWidth, item.width)
-            }
-        }
-        flickable.maxContentWidth = maxWidth
-        contentContainer.width = Math.max(flickable.maxContentWidth, flickable.width)
-        flickable.contentWidth = contentContainer.width
     }
 
     function saveAndStage() {
@@ -668,53 +614,29 @@ IPopup {
         let content = buildFullContent()
 
         let res = conflictController.writeWorkingFile(selectedPath, content)
-
-        if (!res.success) {
+        if (!res.success)
             if (notificationController)
-                notificationController.error(res.errorMessage || "Failed to save file", "Conflict", 4000)
-            return
+                notificationController.error(res.errorMessage || "Save failed", "Conflict", 4000)
+        else {
+            res = statusController.stageFile(selectedPath)
+            if (!res.success)
+                if (notificationController)
+                    notificationController.error(res.errorMessage || "Stage failed", "Conflict", 4000)
+            else
+                notificationController.success("Saved and staged", "Conflict", 2500)
         }
-
-        res = statusController.stageFile(selectedPath)
-        if (!res.success) {
-            if (notificationController)
-                notificationController.error(res.errorMessage || "Failed to stage file", "Conflict", 4000)
-            return
-        }
-        if (notificationController)
-            notificationController.success("File saved and staged", "Conflict", 2500)
         loadConflicts()
         selectFile(selectedPath)
     }
 
     function buildFullContent() {
         let lines = []
-        for (let i = 0; i < displayRows.length; ++i) {
-            let row = displayRows[i]
-            if (row.type === "contextLine") {
-                lines.push(contextLineText(row.lineNumber))
-            } else if (row.type === "blockLine") {
-                lines.push(blockLineText(row.blockIndex, row.line.number))
-            }
+        for (let i = 0; i < displayModel.count; ++i) {
+            let row = displayModel.get(i)
+            if (row.type !== "blockButton")
+                lines.push(row.text)
         }
         return lines.join("\n")
-    }
-
-    function setContextLineText(lineNumber, text) {
-        if (contextEdits[lineNumber] !== text) {
-            let copy = Object.assign({}, contextEdits)
-            copy[lineNumber] = text
-            contextEdits = copy
-        }
-    }
-
-    function setBlockLineText(blockIndex, lineNumber, text) {
-        let key = blockIndex + ":" + lineNumber
-        if (blockEdits[key] !== text) {
-            let copy = Object.assign({}, blockEdits)
-            copy[key] = text
-            blockEdits = copy
-        }
     }
 
     function continueOperation() {
@@ -725,29 +647,23 @@ IPopup {
             let res = mergeController.continueMerge()
             if (res.success) {
                 if (notificationController)
-                    notificationController.success("Merge was completed", "Conflict", 2500)
+                    notificationController.success("Merge completed", "Conflict", 2500)
                 close()
             }
-
-            else {
-                if (notificationController)
-                    notificationController.error(res.errorMessage, "Merge", 4000)
-            }
-        } else {
+            else
+                notificationController.error(res.errorMessage, "Merge", 4000)
+        }
+        else {
             if (!rebaseController)
                 return
-
             let res = rebaseController.continueRebase()
-            if (res.success) {
+            if (res.success){
                 if (notificationController)
-                    notificationController.success("Rebase was completed", "Conflict", 2500)
+                    notificationController.success("Rebase completed", "Conflict", 2500)
                 close()
             }
-
-            else {
-                if (notificationController)
-                    notificationController.error(res.errorMessage, "Rebase", 4000)
-            }
+            else
+                notificationController.error(res.errorMessage, "Rebase", 4000)
         }
     }
 }
