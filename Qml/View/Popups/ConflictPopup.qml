@@ -355,7 +355,12 @@ IPopup {
                                                 border.color: Style.colors.accent
                                                 radius: 3
                                             }
-                                            onClicked: root.acceptBlock(model.blockIndex, "ours")
+                                            MouseArea{
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+
+                                                onClicked: root.acceptBlock(model.blockIndex, "ours")
+                                            }
                                         }
                                         Button {
                                             text: "Accept Incoming"
@@ -368,7 +373,12 @@ IPopup {
                                                 border.color: Style.colors.accent
                                                 radius: 3
                                             }
-                                            onClicked: root.acceptBlock(model.blockIndex, "theirs")
+                                            MouseArea{
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+
+                                                onClicked: root.acceptBlock(model.blockIndex, "theirs")
+                                            }
                                         }
                                         Button {
                                             text: "Accept Both"
@@ -381,7 +391,12 @@ IPopup {
                                                 border.color: Style.colors.accent
                                                 radius: 3
                                             }
-                                            onClicked: root.acceptBlock(model.blockIndex, "both")
+                                            MouseArea{
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+
+                                                onClicked: root.acceptBlock(model.blockIndex, "both")
+                                            }
                                         }
                                         Item { Layout.fillWidth: true }
                                     }
@@ -410,7 +425,41 @@ IPopup {
             // Footer buttons
             RowLayout {
                 Layout.fillWidth: true
-                Item { Layout.fillWidth: true }
+
+                Button {
+                    flat: true
+                    text: "Abort"
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+                    MouseArea{
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: abortOperation()
+                    }
+                }
+
+                Button {
+                    flat: true
+                    text: "Skip"
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+                    MouseArea{
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: skipOperation()
+                    }
+                }
+
                 Button {
                     flat: true
                     text: "Save and Stage"
@@ -420,8 +469,19 @@ IPopup {
                         border.color: Style.colors.accent
                         radius: 5
                     }
-                    onClicked: saveAndStage()
+                    MouseArea{
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: saveAndStage()
+                    }
+
                 }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
                 Button {
                     flat: true
                     text: root.continueButtonText
@@ -432,29 +492,13 @@ IPopup {
                         border.color: Style.colors.accent
                         radius: 5
                     }
-                    onClicked: continueOperation()
-                }
-                Button {
-                    flat: true
-                    text: "Skip"
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                    background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
+                    MouseArea{
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: continueOperation()
                     }
-                    onClicked: skipOperation()
-                }
-                Button {
-                    flat: true
-                    text: "Abort"
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                    background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
-                    }
-                    onClicked: abortOperation()
+
                 }
             }
         }
@@ -476,8 +520,6 @@ IPopup {
             property string message: root.isMerge
                 ? "You are in the middle of a merge.\nClosing will abort it and discard changes."
                 : "You are in the middle of a rebase.\nClosing will abort it and discard changes."
-
-            property bool showQuit: !root.isMerge
 
             signal accepted()
             signal quitPressed()
@@ -534,26 +576,14 @@ IPopup {
                                 radius: 5
                             }
 
-                            onClicked: {
-                                dialog.cancelled()
-                                dialog.close()
-                            }
-                        }
+                            MouseArea{
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
 
-                        Button {
-                            text: "Quit"
-                            flat: true
-                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                            background: Rectangle {
-                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                                border.color: Style.colors.accent
-                                radius: 5
-                            }
-
-                            visible: dialog.showQuit
-                            onClicked: {
-                                dialog.quitPressed()
-                                dialog.close()
+                                onClicked: {
+                                    dialog.cancelled()
+                                    dialog.close()
+                                }
                             }
                         }
 
@@ -567,9 +597,14 @@ IPopup {
                                 radius: 5
                             }
 
-                            onClicked: {
-                                dialog.accepted()
-                                dialog.close()
+                            MouseArea{
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+
+                                onClicked: {
+                                    dialog.accepted()
+                                    dialog.close()
+                                }
                             }
                         }
                     }
