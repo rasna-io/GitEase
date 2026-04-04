@@ -43,6 +43,9 @@ IPopup {
     height: 650
     padding: 12
 
+    modal: true
+    closePolicy: Popup.NoAutoClose
+
     onOpened: loadConflicts()
 
     ListModel {
@@ -107,7 +110,25 @@ IPopup {
                             rotation: -45
                         }
                     }
-                    onClicked: root.close()
+                    onClicked: {
+                        var d = confirmationDialogComponent.createObject(root)
+
+                        d.accepted.connect(() => {
+                            root.abortOperation()
+                            root.close()
+                        })
+
+                        d.quitPressed.connect(() => {
+                            root.quitOperation()
+                            root.close()
+                        })
+
+                        d.cancelled.connect(() => {
+                            // Do nothing
+                        })
+
+                        d.open()
+                    }
                 }
             }
 
@@ -413,6 +434,146 @@ IPopup {
                     }
                     onClicked: continueOperation()
                 }
+                Button {
+                    flat: true
+                    text: "Skip"
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+                    onClicked: skipOperation()
+                }
+                Button {
+                    flat: true
+                    text: "Abort"
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+                    onClicked: abortOperation()
+                }
+            }
+        }
+    }
+
+    Component {
+        id: confirmationDialogComponent
+
+        IPopup {
+            id: dialog
+            modal: true
+            focus: true
+            width: 400
+            height: 200
+            anchors.centerIn: Overlay.overlay
+            closePolicy: Popup.NoAutoClose
+
+            property string title: "Save modification"
+            property string message: root.isMerge
+                ? "You are in the middle of a merge.\nClosing will abort it and discard changes."
+                : "You are in the middle of a rebase.\nClosing will abort it and discard changes."
+
+            property bool showQuit: !root.isMerge
+
+            signal accepted()
+            signal quitPressed()
+            signal cancelled()
+
+            contentItem: Rectangle {
+                anchors.fill: parent
+                color: Style.colors.primaryBackground
+                radius: 16
+                clip: true
+                border.color: Style.colors.accent
+                border.width: 1
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 20
+                    spacing: 8
+
+                    Text {
+                        text: dialog.title
+                        color: Style.colors.secondaryText
+                        font.family: Style.fontTypes.roboto
+                        font.bold: true
+                        font.pixelSize: 16
+                    }
+
+                    Text {
+                        text: dialog.message
+                        wrapMode: Text.Wrap
+                        color: Style.colors.secondaryText
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 14
+
+                    }
+
+                    Item {
+                        Layout.fillHeight: true
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Item {
+                            Layout.fillWidth: true
+                        }
+
+                        Button {
+                            text: "Cancel"
+                            flat: true
+                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                            background: Rectangle {
+                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                                border.color: Style.colors.accent
+                                radius: 5
+                            }
+
+                            onClicked: {
+                                dialog.cancelled()
+                                dialog.close()
+                            }
+                        }
+
+                        Button {
+                            text: "Quit"
+                            flat: true
+                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                            background: Rectangle {
+                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                                border.color: Style.colors.accent
+                                radius: 5
+                            }
+
+                            visible: dialog.showQuit
+                            onClicked: {
+                                dialog.quitPressed()
+                                dialog.close()
+                            }
+                        }
+
+                        Button {
+                            text: "Abort"
+                            flat: true
+                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                            background: Rectangle {
+                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                                border.color: Style.colors.accent
+                                radius: 5
+                            }
+
+                            onClicked: {
+                                dialog.accepted()
+                                dialog.close()
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -664,6 +825,50 @@ IPopup {
             }
             else
                 notificationController.error(res.errorMessage, "Rebase", 4000)
+        }
+    }
+
+    function skipOperation() {
+        if (!isMerge && rebaseController) {
+            let res = rebaseController.skipRebase()
+
+            if (res.success) {
+                notificationController.success("Commit skipped", "Rebase", 2500)
+                loadConflicts()
+            } else {
+                notificationController.error(res.errorMessage, "Rebase", 4000)
+            }
+        }
+    }
+
+    function abortOperation() {
+        let res
+
+        if (isMerge && mergeController) {
+            res = mergeController.abortMerge()
+        }
+        else if (!isMerge && rebaseController) {
+            res = rebaseController.abortRebase()
+        }
+
+        if (res && res.success) {
+            notificationController.success("Operation aborted", "Git", 2500)
+            close()
+        } else if (res) {
+            notificationController.error(res.errorMessage, "Git", 4000)
+        }
+    }
+
+    function quitOperation() {
+        if (!isMerge && rebaseController) {
+            let res = rebaseController.quitRebase()
+
+            if (res.success) {
+                notificationController.success("Rebase quit", "Rebase", 2500)
+                close()
+            } else {
+                notificationController.error(res.errorMessage, "Rebase", 4000)
+            }
         }
     }
 }
