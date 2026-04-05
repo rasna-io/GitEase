@@ -616,7 +616,7 @@ IPopup {
     /* Functions
      * ****************************************************************************************/
 
-    function loadConflicts() {
+    function loadConflicts(keepSelection = false) {
         if (!conflictController)
             return
 
@@ -628,14 +628,18 @@ IPopup {
         }
 
         conflicts = res.data || []
-        if (conflicts.length > 0)
-            selectFile(conflicts[0].path)
 
-        else {
+        if (conflicts.length == 0){
             selectedConflict = null
             selectedPath = ""
             displayModel.clear()
+            return
         }
+
+        if (keepSelection && selectedPath)
+            selectFile(selectedPath)
+        else
+            selectFile(conflicts[0].path)
     }
 
     function selectFile(path) {
@@ -797,9 +801,7 @@ IPopup {
         else {
             if (notificationController)
                 notificationController.success("Conflicts Resolved", "Conflict", 2500)
-            statusController.stageFile(selectedPath)
-            loadConflicts()
-            selectFile(selectedPath)
+            loadConflicts(true)
         }
     }
 
