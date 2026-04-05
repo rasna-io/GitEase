@@ -37,6 +37,8 @@ IPopup {
     property string headerText          : isMerge ? "Merge Conflicts"   : "Rebase Conflicts"
     property string continueButtonText  : isMerge ? "Continue Merge"    : "Continue Rebase"
 
+    property var modifiedFiles: ({}) // path -> array of row objects
+
     /* Object Properties
      * ****************************************************************************************/
     width: 800
@@ -46,7 +48,11 @@ IPopup {
     modal: true
     closePolicy: Popup.NoAutoClose
 
-    onOpened: loadConflicts()
+    onOpened: {
+        modifiedFiles = ({}) // Clear all memory cache
+        selectedPath = ""    // Reset selected path
+        loadConflicts()
+    }
 
     ListModel {
         id: displayModel
@@ -184,11 +190,24 @@ IPopup {
                                     font.pixelSize: 13
                                     elide: Text.ElideMiddle
                                 }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                }
+
+                                ActionIconButton {
+                                    iconText: Style.icons.plus
+                                    tooltip: "Stage"
+                                    textColor: Style.colors.mutedText
+                                    onClicked: {
+                                        root.selectFile(modelData.path)
+                                        root.saveAndStage(modelData.path)
+                                    }
+                                }
                             }
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: root.selectFile(modelData.path)
-                                cursorShape: Qt.PointingHandCursor
+                            TapHandler {
+                                onTapped: root.selectFile(modelData.path)
+                                gesturePolicy: TapHandler.ReleaseWithinBounds
                             }
                         }
                     }
@@ -460,24 +479,6 @@ IPopup {
                     }
                 }
 
-                Button {
-                    flat: true
-                    text: "Save and Stage"
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                    background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
-                    }
-                    MouseArea{
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-
-                        onClicked: saveAndStage()
-                    }
-
-                }
-
                 Item {
                     Layout.fillWidth: true
                 }
@@ -613,6 +614,114 @@ IPopup {
         }
     }
 
+    Component {
+        id: genericConfirmDialogComponent
+
+        IPopup {
+            id: dialog
+            modal: true
+            focus: true
+            width: 400
+            height: 200
+            anchors.centerIn: Overlay.overlay
+            closePolicy: Popup.NoAutoClose
+
+            // Customizable properties
+            property string title: "Confirm"
+            property string message: "Are you sure?"
+            property string acceptText: "OK"
+            property string cancelText: "Cancel"
+
+            // Signals
+            signal accepted()
+            signal cancelled()
+
+            contentItem: Rectangle {
+                anchors.fill: parent
+                color: Style.colors.primaryBackground
+                radius: 16
+                clip: true
+                border.color: Style.colors.accent
+                border.width: 1
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 20
+                    spacing: 8
+
+                    Text {
+                        text: dialog.title
+                        color: Style.colors.secondaryText
+                        font.family: Style.fontTypes.roboto
+                        font.bold: true
+                        font.pixelSize: 16
+                    }
+
+                    Text {
+                        text: dialog.message
+                        wrapMode: Text.Wrap
+                        color: Style.colors.secondaryText
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 14
+                    }
+
+                    Item { Layout.fillHeight: true }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Item { Layout.fillWidth: true }
+
+                        // Cancel button
+                        Button {
+                            text: dialog.cancelText
+                            flat: true
+                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                            background: Rectangle {
+                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                                border.color: Style.colors.accent
+                                radius: 5
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+
+                                onClicked: {
+                                    dialog.cancelled()
+                                    dialog.close()
+                                }
+                            }
+                        }
+
+                        // Accept button
+                        Button {
+                            text: dialog.acceptText
+                            flat: true
+                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                            background: Rectangle {
+                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                                border.color: Style.colors.accent
+                                radius: 5
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+
+                                onClicked: {
+                                    dialog.accepted()
+                                    dialog.close()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
     /* Functions
      * ****************************************************************************************/
 
@@ -639,16 +748,37 @@ IPopup {
         if (keepSelection && selectedPath) {
             let exists = conflicts.some(c => c.path === selectedPath)
             if (exists)
-                selectFile(selectedPath)
+                selectFile(selectedPath, true)
             else
                 selectFile(conflicts[0].path)
         } else {
             selectFile(conflicts[0].path)
         }
-
     }
 
-    function selectFile(path) {
+    function selectFile(path, forceRebuild = false) {
+        if (selectedPath === path && !forceRebuild)
+            return
+
+        // 1. Save current displayModel state before switching
+        if (selectedPath && selectedPath !== path && displayModel.count > 0) {
+            let currentState = []
+            for (let i = 0; i < displayModel.count; ++i) {
+                let row = displayModel.get(i)
+                currentState.push({
+                    type: row.type,
+                    text: row.text || "",
+                    lineNumber: row.lineNumber || 0,
+                    blockIndex: row.blockIndex !== undefined ? row.blockIndex : -1,
+                    role: row.role || ""
+                })
+            }
+            let copy = Object.assign({}, modifiedFiles)
+            copy[selectedPath] = currentState
+            modifiedFiles = copy
+        }
+
+        // 2. Switch File
         for (let i = 0; i < conflicts.length; ++i) {
             if (conflicts[i].path === path) {
                 selectedConflict = conflicts[i]
@@ -666,8 +796,20 @@ IPopup {
         if (!selectedConflict)
             return
 
-        let lines = selectedConflict.lines || []        // All lines in the file
-        let blocks = selectedConflict.blocks || []      // Conflict blocks metadata
+        // 1. Restore from memory if user previously modified it
+        if (modifiedFiles[selectedPath]) {
+            let savedState = modifiedFiles[selectedPath]
+            for (let i = 0; i < savedState.length; ++i) {
+                displayModel.append(savedState[i])
+                if (savedState[i].text)
+                    updateMaxContentWidth(savedState[i].text)
+            }
+            return
+        }
+
+        // 2. Otherwise build original fresh structure
+        let lines = selectedConflict.lines || []
+        let blocks = selectedConflict.blocks || []
 
         // Create a map for quick lookup: startLine → block
         let blockMap = {}
@@ -718,6 +860,7 @@ IPopup {
             }
         }
     }
+
 
     function updateMaxContentWidth(newText) {
         if (newText === undefined || newText === null)
@@ -807,38 +950,94 @@ IPopup {
         else {
             if (notificationController)
                 notificationController.success("Conflicts Resolved", "Conflict", 2500)
+
+            // Clear memory state so fresh Git changes load
+            let copy = Object.assign({}, modifiedFiles)
+            delete copy[selectedPath]
+            modifiedFiles = copy
+
             loadConflicts(true)
         }
     }
 
-    function saveAndStage() {
-        if (!selectedPath || !conflictController)
+    function saveAndStage(selectedPath) {
+        if (!selectedPath || !conflictController || !statusController)
+            return
+
+        let selectedConflict
+        for (let i = 0; i < conflicts.length; ++i) {
+            if (conflicts[i].path === selectedPath)
+                selectedConflict = conflicts[i]
+        }
+
+        if (selectedConflict && selectedConflict.blocks && selectedConflict.blocks.length > 0) {
+            showConflictStageWarning(selectedPath)
+            return
+        }
+
+        performStage(selectedPath)
+    }
+
+    function showConflictStageWarning(path) {
+        const d = genericConfirmDialogComponent.createObject(root)
+
+        d.title = "File Has Unresolved Conflicts"
+        d.message = "This file still contains unresolved conflict markers.\nStage it anyway?"
+        d.acceptText = "Stage Anyway"
+        d.cancelText = "Cancel"
+
+        d.accepted.connect(() => {
+            // Stage the file (content already saved in saveAndStage)
+            performStage(path)
+        })
+
+        d.cancelled.connect(() => {
+            // Do nothing, just close dialog
+        })
+
+        d.open()
+    }
+
+
+    function performStage(path) {
+        if (!path || !statusController)
             return
 
         let content = buildFullContent()
 
         let res = conflictController.writeWorkingFile(selectedPath, content)
-        if (!res.success)
+        if (!res.success){
             if (notificationController)
                 notificationController.error(res.errorMessage || "Save failed", "Conflict", 4000)
-        else {
-            res = statusController.stageFile(selectedPath)
-            if (!res.success)
-                if (notificationController)
-                    notificationController.error(res.errorMessage || "Stage failed", "Conflict", 4000)
-            else
-                notificationController.success("Saved and staged", "Conflict", 2500)
+            return
         }
-        loadConflicts()
-        selectFile(selectedPath)
+
+        res = statusController.stageFile(selectedPath)
+        if (!res.success){
+            if (notificationController)
+                notificationController.error(res.errorMessage || "Stage failed", "Conflict", 4000)
+            return
+        }
+
+        if (notificationController)
+            notificationController.success("File staged", "Conflict", 2500)
+
+        // Clear memory state since changes are successfully staged
+        let copy = Object.assign({}, modifiedFiles)
+        delete copy[selectedPath]
+        modifiedFiles = copy
+
+        loadConflicts(true)
     }
 
     function buildFullContent() {
         let lines = []
         for (let i = 0; i < displayModel.count; ++i) {
             let row = displayModel.get(i)
-            if (row.type !== "blockButton")
-                lines.push(row.text)
+            if (row.type === "blockButton")
+                continue
+
+            lines.push(row.text)
         }
         return lines.join("\n")
     }
@@ -896,6 +1095,12 @@ IPopup {
 
         if (res && res.success) {
             notificationController.success("Operation aborted", "Git", 2500)
+
+            // WIPE CACHE AND VIEW
+            modifiedFiles = ({})
+            displayModel.clear()
+            selectedPath = ""
+
             close()
         } else if (res) {
             notificationController.error(res.errorMessage, "Git", 4000)
@@ -908,10 +1113,17 @@ IPopup {
 
             if (res.success) {
                 notificationController.success("Rebase quit", "Rebase", 2500)
+
+                // WIPE CACHE AND VIEW
+                modifiedFiles = ({})
+                displayModel.clear()
+                selectedPath = ""
+
                 close()
             } else {
                 notificationController.error(res.errorMessage, "Rebase", 4000)
             }
         }
     }
+
 }
