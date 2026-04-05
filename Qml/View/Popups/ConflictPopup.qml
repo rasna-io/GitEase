@@ -636,10 +636,16 @@ IPopup {
             return
         }
 
-        if (keepSelection && selectedPath)
-            selectFile(selectedPath)
-        else
+        if (keepSelection && selectedPath) {
+            let exists = conflicts.some(c => c.path === selectedPath)
+            if (exists)
+                selectFile(selectedPath)
+            else
+                selectFile(conflicts[0].path)
+        } else {
             selectFile(conflicts[0].path)
+        }
+
     }
 
     function selectFile(path) {
