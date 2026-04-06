@@ -520,6 +520,7 @@ IPopup {
 
             property string acceptTitle: "Abort"
             property string acceptDescription: "Exit conflict resolver without saving the modification"
+            property bool hasAbort: true
 
             property string cancelTitle: "Cancel"
             property string cancelDescription: "Don't quit conflict resolver"
@@ -576,7 +577,7 @@ IPopup {
                         }
 
                         // Spacer
-                        Item { Layout.preferredHeight: 20 }
+                        Item { Layout.fillHeight: true }
 
                         // BUTTON 1: Save
                         Rectangle {
@@ -637,6 +638,7 @@ IPopup {
                             Layout.preferredHeight: abortRow.implicitHeight + 16
                             border.color: abortMouseArea.containsMouse ? Style.colors.accent : "transparent"
                             radius: 6
+                            visible: dialog.hasAbort
 
                             MouseArea {
                                 id: abortMouseArea
@@ -741,115 +743,6 @@ IPopup {
             }
         }
     }
-
-
-    Component {
-        id: genericConfirmDialogComponent
-
-        IPopup {
-            id: dialog
-            modal: true
-            focus: true
-            width: 400
-            height: 200
-            anchors.centerIn: Overlay.overlay
-            closePolicy: Popup.NoAutoClose
-
-            // Customizable properties
-            property string title: "Confirm"
-            property string message: "Are you sure?"
-            property string acceptText: "OK"
-            property string cancelText: "Cancel"
-
-            // Signals
-            signal accepted()
-            signal cancelled()
-
-            contentItem: Rectangle {
-                anchors.fill: parent
-                color: Style.colors.primaryBackground
-                radius: 16
-                clip: true
-                border.color: Style.colors.accent
-                border.width: 1
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 8
-
-                    Text {
-                        text: dialog.title
-                        color: Style.colors.secondaryText
-                        font.family: Style.fontTypes.roboto
-                        font.bold: true
-                        font.pixelSize: 16
-                    }
-
-                    Text {
-                        text: dialog.message
-                        wrapMode: Text.Wrap
-                        color: Style.colors.secondaryText
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 14
-                    }
-
-                    Item { Layout.fillHeight: true }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Item { Layout.fillWidth: true }
-
-                        // Cancel button
-                        Button {
-                            text: dialog.cancelText
-                            flat: true
-                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                            background: Rectangle {
-                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                                border.color: Style.colors.accent
-                                radius: 5
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-
-                                onClicked: {
-                                    dialog.cancelled()
-                                    dialog.close()
-                                }
-                            }
-                        }
-
-                        // Accept button
-                        Button {
-                            text: dialog.acceptText
-                            flat: true
-                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                            background: Rectangle {
-                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                                border.color: Style.colors.accent
-                                radius: 5
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-
-                                onClicked: {
-                                    dialog.accepted()
-                                    dialog.close()
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 
     /* Functions
      * ****************************************************************************************/
@@ -1108,20 +1001,22 @@ IPopup {
     }
 
     function showConflictStageWarning(path) {
-        const d = genericConfirmDialogComponent.createObject(root)
+        const d = confirmationDialogComponent.createObject(root)
 
         d.title = "File Has Unresolved Conflicts"
-        d.message = "This file still contains unresolved conflict markers.\nStage it anyway?"
-        d.acceptText = "Stage Anyway"
-        d.cancelText = "Cancel"
+        d.message = "This file still contains unresolved conflict markers.\n" +
+                    "Stage it anyway?"
 
-        d.accepted.connect(() => {
-            // Stage the file (content already saved in saveAndStage)
+        d.saveTitle = "Stage Anyway"
+        d.saveDescription = "The modification will be saved"
+
+        d.cancelTitle = "Cancel"
+        d.cancelDescription = "Don't save The modification"
+
+        d.hasAbort = false
+
+        d.saved.connect(() => {
             performStage(path)
-        })
-
-        d.cancelled.connect(() => {
-            // Do nothing, just close dialog
         })
 
         d.open()
