@@ -200,7 +200,7 @@ IPopup {
                                     iconText: Style.icons.plus
                                     tooltip: "Stage"
                                     textColor: Style.colors.mutedText
-                                    visible: false                      //TODO, next version
+                                    visible: !modelData.blocks || modelData.blocks.length === 0 //TODO, next version
                                     onClicked: {
                                         root.selectFile(modelData.path)
                                         root.saveAndStage(modelData.path)
