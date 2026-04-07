@@ -497,6 +497,8 @@ IPopup {
             anchors.centerIn: Overlay.overlay
             closePolicy: Popup.NoAutoClose
 
+            onClosed: destroy()
+
             // Customizable properties
             property string title: "Save modifications"
             property string message: "There are unsaved modifications!\n" +
