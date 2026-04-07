@@ -588,6 +588,7 @@ IPopup {
 
                             MouseArea {
                                 id: saveMouseArea
+                                cursorShape: Qt.PointingHandCursor
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
@@ -642,6 +643,7 @@ IPopup {
 
                             MouseArea {
                                 id: abortMouseArea
+                                cursorShape: Qt.PointingHandCursor
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
@@ -695,6 +697,7 @@ IPopup {
 
                             MouseArea {
                                 id: cancelMouseArea
+                                cursorShape: Qt.PointingHandCursor
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
