@@ -119,6 +119,13 @@ IPopup {
                     onClicked: {
                         var d = confirmationDialogComponent.createObject(root)
 
+                        let opName = root.isMerge ? "Merge" : "Rebase"
+
+                        d.title = `Abort ${opName}?`
+                        d.message = "You have unresolved conflicts.\n" +
+                                    `Closing this window will abort the ${opName} and discard all progress.\n\n` +
+                                    "Are you sure you want to abort?"
+
                         d.saved.connect(() => {
                             root.saveAllModifications()
                         })
@@ -492,8 +499,8 @@ IPopup {
             id: dialog
             modal: true
             focus: true
-            width: 450
-            height: 250
+            width: 580
+            height: 280
             anchors.centerIn: Overlay.overlay
             closePolicy: Popup.NoAutoClose
 
