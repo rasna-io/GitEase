@@ -977,22 +977,22 @@ IPopup {
         }
     }
 
-    function saveAndStage(selectedPath) {
-        if (!selectedPath || !conflictController || !statusController)
+    function saveAndStage(path) {
+        if (!path  || !conflictController || !statusController)
             return
 
         let selectedConflict
         for (let i = 0; i < conflicts.length; ++i) {
-            if (conflicts[i].path === selectedPath)
+            if (conflicts[i].path === path)
                 selectedConflict = conflicts[i]
         }
 
         if (selectedConflict && selectedConflict.blocks && selectedConflict.blocks.length > 0) {
-            showConflictStageWarning(selectedPath)
+            showConflictStageWarning(path)
             return
         }
 
-        performStage(selectedPath)
+        performStage(path)
     }
 
     function showConflictStageWarning(path) {
@@ -1024,14 +1024,14 @@ IPopup {
 
         let content = buildFullContent()
 
-        let res = conflictController.writeWorkingFile(selectedPath, content)
+        let res = conflictController.writeWorkingFile(path, content)
         if (!res.success){
             if (notificationController)
                 notificationController.error(res.errorMessage || "Save failed", "Conflict", 4000)
             return
         }
 
-        res = statusController.stageFile(selectedPath)
+        res = statusController.stageFile(path)
         if (!res.success){
             if (notificationController)
                 notificationController.error(res.errorMessage || "Stage failed", "Conflict", 4000)
@@ -1043,7 +1043,7 @@ IPopup {
 
         // Clear memory state since changes are successfully staged
         let copy = Object.assign({}, modifiedFiles)
-        delete copy[selectedPath]
+        delete copy[path]
         modifiedFiles = copy
 
         loadConflicts(true)
