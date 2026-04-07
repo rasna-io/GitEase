@@ -947,6 +947,9 @@ IPopup {
         if (!selectedPath || !conflictController)
             return
 
+        let currentContent = buildFullContent()
+        conflictController.writeWorkingFile(selectedPath, currentContent)
+
         let res
         if (mode === "ours")
             res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
