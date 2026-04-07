@@ -437,27 +437,16 @@ IPopup {
             // Footer buttons
             RowLayout {
                 Layout.fillWidth: true
+                spacing: 12
 
-                Button {
-                    flat: true
-                    text: "Abort"
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                    background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
-                    }
-                    MouseArea{
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-
-                        onClicked: abortOperation()
-                    }
+                Item {
+                    Layout.fillWidth: true
                 }
 
                 Button {
                     flat: true
                     text: "Skip"
+                    visible: !root.isMerge
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
@@ -470,10 +459,6 @@ IPopup {
 
                         onClicked: skipOperation()
                     }
-                }
-
-                Item {
-                    Layout.fillWidth: true
                 }
 
                 Button {
