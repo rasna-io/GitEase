@@ -193,6 +193,7 @@ IPopup {
                                     iconText: Style.icons.plus
                                     tooltip: "Stage"
                                     textColor: Style.colors.mutedText
+                                    visible: false                      //TODO, next version
                                     onClicked: {
                                         root.selectFile(modelData.path)
                                         root.saveAndStage(modelData.path)
@@ -571,6 +572,7 @@ IPopup {
                             Layout.preferredHeight: saveRow.implicitHeight + 16
                             border.color: saveMouseArea.containsMouse ? Style.colors.accent : "transparent"
                             radius: 6
+                            visible: false  //TODO, next version
 
                             MouseArea {
                                 id: saveMouseArea
@@ -1141,16 +1143,17 @@ IPopup {
 
     function saveAllModifications() {
 
-        abortOperation();
+
         // 1. Save the currently active file on screen
         if (selectedPath) {
             let currentContent = buildFullContent()
             conflictController.writeWorkingFile(selectedPath, currentContent)
         }
 
-        // 2. Save any other files cached in memory (that the user edited but navigated away from)
+        // 2. Save any other files cached in memory
         for (let path in modifiedFiles) {
-            if (path === selectedPath) continue // Already saved above
+            if (path === selectedPath)
+                continue
 
             let lines = []
             let fileModel = modifiedFiles[path]
@@ -1167,7 +1170,6 @@ IPopup {
         if (notificationController)
             notificationController.success("All modifications saved locally", "Save", 2500)
 
-        // Close the main popup
 
         root.close()
     }
