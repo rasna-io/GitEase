@@ -514,12 +514,12 @@ IPopup {
             property string saveTitle: "Save"
             property string saveDescription: "The modifications will be saved"
 
-            property string acceptTitle: "Abort"
-            property string acceptDescription: "Exit conflict resolver without saving the modification"
+            property string acceptTitle: "Abort Operation"
+            property string acceptDescription: "Discard all changes and exit"
             property bool hasAbort: true
 
-            property string cancelTitle: "Cancel"
-            property string cancelDescription: "Don't quit conflict resolver"
+            property string cancelTitle: "Keep Resolving"
+            property string cancelDescription: "Return to the conflict editor"
 
             // Signals
             signal saved()
