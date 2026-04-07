@@ -120,6 +120,7 @@ IPopup {
                         var d = confirmationDialogComponent.createObject(root)
 
                         d.saved.connect(() => {
+                            root.saveAllModifications()
                         })
 
                         d.aborted.connect(() => {
@@ -1136,6 +1137,39 @@ IPopup {
                 notificationController.error(res.errorMessage, "Rebase", 4000)
             }
         }
+    }
+
+    function saveAllModifications() {
+
+        abortOperation();
+        // 1. Save the currently active file on screen
+        if (selectedPath) {
+            let currentContent = buildFullContent()
+            conflictController.writeWorkingFile(selectedPath, currentContent)
+        }
+
+        // 2. Save any other files cached in memory (that the user edited but navigated away from)
+        for (let path in modifiedFiles) {
+            if (path === selectedPath) continue // Already saved above
+
+            let lines = []
+            let fileModel = modifiedFiles[path]
+            for (let i = 0; i < fileModel.length; ++i) {
+                let row = fileModel[i]
+                if (row.type !== "blockButton") {
+                    lines.push(row.text)
+                }
+            }
+            let content = lines.join("\n")
+            conflictController.writeWorkingFile(path, content)
+        }
+
+        if (notificationController)
+            notificationController.success("All modifications saved locally", "Save", 2500)
+
+        // Close the main popup
+
+        root.close()
     }
 
 }
