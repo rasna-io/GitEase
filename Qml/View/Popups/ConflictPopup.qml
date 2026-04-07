@@ -493,7 +493,7 @@ IPopup {
             modal: true
             focus: true
             width: 450
-            height: 350
+            height: 250
             anchors.centerIn: Overlay.overlay
             closePolicy: Popup.NoAutoClose
 
@@ -525,207 +525,206 @@ IPopup {
                 border.color: Style.colors.accent
                 border.width: 1
 
-                RowLayout {
+                ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 20
-                    spacing: 16
+                    spacing: 8
 
-                    // Main Icon
-                    Text {
-                        Layout.alignment: Qt.AlignTop
-                        text: Style.icons.warning
-                        font.family: Style.fontTypes.font6Pro
-                        color: Style.colors.warning
-                        font.pixelSize: 50
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        // Main Icon
+                        Text {
+                            Layout.alignment: Qt.AlignTop
+                            text: Style.icons.warning
+                            font.family: Style.fontTypes.font6Pro
+                            color: Style.colors.warning
+                            font.pixelSize: 50
+                        }
+
+                        ColumnLayout{
+                            Layout.fillWidth: true
+                            spacing: 12
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: dialog.title
+                                color: Style.colors.secondaryText
+                                font.family: Style.fontTypes.roboto
+                                font.bold: true
+                                font.pixelSize: 18
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: dialog.message
+                                wrapMode: Text.Wrap
+                                color: Style.colors.secondaryText
+                                font.family: Style.fontTypes.roboto
+                                font.pixelSize: 14
+                            }
+                        }
                     }
 
-                    // RIGHT
-                    ColumnLayout {
+                    // BUTTON 1: Save
+                    Rectangle {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        spacing: 12
+                        Layout.preferredHeight: saveRow.implicitHeight + 16
+                        border.color: saveMouseArea.containsMouse ? Style.colors.accent : "transparent"
+                        radius: 6
+                        visible: false  //TODO, next version
 
-                        Text {
-                            Layout.fillWidth: true
-                            text: dialog.title
-                            color: Style.colors.secondaryText
-                            font.family: Style.fontTypes.roboto
-                            font.bold: true
-                            font.pixelSize: 18
+                        MouseArea {
+                            id: saveMouseArea
+                            cursorShape: Qt.PointingHandCursor
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                dialog.saved()
+                                dialog.close()
+                            }
                         }
 
-                        Text {
-                            Layout.fillWidth: true
-                            text: dialog.message
-                            wrapMode: Text.Wrap
-                            color: Style.colors.secondaryText
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 14
-                        }
+                        RowLayout {
+                            id: saveRow
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 12
 
-                        // Spacer
-                        Item { Layout.fillHeight: true }
-
-                        // BUTTON 1: Save
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: saveRow.implicitHeight + 16
-                            border.color: saveMouseArea.containsMouse ? Style.colors.accent : "transparent"
-                            radius: 6
-                            visible: false  //TODO, next version
-
-                            MouseArea {
-                                id: saveMouseArea
-                                cursorShape: Qt.PointingHandCursor
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: {
-                                    dialog.saved()
-                                    dialog.close()
-                                }
+                            Text {
+                                text: Style.icons.arrowRight
+                                Layout.alignment: Qt.AlignTop
+                                color: Style.colors.accent
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 16
                             }
 
-                            RowLayout {
-                                id: saveRow
-                                anchors.fill: parent
-                                anchors.margins: 12
-                                spacing: 12
-
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
                                 Text {
-                                    text: Style.icons.arrowRight
-                                    Layout.alignment: Qt.AlignTop
-                                    color: Style.colors.accent
-                                    font.family: Style.fontTypes.font6Pro
-                                    font.pixelSize: 16
+                                    text: dialog.saveTitle
+                                    color: Style.colors.secondaryText
+                                    font.family: Style.fontTypes.roboto
+                                    font.pixelSize: 14
+                                    font.bold: true
                                 }
-
-                                ColumnLayout {
+                                Text {
+                                    text: dialog.saveDescription
                                     Layout.fillWidth: true
-                                    spacing: 8
-                                    Text {
-                                        text: dialog.saveTitle
-                                        color: Style.colors.secondaryText
-                                        font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 14
-                                        font.bold: true
-                                    }
-                                    Text {
-                                        text: dialog.saveDescription
-                                        Layout.fillWidth: true
-                                        wrapMode: Text.Wrap
-                                        color: Qt.darker(Style.colors.secondaryText, 1.2)
-                                        font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 12
-                                    }
+                                    wrapMode: Text.Wrap
+                                    color: Qt.darker(Style.colors.secondaryText, 1.2)
+                                    font.family: Style.fontTypes.roboto
+                                    font.pixelSize: 12
                                 }
                             }
                         }
+                    }
 
-                        // BUTTON 2: Abort
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: abortRow.implicitHeight + 16
-                            border.color: abortMouseArea.containsMouse ? Style.colors.accent : "transparent"
-                            radius: 6
-                            visible: dialog.hasAbort
+                    // BUTTON 2: Abort
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: abortRow.implicitHeight + 16
+                        border.color: abortMouseArea.containsMouse ? Style.colors.accent : "transparent"
+                        radius: 6
+                        visible: dialog.hasAbort
 
-                            MouseArea {
-                                id: abortMouseArea
-                                cursorShape: Qt.PointingHandCursor
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: {
-                                    dialog.aborted()
-                                    dialog.close()
-                                }
-                            }
-
-                            RowLayout {
-                                id: abortRow
-                                anchors.fill: parent
-                                anchors.margins: 12
-                                spacing: 12
-
-                                Text {
-                                    text: Style.icons.arrowRight
-                                    Layout.alignment: Qt.AlignTop
-                                    color: Style.colors.accent
-                                    font.family: Style.fontTypes.font6Pro
-                                    font.pixelSize: 16
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 8
-                                    Text {
-                                        text: dialog.acceptTitle
-                                        color: Style.colors.secondaryText
-                                        font.family: Style.fontTypes.roboto
-                                        font.bold: true
-                                        font.pixelSize: 14
-                                    }
-                                    Text {
-                                        text: dialog.acceptDescription
-                                        Layout.fillWidth: true
-                                        wrapMode: Text.Wrap
-                                        color: Qt.darker(Style.colors.secondaryText, 1.2)
-                                        font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 12
-                                    }
-                                }
+                        MouseArea {
+                            id: abortMouseArea
+                            cursorShape: Qt.PointingHandCursor
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                dialog.aborted()
+                                dialog.close()
                             }
                         }
 
-                        // BUTTON 3: Cancel
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: cancelRow.implicitHeight + 16
-                            border.color: cancelMouseArea.containsMouse ? Style.colors.accent : "transparent"
-                            radius: 6
+                        RowLayout {
+                            id: abortRow
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 12
 
-                            MouseArea {
-                                id: cancelMouseArea
-                                cursorShape: Qt.PointingHandCursor
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: {
-                                    dialog.cancelled()
-                                    dialog.close()
-                                }
+                            Text {
+                                text: Style.icons.arrowRight
+                                Layout.alignment: Qt.AlignTop
+                                color: Style.colors.accent
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 16
                             }
 
-                            RowLayout {
-                                id: cancelRow
-                                anchors.fill: parent
-                                anchors.margins: 12
-                                spacing: 12
-
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
                                 Text {
-                                    text: Style.icons.arrowRight
-                                    Layout.alignment: Qt.AlignTop
-                                    color: Style.colors.accent
-                                    font.family: Style.fontTypes.font6Pro
-                                    font.pixelSize: 16
+                                    text: dialog.acceptTitle
+                                    color: Style.colors.secondaryText
+                                    font.family: Style.fontTypes.roboto
+                                    font.bold: true
+                                    font.pixelSize: 14
                                 }
-
-                                ColumnLayout {
+                                Text {
+                                    text: dialog.acceptDescription
                                     Layout.fillWidth: true
-                                    spacing: 8
-                                    Text {
-                                        text: dialog.cancelTitle
-                                        color: Style.colors.secondaryText
-                                        font.family: Style.fontTypes.roboto
-                                        font.bold: true
-                                        font.pixelSize: 14
-                                    }
-                                    Text {
-                                        text: dialog.cancelDescription
-                                        Layout.fillWidth: true
-                                        wrapMode: Text.Wrap
-                                        color: Qt.darker(Style.colors.secondaryText, 1.2)
-                                        font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 12
-                                    }
+                                    wrapMode: Text.Wrap
+                                    color: Qt.darker(Style.colors.secondaryText, 1.2)
+                                    font.family: Style.fontTypes.roboto
+                                    font.pixelSize: 12
+                                }
+                            }
+                        }
+                    }
+
+                    // BUTTON 3: Cancel
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: cancelRow.implicitHeight + 16
+                        border.color: cancelMouseArea.containsMouse ? Style.colors.accent : "transparent"
+                        radius: 6
+
+                        MouseArea {
+                            id: cancelMouseArea
+                            cursorShape: Qt.PointingHandCursor
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                dialog.cancelled()
+                                dialog.close()
+                            }
+                        }
+
+                        RowLayout {
+                            id: cancelRow
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 12
+
+                            Text {
+                                text: Style.icons.arrowRight
+                                Layout.alignment: Qt.AlignTop
+                                color: Style.colors.accent
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 16
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                Text {
+                                    text: dialog.cancelTitle
+                                    color: Style.colors.secondaryText
+                                    font.family: Style.fontTypes.roboto
+                                    font.bold: true
+                                    font.pixelSize: 14
+                                }
+                                Text {
+                                    text: dialog.cancelDescription
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.Wrap
+                                    color: Qt.darker(Style.colors.secondaryText, 1.2)
+                                    font.family: Style.fontTypes.roboto
+                                    font.pixelSize: 12
                                 }
                             }
                         }
