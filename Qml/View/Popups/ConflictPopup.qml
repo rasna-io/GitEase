@@ -197,13 +197,21 @@ IPopup {
                                 }
 
                                 ActionIconButton {
+                                    property bool canSave: !modelData.blocks || modelData.blocks.length === 0
+
                                     iconText: Style.icons.plus
-                                    tooltip: "Stage"
                                     textColor: Style.colors.mutedText
-                                    visible: !modelData.blocks || modelData.blocks.length === 0 //TODO, next version
+
+                                    opacity: canSave ? 1.0 : 0.5
+
+                                    tooltip: canSave ? "Save and Stage" : "Resolve conflicts to stage"
+
                                     onClicked: {
-                                        root.selectFile(modelData.path)
-                                        root.saveAndStage(modelData.path)
+                                        if(!modelData.blocks || modelData.blocks.length === 0){
+                                            root.selectFile(modelData.path)
+                                            root.saveAndStage(modelData.path)
+                                        }
+
                                     }
                                 }
                             }
