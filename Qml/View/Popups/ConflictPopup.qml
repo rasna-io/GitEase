@@ -471,22 +471,31 @@ IPopup {
                 }
 
                 Button {
+                    id: continueBtn
                     flat: true
                     text: root.continueButtonText
-                    enabled: root.canContinue
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+
+                    Material.foreground: root.canContinue && hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+
+                    ToolTip.visible: hovered
+                    ToolTip.text: root.canContinue ? "Click to continue" : "Resolve all files to continue"
+
                     background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                        color: root.canContinue && continueBtn.hovered ? Style.colors.accent : Style.colors.secondaryBackground
                         border.color: Style.colors.accent
                         radius: 5
+                        opacity: root.canContinue ? 1.0 : 0.5
                     }
-                    MouseArea{
+
+                    MouseArea {
                         anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-
-                        onClicked: continueOperation()
+                        cursorShape: root.canContinue ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                        onClicked: {
+                            if (root.canContinue) {
+                                continueOperation()
+                            }
+                        }
                     }
-
                 }
             }
         }
