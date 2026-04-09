@@ -312,14 +312,46 @@ IPopup {
                                         }
                                     }
 
-                                    TextArea {
-                                        id: lineEditor
-                                        visible: !isButtonRow
+                                    // 1. Read-only Label exclusively for markers
+                                    Label {
+                                        visible: isMarker
                                         x: -conflictListView.horizontalScrollOffset
                                         width: 2000
-                                        text: model.text
-                                        color: isMarker ? Style.colors.conflictMarkerText : Style.colors.editorForeground
-                                        font.family: "Cascadia Mono"
+
+                                        text: {
+                                            if (model.role === "marker-start") {
+                                                let branchName = model.text.replace("<<<<<<<", "").trim()
+                                                return "Current Change (" + (branchName || "HEAD") + ")"
+                                            }
+                                            if (model.role === "marker-end") {
+                                                let branchName = model.text.replace(">>>>>>>", "").trim()
+                                                return "Incoming Change (" + branchName + ")"
+                                            }
+                                            if (model.role === "separator") {
+                                                return "======================="
+                                            }
+                                            return ""
+                                        }
+
+                                        color: Style.colors.conflictMarkerText
+                                        font.family: Style.fontTypes.roboto
+                                        font.pixelSize: 13
+                                        padding: 0
+                                        leftPadding: 8
+                                        topPadding: 2
+                                    }
+
+                                    // 2. Editable TextArea exclusively for actual code
+                                    TextArea {
+                                        id: lineEditor
+                                        visible: !isButtonRow && !isMarker
+                                        x: -conflictListView.horizontalScrollOffset
+                                        width: 2000
+
+                                        text: model.text // Simple, safe binding
+
+                                        color: Style.colors.editorForeground
+                                        font.family: Style.fontTypes.roboto
                                         font.pixelSize: 13
                                         padding: 0
                                         leftPadding: 8
@@ -328,22 +360,21 @@ IPopup {
                                         selectedTextColor: Style.colors.secondaryForeground
                                         background: null
                                         selectByMouse: true
-                                        readOnly: isMarker
                                         wrapMode: TextArea.NoWrap
 
                                         Material.accent: Style.colors.accent
 
                                         onTextChanged: {
-                                            if (displayModel.get(index))
-                                                displayModel.setProperty(index, "text", text)
-
+                                            if (!isMarker && !isButtonRow && model.text !== text) {
+                                                model.text = text
+                                                if (displayModel.get(index)) {
+                                                    displayModel.setProperty(index, "text", text)
+                                                }
+                                            }
                                             root.updateMaxContentWidth(text)
                                         }
 
                                         Keys.onPressed: (event) => {
-                                            if (readOnly)
-                                                return
-
                                             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                                                 event.accepted = true
                                                 root.splitLine(index, cursorPosition)
@@ -365,6 +396,7 @@ IPopup {
                                             }
                                         }
                                     }
+
 
                                     RowLayout {
                                         id: buttonRow
