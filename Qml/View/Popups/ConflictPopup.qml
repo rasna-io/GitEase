@@ -1151,9 +1151,15 @@ IPopup {
 
             if (res.success) {
                 notificationController.success("Commit skipped", "Rebase", 2500)
-                loadConflicts()
+                close();
             } else {
-                notificationController.error(res.errorMessage, "Rebase", 4000)
+                if (res.data && res.data.hasConflicts){
+                    notificationController.success("Skipped, but new conflicts found.", "Rebase", 2500)
+                    loadConflicts()
+                }
+                else{
+                    notificationController.error(res.errorMessage, "Rebase", 4000)
+                }
             }
         }
     }
