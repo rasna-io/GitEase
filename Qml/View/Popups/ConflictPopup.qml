@@ -515,20 +515,47 @@ IPopup {
                     flat: true
                     text: root.continueButtonText
 
-                    Material.foreground: root.canContinue && hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-
-                    ToolTip.visible: hovered
-                    ToolTip.text: root.canContinue ? "Click to continue" : "Resolve all files to continue"
+                    Material.foreground: root.canContinue && mouse.containsMouse ? Style.colors.secondaryForeground : Style.colors.foreground
 
                     background: Rectangle {
-                        color: root.canContinue && continueBtn.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                        color: root.canContinue && mouse.containsMouse ? Style.colors.accent : Style.colors.secondaryBackground
                         border.color: Style.colors.accent
                         radius: 5
                         opacity: root.canContinue ? 1.0 : 0.5
                     }
 
+                    ToolTip{
+                        id: tip
+                        parent: continueBtn
+                        visible: mouse.containsMouse
+                        delay: 100
+                        timeout: 2000
+                        text: root.canContinue ? "Click to continue" : "Resolve all files to continue"
+
+                        x: (continueBtn.width - width) / 2
+                        y: -height - 6
+
+                        padding: 6
+
+                        contentItem: Text {
+                            text: tip.text
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 11
+                            color: "#ffffff"
+                        }
+
+                        background: Rectangle {
+                            radius: 6
+                            color: Qt.rgba(0, 0, 0, 0.85)
+                            border.color: Qt.rgba(1, 1, 1, 0.12)
+                            border.width: 1
+                        }
+                    }
+
                     MouseArea {
+                        id: mouse
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: root.canContinue ? Qt.PointingHandCursor : Qt.ForbiddenCursor
                         onClicked: {
                             if (root.canContinue) {
