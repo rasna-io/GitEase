@@ -799,7 +799,7 @@ IPopup {
         if (!conflictController)
             return
 
-        let res = conflictController.getMergeConflicts()
+        let res = conflictController.getConflicts()
         if (!res.success) {
             if (notificationController)
                 notificationController.error(res.errorMessage, "Conflicts", 4000)

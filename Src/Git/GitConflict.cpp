@@ -9,7 +9,7 @@ GitConflict::GitConflict(QObject* parent)
 {
 }
 
-GitResult GitConflict::getMergeConflicts()
+GitResult GitConflict::getConflicts()
 {
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository is not open.");
