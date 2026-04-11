@@ -2179,7 +2179,7 @@ Item {
 
             finalModel.push({
                 text: "Merge '" + bName + "' into '" + currentBranch + "'",
-                icon: Style.icons.arrowLeftRight,
+                icon: Style.icons.arowLeftRight,
                 enabled: !isCurrentHead,
                 action: function() {
                     let res = mergeController.mergeBranchIntoCurrent(bName);
@@ -2236,7 +2236,7 @@ Item {
 
         finalModel.push({
             text: "Rebase '" + currentBranch + "' onto " + shortHash,
-            icon: Style.icons.arrowUp,
+            icon: Style.icons.clockRotateLeft,
             enabled: !isCurrentHead,
             action: function() {
                 if (!rebaseController)
