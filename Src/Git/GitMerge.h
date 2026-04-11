@@ -94,6 +94,9 @@ public:
      */
     Q_INVOKABLE bool isMergeInProgress() const;
 
+    /// Abort an in-progress merge (`git merge --abort`).
+    Q_INVOKABLE GitResult abortMerge();
+
 signals:
     /**
      * @brief Emitted whenever the merge state changes (start, conflict, resolution, completion).
