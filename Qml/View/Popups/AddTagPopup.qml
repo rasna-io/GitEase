@@ -17,6 +17,7 @@ IPopup {
     property TagController tagController: null
     property NotificationController notificationController: null
     property string targetHash: ""
+    property bool pushAfterCreate: true
 
     readonly property bool isNameValid: nameInput.text.trim().length > 0
     readonly property bool canAccept: isNameValid
@@ -26,7 +27,7 @@ IPopup {
 
     /* Object Properties */
     width: 360
-    height: 300
+    height: 340
     padding: 12
 
     contentItem: Rectangle {
@@ -97,6 +98,23 @@ IPopup {
                 Layout.fillWidth: true
             }
 
+            CheckBox {
+                id: pushCheckBox
+                text: "Push to remote (origin)"
+                checked: root.pushAfterCreate
+                Layout.fillWidth: true
+
+                contentItem: Text {
+                    text: pushCheckBox.text
+                    font: pushCheckBox.font
+                    color: Style.colors.foreground
+                    leftPadding: pushCheckBox.indicator.width + pushCheckBox.spacing
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onCheckedChanged: root.pushAfterCreate = checked
+            }
+
             RowLayout {
                 spacing: 12
                 Layout.fillWidth: true
@@ -141,14 +159,18 @@ IPopup {
                         let res = ctrl.create(tagName, commitToTag, messageInput.text.trim());
 
                         if (res && res.success) {
-                            if (notif) notif.info("Pushing tag to GitHub...", "Tag", 1500);
+                            if (root.pushAfterCreate) {
+                                if (notif) notif.info("Pushing tag to GitHub...", "Tag", 1500);
 
-                            let pushRes = ctrl.pushTag(tagName);
+                                let pushRes = ctrl.pushTag(tagName);
 
-                            if (pushRes && pushRes.success) {
-                                if (notif) notif.success("Tag '" + tagName + "' created and pushed", "Success", 3000);
+                                if (pushRes && pushRes.success) {
+                                    if (notif) notif.success("Tag '" + tagName + "' created and pushed", "Success", 3000);
+                                } else {
+                                    if (notif) notif.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+                                }
                             } else {
-                                if (notif) notif.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+                                if (notif) notif.success("Tag '" + tagName + "' created locally", "Success", 3000);
                             }
 
                             root.tagCreatedSuccessfully();
@@ -167,6 +189,7 @@ IPopup {
         nameInput.text = "";
         messageInput.text = "";
         targetHash = "";
+        pushAfterCreate = true;
     }
 
     // Auto-focus logic when popup opens
