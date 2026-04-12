@@ -702,7 +702,6 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
     // If the file is physically gone (DELETED), we need a diff that represents the
     // total removal, so we can pick which "removals" to stage.
     if (type == GIT_DELTA_DELETED) {
-        git_tree* headTree = nullptr;
         git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
     } else {
         QByteArray pathUtf8 = filePath.toUtf8();
@@ -721,9 +720,14 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
 
     const auto stagedLines = applySelectedFromPatch(indexLines, patch.get(), startLine, endLine);
     QString stagedText = joinLines(stagedLines);
-    #ifdef Q_OS_WIN
-    stagedText.replace("\n", "\r\n");
-    #endif
+
+    const char* rawContent = static_cast<const char*>(git_blob_rawcontent(indexBlob.get()));
+    git_object_size_t rawSize = git_blob_rawsize(indexBlob.get());
+    QByteArray originalData = QByteArray::fromRawData(rawContent, static_cast<int>(rawSize));
+
+    if (originalData.contains("\r\n")) {
+        stagedText.replace("\n", "\r\n");
+    }
 
     GitResult writeResult = writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
     if (writeResult.success()) {
