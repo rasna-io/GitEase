@@ -99,8 +99,8 @@ UtilitiesCard {
                     // 3. Delete Action (Fixed Position)
                     ActionIconButton {
                         iconText: Style.icons.trash
-                        textColor: Style.colors.deletededFile
-                        tooltip: "Delete Tag"
+                        textColor: Style.colors.modifiediedFile
+                        tooltip: "Delete Tag (Local Only)"
                         Layout.preferredWidth: 28
                         Layout.preferredHeight: 28
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
@@ -110,8 +110,34 @@ UtilitiesCard {
                             let res = ctrl.remove(modelData.name);
                             if (res.success) {
                                 if (root.notificationController)
-                                    root.notificationController.success("Tag deleted", "Tag", 2000);
+                                    root.notificationController.success("Tag deleted locally", "Tag", 2000);
                                 root.update();
+                            }
+                        }
+                    }
+
+                    ActionIconButton {
+                        iconText: Style.icons.trash
+                        textColor: Style.colors.deletededFile
+                        tooltip: "Delete Tag from Remote (Origin)"
+                        Layout.preferredWidth: 28
+                        Layout.preferredHeight: 28
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+
+                        onClicked: {
+                            let ctrl = root.tagController || uiSession.tagController;
+                            let notif = root.notificationController;
+
+                            if (notif) notif.info("Deleting tag from remote...", "Remote", 1500);
+
+                            let res = ctrl.pushDeleteTag(modelData.name);
+
+                            if (res.success) {
+                                if (notif) notif.success("Tag deleted from remote", "Success", 3000);
+                                ctrl.remove(modelData.name);
+                                root.update();
+                            } else {
+                                if (notif) notif.error("Failed to delete from remote: " + res.errorMessage, "Error", 5000);
                             }
                         }
                     }
