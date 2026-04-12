@@ -54,6 +54,13 @@ public:
      */
     Q_INVOKABLE GitResult pushTag(const QString &name);
 
+    /**
+    * @brief Deletes a specific tag from the remote repository (origin).
+    * @param name The name of the tag to delete from remote
+    * @return GitResult indicating success or failure
+    */
+    Q_INVOKABLE GitResult pushDeleteTag(const QString &name);
+
 signals:
     /**
      * @brief Notifies the UI (Graph/Utility Card) that tags have changed.
