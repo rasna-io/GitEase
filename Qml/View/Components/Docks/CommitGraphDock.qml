@@ -593,6 +593,15 @@ Item {
         }
     }
 
+    Connections {
+        target: addTagPopup
+
+        function onTagCreatedSuccessfully() {
+            root.selectedCommit = ""
+            root.reloadAll()
+        }
+    }
+
     Rectangle{
         anchors.fill: parent
         color : Style.colors.primaryBackground
