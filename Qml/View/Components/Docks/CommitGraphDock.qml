@@ -1304,7 +1304,9 @@ Item {
                                     }
 
                                     // Only show labels for HEAD commits
-                                    if (!isHeadCommitForLabels) continue;
+                                    if (!isHeadCommitForLabels && (!commitForLine.tagNames || commitForLine.tagNames.length === 0)) {
+                                        continue;
+                                    }
 
                                     var centerXForLine = centerOffset + posForLine.column * root.columnSpacing + root.columnSpacing / 2;
                                     var centerYForLine = posForLine.y + root.commitItemHeight / 2 + root.commitItemSpacing;
@@ -1320,7 +1322,8 @@ Item {
                                             var tagName = commitForLine.tagNames[tIdx];
                                             allLabels.push({
                                                 text: tagName,
-                                                color: laneLabelColor
+                                                color: "#e2c044",
+                                                isTag: true
                                             });
                                         }
                                     }
@@ -1331,7 +1334,8 @@ Item {
                                         var headBranchName = headBranchesForThisCommit[hbi];
                                         allLabels.push({
                                             text: headBranchName, //+ " (HEAD)",
-                                            color: laneLabelColor
+                                            color: laneLabelColor,
+                                            isTag: false
                                         });
                                     }
 
@@ -1350,10 +1354,12 @@ Item {
                                         var labelPositions = [];
                                         for (var calcIdx = 0; calcIdx < allLabels.length; calcIdx++) {
                                             var calcLabelInfo = allLabels[calcIdx];
+                                            var isTag = calcLabelInfo.isTag;
                                             ctx.font = "bold 11px Arial";
                                             ctx.textAlign = "left";
                                             var calcTextMetrics = ctx.measureText(calcLabelInfo.text);
-                                            var calcLabelWidth = calcTextMetrics.width + 16;
+                                            var extraSpace = isTag ? 20 : 8;
+                                            var calcLabelWidth = calcTextMetrics.width + 8 + extraSpace;
                                             labelPositions.push({
                                                 x: currentLabelX,
                                                 width: calcLabelWidth,
@@ -1395,14 +1401,23 @@ Item {
                                             GraphUtils.drawRoundedRect(ctx, labelX, labelRectY, labelWidth, labelHeight, 2);
                                             ctx.fill();
 
-                                            // Enhanced label styling with better contrast
                                             var contrastColor = GraphUtils.getContrastColor(labelInfo.color);
                                             ctx.fillStyle = contrastColor;
                                             ctx.globalAlpha = 1.0;
-                                            ctx.font = "bold 11px 'Segoe UI', Arial, sans-serif";
-                                            ctx.textAlign = "left";
                                             ctx.textBaseline = "middle";
-                                            ctx.fillText(labelInfo.text, labelX + 8, labelY);
+                                            ctx.textAlign = "left";
+
+                                            if (labelInfo.isTag) {
+                                                ctx.font = "9px " + Style.fontTypes.font6ProSolid;
+                                                ctx.fillText(Style.icons.tag, labelX + 4, labelY);
+
+                                                ctx.font = "bold 11px 'Segoe UI', Arial, sans-serif";
+                                                ctx.fillText(labelInfo.text, labelX + 20, labelY);
+                                            } else {
+                                                ctx.font = "bold 11px 'Segoe UI', Arial, sans-serif";
+                                                ctx.fillText(labelInfo.text, labelX + 8, labelY);
+                                            }
+
                                             ctx.restore();
                                         }
                                     }
@@ -1945,6 +1960,24 @@ Item {
     function compileGraphCommits(rawCommits, rawBranches, rawStashes) {
         if (!rawCommits) return []
 
+        var hashToTags = {};
+
+        var tagController = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
+        if (tagController) {
+            var allTags = tagController.list().data;
+            var keys = Object.keys(allTags);
+            for (var i = 0; i < keys.length; i++) {
+                var tag = allTags[i];
+                var cHash = tag.commitId;
+                if (cHash) {
+                    if (!hashToTags[cHash]) {
+                        hashToTags[cHash] = [];
+                    }
+                    hashToTags[cHash].push(tag.name);
+                }
+            }
+        }
+
         // tip commit hash -> [branchName,...]
         var tipHashToBranches = {}
         var branchTipHashes = []
@@ -2044,7 +2077,7 @@ Item {
 
                 // Only branch tips start with branch names; we'll propagate membership below
                 branchNames: tipHashToBranches[commit.hash] || [],
-                tagNames: [],
+                tagNames: hashToTags[commit.hash] || [],
 
                 // assigned in loadData() after layout (lane -> category)
                 colorKey: "",
