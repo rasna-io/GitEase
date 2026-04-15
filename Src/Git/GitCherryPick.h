@@ -27,6 +27,7 @@ class GitCherryPick : public IGitController
     QML_ELEMENT
 
 private:
+    GitResult processCommits();
     GitResult applyCommit(const QString& commitHash);
     GitResult createCommitFromPick(git_commit* pickedCommit);
     GitResult conflictResult(const QString& commitHash, const QString& message);

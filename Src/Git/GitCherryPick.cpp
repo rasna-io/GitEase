@@ -43,36 +43,7 @@ GitResult GitCherryPick::cherryPickCommits(const QStringList& commitHashes)
     m_hasConflicts = false;
     emit cherryPickStateChanged();
 
-    int appliedCount = 0;
-
-    while (m_currentIndex < m_pendingCommits.size()) {
-        const QString commitHash = m_pendingCommits[m_currentIndex];
-
-        GitResult res = applyCommit(commitHash);
-        if (!res.success()) {
-            if (res.data().toMap().value("status").toString() == "conflict")
-                return res;
-
-            clearState();
-            return res;
-        }
-
-        appliedCount++;
-        m_currentIndex++;
-    }
-
-    QVariantMap data;
-    data["status"] = "completed";
-    data["appliedCount"] = appliedCount;
-    data["totalCount"] = m_pendingCommits.size();
-
-    QString command = "git cherry-pick";
-    for (const QString& hash : commitHashes)
-        command += " " + quoteCommandArg(hash);
-    emitGitCommand(command);
-
-    clearState();
-    return GitResult(true, data, "Cherry-pick completed.");
+    return processCommits();
 }
 
 GitResult GitCherryPick::continueCherryPick()
@@ -105,13 +76,20 @@ GitResult GitCherryPick::continueCherryPick()
     m_hasConflicts = false;
     emit cherryPickStateChanged();
 
+    // Successfully resolved and committed the conflicted commit
     m_currentIndex++;
 
-    int appliedCount = 1;
+    emitGitCommand("git cherry-pick --continue");
 
-    // Continue applying remaining commits
+    // Call the new helper to process whatever is left
+    return processCommits();
+}
+
+GitResult GitCherryPick::processCommits()
+{
     while (m_currentIndex < m_pendingCommits.size()) {
         const QString commitHash = m_pendingCommits[m_currentIndex];
+
         GitResult res = applyCommit(commitHash);
         if (!res.success()) {
             if (res.data().toMap().value("status").toString() == "conflict")
@@ -120,16 +98,20 @@ GitResult GitCherryPick::continueCherryPick()
             clearState();
             return res;
         }
-        appliedCount++;
+
         m_currentIndex++;
     }
 
+    // If we reach here, all commits are done
     QVariantMap data;
     data["status"] = "completed";
-    data["appliedCount"] = appliedCount;
+    data["appliedCount"] = m_currentIndex; // m_currentIndex is the exact total of applied commits!
     data["totalCount"] = m_pendingCommits.size();
 
-    emitGitCommand("git cherry-pick --continue");
+    QString command = "git cherry-pick";
+    for (const QString& hash : m_pendingCommits)
+        command += " " + quoteCommandArg(hash);
+    emitGitCommand(command);
 
     clearState();
     return GitResult(true, data, "Cherry-pick completed.");
