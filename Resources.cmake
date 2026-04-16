@@ -33,6 +33,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/SshKeyController.qml
     Qml/Core/Controllers/MergeController.qml
     Qml/Core/Controllers/RebaseController.qml
+    Qml/Core/Controllers/CherryPickController.qml
     Qml/Core/Controllers/ConflictController.qml
 
     # Scripts
