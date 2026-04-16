@@ -30,6 +30,7 @@ Item {
     property ConflictController conflictController: null
     property MergeController mergeController: null
     property RebaseController rebaseController: null
+    property CherryPickController cherryPickController: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -511,6 +512,7 @@ Item {
                 branchController: root.branchController
                 mergeController: root.mergeController
                 rebaseController: root.rebaseController
+                cherryPickController: root.cherryPickController
                 addBranchPopup: uiSessionPopups.addBranchPopup
                 commitController: root.commitController
                 statusController: root.statusController

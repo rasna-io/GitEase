@@ -35,6 +35,7 @@ QtObject {
             stashController.currentRepo = currentRepo
             mergeController.currentRepo = currentRepo
             rebaseController.currentRepo = currentRepo
+            cherryPickController.currentRepo = currentRepo
             conflictController.currentRepo = currentRepo
         }
 
@@ -112,6 +113,12 @@ QtObject {
     }
 
     property RebaseController rebaseController: RebaseController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
+
+    property CherryPickController cherryPickController: CherryPickController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
         }
