@@ -93,11 +93,14 @@ GitResult GitCherryPick::processCommits()
         GitResult res = applyCommit(commitHash);
         if (!res.success()) {
             if (res.data().toMap().value("status").toString() == "conflict")
-                return res;
+                return res; // Stop processing, wait for user to resolve
 
             clearState();
-            return res;
+            return res; // Hard error
         }
+
+        // SUCCESS
+        emitGitCommand("git cherry-pick " + quoteCommandArg(commitHash));
 
         m_currentIndex++;
     }
@@ -105,13 +108,8 @@ GitResult GitCherryPick::processCommits()
     // If we reach here, all commits are done
     QVariantMap data;
     data["status"] = "completed";
-    data["appliedCount"] = m_currentIndex; // m_currentIndex is the exact total of applied commits!
+    data["appliedCount"] = m_currentIndex;
     data["totalCount"] = m_pendingCommits.size();
-
-    QString command = "git cherry-pick";
-    for (const QString& hash : m_pendingCommits)
-        command += " " + quoteCommandArg(hash);
-    emitGitCommand(command);
 
     clearState();
     return GitResult(true, data, "Cherry-pick completed.");
