@@ -22,6 +22,7 @@ Item {
     property BranchController branchController: null
 
     property MergeController mergeController: null
+    property RebaseController rebaseController: null
 
     property ConflictController conflictController: null
 
@@ -36,10 +37,20 @@ Item {
     property NotificationController notificationController: null
 
     property StashController stashController: null
-    MergeConflictPopup {
-        id: mergeConflictPopup
 
+    ConflictPopup {
+        id: mergeConflictPopup
+        isMerge: true
         mergeController: root.mergeController
+        conflictController: root.conflictController
+        notificationController: root.notificationController
+        statusController: root.statusController
+    }
+
+    ConflictPopup {
+        id: rebaseConflictPopup
+        isMerge: false
+        rebaseController: root.rebaseController
         conflictController: root.conflictController
         notificationController: root.notificationController
         statusController: root.statusController
@@ -1662,6 +1673,7 @@ Item {
 
                         ContextMenu {
                             id: contextMenu
+                            width: 250
 
                             onAboutToShow: {
                                 var branches = commitData.branchNames || [];
@@ -1726,6 +1738,9 @@ Item {
                                         ? root.branchController.getCurrentBranchName()
                                         : "";
                                 addMergeEntries(finalModel, branches, currentBranch, isCurrentHead);
+
+                                // Rebase
+                                addRebaseEntries(finalModel, commitData, currentBranch, isCurrentHead);
 
                                 menuModel = finalModel;
                             }
@@ -2164,15 +2179,92 @@ Item {
 
             finalModel.push({
                 text: "Merge '" + bName + "' into '" + currentBranch + "'",
-                icon: Style.icons.arrowLeftRight,
+                icon: Style.icons.arowLeftRight,
                 enabled: !isCurrentHead,
                 action: function() {
-                    let res = branchController.mergeBranchIntoCurrent(bName);
-                    handleResponse(res, "Merged " + bName + " into " + currentBranch);
+                    let res = mergeController.mergeBranchIntoCurrent(bName);
+
+                    if (mergeController.hasMergeConflicts()) {
+
+                        mergeConflictPopup.open()
+
+                        if (notificationController)
+                            notificationController.warning(
+                                "Merge conflicts detected. Please resolve them.",
+                                "Merge",
+                                4000
+                            )
+
+                        return
+                    }
+
+                    if (!res.success) {
+
+                        if (notificationController)
+                            notificationController.error(
+                                res.errorMessage || "Merge failed",
+                                "Merge",
+                                5000
+                            );
+
+                        return;
+                    }
+
+                    if (notificationController)
+                        notificationController.success(
+                            "Merge completed successfully",
+                            "Merge",
+                            3000
+                        );
                 }
             });
 
         });
+    }
+
+    function addRebaseEntries(finalModel, commitData, currentBranch, isCurrentHead) {
+        if (!rebaseController || !branchController)
+            return
+
+        if (!currentBranch)
+            return
+
+        if (!commitData || !commitData.hash)
+            return
+
+        var shortHash = commitData.shortHash || commitData.hash.substring(0, 7)
+
+        finalModel.push({
+            text: "Rebase '" + currentBranch + "' onto " + shortHash,
+            icon: Style.icons.clockRotateLeft,
+            enabled: !isCurrentHead,
+            action: function() {
+                if (!rebaseController)
+                    return
+
+                if (!branchController)
+                    return
+
+                var res = rebaseController.rebase(commitData.hash)
+
+                if(res && res.success){
+                    if(notificationController)
+                        notificationController.success("Rebase completed successfully", "Rebase", 3000)
+                    return
+                }
+
+                if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
+                    if (rebaseConflictPopup)
+                        rebaseConflictPopup.open()
+                    if (notificationController)
+                        notificationController.warning("Rebase conflicts detected. Please resolve them.", "Rebase", 4000)
+                    return
+                }
+
+                if (notificationController)
+                    notificationController.error(res?.errorMessage || "Rebase failed", "Rebase", 5000)
+            }
+        })
     }
 
     onRepositoryControllerChanged: reloadAll();

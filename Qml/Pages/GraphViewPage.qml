@@ -25,11 +25,11 @@ Item {
     property NotificationController notificationController: null
     property UiSessionPopups        uiSessionPopups: null
     property StashController        stashController: null
-    readonly property var           currentRepo: appModel?.currentRepository ?? null
     property string                 selectedCommit: ""
     property string                 selectedFilePath: ""
     property ConflictController conflictController: null
     property MergeController mergeController: null
+    property RebaseController rebaseController: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -510,6 +510,7 @@ Item {
                 appModel: root.appModel
                 branchController: root.branchController
                 mergeController: root.mergeController
+                rebaseController: root.rebaseController
                 addBranchPopup: uiSessionPopups.addBranchPopup
                 commitController: root.commitController
                 statusController: root.statusController

@@ -18,20 +18,23 @@ Item {
      * ****************************************************************************************/
     property var page: null
 
-    property BranchController branchController: null
-    property BundleController bundleController: null
-    property RemoteController remoteController: null
-    property CommitController commitController: null
-    property StatusController statusController: null
-    property RepositoryController repositoryController: null
-    property UserAuthenticationPopup userAuthenticationPopup: null
-    property UiSessionPopups  uiSessionPopups: null
-    property StashController  stashController   : null
-    property RepoForestPopup  repoForestPopup: null
+    property RepoForestPopup            repoForestPopup             : null
+    property BranchController           branchController            : null
+    property BundleController           bundleController            : null
+    property RemoteController           remoteController            : null
+    property CommitController           commitController            : null
+    property StatusController           statusController            : null
+    property RepositoryController       repositoryController        : null
+    property UserAuthenticationPopup    userAuthenticationPopup     : null
+    property UiSessionPopups            uiSessionPopups             : null
+    property StashController            stashController             : null
     
-    property NotificationController notificationController: null
+    property NotificationController     notificationController      : null
 
-    property ActivityController activityController: null
+    property ActivityController         activityController          : null
+
+    property RebaseController           rebaseController            : null
+    property ConflictController         conflictController          : null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -119,6 +122,25 @@ Item {
                 branchController: root.branchController
                 remoteController: root.remoteController
                 repoForestPopup: root.repoForestPopup
+            }
+            
+            RebaseDock {
+                width: 330
+                height: 390
+                branchController        : root.branchController
+                rebaseController        : root.rebaseController
+                notificationController  : root.notificationController
+
+                conflictPopup: ConflictPopup {
+                    isMerge: false
+
+                    rebaseController        : root.rebaseController
+                    conflictController      : root.conflictController
+                    notificationController  : root.notificationController
+                    statusController        : root.statusController
+                }
+
+
             }
         }
     }

@@ -130,13 +130,11 @@ QtObject{
     property color repoItemStatusPATText:       "#43525D"
 
     // Conflict marker backgrounds
-    property color conflictMarkerStartBg:   "#d4b89c"
-    property color conflictMarkerEndBg:     "#d4b89c"
-    property color conflictOursBg:          "#e6f4d9"
-    property color conflictTheirsBg:        "#d9e8f5"
+    property color conflictMarkerStartBg:   "#A1DFCB"
+    property color conflictMarkerEndBg:     "#99CFFF"
+    property color conflictOursBg:          "#D9F2EA"
+    property color conflictTheirsBg:        "#D9EDFF"
     property color conflictSeparatorBg:     "transparent"
-    property color conflictMarkerText:      "#666666"
-    property color lineNumberColor:         "#6e7681"
-
-
+    property color conflictMarkerText:      "#333333"
+    property color lineNumberColor:         "#808080"
 }

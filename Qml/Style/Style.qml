@@ -131,12 +131,14 @@ QtObject {
         repoItemStatusPATBg:         "#43525D"
         repoItemStatusPATText:       "#90CAF9"
         // Conflict marker backgrounds
-        conflictMarkerStartBg:  "#3d4b5a"
-        conflictMarkerEndBg:    "#3d4b5a"
-        conflictOursBg:         "#2d5a3a"
-        conflictTheirsBg:       "#1e4a6f"
+        conflictMarkerStartBg:  "#2C5D4B"  // Solid Dark Green (Header)
+        conflictOursBg:         "#1E3E31"  // Faded Dark Green (Content)
+
+        conflictMarkerEndBg:    "#285E8E"  // Solid Dark Blue (Header)
+        conflictTheirsBg:       "#1E3A5F"  // Faded Dark Blue (Content)
+
         conflictSeparatorBg:    "transparent"
-        conflictMarkerText:     "#a0a0a0"
+        conflictMarkerText:     "#E0E0E0"  // Brighter text for headers
         hintText:               "#a0a0a0"
         lineNumberColor:        "#a0a0a0"
     }

@@ -2,6 +2,8 @@
 #include <git2.h>
 #include <QDebug>
 
+#include "GitUtils.h"
+
 GitMerge::GitMerge(QObject* parent)
     : IGitController(parent)
 {
@@ -417,4 +419,25 @@ void GitMerge::resetMergeState()
     m_pendingTargetName.clear();
     m_pendingMergeMessage.clear();
     emit mergeStateChanged();  // CRITICAL: Add this line
+}
+
+GitResult GitMerge::abortMerge()
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "Repository not found.");
+
+    if (!isMergeInProgress())
+        return GitResult(false, QVariant(), "No merge in progress.");
+
+    int result = git_repository_state_cleanup(m_currentRepo->repo);
+
+    if (result != GIT_OK) {
+        return GitResult(false, QVariant(),
+                         QString("Failed to abort merge: %1").arg(GitUtils::getLastError()));
+    }
+
+    resetMergeState();
+    emitGitCommand("git merge --abort");
+
+    return GitResult(true, QVariant(), "Merge aborted.");
 }

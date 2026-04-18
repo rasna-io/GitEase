@@ -38,7 +38,7 @@ public:
      *             "lines": list of line maps (each with "number", "text", "role")
      *         )
      */
-    Q_INVOKABLE GitResult getMergeConflicts();
+    Q_INVOKABLE GitResult getConflicts();
 
     /**
      * @brief Accepts the "ours" version for a specific conflict block.

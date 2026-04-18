@@ -34,6 +34,7 @@ QtObject {
             configController.currentRepo = currentRepo
             stashController.currentRepo = currentRepo
             mergeController.currentRepo = currentRepo
+            rebaseController.currentRepo = currentRepo
             conflictController.currentRepo = currentRepo
         }
 
@@ -105,6 +106,12 @@ QtObject {
     }
 
     property MergeController mergeController: MergeController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
+
+    property RebaseController rebaseController: RebaseController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
         }
