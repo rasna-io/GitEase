@@ -2167,40 +2167,8 @@ Item {
                 icon: Style.icons.arrowLeftRight,
                 enabled: !isCurrentHead,
                 action: function() {
-                    let res = mergeController.mergeBranchIntoCurrent(bName);
-
-                    if (mergeController.hasMergeConflicts()) {
-
-                        mergeConflictPopup.open()
-
-                        if (notificationController)
-                            notificationController.warning(
-                                "Merge conflicts detected. Please resolve them.",
-                                "Merge",
-                                4000
-                            )
-
-                        return
-                    }
-
-                    if (!res.success) {
-
-                        if (notificationController)
-                            notificationController.error(
-                                res.errorMessage || "Merge failed",
-                                "Merge",
-                                5000
-                            );
-
-                        return;
-                    }
-
-                    if (notificationController)
-                        notificationController.success(
-                            "Merge completed successfully",
-                            "Merge",
-                            3000
-                        );
+                    let res = branchController.mergeBranchIntoCurrent(bName);
+                    handleResponse(res, "Merged " + bName + " into " + currentBranch);
                 }
             });
 
