@@ -70,12 +70,27 @@ Popup {
         Item {
             id: menuOption
             width: parent.width
-            height: 30
+            height: modelData.separator ? 9 : 30
             visible: modelData.visible !== false
-            readonly property bool isEnabled: modelData.enabled !== false
-            readonly property bool hasSub: !!modelData.subItems && modelData.subItems.length > 0
+            readonly property bool isSep:     !!modelData.separator
+            readonly property bool isEnabled: !isSep && modelData.enabled !== false
+            readonly property bool hasSub:    !isSep && !!modelData.subItems && modelData.subItems.length > 0
 
+            // Separator line
             Rectangle {
+                visible: isSep
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                height: 1
+                color: Style.colors.primaryBorder
+            }
+
+            // Normal item background
+            Rectangle {
+                visible: !isSep
                 anchors.fill: parent
                 anchors.margins: 2
                 radius: 4
@@ -83,6 +98,7 @@ Popup {
             }
 
             RowLayout {
+                visible: !isSep
                 anchors.fill: parent
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
@@ -125,6 +141,8 @@ Popup {
                         subMenuPopup.subModel = modelData.subItems
                         subMenuPopup.y = menuOption.mapToItem(root.contentItem, 0, 0).y - 6
                         subMenuPopup.open()
+                    } else if (!isSep) {
+                        subMenuPopup.close()
                     }
                 }
                 onClicked: {

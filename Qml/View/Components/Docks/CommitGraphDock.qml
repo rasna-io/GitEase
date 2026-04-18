@@ -47,6 +47,10 @@ Item {
         statusController: root.statusController
     }
 
+    MergeMethodPopup {
+        id: mergeMethodPopup
+    }
+
     ConflictPopup {
         id: rebaseConflictPopup
         isMerge: false
@@ -1733,10 +1737,11 @@ Item {
                                     }
                                 });
 
-                                // Merge
                                 var currentBranch = root.branchController
                                         ? root.branchController.getCurrentBranchName()
                                         : "";
+
+                                // Merge (adds its own leading separator when branches exist)
                                 addMergeEntries(finalModel, branches, currentBranch, isCurrentHead);
 
                                 // Rebase
@@ -2167,12 +2172,19 @@ Item {
         if (!currentBranch)
             return;
 
+        var mergeable = branches.filter(function(b) {
+            return b !== currentBranch && !b.startsWith("origin/")
+        });
+
+        if (mergeable.length === 0)
+            return;
+
         function handleMergeResult(res) {
             if (mergeController.hasMergeConflicts()) {
                 mergeConflictPopup.open()
                 if (notificationController)
                     notificationController.warning(
-                        "Merge conflicts detected. Please resolve them.", "Merge", 4000)
+                        "Merge conflicts detected. Resolve them then continue.", "Merge", 4000)
                 return
             }
             if (!res.success) {
@@ -2184,34 +2196,23 @@ Item {
                 notificationController.success("Merge completed successfully", "Merge", 3000)
         }
 
-        branches.forEach(function(bName) {
+        finalModel.push({ separator: true });
 
-            // Skip current branch itself
-            if (bName === currentBranch)
-                return;
-
-            // Skip Remote branches
-            if (bName.startsWith("origin/"))
-                return;
-
+        mergeable.forEach(function(bName) {
             finalModel.push({
                 text: "Merge '" + bName + "' into '" + currentBranch + "'",
                 icon: Style.icons.arowLeftRight,
                 enabled: !isCurrentHead,
                 action: function() {
-                    handleMergeResult(mergeController.mergeBranchIntoCurrent(bName))
+                    mergeMethodPopup.sourceBranch = bName
+                    mergeMethodPopup.targetBranch = currentBranch
+                    mergeMethodPopup.accepted.connect(function(noFF) {
+                        handleMergeResult(mergeController.mergeBranchIntoCurrent(bName, noFF))
+                        mergeMethodPopup.accepted.disconnect(arguments.callee)
+                    })
+                    mergeMethodPopup.open()
                 }
             });
-
-            finalModel.push({
-                text: "Merge '" + bName + "' into '" + currentBranch + "' (--no-ff)",
-                icon: Style.icons.arowLeftRight,
-                enabled: !isCurrentHead,
-                action: function() {
-                    handleMergeResult(mergeController.mergeBranchIntoCurrent(bName, true))
-                }
-            });
-
         });
     }
 
@@ -2228,20 +2229,17 @@ Item {
         var shortHash = commitData.shortHash || commitData.hash.substring(0, 7)
 
         finalModel.push({
-            text: "Rebase '" + currentBranch + "' onto " + shortHash,
+            text: "Rebase onto " + shortHash,
             icon: Style.icons.clockRotateLeft,
             enabled: !isCurrentHead,
             action: function() {
                 if (!rebaseController)
                     return
 
-                if (!branchController)
-                    return
-
                 var res = rebaseController.rebase(commitData.hash)
 
-                if(res && res.success){
-                    if(notificationController)
+                if (res && res.success) {
+                    if (notificationController)
                         notificationController.success("Rebase completed successfully", "Rebase", 3000)
                     return
                 }
@@ -2250,7 +2248,7 @@ Item {
                     if (rebaseConflictPopup)
                         rebaseConflictPopup.open()
                     if (notificationController)
-                        notificationController.warning("Rebase conflicts detected. Please resolve them.", "Rebase", 4000)
+                        notificationController.warning("Rebase conflicts detected. Resolve them then continue.", "Rebase", 4000)
                     return
                 }
 
