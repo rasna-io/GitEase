@@ -236,6 +236,22 @@ Item {
         root.selectedCommitHashes = list
     }
 
+    function selectedCommitsInOrder() {
+        var selected = []
+        if (!root.commits || !root.selectedCommitHashes)
+            return selected
+
+        for (var i = 0; i < root.commits.length; i++) {
+            var c = root.commits[i]
+            if (c && c.hash && isCommitSelected(c.hash)) {
+                selected.push({ commit: c, index: i })
+            }
+        }
+
+        selected.sort(function(a, b) { return b.index - a.index })
+        return selected.map(function(item) { return item.commit })
+    }
+
     function parseDateYYYYMMDD(str) {
         // Returns milliseconds since epoch, or NaN if invalid.
         // Accepts:
