@@ -142,6 +142,10 @@ GitResult GitRepository::cloneInternal(const QString& url,
     if (QDir(localPath).exists())
         return GitResult(false, {}, "Directory already exists");
 
+#ifdef Q_OS_LINUX
+    git_libgit2_opts(GIT_OPT_SET_SSL_CERT_LOCATIONS, "/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs");
+#endif
+
     // SSH agent pre check
     if (auto sshAuth = dynamic_cast<GitSshAuth*>(auth.get()))
     {
