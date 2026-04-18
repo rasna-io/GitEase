@@ -144,11 +144,9 @@ IPopup {
                     onClicked: {
                         var d = confirmationDialogComponent.createObject(root)
 
-                        let opName = root.isMerge ? "Merge" : "Rebase"
-
-                        d.title = `Abort ${opName}?`
+                        d.title = `Abort ${operationName}?`
                         d.message = "You have unresolved conflicts.\n" +
-                                    `Closing this window will abort the ${opName} and discard all progress.\n\n` +
+                                    `Closing this window will abort the ${operationName} and discard all progress.\n\n` +
                                     "Are you sure you want to abort?"
 
                         d.saved.connect(() => {
@@ -520,7 +518,7 @@ IPopup {
                 Button {
                     flat: true
                     text: "Skip"
-                    visible: !root.isMerge
+                    visible: currentOperation === ConflictPopup.OperationType.Merge ? 0 : 1
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
@@ -1170,7 +1168,7 @@ IPopup {
     }
 
     function continueOperation() {
-        if (isMerge) {
+        if (currentOperation === ConflictPopup.OperationType.Merge) {
             if (!mergeController)
                 return
 
@@ -1183,8 +1181,27 @@ IPopup {
             else
                 notificationController.error(res.errorMessage, "Merge", 4000)
         }
-        else {
-            if (!rebaseController)
+        else if (currentOperation === ConflictPopup.OperationType.Rebase) {
+            if (!cherryPickController)
+                return
+
+            let res = cherryPickController.continueCherryPick()
+            if (res.success) {
+                if (notificationController)
+                    notificationController.success("Cherry-pick completed", "Conflict", 2500)
+                close()
+            } else {
+                if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
+                    if (notificationController)
+                        notificationController.warning("Cherry-pick conflicts detected. Please resolve them.", "Cherry-Pick", 4000)
+                    loadConflicts()
+                } else {
+                    notificationController.error(res.errorMessage, "Cherry-Pick", 4000)
+                }
+            }
+        }
+        else if (currentOperation === ConflictPopup.OperationType.CherryPick) {
+            if (!cherryPickController)
                 return
             let res = rebaseController.continueRebase()
             if (res.success){
@@ -1198,7 +1215,7 @@ IPopup {
     }
 
     function skipOperation() {
-        if (!isMerge && rebaseController) {
+        if (currentOperation === ConflictPopup.OperationType.Rebase && rebaseController) {
             let res = rebaseController.skipRebase()
 
             if (res.success) {
@@ -1219,11 +1236,14 @@ IPopup {
     function abortOperation() {
         let res
 
-        if (isMerge && mergeController) {
+        if (currentOperation === ConflictPopup.OperationType.Merge && mergeController) {
             res = mergeController.abortMerge()
         }
-        else if (!isMerge && rebaseController) {
+        else if (currentOperation === ConflictPopup.OperationType.Rebase && rebaseController) {
             res = rebaseController.abortRebase()
+        }
+        else if (currentOperation === ConflictPopup.OperationType.CherryPick && cherryPickController) {
+            res = cherryPickController.abortRebase()
         }
 
         if (res && res.success) {
@@ -1241,7 +1261,7 @@ IPopup {
     }
 
     function quitOperation() {
-        if (!isMerge && rebaseController) {
+        if (currentOperation === ConflictPopup.OperationType.Rebase && rebaseController) {
             let res = rebaseController.quitRebase()
 
             if (res.success) {
