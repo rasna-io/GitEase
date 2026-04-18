@@ -47,11 +47,19 @@ IPopup {
         return false
     }
 
-    property string headerText: currentOperation === ConflictPopup.OperationType.Merge ? "Merge Conflicts" :
-                               (currentOperation === ConflictPopup.OperationType.Rebase ? "Rebase Conflicts" : "Cherry-pick Conflicts")
+    readonly property string operationName: {
+        if (currentOperation === ConflictPopup.OperationType.Merge)
+            return "Merge"
+        if (currentOperation === ConflictPopup.OperationType.Rebase)
+            return "Rebase"
+        if (currentOperation === ConflictPopup.OperationType.CherryPick)
+            return "Cherry-pick"
+        return ""
+    }
 
-    property string continueButtonText: currentOperation === ConflictPopup.OperationType.Merge ? "Continue Merge" :
-                                       (currentOperation === ConflictPopup.OperationType.Rebase ? "Continue Rebase" : "Continue Cherry-pick")
+    property string headerText: `${operationName} Conflicts`
+
+    property string continueButtonText: `Continue ${operationName}`
 
 
     property var modifiedFiles: ({}) // path -> array of row objects
