@@ -236,6 +236,33 @@ Item {
         root.selectedCommitHashes = list
     }
 
+    function selectedCommitHashesInOrder() {
+        var commits = selectedCommitsInOrder()
+        var hashes = []
+        for (var i = 0; i < commits.length; i++) {
+            hashes.push(commits[i].hash)
+        }
+        return hashes
+    }
+
+    function selectionHasStash() {
+        var commits = selectedCommitsInOrder()
+        for (var i = 0; i < commits.length; i++) {
+            if (commits[i].isStash)
+                return true
+        }
+        return false
+    }
+
+    function selectionHasHead() {
+        var commits = selectedCommitsInOrder()
+        for (var i = 0; i < commits.length; i++) {
+            if (commits[i].hash === root.headHash)
+                return true
+        }
+        return false
+    }
+
     function selectedCommitsInOrder() {
         var selected = []
         if (!root.commits || !root.selectedCommitHashes)
@@ -248,6 +275,8 @@ Item {
                 selected.push(c)
             }
         }
+
+        return selected
     }
 
     function parseDateYYYYMMDD(str) {
