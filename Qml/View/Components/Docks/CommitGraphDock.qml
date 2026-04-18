@@ -178,6 +178,23 @@ Item {
         return root.selectedCommitHashes.indexOf(commitHash) !== -1
     }
 
+    function applySelection(commitData, index, modifiers){
+        if (!commitData || !commitData.hash)
+            return
+
+        if ((modifiers & Qt.ControlModifier) !== 0) {
+            toggleSelection(commitData, index)
+            return
+        }
+
+        if ((modifiers & Qt.ShiftModifier) !== 0 && root.lastSelectedIndex >= 0) {
+            selectRange(root.lastSelectedIndex, index)
+            return
+        }
+
+        setSingleSelection(commitData, index)
+    }
+
     function setSingleSelection(commitData, index){
         if(!commitData || !commitData.hash)
             return
@@ -186,8 +203,37 @@ Item {
         root.lastSelectedIndex = index
     }
 
-    function applySelection(commitData, index, modifiers){
-        setSingleSelection(commitData, index)
+    function toggleSelection(commitData, index) {
+        if (!commitData || !commitData.hash)
+            return
+
+        var list = root.selectedCommitHashes ? root.selectedCommitHashes.slice(0) : []
+        var idx = list.indexOf(commitData.hash)
+        if (idx >= 0) {
+            list.splice(idx, 1)
+        } else {
+            list.push(commitData.hash)
+        }
+
+        root.selectedCommitHashes = list
+        root.lastSelectedIndex = index
+    }
+
+    function selectRange(anchorIndex, targetIndex) {
+        if (!root.commits || root.commits.length === 0)
+            return
+
+        var start = Math.min(anchorIndex, targetIndex)
+        var end = Math.max(anchorIndex, targetIndex)
+
+        var list = []
+        for (var i = start; i <= end; i++) {
+            var c = root.commits[i]
+            if (c && c.hash)
+                list.push(c.hash)
+        }
+
+        root.selectedCommitHashes = list
     }
 
     function parseDateYYYYMMDD(str) {
@@ -1608,16 +1654,17 @@ Item {
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                             onClicked: (mouse) => {
+                               root.selectedCommit = commitData;
+                               root.commitClicked(commitData.hash);
+
                                 if (mouse.button === Qt.RightButton) {
                                     if(!root.isCommitSelected(commitData.hash))
                                         root.setSingleSelection(commitData, index)
 
-                                    root.selectedCommit = commitData;
-                                    root.commitClicked(commitData.hash);
-
                                     contextMenu.x = mouse.x;
                                     contextMenu.y = mouse.y;
                                     contextMenu.open();
+
                                 } else {
                                     root.applySelection(commitData, index, mouse.modifiers)
                                 }
