@@ -40,7 +40,8 @@ private:
     // Merge analysis and execution helpers
     GitResult analyzeAndPerformMerge(git_commit* targetCommit,
                                      git_commit* sourceCommit,
-                                     git_reference* sourceRef);
+                                     git_reference* sourceRef,
+                                     bool noFF);
     GitResult performFastForward(git_commit* sourceCommit);
     GitResult performNormalMerge(git_reference* sourceRef);
 
@@ -71,9 +72,10 @@ public:
     /**
      * @brief Merges the given source branch into the currently checked out branch.
      * @param sourceBranch Name of the branch to merge (local branch).
+     * @param noFF         When true, forces a merge commit even for fast-forward eligible merges.
      * @return GitResult indicating success or failure, with an optional message.
      */
-    Q_INVOKABLE GitResult mergeBranchIntoCurrent(const QString& sourceBranch);
+    Q_INVOKABLE GitResult mergeBranchIntoCurrent(const QString& sourceBranch, bool noFF = false);
 
     /**
      * @brief Continues a merge after all conflicts have been resolved.

@@ -47,6 +47,10 @@ Item {
         statusController: root.statusController
     }
 
+    MergeMethodPopup {
+        id: mergeMethodPopup
+    }
+
     ConflictPopup {
         id: rebaseConflictPopup
         isMerge: false
@@ -1733,10 +1737,11 @@ Item {
                                     }
                                 });
 
-                                // Merge
                                 var currentBranch = root.branchController
                                         ? root.branchController.getCurrentBranchName()
                                         : "";
+
+                                // Merge (adds its own leading separator when branches exist)
                                 addMergeEntries(finalModel, branches, currentBranch, isCurrentHead);
 
                                 // Rebase
@@ -2167,58 +2172,47 @@ Item {
         if (!currentBranch)
             return;
 
-        branches.forEach(function(bName) {
+        var mergeable = branches.filter(function(b) {
+            return b !== currentBranch && !b.startsWith("origin/")
+        });
 
-            // Skip current branch itself
-            if (bName === currentBranch)
-                return;
+        if (mergeable.length === 0)
+            return;
 
-            // Skip Remote branches
-            if (bName.startsWith("origin/"))
-                return;
+        function handleMergeResult(res) {
+            if (mergeController.hasMergeConflicts()) {
+                mergeConflictPopup.open()
+                if (notificationController)
+                    notificationController.warning(
+                        "Merge conflicts detected. Resolve them then continue.", "Merge", 4000)
+                return
+            }
+            if (!res.success) {
+                if (notificationController)
+                    notificationController.error(res.errorMessage || "Merge failed", "Merge", 5000)
+                return
+            }
+            if (notificationController)
+                notificationController.success("Merge completed successfully", "Merge", 3000)
+        }
 
+        finalModel.push({ separator: true });
+
+        mergeable.forEach(function(bName) {
             finalModel.push({
                 text: "Merge '" + bName + "' into '" + currentBranch + "'",
                 icon: Style.icons.arowLeftRight,
                 enabled: !isCurrentHead,
                 action: function() {
-                    let res = mergeController.mergeBranchIntoCurrent(bName);
-
-                    if (mergeController.hasMergeConflicts()) {
-
-                        mergeConflictPopup.open()
-
-                        if (notificationController)
-                            notificationController.warning(
-                                "Merge conflicts detected. Please resolve them.",
-                                "Merge",
-                                4000
-                            )
-
-                        return
-                    }
-
-                    if (!res.success) {
-
-                        if (notificationController)
-                            notificationController.error(
-                                res.errorMessage || "Merge failed",
-                                "Merge",
-                                5000
-                            );
-
-                        return;
-                    }
-
-                    if (notificationController)
-                        notificationController.success(
-                            "Merge completed successfully",
-                            "Merge",
-                            3000
-                        );
+                    mergeMethodPopup.sourceBranch = bName
+                    mergeMethodPopup.targetBranch = currentBranch
+                    mergeMethodPopup.accepted.connect(function(noFF) {
+                        handleMergeResult(mergeController.mergeBranchIntoCurrent(bName, noFF))
+                        mergeMethodPopup.accepted.disconnect(arguments.callee)
+                    })
+                    mergeMethodPopup.open()
                 }
             });
-
         });
     }
 
@@ -2235,20 +2229,17 @@ Item {
         var shortHash = commitData.shortHash || commitData.hash.substring(0, 7)
 
         finalModel.push({
-            text: "Rebase '" + currentBranch + "' onto " + shortHash,
+            text: "Rebase onto " + shortHash,
             icon: Style.icons.clockRotateLeft,
             enabled: !isCurrentHead,
             action: function() {
                 if (!rebaseController)
                     return
 
-                if (!branchController)
-                    return
-
                 var res = rebaseController.rebase(commitData.hash)
 
-                if(res && res.success){
-                    if(notificationController)
+                if (res && res.success) {
+                    if (notificationController)
                         notificationController.success("Rebase completed successfully", "Rebase", 3000)
                     return
                 }
@@ -2257,7 +2248,7 @@ Item {
                     if (rebaseConflictPopup)
                         rebaseConflictPopup.open()
                     if (notificationController)
-                        notificationController.warning("Rebase conflicts detected. Please resolve them.", "Rebase", 4000)
+                        notificationController.warning("Rebase conflicts detected. Resolve them then continue.", "Rebase", 4000)
                     return
                 }
 

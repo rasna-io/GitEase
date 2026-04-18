@@ -166,6 +166,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/MergeConflictPopup.qml
     Qml/View/Popups/RebaseConflictPopup.qml
     Qml/View/Popups/ConflictPopup.qml
+    Qml/View/Popups/MergeMethodPopup.qml
 
 )
 
