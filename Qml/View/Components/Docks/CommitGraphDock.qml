@@ -182,7 +182,7 @@ Item {
     }
 
     function isCommitSelected(commitHash){
-        if(!commitHash)
+        if(!commitHash || !root.selectedCommitHashes)
             return false
 
         return root.selectedCommitHashes.indexOf(commitHash) !== -1
@@ -412,10 +412,19 @@ Item {
         ensureMinimumResults()
 
         // If current selection is filtered out, clear it.
-        if (root.selectedCommit && root.selectedCommit.hash) {
-            var stillThere = filtered.find(function(x) { return x && x.hash === root.selectedCommit.hash })
-            if (!stillThere)
+        if (root.selectedCommitHashes && root.selectedCommitHashes.length > 0) {
+            var stillSelected = []
+            for (var si = 0; si < root.selectedCommitHashes.length; si++) {
+                var h = root.selectedCommitHashes[si]
+                var exists = filtered.find(function(x) { return x && x.hash === h })
+                if (exists)
+                    stillSelected.push(h)
+            }
+            root.selectedCommitHashes = stillSelected
+            if (!stillSelected.length) {
                 root.selectedCommit = null
+                root.lastSelectedIndex = -1
+            }
         }
     }
 
@@ -1417,7 +1426,7 @@ Item {
                                             }
                                         }
                                     }
-                                    var isSelected = root.selectedCommit && root.selectedCommit.hash === commit3.hash;
+                                    var isSelected = root.isCommitSelected(commit3.hash);
                                     let isHead = commit3.hash === root.headHash
                                     // Highlight selected commit row
                                     if (isSelected) {
@@ -1532,7 +1541,7 @@ Item {
 
                         property var commitData: modelData
                         property bool isHovered: false
-                        property bool isSelected: root.selectedCommit && root.selectedCommit.hash === commitData.hash
+                        property bool isSelected: root.isCommitSelected(commitData.hash)
                         property bool isHead: modelData.hash === root.headHash
 
                         property bool isStash: modelData.isStash === true
