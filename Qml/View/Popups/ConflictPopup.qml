@@ -18,6 +18,7 @@ IPopup {
     property MergeController        mergeController         : null
     property RebaseController       rebaseController        : null
     property ConflictController     conflictController      : null
+    property CherryPickController   cherryPickController    : null
     property StatusController       statusController        : null
     property NotificationController notificationController  : null
 
@@ -25,17 +26,33 @@ IPopup {
     property var    selectedConflict: null
     property string selectedPath    : ""
 
-    property bool isMerge: false
+    enum OperationType {
+        None,
+        Merge,
+        Rebase,
+        CherryPick
+    }
+    property int currentOperation: ConflictPopup.OperationType.None
 
     readonly property bool canContinue: {
-        if (isMerge)
+        if (currentOperation === ConflictPopup.OperationType.Merge)
             return mergeController && conflicts.length === 0
-        else
+
+        if (currentOperation === ConflictPopup.OperationType.Rebase)
             return rebaseController && conflicts.length === 0
+
+        if (currentOperation === ConflictPopup.OperationType.CherryPick)
+            return cherryPickController && conflicts.length === 0
+
+        return false
     }
 
-    property string headerText          : isMerge ? "Merge Conflicts"   : "Rebase Conflicts"
-    property string continueButtonText  : isMerge ? "Continue Merge"    : "Continue Rebase"
+    property string headerText: currentOperation === ConflictPopup.OperationType.Merge ? "Merge Conflicts" :
+                               (currentOperation === ConflictPopup.OperationType.Rebase ? "Rebase Conflicts" : "Cherry-pick Conflicts")
+
+    property string continueButtonText: currentOperation === ConflictPopup.OperationType.Merge ? "Continue Merge" :
+                                       (currentOperation === ConflictPopup.OperationType.Rebase ? "Continue Rebase" : "Continue Cherry-pick")
+
 
     property var modifiedFiles: ({}) // path -> array of row objects
 
