@@ -2245,7 +2245,7 @@ Item {
                 if (!branchController)
                     return
 
-                var res = rebaseController.rebase(commitData.hash, currentBranch)
+                var res = rebaseController.rebase(commitData.hash)
 
                 if(res && res.success){
                     if(notificationController)
