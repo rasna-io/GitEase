@@ -23,6 +23,7 @@ Item {
 
     property MergeController mergeController: null
     property RebaseController rebaseController: null
+    property CherryPickController cherryPickController: null
 
     property ConflictController conflictController: null
 
@@ -40,7 +41,7 @@ Item {
 
     ConflictPopup {
         id: mergeConflictPopup
-        isMerge: true
+        currentOperation: ConflictPopup.OperationType.Merge
         mergeController: root.mergeController
         conflictController: root.conflictController
         notificationController: root.notificationController
@@ -53,8 +54,17 @@ Item {
 
     ConflictPopup {
         id: rebaseConflictPopup
-        isMerge: false
+        currentOperation: ConflictPopup.OperationType.Rebase
         rebaseController: root.rebaseController
+        conflictController: root.conflictController
+        notificationController: root.notificationController
+        statusController: root.statusController
+    }
+
+    ConflictPopup {
+        id: cherryPickConflictPopup
+        currentOperation: ConflictPopup.OperationType.CherryPick
+        cherryPickController: root.cherryPickController
         conflictController: root.conflictController
         notificationController: root.notificationController
         statusController: root.statusController
