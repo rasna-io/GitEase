@@ -69,6 +69,9 @@ Item {
     property var allCommitsHash: ({})
     property string headHash: ""
 
+    property var selectedCommitHashes: []
+    property int lastSelectedIndex: -1
+
     // navigation state
     // navigationRule: one of ["Author Email", "Author", "Parent 1", "Branch"]
     property string navigationRule: "Message"
@@ -166,6 +169,25 @@ Item {
 
     function normalizeFilterString(str) {
         return (str === null || str === undefined) ? "" : ("" + str)
+    }
+
+    function isCommitSelected(commitHash){
+        if(!commitHash)
+            return false
+
+        return root.selectedCommitHashes.indexOf(commitHash) !== -1
+    }
+
+    function setSingleSelection(commitData, index){
+        if(!commitData || !commitData.hash)
+            return
+
+        root.selectedCommitHashes = [commitData.hash]
+        root.lastSelectedIndex = index
+    }
+
+    function applySelection(commitData, index, modifiers){
+        setSingleSelection(commitData, index)
     }
 
     function parseDateYYYYMMDD(str) {
@@ -1587,12 +1609,17 @@ Item {
 
                             onClicked: (mouse) => {
                                 if (mouse.button === Qt.RightButton) {
+                                    if(!root.isCommitSelected(commitData.hash))
+                                        root.setSingleSelection(commitData, index)
+
+                                    root.selectedCommit = commitData;
+                                    root.commitClicked(commitData.hash);
+
                                     contextMenu.x = mouse.x;
                                     contextMenu.y = mouse.y;
                                     contextMenu.open();
                                 } else {
-                                    root.selectedCommit = commitData;
-                                    root.commitClicked(commitData.hash);
+                                    root.applySelection(commitData, index, mouse.modifiers)
                                 }
                             }
 
