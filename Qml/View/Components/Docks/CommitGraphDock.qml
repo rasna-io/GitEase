@@ -241,15 +241,13 @@ Item {
         if (!root.commits || !root.selectedCommitHashes)
             return selected
 
-        for (var i = 0; i < root.commits.length; i++) {
+        for (var i = root.commits.length - 1; i >= 0; i--) {
             var c = root.commits[i]
+
             if (c && c.hash && isCommitSelected(c.hash)) {
-                selected.push({ commit: c, index: i })
+                selected.push(c)
             }
         }
-
-        selected.sort(function(a, b) { return b.index - a.index })
-        return selected.map(function(item) { return item.commit })
     }
 
     function parseDateYYYYMMDD(str) {
