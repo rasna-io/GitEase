@@ -9,7 +9,7 @@ GitMerge::GitMerge(QObject* parent)
 {
 }
 
-GitResult GitMerge::mergeBranchIntoCurrent(const QString& sourceBranch)
+GitResult GitMerge::mergeBranchIntoCurrent(const QString& sourceBranch, bool noFF)
 {
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository is not open.");
@@ -47,22 +47,27 @@ GitResult GitMerge::mergeBranchIntoCurrent(const QString& sourceBranch)
         return GitResult(false, QVariant(), "Failed to resolve HEAD to commit.");
     }
 
-    GitResult result = analyzeAndPerformMerge(targetCommit, sourceCommit, sourceRef);
+    GitResult result = analyzeAndPerformMerge(targetCommit, sourceCommit, sourceRef, noFF);
 
     git_commit_free(targetCommit);
     git_commit_free(sourceCommit);
     git_reference_free(headRef);
     git_reference_free(sourceRef);
 
-    if (result.success())
-        emitGitCommand(QString("git merge %1").arg(quoteCommandArg(sourceBranch)));
+    if (result.success()) {
+        QString cmd = noFF
+            ? QString("git merge --no-ff %1").arg(quoteCommandArg(sourceBranch))
+            : QString("git merge %1").arg(quoteCommandArg(sourceBranch));
+        emitGitCommand(cmd);
+    }
 
     return result;
 }
 
 GitResult GitMerge::analyzeAndPerformMerge(git_commit* targetCommit,
                                            git_commit* sourceCommit,
-                                           git_reference* sourceRef)
+                                           git_reference* sourceRef,
+                                           bool noFF)
 {
     git_annotated_commit* annotated = nullptr;
     if (git_annotated_commit_from_ref(&annotated, m_currentRepo->repo, sourceRef) != GIT_OK)
@@ -84,10 +89,11 @@ GitResult GitMerge::analyzeAndPerformMerge(git_commit* targetCommit,
     if (analysis & GIT_MERGE_ANALYSIS_UP_TO_DATE) {
         result = GitResult(true, QVariant(), "Branch is already up to date.");
     }
-    else if (analysis & GIT_MERGE_ANALYSIS_FASTFORWARD) {
+    else if ((analysis & GIT_MERGE_ANALYSIS_FASTFORWARD) && !noFF) {
         result = performFastForward(sourceCommit);
     }
-    else if (analysis & GIT_MERGE_ANALYSIS_NORMAL) {
+    else if ((analysis & GIT_MERGE_ANALYSIS_FASTFORWARD) ||
+             (analysis & GIT_MERGE_ANALYSIS_NORMAL)) {
         result = performNormalMerge(sourceRef);
     }
     else {

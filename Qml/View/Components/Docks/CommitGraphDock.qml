@@ -2167,6 +2167,23 @@ Item {
         if (!currentBranch)
             return;
 
+        function handleMergeResult(res) {
+            if (mergeController.hasMergeConflicts()) {
+                mergeConflictPopup.open()
+                if (notificationController)
+                    notificationController.warning(
+                        "Merge conflicts detected. Please resolve them.", "Merge", 4000)
+                return
+            }
+            if (!res.success) {
+                if (notificationController)
+                    notificationController.error(res.errorMessage || "Merge failed", "Merge", 5000)
+                return
+            }
+            if (notificationController)
+                notificationController.success("Merge completed successfully", "Merge", 3000)
+        }
+
         branches.forEach(function(bName) {
 
             // Skip current branch itself
@@ -2182,40 +2199,16 @@ Item {
                 icon: Style.icons.arowLeftRight,
                 enabled: !isCurrentHead,
                 action: function() {
-                    let res = mergeController.mergeBranchIntoCurrent(bName);
+                    handleMergeResult(mergeController.mergeBranchIntoCurrent(bName))
+                }
+            });
 
-                    if (mergeController.hasMergeConflicts()) {
-
-                        mergeConflictPopup.open()
-
-                        if (notificationController)
-                            notificationController.warning(
-                                "Merge conflicts detected. Please resolve them.",
-                                "Merge",
-                                4000
-                            )
-
-                        return
-                    }
-
-                    if (!res.success) {
-
-                        if (notificationController)
-                            notificationController.error(
-                                res.errorMessage || "Merge failed",
-                                "Merge",
-                                5000
-                            );
-
-                        return;
-                    }
-
-                    if (notificationController)
-                        notificationController.success(
-                            "Merge completed successfully",
-                            "Merge",
-                            3000
-                        );
+            finalModel.push({
+                text: "Merge '" + bName + "' into '" + currentBranch + "' (--no-ff)",
+                icon: Style.icons.arowLeftRight,
+                enabled: !isCurrentHead,
+                action: function() {
+                    handleMergeResult(mergeController.mergeBranchIntoCurrent(bName, true))
                 }
             });
 
