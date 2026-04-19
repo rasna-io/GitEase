@@ -103,6 +103,27 @@ IPopup {
                 text: "Push to remote (origin)"
                 checked: root.pushAfterCreate
                 Layout.fillWidth: true
+                implicitHeight: 32
+                spacing: 1
+
+                indicator: Rectangle {
+                    implicitWidth: 20
+                    implicitHeight: 20
+                    y: parent.height / 2 - height / 2
+                    radius: 6
+                    color: pushCheckBox.checked ? Style.colors.accent : Style.colors.secondaryBackground
+                    border.color: pushCheckBox.checked ? Style.colors.accent : Qt.lighter(Style.colors.secondaryBackground, 1.5)
+                    border.width: 1
+
+                    Text {
+                        text: "\uf00c"
+                        font.family: Style.fontTypes.font6ProSolid
+                        font.pixelSize: 12
+                        color: "white"
+                        anchors.centerIn: parent
+                        visible: pushCheckBox.checked
+                    }
+                }
 
                 contentItem: Text {
                     text: pushCheckBox.text
