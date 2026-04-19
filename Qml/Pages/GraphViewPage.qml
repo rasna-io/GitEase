@@ -27,6 +27,7 @@ Item {
     property StashController        stashController: null
     property string                 selectedCommit: ""
     property string                 selectedFilePath: ""
+    property string                 headHash: ""
     property ConflictController conflictController: null
     property MergeController mergeController: null
     property RebaseController rebaseController: null
@@ -488,7 +489,11 @@ Item {
                            reloadButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
-                onClicked: commitGraph.reloadAll()
+                onClicked: {
+                    commitGraph.reloadAll()
+                    root.headHash = commitController.getHeadHash()
+                }
+
             }
         }
     }
@@ -522,7 +527,46 @@ Item {
                 conflictController: root.conflictController
 
                 onCommitClicked: function(commitId) {
-                    root.selectedCommit = commitId
+                    let node = commitGraph.commits.find(c => c.hash === commitId);
+
+                    root.selectedCommit = commitId;
+
+                    if (node && node.isUncommitted) {
+                        let res = statusController.status()
+
+                        if (!res.success || !res.data) {
+                            console.log("status failed:", res);
+                            fileChangesDock.files = [];
+                            return;
+                        }
+
+                        fileChangesDock.files = res.data;
+
+                        return;
+                    }
+
+                    let res = commitController.getCommitFileChanges(commitId);
+
+                    if (!res.success) {
+                        console.log("commit diff failed:", res);
+                        fileChangesDock.files = [];
+                        return;
+                    }
+
+                    let files = [];
+
+                    if (res.data) {
+                        if (res.data.staged)
+                            files = files.concat(res.data.staged);
+
+                        if (res.data.unstaged)
+                            files = files.concat(res.data.unstaged);
+
+                        if (Array.isArray(res.data))
+                            files = res.data;
+                    }
+
+                    fileChangesDock.files = files;
                 }
             }
         }
@@ -551,20 +595,42 @@ Item {
                         repositoryController : root.repositoryController
                         statusController: root.statusController
 
-                        onFileSelected: function(filePath){
+                        onFileSelected: function(filePath) {
                             root.selectedFilePath = filePath
 
-                            let selectedCommitObj = commitGraph.selectedCommit
-                            let parentHash = ""
-                            if (selectedCommitObj && selectedCommitObj.isStash && selectedCommitObj.stashParentId) {
-                                parentHash = selectedCommitObj.stashParentId
-                            } else {
-                                parentHash = root.commitController.getParentHash(root.selectedCommit)
+                            let commitId = root.selectedCommit
+                            let node = commitGraph.commits.find(c => c.hash === commitId)
+
+                            let res = null
+
+                            if (commitId === "__uncommitted__" || (node && node.isUncommitted)) { // UNCOMMITTED COMMITS
+                                let headHash = statusController.getHeadHash()
+
+                                if (!headHash) {
+                                    console.log("HEAD is null -> cannot diff uncommitted")
+                                    return
+                                }
+
+                                res = statusController.getWorkingDirectoryDiff(headHash, filePath)
+                            }
+                            else { // NORMAL COMMITS
+                                let parentHash = ""
+
+                                if (node && node.isStash && node.stashParentId) {
+                                    parentHash = node.stashParentId
+                                } else {
+                                    parentHash = commitController.getParentHash(commitId)
+                                }
+
+                                if (!parentHash || !commitId) {
+                                    console.log("Invalid diff inputs:", parentHash, commitId)
+                                    return
+                                }
+
+                                res = statusController.getDiff(parentHash, commitId, filePath)
                             }
 
-                            let res = root.statusController.getDiff(parentHash, root.selectedCommit, root.selectedFilePath)
-
-                            if (res.success) {
+                            if (res && res.success) {
                                 diffView.diffData = res.data
                             }
                         }
