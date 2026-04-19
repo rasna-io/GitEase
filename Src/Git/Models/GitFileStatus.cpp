@@ -54,6 +54,34 @@ GitFileStatus::GitFileStatus(const git_diff_delta *delta, int additions, int del
     m_deltaStatus = static_cast<DeltaStatus>(delta->status);
 }
 
+GitFileStatus::GitFileStatus(const git_status_entry *entry,
+                             int additions,
+                             int deletions,
+                             DeltaStatus deltaStatus)
+{
+    if (!entry) return;
+
+    if (entry->head_to_index && entry->head_to_index->new_file.path)
+        m_path = QString::fromUtf8(entry->head_to_index->new_file.path);
+    else if (entry->index_to_workdir && entry->index_to_workdir->new_file.path)
+        m_path = QString::fromUtf8(entry->index_to_workdir->new_file.path);
+
+    m_status = static_cast<Status>(entry->status);
+
+    m_isStaged = entry->status & GIT_STATUS_INDEX_NEW ||
+                 entry->status & GIT_STATUS_INDEX_MODIFIED ||
+                 entry->status & GIT_STATUS_INDEX_DELETED;
+
+    m_isUnstaged = entry->status & GIT_STATUS_WT_MODIFIED ||
+                   entry->status & GIT_STATUS_WT_DELETED;
+
+    m_isUntracked = entry->status & GIT_STATUS_WT_NEW;
+
+    m_additionsCount = additions;
+    m_deletionsCount = deletions;
+    m_deltaStatus = deltaStatus;
+}
+
 QString GitFileStatus::path() const
 {
     return m_path;
