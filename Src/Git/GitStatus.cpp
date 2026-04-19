@@ -108,37 +108,78 @@ GitResult GitStatus::stageAll(bool includeUntrackedFiles)
 
 GitResult GitStatus::status()
 {
-    // Get repository handle - SIMPLIFIED
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
 
-
-    QVariantMap statusData;
     QList<GitFileStatus> fileInfos;
 
-    // Configure status options
     git_status_options opts = GIT_STATUS_OPTIONS_INIT;
-    opts.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;      //Index vs HEAD
+    opts.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
     opts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED;
 
     git_status_list *status_list = nullptr;
-    int gitResult = git_status_list_new(&status_list,  m_currentRepo->repo, &opts);
+    git_diff *diff = nullptr;
 
-    if (gitResult == 0) {
-        size_t count = git_status_list_entrycount(status_list);
+    if (git_status_list_new(&status_list, m_currentRepo->repo, &opts) != 0 || !status_list)
+        return GitResult(true, QVariant::fromValue(fileInfos));
 
-        // Process each status entry
-        for (size_t i = 0; i < count; i++) {
-            const git_status_entry *entry = git_status_byindex(status_list, i);
-            if (!entry) continue;
+    git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
+    diffOpts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
 
-            GitFileStatus fileInfo = GitFileStatus(entry);
-            fileInfos.append(fileInfo);
+    git_diff_index_to_workdir(&diff, m_currentRepo->repo, nullptr, &diffOpts);
+
+    size_t numDeltas = diff ? git_diff_num_deltas(diff) : 0;
+
+    for (size_t i = 0; i < git_status_list_entrycount(status_list); i++) {
+
+        const git_status_entry *entry = git_status_byindex(status_list, i);
+        if (!entry) continue;
+
+        int add = 0, del = 0;
+        const git_diff_delta *matched = nullptr;
+
+        if (diff) {
+            for (size_t j = 0; j < numDeltas; j++) {
+
+                const git_diff_delta *delta = git_diff_get_delta(diff, j);
+                if (!delta) continue;
+
+                QString dPath = QString::fromUtf8(delta->new_file.path);
+
+                QString ePath;
+                if (entry->head_to_index && entry->head_to_index->new_file.path)
+                    ePath = QString::fromUtf8(entry->head_to_index->new_file.path);
+                else if (entry->index_to_workdir && entry->index_to_workdir->new_file.path)
+                    ePath = QString::fromUtf8(entry->index_to_workdir->new_file.path);
+
+                if (dPath != ePath)
+                    continue;
+
+                matched = delta;
+
+                git_patch *patch = nullptr;
+                size_t a = 0, d = 0;
+
+                if (git_patch_from_diff(&patch, diff, j) == GIT_OK && patch) {
+                    git_patch_line_stats(nullptr, &a, &d, patch);
+                    git_patch_free(patch);
+                }
+
+                add = static_cast<int>(a);
+                del = static_cast<int>(d);
+                break;
+            }
         }
 
-        // Clean up status list
-        git_status_list_free(status_list);
+        fileInfos.append(
+            matched
+                ? GitFileStatus(matched, add, del)
+                : GitFileStatus(entry)
+            );
     }
+
+    git_status_list_free(status_list);
+    if (diff) git_diff_free(diff);
 
     emitGitCommand("git status --short");
 
@@ -410,6 +451,96 @@ GitResult GitStatus::getDiff(const QString &oldCommitHash, const QString &newCom
 
     // Return the result with the diff lines
     return GitResult(true, QVariant::fromValue(result), "Commit diff retrieved successfully.");
+}
+
+GitResult GitStatus::getWorkingDirectoryDiff(const QString &headCommitHash, const QString &filePath)
+{
+    QList<GitDiff> result;
+
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
+
+    git_object *headObj = nullptr;
+    git_tree *headTree = nullptr;
+    git_diff *diff = nullptr;
+
+    int rc = git_revparse_single(&headObj, m_currentRepo->repo, headCommitHash.toUtf8().constData());
+    if (rc != GIT_OK)
+        return GitResult(false, QVariant(), "Failed to retrieve HEAD commit.");
+
+    rc = git_commit_tree(&headTree, reinterpret_cast<git_commit*>(headObj));
+    if (rc != GIT_OK) {
+        git_object_free(headObj);
+        return GitResult(false, QVariant(), "Failed to retrieve HEAD tree.");
+    }
+
+    git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+    opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED |
+                  GIT_DIFF_RECURSE_UNTRACKED_DIRS |
+                  GIT_DIFF_PATIENCE |
+                  GIT_DIFF_INDENT_HEURISTIC;
+
+    QByteArray pathBytes = filePath.toUtf8();
+    char* path = const_cast<char*>(pathBytes.constData());
+    opts.pathspec.strings = &path;
+    opts.pathspec.count = 1;
+
+    rc = git_diff_tree_to_workdir_with_index(
+        &diff,
+        m_currentRepo->repo,
+        headTree,
+        &opts
+        );
+
+    if (rc != GIT_OK) {
+        git_tree_free(headTree);
+        git_object_free(headObj);
+        return GitResult(false, QVariant(), "Failed to create working directory diff.");
+    }
+
+    std::vector<GitDiff> rawLines;
+
+    git_diff_print(diff, GIT_DIFF_FORMAT_PATCH,
+                   [](const git_diff_delta*, const git_diff_hunk*, const git_diff_line *line, void *payload) -> int {
+
+                       auto *vec = static_cast<std::vector<GitDiff>*>(payload);
+
+                       if (line->origin == GIT_DIFF_LINE_CONTEXT ||
+                           line->origin == GIT_DIFF_LINE_ADDITION ||
+                           line->origin == GIT_DIFF_LINE_DELETION) {
+
+                           QString content = QString::fromUtf8(line->content, line->content_len);
+                           content.remove('\n').remove('\r');
+
+                           GitDiff::DiffType type;
+
+                           if (line->origin == GIT_DIFF_LINE_ADDITION)
+                               type = GitDiff::Added;
+                           else if (line->origin == GIT_DIFF_LINE_DELETION)
+                               type = GitDiff::Deleted;
+                           else
+                               type = GitDiff::Context;
+
+                           vec->push_back(GitDiff(type, line->old_lineno, line->new_lineno, content));
+                       }
+
+                       return 0;
+                   },
+                   &rawLines
+                   );
+
+    for (const auto &line : rawLines)
+        result.append(line);
+
+    git_diff_free(diff);
+    git_tree_free(headTree);
+    git_object_free(headObj);
+
+    emitGitCommand(QString("git diff %1 -- %2")
+                       .arg(quoteCommandArg(headCommitHash),
+                            quoteCommandArg(filePath)));
+
+    return GitResult(true, QVariant::fromValue(result), "Working directory diff retrieved successfully.");
 }
 
 GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
