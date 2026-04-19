@@ -173,7 +173,7 @@ GitResult GitStatus::status()
 
         fileInfos.append(
             matched
-                ? GitFileStatus(matched, add, del)
+                ? GitFileStatus(entry, add, del, static_cast<GitFileStatus::DeltaStatus>(matched->status))
                 : GitFileStatus(entry)
             );
     }
