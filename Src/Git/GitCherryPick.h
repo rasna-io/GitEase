@@ -56,6 +56,9 @@ public:
     /// Continue a cherry-pick after conflicts are resolved.
     Q_INVOKABLE GitResult continueCherryPick();
 
+    /// Skip the current conflicting commit and continue with the rest.
+    Q_INVOKABLE GitResult skipCherryPick();
+
     /// Abort an in-progress cherry-pick and restore original HEAD.
     Q_INVOKABLE GitResult abortCherryPick();
 

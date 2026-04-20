@@ -428,3 +428,41 @@ QString GitCherryPick::headHash() const
     git_reference_free(headRef);
     return QString::fromUtf8(hash);
 }
+
+GitResult GitCherryPick::skipCherryPick()
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "Repository is not open.");
+
+    if (!m_inProgress)
+        return GitResult(false, QVariant(), "No cherry-pick is in progress.");
+
+    if (m_currentIndex < 0 || m_currentIndex >= m_pendingCommits.size())
+        return GitResult(false, QVariant(), "Cherry-pick state is invalid.");
+
+    git_object* headObj = nullptr;
+    if (git_revparse_single(&headObj, m_currentRepo->repo, "HEAD") == GIT_OK) {
+        git_reset(m_currentRepo->repo, headObj, GIT_RESET_HARD, nullptr);
+        git_object_free(headObj);
+    } else {
+        return GitResult(false, QVariant(), "Failed to resolve HEAD during skip.");
+    }
+
+    git_index* index = nullptr;
+    if (git_repository_index(&index, m_currentRepo->repo) == GIT_OK && index) {
+        git_index_conflict_cleanup(index);
+        git_index_write(index);
+        git_index_free(index);
+    }
+
+    git_repository_state_cleanup(m_currentRepo->repo);
+
+    m_hasConflicts = false;
+    emit cherryPickStateChanged();
+
+    emitGitCommand("git cherry-pick --skip");
+
+    m_currentIndex++;
+
+    return processCommits();
+}
