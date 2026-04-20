@@ -1181,7 +1181,7 @@ IPopup {
             else
                 notificationController.error(res.errorMessage, "Merge", 4000)
         }
-        else if (currentOperation === ConflictPopup.OperationType.Rebase) {
+        else if (currentOperation === ConflictPopup.OperationType.CherryPick) {
             if (!cherryPickController)
                 return
 
@@ -1200,8 +1200,8 @@ IPopup {
                 }
             }
         }
-        else if (currentOperation === ConflictPopup.OperationType.CherryPick) {
-            if (!cherryPickController)
+        else if (currentOperation === ConflictPopup.OperationType.Rebase) {
+            if (!rebaseController)
                 return
             let res = rebaseController.continueRebase()
             if (res.success){
@@ -1231,6 +1231,21 @@ IPopup {
                 }
             }
         }
+        else if (currentOperation === ConflictPopup.OperationType.CherryPick && cherryPickController) {
+                    let res = cherryPickController.skipCherryPick()
+
+                    if (res.success) {
+                        notificationController.success("Commit skipped", "Cherry-Pick", 2500)
+                        close();
+                    } else {
+                        if (res.data && res.data.hasConflicts){
+                            notificationController.success("Skipped, but new conflicts found in the next commit.", "Cherry-Pick", 2500)
+                            loadConflicts()
+                        } else {
+                            notificationController.error(res.errorMessage, "Cherry-Pick", 4000)
+                        }
+                    }
+                }
     }
 
     function abortOperation() {
@@ -1243,7 +1258,7 @@ IPopup {
             res = rebaseController.abortRebase()
         }
         else if (currentOperation === ConflictPopup.OperationType.CherryPick && cherryPickController) {
-            res = cherryPickController.abortRebase()
+            res = cherryPickController.abortCherryPick()
         }
 
         if (res && res.success) {
