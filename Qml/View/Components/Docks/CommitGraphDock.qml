@@ -1885,6 +1885,9 @@ Item {
                                 // Rebase
                                 addRebaseEntries(finalModel, commitData, currentBranch, isCurrentHead);
 
+                                // Cherry-pick
+                                addCherrypickEntries(finalModel, commitData, shortHash, isCurrentHead)
+
                                 menuModel = finalModel;
                             }
 
@@ -2397,6 +2400,71 @@ Item {
             }
         })
     }
+
+    function addCherrypickEntries(finalModel, commitData, shortHash, isCurrentHead){
+
+        var selectedHashes = root.selectedCommitHashesInOrder()
+        var selectionCount = selectedHashes.length
+        var cherryPickEnabled = !!root.cherryPickController &&
+                                selectionCount > 0 &&
+                                !root.selectionHasStash() &&
+                                !root.selectionHasHead()
+
+        if (selectionCount > 1) {
+            finalModel.push({
+                text: "Cherry-Pick Selected (" + selectionCount + ")",
+                icon: Style.icons.copy,
+                enabled: cherryPickEnabled,
+                action: function() {
+                    if (!root.cherryPickController)
+                        return
+
+                    var res = root.cherryPickController.cherryPickCommits(selectedHashes)
+                    handleCherryPickResult(res, selectionCount)
+                }
+            })
+        } else {
+            finalModel.push({
+                text: "Cherry-Pick " + shortHash,
+                icon: Style.icons.copy,
+                enabled: !!root.cherryPickController && !commitData.isStash && !isCurrentHead,
+                action: function() {
+                    if (!root.cherryPickController)
+                        return
+
+                    var res = root.cherryPickController.cherryPickCommit(commitData.hash)
+                    handleCherryPickResult(res, 1)
+                }
+            })
+        }
+    }
+
+    function handleCherryPickResult(res, selectionCount) {
+        if (res && res.success) {
+            if (root.notificationController) {
+                root.notificationController.success(
+                    selectionCount > 1 ? ("Cherry-picked " + selectionCount + " commits") : "Cherry-pick completed",
+                    "Cherry-Pick",
+                    3000
+                );
+            }
+            root.reloadAll();
+            return;
+        }
+
+        if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
+            if (cherryPickConflictPopup) cherryPickConflictPopup.open();
+            if (root.notificationController) {
+                root.notificationController.warning("Cherry-pick conflicts detected. Please resolve them.", "Cherry-Pick", 4000);
+            }
+            return;
+        }
+
+        if (root.notificationController) {
+            root.notificationController.error(res ? res.errorMessage : "Cherry-pick failed", "Cherry-Pick", 5000);
+        }
+    }
+
 
     onRepositoryControllerChanged: reloadAll();
 
