@@ -73,17 +73,38 @@ GitResult GitCherryPick::continueCherryPick()
     if (!commitRes.success())
         return commitRes;
 
+    // Clean up sequencer state
+    int cleanupError = git_repository_state_cleanup(m_currentRepo->repo);
+    if (cleanupError != GIT_OK) {
+        return GitResult(false, QVariant(), QString("Failed to cleanup repository state: %1")
+                             .arg(git_error_last() ? git_error_last()->message : "Unknown error"));
+    }
+
+    // Hard reset HEAD to update index and working directory
+    git_object* newHead = nullptr;
+    int revparseError = git_revparse_single(&newHead, m_currentRepo->repo, "HEAD");
+    if (revparseError != GIT_OK) {
+        return GitResult(false, QVariant(), QString("Failed to get HEAD object: %1")
+                             .arg(git_error_last() ? git_error_last()->message : "Unknown error"));
+    }
+
+    int resetError = git_reset(m_currentRepo->repo, newHead, GIT_RESET_HARD, nullptr);
+    git_object_free(newHead);
+    if (resetError != GIT_OK) {
+        return GitResult(false, QVariant(), QString("Failed to reset repository to HEAD: %1")
+                             .arg(git_error_last() ? git_error_last()->message : "Unknown error"));
+    }
+
     m_hasConflicts = false;
     emit cherryPickStateChanged();
 
-    // Successfully resolved and committed the conflicted commit
     m_currentIndex++;
 
     emitGitCommand("git cherry-pick --continue");
 
-    // Call the new helper to process whatever is left
     return processCommits();
 }
+
 
 GitResult GitCherryPick::processCommits()
 {
