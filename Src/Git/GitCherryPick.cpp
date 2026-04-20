@@ -27,6 +27,11 @@ GitResult GitCherryPick::cherryPickCommits(const QStringList& commitHashes)
         return GitResult(false, QVariant(),
                          "A cherry-pick is already in progress. Continue or abort it first.");
 
+    // Ensure the repository index is clean before starting a sequence
+    if (repositoryHasConflicts()) {
+        return GitResult(false, QVariant(), "You have existing conflicts in your repository. Resolve them first.");
+    }
+
     int state = git_repository_state(m_currentRepo->repo);
     if (state != GIT_REPOSITORY_STATE_NONE) {
         return GitResult(false, QVariant(),
