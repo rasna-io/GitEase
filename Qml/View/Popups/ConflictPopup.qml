@@ -1203,14 +1203,26 @@ IPopup {
         else if (currentOperation === ConflictPopup.OperationType.Rebase) {
             if (!rebaseController)
                 return
+
             let res = rebaseController.continueRebase()
+
             if (res.success){
                 if (notificationController)
                     notificationController.success("Rebase completed", "Conflict", 2500)
                 close()
+            } else {
+                // Check if it stopped because it hit a NEW conflict
+                if (res.data && res.data.hasConflicts) {
+                    if (notificationController)
+                        notificationController.warning("Continuing... but new conflicts found.", "Rebase", 4000);
+
+                    loadConflicts();
+                } else {
+                    // A real error occurred
+                    if (notificationController)
+                        notificationController.error(res.errorMessage, "Rebase", 4000);
+                }
             }
-            else
-                notificationController.error(res.errorMessage, "Rebase", 4000)
         }
     }
 
