@@ -1585,7 +1585,11 @@ Item {
 
                         color: {
                             if (commitData.isUncommitted) {
-                                return "#2f2f2f";
+                                if (isSelected) {
+                                    return "#6088B2DF";
+                                } else {
+                                    return "#2f2f2f";
+                                }
                             }
                             if (isSelected) {
                                 return "#6088B2DF";
