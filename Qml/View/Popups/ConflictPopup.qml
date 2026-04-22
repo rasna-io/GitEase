@@ -1233,7 +1233,10 @@ IPopup {
     }
 
     function skipOperation() {
-        if (currentOperation === ConflictPopup.OperationType.Rebase && rebaseController) {
+        if (currentOperation === ConflictPopup.OperationType.Rebase) {
+            if (!rebaseController)
+                return
+
             let res = rebaseController.skipRebase()
 
             if (res.success) {
@@ -1241,29 +1244,36 @@ IPopup {
                 close();
             } else {
                 if (res.data && res.data.hasConflicts){
-                    notificationController.success("Skipped, but new conflicts found.", "Rebase", 2500)
-                    loadConflicts()
+                    notificationController.warning("Skipped, but new conflicts found in the next commit.", "Rebase", 2500)
+
+                    modifiedFiles = ({})
+                    loadConflicts(true)
                 }
                 else{
                     notificationController.error(res.errorMessage, "Rebase", 4000)
                 }
             }
         }
-        else if (currentOperation === ConflictPopup.OperationType.CherryPick && cherryPickController) {
-                    let res = cherryPickController.skipCherryPick()
+        else if (currentOperation === ConflictPopup.OperationType.CherryPick) {
+            if(!cherryPickController)
+                return
 
-                    if (res.success) {
-                        notificationController.success("Commit skipped", "Cherry-Pick", 2500)
-                        close();
-                    } else {
-                        if (res.data && res.data.hasConflicts){
-                            notificationController.success("Skipped, but new conflicts found in the next commit.", "Cherry-Pick", 2500)
-                            loadConflicts()
-                        } else {
-                            notificationController.error(res.errorMessage, "Cherry-Pick", 4000)
-                        }
-                    }
+            let res = cherryPickController.skipCherryPick()
+
+            if (res.success) {
+                notificationController.success("Commit skipped", "Cherry-Pick", 2500)
+                close();
+            } else {
+                if (res.data && res.data.hasConflicts){
+                    notificationController.warning("Skipped, but new conflicts found in the next commit.", "Cherry-Pick", 2500)
+
+                    modifiedFiles = ({})
+                    loadConflicts(true)
+                } else {
+                    notificationController.error(res.errorMessage, "Cherry-Pick", 4000)
                 }
+            }
+        }
     }
 
     function abortOperation() {
