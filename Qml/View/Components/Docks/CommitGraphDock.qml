@@ -2166,7 +2166,7 @@ Item {
 
             author: "",
             authorEmail: "",
-            authorDate: new Date(),
+            authorDate: "",
 
             parentHashes: root.headHash ? [root.headHash] : [],
             commitType: "uncommitted",
