@@ -1173,9 +1173,11 @@ IPopup {
                 return
 
             let res = mergeController.continueMerge()
+
             if (res.success) {
                 if (notificationController)
                     notificationController.success("Merge completed", "Conflict", 2500)
+
                 close()
             }
             else
@@ -1186,15 +1188,19 @@ IPopup {
                 return
 
             let res = cherryPickController.continueCherryPick()
+
             if (res.success) {
                 if (notificationController)
                     notificationController.success("Cherry-pick completed", "Conflict", 2500)
+
                 close()
             } else {
                 if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
                     if (notificationController)
-                        notificationController.warning("Cherry-pick conflicts detected. Please resolve them.", "Cherry-Pick", 4000)
-                    loadConflicts()
+                        notificationController.warning("Continuing... but new conflicts found.", "Cherry-Pick", 4000)
+
+                    modifiedFiles = ({})
+                    loadConflicts(true)
                 } else {
                     notificationController.error(res.errorMessage, "Cherry-Pick", 4000)
                 }
@@ -1209,16 +1215,16 @@ IPopup {
             if (res.success){
                 if (notificationController)
                     notificationController.success("Rebase completed", "Conflict", 2500)
+
                 close()
             } else {
-                // Check if it stopped because it hit a NEW conflict
-                if (res.data && res.data.hasConflicts) {
+                    if (res.data && res.data.hasConflicts) {
                     if (notificationController)
                         notificationController.warning("Continuing... but new conflicts found.", "Rebase", 4000);
 
-                    loadConflicts();
+                    modifiedFiles = ({})
+                    loadConflicts(true)
                 } else {
-                    // A real error occurred
                     if (notificationController)
                         notificationController.error(res.errorMessage, "Rebase", 4000);
                 }
