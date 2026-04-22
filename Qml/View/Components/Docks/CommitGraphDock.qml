@@ -1786,6 +1786,9 @@ Item {
                                 if (mouse.button !== Qt.LeftButton)
                                     return;
 
+                                if (commitData.isUncommitted)
+                                    return;
+
                                 if (commitData.isStash)
                                     return;
 
