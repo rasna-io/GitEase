@@ -1364,7 +1364,7 @@ Item {
                                         for (var calcIdx = 0; calcIdx < allLabels.length; calcIdx++) {
                                             var calcLabelInfo = allLabels[calcIdx];
                                             var isTag = calcLabelInfo.isTag;
-                                            ctx.font = "bold 11px Arial";
+                                            ctx.font = "11px sans-serif";
                                             ctx.textAlign = "left";
                                             var calcTextMetrics = ctx.measureText(calcLabelInfo.text);
                                             var extraSpace = isTag ? 20 : 8;
@@ -1417,7 +1417,7 @@ Item {
                                             ctx.textAlign = "left";
 
                                             if (labelInfo.isTag) {
-                                                ctx.font = "9px " + Style.fontTypes.font6ProSolid;
+                                                ctx.font = "9px sans-serif";
                                                 ctx.fillText(Style.icons.tag, labelX + 4, labelY);
 
                                                 ctx.font = "bold 11px 'Segoe UI', Arial, sans-serif";
@@ -1508,7 +1508,7 @@ Item {
                                         if (showAvatar) {
                                             // Draw avatar icon
                                             ctx.fillStyle = "#ffffff";
-                                            ctx.font = (avatarSize * 0.8) + "px Arial";
+                                            ctx.font = (avatarSize * 0.8) + "px sans-serif";
                                             ctx.textAlign = "center";
                                             ctx.textBaseline = "middle";
 
