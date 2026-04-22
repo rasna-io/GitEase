@@ -2161,8 +2161,8 @@ Item {
         return {
             hash: "__uncommitted__",
             shortHash: "",
-            message: "Uncommitted Changes",
-            summary: "Uncommitted Changes (" + total + " files)",
+            message: "Working tree Changes",
+            summary: "Working tree Changes (" + total + " files)",
 
             author: "",
             authorEmail: "",
