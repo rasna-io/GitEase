@@ -1765,6 +1765,9 @@ Item {
                                root.commitClicked(commitData.hash);
 
                                 if (mouse.button === Qt.RightButton) {
+                                    if (commitData.isUncommitted)
+                                        return;
+
                                     if(!root.isCommitSelected(commitData.hash))
                                         root.setSingleSelection(commitData, index)
 
