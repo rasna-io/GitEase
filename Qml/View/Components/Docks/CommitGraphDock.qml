@@ -1584,22 +1584,23 @@ Item {
                         property bool isStash: modelData.isStash === true
 
                         color: {
-                            if (commitData.isUncommitted) {
-                                if (isSelected) {
-                                    return "#6088B2DF";
-                                } else {
-                                    return "#2f2f2f";
-                                }
-                            }
                             if (isSelected) {
                                 return "#6088B2DF";
-                            } else if (isHovered) {
-                                return Style.colors.hoverTitle;
-                            } else if (isHead) {
-                                return "#40FFA500";
-                            } else {
-                                return Style.colors.primaryBackground;
                             }
+                            if (commitData.isUncommitted) {
+                                if (isHovered) {
+                                    return Qt.darker(Style.colors.hoverTitle, 1.03);
+                                }
+                                return Style.colors.secondaryBackground || Style.colors.primaryBackground;
+                            }
+                            if (isHovered) {
+                                return Style.colors.hoverTitle;
+                            }
+                            if (isHead) {
+                                return "#40FFA500";
+                            }
+
+                            return Style.colors.primaryBackground;
                         }
 
                         radius: (isSelected || isHovered) ? 4 : 0
