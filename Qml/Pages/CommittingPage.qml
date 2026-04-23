@@ -1,4 +1,4 @@
-﻿import QtQuick
+import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -40,6 +40,7 @@ Item {
 
     property var                     pluginController:        null
 
+    property CommitAmendPopup        commitAmendPopup:        null
 
     property bool                    isFetching:             false
     property var                     activeFetchRemotes:     []
@@ -151,6 +152,14 @@ Item {
 
             changesFileLists.updateStatus()
         }
+    }
+
+    CommitAmendPopup {
+        id: amendPopup
+        anchors.centerIn: parent
+
+        commitController        : root.commitController
+        notificationController  : root.notificationController
     }
 
     Connections {
@@ -400,7 +409,9 @@ Item {
                                         {
                                             text: "Commit Amend",
                                             icon: Style.icons.penToSquare,
-                                            action: function() {root.commitAndUpdate(true)}
+                                            action: function() {
+                                                amendPopup.open();
+                                            }
                                         },
                                         {
                                             text: "Commit && Push",
