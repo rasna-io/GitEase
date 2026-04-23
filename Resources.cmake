@@ -192,6 +192,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/RepoForestPopup.qml
     Qml/View/Popups/ConflictPopup.qml
     Qml/View/Popups/MergeMethodPopup.qml
+    Qml/View/Popups/CommitAmendPopup.qml
 
     Qml/View/Popups/AddTagPopup.qml
     Qml/View/Popups/CalendarPopup.qml
