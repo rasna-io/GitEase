@@ -556,3 +556,27 @@ QStringList GitCommit::getAllParents(git_commit *gitCommit)
 
     return parentHashes;
 }
+
+QString GitCommit::getLastCommitMessage()
+{
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return "";
+    }
+
+    git_reference* headRef = nullptr;
+    if (git_repository_head(&headRef, m_currentRepo->repo) != 0) {
+        return "";
+    }
+
+    git_commit* headCommit = nullptr;
+    int result = git_reference_peel((git_object**)&headCommit, headRef, GIT_OBJECT_COMMIT);
+    git_reference_free(headRef);
+
+    QString message = "";
+    if (result == 0 && headCommit) {
+        message = QString::fromUtf8(git_commit_message(headCommit));
+        git_commit_free(headCommit);
+    }
+
+    return message;
+}

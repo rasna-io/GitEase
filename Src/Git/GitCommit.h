@@ -132,6 +132,12 @@ public:
      */
     void freeParentCommits(ParentCommits& parents);
 
+    /**
+     * \brief Retrieve the last commit message from the current repository
+     * \return The message of the last (HEAD) commit, or an empty string on error
+     */
+    Q_INVOKABLE QString getLastCommitMessage();
+
 
     Repository *currentRepo() const;
 
