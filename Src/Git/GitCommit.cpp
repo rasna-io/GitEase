@@ -236,18 +236,38 @@ GitResult GitCommit::commit(const QString& message,
 
     QByteArray messageUtf8 = message.trimmed().toUtf8();
 
-    int result = git_commit_create(
-        &newCommitOid,                      // Output: new commit's SHA-1
-        m_currentRepo->repo,                // Repository to create in
-        "HEAD",                             // Update HEAD reference
-        author,                             // Who wrote the changes
-        author,                             // Who committed them
-        nullptr,                            // Default encoding (UTF-8)
-        messageUtf8.constData(),            // Commit message
-        tree,                               // Tree snapshot
-        parents.count,                      // Number of parents
-        (const git_commit**)parents.commits // Parent commits
+    int result = 0;
+    if (amend) {
+        if (!parents.amendedCommit) {
+            cleanupCommitResources(author, tree, parents);
+            return GitResult(false, QVariant(), "Cannot amend: no commits yet (unborn branch).");
+        }
+
+        result = git_commit_amend(
+            &newCommitOid,
+            parents.amendedCommit,              // The commit to amend
+            "HEAD",                             // Update HEAD reference
+            author,                             // Who wrote the changes
+            author,                             // Who committed them
+            nullptr,                            // Default encoding (UTF-8)
+            messageUtf8.constData(),            // Commit message
+            tree                                // Tree snapshot
         );
+    }
+    else{
+        result = git_commit_create(
+            &newCommitOid,                      // Output: new commit's SHA-1
+            m_currentRepo->repo,                // Repository to create in
+            "HEAD",                             // Update HEAD reference
+            author,                             // Who wrote the changes
+            author,                             // Who committed them
+            nullptr,                            // Default encoding (UTF-8)
+            messageUtf8.constData(),            // Commit message
+            tree,                               // Tree snapshot
+            parents.count,                      // Number of parents
+            (const git_commit**)parents.commits // Parent commits
+        );
+    }
 
     if (result != GIT_OK) {
         // Cleanup on failure
