@@ -161,6 +161,9 @@ Rectangle {
                         if (item.hasOwnProperty("rebaseController")) {
                             item.rebaseController = Qt.binding(function() { return root.uiSession?.rebaseController })
                         }
+                        if (item.hasOwnProperty("cherryPickController")) {
+                            item.cherryPickController = Qt.binding(function() { return root.uiSession?.cherryPickController })
+                        }
                         if (item.hasOwnProperty("conflictController")) {
                             item.conflictController = Qt.binding(function() { return root.uiSession?.conflictController })
                         }

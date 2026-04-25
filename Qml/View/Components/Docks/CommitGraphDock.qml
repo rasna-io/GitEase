@@ -23,6 +23,7 @@ Item {
 
     property MergeController mergeController: null
     property RebaseController rebaseController: null
+    property CherryPickController cherryPickController: null
 
     property ConflictController conflictController: null
 
@@ -40,7 +41,7 @@ Item {
 
     ConflictPopup {
         id: mergeConflictPopup
-        isMerge: true
+        currentOperation: ConflictPopup.OperationType.Merge
         mergeController: root.mergeController
         conflictController: root.conflictController
         notificationController: root.notificationController
@@ -53,8 +54,17 @@ Item {
 
     ConflictPopup {
         id: rebaseConflictPopup
-        isMerge: false
+        currentOperation: ConflictPopup.OperationType.Rebase
         rebaseController: root.rebaseController
+        conflictController: root.conflictController
+        notificationController: root.notificationController
+        statusController: root.statusController
+    }
+
+    ConflictPopup {
+        id: cherryPickConflictPopup
+        currentOperation: ConflictPopup.OperationType.CherryPick
+        cherryPickController: root.cherryPickController
         conflictController: root.conflictController
         notificationController: root.notificationController
         statusController: root.statusController
@@ -68,6 +78,9 @@ Item {
     property var selectedCommit: null
     property var allCommitsHash: ({})
     property string headHash: ""
+
+    property var selectedCommitHashes: []
+    property int lastSelectedIndex: -1
 
     // navigation state
     // navigationRule: one of ["Author Email", "Author", "Parent 1", "Branch"]
@@ -166,6 +179,114 @@ Item {
 
     function normalizeFilterString(str) {
         return (str === null || str === undefined) ? "" : ("" + str)
+    }
+
+    function isCommitSelected(commitHash){
+        if(!commitHash || !root.selectedCommitHashes)
+            return false
+
+        return root.selectedCommitHashes.indexOf(commitHash) !== -1
+    }
+
+    function applySelection(commitData, index, modifiers){
+        if (!commitData || !commitData.hash)
+            return
+
+        if ((modifiers & Qt.ControlModifier) !== 0) {
+            toggleSelection(commitData, index)
+            return
+        }
+
+        if ((modifiers & Qt.ShiftModifier) !== 0 && root.lastSelectedIndex >= 0) {
+            selectRange(root.lastSelectedIndex, index)
+            return
+        }
+
+        setSingleSelection(commitData, index)
+    }
+
+    function setSingleSelection(commitData, index){
+        if(!commitData || !commitData.hash)
+            return
+
+        root.selectedCommitHashes = [commitData.hash]
+        root.lastSelectedIndex = index
+    }
+
+    function toggleSelection(commitData, index) {
+        if (!commitData || !commitData.hash)
+            return
+
+        var list = root.selectedCommitHashes ? root.selectedCommitHashes.slice(0) : []
+        var idx = list.indexOf(commitData.hash)
+        if (idx >= 0) {
+            list.splice(idx, 1)
+        } else {
+            list.push(commitData.hash)
+        }
+
+        root.selectedCommitHashes = list
+        root.lastSelectedIndex = index
+    }
+
+    function selectRange(anchorIndex, targetIndex) {
+        if (!root.commits || root.commits.length === 0)
+            return
+
+        var start = Math.min(anchorIndex, targetIndex)
+        var end = Math.max(anchorIndex, targetIndex)
+
+        var list = []
+        for (var i = start; i <= end; i++) {
+            var c = root.commits[i]
+            if (c && c.hash)
+                list.push(c.hash)
+        }
+
+        root.selectedCommitHashes = list
+    }
+
+    function selectedCommitHashesInOrder() {
+        var commits = selectedCommitsInOrder()
+        var hashes = []
+        for (var i = 0; i < commits.length; i++) {
+            hashes.push(commits[i].hash)
+        }
+        return hashes
+    }
+
+    function selectionHasStash() {
+        var commits = selectedCommitsInOrder()
+        for (var i = 0; i < commits.length; i++) {
+            if (commits[i].isStash)
+                return true
+        }
+        return false
+    }
+
+    function selectionHasHead() {
+        var commits = selectedCommitsInOrder()
+        for (var i = 0; i < commits.length; i++) {
+            if (commits[i].hash === root.headHash)
+                return true
+        }
+        return false
+    }
+
+    function selectedCommitsInOrder() {
+        var selected = []
+        if (!root.commits || !root.selectedCommitHashes)
+            return selected
+
+        for (var i = root.commits.length - 1; i >= 0; i--) {
+            var c = root.commits[i]
+
+            if (c && c.hash && isCommitSelected(c.hash)) {
+                selected.push(c)
+            }
+        }
+
+        return selected
     }
 
     function parseDateYYYYMMDD(str) {
@@ -291,10 +412,19 @@ Item {
         ensureMinimumResults()
 
         // If current selection is filtered out, clear it.
-        if (root.selectedCommit && root.selectedCommit.hash) {
-            var stillThere = filtered.find(function(x) { return x && x.hash === root.selectedCommit.hash })
-            if (!stillThere)
+        if (root.selectedCommitHashes && root.selectedCommitHashes.length > 0) {
+            var stillSelected = []
+            for (var si = 0; si < root.selectedCommitHashes.length; si++) {
+                var h = root.selectedCommitHashes[si]
+                var exists = filtered.find(function(x) { return x && x.hash === h })
+                if (exists)
+                    stillSelected.push(h)
+            }
+            root.selectedCommitHashes = stillSelected
+            if (!stillSelected.length) {
                 root.selectedCommit = null
+                root.lastSelectedIndex = -1
+            }
         }
     }
 
@@ -455,6 +585,8 @@ Item {
 
         function onBranchCreatedSuccessfully() {
             root.selectedCommit = ""
+            root.selectedCommitHashes = []
+            root.lastSelectedIndex = -1
             root.reloadAll()
         }
     }
@@ -1296,7 +1428,7 @@ Item {
                                             }
                                         }
                                     }
-                                    var isSelected = root.selectedCommit && root.selectedCommit.hash === commit3.hash;
+                                    var isSelected = root.isCommitSelected(commit3.hash);
                                     let isHead = commit3.hash === root.headHash
                                     // Highlight selected commit row
                                     if (isSelected) {
@@ -1411,7 +1543,7 @@ Item {
 
                         property var commitData: modelData
                         property bool isHovered: false
-                        property bool isSelected: root.selectedCommit && root.selectedCommit.hash === commitData.hash
+                        property bool isSelected: root.isCommitSelected(commitData.hash)
                         property bool isHead: modelData.hash === root.headHash
 
                         property bool isStash: modelData.isStash === true
@@ -1586,13 +1718,19 @@ Item {
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                             onClicked: (mouse) => {
+                               root.selectedCommit = commitData;
+                               root.commitClicked(commitData.hash);
+
                                 if (mouse.button === Qt.RightButton) {
+                                    if(!root.isCommitSelected(commitData.hash))
+                                        root.setSingleSelection(commitData, index)
+
                                     contextMenu.x = mouse.x;
                                     contextMenu.y = mouse.y;
                                     contextMenu.open();
+
                                 } else {
-                                    root.selectedCommit = commitData;
-                                    root.commitClicked(commitData.hash);
+                                    root.applySelection(commitData, index, mouse.modifiers)
                                 }
                             }
 
@@ -1747,6 +1885,9 @@ Item {
                                 // Rebase
                                 addRebaseEntries(finalModel, commitData, currentBranch, isCurrentHead);
 
+                                // Cherry-pick
+                                addCherrypickEntries(finalModel, commitData, shortHash, isCurrentHead)
+
                                 menuModel = finalModel;
                             }
 
@@ -1759,6 +1900,8 @@ Item {
                                     root.notificationController.error(res.errorMessage || "Failed to checkout", "Checkout Error", 5000);
                                 }
                                 root.selectedCommit = "";
+                                root.selectedCommitHashes = []
+                                root.lastSelectedIndex = -1
                                 root.reloadAll();
                             }
                         }
@@ -2257,6 +2400,71 @@ Item {
             }
         })
     }
+
+    function addCherrypickEntries(finalModel, commitData, shortHash, isCurrentHead){
+
+        var selectedHashes = root.selectedCommitHashesInOrder()
+        var selectionCount = selectedHashes.length
+        var cherryPickEnabled = !!root.cherryPickController &&
+                                selectionCount > 0 &&
+                                !root.selectionHasStash() &&
+                                !root.selectionHasHead()
+
+        if (selectionCount > 1) {
+            finalModel.push({
+                text: "Cherry-Pick Selected (" + selectionCount + ")",
+                icon: Style.icons.copy,
+                enabled: cherryPickEnabled,
+                action: function() {
+                    if (!root.cherryPickController)
+                        return
+
+                    var res = root.cherryPickController.cherryPickCommits(selectedHashes)
+                    handleCherryPickResult(res, selectionCount)
+                }
+            })
+        } else {
+            finalModel.push({
+                text: "Cherry-Pick " + shortHash,
+                icon: Style.icons.copy,
+                enabled: !!root.cherryPickController && !commitData.isStash && !isCurrentHead,
+                action: function() {
+                    if (!root.cherryPickController)
+                        return
+
+                    var res = root.cherryPickController.cherryPickCommit(commitData.hash)
+                    handleCherryPickResult(res, 1)
+                }
+            })
+        }
+    }
+
+    function handleCherryPickResult(res, selectionCount) {
+        if (res && res.success) {
+            if (root.notificationController) {
+                root.notificationController.success(
+                    selectionCount > 1 ? ("Cherry-picked " + selectionCount + " commits") : "Cherry-pick completed",
+                    "Cherry-Pick",
+                    3000
+                );
+            }
+            root.reloadAll();
+            return;
+        }
+
+        if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
+            if (cherryPickConflictPopup) cherryPickConflictPopup.open();
+            if (root.notificationController) {
+                root.notificationController.warning("Cherry-pick conflicts detected. Please resolve them.", "Cherry-Pick", 4000);
+            }
+            return;
+        }
+
+        if (root.notificationController) {
+            root.notificationController.error(res ? res.errorMessage : "Cherry-pick failed", "Cherry-Pick", 5000);
+        }
+    }
+
 
     onRepositoryControllerChanged: reloadAll();
 
