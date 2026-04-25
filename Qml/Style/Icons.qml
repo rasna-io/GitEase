@@ -53,6 +53,8 @@ QtObject{
 
     property string branch:            "\uf126"
 
+    property string tag:               "\uf02b"
+
     property string arowLeftRight:     "\uf0ec"
     
     // Calendar icons
