@@ -110,6 +110,9 @@ ApplicationWindow {
                     if (item && item.hasOwnProperty("appModel")) {
                         item.appModel = Qt.binding(function() {return uiSession.appModel})
                     }
+                    if (item && item.hasOwnProperty("windowController")) {
+                        item.windowController = Qt.binding(function() {return uiSession.windowController})
+                    }
                 }
             }
         }
