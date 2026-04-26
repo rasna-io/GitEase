@@ -10,8 +10,17 @@ import GitEase
  * WindowsHeader
  * ************************************************************************************************/
 Rectangle {
+
+    /* Property Declarations
+     * ****************************************************************************************/
+    property WindowController windowController
+
+    /* Object Properties
+     * ****************************************************************************************/
     color: Style.colors.primaryBackground
     
+    /* Children
+     * ****************************************************************************************/
     RowLayout {
         anchors.centerIn: parent
         spacing: 4
@@ -19,7 +28,7 @@ Rectangle {
         // Minimize Button
         WindowsButton {
             id: minimizeButton
-            onClicked: WindowController.minimize()
+            onClicked: windowController.minimize()
             Material.accent: Style.colors.windowsMinimize
             content: Rectangle {
                 anchors.centerIn: parent
@@ -33,7 +42,7 @@ Rectangle {
         // Maximize/Restore Button
         WindowsButton {
             id: maximizeButton
-            onClicked: WindowController.toggleMaxRestore()
+            onClicked: windowController.toggleMaxRestore()
             Material.accent: Style.colors.windowsMaximize
             content: Rectangle {
                 anchors.centerIn: parent
@@ -49,7 +58,7 @@ Rectangle {
         // Close Button
         WindowsButton {
             id: closeButton
-            onClicked: WindowController.closeWindow()
+            onClicked: windowController.closeWindow()
             Material.accent: Style.colors.windowsClose
             content: Item {
                 anchors.centerIn: parent
