@@ -3,15 +3,41 @@
 
 #include <QtCore/QObject>
 #include <QtGui/QWindow>
+#include <QQmlEngine>
 
 class WindowController : public QObject
 {
     Q_OBJECT
+    QML_ELEMENT
+    Q_PROPERTY(QWindow* window READ window WRITE setWindow NOTIFY windowChanged)
 public:
-    explicit WindowController(QWindow* window, QObject* parent = nullptr)
-        : QObject(parent), m_window(window)
+    explicit WindowController(QObject* parent = nullptr)
+        : QObject(parent)
     {
-        m_helper = new BorderlessWindowHelper(window, parent);
+    }
+
+    explicit WindowController(QWindow* window, QObject* parent = nullptr)
+        : QObject(parent)
+    {
+        setWindow(window);
+    }
+
+    QWindow* window() const { return m_window; }
+
+    void setWindow(QWindow* window) {
+        if (m_window == window)
+            return;
+
+        m_window = window;
+        if (m_helper) {
+            delete m_helper;
+            m_helper = nullptr;
+        }
+
+        if (m_window)
+            m_helper = new BorderlessWindowHelper(m_window, this);
+
+        emit windowChanged();
     }
 
     Q_INVOKABLE void minimize() {
@@ -50,9 +76,10 @@ public:
 
 signals:
     void titleBarHeightChanged();
+    void windowChanged();
 
 private:
     QPointer<QWindow> m_window;
 
-    BorderlessWindowHelper *m_helper;
+    BorderlessWindowHelper *m_helper = nullptr;
 };
