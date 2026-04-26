@@ -51,6 +51,8 @@ ApplicationWindow {
     UiSession {
         id: uiSession
         popups: uiSessionPopups
+
+        Component.onCompleted: uiSession.windowController.window = window
     }
 
     UiSessionPopups {
