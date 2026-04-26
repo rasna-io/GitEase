@@ -18,6 +18,8 @@ QtObject {
         appModel: root.appModel
     }
 
+    property WindowController   windowController:   WindowController    {}
+
     property ActivityController activityController: ActivityController {}
 
     property RepositoryController repositoryController: RepositoryController {
