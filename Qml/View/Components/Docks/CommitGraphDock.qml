@@ -13,8 +13,7 @@ import "qrc:/GitEase/Qml/Core/Scripts/GraphUtils.js" as GraphUtils
  * CommitGraphDock
  * show graph and commits
  * ************************************************************************************************/
-Item {
-
+DetachablePanel {
     id : root
 
     property AppModel appModel: null
@@ -123,6 +122,10 @@ Item {
     readonly property int minColMessageWidth: 100
     readonly property int minColAuthorWidth: 60
     readonly property int minColDateWidth: 80
+
+    /* Object Properties
+     * ****************************************************************************************/
+    title: qsTr("Commit Graph")
 
     /* Signals
      * ****************************************************************************************/

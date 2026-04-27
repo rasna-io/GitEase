@@ -9,7 +9,7 @@ import GitEase_Style
  * DiffView
  * ************************************************************************************************/
 
-Item {
+DetachablePanel {
     id: root
 
     /* Property Declarations
@@ -19,6 +19,10 @@ Item {
     property bool readOnly: false
 
     property alias scrollPosition: diffListView.contentY
+
+    /* Object Properties
+     * ****************************************************************************************/
+    title: qsTr("Diff View")
 
     /* Signals
      * ****************************************************************************************/

@@ -10,7 +10,7 @@ import GitEase
  * FileChangesDock
  * show changed files
  * ************************************************************************************************/
-Item {
+DetachablePanel {
     id : root
 
     property RepositoryController repositoryController: null
