@@ -164,7 +164,7 @@ Rectangle {
 
             if(!fetchRes || !fetchRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
-                scanBranchController.fetchFinished.disconnect(onFetchFinished)
+                scanRemoteController.fetchFinished.disconnect(onFetchFinished)
                 processNextOperation()
             }
         })
