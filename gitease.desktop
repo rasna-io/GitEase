@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=GitEase
+Comment=A powerful Git GUI client
+Exec=gitease-launcher.sh
+Icon=gitease
+Terminal=false
+Categories=Development;RevisionControl;

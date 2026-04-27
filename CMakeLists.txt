@@ -122,3 +122,15 @@ include(CTest)
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
+
+if(UNIX AND NOT APPLE)
+    install(TARGETS ${MAIN_TARGET_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+    install(PROGRAMS gitease-launcher.sh DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+    install(FILES gitease.desktop DESTINATION share/applications)
+
+    install(FILES Res/Images/Logo.png DESTINATION share/icons/hicolor/256x256/apps RENAME gitease.png)
+endif()
+
+include(packaging.cmake)
