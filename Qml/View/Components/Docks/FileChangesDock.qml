@@ -643,6 +643,7 @@ Item {
         if (res.success)
             root.files = res.data
 
+        root.fileSelected(root.files.length > 0 ? root.files[0].path : "")
     }
 
     /* Functions
