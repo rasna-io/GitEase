@@ -61,6 +61,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/BusyWaiter.qml                    # Items Busy Wait State View
     Qml/View/Components/Base/UtilitiesCard.qml
     Qml/View/Components/Base/ContextMenu.qml
+    Qml/View/Components/Base/DetachablePanel.qml               # Detachable panel wrapper
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
