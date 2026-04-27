@@ -502,16 +502,12 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        Rectangle {
+        DropZone {
             id: commitGraphDock
             Layout.fillWidth: true
-            Layout.minimumHeight: root.height / 2
-            Layout.maximumHeight: root.height / 2
-            color: "transparent"
 
             CommitGraphDock {
                 id: commitGraph
-                anchors.fill: parent
                 repositoryController: root.repositoryController
                 appModel: root.appModel
                 branchController: root.branchController
@@ -571,29 +567,25 @@ Item {
             }
         }
 
-        Rectangle {
+        DropZone {
             Layout.fillWidth: true
-            Layout.minimumHeight: root.height / 2
-            Layout.maximumHeight: root.height / 2
-            color: "transparent"
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.margins: 8
-                anchors.topMargin: 32
-                spacing: 12
+            FileChangesDock {
+                id: fileChangesDock
 
-                Rectangle {
-                    Layout.preferredWidth: root.width / 2
-                    Layout.fillHeight: true
-                    color: "transparent"
+                repositoryController : root.repositoryController
+                statusController: root.statusController
 
-                    FileChangesDock {
-                        id: fileChangesDock
-                        anchors.fill: parent
+                onFileSelected: function(filePath){
+                    root.selectedFilePath = filePath
 
-                        repositoryController : root.repositoryController
-                        statusController: root.statusController
+                    let selectedCommitObj = commitGraph.selectedCommit
+                    let parentHash = ""
+                    if (selectedCommitObj && selectedCommitObj.isStash && selectedCommitObj.stashParentId) {
+                        parentHash = selectedCommitObj.stashParentId
+                    } else {
+                        parentHash = root.commitController.getParentHash(root.selectedCommit)
+                    }
 
                         onFileSelected: function(filePath) {
                             root.selectedFilePath = filePath
@@ -636,18 +628,11 @@ Item {
                         }
                     }
                 }
+            }
 
-                Rectangle {
-                    Layout.preferredWidth: root.width / 2
-                    Layout.fillHeight: true
-                    color: "transparent"
-
-                    DiffView {
-                        id: diffView
-                        anchors.fill: parent
-                        readOnly: true
-                    }
-                }
+            DiffView {
+                id: diffView
+                readOnly: true
             }
         }
     }
