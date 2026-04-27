@@ -100,6 +100,14 @@ public:
                       const QString &filePath);
 
     /**
+    * @brief Retrieves a side-by-side diff between HEAD and working directory for a file.
+    * @param headCommitHash The hash of the HEAD commit.
+    * @param filePath The relative path of the file.
+    */
+    Q_INVOKABLE GitResult getWorkingDirectoryDiff(const QString &headCommitHash,
+                                                  const QString &filePath);
+
+    /**
     * @brief Retrieves the list of files changed in a specific commit with their stats.
     *
     * This function compares the given commit with its parent (if any) and extracts

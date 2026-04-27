@@ -165,6 +165,8 @@ Item {
     }
 
     function commitColor(commitObj) {
+        if (commitObj && commitObj.isUncommitted)
+            return "#888888";
         if (!commitObj || !commitObj.colorKey)
             return GraphUtils.getCategoryColor("default")
         return GraphUtils.getCategoryColor(commitObj.colorKey)
@@ -1191,10 +1193,17 @@ Item {
                                             ctx.globalAlpha = 0.9;
                                             ctx.lineWidth = 2.5;
 
+                                            if (commit2.isUncommitted) {
+                                                ctx.setLineDash([4, 4]);
+                                            } else {
+                                                ctx.setLineDash([]);
+                                            }
+
                                             ctx.beginPath();
                                             ctx.moveTo(centerX, centerY);
                                             ctx.lineTo(parentX, parentY);
                                             ctx.stroke();
+                                            ctx.setLineDash([]);
                                             ctx.restore();
                                         }
                                     } else {
@@ -1577,13 +1586,21 @@ Item {
                         color: {
                             if (isSelected) {
                                 return "#6088B2DF";
-                            } else if (isHovered) {
-                                return Style.colors.hoverTitle;
-                            } else if (isHead) {
-                                return "#40FFA500";
-                            } else {
-                                return Style.colors.primaryBackground;
                             }
+                            if (commitData.isUncommitted) {
+                                if (isHovered) {
+                                    return Qt.darker(Style.colors.hoverTitle, 1.03);
+                                }
+                                return Style.colors.secondaryBackground || Style.colors.primaryBackground;
+                            }
+                            if (isHovered) {
+                                return Style.colors.hoverTitle;
+                            }
+                            if (isHead) {
+                                return "#40FFA500";
+                            }
+
+                            return Style.colors.primaryBackground;
                         }
 
                         radius: (isSelected || isHovered) ? 4 : 0
@@ -1670,7 +1687,7 @@ Item {
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: 10
                                         font.family: Style.fontTypes.roboto
-                                        font.weight: commitItem.isHead ? 900 : 400
+                                        font.weight: commitData.isUncommitted ? 700 : (commitItem.isHead ? 900 : 400)
                                         font.letterSpacing: 0.2
                                         Layout.fillWidth: true
                                         Layout.leftMargin: 6
@@ -1748,6 +1765,9 @@ Item {
                                root.commitClicked(commitData.hash);
 
                                 if (mouse.button === Qt.RightButton) {
+                                    if (commitData.isUncommitted)
+                                        return;
+
                                     if(!root.isCommitSelected(commitData.hash))
                                         root.setSingleSelection(commitData, index)
 
@@ -1756,12 +1776,20 @@ Item {
                                     contextMenu.open();
 
                                 } else {
+                                    if (commitData.isUncommitted) {
+                                        root.selectedCommit = commitData;
+                                        root.commitClicked("__uncommitted__");
+                                        return;
+                                    }
                                     root.applySelection(commitData, index, mouse.modifiers)
                                 }
                             }
 
                             onDoubleClicked: (mouse) => {
                                 if (mouse.button !== Qt.LeftButton)
+                                    return;
+
+                                if (commitData.isUncommitted)
                                     return;
 
                                 if (commitData.isStash)
@@ -2044,7 +2072,10 @@ Item {
                     isStash: true,
                     stashIndex: stash.index,
                     stashLabel: stashLabel,
-                    stashParentId: stash.parentId || ""
+                    stashParentId: stash.parentId || "",
+
+                    files: commit.files ?? null,
+                    isUncommitted: commit.isUncommitted ?? false
                 }
                 stashNodeList.push(stashObj)
             }
@@ -2094,7 +2125,10 @@ Item {
                 isStash: false,
                 stashIndex: -1,
                 stashLabel: "",
-                stashParentId: ""
+                stashParentId: "",
+
+                files: commit.files ?? null,
+                isUncommitted: commit.isUncommitted ?? false
             }
 
             compiled.push(obj)
@@ -2107,6 +2141,59 @@ Item {
         }
 
         return compiled
+    }
+
+    function createUncommittedNode() {
+        if (!statusController)
+            return null;
+
+        let res = statusController.status();
+        if (!res.success || !res.data)
+            return null;
+
+        let staged = [];
+        let unstaged = [];
+
+        res.data.forEach((file) => {
+            if (file.isStaged)
+            {
+                staged.push(file);
+            }
+            else if (file.isUnstaged || file.isUntracked)
+            {
+                unstaged.push(file);
+            }
+        });
+
+        let total = staged.length + unstaged.length;
+        if (total === 0)
+            return null;
+
+        return {
+            hash: "__uncommitted__",
+            shortHash: "",
+            message: "Working tree Changes",
+            summary: "Working tree Changes (" + total + " files)",
+
+            author: "",
+            authorEmail: "",
+            authorDate: "",
+
+            parentHashes: root.headHash ? [root.headHash] : [],
+            commitType: "uncommitted",
+
+            branchNames: [],
+            tagNames: [],
+            colorKey: "uncommitted",
+
+            isUncommitted: true,
+            isStash: false,
+
+            files: {
+                staged: staged,
+                unstaged: unstaged
+            }
+        };
     }
 
     function selectedIndex() {
@@ -2305,6 +2392,9 @@ Item {
         }
 
         var commits = compileGraphCommits(page, allBranches, stashes);
+        var uncommitted = createUncommittedNode();
+        if (uncommitted)
+            commits.unshift(uncommitted);
         commitsOffset = page ? page.length : 0
         hasMoreCommits = (page && page.length === pageSize)
 

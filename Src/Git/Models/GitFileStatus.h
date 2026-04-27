@@ -55,6 +55,9 @@ public:
 
     GitFileStatus(const git_diff_delta *delta, int additions, int deletions);
 
+    GitFileStatus(const git_status_entry *entry, int additions, int deletions,
+                  DeltaStatus deltaStatus);
+
 
     QString path() const;
 
