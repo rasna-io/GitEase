@@ -540,32 +540,7 @@ Item {
                         }
 
                         fileChangesDock.files = res.data;
-
-                        return;
                     }
-
-                    let res = commitController.getCommitFileChanges(commitId);
-
-                    if (!res.success) {
-                        console.log("commit diff failed:", res);
-                        fileChangesDock.files = [];
-                        return;
-                    }
-
-                    let files = [];
-
-                    if (res.data) {
-                        if (res.data.staged)
-                            files = files.concat(res.data.staged);
-
-                        if (res.data.unstaged)
-                            files = files.concat(res.data.unstaged);
-
-                        if (Array.isArray(res.data))
-                            files = res.data;
-                    }
-
-                    fileChangesDock.files = files;
                 }
             }
         }
