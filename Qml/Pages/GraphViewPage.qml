@@ -576,56 +576,43 @@ Item {
                 repositoryController : root.repositoryController
                 statusController: root.statusController
 
-                onFileSelected: function(filePath){
+                onFileSelected: function(filePath) {
                     root.selectedFilePath = filePath
 
-                    let selectedCommitObj = commitGraph.selectedCommit
-                    let parentHash = ""
-                    if (selectedCommitObj && selectedCommitObj.isStash && selectedCommitObj.stashParentId) {
-                        parentHash = selectedCommitObj.stashParentId
-                    } else {
-                        parentHash = root.commitController.getParentHash(root.selectedCommit)
+                    let commitId = root.selectedCommit
+                    let node = commitGraph.commits.find(c => c.hash === commitId)
+
+                    let res = null
+
+                    if (commitId === "__uncommitted__" || (node && node.isUncommitted)) { // UNCOMMITTED COMMITS
+                        let headHash = statusController.getHeadHash()
+
+                        if (!headHash) {
+                            console.log("HEAD is null -> cannot diff uncommitted")
+                            return
+                        }
+
+                        res = statusController.getWorkingDirectoryDiff(headHash, filePath)
+                    }
+                    else { // NORMAL COMMITS
+                        let parentHash = ""
+
+                        if (node && node.isStash && node.stashParentId) {
+                            parentHash = node.stashParentId
+                        } else {
+                            parentHash = commitController.getParentHash(commitId)
+                        }
+
+                        if (!parentHash || !commitId) {
+                            console.log("Invalid diff inputs:", parentHash, commitId)
+                            return
+                        }
+
+                        res = statusController.getDiff(parentHash, commitId, filePath)
                     }
 
-                        onFileSelected: function(filePath) {
-                            root.selectedFilePath = filePath
-
-                            let commitId = root.selectedCommit
-                            let node = commitGraph.commits.find(c => c.hash === commitId)
-
-                            let res = null
-
-                            if (commitId === "__uncommitted__" || (node && node.isUncommitted)) { // UNCOMMITTED COMMITS
-                                let headHash = statusController.getHeadHash()
-
-                                if (!headHash) {
-                                    console.log("HEAD is null -> cannot diff uncommitted")
-                                    return
-                                }
-
-                                res = statusController.getWorkingDirectoryDiff(headHash, filePath)
-                            }
-                            else { // NORMAL COMMITS
-                                let parentHash = ""
-
-                                if (node && node.isStash && node.stashParentId) {
-                                    parentHash = node.stashParentId
-                                } else {
-                                    parentHash = commitController.getParentHash(commitId)
-                                }
-
-                                if (!parentHash || !commitId) {
-                                    console.log("Invalid diff inputs:", parentHash, commitId)
-                                    return
-                                }
-
-                                res = statusController.getDiff(parentHash, commitId, filePath)
-                            }
-
-                            if (res && res.success) {
-                                diffView.diffData = res.data
-                            }
-                        }
+                    if (res && res.success) {
+                        diffView.diffData = res.data
                     }
                 }
             }
