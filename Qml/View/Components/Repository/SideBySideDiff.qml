@@ -1,3 +1,4 @@
+
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
@@ -23,6 +24,8 @@ Item {
     property bool isCurrentItem: false
     property var fileModel
 
+    property var diffModel
+
     property bool readOnly: false
 
     property real horizontalOffset: 0
@@ -37,7 +40,8 @@ Item {
         if (index === 0)
             return true;
 
-        let prevItem = fileModel.get(index - 1);
+        let model = diffModel || fileModel;
+        let prevItem = model ? model.get(index - 1) : null;
         return prevItem ? prevItem.type === GitDiff.Context : false;
     }
 
@@ -313,19 +317,20 @@ Item {
         }
     }
 
-
     function getRange() {
         let startIdx = index;
         let endIdx = index;
+        let model = diffModel || fileModel;
 
-        for (let i = index; i < fileModel.count; i++) {
-            let item = fileModel.get(i);
-            if (!item || item.type === GitDiff.Context) break;
+        for (let i = index; i < model.count; i++) {
+            let item = model.get(i);
+            if (!item || item.type === GitDiff.Context ||
+                (item.rowType && item.rowType !== "diff")) break;
             endIdx = i;
         }
 
-        let firstItem = fileModel.get(startIdx);
-        let lastItem = fileModel.get(endIdx);
+        let firstItem = model.get(startIdx);
+        let lastItem = model.get(endIdx);
 
         if (!firstItem || !lastItem) return { start: 0, end: 0, type: 0 };
 
