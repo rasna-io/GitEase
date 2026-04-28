@@ -127,16 +127,31 @@ DetachablePanel {
                     Row {
                         anchors.centerIn: parent
                         spacing: 4
-                        Text {
+                        Label {
                             text: model.direction === "up" ? Style.icons.caretUp : Style.icons.caretDown
                             font.family: Style.fontTypes.font6Pro
-                            font.pixelSize: 13
-                            color: hiddenMarker.containsMouse ? Style.colors.accent : Style.colors.secondaryText
+                            font.pixelSize: 12
+                            color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground
+                                                              : Qt.darker(Style.colors.secondaryForeground, 1.4)
+                            padding: 4
+                            background: Rectangle {
+                                color: hiddenMarker.containsMouse ? Style.colors.accent
+                                                                 : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
+                                radius: 4
+                            }
                         }
-                        Text {
+                        Label {
                             text: model.hiddenCount - model.visibleCount
-                            font.pixelSize: 10
-                            color: hiddenMarker.containsMouse ? Style.colors.accent : Style.colors.secondaryText
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 9
+                            color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground
+                                                              : Qt.darker(Style.colors.secondaryForeground, 1.4)
+                            padding: 3
+                            background: Rectangle {
+                                color: hiddenMarker.containsMouse ? Style.colors.accent
+                                                                 : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
+                                radius: 3
+                            }
                         }
                     }
                 }
