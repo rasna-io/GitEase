@@ -14,7 +14,13 @@ DetachablePanel {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var diffData: []
+    property var diffData: []   // used when chunkMode = false
+    property var chunkData: []  // used when chunkMode = true
+
+    /* Chunking configuration */
+    property bool chunkMode     : false
+    property int  contextLines  : 0         // how many unchanged lines to show around each hunk
+    property int  expandLines   : 10        // lines to reveal when expanding a hidden block
 
     property bool readOnly: false
 
@@ -36,7 +42,14 @@ DetachablePanel {
         id: fileModel
     }
 
+    ListModel {
+        id: chunkModel
+    }
+
     onDiffDataChanged: {
+        if (chunkMode)
+            return
+
         fileModel.clear()
 
         for(var i = 0; i < diffData.length; i++) {
@@ -51,13 +64,19 @@ DetachablePanel {
             if (diff.type === GitDiff.Deleted)
                 right = "";
 
-            appendRow(diff.type, left, right, diff.oldLine, diff.newLine);
+            appendRow(fileModel, diff.type, left, right, diff.oldLine, diff.newLine);
 
             updateMaxContentWidth(left);
             updateMaxContentWidth(right);
         }
     }
 
+    onChunkDataChanged: {
+        if (!chunkMode)
+            return
+
+        buildChunkModel()
+    }
 
     TextMetrics {
         id: widthCalculator
@@ -68,13 +87,15 @@ DetachablePanel {
     EmptyStateView {
         title: "No file changes to show"
         details: "Select a file to view the Diff"
-        visible: !root.diffData || root.diffData.length === 0
+        visible: chunkMode ? (!chunkData || chunkData.length === 0)
+                           : (!root.diffData || root.diffData.length === 0)
     }
 
     Rectangle {
         anchors.fill: parent
         color: Style.colors.editorBackgroound
-        visible: root.diffData && root.diffData.length > 0
+        visible: chunkMode ? (chunkData && chunkData.length > 0)
+                           : (root.diffData && root.diffData.length > 0)
 
         ListView {
             id: diffListView
@@ -83,35 +104,63 @@ DetachablePanel {
 
             anchors.fill: parent
             clip: true
-            model: fileModel
+            model: chunkMode ? chunkModel : fileModel
 
             cacheBuffer: 5000
             reuseItems: true
             anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
             ScrollBar.vertical: ScrollBar { active: true }
 
-            delegate: SideBySideDiff {
+            delegate: Item{
+                id: delegateItem
                 width: diffListView.width
-                horizontalOffset: diffListView.horizontalScrollOffset
-                readOnly: root.readOnly
-                diffType: model.type
-                leftContent: model.leftText
-                rightContent: model.rightText
-                leftLineNum: model.oldLineNum
-                rightLineNum: model.newLineNum
-                fileModel: diffListView.model
-                onRequestSplit: (pos, txt) => root.splitLine(index, pos, txt)
-                onRequestMergeUp: root.mergeLineUp(index)
-                onRequestFocusNext: diffListView.currentIndex = index + 1
-                onRequestFocusPrev: diffListView.currentIndex = index - 1
+                height: model.rowType === "hidden" ? 18 : diffLineItem.height
 
-                isCurrentItem: ListView.isCurrentItem
+                MouseArea{
+                    id: hiddenMarker
+                    anchors.fill: parent
+                    visible: model.rowType === "hidden"
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.expandHiddenBlock(index, model.direction)
 
-                onRequestStage: function (start, end, type) {
-                    root.requestStage(start, end, type)
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 4
+                        Text {
+                            text: model.direction === "up" ? Style.icons.caretUp : Style.icons.caretDown
+                            font.family: Style.fontTypes.font6Pro
+                            font.pixelSize: 13
+                            color: hiddenMarker.containsMouse ? Style.colors.accent : Style.colors.secondaryText
+                        }
+                        Text {
+                            text: model.hiddenCount - model.visibleCount
+                            font.pixelSize: 10
+                            color: hiddenMarker.containsMouse ? Style.colors.accent : Style.colors.secondaryText
+                        }
+                    }
                 }
-                onRequestRevert: function (start, end, type) {
-                    root.requestRevert(start, end, type)
+
+                SideBySideDiff {
+                    id: diffLineItem
+                    anchors.fill: parent
+                    visible: model.rowType !== "hidden"
+                    horizontalOffset: diffListView.horizontalScrollOffset
+                    readOnly: root.readOnly || (root.chunkMode && model.rowType === "context")
+                    diffModel: diffListView.model
+                    diffType: (model.diffType !== undefined) ? model.diffType : GitDiff.Context
+                    leftContent:  model.leftText  || ""
+                    rightContent: model.rightText || ""
+                    leftLineNum:  model.oldLineNum !== undefined ? model.oldLineNum : -1
+                    rightLineNum: model.newLineNum !== undefined ? model.newLineNum : -1
+                    isCurrentItem: ListView.isCurrentItem
+
+                    onRequestSplit:  (pos, txt) => root.splitLine(index, pos, txt)
+                    onRequestMergeUp: root.mergeLineUp(index)
+                    onRequestFocusNext: diffListView.currentIndex = index + 1
+                    onRequestFocusPrev: diffListView.currentIndex = index - 1
+                    onRequestStage: (start, end, type) => root.requestStage(start, end, type)
+                    onRequestRevert: (start, end, type) => root.requestRevert(start, end, type)
                 }
             }
         }
@@ -135,18 +184,22 @@ DetachablePanel {
 
     /* Functions
      * ****************************************************************************************/
-    function appendRow(type, lTxt, rTxt, lNum, rNum) {
-        fileModel.append({
-                             "type": type,
-                             "leftText": lTxt,
-                             "rightText": rTxt,
-                             "oldLineNum": lNum,
-                             "newLineNum": rNum
-                         })
+    function appendRow(model, type, lTxt, rTxt, lNum, rNum) {
+        model.append({
+                     "type": type,
+                     "leftText": lTxt,
+                     "rightText": rTxt,
+                     "oldLineNum": lNum,
+                     "newLineNum": rNum
+                 })
     }
 
     // Called by Delegate when user presses Enter
     function splitLine(index, cursorPosition, textAfterCursor) {
+
+        if (chunkMode)
+            return
+
         // Update the current row to contain only text BEFORE cursor
         var currentRow = fileModel.get(index)
         var originalText = currentRow.rightText
@@ -219,4 +272,185 @@ DetachablePanel {
         }
     }
 
+    function buildChunkModel() {
+        chunkModel.clear()
+
+        if (!chunkData || chunkData.length === 0)
+            return
+
+        for (let c = 0; c < chunkData.length; c++) {
+            let chunk = chunkData[c]
+
+            if (chunk.chunkType === "changed") {
+                let lines = chunk.lines
+                for (let l = 0; l < lines.length; l++) {
+                    let line    = lines[l]
+                    let left    = (line.type === GitDiff.Added)     ? "" : line.content
+                    let right   = (line.type === GitDiff.Deleted)   ? "" :
+                                  (line.type === GitDiff.Modified   ? line.newContent : line.content)
+
+                    chunkModel.append({
+                        rowType     : "diff",
+                        diffType    : line.type,
+                        leftText    : left,
+                        rightText   : right,
+                        oldLineNum  : line.oldLine !== undefined ? line.oldLine : -1,
+                        newLineNum  : line.newLine !== undefined ? line.newLine : -1
+                    })
+                    updateMaxContentWidth(left)
+                    updateMaxContentWidth(right)
+                }
+            } else if (chunk.chunkType === "hidden") {
+                let prevChunk = (c > 0) ? chunkData[c-1] : null
+                let nextChunk = (c < chunkData.length-1) ? chunkData[c+1] : null
+
+                if (prevChunk && prevChunk.chunkType === "changed") {
+                    chunkModel.append({
+                        rowType: "hidden",
+                        direction: "down",
+                        hiddenCount: chunk.hiddenCount,
+                        visibleCount: 0,
+                        chunkIndex: c
+                    })
+                }
+
+                if (nextChunk && nextChunk.chunkType === "changed") {
+                    chunkModel.append({
+                        rowType: "hidden",
+                        direction: "up",
+                        hiddenCount: chunk.hiddenCount,
+                        visibleCount: 0,
+                        chunkIndex: c
+                    })
+                }
+            }
+        }
+    }
+
+    function expandHiddenBlock(modelIndex, direction) {
+        let row = chunkModel.get(modelIndex)
+        if (!row || row.rowType !== "hidden") 
+            return
+
+        let chunk = chunkData[row.chunkIndex]
+        if (!chunk || chunk.chunkType !== "hidden" || !chunk.hiddenLines) 
+            return
+
+        let remaining = row.hiddenCount - row.visibleCount
+        let toShow = Math.min(expandLines, remaining)
+        if (toShow <= 0) return
+
+        let hiddenLines = chunk.hiddenLines
+        let newLines = []
+        let oldVisible = row.visibleCount
+        let oldBarIndex = modelIndex
+        let chunkIdx = row.chunkIndex
+        let totalHidden = row.hiddenCount
+
+        // 1. Prepare the new context lines
+        if (direction === "down") {
+            for (let i = 0; i < toShow; i++) {
+                let lineObj = hiddenLines[oldVisible + i]
+                if (!lineObj) break
+                newLines.push({
+                    rowType: "context",
+                    diffType: GitDiff.Context,
+                    leftText: lineObj.content,
+                    rightText: lineObj.content,
+                    oldLineNum: lineObj.oldLine,
+                    newLineNum: lineObj.newLine
+                })
+            }
+        } else {  // "up"
+            let endIdx = hiddenLines.length - 1 - oldVisible
+            for (let i = 0; i < toShow; i++) {
+                let idx = endIdx - i
+                if (idx < 0) break
+                let lineObj = hiddenLines[idx]
+                newLines.push({
+                    rowType: "context",
+                    diffType: GitDiff.Context,
+                    leftText: lineObj.content,
+                    rightText: lineObj.content,
+                    oldLineNum: lineObj.oldLine,
+                    newLineNum: lineObj.newLine
+                })
+            }
+            newLines.sort((a, b) => a.oldLineNum - b.oldLineNum)
+        }
+
+        // 2. Remove the bar temporarily
+        chunkModel.remove(oldBarIndex)
+
+        // 3. Insert the new lines at the bar's old position
+        for (let i = 0; i < newLines.length; i++) {
+            chunkModel.insert(oldBarIndex + i, newLines[i])
+        }
+
+        // 4. Re-insert the bar at the correct new position
+        let newVisible = oldVisible + toShow
+        let barProperties = {
+            rowType: "hidden",
+            direction: direction,
+            hiddenCount: totalHidden,
+            visibleCount: newVisible,
+            chunkIndex: chunkIdx,
+            diffType: GitDiff.Context,
+            leftText: "", rightText: "",
+            oldLineNum: -1, newLineNum: -1
+        }
+
+        if (direction === "down") {
+            // Bar goes after the new lines
+            chunkModel.insert(oldBarIndex + toShow, barProperties)
+        } else {
+            // Bar goes before the new lines (stay at oldBarIndex)
+            chunkModel.insert(oldBarIndex, barProperties)
+        }
+
+        // 5. If fully expanded, remove this bar and its sibling
+        if (newVisible >= totalHidden) {
+            let barToRemove = direction === "down" ? oldBarIndex + toShow : oldBarIndex
+            chunkModel.remove(barToRemove)
+            for (let i = 0; i < chunkModel.count; i++) {
+                let r = chunkModel.get(i)
+                if (r.rowType === "hidden" && r.chunkIndex === chunkIdx) {
+                    chunkModel.remove(i)
+                    break
+                }
+            }
+        }
+
+        // 6. Update widths
+        for (let line of newLines) {
+            updateMaxContentWidth(line.leftText)
+        }
+    }
+
+    function removeBarsForGap(anyBarIndex, chunkIdx) {
+        // Remove the given bar first
+        chunkModel.remove(anyBarIndex)
+        // Then remove the other bar with the same chunkIndex
+        for (let i = 0; i < chunkModel.count; i++) {
+            let r = chunkModel.get(i)
+            if (r.rowType === "hidden" && r.chunkIndex === chunkIdx) {
+                chunkModel.remove(i)
+                break
+            }
+        }
+    }
+
+    function appendHiddenBar(direction, chunk, chunkIdx) {
+        chunkModel.append({
+            rowType: "hidden",
+            direction: direction,
+            hiddenCount: chunk.hiddenCount || 0,
+            visibleCount: 0,
+            chunkIndex: chunkIdx,
+            firstVisibleIndex: direction === "up" ? -1 : 0,   // used only for up
+            diffType: GitDiff.Context,
+            leftText: "", rightText: "",
+            oldLineNum: -1, newLineNum: -1
+        })
+    }
 }
