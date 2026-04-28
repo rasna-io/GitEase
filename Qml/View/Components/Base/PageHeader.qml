@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
@@ -14,9 +15,10 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string pageTitle: ""
-    property bool showBackButton: true
-    property bool showBrand: true
+    property WindowController   windowController
+    property string             pageTitle:          ""
+    property bool               showBackButton:     true
+    property bool               showBrand:          true
 
     /* Signals
      * ****************************************************************************************/
@@ -85,8 +87,8 @@ Item {
         id: dragArea
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
-        onPressed: WindowController.startSystemMove()
-        onDoubleClicked: WindowController.toggleMaxRestore()
+        onPressed: root.windowController.startSystemMove()
+        onDoubleClicked: root.windowController.toggleMaxRestore()
     }
 }
 

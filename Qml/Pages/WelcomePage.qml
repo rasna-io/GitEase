@@ -15,6 +15,8 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property WindowController      windowController
+
     property WelcomeController     controller
 
     property RepositoryController  repositoryController
@@ -44,6 +46,7 @@ Rectangle {
         // Shared PageHeader for all steps
         PageHeader {
             id: pageHeader
+            windowController: root.windowController
             pageTitle: {
                 switch(root.controller ? root.controller.currentPageIndex : Enums.WelcomePages.WelcomeBanner) {
                     case Enums.WelcomePages.WelcomeBanner: return ""

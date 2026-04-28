@@ -10,7 +10,7 @@ import GitEase
  * FileChangesDock
  * show changed files
  * ************************************************************************************************/
-Item {
+DetachablePanel {
     id : root
 
     property RepositoryController repositoryController: null
@@ -25,14 +25,18 @@ Item {
     property var selectedFile: null
 
     // Property to receive list of fileData objects
-    property int filesColPathWidth: parent.width * 0.4
-    property int filesColExtensionWidth: parent.width * 0.15
-    property int filesColStatusWidth: parent.width * 0.15
-    property int filesColAddedLinesWidth: parent.width * 0.15
-    property int filesColRemovedLinesWidth: parent.width * 0.15
+    property int filesColPathWidth: root.width * 0.4
+    property int filesColExtensionWidth: root.width * 0.15
+    property int filesColStatusWidth: root.width * 0.15
+    property int filesColAddedLinesWidth: root.width * 0.15
+    property int filesColRemovedLinesWidth: root.width * 0.15
     
     // Minimum widths for each column
-    readonly property int minColWidth: parent.width / 7
+    readonly property int minColWidth: root.width / 7
+
+    /* Object Properties
+     * ****************************************************************************************/
+    title: qsTr("File Changes")
 
     /* Signals
      * ****************************************************************************************/
@@ -458,175 +462,153 @@ Item {
                             anchors.bottomMargin: 5
 
                             // Column 1: File Path
-                            ColumnLayout {
-                                Layout.fillWidth: false
+                            RowLayout {
                                 Layout.preferredWidth: root.filesColPathWidth
                                 Layout.fillHeight: true
                                 spacing: 0
 
-                                RowLayout {
+                                Rectangle {
+                                    Layout.preferredWidth: 1
+                                    Layout.fillHeight: true
+                                    width: 1
+                                    color: Style.colors.hoverTitle
+                                }
+
+                                Label {
+                                    text: fileData.path || ""
+                                    color: Style.colors.foreground
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.pixelSize: 10
+                                    font.family: Style.fontTypes.roboto
+                                    font.weight: 400
+                                    font.letterSpacing: 0.2
                                     Layout.fillWidth: true
-
-                                    Rectangle {
-                                        Layout.preferredWidth: 1
-                                        Layout.fillHeight: true
-                                        width: 1
-                                        color: Style.colors.hoverTitle
-                                    }
-
-                                    Label {
-                                        text: fileData.path || ""
-                                        color: Style.colors.foreground
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.pixelSize: 10
-                                        font.family: Style.fontTypes.roboto
-                                        font.weight: 400
-                                        font.letterSpacing: 0.2
-                                        Layout.fillWidth: true
-                                        Layout.leftMargin: 6
-                                        elide: Text.ElideRight
-                                    }
+                                    Layout.leftMargin: 6
+                                    elide: Text.ElideRight
                                 }
                             }
 
                             // Column 2: File Extension
-                            ColumnLayout {
-                                Layout.fillWidth: false
+                            RowLayout {
                                 Layout.preferredWidth: root.filesColExtensionWidth
                                 Layout.fillHeight: true
                                 Layout.alignment: Qt.AlignVCenter
                                 spacing: 0
 
-                                RowLayout {
+                                Rectangle {
+                                    Layout.preferredWidth: 1
+                                    Layout.fillHeight: true
+                                    width: 1
+                                    color: Style.colors.hoverTitle
+                                }
+
+                                Label {
+                                    text: root.getFileExtension(fileData.path) || ""
+                                    color: Style.colors.foreground
+                                    verticalAlignment: Text.AlignVCenter
+                                    horizontalAlignment: Text.AlignHCenter
+                                    font.pixelSize: 10
+                                    font.family: Style.fontTypes.roboto
+                                    font.weight: 400
+                                    font.letterSpacing: 0.2
                                     Layout.fillWidth: true
-
-                                    Rectangle {
-                                        Layout.preferredWidth: 1
-                                        Layout.fillHeight: true
-                                        width: 1
-                                        color: Style.colors.hoverTitle
-                                    }
-
-                                    Label {
-                                        text: root.getFileExtension(fileData.path) || ""
-                                        color: Style.colors.foreground
-                                        verticalAlignment: Text.AlignVCenter
-                                        horizontalAlignment: Text.AlignHCenter
-                                        font.pixelSize: 10
-                                        font.family: Style.fontTypes.roboto
-                                        font.weight: 400
-                                        font.letterSpacing: 0.2
-                                        Layout.fillWidth: true
-                                        Layout.fillHeight: true
-                                        Layout.leftMargin: 6
-                                        elide: Text.ElideRight
-                                    }
+                                    Layout.fillHeight: true
+                                    Layout.leftMargin: 6
+                                    elide: Text.ElideRight
                                 }
                             }
 
                             // Column 3: File Status
-                            ColumnLayout {
+                            RowLayout {
                                 Layout.preferredWidth: root.filesColStatusWidth
                                 Layout.fillHeight: true
                                 spacing: 0
 
-                                RowLayout {
-                                    Layout.fillWidth: true
+                                Rectangle {
+                                    Layout.preferredWidth: 1
+                                    Layout.fillHeight: true
+                                    width: 1
+                                    color: Style.colors.hoverTitle
+                                }
 
-                                    Rectangle {
-                                        Layout.preferredWidth: 1
-                                        Layout.fillHeight: true
-                                        width: 1
-                                        color: Style.colors.hoverTitle
+                                Label {
+                                    text: {
+                                        switch(fileData.deltaStatus) {
+                                            case GitFileStatus.ADDED:
+                                                return "Added"
+                                            case GitFileStatus.DELETED:
+                                                return "Deleted"
+                                            case GitFileStatus.MODIFIED:
+                                                return "Modified"
+                                            case GitFileStatus.RENAMED:
+                                                return "Renamed"
+                                            case GitFileStatus.UNTRACKED:
+                                                return "Untracked"
+                                            default:
+                                                return "Untracked"
+                                        }
                                     }
 
-                                    Label {
-                                        text: {
-                                            switch(fileData.deltaStatus) {
-                                                case GitFileStatus.ADDED:
-                                                    return "Added"
-                                                case GitFileStatus.DELETED:
-                                                    return "Deleted"
-                                                case GitFileStatus.MODIFIED:
-                                                    return "Modified"
-                                                case GitFileStatus.RENAMED:
-                                                    return "Renamed"
-                                                case GitFileStatus.UNTRACKED:
-                                                    return "Untracked"
-                                                default:
-                                                    return "Untracked"
-                                            }
-                                        }
-
-                                        color: Style.colors.titleText
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.pixelSize: 12
-                                        Layout.fillWidth: true
-                                        horizontalAlignment: Text.AlignHCenter
-                                        elide: Text.ElideRight
-                                        wrapMode: Text.NoWrap
-                                        background: Rectangle {
-                                            radius: 3
-                                            color: root.getChangeColor(fileData.deltaStatus)
-                                        }
+                                    color: Style.colors.titleText
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.pixelSize: 12
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    elide: Text.ElideRight
+                                    wrapMode: Text.NoWrap
+                                    background: Rectangle {
+                                        radius: 3
+                                        color: root.getChangeColor(fileData.deltaStatus)
                                     }
                                 }
                             }
 
                             // Column 4: Added Lines
-                            ColumnLayout {
+                            RowLayout {
                                 Layout.preferredWidth: root.filesColAddedLinesWidth
                                 Layout.fillHeight: true
                                 spacing: 0
 
-                                RowLayout {
+                                Rectangle {
+                                    Layout.preferredWidth: 1
+                                    Layout.fillHeight: true
+                                    width: 1
+                                    color: Style.colors.hoverTitle
+                                }
+
+                                Label {
+                                    text: fileData.additionsCount  || "0"
+                                    color: Style.colors.foreground
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.pixelSize: 10
                                     Layout.fillWidth: true
-
-                                    Rectangle {
-                                        Layout.preferredWidth: 1
-                                        Layout.fillHeight: true
-                                        width: 1
-                                        color: Style.colors.hoverTitle
-                                    }
-
-                                    Label {
-                                        text: fileData.additionsCount  || "0"
-                                        color: Style.colors.foreground
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.pixelSize: 10
-                                        Layout.fillWidth: true
-                                        horizontalAlignment: Text.AlignHCenter
-                                        wrapMode: Text.NoWrap
-                                    }
+                                    horizontalAlignment: Text.AlignHCenter
+                                    wrapMode: Text.NoWrap
                                 }
                             }
 
                             // Column 4: Removed Lines
-                            ColumnLayout {
+                            RowLayout {
                                 Layout.preferredWidth: root.filesColRemovedLinesWidth
                                 Layout.fillHeight: true
                                 spacing: 0
 
-                                RowLayout {
+                                Rectangle {
+                                    Layout.preferredWidth: 1
+                                    Layout.fillHeight: true
+                                    width: 1
+                                    color: Style.colors.hoverTitle
+                                }
+
+                                Label {
+                                    text: fileData.deletionsCount  || "0"
+                                    color: Style.colors.foreground
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.pixelSize: 10
                                     Layout.fillWidth: true
-
-                                    Rectangle {
-                                        Layout.preferredWidth: 1
-                                        Layout.fillHeight: true
-                                        width: 1
-                                        color: Style.colors.hoverTitle
-                                    }
-
-                                    Label {
-                                        text: fileData.deletionsCount  || "0"
-                                        color: Style.colors.foreground
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.pixelSize: 10
-                                        Layout.fillWidth: true
-                                        Layout.fillHeight: true
-                                        horizontalAlignment: Text.AlignHCenter
-                                        wrapMode: Text.NoWrap
-                                    }
+                                    Layout.fillHeight: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    wrapMode: Text.NoWrap
                                 }
                             }
                         }
@@ -661,6 +643,7 @@ Item {
         if (res.success)
             root.files = res.data
 
+        root.fileSelected(root.files.length > 0 ? root.files[0].path : "")
     }
 
     /* Functions

@@ -1,6 +1,3 @@
-#include "Remote.h"
-#include "Src/Utilities/windowsManager/windowcontroller.hpp"
-
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QIcon>
@@ -33,10 +30,6 @@ int main(int argc, char *argv[])
         return -1;
 
     win->setIcon(app.windowIcon());
-
-    auto controller = WindowController(win, &app);
-    engine.rootContext()->setContextProperty(QStringLiteral("WindowController"), &controller);
-    win->show();
 
     return app.exec();
 }

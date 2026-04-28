@@ -33,6 +33,7 @@ Rectangle {
             Layout.maximumHeight: 50
             Layout.fillWidth: true
 
+            windowController: root.uiSession.windowController
             content: (pageLoader.item && pageLoader.item.hasOwnProperty("headerContent")) ? pageLoader.item.headerContent : null
         }
 
@@ -169,6 +170,9 @@ Rectangle {
                         }
                         if (item.hasOwnProperty("conflictController")) {
                             item.conflictController = Qt.binding(function() { return root.uiSession?.conflictController })
+                        }
+                        if (item.hasOwnProperty("windowController")) {
+                            item.windowController = Qt.binding(function() {return root.uiSession?.windowController})
                         }
                     }
 

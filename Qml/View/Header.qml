@@ -16,7 +16,8 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property Component content
+    property WindowController   windowController
+    property Component          content
 
     /* Children
      * ****************************************************************************************/
@@ -25,8 +26,8 @@ Item {
         id: dragArea
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
-        onPressed: WindowController.startSystemMove()
-        onDoubleClicked: WindowController.toggleMaxRestore()
+        onPressed: windowController.startSystemMove()
+        onDoubleClicked: windowController.toggleMaxRestore()
     }
 
     ColumnLayout {
@@ -57,6 +58,8 @@ Item {
 
             WindowsHeader {
                 Layout.preferredWidth: 120
+
+                windowController: root.windowController
             }
         }
 
