@@ -41,8 +41,14 @@ Item {
             return true;
 
         let model = diffModel || fileModel;
-        let prevItem = model ? model.get(index - 1) : null;
-        return prevItem ? prevItem.type === GitDiff.Context : false;
+        if (!model)
+            return false;
+
+        let prevItem = model.get(index - 1);
+        if (!prevItem)
+            return false;
+
+        return prevItem.rowType !== "diff";
     }
 
 
