@@ -523,9 +523,12 @@ Item {
                 conflictController: root.conflictController
 
                 onCommitClicked: function(commitId) {
-                    let node = commitGraph.commits.find(c => c.hash === commitId);
-
                     root.selectedCommit = commitId;
+
+                    if(commitId !== "__uncommitted__")
+                        return
+
+                    let node = commitGraph.commits.find(c => c.hash === commitId);
 
                     if (node && node.isUncommitted) {
                         let res = statusController.status()
