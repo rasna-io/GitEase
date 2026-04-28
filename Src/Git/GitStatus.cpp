@@ -811,6 +811,90 @@ GitResult GitStatus::getStagedDiff(const QString &filePath)
     return GitResult(true, QVariant::fromValue(result));
 }
 
+GitResult GitStatus::getChunkedDiffView(const QString &filePath, bool staged)
+{
+    GitResult diffRes = staged ? getStagedDiff(filePath) : getDiff(filePath);
+    if (!diffRes.success())
+        return diffRes;
+
+    QList<GitDiff> diffList = diffRes.data().value<QList<GitDiff>>();
+
+    QVariantList allLines;
+    for (const GitDiff &d : diffList) {
+        allLines.append(gitDiffToMap(d));
+    }
+
+    QVariantList chunks;
+
+    int i = 0;
+    const int N = allLines.size();
+
+    while (i < N) {
+        QVariantMap line = allLines[i].toMap();
+
+        if (isContextLine(line)) {
+            int ctxStart = i;
+            while (i < N && isContextLine(allLines[i].toMap()))
+                i++;
+
+            int ctxEnd = i - 1;
+
+            QVariantMap hidden;
+            hidden["chunkType"]   = "hidden";
+            hidden["hiddenCount"] = ctxEnd - ctxStart + 1;
+
+            QVariantMap first   = allLines[ctxStart].toMap();
+            hidden["oldStart"]  = first["oldLine"];
+            hidden["newStart"]  = first["newLine"];
+
+            QVariantList hiddenLines;
+            for (int j = ctxStart; j <= ctxEnd; ++j)
+                hiddenLines.append(allLines[j]);
+            hidden["hiddenLines"] = hiddenLines;
+
+            chunks.append(hidden);
+        } else {
+            int hunkStart = i;
+            while (i < N && !isContextLine(allLines[i].toMap())) i++;
+            int hunkEnd = i - 1;
+
+            QVariantMap changed;
+            changed["chunkType"] = "changed";
+            changed["oldStart"]  = allLines[hunkStart].toMap()["oldLine"];
+            changed["oldEnd"]    = allLines[hunkEnd].toMap()["oldLine"];
+            changed["newStart"]  = allLines[hunkStart].toMap()["newLine"];
+            changed["newEnd"]    = allLines[hunkEnd].toMap()["newLine"];
+
+            QVariantList lines;
+            for (int j = hunkStart; j <= hunkEnd; ++j)
+                lines.append(allLines[j]);
+            changed["lines"] = lines;
+
+            chunks.append(changed);
+        }
+    }
+
+    QVariantMap resultData;
+    resultData["chunks"] = chunks;
+    return GitResult(true, resultData);
+}
+
+QVariantMap GitStatus::gitDiffToMap(const GitDiff &d)
+{
+    QVariantMap m;
+    m["type"]       = static_cast<int>(d.type());
+    m["oldLine"]    = d.oldLine();
+    m["newLine"]    = d.newLine();
+    m["content"]    = d.content();
+    m["newContent"] = d.newContent();
+    return m;
+}
+
+bool GitStatus::isContextLine(const QVariantMap &line) const
+{
+    return line.value("type").toInt() == static_cast<int>(GitDiff::Context);
+}
+
 GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, int endLine, int mode)
 {
     if (!m_currentRepo || !m_currentRepo->repo)
