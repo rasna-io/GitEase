@@ -114,29 +114,41 @@ DetachablePanel {
             delegate: Item{
                 id: delegateItem
                 width: diffListView.width
-                height: model.rowType === "hidden" ? 18 : diffLineItem.height
+                height: model.rowType === "hidden" ? 24 : diffLineItem.height
 
-                MouseArea{
-                    id: hiddenMarker
+                Item {
                     anchors.fill: parent
                     visible: model.rowType === "hidden"
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.expandHiddenBlock(index, model.direction)
+
+                    MouseArea{
+                        id: hiddenMarker
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.expandHiddenBlock(index, model.direction)
+                    }
+
+                    Rectangle{
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width
+                        height: 1
+                        color: hiddenMarker.containsMouse ? Style.colors.accent
+                                                          : Style.colors.primaryBorder
+                    }
 
                     Row {
                         anchors.centerIn: parent
-                        spacing: 4
+                        spacing: 6
                         Label {
                             text: model.direction === "up" ? Style.icons.arrowUpToLine : Style.icons.arrowDownToLine
                             font.family: Style.fontTypes.font6Pro
                             font.pixelSize: 12
                             color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground
-                                                              : Qt.darker(Style.colors.secondaryForeground, 1.4)
+                                                              : Style.colors.secondaryText
                             padding: 4
                             background: Rectangle {
                                 color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                                 : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
+                                                                  : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
                                 radius: 4
                             }
                         }
@@ -145,11 +157,11 @@ DetachablePanel {
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 9
                             color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground
-                                                              : Qt.darker(Style.colors.secondaryForeground, 1.4)
+                                                              : Style.colors.secondaryText
                             padding: 3
                             background: Rectangle {
                                 color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                                 : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
+                                                                  : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
                                 radius: 3
                             }
                         }
