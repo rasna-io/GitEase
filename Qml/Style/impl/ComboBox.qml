@@ -6,6 +6,7 @@ import QtQuick.Templates as T
 import QtQuick.Controls.Material
 import QtQuick.Controls.Material.impl
 
+import GitEase
 import GitEase_Style
 
 T.ComboBox {
@@ -37,12 +38,10 @@ T.ComboBox {
 
         width: control.width
         height: control.minHeight
-        contentItem: Text {
+        contentItem: ScrollingText {
             text:  model[control.textRole]
             font: control.font
             color: control.Material.foreground
-            elide: Text.ElideRight
-            verticalAlignment: Text.AlignVCenter
         }
         highlighted: control.highlightedIndex === index
     }
