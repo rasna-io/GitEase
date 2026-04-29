@@ -88,7 +88,7 @@ UtilitiesCard {
                             text: modelData.commitId.substring(0, 7)
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 10
-                            color: Style.colors.secondaryForeground
+                            color: Style.colors.mutedText
 
                             Layout.fillWidth: true
                             elide: Text.ElideRight
