@@ -106,8 +106,8 @@ DetachablePanel {
             clip: true
             model: chunkMode ? chunkModel : fileModel
 
-            cacheBuffer: 5000
-            reuseItems: true
+            cacheBuffer: 0
+            reuseItems: false
             anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
             ScrollBar.vertical: ScrollBar { active: true }
 
