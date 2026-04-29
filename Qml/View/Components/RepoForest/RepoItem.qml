@@ -71,7 +71,7 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 6
 
-                Text {
+                ScrollingText {
                     Layout.fillWidth: true
                     text: root.modelData.name
                     font.pixelSize: 12
@@ -79,7 +79,6 @@ Rectangle {
                     font.weight: 400
                     font.letterSpacing: 0
                     color: Style.colors.foreground
-                    elide: Text.ElideRight
                 }
 
                 Rectangle {
@@ -197,13 +196,12 @@ Rectangle {
                         color: Style.colors.foreground
                     }
 
-                    Text {
+                    ScrollingText {
                         Layout.fillWidth: true
                         text: root.modelData.path
                         font.pixelSize: 12
                         font.family: Style.fontTypes.roboto
                         color: Style.colors.mutedText
-                        elide: Text.ElideMiddle
                         font.weight: 400
                         font.letterSpacing: 0
                     }
@@ -220,13 +218,12 @@ Rectangle {
                         color: Style.colors.foreground
                     }
 
-                    Text {
+                    ScrollingText {
                         Layout.fillWidth: true
                         text: root.modelData.branchName
                         font.pixelSize: 12
                         font.family: Style.fontTypes.roboto
                         color: Style.colors.mutedText
-                        elide: Text.ElideMiddle
                         font.weight: 400
                         font.letterSpacing: 0
                     }
@@ -245,13 +242,12 @@ Rectangle {
                     color: Style.colors.foreground
                 }
 
-                Text {
+                ScrollingText {
                     Layout.fillWidth: true
                     text: root.modelData.remote
                     font.pixelSize: 12
                     font.family: Style.fontTypes.roboto
                     color: Style.colors.mutedText
-                    elide: Text.ElideMiddle
                     font.weight: 400
                     font.letterSpacing: 0
                 }

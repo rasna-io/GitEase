@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
@@ -29,13 +30,12 @@ IPopup {
             anchors.margins: 20
             spacing: 0
 
-            Text {
+            ScrollingText {
                 text: root.sourceBranch + "  →  " + root.targetBranch
                 color: Style.colors.foreground
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 13
                 font.bold: true
-                elide: Text.ElideMiddle
                 Layout.fillWidth: true
                 Layout.bottomMargin: 16
             }

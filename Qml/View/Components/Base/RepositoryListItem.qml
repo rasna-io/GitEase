@@ -81,12 +81,11 @@ Rectangle {
             }
 
             // Path
-            Text {
+            ScrollingText {
                 text: root.path
                 font.pixelSize: 12
                 font.family: Style.fontTypes.roboto
                 color: root.isSelected ? Style.colors.secondaryForeground : root.isExists ? Style.colors.mutedText : Style.colors.error
-                elide: Text.ElideMiddle
                 font.weight: 400
                 font.strikeout: !root.isExists
                 font.letterSpacing: 0
