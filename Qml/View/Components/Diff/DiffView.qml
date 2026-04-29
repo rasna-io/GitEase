@@ -259,6 +259,9 @@ DetachablePanel {
 
     // Called by Delegate when user presses Backspace at start
     function mergeLineUp(index) {
+        if (chunkMode)
+            return
+
         if (index === 0) return;
 
         var currentRow = fileModel.get(index)
