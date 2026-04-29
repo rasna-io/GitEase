@@ -474,17 +474,15 @@ DetachablePanel {
                                     color: Style.colors.hoverTitle
                                 }
 
-                                Label {
+                                ScrollingText {
                                     text: fileData.path || ""
                                     color: Style.colors.foreground
-                                    verticalAlignment: Text.AlignVCenter
                                     font.pixelSize: 10
                                     font.family: Style.fontTypes.roboto
                                     font.weight: 400
                                     font.letterSpacing: 0.2
                                     Layout.fillWidth: true
                                     Layout.leftMargin: 6
-                                    elide: Text.ElideRight
                                 }
                             }
 
