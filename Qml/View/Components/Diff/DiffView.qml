@@ -141,7 +141,7 @@ DetachablePanel {
                             }
                         }
                         Label {
-                            text: model.hiddenCount - model.visibleCount
+                            text: model.remaining
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 9
                             color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground
@@ -316,6 +316,9 @@ DetachablePanel {
                     updateMaxContentWidth(right)
                 }
             } else if (chunk.chunkType === "hidden") {
+                chunk.visibleTop = 0
+                chunk.visibleBottom = 0
+
                 let prevChunk = (c > 0) ? chunkData[c-1] : null
                 let nextChunk = (c < chunkData.length-1) ? chunkData[c+1] : null
 
@@ -324,7 +327,7 @@ DetachablePanel {
                         rowType: "hidden",
                         direction: "down",
                         hiddenCount: chunk.hiddenCount,
-                        visibleCount: 0,
+                        remaining: chunk.hiddenCount,
                         chunkIndex: c
                     })
                 }
@@ -334,138 +337,145 @@ DetachablePanel {
                         rowType: "hidden",
                         direction: "up",
                         hiddenCount: chunk.hiddenCount,
-                        visibleCount: 0,
+                        remaining: chunk.hiddenCount,
                         chunkIndex: c
                     })
                 }
             }
         }
-    }
+        if (root.contextLines > 0) {
+            let processedChunks = []
+            for (let c = 0; c < chunkData.length; c++) {
+                let chunk = chunkData[c]
+                if (chunk.chunkType !== "hidden")
+                    continue
 
-    function expandHiddenBlock(modelIndex, direction) {
-        let row = chunkModel.get(modelIndex)
-        if (!row || row.rowType !== "hidden") 
-            return
-
-        let chunk = chunkData[row.chunkIndex]
-        if (!chunk || chunk.chunkType !== "hidden" || !chunk.hiddenLines) 
-            return
-
-        let remaining = row.hiddenCount - row.visibleCount
-        let toShow = Math.min(expandLines, remaining)
-        if (toShow <= 0) return
-
-        let hiddenLines = chunk.hiddenLines
-        let newLines = []
-        let oldVisible = row.visibleCount
-        let oldBarIndex = modelIndex
-        let chunkIdx = row.chunkIndex
-        let totalHidden = row.hiddenCount
-
-        // 1. Prepare the new context lines
-        if (direction === "down") {
-            for (let i = 0; i < toShow; i++) {
-                let lineObj = hiddenLines[oldVisible + i]
-                if (!lineObj) break
-                newLines.push({
-                    rowType: "context",
-                    diffType: GitDiff.Context,
-                    leftText: lineObj.content,
-                    rightText: lineObj.content,
-                    oldLineNum: lineObj.oldLine,
-                    newLineNum: lineObj.newLine
-                })
-            }
-        } else {  // "up"
-            let endIdx = hiddenLines.length - 1 - oldVisible
-            for (let i = 0; i < toShow; i++) {
-                let idx = endIdx - i
-                if (idx < 0) break
-                let lineObj = hiddenLines[idx]
-                newLines.push({
-                    rowType: "context",
-                    diffType: GitDiff.Context,
-                    leftText: lineObj.content,
-                    rightText: lineObj.content,
-                    oldLineNum: lineObj.oldLine,
-                    newLineNum: lineObj.newLine
-                })
-            }
-            newLines.sort((a, b) => a.oldLineNum - b.oldLineNum)
-        }
-
-        // 2. Remove the bar temporarily
-        chunkModel.remove(oldBarIndex)
-
-        // 3. Insert the new lines at the bar's old position
-        for (let i = 0; i < newLines.length; i++) {
-            chunkModel.insert(oldBarIndex + i, newLines[i])
-        }
-
-        // 4. Re-insert the bar at the correct new position
-        let newVisible = oldVisible + toShow
-        let barProperties = {
-            rowType: "hidden",
-            direction: direction,
-            hiddenCount: totalHidden,
-            visibleCount: newVisible,
-            chunkIndex: chunkIdx,
-            diffType: GitDiff.Context,
-            leftText: "", rightText: "",
-            oldLineNum: -1, newLineNum: -1
-        }
-
-        if (direction === "down") {
-            // Bar goes after the new lines
-            chunkModel.insert(oldBarIndex + toShow, barProperties)
-        } else {
-            // Bar goes before the new lines (stay at oldBarIndex)
-            chunkModel.insert(oldBarIndex, barProperties)
-        }
-
-        // 5. If fully expanded, remove this bar and its sibling
-        if (newVisible >= totalHidden) {
-            let barToRemove = direction === "down" ? oldBarIndex + toShow : oldBarIndex
-            chunkModel.remove(barToRemove)
-            for (let i = 0; i < chunkModel.count; i++) {
-                let r = chunkModel.get(i)
-                if (r.rowType === "hidden" && r.chunkIndex === chunkIdx) {
-                    chunkModel.remove(i)
-                    break
+                let downIdx = -1, upIdx = -1
+                for (let i = 0; i < chunkModel.count; i++) {
+                    let r = chunkModel.get(i)
+                    if (r.rowType === "hidden" && r.chunkIndex === c) {
+                        if (r.direction === "down") downIdx = i
+                        else if (r.direction === "up") upIdx = i
+                    }
+                }
+                if (downIdx !== -1) {
+                    root.expandHiddenBlock(downIdx, "down", root.contextLines)
+                    if (upIdx !== -1) {
+                        upIdx = -1
+                        for (let j = 0; j < chunkModel.count; j++) {
+                            let r = chunkModel.get(j)
+                            if (r.rowType === "hidden" && r.chunkIndex === c && r.direction === "up")
+                                upIdx = j
+                        }
+                    }
+                }
+                if (upIdx !== -1) {
+                    root.expandHiddenBlock(upIdx, "up", root.contextLines)
                 }
             }
         }
-
-        // 6. Update widths
-        for (let line of newLines) {
-            updateMaxContentWidth(line.leftText)
-        }
     }
 
-    function removeBarsForGap(anyBarIndex, chunkIdx) {
-        // Remove the given bar first
-        chunkModel.remove(anyBarIndex)
-        // Then remove the other bar with the same chunkIndex
+    function expandHiddenBlock(modelIndex, direction, customCount) {
+        let bar = chunkModel.get(modelIndex)
+        if (!bar || bar.rowType !== "hidden")
+            return
+
+        let chunk = chunkData[bar.chunkIndex]
+        if (!chunk || chunk.chunkType !== "hidden" || !chunk.hiddenLines)
+            return
+
+        let totalHidden = chunk.hiddenCount
+        let visibleTop = chunk.visibleTop || 0
+        let visibleBottom = chunk.visibleBottom || 0
+        let remaining = totalHidden - visibleTop - visibleBottom
+        if (remaining <= 0)
+            return
+
+        let toShow = Math.min(customCount !== undefined ? customCount : root.expandLines, remaining)
+        if (toShow <= 0)
+            return
+
+        let hiddenLines = chunk.hiddenLines
+        let newLines = []
+        let oldBarIndex = modelIndex
+        let chunkIdx = bar.chunkIndex
+
+        if (direction === "down") {
+            for (let i = 0; i < toShow; i++) {
+                let lineObj = hiddenLines[visibleTop + i]
+                if (!lineObj) break
+                newLines.push(makeContextLine(lineObj))
+            }
+
+            chunkModel.remove(oldBarIndex)
+            for (let i = 0; i < newLines.length; i++)
+                chunkModel.insert(oldBarIndex + i, newLines[i])
+
+            chunk.visibleTop = visibleTop + toShow
+
+            let newRemaining = totalHidden - chunk.visibleTop - chunk.visibleBottom
+            chunkModel.insert(oldBarIndex + toShow, {
+                rowType: "hidden",
+                direction: "down",
+                hiddenCount: totalHidden,
+                remaining: newRemaining,
+                chunkIndex: chunkIdx
+            })
+
+        } else { // "up"
+            let endIdx = hiddenLines.length - 1 - visibleBottom
+            for (let i = 0; i < toShow; i++) {
+                let idx = endIdx - i
+                if (idx < 0) break
+                newLines.push(makeContextLine(hiddenLines[idx]))
+            }
+            newLines.sort((a, b) => a.oldLineNum - b.oldLineNum)
+
+            chunkModel.remove(oldBarIndex)
+            for (let i = 0; i < newLines.length; i++)
+                chunkModel.insert(oldBarIndex + i, newLines[i])
+
+            chunk.visibleBottom = visibleBottom + toShow
+
+            let newRemaining = totalHidden - chunk.visibleTop - chunk.visibleBottom
+            chunkModel.insert(oldBarIndex, {
+                rowType: "hidden",
+                direction: "up",
+                hiddenCount: totalHidden,
+                remaining: newRemaining,
+                chunkIndex: chunkIdx
+            })
+        }
+
+        let finalRemaining = totalHidden - chunk.visibleTop - chunk.visibleBottom
         for (let i = 0; i < chunkModel.count; i++) {
             let r = chunkModel.get(i)
             if (r.rowType === "hidden" && r.chunkIndex === chunkIdx) {
-                chunkModel.remove(i)
-                break
+                chunkModel.setProperty(i, "remaining", finalRemaining)
             }
         }
+
+        if (finalRemaining <= 0) {
+            for (let i = chunkModel.count - 1; i >= 0; i--) {
+                let r = chunkModel.get(i)
+                if (r.rowType === "hidden" && r.chunkIndex === chunkIdx)
+                    chunkModel.remove(i)
+            }
+        }
+
+        for (let line of newLines)
+            updateMaxContentWidth(line.leftText)
     }
 
-    function appendHiddenBar(direction, chunk, chunkIdx) {
-        chunkModel.append({
-            rowType: "hidden",
-            direction: direction,
-            hiddenCount: chunk.hiddenCount || 0,
-            visibleCount: 0,
-            chunkIndex: chunkIdx,
-            firstVisibleIndex: direction === "up" ? -1 : 0,   // used only for up
+    function makeContextLine(lineObj) {
+        return {
+            rowType: "context",
             diffType: GitDiff.Context,
-            leftText: "", rightText: "",
-            oldLineNum: -1, newLineNum: -1
-        })
+            leftText: lineObj.content,
+            rightText: lineObj.content,
+            oldLineNum: lineObj.oldLine,
+            newLineNum: lineObj.newLine
+        }
     }
 }
