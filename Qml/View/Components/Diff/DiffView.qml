@@ -128,7 +128,7 @@ DetachablePanel {
                         anchors.centerIn: parent
                         spacing: 4
                         Label {
-                            text: model.direction === "up" ? Style.icons.caretUp : Style.icons.caretDown
+                            text: model.direction === "up" ? Style.icons.arrowUpToLine : Style.icons.arrowDownToLine
                             font.family: Style.fontTypes.font6Pro
                             font.pixelSize: 12
                             color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground

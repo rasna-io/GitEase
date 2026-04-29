@@ -65,4 +65,7 @@ QtObject{
     property string calendarCheck:     "\uf274" // calendar-check
     property string clockRotateLeft:   "\uf1da" // clock-rotate-left (history)
     property string list:              "\uf03a" // list
+
+    property string arrowUpToLine:     "\uf341"
+    property string arrowDownToLine:   "\uf33d"
 }
