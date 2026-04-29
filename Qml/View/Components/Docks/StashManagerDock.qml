@@ -96,13 +96,12 @@ UtilitiesCard {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 1
-                        Text {
+                        ScrollingText {
                             Layout.fillWidth: true
                             text: modelData.message || qsTr("WIP on %1").arg(modelData.author || "unknown")
                             color: Style.colors.foreground
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 11
-                            elide: Text.ElideMiddle
                         }
                         Text {
                             Layout.fillWidth: true

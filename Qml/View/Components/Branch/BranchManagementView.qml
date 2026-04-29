@@ -88,14 +88,13 @@ UtilitiesCard {
                         visible: branch.name === root.currentBranch
                     }
 
-                    Text {
+                    ScrollingText {
                         text: branch.name
                         Layout.fillWidth: true
                         font.family: Style.fontTypes.roboto
                         font.pixelSize: 12
                         font.bold: branch.name === root.currentBranch
                         color: Style.colors.foreground
-                        elide: Text.ElideMiddle
                     }
 
                     RowLayout {

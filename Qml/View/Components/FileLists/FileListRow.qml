@@ -97,7 +97,7 @@ Rectangle {
         anchors.rightMargin: 6
         spacing: 8
 
-        Text {
+        ScrollingText {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
 
@@ -105,7 +105,6 @@ Rectangle {
             font.family: Style.fontTypes.roboto
             font.pixelSize: 12
             color: Style.colors.secondaryText
-            elide: Text.ElideRight
         }
 
         Loader {

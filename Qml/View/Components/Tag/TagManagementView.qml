@@ -74,7 +74,7 @@ UtilitiesCard {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
 
-                        Text {
+                        ScrollingText {
                             text: modelData.name
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 12
@@ -82,7 +82,6 @@ UtilitiesCard {
                             color: Style.colors.foreground
 
                             Layout.fillWidth: true
-                            elide: Text.ElideRight
                         }
 
                         Text {

@@ -193,13 +193,12 @@ IPopup {
                                     font.bold: true
                                 }
 
-                                Text {
+                                ScrollingText {
                                     text: modelData.path || ""
                                     color: Style.colors.foreground
                                     font.family: Style.fontTypes.roboto
                                     font.pixelSize: 13
                                     Layout.fillWidth: true
-                                    elide: Text.ElideMiddle
                                 }
                             }
 
