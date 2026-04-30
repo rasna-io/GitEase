@@ -87,7 +87,7 @@ ColumnLayout {
 
                             Text {
                                 text: tabData.title || ""
-                                font.pixelSize: Style.appFont.defaultPt * 0.8
+                                font.pixelSize: 12
                                 font.bold: tabButton.checked
                                 color: tabButton.checked ? "white" : Style.colors.foreground
                             }
