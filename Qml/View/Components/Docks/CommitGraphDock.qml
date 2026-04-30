@@ -1376,7 +1376,7 @@ DetachablePanel {
                                         for (var calcIdx = 0; calcIdx < allLabels.length; calcIdx++) {
                                             var calcLabelInfo = allLabels[calcIdx];
                                             var isTag = calcLabelInfo.isTag;
-                                            ctx.font = "11px sans-serif";
+                                            ctx.font = "bold 11px sans-serif";
                                             ctx.textAlign = "left";
                                             var calcTextMetrics = ctx.measureText(calcLabelInfo.text);
                                             var extraSpace = isTag ? 20 : 8;
@@ -1432,10 +1432,10 @@ DetachablePanel {
                                                 ctx.font = "9px sans-serif";
                                                 ctx.fillText(Style.icons.tag, labelX + 4, labelY);
 
-                                                ctx.font = "bold 11px 'Segoe UI', Arial, sans-serif";
+                                                ctx.font = "bold 11px sans-serif";
                                                 ctx.fillText(labelInfo.text, labelX + 20, labelY);
                                             } else {
-                                                ctx.font = "bold 11px 'Segoe UI', Arial, sans-serif";
+                                                ctx.font = "bold 11px sans-serif";
                                                 ctx.fillText(labelInfo.text, labelX + 8, labelY);
                                             }
 
