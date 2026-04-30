@@ -474,7 +474,7 @@ DetachablePanel {
                                     color: Style.colors.hoverTitle
                                 }
 
-                                ScrollingText {
+                                Label {
                                     text: fileData.path || ""
                                     color: Style.colors.foreground
                                     font.pixelSize: 10
@@ -483,6 +483,7 @@ DetachablePanel {
                                     font.letterSpacing: 0.2
                                     Layout.fillWidth: true
                                     Layout.leftMargin: 6
+                                    elide: Text.ElideLeft
                                 }
                             }
 
