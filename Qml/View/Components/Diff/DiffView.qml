@@ -175,7 +175,9 @@ DetachablePanel {
                     horizontalOffset: diffListView.horizontalScrollOffset
                     readOnly: root.readOnly || (root.chunkMode && model.rowType === "context")
                     diffModel: diffListView.model
-                    diffType: (model.diffType !== undefined) ? model.diffType : GitDiff.Context
+                    diffType: (model.diffType !== undefined) ? model.diffType
+                             : (model.type !== undefined) ? model.type
+                             : GitDiff.Context
                     leftContent:  model.leftText  || ""
                     rightContent: model.rightText || ""
                     leftLineNum:  model.oldLineNum !== undefined ? model.oldLineNum : -1
