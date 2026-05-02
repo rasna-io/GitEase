@@ -13,6 +13,7 @@
 #include "GitFileStatus.h"
 #include "GitResult.h"
 #include "IGitController.h"
+#include "GitDiff.h"
 
 // Smart pointer deleters for libgit2 types
 struct IndexDeleter { void operator()(git_index* p) const { git_index_free(p); } };
@@ -168,6 +169,10 @@ public:
     Q_INVOKABLE GitResult revertAll();
 
     Q_INVOKABLE QString getHeadHash();
+
+    /// Returns a QVariantList of chunk objects ready for QML
+    Q_INVOKABLE GitResult getChunkedDiffView(const QString &filePath, bool staged);
+
 private:
     /**
      * @brief Get unstaged diff view (index to workdir).
@@ -270,4 +275,7 @@ private:
     * @return GitResult success status.
     */
     GitResult writeIndexFromBuffer(git_repository *repo, const QString &filePath, const QByteArray &contentUtf8, uint32_t modeIfKnown);
+
+    QVariantMap gitDiffToMap(const GitDiff &d);
+    bool isContextLine(const QVariantMap &line) const;
 };

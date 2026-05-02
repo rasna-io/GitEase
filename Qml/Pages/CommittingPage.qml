@@ -1228,6 +1228,9 @@ Item {
             DiffView {
                 id: diffView
                 anchors.fill: parent
+                chunkMode: true
+                contextLines: 0
+                expandLines: 10
                 onRequestStage: function (start, end, type) {
                     let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
                     if (res.success) {
@@ -1254,9 +1257,16 @@ Item {
     function updateDiff(isStaged) {
         let oldY = diffView.scrollPosition;
 
-        let res = root.statusController.getDiffView(root.selectedFilePath, isStaged)
-        if (res.success) {
-            diffView.diffData = res.data.lines
+        if(diffView.chunkMode){
+            let res = root.statusController.getChunkedDiffView(root.selectedFilePath, isStaged)
+            if (res.success) {
+                diffView.chunkData = res.data.chunks
+            }
+        }else{
+            let res = root.statusController.getDiffView(root.selectedFilePath, isStaged)
+            if (res.success) {
+                diffView.diffData = res.data.lines
+            }
         }
 
         diffView.readOnly = isStaged
