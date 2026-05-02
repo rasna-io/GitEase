@@ -2219,6 +2219,8 @@ DetachablePanel {
         if (!c)
             return
 
+        root.setSingleSelection(c, i)
+
         root.selectedCommit = c
         root.commitClicked(c.hash)
 
