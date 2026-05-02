@@ -221,21 +221,19 @@ UtilitiesCard {
                             spacing: 2
                             clip: true
 
-                            Text {
+                            ScrollingText {
                                 Layout.fillWidth: true
                                 text: currentRemote.name
                                 color: Style.colors.foreground
                                 font.family: Style.fontTypes.roboto
                                 font.pixelSize: 12
-                                elide: Text.ElideRight
                             }
-                            Text {
+                            ScrollingText {
                                 Layout.fillWidth: true
                                 text: currentRemote.url
                                 color: Style.colors.mutedText
                                 font.family: Style.fontTypes.roboto
                                 font.pixelSize: 10
-                                elide: Text.ElideRight
                             }
                         }
 

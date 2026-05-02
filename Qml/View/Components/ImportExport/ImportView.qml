@@ -57,13 +57,12 @@ Item {
                     Layout.preferredHeight: 40
                     radius: 5
                     color: Style.colors.secondaryBackground
-                    Text {
+                    ScrollingText {
                         id: fileLabel
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.leftMargin: 15
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        elide: Text.ElideLeft
                         color: root.selectedFile === "" ? Style.colors.placeholderText : Style.colors.secondaryText
                         text: root.selectedFile !== "" ? root.selectedFile : "Select .bundle file..."
                     }

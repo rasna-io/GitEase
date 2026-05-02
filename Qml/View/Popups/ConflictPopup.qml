@@ -206,13 +206,12 @@ IPopup {
                                     font.pixelSize: 12
                                     opacity: 0.7
                                 }
-                                Text {
+                                ScrollingText {
                                     Layout.fillWidth: true
                                     text: modelData.path || ""
                                     font.family: Style.fontTypes.roboto
                                     color: Style.colors.lineNumberColor
                                     font.pixelSize: 13
-                                    elide: Text.ElideMiddle
                                 }
 
                                 Item {

@@ -43,13 +43,24 @@ UtilitiesCard {
                         anchors.margins: 8
                         spacing: 4
 
-                        Text {
+                        RowLayout {
                             Layout.fillWidth: true
-                            text: "$ " + modelData.command
-                            color: Style.colors.foreground
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 11
-                            elide: Text.ElideRight
+                            spacing: 1
+
+                            Text  {
+                                color: Style.colors.foreground
+                                font.family: Style.fontTypes.roboto
+                                font.pixelSize: 11
+                                text: "$ "
+                            }
+
+                            ScrollingText  {
+                                Layout.fillWidth: true
+                                color: Style.colors.foreground
+                                font.family: Style.fontTypes.roboto
+                                font.pixelSize: 11
+                                text: modelData.command
+                            }
                         }
 
                         Text {

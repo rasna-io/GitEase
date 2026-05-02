@@ -116,7 +116,7 @@ Popup {
                 }
 
                 // Label
-                Text {
+                ScrollingText {
                     text: modelData.text || ""
                     font.family: Style.fontTypes.roboto
                     font.pixelSize: 12

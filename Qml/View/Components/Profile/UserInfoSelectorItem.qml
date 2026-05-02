@@ -138,13 +138,11 @@ Rectangle {
                 }
             }
 
-            Text {
+            ScrollingText {
                 text: root.email
                 font.pixelSize: 11
                 font.family: Style.fontTypes.roboto
                 color: Style.colors.mutedText
-                elide: Text.ElideRight
-                verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true
             }
         }
