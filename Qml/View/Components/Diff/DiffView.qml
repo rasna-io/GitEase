@@ -116,55 +116,18 @@ DetachablePanel {
                 width: diffListView.width
                 height: model.rowType === "hidden" ? 24 : diffLineItem.height
 
-                Item {
+                Loader {
                     anchors.fill: parent
-                    visible: model.rowType === "hidden"
+                    active: root.chunkMode && model.rowType === "hidden"
+                    sourceComponent: hiddenBarComponent
 
-                    MouseArea{
-                        id: hiddenMarker
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.expandHiddenBlock(index, model.direction)
-                    }
+                    onLoaded: {
+                        if (!item)
+                            return
 
-                    Rectangle{
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width
-                        height: 1
-                        color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                          : Style.colors.primaryBorder
-                    }
-
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 6
-                        Label {
-                            text: model.direction === "up" ? Style.icons.arrowUpToLine : Style.icons.arrowDownToLine
-                            font.family: Style.fontTypes.font6Pro
-                            font.pixelSize: 12
-                            color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground
-                                                              : Style.colors.secondaryText
-                            padding: 4
-                            background: Rectangle {
-                                color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                                  : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                                radius: 4
-                            }
-                        }
-                        Label {
-                            text: model.remaining
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 9
-                            color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground
-                                                              : Style.colors.secondaryText
-                            padding: 3
-                            background: Rectangle {
-                                color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                                  : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                                radius: 3
-                            }
-                        }
+                        item.direction      = Qt.binding(function() { return model.direction })
+                        item.remaining      = Qt.binding(function() { return model.remaining })
+                        item.delegateIndex  = Qt.binding(function() { return index })
                     }
                 }
 
@@ -175,7 +138,9 @@ DetachablePanel {
                     horizontalOffset: diffListView.horizontalScrollOffset
                     readOnly: root.readOnly || (root.chunkMode && model.rowType === "context")
                     diffModel: diffListView.model
-                    diffType: (model.diffType !== undefined) ? model.diffType : GitDiff.Context
+                    diffType: (model.diffType !== undefined) ? model.diffType
+                             : (model.type !== undefined) ? model.type
+                             : GitDiff.Context
                     leftContent:  model.leftText  || ""
                     rightContent: model.rightText || ""
                     leftLineNum:  model.oldLineNum !== undefined ? model.oldLineNum : -1
@@ -205,6 +170,61 @@ DetachablePanel {
             onPositionChanged: {
                 // Calculate the pixel offset based on scrollbar position
                 diffListView.horizontalScrollOffset = position * diffListView.maxContentWidth
+            }
+        }
+    }
+
+    Component {
+        id: hiddenBarComponent
+        Item {
+            property string direction: ""
+            property int remaining: 0
+            property int delegateIndex: -1
+
+            anchors.fill: parent
+
+            MouseArea {
+                id: hiddenMarker
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.expandHiddenBlock(delegateIndex, direction)
+            }
+
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width
+                height: 1
+                color: hiddenMarker.containsMouse ? Style.colors.accent : Style.colors.primaryBorder
+            }
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 6
+                Label {
+                    text: direction === "up" ? Style.icons.arrowUpToLine : Style.icons.arrowDownToLine
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: 12
+                    color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
+                    padding: 4
+                    background: Rectangle {
+                        color: hiddenMarker.containsMouse ? Style.colors.accent
+                                                          : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
+                        radius: 4
+                    }
+                }
+                Label {
+                    text: remaining
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: 9
+                    color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
+                    padding: 3
+                    background: Rectangle {
+                        color: hiddenMarker.containsMouse ? Style.colors.accent
+                                                          : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
+                        radius: 3
+                    }
+                }
             }
         }
     }
