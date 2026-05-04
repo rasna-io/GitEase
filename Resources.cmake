@@ -143,6 +143,11 @@ set(RESOURCES_COMPONENTS
     # Repo Forest
     Qml/View/Components/RepoForest/RepoForest.qml
     Qml/View/Components/RepoForest/RepoItem.qml
+
+    # Conflict Components
+    Qml/View/Components/Conflict/ConflictFileList.qml
+    Qml/View/Components/Conflict/ConflictConfirmationDialog.qml
+    Qml/View/Components/Conflict/ConflictEditorDelegate.qml
 )
 
 
