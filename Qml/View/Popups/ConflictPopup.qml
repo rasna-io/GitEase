@@ -546,7 +546,7 @@ IPopup {
     }
 
     function showConflictStageWarning(path) {
-        const d = confirmationDialogComponent.createObject(root)
+        const d = conflictConfirmationDialogComp.createObject(root)
 
         d.title = "File Has Unresolved Conflicts"
         d.message = "This file still contains unresolved conflict markers.\n" +
