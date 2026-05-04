@@ -27,8 +27,8 @@ IPopup {
     property string selectedPath    : ""
     property var    modifiedFiles   : ({})
 
-    property string headerText          : `${operationName} Conflicts`
-    property string continueButtonText  : `Continue ${operationName}`
+    property string headerText          : `${currentOperationName} Conflicts`
+    property string continueButtonText  : `Continue ${currentOperationName}`
 
     readonly property bool canContinue: {
         return conflicts.length === 0
@@ -50,7 +50,7 @@ IPopup {
             default                                     : return null
         }
     }
-    readonly property string operationName:{
+    readonly property string currentOperationName:{
         switch(currentOperation){
             case ConflictPopup.OperationType.Merge      : return "Merge"
             case ConflictPopup.OperationType.Rebase     : return "Rebase"
@@ -127,9 +127,9 @@ IPopup {
                     }
                     onClicked: {
                         var d = conflictConfirmationDialogComp.createObject(root)
-                        d.title = `Abort ${operationName}?`
+                        d.title = `Abort ${currentOperationName}?`
                         d.message = "You have unresolved conflicts.\n" +
-                                    `Closing this window will abort the ${operationName} and discard all progress.\n\n` +
+                                    `Closing this window will abort the ${currentOperationName} and discard all progress.\n\n` +
                                     "Are you sure you want to abort?"
                         d.saved.connect(() => { root.saveAllModifications() })
                         d.aborted.connect(() => { root.abortOperation() })
@@ -614,83 +614,51 @@ IPopup {
         let res = currentController.continueOp()
 
         if (res.success) {
-            notificationController.success(`${operationName} completed`, "Conflict", 2500)
+            notificationController.success(`${currentOperationName} completed`, currentOperationName, 2500)
             close()
         }
 
         else {
             if (res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-                notificationController.warning("Continuing... but new conflicts found.", operationName, 4000)
+                notificationController.warning("Continuing... but new conflicts found.", currentOperationName, 4000)
 
                 modifiedFiles = ({})
                 loadConflicts(true)
             }
 
             else {
-                notificationController.error(res.errorMessage, operationName, 4000)
+                notificationController.error(res.errorMessage, currentOperationName, 4000)
             }
         }
     }
 
     function skipOperation() {
-        if (currentOperation === ConflictPopup.OperationType.Rebase) {
-            if (!rebaseController)
-                return
+        let res = currentController.skipOp()
 
-            let res = rebaseController.skipOp()
-
-            if (res.success) {
-                notificationController.success("Commit skipped", "Rebase", 2500)
-                close();
-            } else {
-                if (res.data && res.data.hasConflicts){
-                    notificationController.warning("Skipped, but new conflicts found in the next commit.", "Rebase", 2500)
-
-                    modifiedFiles = ({})
-                    loadConflicts(true)
-                }
-                else{
-                    notificationController.error(res.errorMessage, "Rebase", 4000)
-                }
-            }
+        if (res.success) {
+            notificationController.success("Commit skipped", currentOperationName, 2500)
+            close();
         }
-        else if (currentOperation === ConflictPopup.OperationType.CherryPick) {
-            if(!cherryPickController)
-                return
 
-            let res = cherryPickController.skipCherryPick()
+        else {
+            if (res.data && (res.data.status === "conflict" || res.data.hasConflicts)){
+                notificationController.warning("Skipped, but new conflicts found in the next commit.", currentOperationName, 2500)
 
-            if (res.success) {
-                notificationController.success("Commit skipped", "Cherry-Pick", 2500)
-                close();
-            } else {
-                if (res.data && res.data.hasConflicts){
-                    notificationController.warning("Skipped, but new conflicts found in the next commit.", "Cherry-Pick", 2500)
+                modifiedFiles = ({})
+                loadConflicts(true)
+            }
 
-                    modifiedFiles = ({})
-                    loadConflicts(true)
-                } else {
-                    notificationController.error(res.errorMessage, "Cherry-Pick", 4000)
-                }
+            else{
+                notificationController.error(res.errorMessage, currentOperationName, 4000)
             }
         }
     }
 
     function abortOperation() {
-        let res
+        let res = currentController.abortOp()
 
-        if (currentOperation === ConflictPopup.OperationType.Merge && mergeController) {
-            res = mergeController.abortOp()
-        }
-        else if (currentOperation === ConflictPopup.OperationType.Rebase && rebaseController) {
-            res = rebaseController.abortOp()
-        }
-        else if (currentOperation === ConflictPopup.OperationType.CherryPick && cherryPickController) {
-            res = cherryPickController.abortCherryPick()
-        }
-
-        if (res && res.success) {
-            notificationController.success("Operation aborted", "Git", 2500)
+        if (res.success) {
+            notificationController.success(`${currentOperationName} aborted`, currentOperationName, 2500)
 
             // WIPE CACHE AND VIEW
             modifiedFiles = ({})
@@ -698,27 +666,29 @@ IPopup {
             selectedPath = ""
 
             close()
-        } else if (res) {
-            notificationController.error(res.errorMessage, "Git", 4000)
+        }
+
+        else {
+            notificationController.error(res.errorMessage, currentOperationName, 4000)
         }
     }
 
     function quitOperation() {
-        if (currentOperation === ConflictPopup.OperationType.Rebase && rebaseController) {
-            let res = rebaseController.quitRebase()
+        let res = currentController.quitOp()
 
-            if (res.success) {
-                notificationController.success("Rebase quit", "Rebase", 2500)
+        if (res.success) {
+            notificationController.success(`${currentOperationName} quitted`, currentOperationName, 2500)
 
-                // WIPE CACHE AND VIEW
-                modifiedFiles = ({})
-                displayModel.clear()
-                selectedPath = ""
+            // WIPE CACHE AND VIEW
+            modifiedFiles = ({})
+            displayModel.clear()
+            selectedPath = ""
 
-                close()
-            } else {
-                notificationController.error(res.errorMessage, "Rebase", 4000)
-            }
+            close()
+        }
+
+        else {
+            notificationController.error(res.errorMessage, currentOperationName, 4000)
         }
     }
 
