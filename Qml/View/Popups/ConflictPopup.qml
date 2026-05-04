@@ -69,6 +69,26 @@ IPopup {
     closePolicy: Popup.NoAutoClose
 
     onOpened: {
+        if (!notificationController) {
+            console.error("ConflictPopup: missing required controllers")
+            close()
+            return
+        }
+
+        if (!conflictController || !statusController) {
+            notificationController.error("Cannot start conflict resolution: required Git controllers (conflict/status) are missing.",
+                                         "Initialization Error", 4000)
+            close()
+            return
+        }
+
+        if (!currentController) {
+            notificationController.error(`Cannot start ${currentOperationName.toLowerCase()} conflict resolution: the ${currentOperationName} controller is not available.`,
+                                         "Initialization Error", 4000)
+            close()
+            return
+        }
+
         modifiedFiles = ({})
         selectedPath = ""
         loadConflicts()
