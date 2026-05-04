@@ -494,29 +494,33 @@ IPopup {
     }
 
     function acceptBlock(blockIndex, mode) {
-        if (!selectedPath || !conflictController)
+        if (!selectedPath)
             return
 
         let currentContent = buildFullContent()
         conflictController.writeWorkingFile(selectedPath, currentContent)
 
         let res
-        if (mode === "ours")
-            res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
-        else if (mode === "theirs")
-            res = conflictController.acceptBlockTheirs(selectedPath, blockIndex)
-        else if (mode === "both")
-            res = conflictController.acceptBlockBoth(selectedPath, blockIndex)
-        else
-            return
+        switch (mode) {
+            case "ours":
+                res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
+                break
+            case "theirs":
+                res = conflictController.acceptBlockTheirs(selectedPath, blockIndex)
+                break
+            case "both":
+                res = conflictController.acceptBlockBoth(selectedPath, blockIndex)
+                break
+            default:
+                break
+        }
 
         if (!res.success) {
-            if (notificationController)
-                notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
+            notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
         }
+
         else {
-            if (notificationController)
-                notificationController.success("Conflicts Resolved", "Conflict", 2500)
+            notificationController.success("Conflicts Resolved", "Conflict", 2500)
 
             // Clear memory state so fresh Git changes load
             let copy = Object.assign({}, modifiedFiles)
@@ -528,7 +532,7 @@ IPopup {
     }
 
     function saveAndStage(path) {
-        if (!path  || !conflictController || !statusController)
+        if (!path)
             return
 
         let selectedConflict
@@ -568,27 +572,24 @@ IPopup {
     }
 
     function performStage(path) {
-        if (!path || !statusController)
+        if (!path)
             return
 
         let content = buildFullContent()
 
         let res = conflictController.writeWorkingFile(path, content)
         if (!res.success){
-            if (notificationController)
-                notificationController.error(res.errorMessage || "Save failed", "Conflict", 4000)
+            notificationController.error(res.errorMessage || "Save failed", "Conflict", 4000)
             return
         }
 
         res = statusController.stageFile(path)
         if (!res.success){
-            if (notificationController)
-                notificationController.error(res.errorMessage || "Stage failed", "Conflict", 4000)
+            notificationController.error(res.errorMessage || "Stage failed", "Conflict", 4000)
             return
         }
 
-        if (notificationController)
-            notificationController.success("File staged", "Conflict", 2500)
+        notificationController.success("File staged", "Conflict", 2500)
 
         // Clear memory state since changes are successfully staged
         let copy = Object.assign({}, modifiedFiles)
