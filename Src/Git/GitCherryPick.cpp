@@ -51,7 +51,7 @@ GitResult GitCherryPick::cherryPickCommits(const QStringList& commitHashes)
     return processCommits();
 }
 
-GitResult GitCherryPick::continueCherryPick()
+GitResult GitCherryPick::continueOp()
 {
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository is not open.");
@@ -141,7 +141,7 @@ GitResult GitCherryPick::processCommits()
     return GitResult(true, data, "Cherry-pick completed.");
 }
 
-GitResult GitCherryPick::abortCherryPick()
+GitResult GitCherryPick::abortOp()
 {
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository not found.");
@@ -429,7 +429,7 @@ QString GitCherryPick::headHash() const
     return QString::fromUtf8(hash);
 }
 
-GitResult GitCherryPick::skipCherryPick()
+GitResult GitCherryPick::skipOp()
 {
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository is not open.");

@@ -126,7 +126,7 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
     return rebaseResult;
 }
 
-GitResult GitRebase::continueRebase()
+GitResult GitRebase::continueOp()
 {
     if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository not found.");
@@ -152,7 +152,7 @@ GitResult GitRebase::continueRebase()
     return continueResult;
 }
 
-GitResult GitRebase::skipRebase()
+GitResult GitRebase::skipOp()
 {
     if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository not found.");
@@ -185,7 +185,7 @@ GitResult GitRebase::skipRebase()
     return skipResult;
 }
 
-GitResult GitRebase::abortRebase()
+GitResult GitRebase::abortOp()
 {
     if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository not found.");
@@ -213,7 +213,7 @@ GitResult GitRebase::abortRebase()
     return GitResult(true, QVariant(), "Rebase aborted.");
 }
 
-GitResult GitRebase::quitRebase()
+GitResult GitRebase::quitOp()
 {
     if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository not found.");

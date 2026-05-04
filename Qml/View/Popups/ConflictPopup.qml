@@ -42,19 +42,20 @@ IPopup {
     }
     property int currentOperation: ConflictPopup.OperationType.None
 
-    readonly property string operationName: {
+    readonly property var currentController:{
         switch(currentOperation){
-            case ConflictPopup.OperationType.Merge:
-                return "Merge"
-
-            case ConflictPopup.OperationType.Rebase:
-                return "Rebase"
-
-            case ConflictPopup.OperationType.CherryPick:
-                return "Cherry-pick"
-
-            default:
-                return ""
+            case ConflictPopup.OperationType.Merge      : return mergeController
+            case ConflictPopup.OperationType.Rebase     : return rebaseController
+            case ConflictPopup.OperationType.CherryPick : return cherryPickController
+            default                                     : return null
+        }
+    }
+    readonly property string operationName:{
+        switch(currentOperation){
+            case ConflictPopup.OperationType.Merge      : return "Merge"
+            case ConflictPopup.OperationType.Rebase     : return "Rebase"
+            case ConflictPopup.OperationType.CherryPick : return "Cherry-pick"
+            default                                     : return ""
         }
     }
 
@@ -610,66 +611,23 @@ IPopup {
     }
 
     function continueOperation() {
-        if (currentOperation === ConflictPopup.OperationType.Merge) {
-            if (!mergeController)
-                return
+        let res = currentController.continueOp()
 
-            let res = mergeController.continueMerge()
-
-            if (res.success) {
-                if (notificationController)
-                    notificationController.success("Merge completed", "Conflict", 2500)
-
-                close()
-            }
-            else
-                notificationController.error(res.errorMessage, "Merge", 4000)
+        if (res.success) {
+            notificationController.success(`${operationName} completed`, "Conflict", 2500)
+            close()
         }
-        else if (currentOperation === ConflictPopup.OperationType.CherryPick) {
-            if (!cherryPickController)
-                return
 
-            let res = cherryPickController.continueCherryPick()
+        else {
+            if (res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
+                notificationController.warning("Continuing... but new conflicts found.", operationName, 4000)
 
-            if (res.success) {
-                if (notificationController)
-                    notificationController.success("Cherry-pick completed", "Conflict", 2500)
-
-                close()
-            } else {
-                if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-                    if (notificationController)
-                        notificationController.warning("Continuing... but new conflicts found.", "Cherry-Pick", 4000)
-
-                    modifiedFiles = ({})
-                    loadConflicts(true)
-                } else {
-                    notificationController.error(res.errorMessage, "Cherry-Pick", 4000)
-                }
+                modifiedFiles = ({})
+                loadConflicts(true)
             }
-        }
-        else if (currentOperation === ConflictPopup.OperationType.Rebase) {
-            if (!rebaseController)
-                return
 
-            let res = rebaseController.continueRebase()
-
-            if (res.success){
-                if (notificationController)
-                    notificationController.success("Rebase completed", "Conflict", 2500)
-
-                close()
-            } else {
-                    if (res.data && res.data.hasConflicts) {
-                    if (notificationController)
-                        notificationController.warning("Continuing... but new conflicts found.", "Rebase", 4000);
-
-                    modifiedFiles = ({})
-                    loadConflicts(true)
-                } else {
-                    if (notificationController)
-                        notificationController.error(res.errorMessage, "Rebase", 4000);
-                }
+            else {
+                notificationController.error(res.errorMessage, operationName, 4000)
             }
         }
     }
@@ -679,7 +637,7 @@ IPopup {
             if (!rebaseController)
                 return
 
-            let res = rebaseController.skipRebase()
+            let res = rebaseController.skipOp()
 
             if (res.success) {
                 notificationController.success("Commit skipped", "Rebase", 2500)
@@ -722,10 +680,10 @@ IPopup {
         let res
 
         if (currentOperation === ConflictPopup.OperationType.Merge && mergeController) {
-            res = mergeController.abortMerge()
+            res = mergeController.abortOp()
         }
         else if (currentOperation === ConflictPopup.OperationType.Rebase && rebaseController) {
-            res = rebaseController.abortRebase()
+            res = rebaseController.abortOp()
         }
         else if (currentOperation === ConflictPopup.OperationType.CherryPick && cherryPickController) {
             res = cherryPickController.abortCherryPick()

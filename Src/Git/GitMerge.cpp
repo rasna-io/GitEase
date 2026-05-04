@@ -251,7 +251,7 @@ GitResult GitMerge::finalizeAutomaticMerge(git_reference* sourceRef,
     return result;
 }
 
-GitResult GitMerge::continueMerge(const QString& commitMessage)
+GitResult GitMerge::continueOp(const QString& commitMessage)
 {
     if (!m_mergeInProgress)
         return GitResult(false, QVariant(), "No merge is currently in progress.");
@@ -427,7 +427,7 @@ void GitMerge::resetMergeState()
     emit mergeStateChanged();  // CRITICAL: Add this line
 }
 
-GitResult GitMerge::abortMerge()
+GitResult GitMerge::abortOp()
 {
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository not found.");

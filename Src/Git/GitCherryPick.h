@@ -54,13 +54,13 @@ public:
     Q_INVOKABLE GitResult cherryPickCommits(const QStringList& commitHashes);
 
     /// Continue a cherry-pick after conflicts are resolved.
-    Q_INVOKABLE GitResult continueCherryPick();
+    Q_INVOKABLE GitResult continueOp();
 
     /// Skip the current conflicting commit and continue with the rest.
-    Q_INVOKABLE GitResult skipCherryPick();
+    Q_INVOKABLE GitResult skipOp();
 
     /// Abort an in-progress cherry-pick and restore original HEAD.
-    Q_INVOKABLE GitResult abortCherryPick();
+    Q_INVOKABLE GitResult abortOp();
 
     /// Return cherry-pick progress and conflict status.
     Q_INVOKABLE GitResult cherryPickStatus();
