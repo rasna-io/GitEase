@@ -6,6 +6,8 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
+import "qrc:/GitEase/Qml/Core/Scripts/ConflictPopupUtils.js" as ConflictUtils
+
 /*! ***********************************************************************************************
  * ConflictPopup
  * ************************************************************************************************/
@@ -200,8 +202,8 @@ IPopup {
                             horizontalOffset: conflictListView.horizontalScrollOffset
                             isCurrentItem: ListView.isCurrentItem
 
-                            onSplitRequested        : (cursorPos)           => root.splitLine(index, cursorPos)
-                            onMergeUpRequested      : ()                    => root.mergeLineUp(index)
+                            onSplitRequested        : (cursorPos)           => ConflictUtils.splitLine(displayModel, index, cursorPos, conflictListView)
+                            onMergeUpRequested      : ()                    => ConflictUtils.mergeLineUp(displayModel, index, conflictListView)
                             onAcceptBlockRequested  : (blockIndex, mode)    => root.acceptBlock(blockIndex, mode)
                             onMoveFocusUp           : conflictListView.currentIndex = Math.max(0, index - 1)
                             onMoveFocusDown         : conflictListView.currentIndex = Math.min(displayModel.count - 1, index + 1)
@@ -368,148 +370,16 @@ IPopup {
             if (conflicts[i].path === path) {
                 selectedConflict = conflicts[i]
                 selectedPath = path
-                buildDisplayModel()
+                ConflictUtils.buildDisplayModel(
+                    selectedConflict,
+                    modifiedFiles,
+                    selectedPath,
+                    displayModel,
+                    conflictListView,
+                    widthCalculator
+                );
                 break
             }
-        }
-    }
-
-    function buildDisplayModel() {
-        displayModel.clear()
-        conflictListView.maxContentWidth = 0
-
-        if (!selectedConflict)
-            return
-
-        // 1. Restore from memory if user previously modified it
-        if (modifiedFiles[selectedPath]) {
-            let savedState = modifiedFiles[selectedPath]
-            for (let i = 0; i < savedState.length; ++i) {
-                displayModel.append(savedState[i])
-                if (savedState[i].text)
-                    updateMaxContentWidth(savedState[i].text)
-            }
-            return
-        }
-
-        // 2. Otherwise build original fresh structure
-        let lines = selectedConflict.lines || []
-        let blocks = selectedConflict.blocks || []
-
-        // Create a map for quick lookup: startLine → block
-        let blockMap = {}
-        for (let b of blocks)
-            blockMap[b.startLine] = b
-
-        let i = 0
-        let runningLine = 1
-
-        while (i < lines.length) {
-            let lineNumber = i + 1
-
-            // Check if this line starts a conflict block
-            if (blockMap[lineNumber]) {
-                let block = blockMap[lineNumber]
-
-                // 1. Add button row
-                displayModel.append({
-                    type: "blockButton",
-                    blockIndex: block.index
-                })
-
-                // 2. Add all lines inside the conflict block
-                for (let j = 0; j < block.lines.length; ++j) {
-                    let line = block.lines[j]
-                    displayModel.append({
-                        type: "blockLine",
-                        text: line.text,
-                        blockIndex: block.index,
-                        role: line.role,
-                        lineNumber: runningLine
-                    })
-                    updateMaxContentWidth(line.text)
-                    runningLine++
-                }
-                i = block.endLine
-            }
-            // Regular (non-conflict) line
-            else {
-                displayModel.append({
-                    type: "contextLine",
-                    text: lines[i],
-                    lineNumber: runningLine
-                })
-                updateMaxContentWidth(lines[i])
-                runningLine++
-                i++
-            }
-        }
-    }
-
-    function updateMaxContentWidth(newText) {
-        if (newText === undefined || newText === null)
-            return
-
-        let visualText = newText.replace(/\t/g, "    ")
-        widthCalculator.text = visualText
-
-        var measuredWidth = widthCalculator.width + 200
-        if (measuredWidth > conflictListView.maxContentWidth)
-            conflictListView.maxContentWidth = measuredWidth
-    }
-
-    function splitLine(rowIndex, cursorPos) {
-        var row = displayModel.get(rowIndex)
-
-        if (!row || row.type === "blockButton")
-            return
-
-        if (row.type === "blockLine" && (row.role === "marker-start" || row.role === "separator" || row.role === "marker-end"))
-            return
-
-        var before = row.text.substring(0, cursorPos)
-        var after = row.text.substring(cursorPos)
-
-        displayModel.setProperty(rowIndex, "text", before)
-
-        var newRow = { type: row.type, text: after, lineNumber: row.lineNumber + 1 }
-        if (row.blockIndex !== undefined) newRow.blockIndex = row.blockIndex
-        if (row.role !== undefined) newRow.role = row.role
-
-        displayModel.insert(rowIndex + 1, newRow)
-        recomputeLineNumbers()
-        conflictListView.currentIndex = rowIndex + 1
-    }
-
-    function mergeLineUp(rowIndex) {
-        if (rowIndex === 0)
-            return
-
-        var current = displayModel.get(rowIndex)
-        var prev = displayModel.get(rowIndex - 1)
-        if (!current || !prev)
-            return
-
-        if (current.type !== prev.type)
-            return
-
-        if (current.type === "blockLine") {
-            if (current.blockIndex !== prev.blockIndex || current.role !== prev.role) return
-            if (current.role === "marker-start" || current.role === "separator" || current.role === "marker-end") return
-        }
-        displayModel.setProperty(rowIndex - 1, "text", prev.text + current.text)
-        displayModel.remove(rowIndex)
-        recomputeLineNumbers()
-        conflictListView.currentIndex = rowIndex - 1
-    }
-
-    function recomputeLineNumbers() {
-        var lineNum = 1
-        for (var i = 0; i < displayModel.count; ++i) {
-            var row = displayModel.get(i)
-            if (row.type === "blockButton") continue
-            displayModel.setProperty(i, "lineNumber", lineNum)
-            lineNum++
         }
     }
 
@@ -517,7 +387,7 @@ IPopup {
         if (!selectedPath)
             return
 
-        let currentContent = buildFullContent()
+        let currentContent = ConflictUtils.buildFullContent(displayModel)
         conflictController.writeWorkingFile(selectedPath, currentContent)
 
         let res
@@ -595,7 +465,7 @@ IPopup {
         if (!path)
             return
 
-        let content = buildFullContent()
+        let content = ConflictUtils.buildFullContent(displayModel)
 
         let res = conflictController.writeWorkingFile(path, content)
         if (!res.success){
@@ -617,18 +487,6 @@ IPopup {
         modifiedFiles = copy
 
         loadConflicts(true)
-    }
-
-    function buildFullContent() {
-        let lines = []
-        for (let i = 0; i < displayModel.count; ++i) {
-            let row = displayModel.get(i)
-            if (row.type === "blockButton")
-                continue
-
-            lines.push(row.text)
-        }
-        return lines.join("\n")
     }
 
     function continueOperation() {
@@ -717,7 +575,7 @@ IPopup {
 
         // 1. Save the currently active file on screen
         if (selectedPath) {
-            let currentContent = buildFullContent()
+            let currentContent = ConflictUtils.buildFullContent(displayModel);
             conflictController.writeWorkingFile(selectedPath, currentContent)
         }
 
@@ -743,5 +601,4 @@ IPopup {
 
         root.close()
     }
-
 }

@@ -40,6 +40,7 @@ set(RESOURCES_CORE
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
     Qml/Core/Scripts/GraphLayout.js
+    Qml/Core/Scripts/ConflictPopupUtils.js
 )
 
 
