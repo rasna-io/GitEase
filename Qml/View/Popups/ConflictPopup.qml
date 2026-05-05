@@ -61,6 +61,10 @@ IPopup {
         }
     }
 
+    /* Signals
+     * ****************************************************************************************/
+    signal operationCompleted();
+
     /* Object Properties
      * ****************************************************************************************/
     width: 800
@@ -494,6 +498,7 @@ IPopup {
 
         if (res.success) {
             notificationController.success(`${currentOperationName} completed`, currentOperationName, 2500)
+            operationCompleted()
             close()
         }
 
@@ -516,6 +521,7 @@ IPopup {
 
         if (res.success) {
             notificationController.success("Commit skipped", currentOperationName, 2500)
+            operationCompleted()
             close();
         }
 
