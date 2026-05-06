@@ -6,6 +6,11 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
+/*! ***********************************************************************************************
+ * MergeMethodPopup
+ * ************************************************************************************************/
+
+
 IPopup {
     id: root
 
@@ -14,8 +19,8 @@ IPopup {
 
     signal accepted(bool noFF)
 
-    width: 300
-    height: 250
+    width: 340
+    height: 280
     padding: 0
 
     contentItem: Rectangle {
@@ -28,61 +33,101 @@ IPopup {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 20
-            spacing: 0
+            spacing: 16
 
             ScrollingText {
                 text: root.sourceBranch + "  →  " + root.targetBranch
                 color: Style.colors.foreground
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
+                font.pixelSize: 14
                 font.bold: true
                 Layout.fillWidth: true
-                Layout.bottomMargin: 16
             }
 
-            RadioButton {
-                id: ffRadio
-                text: "Fast-forward"
-                checked: true
-                Layout.bottomMargin: 2
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
-                Material.accent: Style.colors.accent
-                Material.foreground: Style.colors.foreground
-            }
+            Rectangle{
+                Layout.fillHeight: true
+                Layout.fillWidth: true
 
-            RadioButton {
-                id: noFFRadio
-                text: "No fast-forward  (--no-ff)"
-                checked: false
-                Layout.bottomMargin: 16
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
-                Material.accent: Style.colors.accent
-                Material.foreground: Style.colors.foreground
+                color: Style.colors.surfaceMuted
+                border.color: Style.colors.primaryBorder
+                border.width: 1
+                radius: 8
+
+                ColumnLayout{
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+
+                    RadioButton {
+                        id: ffRadio
+                        text: "Fast-forward"
+                        checked: true
+                        Layout.fillWidth: true
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 13
+                        Material.accent: Style.colors.accent
+                        Material.foreground: Style.colors.foreground
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            acceptedButtons: Qt.NoButton
+                        }
+
+
+                        hoverEnabled: true
+                        font.bold: hovered
+                    }
+
+                    RadioButton {
+                        id: noFFRadio
+                        text: "No fast-forward  (--no-ff)"
+                        checked: false
+                        Layout.fillWidth: true
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 13
+                        Material.accent: Style.colors.accent
+                        Material.foreground: Style.colors.foreground
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            acceptedButtons: Qt.NoButton
+                        }
+
+                        hoverEnabled: true
+                        font.bold: hovered
+                    }
+                }
             }
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
-
-                Button {
-                    text: "Cancel"
-                    flat: true
-                    Layout.preferredWidth: 80
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
-                    Material.foreground: Style.colors.mutedText
-                    onClicked: root.close()
-                    background: Rectangle { color: "transparent" }
-                }
+                spacing: 12
 
                 Item { Layout.fillWidth: true }
 
                 Button {
+                    text: "Cancel"
+                    flat: true
+                    Layout.preferredWidth: 100
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: 12
+                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
+                        border.color: Style.colors.accent
+                        radius: 5
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.close()
+                    }
+                }
+
+                Button {
                     id: mergeBtn
                     text: "Merge"
-                    Layout.preferredWidth: 80
+                    Layout.preferredWidth: 100
                     font.family: Style.fontTypes.roboto
                     font.pixelSize: 12
                     Material.foreground: Style.colors.textButton
@@ -91,9 +136,13 @@ IPopup {
                         color: mergeBtn.hovered ? Style.colors.accentHover : Style.colors.accent
                         radius: 5
                     }
-                    onClicked: {
-                        root.accepted(noFFRadio.checked)
-                        root.close()
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.accepted(noFFRadio.checked)
+                            root.close()
+                        }
                     }
                 }
             }
