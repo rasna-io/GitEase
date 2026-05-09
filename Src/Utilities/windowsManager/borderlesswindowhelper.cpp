@@ -250,6 +250,9 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
         // Provide native resize borders. We *don’t* return HTCAPTION here,
         // because we want QML to initiate move via startSystemMove(), so buttons remain clickable.
         // This keeps resizing 100% native while your header logic stays in QML.
+        if (msg->hwnd != m_hwnd)
+            return false;
+
         const LONG x = GET_X_LPARAM(msg->lParam);
         const LONG y = GET_Y_LPARAM(msg->lParam);
 
