@@ -133,6 +133,25 @@ Item {
     /* Functions
      * ****************************************************************************************/
     function initPresenter() {
+        if (!notificationController) {
+            console.error("ConflictPopup: missing required controllers")
+            close()
+            return
+        }
+
+        if (!statusController || !commitController) {
+                notificationController.error("Cannot initialize Graph View: required controllers are missing.",
+                                             "Initialization Error", 4000)
+            return
+        }
+
+        if (!commitGraph || !fileChangesDock || !diffView) {
+                notificationController.error("GraphViewPage: missing required UI components",
+                                             "Initialization Error", 4000)
+            return
+        }
+
+        // 3. Initialize Presenter safely
         Presenter.init({
             commitGraph     : commitGraph,
             fileChangesDock : fileChangesDock,
