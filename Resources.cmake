@@ -41,6 +41,7 @@ set(RESOURCES_CORE
     Qml/Core/Scripts/GraphUtils.js
     Qml/Core/Scripts/GraphLayout.js
     Qml/Core/Scripts/ConflictPopupUtils.js
+    Qml/Core/Scripts/GraphViewPresenter.js
 )
 
 
