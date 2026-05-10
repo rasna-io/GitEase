@@ -13,9 +13,14 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var    headerRef   : null
     property bool   isStart     : true
     property point  fieldOrigin : Qt.point(0, 0)
+    property string otherDateStr: ""
+
+    /* Signals
+     * ****************************************************************************************/
+    signal dateSelected(string dateString, bool isStart)
+    signal clearRequested(bool isStart)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -47,15 +52,14 @@ IPopup {
 
     /* Functions
      * ****************************************************************************************/
-    function openForField(field, header, isStartMode) {
-        root.headerRef  = header;
-        root.isStart    = isStartMode;
+    function prepareAndOpen(field, isStartMode, currentDateStr, oppositeDateStr) {
+        root.isStart      = isStartMode;
+        root.otherDateStr = oppositeDateStr;
 
         cal.errorMessage = "";
 
-        var dateStr = isStartMode ? header.filterStartDate : header.filterEndDate;
-        if (dateStr && dateStr.length === 10) {
-            cal.setDate(dateStr);
+        if (currentDateStr && currentDateStr.length === 10) {
+            cal.setDate(currentDateStr);
         } else {
             cal.selectedDate = new Date();
         }
@@ -65,40 +69,29 @@ IPopup {
     }
 
     function handleDateSelected(date) {
-        if (!root.headerRef)
-            return;
-
         var formatted = cal.dateToString(date);
+
         cal.errorMessage = "";
 
         if (root.isStart) {
-            if (root.headerRef.filterEndDate && formatted > root.headerRef.filterEndDate) {
+            if (root.otherDateStr && formatted > root.otherDateStr) {
                 cal.errorMessage = "Start date cannot be greater than end date";
                 return;
             }
-            root.headerRef.filterStartDate = formatted;
         }
         else {
-            if (root.headerRef.filterStartDate && formatted < root.headerRef.filterStartDate) {
+            if (root.otherDateStr && formatted < root.otherDateStr) {
                 cal.errorMessage = "End date cannot be less than start date";
                 return;
             }
-            root.headerRef.filterEndDate = formatted;
         }
-        root.headerRef.applyFilter();
+
+        root.dateSelected(formatted, root.isStart);
         root.close();
     }
 
     function handleClearRequested() {
-        if (!root.headerRef)
-            return;
-
-        if (root.isStart)
-            root.headerRef.filterStartDate = "";
-        else
-            root.headerRef.filterEndDate = "";
-
-        root.headerRef.applyFilter();
+        root.clearRequested(root.isStart);
         root.close();
     }
 }

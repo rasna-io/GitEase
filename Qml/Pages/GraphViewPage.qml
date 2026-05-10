@@ -16,7 +16,8 @@ import "qrc:/GitEase/Qml/Core/Scripts/GraphViewPresenter.js" as Presenter
 Item {
     id: root
 
-    /* Property Declarations */
+    /* Property Declarations
+     * ****************************************************************************************/
     property var                    page                    : null
     property AppModel               appModel                : null
 
@@ -32,15 +33,38 @@ Item {
     property RebaseController       rebaseController        : null
     property CherryPickController   cherryPickController    : null
 
-    property alias graphRef: commitGraph
 
+
+    /* Object Properties
+     * ****************************************************************************************/
     anchors.fill: parent
+
+    property alias graphRef: commitGraph
 
     // Header exposed to MainWindow
     property Component headerContent: Component {
         GraphViewHeader {
             id: graphViewHeader
-            commitGraph: root.graphRef
+
+            isGraphReady: root.graphRef !== null
+
+            onFilterRequested: function(text, startDate, endDate, modes) {
+                if (root.graphRef) {
+                    root.graphRef.applyFilter(text, startDate, endDate, modes);
+                }
+            }
+
+            onNextRequested: function(rule) {
+                root.graphRef.selectNext(rule);
+            }
+
+            onPreviousRequested: function(rule) {
+                root.graphRef.selectPrevious(rule);
+            }
+
+            onReloadRequested: function() {
+                root.graphRef.reloadAll();
+            }
         }
     }
 
@@ -56,6 +80,8 @@ Item {
         }
     }
 
+    /* Children
+     * ****************************************************************************************/
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -104,6 +130,8 @@ Item {
         }
     }
 
+    /* Functions
+     * ****************************************************************************************/
     function initPresenter() {
         Presenter.init({
             commitGraph     : commitGraph,

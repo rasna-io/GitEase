@@ -14,7 +14,7 @@ RowLayout {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var    commitGraph     : null
+    property bool   isGraphReady    : false
     property string filterText      : ""
     property string filterStartDate : ""
     property string filterEndDate   : ""
@@ -23,9 +23,27 @@ RowLayout {
     property var            navigationRules : ["Author Email", "Author", "Parent 1", "Branch"]
     property string         navigationRule  : navigationRules[0]
 
-    spacing: (parent && parent.width < Style.appHeight) ? 6 : 10
-    anchors.leftMargin: (parent && parent.width < Style.appHeight) ? 8 : 20
-    anchors.rightMargin: (parent && parent.width < Style.appHeight) ? 4 : 5
+    /* Signals
+     * ****************************************************************************************/
+    signal filterRequested(string text, string startDate, string endDate, var modes)
+    signal nextRequested(string rule)
+    signal previousRequested(string rule)
+    signal reloadRequested()
+
+    /* Object Properties
+     * ****************************************************************************************/
+    spacing             : (parent && parent.width < Style.appHeight) ? 6 : 10
+    anchors.leftMargin  : (parent && parent.width < Style.appHeight) ? 8 : 20
+    anchors.rightMargin : (parent && parent.width < Style.appHeight) ? 4 : 5
+
+ListModel {
+        id: filterOptionsModel
+        ListElement { text: "Messages"; checked: false }
+        ListElement { text: "Subjects"; checked: false }
+        ListElement { text: "Authors";  checked: false }
+        ListElement { text: "Emails";   checked: false }
+        ListElement { text: "SHA-1";    checked: false }
+    }
 
     TextField {
         id: textFilterField
@@ -98,19 +116,6 @@ RowLayout {
         }
     }
 
-    ListModel {
-        id: filterOptionsModel
-        ListElement { text: "Messages"; checked: false }
-        ListElement { text: "Subjects"; checked: false }
-        ListElement { text: "Authors";  checked: false }
-        ListElement { text: "Emails";   checked: false }
-        ListElement { text: "SHA-1";    checked: false }
-    }
-
-    CalendarPopup {
-        id: calendarPopup
-    }
-
     Label {
         Layout.leftMargin: compact ? 8 : 40
         color: Style.colors.descriptionText
@@ -128,7 +133,8 @@ RowLayout {
         placeholder: "2025-08-30"
         dateString: headerRow.filterStartDate
 
-        onClicked: calendarPopup.openForField(startDateField, headerRow, true)
+        onClicked: calendarPopup.prepareAndOpen(startDateField, true, headerRow.filterStartDate, headerRow.filterEndDate)
+
     }
 
     Label {
@@ -147,7 +153,8 @@ RowLayout {
         placeholder: "2025-09-30"
         dateString: headerRow.filterEndDate
 
-        onClicked: calendarPopup.openForField(endDateField, headerRow, false)
+        onClicked: calendarPopup.prepareAndOpen(endDateField, false, headerRow.filterEndDate, headerRow.filterStartDate)
+
     }
 
     ComboBox {
@@ -185,7 +192,7 @@ RowLayout {
         Layout.preferredHeight: 26
 
         visible: !compact
-        enabled: !!headerRow.commitGraph
+        enabled: headerRow.isGraphReady
         hoverEnabled: true
 
         text: Style.icons.caretDown
@@ -208,7 +215,7 @@ RowLayout {
                    downButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
         }
 
-        onClicked: headerRow.commitGraph.selectNext(navigationRule)
+        onClicked: headerRow.previousRequested(navigationRule)
     }
 
     ToolButton {
@@ -217,7 +224,7 @@ RowLayout {
         Layout.preferredHeight: 26
 
         visible: !compact
-        enabled: !!headerRow.commitGraph
+        enabled: headerRow.isGraphReady
         hoverEnabled: true
 
         text: Style.icons.caretUp
@@ -240,7 +247,7 @@ RowLayout {
                    upButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
         }
 
-        onClicked: headerRow.commitGraph.selectPrevious(navigationRule)
+        onClicked: headerRow.nextRequested(navigationRule)
     }
 
     ToolButton {
@@ -249,7 +256,7 @@ RowLayout {
         Layout.preferredHeight: 26
         Layout.leftMargin: 10
 
-        enabled: !!headerRow.commitGraph
+        enabled: headerRow.isGraphReady
         hoverEnabled: true
 
         text: Style.icons.refresh
@@ -272,21 +279,47 @@ RowLayout {
                    reloadButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
         }
 
-        onClicked: headerRow.commitGraph.reloadAll()
+        onClicked: headerRow.reloadRequested()
     }
 
-    function applyFilter() {
-        if (!headerRow.commitGraph)
-            return;
+    CalendarPopup {
+        id: calendarPopup
 
+        onDateSelected: headerRow.handleDateSelected(dateString, isStart)
+
+        onClearRequested: headerRow.handleClearRequested(isStart)
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function applyFilter() {
         var selectedItems = filterOptionsPopup.selectedItems;
+
         var modes = selectedItems && selectedItems.length > 0
                      ? selectedItems.map(function(it) { return it.text })
                      : [];
-        headerRow.commitGraph.applyFilter(headerRow.filterText,
-                                          headerRow.filterStartDate,
-                                          headerRow.filterEndDate,
-                                          modes);
+        headerRow.filterRequested(headerRow.filterText,
+                                  headerRow.filterStartDate,
+                                  headerRow.filterEndDate,
+                                  modes);
 
+    }
+
+    function handleDateSelected(dateString, isStart) {
+        if (isStart)
+            headerRow.filterStartDate = dateString;
+        else
+            headerRow.filterEndDate = dateString;
+
+        headerRow.applyFilter();
+    }
+
+    function handleClearRequested(isStart) {
+        if (isStart)
+            headerRow.filterStartDate = "";
+        else
+            headerRow.filterEndDate = "";
+
+        headerRow.applyFilter();
     }
 }
