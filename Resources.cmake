@@ -183,6 +183,8 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/MergeMethodPopup.qml
 
     Qml/View/Popups/AddTagPopup.qml
+    Qml/View/Popups/CalendarPopup.qml
+
 )
 
 
