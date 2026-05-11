@@ -16,6 +16,11 @@ var commitController    = null;
 
 /* Functions
  * ****************************************************************************************/
+
+/**
+ * @brief Initializes the presenter with required dependencies.
+ * @param {Object} deps - Dictionary containing references to UI components and controllers.
+ */
 function init(deps) {
     commitGraph         = deps.commitGraph;
     fileChangesDock     = deps.fileChangesDock;
@@ -24,12 +29,19 @@ function init(deps) {
     commitController    = deps.commitController;
 }
 
+/**
+ * @brief Clears the currently selected commit and file, and resets the diff view.
+ */
 function clearSelection() {
     selectedCommit      = "";
     selectedFilePath    = "";
     diffView.diffData   = null;
 }
 
+/**
+ * @brief Handles the event when a commit is clicked in the graph.
+ * @param {string} commitId - The hash of the selected commit, or "__uncommitted__".
+ */
 function handleCommitClicked(commitId) {
     selectedCommit = commitId;
 
@@ -49,6 +61,11 @@ function handleCommitClicked(commitId) {
     }
 }
 
+/**
+ * @brief Handles the event when a file is selected in the file changes dock.
+ *        Fetches the appropriate diff and updates the DiffView.
+ * @param {string} filePath - The path of the selected file.
+ */
 function handleFileSelected(filePath) {
     selectedFilePath = filePath;
     var commitId = selectedCommit;
