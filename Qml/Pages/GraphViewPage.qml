@@ -33,13 +33,7 @@ Item {
     property RebaseController       rebaseController        : null
     property CherryPickController   cherryPickController    : null
 
-
-
-    /* Object Properties
-     * ****************************************************************************************/
-    anchors.fill: parent
-
-    property alias graphRef: commitGraph
+    property alias                  graphRef                : commitGraph
 
     // Header exposed to MainWindow
     property Component headerContent: Component {
@@ -68,6 +62,8 @@ Item {
         }
     }
 
+    /* Signals and Connections
+     * ****************************************************************************************/
     Component.onCompleted: {
         Qt.callLater(initPresenter)
     }
@@ -79,6 +75,10 @@ Item {
             diffView.diffData = null
         }
     }
+
+    /* Object Properties
+     * ****************************************************************************************/
+    anchors.fill: parent
 
     /* Children
      * ****************************************************************************************/
@@ -134,8 +134,7 @@ Item {
      * ****************************************************************************************/
     function initPresenter() {
         if (!notificationController) {
-            console.error("ConflictPopup: missing required controllers")
-            close()
+            console.error("GraphViewPage: missing Notification Controller")
             return
         }
 
@@ -151,7 +150,6 @@ Item {
             return
         }
 
-        // 3. Initialize Presenter safely
         Presenter.init({
             commitGraph     : commitGraph,
             fileChangesDock : fileChangesDock,
