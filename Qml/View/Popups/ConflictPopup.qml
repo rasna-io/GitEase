@@ -6,6 +6,8 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
+import "qrc:/GitEase/Qml/Core/Scripts/ConflictPopupUtils.js" as ConflictUtils
+
 /*! ***********************************************************************************************
  * ConflictPopup
  * ************************************************************************************************/
@@ -25,6 +27,14 @@ IPopup {
     property var    conflicts       : []
     property var    selectedConflict: null
     property string selectedPath    : ""
+    property var    modifiedFiles   : ({})
+
+    property string headerText          : `${currentOperationName} Conflicts`
+    property string continueButtonText  : `Continue ${currentOperationName}`
+
+    readonly property bool canContinue: {
+        return conflicts.length === 0
+    }
 
     enum OperationType {
         None,
@@ -34,35 +44,26 @@ IPopup {
     }
     property int currentOperation: ConflictPopup.OperationType.None
 
-    readonly property bool canContinue: {
-        if (currentOperation === ConflictPopup.OperationType.Merge)
-            return mergeController && conflicts.length === 0
-
-        if (currentOperation === ConflictPopup.OperationType.Rebase)
-            return rebaseController && conflicts.length === 0
-
-        if (currentOperation === ConflictPopup.OperationType.CherryPick)
-            return cherryPickController && conflicts.length === 0
-
-        return false
+    readonly property var currentController:{
+        switch(currentOperation){
+            case ConflictPopup.OperationType.Merge      : return mergeController
+            case ConflictPopup.OperationType.Rebase     : return rebaseController
+            case ConflictPopup.OperationType.CherryPick : return cherryPickController
+            default                                     : return null
+        }
+    }
+    readonly property string currentOperationName:{
+        switch(currentOperation){
+            case ConflictPopup.OperationType.Merge      : return "Merge"
+            case ConflictPopup.OperationType.Rebase     : return "Rebase"
+            case ConflictPopup.OperationType.CherryPick : return "Cherry-pick"
+            default                                     : return ""
+        }
     }
 
-    readonly property string operationName: {
-        if (currentOperation === ConflictPopup.OperationType.Merge)
-            return "Merge"
-        if (currentOperation === ConflictPopup.OperationType.Rebase)
-            return "Rebase"
-        if (currentOperation === ConflictPopup.OperationType.CherryPick)
-            return "Cherry-pick"
-        return ""
-    }
-
-    property string headerText: `${operationName} Conflicts`
-
-    property string continueButtonText: `Continue ${operationName}`
-
-
-    property var modifiedFiles: ({}) // path -> array of row objects
+    /* Signals
+     * ****************************************************************************************/
+    signal operationCompleted();
 
     /* Object Properties
      * ****************************************************************************************/
@@ -74,18 +75,36 @@ IPopup {
     closePolicy: Popup.NoAutoClose
 
     onOpened: {
-        modifiedFiles = ({}) // Clear all memory cache
-        selectedPath = ""    // Reset selected path
+        if (!notificationController) {
+            console.error("ConflictPopup: missing required controllers")
+            close()
+            return
+        }
+
+        if (!conflictController || !statusController) {
+            notificationController.error("Cannot start conflict resolution: required Git controllers (conflict/status) are missing.",
+                                         "Initialization Error", 4000)
+            close()
+            return
+        }
+
+        if (!currentController) {
+            notificationController.error(`Cannot start ${currentOperationName.toLowerCase()} conflict resolution: the ${currentOperationName} controller is not available.`,
+                                         "Initialization Error", 4000)
+            close()
+            return
+        }
+
+        modifiedFiles = ({})
+        selectedPath = ""
         loadConflicts()
     }
 
-    ListModel {
-        id: displayModel
-    }
+    ListModel { id: displayModel }
 
     TextMetrics {
         id: widthCalculator
-        font.family: "Cascadia Mono"
+        font.family: Style.fontTypes.roboto
         font.pixelSize: 13
     }
 
@@ -120,43 +139,26 @@ IPopup {
                     Material.accent: Style.colors.windowsClose
                     content: Item {
                         anchors.centerIn: parent
-                        width: 10
-                        height: 10
-
+                        width: 10; height: 10
                         Rectangle {
-                            width: 12
-                            height: 2
-                            radius: 1
+                            width: 12; height: 2; radius: 1
                             color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                            anchors.centerIn: parent
-                            rotation: 45
+                            anchors.centerIn: parent; rotation: 45
                         }
-
                         Rectangle {
-                            width: 12
-                            height: 2
-                            radius: 1
+                            width: 12; height: 2; radius: 1
                             color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                            anchors.centerIn: parent
-                            rotation: -45
+                            anchors.centerIn: parent; rotation: -45
                         }
                     }
                     onClicked: {
-                        var d = confirmationDialogComponent.createObject(root)
-
-                        d.title = `Abort ${operationName}?`
+                        var d = conflictConfirmationDialogComp.createObject(root)
+                        d.title = `Abort ${currentOperationName}?`
                         d.message = "You have unresolved conflicts.\n" +
-                                    `Closing this window will abort the ${operationName} and discard all progress.\n\n` +
+                                    `Closing this window will abort the ${currentOperationName} and discard all progress.\n\n` +
                                     "Are you sure you want to abort?"
-
-                        d.saved.connect(() => {
-                            root.saveAllModifications()
-                        })
-
-                        d.aborted.connect(() => {
-                            root.abortOperation()
-                        })
-
+                        d.saved.connect(() => { root.saveAllModifications() })
+                        d.aborted.connect(() => { root.abortOperation() })
                         d.open()
                     }
                 }
@@ -168,81 +170,12 @@ IPopup {
                 spacing: 8
 
                 // Left panel: file list
-                Rectangle {
-                    Layout.preferredWidth: 240
-                    Layout.fillHeight: true
-                    radius: 4
-                    color: Style.colors.primaryBackground
-                    border.width: 1
-                    border.color: Style.colors.primaryBorder
-
-                    ListView {
-                        id: fileListView
-                        anchors.fill: parent
-                        model: conflicts
-                        spacing: 1
-                        currentIndex: {
-                            for (let i = 0; i < conflicts.length; ++i)
-                                if (conflicts[i].path === selectedPath)
-                                    return i
-                            return -1
-                        }
-
-                        delegate: Rectangle {
-                            width: parent.width
-                            height: 24
-                            radius: 3
-                            color: ListView.isCurrentItem ? Style.colors.hoverTitle : "transparent"
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                anchors.rightMargin: 8
-                                spacing: 8
-                                Text {
-                                    text: (index + 1) + "."
-                                    color: Style.colors.lineNumberColor
-                                    font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 12
-                                    opacity: 0.7
-                                }
-                                ScrollingText {
-                                    Layout.fillWidth: true
-                                    text: modelData.path || ""
-                                    font.family: Style.fontTypes.roboto
-                                    color: Style.colors.lineNumberColor
-                                    font.pixelSize: 13
-                                }
-
-                                Item {
-                                    Layout.fillWidth: true
-                                }
-
-                                ActionIconButton {
-                                    property bool canSave: !modelData.blocks || modelData.blocks.length === 0
-
-                                    iconText: Style.icons.plus
-                                    textColor: Style.colors.mutedText
-
-                                    opacity: canSave ? 1.0 : 0.5
-
-                                    tooltip: canSave ? "Save and Stage" : "Resolve conflicts to stage"
-
-                                    onClicked: {
-                                        if(!modelData.blocks || modelData.blocks.length === 0){
-                                            root.selectFile(modelData.path)
-                                            root.saveAndStage(modelData.path)
-                                        }
-
-                                    }
-                                }
-                            }
-                            TapHandler {
-                                onTapped: root.selectFile(modelData.path)
-                                gesturePolicy: TapHandler.ReleaseWithinBounds
-                            }
-                        }
-                    }
+                ConflictFileList {
+                    id: fileListComp
+                    conflictFiles: root.conflicts
+                    currentPath: root.selectedPath
+                    onFileSelected  : (path) => root.selectFile(path)
+                    onStageRequested: (path) => root.saveAndStage(path)
                 }
 
                 // Right panel: conflict editor
@@ -266,225 +199,18 @@ IPopup {
                         cacheBuffer: 5000
                         reuseItems: true
                         anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
-                        ScrollBar.vertical: ScrollBar
-                        {
-                            active: true
-                        }
+                        ScrollBar.vertical: ScrollBar { active: true }
 
-                        delegate: Item {
-                            id: rowRoot
+                        delegate: ConflictEditorDelegate {
                             width: conflictListView.width
+                            horizontalOffset: conflictListView.horizontalScrollOffset
+                            isCurrentItem: ListView.isCurrentItem
 
-                            readonly property bool isButtonRow: model.type === "blockButton"
-                            readonly property bool isBlockLine: model.type === "blockLine"
-                            readonly property bool isMarker: isBlockLine && (model.role === "marker-start" ||
-                                                                              model.role === "separator" ||
-                                                                              model.role === "marker-end")
-                            property bool isCurrentItem: ListView.isCurrentItem
-
-                            height: Math.max(isButtonRow ? 32 : 24,
-                                             isButtonRow ? buttonRow.implicitHeight + 8 : lineEditor.contentHeight + 4)
-
-                            onIsCurrentItemChanged: {
-                                if (isCurrentItem && !isButtonRow && !isMarker)
-                                    lineEditor.forceActiveFocus()
-                            }
-
-                            Row {
-                                anchors.fill: parent
-                                spacing: 0
-
-                                // Line number panel
-                                Label {
-                                    width: 45
-                                    height: parent.height
-                                    text: isButtonRow ? "" : model.lineNumber
-                                    color: Style.colors.linePanelForeground
-                                    font.family: "Cascadia Mono"
-                                    font.pixelSize: 12
-                                    horizontalAlignment: Text.AlignRight
-                                    rightPadding: 10
-                                    topPadding: 4
-
-                                    background: Rectangle {
-                                        color: Style.colors.linePanelBackgroound
-                                    }
-                                }
-
-                                // Content panel
-                                Item {
-                                    id: contentPanel
-                                    height: parent.height
-                                    width: parent.width - 45
-                                    clip: true
-
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        z: -1
-                                        color: {
-                                            if (isButtonRow) return Style.colors.secondaryBackground
-                                            if (!isBlockLine) return "transparent"
-
-                                            if (model.role === "marker-start") return Style.colors.conflictMarkerStartBg
-                                            if (model.role === "ours") return Style.colors.conflictOursBg
-                                            if (model.role === "theirs") return Style.colors.conflictTheirsBg
-                                            if (model.role === "marker-end") return Style.colors.conflictMarkerEndBg
-                                            if (model.role === "separator") return Style.colors.conflictSeparatorBg
-                                            return "transparent"
-                                        }
-                                    }
-
-                                    // 1. Read-only Label exclusively for markers
-                                    Label {
-                                        visible: isMarker
-                                        x: -conflictListView.horizontalScrollOffset
-                                        width: 2000
-
-                                        text: {
-                                            if (model.role === "marker-start") {
-                                                let branchName = model.text.replace("<<<<<<<", "").trim()
-                                                return "Current Change (" + (branchName || "HEAD") + ")"
-                                            }
-                                            if (model.role === "marker-end") {
-                                                let branchName = model.text.replace(">>>>>>>", "").trim()
-                                                return "Incoming Change (" + branchName + ")"
-                                            }
-                                            if (model.role === "separator") {
-                                                return "======================="
-                                            }
-                                            return ""
-                                        }
-
-                                        color: Style.colors.conflictMarkerText
-                                        font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 13
-                                        padding: 0
-                                        leftPadding: 8
-                                        topPadding: 2
-                                    }
-
-                                    // 2. Editable TextArea exclusively for actual code
-                                    TextArea {
-                                        id: lineEditor
-                                        visible: !isButtonRow && !isMarker
-                                        x: -conflictListView.horizontalScrollOffset
-                                        width: 2000
-
-                                        text: model.text // Simple, safe binding
-
-                                        color: Style.colors.editorForeground
-                                        font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 13
-                                        padding: 0
-                                        leftPadding: 8
-                                        topPadding: 2
-                                        selectionColor: Style.colors.accent
-                                        selectedTextColor: Style.colors.secondaryForeground
-                                        background: null
-                                        selectByMouse: true
-                                        wrapMode: TextArea.NoWrap
-
-                                        Material.accent: Style.colors.accent
-
-                                        onTextChanged: {
-                                            if (!isMarker && !isButtonRow && model.text !== text) {
-                                                model.text = text
-                                                if (displayModel.get(index)) {
-                                                    displayModel.setProperty(index, "text", text)
-                                                }
-                                            }
-                                            root.updateMaxContentWidth(text)
-                                        }
-
-                                        Keys.onPressed: (event) => {
-                                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                                                event.accepted = true
-                                                root.splitLine(index, cursorPosition)
-                                            } else if (event.key === Qt.Key_Up) {
-                                                if (cursorRectangle.y <= topPadding + 2) {
-                                                    event.accepted = true
-                                                    conflictListView.currentIndex = Math.max(0, index - 1)
-                                                }
-                                            } else if (event.key === Qt.Key_Down) {
-                                                if (cursorRectangle.y + cursorRectangle.height >= height - bottomPadding) {
-                                                    event.accepted = true
-                                                    conflictListView.currentIndex = Math.min(displayModel.count - 1, index + 1)
-                                                }
-                                            } else if (event.key === Qt.Key_Backspace) {
-                                                if (cursorPosition === 0) {
-                                                    event.accepted = true
-                                                    root.mergeLineUp(index)
-                                                }
-                                            }
-                                        }
-                                    }
-
-
-                                    RowLayout {
-                                        id: buttonRow
-                                        visible: isButtonRow
-                                        anchors.fill: parent
-                                        anchors.margins: 2
-                                        spacing: 8
-
-                                        Button {
-                                            text: "Accept Current"
-                                            flat: true
-                                            font.pixelSize: 10
-                                            font.family: Style.fontTypes.roboto
-                                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                                            background: Rectangle {
-                                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                                                border.color: Style.colors.accent
-                                                radius: 3
-                                            }
-                                            MouseArea{
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-
-                                                onClicked: root.acceptBlock(model.blockIndex, "ours")
-                                            }
-                                        }
-                                        Button {
-                                            text: "Accept Incoming"
-                                            flat: true
-                                            font.pixelSize: 10
-                                            font.family: Style.fontTypes.roboto
-                                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                                            background: Rectangle {
-                                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                                                border.color: Style.colors.accent
-                                                radius: 3
-                                            }
-                                            MouseArea{
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-
-                                                onClicked: root.acceptBlock(model.blockIndex, "theirs")
-                                            }
-                                        }
-                                        Button {
-                                            text: "Accept Both"
-                                            flat: true
-                                            font.pixelSize: 10
-                                            font.family: Style.fontTypes.roboto
-                                            Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                                            background: Rectangle {
-                                                color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                                                border.color: Style.colors.accent
-                                                radius: 3
-                                            }
-                                            MouseArea{
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-
-                                                onClicked: root.acceptBlock(model.blockIndex, "both")
-                                            }
-                                        }
-                                        Item { Layout.fillWidth: true }
-                                    }
-                                }
-                            }
+                            onSplitRequested        : (cursorPos)           => ConflictUtils.splitLine(displayModel, index, cursorPos, conflictListView)
+                            onMergeUpRequested      : ()                    => ConflictUtils.mergeLineUp(displayModel, index, conflictListView)
+                            onAcceptBlockRequested  : (blockIndex, mode)    => root.acceptBlock(blockIndex, mode)
+                            onMoveFocusUp           : conflictListView.currentIndex = Math.max(0, index - 1)
+                            onMoveFocusDown         : conflictListView.currentIndex = Math.min(displayModel.count - 1, index + 1)
                         }
                     }
 
@@ -510,24 +236,21 @@ IPopup {
                 Layout.fillWidth: true
                 spacing: 12
 
-                Item {
-                    Layout.fillWidth: true
-                }
+                Item { Layout.fillWidth: true }
 
                 Button {
                     flat: true
                     text: "Skip"
-                    visible: currentOperation === ConflictPopup.OperationType.Merge ? 0 : 1
+                    visible: currentOperation !== ConflictPopup.OperationType.Merge
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
                         border.color: Style.colors.accent
                         radius: 5
                     }
-                    MouseArea{
+                    MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-
                         onClicked: skipOperation()
                     }
                 }
@@ -546,26 +269,22 @@ IPopup {
                         opacity: root.canContinue ? 1.0 : 0.5
                     }
 
-                    ToolTip{
+                    ToolTip {
                         id: tip
                         parent: continueBtn
                         visible: mouse.containsMouse
                         delay: 100
                         timeout: 2000
                         text: root.canContinue ? "Click to continue" : "Resolve all files to continue"
-
                         x: (continueBtn.width - width) / 2
                         y: -height - 6
-
                         padding: 6
-
                         contentItem: Text {
                             text: tip.text
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 11
                             color: "#ffffff"
                         }
-
                         background: Rectangle {
                             radius: 6
                             color: Qt.rgba(0, 0, 0, 0.85)
@@ -580,9 +299,8 @@ IPopup {
                         hoverEnabled: true
                         cursorShape: root.canContinue ? Qt.PointingHandCursor : Qt.ForbiddenCursor
                         onClicked: {
-                            if (root.canContinue) {
+                            if (root.canContinue)
                                 continueOperation()
-                            }
                         }
                     }
                 }
@@ -591,254 +309,8 @@ IPopup {
     }
 
     Component {
-        id: confirmationDialogComponent
-
-        IPopup {
-            id: dialog
-            modal: true
-            focus: true
-            width: 580
-            height: 280
-            anchors.centerIn: Overlay.overlay
-            closePolicy: Popup.NoAutoClose
-
-            onClosed: destroy()
-
-            // Customizable properties
-            property string title: "Save modifications"
-            property string message: "There are unsaved modifications!\n" +
-                                     "Do you want to save your changes?"
-
-            property string saveTitle: "Save"
-            property string saveDescription: "The modifications will be saved"
-
-            property string acceptTitle: "Abort Operation"
-            property string acceptDescription: "Discard all changes and exit"
-            property bool hasAbort: true
-
-            property string cancelTitle: "Keep Resolving"
-            property string cancelDescription: "Return to the conflict editor"
-
-            // Signals
-            signal saved()
-            signal aborted()
-            signal cancelled()
-
-            contentItem: Rectangle {
-                anchors.fill: parent
-                color: Style.colors.primaryBackground
-                radius: 16
-                clip: true
-                border.color: Style.colors.accent
-                border.width: 1
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 8
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 12
-                        // Main Icon
-                        Text {
-                            Layout.alignment: Qt.AlignTop
-                            text: Style.icons.warning
-                            font.family: Style.fontTypes.font6Pro
-                            color: Style.colors.warning
-                            font.pixelSize: 50
-                        }
-
-                        ColumnLayout{
-                            Layout.fillWidth: true
-                            spacing: 12
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: dialog.title
-                                color: Style.colors.secondaryText
-                                font.family: Style.fontTypes.roboto
-                                font.bold: true
-                                font.pixelSize: 18
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: dialog.message
-                                wrapMode: Text.Wrap
-                                color: Style.colors.secondaryText
-                                font.family: Style.fontTypes.roboto
-                                font.pixelSize: 14
-                            }
-                        }
-                    }
-
-                    // BUTTON 1: Save
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: saveRow.implicitHeight + 16
-                        border.color: saveMouseArea.containsMouse ? Style.colors.accent : "transparent"
-                        radius: 6
-                        visible: false  //TODO, next version
-
-                        MouseArea {
-                            id: saveMouseArea
-                            cursorShape: Qt.PointingHandCursor
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: {
-                                dialog.saved()
-                                dialog.close()
-                            }
-                        }
-
-                        RowLayout {
-                            id: saveRow
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
-
-                            Text {
-                                text: Style.icons.arrowRight
-                                Layout.alignment: Qt.AlignTop
-                                color: Style.colors.accent
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 16
-                            }
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
-                                Text {
-                                    text: dialog.saveTitle
-                                    color: Style.colors.secondaryText
-                                    font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 14
-                                    font.bold: true
-                                }
-                                Text {
-                                    text: dialog.saveDescription
-                                    Layout.fillWidth: true
-                                    wrapMode: Text.Wrap
-                                    color: Qt.darker(Style.colors.secondaryText, 1.2)
-                                    font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 12
-                                }
-                            }
-                        }
-                    }
-
-                    // BUTTON 2: Abort
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: abortRow.implicitHeight + 16
-                        border.color: abortMouseArea.containsMouse ? Style.colors.accent : "transparent"
-                        radius: 6
-                        visible: dialog.hasAbort
-
-                        MouseArea {
-                            id: abortMouseArea
-                            cursorShape: Qt.PointingHandCursor
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: {
-                                dialog.aborted()
-                                dialog.close()
-                            }
-                        }
-
-                        RowLayout {
-                            id: abortRow
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
-
-                            Text {
-                                text: Style.icons.arrowRight
-                                Layout.alignment: Qt.AlignTop
-                                color: Style.colors.accent
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 16
-                            }
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
-                                Text {
-                                    text: dialog.acceptTitle
-                                    color: Style.colors.secondaryText
-                                    font.family: Style.fontTypes.roboto
-                                    font.bold: true
-                                    font.pixelSize: 14
-                                }
-                                Text {
-                                    text: dialog.acceptDescription
-                                    Layout.fillWidth: true
-                                    wrapMode: Text.Wrap
-                                    color: Qt.darker(Style.colors.secondaryText, 1.2)
-                                    font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 12
-                                }
-                            }
-                        }
-                    }
-
-                    // BUTTON 3: Cancel
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: cancelRow.implicitHeight + 16
-                        border.color: cancelMouseArea.containsMouse ? Style.colors.accent : "transparent"
-                        radius: 6
-
-                        MouseArea {
-                            id: cancelMouseArea
-                            cursorShape: Qt.PointingHandCursor
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: {
-                                dialog.cancelled()
-                                dialog.close()
-                            }
-                        }
-
-                        RowLayout {
-                            id: cancelRow
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
-
-                            Text {
-                                text: Style.icons.arrowRight
-                                Layout.alignment: Qt.AlignTop
-                                color: Style.colors.accent
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 16
-                            }
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
-                                Text {
-                                    text: dialog.cancelTitle
-                                    color: Style.colors.secondaryText
-                                    font.family: Style.fontTypes.roboto
-                                    font.bold: true
-                                    font.pixelSize: 14
-                                }
-                                Text {
-                                    text: dialog.cancelDescription
-                                    Layout.fillWidth: true
-                                    wrapMode: Text.Wrap
-                                    color: Qt.darker(Style.colors.secondaryText, 1.2)
-                                    font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 12
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        id: conflictConfirmationDialogComp
+        ConflictConfirmationDialog { }
     }
 
     /* Functions
@@ -902,176 +374,47 @@ IPopup {
             if (conflicts[i].path === path) {
                 selectedConflict = conflicts[i]
                 selectedPath = path
-                buildDisplayModel()
+                ConflictUtils.buildDisplayModel(
+                    selectedConflict,
+                    modifiedFiles,
+                    selectedPath,
+                    displayModel,
+                    conflictListView,
+                    widthCalculator
+                );
                 break
             }
         }
     }
 
-    function buildDisplayModel() {
-        displayModel.clear()
-        conflictListView.maxContentWidth = 0
-
-        if (!selectedConflict)
-            return
-
-        // 1. Restore from memory if user previously modified it
-        if (modifiedFiles[selectedPath]) {
-            let savedState = modifiedFiles[selectedPath]
-            for (let i = 0; i < savedState.length; ++i) {
-                displayModel.append(savedState[i])
-                if (savedState[i].text)
-                    updateMaxContentWidth(savedState[i].text)
-            }
-            return
-        }
-
-        // 2. Otherwise build original fresh structure
-        let lines = selectedConflict.lines || []
-        let blocks = selectedConflict.blocks || []
-
-        // Create a map for quick lookup: startLine → block
-        let blockMap = {}
-        for (let b of blocks)
-            blockMap[b.startLine] = b
-
-        let i = 0
-        let runningLine = 1
-
-        while (i < lines.length) {
-            let lineNumber = i + 1
-
-            // Check if this line starts a conflict block
-            if (blockMap[lineNumber]) {
-                let block = blockMap[lineNumber]
-
-                // 1. Add button row
-                displayModel.append({
-                    type: "blockButton",
-                    blockIndex: block.index
-                })
-
-                // 2. Add all lines inside the conflict block
-                for (let j = 0; j < block.lines.length; ++j) {
-                    let line = block.lines[j]
-                    displayModel.append({
-                        type: "blockLine",
-                        text: line.text,
-                        blockIndex: block.index,
-                        role: line.role,
-                        lineNumber: runningLine
-                    })
-                    updateMaxContentWidth(line.text)
-                    runningLine++
-                }
-                i = block.endLine
-            }
-            // Regular (non-conflict) line
-            else {
-                displayModel.append({
-                    type: "contextLine",
-                    text: lines[i],
-                    lineNumber: runningLine
-                })
-                updateMaxContentWidth(lines[i])
-                runningLine++
-                i++
-            }
-        }
-    }
-
-
-    function updateMaxContentWidth(newText) {
-        if (newText === undefined || newText === null)
-            return
-
-        let visualText = newText.replace(/\t/g, "    ")
-        widthCalculator.text = visualText
-
-        var measuredWidth = widthCalculator.width + 200
-        if (measuredWidth > conflictListView.maxContentWidth)
-            conflictListView.maxContentWidth = measuredWidth
-    }
-
-    function splitLine(rowIndex, cursorPos) {
-        var row = displayModel.get(rowIndex)
-
-        if (!row || row.type === "blockButton")
-            return
-
-        if (row.type === "blockLine" && (row.role === "marker-start" || row.role === "separator" || row.role === "marker-end"))
-            return
-
-        var before = row.text.substring(0, cursorPos)
-        var after = row.text.substring(cursorPos)
-
-        displayModel.setProperty(rowIndex, "text", before)
-
-        var newRow = { type: row.type, text: after, lineNumber: row.lineNumber + 1 }
-        if (row.blockIndex !== undefined) newRow.blockIndex = row.blockIndex
-        if (row.role !== undefined) newRow.role = row.role
-
-        displayModel.insert(rowIndex + 1, newRow)
-        recomputeLineNumbers()
-        conflictListView.currentIndex = rowIndex + 1
-    }
-
-    function mergeLineUp(rowIndex) {
-        if (rowIndex === 0)
-            return
-
-        var current = displayModel.get(rowIndex)
-        var prev = displayModel.get(rowIndex - 1)
-        if (!current || !prev)
-            return
-
-        if (current.type !== prev.type)
-            return
-
-        if (current.type === "blockLine") {
-            if (current.blockIndex !== prev.blockIndex || current.role !== prev.role) return
-            if (current.role === "marker-start" || current.role === "separator" || current.role === "marker-end") return
-        }
-        displayModel.setProperty(rowIndex - 1, "text", prev.text + current.text)
-        displayModel.remove(rowIndex)
-        recomputeLineNumbers()
-        conflictListView.currentIndex = rowIndex - 1
-    }
-
-    function recomputeLineNumbers() {
-        var lineNum = 1
-        for (var i = 0; i < displayModel.count; ++i) {
-            var row = displayModel.get(i)
-            if (row.type === "blockButton") continue
-            displayModel.setProperty(i, "lineNumber", lineNum)
-            lineNum++
-        }
-    }
-
     function acceptBlock(blockIndex, mode) {
-        if (!selectedPath || !conflictController)
+        if (!selectedPath)
             return
 
-        let currentContent = buildFullContent()
+        let currentContent = ConflictUtils.buildFullContent(displayModel)
         conflictController.writeWorkingFile(selectedPath, currentContent)
 
         let res
-        if (mode === "ours")
-            res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
-        else if (mode === "theirs")
-            res = conflictController.acceptBlockTheirs(selectedPath, blockIndex)
-        else if (mode === "both")
-            res = conflictController.acceptBlockBoth(selectedPath, blockIndex)
-        else
-            return
+        switch (mode) {
+            case "ours":
+                res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
+                break
+            case "theirs":
+                res = conflictController.acceptBlockTheirs(selectedPath, blockIndex)
+                break
+            case "both":
+                res = conflictController.acceptBlockBoth(selectedPath, blockIndex)
+                break
+            default:
+                break
+        }
 
         if (!res.success) {
-            if (notificationController)
-                notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
+            notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
         }
+
         else {
-            if (notificationController)
-                notificationController.success("Conflicts Resolved", "Conflict", 2500)
+            notificationController.success("Conflicts Resolved", "Conflict", 2500)
 
             // Clear memory state so fresh Git changes load
             let copy = Object.assign({}, modifiedFiles)
@@ -1083,7 +426,7 @@ IPopup {
     }
 
     function saveAndStage(path) {
-        if (!path  || !conflictController || !statusController)
+        if (!path)
             return
 
         let selectedConflict
@@ -1101,7 +444,7 @@ IPopup {
     }
 
     function showConflictStageWarning(path) {
-        const d = confirmationDialogComponent.createObject(root)
+        const d = conflictConfirmationDialogComp.createObject(root)
 
         d.title = "File Has Unresolved Conflicts"
         d.message = "This file still contains unresolved conflict markers.\n" +
@@ -1122,29 +465,25 @@ IPopup {
         d.open()
     }
 
-
     function performStage(path) {
-        if (!path || !statusController)
+        if (!path)
             return
 
-        let content = buildFullContent()
+        let content = ConflictUtils.buildFullContent(displayModel)
 
         let res = conflictController.writeWorkingFile(path, content)
         if (!res.success){
-            if (notificationController)
-                notificationController.error(res.errorMessage || "Save failed", "Conflict", 4000)
+            notificationController.error(res.errorMessage || "Save failed", "Conflict", 4000)
             return
         }
 
         res = statusController.stageFile(path)
         if (!res.success){
-            if (notificationController)
-                notificationController.error(res.errorMessage || "Stage failed", "Conflict", 4000)
+            notificationController.error(res.errorMessage || "Stage failed", "Conflict", 4000)
             return
         }
 
-        if (notificationController)
-            notificationController.success("File staged", "Conflict", 2500)
+        notificationController.success("File staged", "Conflict", 2500)
 
         // Clear memory state since changes are successfully staged
         let copy = Object.assign({}, modifiedFiles)
@@ -1154,142 +493,57 @@ IPopup {
         loadConflicts(true)
     }
 
-    function buildFullContent() {
-        let lines = []
-        for (let i = 0; i < displayModel.count; ++i) {
-            let row = displayModel.get(i)
-            if (row.type === "blockButton")
-                continue
-
-            lines.push(row.text)
-        }
-        return lines.join("\n")
-    }
-
     function continueOperation() {
-        if (currentOperation === ConflictPopup.OperationType.Merge) {
-            if (!mergeController)
-                return
+        let res = currentController.continueOp()
 
-            let res = mergeController.continueMerge()
-
-            if (res.success) {
-                if (notificationController)
-                    notificationController.success("Merge completed", "Conflict", 2500)
-
-                close()
-            }
-            else
-                notificationController.error(res.errorMessage, "Merge", 4000)
+        if (res.success) {
+            notificationController.success(`${currentOperationName} completed`, currentOperationName, 2500)
+            operationCompleted()
+            close()
         }
-        else if (currentOperation === ConflictPopup.OperationType.CherryPick) {
-            if (!cherryPickController)
-                return
 
-            let res = cherryPickController.continueCherryPick()
+        else {
+            if (res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
+                notificationController.warning("Continuing... but new conflicts found.", currentOperationName, 4000)
 
-            if (res.success) {
-                if (notificationController)
-                    notificationController.success("Cherry-pick completed", "Conflict", 2500)
-
-                close()
-            } else {
-                if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-                    if (notificationController)
-                        notificationController.warning("Continuing... but new conflicts found.", "Cherry-Pick", 4000)
-
-                    modifiedFiles = ({})
-                    loadConflicts(true)
-                } else {
-                    notificationController.error(res.errorMessage, "Cherry-Pick", 4000)
-                }
+                modifiedFiles = ({})
+                loadConflicts(true)
             }
-        }
-        else if (currentOperation === ConflictPopup.OperationType.Rebase) {
-            if (!rebaseController)
-                return
 
-            let res = rebaseController.continueRebase()
-
-            if (res.success){
-                if (notificationController)
-                    notificationController.success("Rebase completed", "Conflict", 2500)
-
-                close()
-            } else {
-                    if (res.data && res.data.hasConflicts) {
-                    if (notificationController)
-                        notificationController.warning("Continuing... but new conflicts found.", "Rebase", 4000);
-
-                    modifiedFiles = ({})
-                    loadConflicts(true)
-                } else {
-                    if (notificationController)
-                        notificationController.error(res.errorMessage, "Rebase", 4000);
-                }
+            else {
+                notificationController.error(res.errorMessage, currentOperationName, 4000)
             }
         }
     }
 
     function skipOperation() {
-        if (currentOperation === ConflictPopup.OperationType.Rebase) {
-            if (!rebaseController)
-                return
+        let res = currentController.skipOp()
 
-            let res = rebaseController.skipRebase()
-
-            if (res.success) {
-                notificationController.success("Commit skipped", "Rebase", 2500)
-                close();
-            } else {
-                if (res.data && res.data.hasConflicts){
-                    notificationController.warning("Skipped, but new conflicts found in the next commit.", "Rebase", 2500)
-
-                    modifiedFiles = ({})
-                    loadConflicts(true)
-                }
-                else{
-                    notificationController.error(res.errorMessage, "Rebase", 4000)
-                }
-            }
+        if (res.success) {
+            notificationController.success("Commit skipped", currentOperationName, 2500)
+            operationCompleted()
+            close();
         }
-        else if (currentOperation === ConflictPopup.OperationType.CherryPick) {
-            if(!cherryPickController)
-                return
 
-            let res = cherryPickController.skipCherryPick()
+        else {
+            if (res.data && (res.data.status === "conflict" || res.data.hasConflicts)){
+                notificationController.warning("Skipped, but new conflicts found in the next commit.", currentOperationName, 2500)
 
-            if (res.success) {
-                notificationController.success("Commit skipped", "Cherry-Pick", 2500)
-                close();
-            } else {
-                if (res.data && res.data.hasConflicts){
-                    notificationController.warning("Skipped, but new conflicts found in the next commit.", "Cherry-Pick", 2500)
+                modifiedFiles = ({})
+                loadConflicts(true)
+            }
 
-                    modifiedFiles = ({})
-                    loadConflicts(true)
-                } else {
-                    notificationController.error(res.errorMessage, "Cherry-Pick", 4000)
-                }
+            else{
+                notificationController.error(res.errorMessage, currentOperationName, 4000)
             }
         }
     }
 
     function abortOperation() {
-        let res
+        let res = currentController.abortOp()
 
-        if (currentOperation === ConflictPopup.OperationType.Merge && mergeController) {
-            res = mergeController.abortMerge()
-        }
-        else if (currentOperation === ConflictPopup.OperationType.Rebase && rebaseController) {
-            res = rebaseController.abortRebase()
-        }
-        else if (currentOperation === ConflictPopup.OperationType.CherryPick && cherryPickController) {
-            res = cherryPickController.abortCherryPick()
-        }
-
-        if (res && res.success) {
-            notificationController.success("Operation aborted", "Git", 2500)
+        if (res.success) {
+            notificationController.success(`${currentOperationName} aborted`, currentOperationName, 2500)
 
             // WIPE CACHE AND VIEW
             modifiedFiles = ({})
@@ -1297,36 +551,37 @@ IPopup {
             selectedPath = ""
 
             close()
-        } else if (res) {
-            notificationController.error(res.errorMessage, "Git", 4000)
+        }
+
+        else {
+            notificationController.error(res.errorMessage, currentOperationName, 4000)
         }
     }
 
     function quitOperation() {
-        if (currentOperation === ConflictPopup.OperationType.Rebase && rebaseController) {
-            let res = rebaseController.quitRebase()
+        let res = currentController.quitOp()
 
-            if (res.success) {
-                notificationController.success("Rebase quit", "Rebase", 2500)
+        if (res.success) {
+            notificationController.success(`${currentOperationName} quitted`, currentOperationName, 2500)
 
-                // WIPE CACHE AND VIEW
-                modifiedFiles = ({})
-                displayModel.clear()
-                selectedPath = ""
+            // WIPE CACHE AND VIEW
+            modifiedFiles = ({})
+            displayModel.clear()
+            selectedPath = ""
 
-                close()
-            } else {
-                notificationController.error(res.errorMessage, "Rebase", 4000)
-            }
+            close()
+        }
+
+        else {
+            notificationController.error(res.errorMessage, currentOperationName, 4000)
         }
     }
 
     function saveAllModifications() {
 
-
         // 1. Save the currently active file on screen
         if (selectedPath) {
-            let currentContent = buildFullContent()
+            let currentContent = ConflictUtils.buildFullContent(displayModel);
             conflictController.writeWorkingFile(selectedPath, currentContent)
         }
 
@@ -1350,8 +605,6 @@ IPopup {
         if (notificationController)
             notificationController.success("All modifications saved locally", "Save", 2500)
 
-
         root.close()
     }
-
 }

@@ -47,6 +47,7 @@ DetachablePanel {
         conflictController: root.conflictController
         notificationController: root.notificationController
         statusController: root.statusController
+        onOperationCompleted: reloadAll()
     }
 
     MergeMethodPopup {
@@ -60,6 +61,7 @@ DetachablePanel {
         conflictController: root.conflictController
         notificationController: root.notificationController
         statusController: root.statusController
+        onOperationCompleted: reloadAll()
     }
 
     ConflictPopup {
@@ -69,6 +71,7 @@ DetachablePanel {
         conflictController: root.conflictController
         notificationController: root.notificationController
         statusController: root.statusController
+        onOperationCompleted: reloadAll()
     }
 
     /* Property Declarations

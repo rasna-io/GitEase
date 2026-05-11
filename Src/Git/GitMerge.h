@@ -82,7 +82,7 @@ public:
      * @param commitMessage Optional custom commit message. If empty, a default is used.
      * @return GitResult indicating success or failure.
      */
-    Q_INVOKABLE GitResult continueMerge(const QString& commitMessage = QString());
+    Q_INVOKABLE GitResult continueOp(const QString& commitMessage = QString());
 
     /**
      * @brief Checks whether the repository currently has merge conflicts.
@@ -97,7 +97,7 @@ public:
     Q_INVOKABLE bool isMergeInProgress() const;
 
     /// Abort an in-progress merge (`git merge --abort`).
-    Q_INVOKABLE GitResult abortMerge();
+    Q_INVOKABLE GitResult abortOp();
 
 signals:
     /**

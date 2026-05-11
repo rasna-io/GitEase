@@ -56,16 +56,16 @@ public:
                                      QString branch = QString());
 
     /// Continue an in-progress rebase (`git rebase --continue`).
-    Q_INVOKABLE GitResult continueRebase();
+    Q_INVOKABLE GitResult continueOp();
 
     /// Skip current rebase operation and continue (`git rebase --skip`).
-    Q_INVOKABLE GitResult skipRebase();
+    Q_INVOKABLE GitResult skipOp();
 
     /// Abort an in-progress rebase (`git rebase --abort`).
-    Q_INVOKABLE GitResult abortRebase();
+    Q_INVOKABLE GitResult abortOp();
 
     /// Quit rebase mode and cleanup state without resetting branch (`git rebase --quit`).
-    Q_INVOKABLE GitResult quitRebase();
+    Q_INVOKABLE GitResult quitOp();
 
     /// Return details about current rebase progress/conflicts.
     Q_INVOKABLE GitResult rebaseStatus();

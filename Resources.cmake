@@ -40,6 +40,7 @@ set(RESOURCES_CORE
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
     Qml/Core/Scripts/GraphLayout.js
+    Qml/Core/Scripts/ConflictPopupUtils.js
 )
 
 
@@ -143,6 +144,11 @@ set(RESOURCES_COMPONENTS
     # Repo Forest
     Qml/View/Components/RepoForest/RepoForest.qml
     Qml/View/Components/RepoForest/RepoItem.qml
+
+    # Conflict Components
+    Qml/View/Components/Conflict/ConflictFileList.qml
+    Qml/View/Components/Conflict/ConflictConfirmationDialog.qml
+    Qml/View/Components/Conflict/ConflictEditorDelegate.qml
 )
 
 
@@ -169,8 +175,6 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/ManageStashPopup.qml
     Qml/View/Popups/FetchSummaryPopup.qml
     Qml/View/Popups/RepoForestPopup.qml
-    Qml/View/Popups/MergeConflictPopup.qml
-    Qml/View/Popups/RebaseConflictPopup.qml
     Qml/View/Popups/ConflictPopup.qml
     Qml/View/Popups/MergeMethodPopup.qml
 
