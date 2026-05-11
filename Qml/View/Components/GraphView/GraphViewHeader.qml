@@ -36,7 +36,7 @@ RowLayout {
     anchors.leftMargin  : (parent && parent.width < Style.appHeight) ? 8 : 20
     anchors.rightMargin : (parent && parent.width < Style.appHeight) ? 4 : 5
 
-ListModel {
+    ListModel {
         id: filterOptionsModel
         ListElement { text: "Messages"; checked: false }
         ListElement { text: "Subjects"; checked: false }
@@ -178,7 +178,7 @@ ListModel {
             color: columnCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
         }
 
-        Layout.preferredWidth: 90
+        Layout.preferredWidth: 120
         currentIndex: navigationRules.indexOf(navigationRule)
         onActivated: function(index) {
             navigationRule = navigationRules[index]
