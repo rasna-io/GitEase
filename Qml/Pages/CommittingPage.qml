@@ -1219,37 +1219,31 @@ Item {
             }
         }
 
-        // Right panel: diff placeholder
-        Rectangle {
+        DiffView {
+            id: diffView
             Layout.fillHeight: true
             Layout.fillWidth: true
-            color: "transparent"
-
-            DiffView {
-                id: diffView
-                anchors.fill: parent
-                chunkMode: true
-                contextLines: 0
-                expandLines: 10
-                onRequestStage: function (start, end, type) {
-                    let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
-                    if (res.success) {
-                        root.notificationController.success("Selected lines staged", "Stage", 2000)
-                    } else {
-                        root.notificationController.error(res.errorMessage || "Failed to stage selected lines", "Stage Error", 5000)
-                    }
-                    root.update()
+            chunkMode: true
+            contextLines: 0
+            expandLines: 10
+            onRequestStage: function (start, end, type) {
+                let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
+                if (res.success) {
+                    root.notificationController.success("Selected lines staged", "Stage", 2000)
+                } else {
+                    root.notificationController.error(res.errorMessage || "Failed to stage selected lines", "Stage Error", 5000)
                 }
+                root.update()
+            }
 
-                onRequestRevert: function (start, end, type) {
-                    let res = root.statusController.revertSelectedLines(root.selectedFilePath, start, end, type)
-                    if (res.success) {
-                        root.notificationController.success("Selected lines reverted", "Revert", 2000)
-                    } else {
-                        root.notificationController.error(res.errorMessage || "Failed to revert selected lines", "Revert Error", 5000)
-                    }
-                    root.update()
+            onRequestRevert: function (start, end, type) {
+                let res = root.statusController.revertSelectedLines(root.selectedFilePath, start, end, type)
+                if (res.success) {
+                    root.notificationController.success("Selected lines reverted", "Revert", 2000)
+                } else {
+                    root.notificationController.error(res.errorMessage || "Failed to revert selected lines", "Revert Error", 5000)
                 }
+                root.update()
             }
         }
     }
