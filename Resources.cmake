@@ -65,6 +65,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/DetachablePanel.qml               # Detachable panel wrapper
     Qml/View/Components/Base/DropZone.qml                      # Dock zone
     Qml/View/Components/Base/ScrollingText.qml                 # Single-line auto-scrolling text
+    Qml/View/Components/Base/ModernInputArea.qml               # Modern Input Area
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
