@@ -30,7 +30,7 @@ Item {
 
     property UserProfileController   userProfileController:   null
 
-    property StashController          stashController:        null
+    property StashController         stashController:        null
 
     property NotificationController  notificationController:  null
 
@@ -171,7 +171,7 @@ Item {
                         } else {
                             if (notificationController)
                                 notificationController.success("Pulled successfully", "Pull", 3000)
-                            root.update()
+                            changesFileLists.updateStatus()
                         }
                         break
                     }
@@ -358,7 +358,7 @@ Item {
                         } else {
                             root.isFetching = false
                         }
-                        root.update()
+                        changesFileLists.updateStatus()
                 }
 
                 ToolTip.visible: fetchBtnHeader.hovered
@@ -446,7 +446,6 @@ Item {
     }
 
     onStatusControllerChanged: {
-        update()
         branchController.getCurrentBranchName()
     }
 
@@ -461,7 +460,7 @@ Item {
         target: repositoryController
 
         function onCurrentRepoChanged() {
-            root.update()
+            changesFileLists.updateStatus()
             currentBranchNameText.text = branchController.getCurrentBranchName()
             commitPanelBranchText.text = branchController ? branchController.getCurrentBranchName() : ""
         }
@@ -494,7 +493,7 @@ Item {
                     popup.open()
                 }
             }
-            root.update()
+            changesFileLists.updateStatus()
         }
 
         function onPullFinished(result) {
@@ -517,7 +516,7 @@ Item {
                     root.notificationController.error(errorMessageLabel.text, "Pull Error", 5000)
             }
 
-            root.update()
+            changesFileLists.updateStatus()
         }
     }
 
@@ -541,7 +540,7 @@ Item {
                 } else {
                     if (root.notificationController)
                         root.notificationController.success("Pulled successfully", "Pull", 3000)
-                    root.update()
+                    changesFileLists.updateStatus()
                 }
                 root.authPurpose = "push"
                 return
@@ -572,7 +571,7 @@ Item {
                 root.authPurpose = "push"
                 root.pendingFetchRemoteNames = []
                 root.pendingPullRemoteNames = []
-                root.update()
+                changesFileLists.updateStatus()
                 return
             }
 
@@ -599,7 +598,7 @@ Item {
                 root.authPurpose = "push"
                 root.pendingFetchRemoteNames = []
                 root.pendingPullRemoteNames = []
-                root.update()
+                changesFileLists.updateStatus()
                 return
             }
 
@@ -639,7 +638,7 @@ Item {
             }
             root.authPurpose = "push"
 
-            root.update()
+            changesFileLists.updateStatus()
         }
 
         function onRejected() {
@@ -720,7 +719,7 @@ Item {
                                                 if (notificationController)
                                                     notificationController.error("Unsupported protocol", "Push Force Error", 5000)
                                             }
-                                            root.update()
+                                            changesFileLists.updateStatus()
                                         }
                                     },
                                     {
@@ -785,7 +784,7 @@ Item {
                                             }
                                             if (httpsRemotes.length === 0 && root.activeFetchRemotes.length === 0)
                                                 root.isFetching = false
-                                            root.update()
+                                            changesFileLists.updateStatus()
                                         }
                                     },
                                     {
@@ -839,7 +838,7 @@ Item {
                                             } else {
                                                 root.isFetching = false
                                             }
-                                            root.update()
+                                            changesFileLists.updateStatus()
                                         }
                                     }
                                 ]
@@ -901,7 +900,7 @@ Item {
                                             root.notificationController.error(res.errorMessage || "Commit failed", "Commit Error", 5000)
                                             errorMessageLabel.text = res.errorMessage ?? "commit error"
                                         }
-                                        root.update()
+                                        changesFileLists.updateStatus()
                                     }
                                 }
 
@@ -965,7 +964,7 @@ Item {
                                                     root.notificationController.error(res.errorMessage || "Amend failed", "Commit Amend Error", 5000)
                                                     errorMessageLabel.text = res.errorMessage ?? "amend error"
                                                 }
-                                                root.update()
+                                                changesFileLists.updateStatus()
                                             }
                                         },
                                         {
@@ -980,7 +979,7 @@ Item {
                                                 }
                                                 commitTextArea.text = ""
                                                 root.notificationController.success("Commit successful", "Commit", 3000)
-                                                root.update()
+                                                changesFileLists.updateStatus()
                                                 let urlRes = remoteController.getRemoteUrl("origin")
                                                 if (!urlRes.success) {
                                                     root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", "Push Error", 5000)
@@ -1007,7 +1006,7 @@ Item {
                                                 default:
                                                     root.notificationController.error("Unsupported protocol", "Push Error", 5000)
                                                 }
-                                                root.update()
+                                                changesFileLists.updateStatus()
                                             }
                                         }
                                     ]
@@ -1059,113 +1058,19 @@ Item {
                     }
                 }
 
-                // File lists
-                Rectangle {
-                    id: fileListsPanel
+                ChangesFileLists {
+                    id: changesFileLists
+
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: "transparent"
 
-                    // Default fake data so the UI is visibly populated without git wiring.
-                    // Keep one list non-empty and the other empty to demonstrate both states.
-                    property var unstagedChanges: []
+                    statusController: root.statusController
+                    notificationController: root.notificationController
+                    stashController: root.stashController
 
-                    property var stagedChanges: []
-
-                    ChangesFileLists {
-                        id: changesFileLists
-                        anchors.fill: parent
-                        unstagedModel: fileListsPanel.unstagedChanges
-                        stagedModel: fileListsPanel.stagedChanges
-
-                        selectedFilePath: root.selectedFilePath
-
-                        onFileSelected: function(filePath) {
-                            root.selectedFilePath = filePath
-                            let isStaged = fileListsPanel.stagedChanges.some(file => file.path === filePath)
-                            root.updateDiff(isStaged)
-                        }
-
-                        onStageFileRequested: function(filePath) {
-                            let res = statusController.stageFile(filePath)
-                            if (!res.success) {
-                                root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
-                            }
-                            root.update()
-                        }
-
-                        onUnstageFileRequested: function(filePath) {
-                            let res = statusController.unstageFile(filePath)
-                            if (!res.success) {
-                                root.notificationController.error(res.errorMessage || "Failed to unstage file", "Unstage Error", 5000)
-                            }
-                            root.update()
-                        }
-
-                        onDiscardFileRequested: function(filePath) {
-                            let res = statusController.revertFile(filePath)
-                            if (res.success) {
-                                root.notificationController.success("File changes discarded successfully", "Discard", 3000)
-                            } else {
-                                root.notificationController.error(res.errorMessage || "Failed to discard file changes", "Discard Error", 5000)
-                            }
-                            root.update()
-                        }
-
-                        onOpenFileRequested: function(filePath, isStaged) {
-                            root.selectedFilePath = filePath;
-                            updateDiff(isStaged)
-                        }
-
-                        onStageAllRequested: function() {
-                            let res = statusController.stageAll()
-                            if (res.success) {
-                                root.notificationController.success("All files staged successfully", "Stage All", 3000)
-                            } else {
-                                root.notificationController.error(res.errorMessage || "Failed to stage all files", "Stage Error", 5000)
-                            }
-                            root.update()
-                        }
-
-                        onUnstageAllRequested: function() {
-                            let failedFiles = []
-                            fileListsPanel.stagedChanges.forEach((file)=>{
-                                let res = statusController.unstageFile(file.path)
-                                if (!res.success) {
-                                    failedFiles.push(file.path)
-                                }
-                            })
-                            if (failedFiles.length > 0) {
-                                root.notificationController.error("Failed to unstage some files", "Unstage Error", 5000)
-                            } else if (fileListsPanel.stagedChanges.length > 0) {
-                                root.notificationController.success("All files unstaged successfully", "Unstage All", 3000)
-                            }
-                            root.update()
-                        }
-
-                        onDiscardAllRequested: function() {
-                            let res = statusController.revertAll()
-                            if (res.success) {
-                                root.notificationController.success("All changes discarded successfully", "Discard All", 3000)
-                            } else {
-                                root.notificationController.error(res.errorMessage || "Failed to discard all changes", "Discard Error", 5000)
-                            }
-                            root.update()
-                        }
-
-                        onStashAllRequested: function(section) {
-                            let message = section === "unstaged" ? "Stash unstaged changes" : "Stash staged changes";
-                            let keepIndex = section === "staged";
-                            let result = stashController.save(message, keepIndex);
-
-                            if (result.success) {
-                                root.notificationController.success("Changes stashed successfully", "Stash", 3000)
-                                root.update();
-                            } else {
-                                root.notificationController.error(result.errorMessage || "Stash failed", "Stash Error", 5000)
-                                errorMessageLabel.text = result.errorMessage ?? "Stash failed";
-                            }
-                        }
+                    onFileSelected: function(filePath, isStaged) {
+                        root.selectedFilePath = filePath
+                        root.updateDiff(isStaged)
                     }
                 }
             }
@@ -1185,7 +1090,7 @@ Item {
                 } else {
                     root.notificationController.error(res.errorMessage || "Failed to stage selected lines", "Stage Error", 5000)
                 }
-                root.update()
+                changesFileLists.updateStatus()
             }
 
             onRequestRevert: function (start, end, type) {
@@ -1195,7 +1100,7 @@ Item {
                 } else {
                     root.notificationController.error(res.errorMessage || "Failed to revert selected lines", "Revert Error", 5000)
                 }
-                root.update()
+                changesFileLists.updateStatus()
             }
         }
     }
@@ -1220,42 +1125,5 @@ Item {
         Qt.callLater(() => {
             diffView.scrollPosition = oldY;
         });
-    }
-
-    function updateStatus() {
-        let res = statusController.status()
-
-        if (!res.success) return;
-
-        fileListsPanel.unstagedChanges = []
-        fileListsPanel.stagedChanges = []
-
-        res.data.forEach((file) => {
-            if (file.isStaged) {
-                fileListsPanel.stagedChanges.push(file)
-            }
-            if (file.isUnstaged || file.isUntracked) {
-                fileListsPanel.unstagedChanges.push(file)
-            }
-        })
-
-        fileListsPanel.unstagedChanges = fileListsPanel.unstagedChanges.slice(0)
-        fileListsPanel.stagedChanges = fileListsPanel.stagedChanges.slice(0)
-
-        let totalFiles = fileListsPanel.stagedChanges.length + fileListsPanel.unstagedChanges.length;
-
-        if (totalFiles === 1 && root.selectedFilePath === "") {
-            let firstFile = fileListsPanel.unstagedChanges.length > 0
-                            ? fileListsPanel.unstagedChanges[0]
-                            : fileListsPanel.stagedChanges[0];
-
-            root.selectedFilePath = firstFile.path;
-            diffView.readOnly = firstFile.isStaged && !firstFile.isUnstaged;
-        }
-    }
-
-    function update() {
-        updateStatus()
-        updateDiff(diffView.readOnly)
     }
 }
