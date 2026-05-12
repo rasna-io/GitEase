@@ -845,61 +845,13 @@ Item {
                                 ]
                         }
 
-                        // Modern Input Area
-                        Rectangle {
+                        ModernInputArea {
+                            id: commitTextArea
+
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            color: Style.colors.primaryBackground
-                            radius: 4
-                            border.width: 1
-                            border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
 
-                            ColumnLayout {
-                                anchors.fill: parent
-                                spacing: 0
-
-                                ScrollView {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    clip: true
-
-                                    TextArea {
-                                        id: commitTextArea
-                                        placeholderText: "What did you change?..."
-                                        placeholderTextColor: Style.colors.placeholderText
-                                        color: Style.colors.foreground
-                                        font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 14
-                                        wrapMode: TextEdit.Wrap
-                                        leftPadding: 12;
-                                        topPadding: 12;
-                                        rightPadding: 12
-                                        selectByMouse: true
-                                        background: null
-                                        selectionColor: Style.colors.accent
-                                        selectedTextColor: Style.colors.secondaryForeground
-                                        Material.accent: Style.colors.accent
-                                    }
-                                }
-
-                                // Character Count & Branch Hint
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 24
-                                    color: "transparent"
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.leftMargin: 12; anchors.rightMargin: 12
-                                        Item { Layout.fillWidth: true }
-                                        Text {
-                                            text: commitTextArea.text.length + " characters"
-                                            font.pixelSize: 10
-                                            color: Style.colors.placeholderText
-                                        }
-                                    }
-                                }
-                            }
+                            placeholder: "What did you change?..."
                         }
 
                         RowLayout {
