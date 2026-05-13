@@ -1,0 +1,217 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+
+import GitEase_Style
+import GitEase_Style_Impl
+import GitEase
+
+import "qrc:/GitEase/Qml/Core/Scripts/GraphUtils.js" as GraphUtils
+
+/*! ***********************************************************************************************
+ * CommitListDelegate
+ * ************************************************************************************************/
+
+Rectangle {
+    id: commitItem
+
+    /* Property Declarations
+     * ****************************************************************************************/
+    property var    commitData      : typeof modelData !== "undefined" ? modelData : null
+
+    property real   messageWidth    : 0
+    property real   authorWidth     : 0
+    property real   dateWidth       : 0
+
+    property color  indicatorColor  : "gray"
+
+    property bool   isSelected      : false
+    property bool   isHead          : false
+    property bool   isStash         : false
+
+    property bool   isHovered       : mouseArea.containsMouse
+
+    /* Signals
+     * ****************************************************************************************/
+    signal itemClicked(int mouseButton, int mouseModifiers, int _index, real mouseX, real mouseY)
+    signal itemDoubleClicked(int mouseButton, int mouseModifiers, var _index)
+
+    /* Object Properties
+     * ****************************************************************************************/
+    width   : ListView.view ? ListView.view.width : parent.width
+    height  : 24 + 4*2
+
+    radius  : (isSelected || isHovered) ? 4 : 0
+
+    color: {
+        if (!commitData)
+            return Style.colors.primaryBackground;
+
+        if (isSelected)
+            return "#6088B2DF";
+
+        if (commitData.isUncommitted) {
+            return isHovered ? Qt.darker(Style.colors.hoverTitle, 1.03)
+                             : (Style.colors.secondaryBackground || Style.colors.primaryBackground);
+        }
+
+        if (isHovered)
+            return Style.colors.hoverTitle;
+
+        if (isHead)
+            return "#40FFA500";
+
+        return Style.colors.primaryBackground;
+    }
+
+    /* Children
+     * ****************************************************************************************/
+    RowLayout {
+        anchors.fill: parent
+        spacing: 0
+        anchors.topMargin: 4
+        anchors.bottomMargin: 4
+
+        // Message column
+        ColumnLayout {
+            Layout.fillWidth: false
+            Layout.preferredWidth: commitItem.messageWidth
+            Layout.fillHeight: true
+            spacing: 0
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                // separator
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.fillHeight: true
+                    color: Style.colors.hoverTitle
+                }
+
+                // Lane colour bar
+                Rectangle {
+                    Layout.preferredWidth: 3
+                    Layout.preferredHeight: parent.height * 0.8
+                    Layout.alignment: Qt.AlignVCenter
+                    radius: 6
+                    color: indicatorColor
+                }
+
+                // Stash badge
+                Rectangle {
+                    visible: commitItem.isStash
+                    Layout.preferredWidth: stashBadgeRow.implicitWidth + 10
+                    Layout.preferredHeight: 17
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: 4
+                    radius: 2
+                    color: indicatorColor
+                    Row {
+                        id: stashBadgeRow
+                        anchors.centerIn: parent
+                        spacing: 3
+                        Text {
+                            text: Style.icons.archive
+                            font.family: Style.fontTypes.font6ProSolid
+                            font.pixelSize: 9
+                            color: GraphUtils.getContrastColor(indicatorColor.toString())
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        Text {
+                            text: commitData ? (commitData.stashLabel || "stash") : ""
+                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: 9
+                            color: GraphUtils.getContrastColor(indicatorColor.toString())
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                }
+
+                // Summary text
+                Label {
+                    text: commitData ? (commitData.summary || "") : ""
+                    color: Style.colors.foreground
+                    verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: 10
+                    font.family: Style.fontTypes.roboto
+                    font.weight: commitData && commitData.isUncommitted ? 700 :
+                                  (isHead ? 900 : 400)
+                    font.letterSpacing: 0.2
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 6
+                    elide: Text.ElideRight
+                }
+            }
+        }
+
+        // Author column
+        ColumnLayout {
+            Layout.fillWidth: false
+            Layout.preferredWidth: commitItem.authorWidth
+            Layout.fillHeight: true
+            spacing: 0
+
+            RowLayout {
+                Layout.fillWidth: true
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.fillHeight: true
+                    color: Style.colors.hoverTitle
+                }
+                Label {
+                    text: commitData ? (commitData.author || "") : ""
+                    color: Style.colors.foreground
+                    verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: 12
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignLeft
+                    elide: Text.ElideRight
+                }
+            }
+        }
+
+        // Date column
+        ColumnLayout {
+            Layout.fillWidth: false
+            Layout.preferredWidth: commitItem.dateWidth
+            Layout.fillHeight: true
+            spacing: 0
+
+            RowLayout {
+                Layout.fillWidth: true
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.fillHeight: true
+                    color: Style.colors.hoverTitle
+                }
+                Label {
+                    text: commitData ? (
+                        GraphUtils.formatDate(commitData.authorDate) + " " +
+                        GraphUtils.formatTime(commitData.authorDate)
+                    ) : ""
+                    color: Style.colors.foreground
+                    verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: 10
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignLeft
+                    wrapMode: Text.NoWrap
+                }
+            }
+        }
+    }
+
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+        onClicked: function(mouse) {
+            commitItem.itemClicked(mouse.button, mouse.modifiers, index, mouse.x, mouse.y)
+        }
+        onDoubleClicked: function(mouse) {
+            commitItem.itemDoubleClicked(mouse.button, mouse.modifiers, index)
+        }
+    }
+}
