@@ -134,38 +134,7 @@ Item {
                 tooltip: "Push to origin"
                 compact:headerRow.compact
 
-                onClicked: {
-                    let res = remoteController.getRemoteUrl("origin")
-                    if (!res.success) {
-                        if (notificationController)
-                            notificationController.error(res.errorMessage || "Failed to get remote URL", "Push Error", 5000)
-                        return
-                    }
-                    let url = res.data.url
-                    let protocol = repositoryController.detectGitProtocol(url)
-                    switch (protocol) {
-                    case RepositoryController.GitProtocol.SSH: {
-                        let branchName = branchController.getCurrentBranchName()
-                        let remoteRes = remoteController.push("origin", branchName, false)
-                        if (!remoteRes.success) {
-                            if (notificationController)
-                                notificationController.error(remoteRes.errorMessage || "Push failed", "Push Error", 5000)
-                        } else {
-                            if (notificationController)
-                                notificationController.success("Changes pushed successfully", "Push", 3000)
-                        }
-                        break
-                    }
-                    case RepositoryController.GitProtocol.HTTPS:
-                    case RepositoryController.GitProtocol.HTTP:
-                        root.authPurpose = "push"
-                        userAuthenticationPopup.open()
-                        break
-                    default:
-                        if (notificationController)
-                            notificationController.error("Unsupported protocol", "Push Error", 5000)
-                    }
-                }
+                onClicked: root.pushAndUpdate()
             }
 
             Item {
@@ -241,38 +210,7 @@ Item {
                 tooltip: "Force push to origin"
                 compact: headerRow.compact
 
-                onClicked: {
-                    let res = remoteController.getRemoteUrl("origin")
-                    if (!res.success) {
-                        if (notificationController)
-                            notificationController.error(res.errorMessage || "Failed to get remote URL", "Push Force Error", 5000)
-                        return
-                    }
-                    let url = res.data.url
-                    let protocol = repositoryController.detectGitProtocol(url)
-                    switch (protocol) {
-                    case RepositoryController.GitProtocol.SSH: {
-                        let branchName = branchController.getCurrentBranchName()
-                        let remoteRes = remoteController.push("origin", branchName, true)
-                        if (!remoteRes.success) {
-                            if (notificationController)
-                                notificationController.error(remoteRes.errorMessage || "Push force failed", "Push Force Error", 5000)
-                        } else {
-                            if (notificationController)
-                                notificationController.success("Changes force pushed successfully", "Push Force", 3000)
-                        }
-                        break
-                    }
-                    case RepositoryController.GitProtocol.HTTPS:
-                    case RepositoryController.GitProtocol.HTTP:
-                        root.authPurpose = "pushForce"
-                        userAuthenticationPopup.open()
-                        break
-                    default:
-                        if (notificationController)
-                            notificationController.error("Unsupported protocol", "Push Force Error", 5000)
-                    }
-                }
+                onClicked: root.pushAndUpdate(true)
             }
         }
     }
@@ -520,38 +458,7 @@ Item {
                                         text: "Push Force",
                                         icon: Style.icons.arrowUp,
                                         action: function() {
-                                            let res = remoteController.getRemoteUrl("origin")
-                                            if (!res.success) {
-                                                if (notificationController)
-                                                    notificationController.error(res.errorMessage || "Failed to get remote URL", "Push Force Error", 5000)
-                                                return
-                                            }
-                                            let url = res.data.url
-                                            let protocol = repositoryController.detectGitProtocol(url)
-                                            switch (protocol) {
-                                            case RepositoryController.GitProtocol.SSH: {
-                                                let branchName = branchController.getCurrentBranchName()
-                                                let remoteRes = remoteController.push("origin", branchName, true)
-                                                if (!remoteRes.success) {
-                                                    if (notificationController)
-                                                        notificationController.error(remoteRes.errorMessage || "Push force failed", "Push Force Error", 5000)
-                                                    errorMessageLabel.text = remoteRes.errorMessage ?? "push force error"
-                                                } else {
-                                                    if (notificationController)
-                                                        notificationController.success("Changes force pushed successfully", "Push Force", 3000)
-                                                }
-                                                break
-                                            }
-                                            case RepositoryController.GitProtocol.HTTPS:
-                                            case RepositoryController.GitProtocol.HTTP:
-                                                root.authPurpose = "pushForce"
-                                                userAuthenticationPopup.open()
-                                                break
-                                            default:
-                                                if (notificationController)
-                                                    notificationController.error("Unsupported protocol", "Push Force Error", 5000)
-                                            }
-                                            changesFileLists.updateStatus()
+                                            root.pushAndUpdate(true)
                                         }
                                     },
                                     {
@@ -786,33 +693,7 @@ Item {
                                                 if(!root.commitAndUpdate())
                                                     return
 
-                                                let urlRes = remoteController.getRemoteUrl("origin")
-                                                if (!urlRes.success) {
-                                                    root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", "Push Error", 5000)
-                                                    return
-                                                }
-                                                let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
-                                                switch (protocol) {
-                                                case RepositoryController.GitProtocol.SSH: {
-                                                    let branchName = branchController.getCurrentBranchName()
-                                                    let pushRes = remoteController.push("origin", branchName, false)
-                                                    if (!pushRes.success) {
-                                                        root.notificationController.error(pushRes.errorMessage || "Push failed", "Push Error", 5000)
-                                                        errorMessageLabel.text = pushRes.errorMessage ?? "push error"
-                                                    } else {
-                                                        root.notificationController.success("Changes pushed successfully", "Push", 3000)
-                                                    }
-                                                    break
-                                                }
-                                                case RepositoryController.GitProtocol.HTTPS:
-                                                case RepositoryController.GitProtocol.HTTP:
-                                                    root.authPurpose = "push"
-                                                    userAuthenticationPopup.open()
-                                                    break
-                                                default:
-                                                    root.notificationController.error("Unsupported protocol", "Push Error", 5000)
-                                                }
-                                                changesFileLists.updateStatus()
+                                                root.pushAndUpdate()
                                             }
                                         }
                                     ]
@@ -928,6 +809,42 @@ Item {
         let result = root.commit(amend)
         changesFileLists.updateStatus()
         return result
+    }
+
+    function push(force) {
+        force = force || false
+
+        let urlRes = remoteController.getRemoteUrl("origin")
+        if (!urlRes.success) {
+            root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${force ? "Force" : ""} Push Error`, 5000)
+            return
+        }
+        let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
+        switch (protocol) {
+        case RepositoryController.GitProtocol.SSH: {
+            let branchName = branchController.getCurrentBranchName()
+            let pushRes = remoteController.push("origin", branchName, force)
+            if (!pushRes.success) {
+                root.notificationController.error(pushRes.errorMessage || `${force ? "Force" : ""} Push failed`, `${force ? "Force" : ""} Push Error`, 5000)
+                errorMessageLabel.text = pushRes.errorMessage ?? `${force ? "Force" : ""} Push Error`
+            } else {
+                root.notificationController.success(`Changes ${force ? "force" : ""} pushed successfully`, `${force ? "Force" : ""} Push`, 3000)
+            }
+            break
+        }
+        case RepositoryController.GitProtocol.HTTPS:
+        case RepositoryController.GitProtocol.HTTP:
+            root.authPurpose = force ? "pushForce" : "push"
+            userAuthenticationPopup.open()
+            break
+        default:
+            root.notificationController.error("Unsupported protocol", `${force ? "Force" : ""} Push Error`, 5000)
+        }
+    }
+
+    function pushAndUpdate(force) {
+        root.push(force)
+        changesFileLists.updateStatus()
     }
 
     function updateDiff(isStaged) {
