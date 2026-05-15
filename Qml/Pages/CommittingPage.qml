@@ -59,50 +59,18 @@ Item {
 
             readonly property bool compact: parent.width < 550
 
-            ToolButton {
+            RoniaButton {
                 id: branchChip
-                Layout.preferredWidth: branchChipContent.implicitWidth + 20
                 Layout.preferredHeight: 25
-                Layout.maximumWidth: 200
                 visible: !headerRow.compact
-                hoverEnabled: true
+                icon.name: Style.icons.branch
+                text: branchController ? branchController.getCurrentBranchName() : ""
 
-                contentItem: Item {
-                    Row {
-                        id: branchChipContent
-                        anchors.centerIn: parent
-                        spacing: 5
-                        Text {
-                            text: Style.icons.branch
-                            font.family: Style.fontTypes.font6ProSolid
-                            font.pixelSize: 11
-                            color: Style.colors.foreground
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            id: headerBranchLabel
-                            text: branchController ? branchController.getCurrentBranchName() : ""
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
-                            color: Style.colors.foreground
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Connections {
-                                target: repositoryController
-                                function onCurrentRepoChanged() {
-                                    headerBranchLabel.text = branchController ? branchController.getCurrentBranchName() : ""
-                                }
-                            }
-                        }
+                Connections {
+                    target: repositoryController
+                    function onCurrentRepoChanged() {
+                        headerBranchLabel.text = branchController ? branchController.getCurrentBranchName() : ""
                     }
-                }
-
-                background: Rectangle {
-                    radius: 5
-                    color: branchChip.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
             }
 
@@ -114,44 +82,14 @@ Item {
                 visible: !headerRow.compact
             }
 
-            ToolButton {
+            RoniaButton {
                 id: pullBtn
-                Layout.preferredWidth: headerRow.compact ? 26 : 70
                 Layout.preferredHeight: 26
-                hoverEnabled: true
 
-                text: Style.icons.arrowDown
-                font.family: Style.fontTypes.font6ProSolid
-                font.pixelSize: 13
-
-                contentItem: Item {
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 5
-                        Text {
-                            text: pullBtn.text
-                            font: pullBtn.font
-                            color: Style.colors.foreground
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: "Pull"
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
-                            color: Style.colors.foreground
-                            visible: !headerRow.compact
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-                }
-
-                background: Rectangle {
-                    radius: 5
-                    color: !pullBtn.enabled ? Style.colors.primaryBackground :
-                           pullBtn.down ? Style.colors.surfaceMuted :
-                           pullBtn.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                }
+                icon.name: Style.icons.arrowDown
+                text: "Pull"
+                tooltip: "Pull from origin"
+                compact: headerRow.compact
 
                 onClicked: {
                     let res = remoteController.getRemoteUrl("origin")
@@ -185,50 +123,16 @@ Item {
                             notificationController.error("Unsupported protocol", "Pull Error", 5000)
                     }
                 }
-
-                ToolTip.visible: pullBtn.hovered
-                ToolTip.text: "Pull from origin"
-                ToolTip.delay: 600
             }
 
-            ToolButton {
+            RoniaButton {
                 id: pushBtnHeader
-                Layout.preferredWidth: headerRow.compact ? 26 : 68
                 Layout.preferredHeight: 26
-                hoverEnabled: true
 
-                text: Style.icons.arrowUp
-                font.family: Style.fontTypes.font6ProSolid
-                font.pixelSize: 13
-
-                contentItem: Item {
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 5
-                        Text {
-                            text: pushBtnHeader.text
-                            font: pushBtnHeader.font
-                            color: Style.colors.foreground
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: "Push"
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
-                            color: Style.colors.foreground
-                            visible: !headerRow.compact
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-                }
-
-                background: Rectangle {
-                    radius: 5
-                    color: !pushBtnHeader.enabled ? Style.colors.primaryBackground :
-                           pushBtnHeader.down ? Style.colors.surfaceMuted :
-                           pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                }
+                icon.name: Style.icons.arrowUp
+                text: "Push"
+                tooltip: "Push to origin"
+                compact:headerRow.compact
 
                 onClicked: {
                     let res = remoteController.getRemoteUrl("origin")
@@ -262,56 +166,22 @@ Item {
                             notificationController.error("Unsupported protocol", "Push Error", 5000)
                     }
                 }
-
-                ToolTip.visible: pushBtnHeader.hovered
-                ToolTip.text: "Push to origin"
-                ToolTip.delay: 600
             }
 
             Item {
                 Layout.fillWidth: true
             }
 
-            ToolButton {
+            RoniaButton {
                 id: fetchBtnHeader
-                Layout.preferredWidth: headerRow.compact ? 26 : 72
                 Layout.preferredHeight: 26
-                hoverEnabled: true
+
                 enabled: !root.isFetching
-                opacity: root.isFetching ? 0.5 : 1.0
 
-                text: Style.icons.download
-                font.family: Style.fontTypes.font6ProSolid
-                font.pixelSize: 13
-
-                contentItem: Item {
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 5
-                        Text {
-                            text: fetchBtnHeader.text
-                            font: fetchBtnHeader.font
-                            color: Style.colors.foreground
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: "Fetch"
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
-                            color: Style.colors.foreground
-                            visible: !headerRow.compact
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-                }
-
-                background: Rectangle {
-                    radius: 5
-                    color: !fetchBtnHeader.enabled ? Style.colors.primaryBackground :
-                           fetchBtnHeader.down ? Style.colors.surfaceMuted :
-                           fetchBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                }
+                icon.name: Style.icons.download
+                text: "Fetch"
+                tooltip: root.isFetching ? "Fetching…" : "Fetch all remotes"
+                compact: headerRow.compact
 
                 onClicked: {
                         let remotesRes = remoteController.getRemotes()
@@ -360,50 +230,16 @@ Item {
                         }
                         changesFileLists.updateStatus()
                 }
-
-                ToolTip.visible: fetchBtnHeader.hovered
-                ToolTip.text: root.isFetching ? "Fetching…" : "Fetch all remotes"
-                ToolTip.delay: 600
             }
 
-            ToolButton {
+            RoniaButton {
                 id: pushForceBtnHeader
-                Layout.preferredWidth: headerRow.compact ? 26 : 96
                 Layout.preferredHeight: 26
-                hoverEnabled: true
 
-                text: Style.icons.arrowUp
-                font.family: Style.fontTypes.font6ProSolid
-                font.pixelSize: 13
-
-                contentItem: Item {
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 5
-                        Text {
-                            text: pushForceBtnHeader.text
-                            font: pushForceBtnHeader.font
-                            color: Style.colors.foreground
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                        Text {
-                            text: "Push Force"
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
-                            color: Style.colors.foreground
-                            visible: !headerRow.compact
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-                }
-
-                background: Rectangle {
-                    radius: 5
-                    color: !pushForceBtnHeader.enabled ? Style.colors.primaryBackground :
-                           pushForceBtnHeader.down ? Style.colors.surfaceMuted :
-                           pushForceBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                }
+                icon.name: Style.icons.arrowUp
+                text: "Push Force"
+                tooltip: "Force push to origin"
+                compact: headerRow.compact
 
                 onClicked: {
                     let res = remoteController.getRemoteUrl("origin")
@@ -437,10 +273,6 @@ Item {
                             notificationController.error("Unsupported protocol", "Push Force Error", 5000)
                     }
                 }
-
-                ToolTip.visible: pushForceBtnHeader.hovered
-                ToolTip.text: "Force push to origin"
-                ToolTip.delay: 600
             }
         }
     }
