@@ -150,6 +150,9 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Conflict/ConflictFileList.qml
     Qml/View/Components/Conflict/ConflictConfirmationDialog.qml
     Qml/View/Components/Conflict/ConflictEditorDelegate.qml
+
+    # Pages Components
+    Qml/View/Components/Pages/CommittingPage/CommittingPageHeader.qml
 )
 
 
