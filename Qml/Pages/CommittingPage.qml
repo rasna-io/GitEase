@@ -140,20 +140,6 @@ Item {
         target: userAuthenticationPopup
 
         function onPasswordConfirm(password){
-            if (root.authPurpose === "pull") {
-                let pullRes = remoteController.fetchWithToken("origin", password)
-                if (!pullRes.success) {
-                    if (root.notificationController)
-                        root.notificationController.error(pullRes.errorMessage || "Pull failed", "Pull Error", 5000)
-                } else {
-                    if (root.notificationController)
-                        root.notificationController.success("Pulled successfully", "Pull", 3000)
-                    changesFileLists.updateStatus()
-                }
-                root.authPurpose = "push"
-                return
-            }
-
             if (root.authPurpose === "fetch") {
                 let failed = []
                 for (let i = 0; i < root.pendingFetchRemoteNames.length; i++) {
@@ -184,29 +170,8 @@ Item {
             }
 
             if (root.authPurpose === "pull") {
-                let failed = []
-                let succeeded = []
-                for (let i = 0; i < root.pendingPullRemoteNames.length; i++) {
-                    let name = root.pendingPullRemoteNames[i]
-                    let res = root.remoteController.pull(name, "", password)
-                    if (res.success)
-                        succeeded.push(name)
-                    else
-                        failed.push({ name: name, message: res.errorMessage || "Unknown error" })
-                }
-                if (root.notificationController) {
-                    if (failed.length === 0)
-                        root.notificationController.success("Pulled from remotes: " + succeeded.join(", "), "Pull", 5000)
-                    else if (succeeded.length === 0)
-                        root.notificationController.error("Pull failed for: " + failed.map(f => f.name + " (" + f.message + ")").join("; "), "Pull Error", 7000)
-                    else
-                        root.notificationController.error("Pull partial failure: " + failed.map(f => f.name + " (" + f.message + ")").join("; "), "Pull Error", 7000)
-                }
-                root.isFetching = false
+                root.pull(password)
                 root.authPurpose = "push"
-                root.pendingFetchRemoteNames = []
-                root.pendingPullRemoteNames = []
-                changesFileLists.updateStatus()
                 return
             }
 
@@ -642,7 +607,7 @@ Item {
         changesFileLists.updateStatus()
     }
 
-    function pull() {
+    function pull(secret: string) {
         let res = remoteController.getRemoteUrl("origin")
         if (!res.success) {
             if (notificationController)
@@ -660,14 +625,24 @@ Item {
             } else {
                 if (notificationController)
                     notificationController.success("Pulled successfully", "Pull", 3000)
-                changesFileLists.updateStatus()
             }
             break
         }
         case RepositoryController.GitProtocol.HTTPS:
         case RepositoryController.GitProtocol.HTTP:
-            root.authPurpose = "pull"
-            userAuthenticationPopup.open()
+            if(secret.length > 0 && secret !== "undefined" && secret) {
+                let res = root.remoteController.pull("origin", root.branchController.getCurrentBranchName(), secret)
+                if (!res.success) {
+                    if (notificationController)
+                        notificationController.error(res.errorMessage || "Pull failed", "Pull Error", 5000)
+                } else {
+                    if (notificationController)
+                        notificationController.success("Pulled successfully", "Pull", 3000)
+                }
+            }else {
+                root.authPurpose = "pull"
+                userAuthenticationPopup.open()
+            }
             break
         default:
             if (notificationController)
@@ -675,8 +650,8 @@ Item {
         }
     }
 
-    function pullAndUpdate() {
-        root.pull()
+    function pullAndUpdate(secret: string) {
+        root.pull(secret)
         changesFileLists.updateStatus()
     }
 
