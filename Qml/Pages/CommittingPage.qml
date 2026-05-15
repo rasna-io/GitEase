@@ -723,17 +723,7 @@ Item {
                                         font.pixelSize: 12
                                     }
 
-                                    onClicked: {
-                                        let res = commitController.commit(commitTextArea.text, false, false)
-                                        if (res.success) {
-                                            commitTextArea.text = ""
-                                            root.notificationController.success("Commit successful", "Commit", 3000)
-                                        } else {
-                                            root.notificationController.error(res.errorMessage || "Commit failed", "Commit Error", 5000)
-                                            errorMessageLabel.text = res.errorMessage ?? "commit error"
-                                        }
-                                        changesFileLists.updateStatus()
-                                    }
+                                    onClicked: root.commitAndUpdate()
                                 }
 
                                 Rectangle {
@@ -787,31 +777,15 @@ Item {
                                         {
                                             text: "Commit Amend",
                                             icon: Style.icons.penToSquare,
-                                            action: function() {
-                                                let res = commitController.commit(commitTextArea.text, true, false)
-                                                if (res.success) {
-                                                    commitTextArea.text = ""
-                                                    root.notificationController.success("Commit amended successfully", "Commit Amend", 3000)
-                                                } else {
-                                                    root.notificationController.error(res.errorMessage || "Amend failed", "Commit Amend Error", 5000)
-                                                    errorMessageLabel.text = res.errorMessage ?? "amend error"
-                                                }
-                                                changesFileLists.updateStatus()
-                                            }
+                                            action: function() {root.commitAndUpdate(true)}
                                         },
                                         {
                                             text: "Commit && Push",
                                             icon: Style.icons.arrowUp,
                                             action: function() {
-                                                let commitRes = commitController.commit(commitTextArea.text, false, false)
-                                                if (!commitRes.success) {
-                                                    root.notificationController.error(commitRes.errorMessage || "Commit failed", "Commit Error", 5000)
-                                                    errorMessageLabel.text = commitRes.errorMessage ?? "commit error"
+                                                if(!root.commitAndUpdate())
                                                     return
-                                                }
-                                                commitTextArea.text = ""
-                                                root.notificationController.success("Commit successful", "Commit", 3000)
-                                                changesFileLists.updateStatus()
+
                                                 let urlRes = remoteController.getRemoteUrl("origin")
                                                 if (!urlRes.success) {
                                                     root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", "Push Error", 5000)
@@ -935,6 +909,25 @@ Item {
                 changesFileLists.updateStatus()
             }
         }
+    }
+
+    function commit(amend) : bool {
+        amend = amend || false
+        let res = commitController.commit(commitTextArea.text, amend, false)
+        if (res.success) {
+            commitTextArea.text = ""
+            root.notificationController.success(`Commit ${amend ? "amended" : ""} successfully`, `Commit ${amend ? "Amend" : "" }`, 3000)
+        } else {
+            root.notificationController.error(res.errorMessage || `Commit ${amend ? "Amend" : ""} failed`, `Commit ${amend ? "Amend" : ""} Error`, 5000)
+            errorMessageLabel.text = res.errorMessage ?? `Commit ${amend ? "Amend" : ""} Error`
+        }
+        return res.success
+    }
+
+    function commitAndUpdate(amend) : bool {
+        let result = root.commit(amend)
+        changesFileLists.updateStatus()
+        return result
     }
 
     function updateDiff(isStaged) {
