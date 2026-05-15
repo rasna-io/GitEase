@@ -91,38 +91,7 @@ Item {
                 tooltip: "Pull from origin"
                 compact: headerRow.compact
 
-                onClicked: {
-                    let res = remoteController.getRemoteUrl("origin")
-                    if (!res.success) {
-                        if (notificationController)
-                            notificationController.error(res.errorMessage || "Failed to get remote URL", "Pull Error", 5000)
-                        return
-                    }
-                    let url = res.data.url
-                    let protocol = repositoryController.detectGitProtocol(url)
-                    switch (protocol) {
-                    case RepositoryController.GitProtocol.SSH: {
-                        let pullRes = remoteController.fetch("origin")
-                        if (!pullRes.success) {
-                            if (notificationController)
-                                notificationController.error(pullRes.errorMessage || "Pull failed", "Pull Error", 5000)
-                        } else {
-                            if (notificationController)
-                                notificationController.success("Pulled successfully", "Pull", 3000)
-                            changesFileLists.updateStatus()
-                        }
-                        break
-                    }
-                    case RepositoryController.GitProtocol.HTTPS:
-                    case RepositoryController.GitProtocol.HTTP:
-                        root.authPurpose = "pull"
-                        userAuthenticationPopup.open()
-                        break
-                    default:
-                        if (notificationController)
-                            notificationController.error("Unsupported protocol", "Pull Error", 5000)
-                    }
-                }
+                onClicked: root.pullAndUpdate()
             }
 
             RoniaButton {
@@ -531,53 +500,7 @@ Item {
                                         icon: Style.icons.arrowDown,
                                         enabled: !root.isFetching,
                                         action: function() {
-                                            let remotesRes = remoteController.getRemotes()
-                                            if (!remotesRes.success || !remotesRes.data || remotesRes.data.length === 0) {
-                                                if (notificationController)
-                                                    notificationController.error("No remotes configured", "Pull", 5000)
-                                                return
-                                            }
-                                            let httpsRemotes = []
-                                            let pullFailed = []
-                                            root.isFetching = true
-                                            for (let i = 0; i < remotesRes.data.length; i++) {
-                                                let remote = remotesRes.data[i]
-                                                let urlRes = remoteController.getRemoteUrl(remote.name)
-                                                if (!urlRes.success) {
-                                                    pullFailed.push({ name: remote.name, message: urlRes.errorMessage || "No URL" })
-                                                    continue
-                                                }
-                                                let url = urlRes.data.url
-                                                let protocol = repositoryController.detectGitProtocol(url)
-                                                switch (protocol) {
-                                                case RepositoryController.GitProtocol.SSH: {
-                                                    let res = remoteController.pull(remote.name)
-                                                    if (!res.success)
-                                                        pullFailed.push({ name: remote.name, message: res.errorMessage || "Pull failed" })
-                                                    break
-                                                }
-                                                case RepositoryController.GitProtocol.HTTPS:
-                                                case RepositoryController.GitProtocol.HTTP:
-                                                    httpsRemotes.push(remote.name)
-                                                    break
-                                                default:
-                                                    pullFailed.push({ name: remote.name, message: "Unsupported protocol" })
-                                                }
-                                            }
-                                            if (pullFailed.length > 0 && notificationController) {
-                                                let msg = pullFailed.map(f => f.name + ": " + f.message).join("; ")
-                                                notificationController.error(msg, "Pull Error", 7000)
-                                            } else if (httpsRemotes.length === 0 && notificationController) {
-                                                notificationController.success("Pulled from remotes", "Pull", 5000)
-                                            }
-                                            if (httpsRemotes.length > 0) {
-                                                root.pendingPullRemoteNames = httpsRemotes
-                                                root.authPurpose = "pull"
-                                                userAuthenticationPopup.open()
-                                            } else {
-                                                root.isFetching = false
-                                            }
-                                            changesFileLists.updateStatus()
+                                            root.pullAndUpdate()
                                         }
                                     }
                                 ]
@@ -844,6 +767,44 @@ Item {
 
     function pushAndUpdate(force) {
         root.push(force)
+        changesFileLists.updateStatus()
+    }
+
+    function pull() {
+        let res = remoteController.getRemoteUrl("origin")
+        if (!res.success) {
+            if (notificationController)
+                notificationController.error(res.errorMessage || "Failed to get remote URL", "Pull Error", 5000)
+            return
+        }
+        let url = res.data.url
+        let protocol = repositoryController.detectGitProtocol(url)
+        switch (protocol) {
+        case RepositoryController.GitProtocol.SSH: {
+            let pullRes = remoteController.pull("origin", root.branchController.getCurrentBranchName())
+            if (!pullRes.success) {
+                if (notificationController)
+                    notificationController.error(pullRes.errorMessage || "Pull failed", "Pull Error", 5000)
+            } else {
+                if (notificationController)
+                    notificationController.success("Pulled successfully", "Pull", 3000)
+                changesFileLists.updateStatus()
+            }
+            break
+        }
+        case RepositoryController.GitProtocol.HTTPS:
+        case RepositoryController.GitProtocol.HTTP:
+            root.authPurpose = "pull"
+            userAuthenticationPopup.open()
+            break
+        default:
+            if (notificationController)
+                notificationController.error("Unsupported protocol", "Pull Error", 5000)
+        }
+    }
+
+    function pullAndUpdate() {
+        root.pull()
         changesFileLists.updateStatus()
     }
 
