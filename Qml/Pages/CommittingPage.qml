@@ -121,53 +121,7 @@ Item {
                 tooltip: root.isFetching ? "Fetching…" : "Fetch all remotes"
                 compact: headerRow.compact
 
-                onClicked: {
-                        let remotesRes = remoteController.getRemotes()
-                        if (!remotesRes.success || !remotesRes.data || remotesRes.data.length === 0) {
-                            if (notificationController)
-                                notificationController.error("No remotes configured", "Fetch", 5000)
-                            return
-                        }
-                        let httpsRemotes = []
-                        let sshFailed = []
-                        root.isFetching = true
-                        for (let i = 0; i < remotesRes.data.length; i++) {
-                            let remote = remotesRes.data[i]
-                            let urlRes = remoteController.getRemoteUrl(remote.name)
-                            if (!urlRes.success) {
-                                sshFailed.push({ name: remote.name, message: urlRes.errorMessage || "No URL" })
-                                continue
-                            }
-                            let url = urlRes.data.url
-                            let protocol = repositoryController.detectGitProtocol(url)
-                            switch (protocol) {
-                            case RepositoryController.GitProtocol.SSH: {
-                                let res = remoteController.fetch(remote.name)
-                                if (!res.success)
-                                    sshFailed.push({ name: remote.name, message: res.errorMessage || "Fetch failed" })
-                                break
-                            }
-                            case RepositoryController.GitProtocol.HTTPS:
-                            case RepositoryController.GitProtocol.HTTP:
-                                httpsRemotes.push(remote.name)
-                                break
-                            default:
-                                sshFailed.push({ name: remote.name, message: "Unsupported protocol" })
-                            }
-                        }
-                        if (sshFailed.length > 0 && notificationController)
-                            notificationController.error(sshFailed.map(f => f.name + ": " + f.message).join("; "), "Fetch Error", 7000)
-                        else if (httpsRemotes.length === 0 && notificationController)
-                            notificationController.success("Fetched from all remotes", "Fetch", 5000)
-                        if (httpsRemotes.length > 0) {
-                            root.pendingFetchRemoteNames = httpsRemotes
-                            root.authPurpose = "fetch"
-                            userAuthenticationPopup.open()
-                        } else {
-                            root.isFetching = false
-                        }
-                        changesFileLists.updateStatus()
-                }
+                onClicked: root.fetch()
             }
 
             RoniaButton {
@@ -435,64 +389,7 @@ Item {
                                         icon: Style.icons.download,
                                         enabled: !root.isFetching,
                                         action: function() {
-                                            let remotesRes = remoteController.getRemotes()
-                                            if (!remotesRes.success || !remotesRes.data || remotesRes.data.length === 0) {
-                                                if (notificationController)
-                                                    notificationController.error("No remotes configured", "Fetch", 5000)
-                                                return
-                                            }
-                                            root.fetchBatchResults = []
-                                            let httpsRemotes = []
-                                            let sshFailed = []
-                                            root.activeFetchRemotes = []
-                                            root.isFetching = true
-                                            for (let i = 0; i < remotesRes.data.length; i++) {
-                                                let remote = remotesRes.data[i]
-                                                let urlRes = remoteController.getRemoteUrl(remote.name)
-                                                if (!urlRes.success) {
-                                                    sshFailed.push({ name: remote.name, message: urlRes.errorMessage || "No URL" })
-                                                    continue
-                                                }
-                                                let url = urlRes.data.url
-                                                let protocol = repositoryController.detectGitProtocol(url)
-                                                switch (protocol) {
-                                                case RepositoryController.GitProtocol.SSH: {
-                                                    let res = remoteController.fetch(remote.name)
-                                                    if (res.success) {
-                                                        if (root.activeFetchRemotes.indexOf(remote.name) === -1)
-                                                            root.activeFetchRemotes.push(remote.name)
-                                                    } else {
-                                                        let msg = res.errorMessage || "Fetch failed"
-                                                        sshFailed.push({ name: remote.name, message: msg })
-                                                        root.fetchBatchResults.push({
-                                                            remote: remote.name,
-                                                            success: false,
-                                                            errorMessage: msg,
-                                                            data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                                                        })
-                                                    }
-                                                    break
-                                                }
-                                                case RepositoryController.GitProtocol.HTTPS:
-                                                case RepositoryController.GitProtocol.HTTP:
-                                                    httpsRemotes.push(remote.name)
-                                                    break
-                                                default:
-                                                    sshFailed.push({ name: remote.name, message: "Unsupported protocol" })
-                                                }
-                                            }
-                                            if (sshFailed.length > 0 && notificationController) {
-                                                let msg = sshFailed.map(f => f.name + ": " + f.message).join("; ")
-                                                notificationController.error(msg, "Fetch Error", 7000)
-                                            }
-                                            if (httpsRemotes.length > 0) {
-                                                root.pendingFetchRemoteNames = httpsRemotes
-                                                root.authPurpose = "fetch"
-                                                userAuthenticationPopup.open()
-                                            }
-                                            if (httpsRemotes.length === 0 && root.activeFetchRemotes.length === 0)
-                                                root.isFetching = false
-                                            changesFileLists.updateStatus()
+                                            root.fetch()
                                         }
                                     },
                                     {
@@ -713,6 +610,66 @@ Item {
                 changesFileLists.updateStatus()
             }
         }
+    }
+
+    function fetch() {
+        let remotesRes = remoteController.getRemotes()
+        if (!remotesRes.success || !remotesRes.data || remotesRes.data.length === 0) {
+            if (notificationController)
+                notificationController.error("No remotes configured", "Fetch", 5000)
+            return
+        }
+        root.fetchBatchResults = []
+        let httpsRemotes = []
+        let sshFailed = []
+        root.activeFetchRemotes = []
+        root.isFetching = true
+        for (let i = 0; i < remotesRes.data.length; i++) {
+            let remote = remotesRes.data[i]
+            let urlRes = remoteController.getRemoteUrl(remote.name)
+            if (!urlRes.success) {
+                sshFailed.push({ name: remote.name, message: urlRes.errorMessage || "No URL" })
+                continue
+            }
+            let url = urlRes.data.url
+            let protocol = repositoryController.detectGitProtocol(url)
+            switch (protocol) {
+            case RepositoryController.GitProtocol.SSH: {
+                let res = remoteController.fetch(remote.name)
+                if (res.success) {
+                    if (root.activeFetchRemotes.indexOf(remote.name) === -1)
+                        root.activeFetchRemotes.push(remote.name)
+                } else {
+                    let msg = res.errorMessage || "Fetch failed"
+                    sshFailed.push({ name: remote.name, message: msg })
+                    root.fetchBatchResults.push({
+                        remote: remote.name,
+                        success: false,
+                        errorMessage: msg,
+                        data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
+                    })
+                }
+                break
+            }
+            case RepositoryController.GitProtocol.HTTPS:
+            case RepositoryController.GitProtocol.HTTP:
+                httpsRemotes.push(remote.name)
+                break
+            default:
+                sshFailed.push({ name: remote.name, message: "Unsupported protocol" })
+            }
+        }
+        if (sshFailed.length > 0 && notificationController) {
+            let msg = sshFailed.map(f => f.name + ": " + f.message).join("; ")
+            notificationController.error(msg, "Fetch Error", 7000)
+        }
+        if (httpsRemotes.length > 0) {
+            root.pendingFetchRemoteNames = httpsRemotes
+            root.authPurpose = "fetch"
+            userAuthenticationPopup.open()
+        }
+        if (httpsRemotes.length === 0 && root.activeFetchRemotes.length === 0)
+            root.isFetching = false
     }
 
     function commit(amend) : bool {
