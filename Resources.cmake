@@ -160,7 +160,8 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/CommittingPage/CommittingPageHeader.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
-
+    Qml/View/Components/GraphView/ResizableColumnHeader.qml
+    Qml/View/Components/GraphView/CommitGraphCanvas.qml
     Qml/View/Components/GraphView/CommitListDelegate.qml
 )
 
