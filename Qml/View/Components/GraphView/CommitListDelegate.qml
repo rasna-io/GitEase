@@ -31,6 +31,8 @@ Rectangle {
 
     property bool   isHovered       : mouseArea.containsMouse
 
+    property Item   parentRoot      : null
+
     /* Signals
      * ****************************************************************************************/
     signal itemClicked(int mouseButton, int mouseModifiers, int _index, real mouseX, real mouseY)
@@ -207,10 +209,12 @@ Rectangle {
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-        onClicked: function(mouse) {
-            commitItem.itemClicked(mouse.button, mouse.modifiers, index, mouse.x, mouse.y)
+        onClicked: (mouse) => {
+            var pos = parentRoot ? commitItem.mapToItem(parentRoot, mouse.x, mouse.y) : Qt.point(mouse.x, mouse.y)
+            commitItem.itemClicked(mouse.button, mouse.modifiers, index, pos.x, pos.y)
         }
-        onDoubleClicked: function(mouse) {
+
+        onDoubleClicked: (mouse) => {
             commitItem.itemDoubleClicked(mouse.button, mouse.modifiers, index)
         }
     }
