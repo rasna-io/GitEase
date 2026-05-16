@@ -12,6 +12,8 @@ QtObject{
     property color warning:             "#FFA500"
     property color disabledButton:      "#9D9D9D"
 
+    property color navigationRailBgColor: "#EFEFEF"
+
     property color navButton:           "#F3F3F3"
     property color hoverTitle:          "#E8E8E8"
     property color textButton:          "#FDFDFD"
