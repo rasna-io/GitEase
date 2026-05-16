@@ -37,14 +37,20 @@ Rectangle {
             content: (pageLoader.item && pageLoader.item.hasOwnProperty("headerContent")) ? pageLoader.item.headerContent : null
         }
 
-        RowLayout {
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 0
 
             NavigationRail {
                 id: navigationRail
-                Layout.fillHeight: true
+                anchors {
+                    left: parent.left
+                    top: parent.top
+                    bottom: parent.bottom
+                    margins: 1
+                }
+
+                z: 1
 
                 appModel: root.uiSession?.appModel
                 pageController: root.uiSession?.pageController
@@ -83,12 +89,14 @@ Rectangle {
             }
 
             Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.topMargin: 4
-                Layout.rightMargin: 4
-                Layout.leftMargin: 4
-                Layout.bottomMargin: 4
+                anchors {
+                    right: parent.right
+                    top: parent.top
+                    bottom: parent.bottom
+                    margins: 4
+                }
+
+                width: parent.width - navigationRail.collapsedWidth - (anchors.leftMargin + anchors.rightMargin)
 
                 color: Style.colors.primaryBackground
                 radius: 6
