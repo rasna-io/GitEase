@@ -42,6 +42,10 @@ set(RESOURCES_CORE
     Qml/Core/Scripts/GraphLayout.js
     Qml/Core/Scripts/ConflictPopupUtils.js
     Qml/Core/Scripts/GraphViewPresenter.js
+    Qml/Core/Scripts/CommitGraphDataLoader.js
+    Qml/Core/Scripts/CommitGraphFilter.js
+    Qml/Core/Scripts/CommitGraphNavigation.js
+    Qml/Core/Scripts/CommitGraphMenuBuilder.js
 )
 
 
