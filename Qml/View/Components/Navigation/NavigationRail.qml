@@ -78,13 +78,14 @@ Rectangle {
     implicitWidth: animatedWidth
     width: animatedWidth
 
+    radius: 5
     Layout.preferredWidth: animatedWidth
     Layout.minimumWidth: collapsedWidth
     Layout.maximumWidth: expandedWidth
 
     /* Object Properties
      * ****************************************************************************************/
-    color: Style.colors.secondaryBackground
+    color: Style.colors.navigationRailBgColor
 
     /* Children
      * ****************************************************************************************/
@@ -98,7 +99,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            color: Style.colors.secondaryBackground
+            color: "transparent"
             model: root.appModel?.pages
             expanded: root.expanded
             currentId: root.appModel.currentPage.id
@@ -113,7 +114,7 @@ Rectangle {
         RepositoriesSidebar {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Style.colors.secondaryBackground
+            color: "transparent"
 
             expanded: root.expanded
             repositoryController: root.repositoryController
