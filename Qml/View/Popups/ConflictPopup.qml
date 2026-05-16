@@ -12,7 +12,7 @@ import "qrc:/GitEase/Qml/Core/Scripts/ConflictPopupUtils.js" as ConflictUtils
  * ConflictPopup
  * ************************************************************************************************/
 
-IPopup {
+Window {
     id: root
 
     /* Property Declarations
@@ -69,12 +69,14 @@ IPopup {
      * ****************************************************************************************/
     width: 800
     height: 650
-    padding: 12
 
-    modal: true
-    closePolicy: Popup.NoAutoClose
+    modality: Qt.ApplicationModal
+    color: "transparent"
 
-    onOpened: {
+    onVisibleChanged: {
+        if(!visible)
+            return
+
         if (!notificationController) {
             console.error("ConflictPopup: missing required controllers")
             close()
@@ -100,6 +102,11 @@ IPopup {
         loadConflicts()
     }
 
+    Component.onCompleted: {
+        windowController.window = root
+        windowController.setMinimumSize(width, height)
+    }
+
     ListModel { id: displayModel }
 
     TextMetrics {
@@ -108,9 +115,14 @@ IPopup {
         font.pixelSize: 13
     }
 
-    contentItem: Rectangle {
+    WindowController {
+        id: windowController
+    }
+
+    Rectangle {
+        anchors.fill: parent
         color: Style.colors.primaryBackground
-        radius: 16
+        radius: 5
         clip: true
         border.color: Style.colors.accent
         border.width: 1
@@ -125,12 +137,43 @@ IPopup {
                 Layout.fillWidth: true
 
                 Text {
-                    Layout.fillWidth: true
                     text: root.headerText
                     color: Style.colors.secondaryText
                     font.family: Style.fontTypes.roboto
                     font.bold: true
                     font.pixelSize: 14
+                }
+
+                MouseArea {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 27
+                    Layout.leftMargin: 20
+                    Layout.rightMargin: 20
+                    cursorShape: Qt.SizeAllCursor
+
+                    property point clickPos
+
+                    onPressed: function(mouse) {
+                        clickPos = Qt.point(mouse.x, mouse.y)
+                    }
+
+                    onPositionChanged: function(mouse) {
+                        root.x += mouse.x - clickPos.x
+                        root.y += mouse.y - clickPos.y
+                    }
+                }
+
+                WindowsButton {
+                    id: minimizeButton
+                    onClicked: windowController.minimize()
+                    Material.accent: Style.colors.windowsMinimize
+                    content: Rectangle {
+                        anchors.centerIn: parent
+                        width: 10
+                        height: 2
+                        radius: 1
+                        color: minimizeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                    }
                 }
 
                 // Close Button
