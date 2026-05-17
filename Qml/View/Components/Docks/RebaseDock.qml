@@ -254,7 +254,7 @@ UtilitiesCard {
 
         if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
             if (conflictPopup)
-                conflictPopup.open()
+                conflictPopup.show()
             if (notificationController)
                 notificationController.warning("Rebase conflicts detected. Please resolve them.", "Rebase", 4000)
             return
