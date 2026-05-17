@@ -12,7 +12,7 @@
  * @param {string} newNavRule      – (optional) new navigation rule to apply
  * @returns {{ selected: Object, index: number, scroll: boolean }}
  */
-function selectNext(commits, selectedCommit, selectedIndex, navigationRule, newNavRule) {
+function selectPrevious(commits, selectedCommit, selectedIndex, navigationRule, newNavRule) {
     if (newNavRule !== undefined)
         navigationRule = newNavRule;
 
@@ -60,7 +60,7 @@ function selectNext(commits, selectedCommit, selectedIndex, navigationRule, newN
 /**
  * Same signature, but moves upwards.
  */
-function selectPrevious(commits, selectedCommit, selectedIndex, navigationRule, newNavRule) {
+function selectNext(commits, selectedCommit, selectedIndex, navigationRule, newNavRule) {
     if (newNavRule !== undefined)
         navigationRule = newNavRule;
 
