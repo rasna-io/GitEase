@@ -865,77 +865,58 @@ DetachablePanel {
     function executeMergeBranch(source, target) {
         mergeMethodPopup.sourceBranch = source
         mergeMethodPopup.targetBranch = target
+
         mergeMethodPopup.accepted.connect(function(noFF) {
             var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
+
             if (root.mergeController.hasMergeConflicts()) {
                 mergeConflictPopup.open()
-                if (root.notificationController) root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
-            } else if (!res.success) {
-                if (root.notificationController) root.notificationController.error(res.errorMessage || "Merge failed", "Merge", 5000)
+
+                root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
+
+                root.reloadAll()
             } else {
-                if (root.notificationController) root.notificationController.success("Merge completed", "Merge", 3000)
+                handleGitControllerResult(res, "Merge completed", mergeConflictPopup, "Merge")
             }
+
             mergeMethodPopup.accepted.disconnect(arguments.callee)
-            root.reloadAll()
         })
+
         mergeMethodPopup.open()
     }
 
     function executeRebase(commitHash) {
-        var res = root.rebaseController.rebase(commitHash)
-        if (res && res.success) {
-            root.notificationController.success("Rebase completed", "Rebase", 3000)
-        }
+        var res = rebaseController.rebase(commitHash);
 
-        else if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-            rebaseConflictPopup.open()
-            root.notificationController.warning("Rebase conflicts detected.", "Rebase", 4000)
-        }
-
-        else {
-            root.notificationController.error(res ? res.errorMessage : "Rebase failed", "Rebase", 5000)
-        }
-
-        root.reloadAll()
+        handleGitControllerResult(res, "Rebase completed", rebaseConflictPopup, "Rebase");
     }
 
     function executeCherryPickSelected() {
-        console.log("2")
-        var hashes = selectedCommitHashesInOrder()
-        var res = root.cherryPickController.cherryPickCommits(hashes)
-        if (res && res.success) {
-            root.notificationController.success("Cherry-pick completed", "Cherry-Pick", 3000)
-        }
+        var hashes  = selectedCommitHashesInOrder();
+        var res     = cherryPickController.cherryPickCommits(hashes);
 
-        else if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-            cherryPickConflictPopup.open()
-            root.notificationController.warning("Cherry-pick conflicts detected.", "Cherry-Pick", 4000)
-        }
-
-        else {
-            root.notificationController.error(res ? res.errorMessage : "Cherry-pick failed", "Cherry-Pick", 5000)
-        }
-
-        root.reloadAll()
+        handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
     }
 
     function executeCherryPickSingle(commitHash) {
-        console.log("1")
-        var res = root.cherryPickController.cherryPickCommit(commitHash)
+        var res = cherryPickController.cherryPickCommit(commitHash);
+
+        handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
+    }
+
+    function handleGitControllerResult(res, successMsg, conflictPopup, commandName) {
         if (res && res.success) {
-            if (root.notificationController) root.notificationController.success("Cherry-pick completed", "Cherry-Pick", 3000)
+            notificationController.success(successMsg, commandName, 3000)
         }
-
         else if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-            cherryPickConflictPopup.open()
-            root.notificationController.warning("Cherry-pick conflicts detected.", "Cherry-Pick", 4000)
+            conflictPopup.open();
+            notificationController.warning(commandName + " conflicts detected.", commandName, 4000);
         }
-
         else {
-            root.notificationController.error(res ? res.errorMessage : "Cherry-pick failed", "Cherry-Pick", 5000)
+            notificationController.error(res ? res.errorMessage : commandName + " failed", commandName, 5000);
         }
 
-        root.reloadAll()
+        root.reloadAll();
     }
 
     function handleItemDoubleClick(data, button, modifiers, idx) {
