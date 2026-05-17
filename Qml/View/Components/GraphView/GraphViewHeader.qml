@@ -285,9 +285,13 @@ RowLayout {
     CalendarPopup {
         id: calendarPopup
 
-        onDateSelected: headerRow.handleDateSelected(dateString, isStart)
+        onDateSelected: function(dateString, isStart) {
+            headerRow.handleDateSelected(dateString, isStart)
+        }
 
-        onClearRequested: headerRow.handleClearRequested(isStart)
+        onClearRequested: function(isStart) {
+            headerRow.handleClearRequested(isStart)
+        }
     }
 
     /* Functions
