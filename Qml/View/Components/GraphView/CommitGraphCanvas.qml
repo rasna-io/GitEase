@@ -17,26 +17,28 @@ import "qrc:/GitEase/Qml/Core/Scripts/GraphUtils.js" as GraphUtils
 Item {
     id: root
 
-    // ---------- Public properties (bound from dock) ----------
-    property var commits: []
-    property var commitPositions: ({})
-    property int columnSpacing: 30
-    property int commitItemHeight: 24
-    property int commitItemSpacing: 4
-    property var selectedHashes: []
-    property string headHash: ""
-    property bool showAvatar: true
-    property real graphColumnWidth: 60
-    property real branchTagColumnWidth: 80
-    property var allCommitsHash: ({})
+    /*! ***********************************************************************************************
+     * Property Declarations
+     * ************************************************************************************************/
 
+    property var    commits             : []
+    property var    commitPositions     : ({})
+    property int    columnSpacing       : 30
+    property int    commitItemHeight    : 24
+    property int    commitItemSpacing   : 4
+    property var    selectedHashes      : []
+    property string headHash            : ""
+    property bool   showAvatar          : true
+    property real   graphColumnWidth    : 60
+    property real   branchTagColumnWidth: 80
+    property var    allCommitsHash      : ({})
+
+    /* Signals
+     * ****************************************************************************************/
     signal infiniteScroll()
 
-    function requestPaint() {
-        graphCanvas.requestPaint()
-    }
-
-    // ---------- Flickable (fills the whole Item) ----------
+    /* Children
+     * ****************************************************************************************/
     Flickable {
         id: flick
         anchors.fill: parent
