@@ -116,8 +116,8 @@ DetachablePanel {
                     ResizableColumnHeader {
                         Layout.preferredWidth: root.commitsColGraphWidth
                         label: "Graph"
-                        onResized: function(delta) {
-                            var newWidth = Math.max(root.minColGraphWidth, root.commitsColGraphWidth + delta)
+                        onResized: function(delta, startWidth) {
+                            var newWidth = Math.max(root.minColGraphWidth, startWidth + delta)
                             var actualDelta = newWidth - root.commitsColGraphWidth
                             var nextWidth = root.commitsColBranchTagWidth - actualDelta
                             if (nextWidth < root.minColBranchTagWidth) {
@@ -132,8 +132,8 @@ DetachablePanel {
                     ResizableColumnHeader {
                         Layout.preferredWidth: root.commitsColBranchTagWidth
                         label: "Branch/Tag"
-                        onResized: function(delta) {
-                            var newWidth = Math.max(root.minColBranchTagWidth, root.commitsColBranchTagWidth + delta)
+                        onResized: function(delta, startWidth) {
+                            var newWidth = Math.max(root.minColBranchTagWidth, startWidth + delta)
                             var actualDelta = newWidth - root.commitsColBranchTagWidth
                             var nextWidth = root.commitsColMessageWidth - actualDelta
                             if (nextWidth < root.minColMessageWidth) {
@@ -148,8 +148,8 @@ DetachablePanel {
                     ResizableColumnHeader {
                         Layout.preferredWidth: root.commitsColMessageWidth
                         label: "Message"
-                        onResized: function(delta) {
-                            var newWidth = Math.max(root.minColMessageWidth, root.commitsColMessageWidth + delta)
+                        onResized: function(delta, startWidth) {
+                            var newWidth = Math.max(root.minColMessageWidth, startWidth + delta)
                             var actualDelta = newWidth - root.commitsColMessageWidth
                             var nextWidth = root.commitsColAuthorWidth - actualDelta
                             if (nextWidth < root.minColAuthorWidth) {
@@ -164,8 +164,8 @@ DetachablePanel {
                     ResizableColumnHeader {
                         Layout.preferredWidth: root.commitsColAuthorWidth
                         label: "Author"
-                        onResized: function(delta) {
-                            var newWidth = Math.max(root.minColAuthorWidth, root.commitsColAuthorWidth + delta)
+                        onResized: function(delta, startWidth) {
+                            var newWidth = Math.max(root.minColAuthorWidth, startWidth + delta)
                             var actualDelta = newWidth - root.commitsColAuthorWidth
                             var nextWidth = root.commitsColDateWidth - actualDelta
                             if (nextWidth < root.minColDateWidth) {
@@ -328,17 +328,6 @@ DetachablePanel {
 
         function onShowStashNodesChanged() {
             root.refreshStashNodes()
-        }
-    }
-
-    Connections {
-        target: root
-        function onGraphColumnWidthChanged() {
-            graphCanvas.requestPaint()
-        }
-
-        function onBranchTagColumnWidthChanged() {
-            graphCanvas.requestPaint()
         }
     }
 

@@ -434,4 +434,10 @@ Item {
             }
         }
     }
+
+    /* Functions
+     * ****************************************************************************************/
+
+    onWidthChanged  :  graphCanvas.requestPaint()
+    onHeightChanged : graphCanvas.requestPaint()
 }
