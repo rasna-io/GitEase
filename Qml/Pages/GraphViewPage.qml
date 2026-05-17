@@ -138,15 +138,27 @@ Item {
             return
         }
 
-        if (!statusController || !commitController) {
-                notificationController.error("Cannot initialize Graph View: required controllers are missing.",
-                                             "Initialization Error", 4000)
-            return
-        }
+        var missing = []
 
-        if (!commitGraph || !fileChangesDock || !diffView) {
-                notificationController.error("GraphViewPage: missing required UI components",
-                                             "Initialization Error", 4000)
+        if (!appModel)               missing.push("AppModel")
+        if (!branchController)       missing.push("BranchController")
+        if (!commitController)       missing.push("CommitController")
+        if (!statusController)       missing.push("StatusController")
+        if (!repositoryController)   missing.push("RepositoryController")
+        if (!notificationController) missing.push("NotificationController")
+        if (!stashController)        missing.push("StashController")
+        if (!mergeController)        missing.push("MergeController")
+        if (!rebaseController)       missing.push("RebaseController")
+        if (!cherryPickController)   missing.push("CherryPickController")
+        if (!conflictController)     missing.push("ConflictController")
+        if (!addBranchPopup)         missing.push("AddBranchPopup")
+        if (!addTagPopup)            missing.push("AddTagPopup")
+
+        if (missing.length > 0) {
+            notificationController.error(
+                    "Commit Graph cannot work correctly – missing: " + missing.join(", "),
+                    "Initialization Error", 5000
+            )
             return
         }
 
