@@ -247,6 +247,17 @@ DetachablePanel {
                     model   : root.commits
                     clip    : true
 
+                    // Sync scroll position with graph
+                    onContentYChanged: {
+                        // Infinite scroll trigger (list side)
+                        if (!root.isLoadingMore && root.hasMoreCommits) {
+                            var remaining = commitsListView.contentHeight - (commitsListView.contentY + commitsListView.height)
+                            if (remaining < 300) {
+                                root.loadMoreCommits()
+                            }
+                        }
+                    }
+
                     delegate: CommitListDelegate {
                         height: root.commitItemHeight + root.commitItemSpacing * 2
 
