@@ -985,8 +985,6 @@ DetachablePanel {
         handleContextResponse(root.branchController.checkoutBranch(localName), "Created and checked out branch " + localName)
     }
 
-
-
     function handleContextResponse(res, successMsg) {
         if (res && res.success)
             root.notificationController.success(successMsg, "Checkout", 3000)
@@ -1001,26 +999,38 @@ DetachablePanel {
     }
 
     function selectNext(rule) {
-        var idx = Navigation.selectedIndex(root.commits, root.selectedCommit)
-        var result = Navigation.selectNext(root.commits, root.selectedCommit, idx, root.navigationRule, rule)
-        if (!result) return
+        var idx     = Navigation.selectedIndex(root.commits, root.selectedCommit)
+        var result  = Navigation.selectNext(root.commits, root.selectedCommit, idx, root.navigationRule, rule)
 
-        if (rule !== undefined) root.navigationRule = rule
+        if (!result)
+            return
+
+        if (rule !== undefined)
+            root.navigationRule = rule
+
         setSingleSelection(result.selected, result.index)
         root.selectedCommit = result.selected
         root.commitClicked(result.selected.hash)
-        if (result.scroll) commitsListView.positionViewAtIndex(result.index, ListView.Center)
+
+        if (result.scroll)
+            commitsListView.positionViewAtIndex(result.index, ListView.Contain)
     }
 
     function selectPrevious(rule) {
-        var idx = Navigation.selectedIndex(root.commits, root.selectedCommit)
-        var result = Navigation.selectPrevious(root.commits, root.selectedCommit, idx, root.navigationRule, rule)
-        if (!result) return
+        var idx     = Navigation.selectedIndex(root.commits, root.selectedCommit)
+        var result  = Navigation.selectPrevious(root.commits, root.selectedCommit, idx, root.navigationRule, rule)
 
-        if (rule !== undefined) root.navigationRule = rule
+        if (!result)
+            return
+
+        if (rule !== undefined)
+            root.navigationRule = rule
+
         setSingleSelection(result.selected, result.index)
         root.selectedCommit = result.selected
         root.commitClicked(result.selected.hash)
-        if (result.scroll) commitsListView.positionViewAtIndex(result.index, ListView.Center)
+
+        if (result.scroll)
+            commitsListView.positionViewAtIndex(result.index, ListView.Contain)
     }
 }
