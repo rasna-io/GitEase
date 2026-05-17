@@ -348,31 +348,34 @@ DetachablePanel {
 
     ConflictPopup {
         id: mergeConflictPopup
-        currentOperation: ConflictPopup.OperationType.Merge
-        mergeController: root.mergeController
-        conflictController: root.conflictController
-        notificationController: root.notificationController
-        statusController: root.statusController
+        currentOperation        : ConflictPopup.OperationType.Merge
+        mergeController         : root.mergeController
+        conflictController      : root.conflictController
+        notificationController  : root.notificationController
+        statusController        : root.statusController
+        onOperationCompleted    : reloadAll()
     }
 
     MergeMethodPopup { id: mergeMethodPopup }
 
     ConflictPopup {
         id: rebaseConflictPopup
-        currentOperation: ConflictPopup.OperationType.Rebase
-        rebaseController: root.rebaseController
-        conflictController: root.conflictController
-        notificationController: root.notificationController
-        statusController: root.statusController
+        currentOperation        : ConflictPopup.OperationType.Rebase
+        rebaseController        : root.rebaseController
+        conflictController      : root.conflictController
+        notificationController  : root.notificationController
+        statusController        : root.statusController
+        onOperationCompleted    : reloadAll()
     }
 
     ConflictPopup {
         id: cherryPickConflictPopup
-        currentOperation: ConflictPopup.OperationType.CherryPick
-        cherryPickController: root.cherryPickController
-        conflictController: root.conflictController
-        notificationController: root.notificationController
-        statusController: root.statusController
+        currentOperation        : ConflictPopup.OperationType.CherryPick
+        cherryPickController    : root.cherryPickController
+        conflictController      : root.conflictController
+        notificationController  : root.notificationController
+        statusController        : root.statusController
+        onOperationCompleted    : reloadAll()
     }
 
     CheckoutBranchSelectorPopup {
