@@ -145,14 +145,11 @@ Item {
         if (!commitController)       missing.push("CommitController")
         if (!statusController)       missing.push("StatusController")
         if (!repositoryController)   missing.push("RepositoryController")
-        if (!notificationController) missing.push("NotificationController")
         if (!stashController)        missing.push("StashController")
         if (!mergeController)        missing.push("MergeController")
         if (!rebaseController)       missing.push("RebaseController")
         if (!cherryPickController)   missing.push("CherryPickController")
         if (!conflictController)     missing.push("ConflictController")
-        if (!addBranchPopup)         missing.push("AddBranchPopup")
-        if (!addTagPopup)            missing.push("AddTagPopup")
 
         if (missing.length > 0) {
             notificationController.error(
