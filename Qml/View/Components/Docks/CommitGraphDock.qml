@@ -356,7 +356,7 @@ DetachablePanel {
         conflictController      : root.conflictController
         notificationController  : root.notificationController
         statusController        : root.statusController
-        onOperationCompleted    : reloadAll()
+        // onOperationCompleted    : reloadAll()        //TODO
     }
 
     MergeMethodPopup { id: mergeMethodPopup }
@@ -368,7 +368,7 @@ DetachablePanel {
         conflictController      : root.conflictController
         notificationController  : root.notificationController
         statusController        : root.statusController
-        onOperationCompleted    : reloadAll()
+        // onOperationCompleted    : reloadAll()        //TODO
     }
 
     ConflictPopup {
@@ -378,7 +378,7 @@ DetachablePanel {
         conflictController      : root.conflictController
         notificationController  : root.notificationController
         statusController        : root.statusController
-        onOperationCompleted    : reloadAll()
+        // onOperationCompleted    : reloadAll()        //TODO
     }
 
     CheckoutBranchSelectorPopup {
