@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import QtQuick.Templates as T
 import QtQuick.Controls.impl
 import QtQuick.Controls.Material
@@ -13,8 +14,9 @@ import GitEase_Style
 T.Button {
     id: control
 
-    property string tooltip: ""
-    property bool   compact: false
+    property string tooltip:        ""
+    property bool   compact:        false
+    property real   maximumWidth:   -1
 
     /* Object Properties
      * ****************************************************************************************/
@@ -30,6 +32,8 @@ T.Button {
 
     contentItem: Item {
         implicitWidth: row.implicitWidth
+        implicitHeight: row.implicitHeight
+
         Row {
             id: row
             anchors.centerIn: parent
@@ -46,16 +50,25 @@ T.Button {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            ScrollingText {
-                text: control.text
-                font {
-                    family: Style.fontTypes.roboto
-                    pixelSize: 11
-                    weight: Font.Medium
-                }
-                color: Style.colors.foreground
-                visible: !control.compact
+            Item {
+                width: control.maximumWidth > 0 ?
+                       Math.min(control.maximumWidth, scrollText.implicitWidth) :
+                       scrollText.implicitWidth
+                height: scrollText.implicitHeight
                 anchors.verticalCenter: parent.verticalCenter
+
+                ScrollingText {
+                    id: scrollText
+                    anchors.fill: parent
+                    text: control.text
+                    font{
+                        family: Style.fontTypes.roboto
+                        pixelSize: 11
+                        weight: Font.Medium
+                    }
+                    color: Style.colors.foreground
+                    visible: !control.compact
+                }
             }
         }
     }
