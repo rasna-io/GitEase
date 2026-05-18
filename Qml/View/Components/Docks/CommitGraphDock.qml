@@ -2478,7 +2478,7 @@ DetachablePanel {
 
         function handleMergeResult(res) {
             if (mergeController.hasMergeConflicts()) {
-                mergeConflictPopup.open()
+                mergeConflictPopup.show()
                 if (notificationController)
                     notificationController.warning(
                         "Merge conflicts detected. Resolve them then continue.", "Merge", 4000)
@@ -2543,7 +2543,7 @@ DetachablePanel {
 
                 if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
                     if (rebaseConflictPopup)
-                        rebaseConflictPopup.open()
+                        rebaseConflictPopup.show()
                     if (notificationController)
                         notificationController.warning("Rebase conflicts detected. Resolve them then continue.", "Rebase", 4000)
                     return
@@ -2607,7 +2607,7 @@ DetachablePanel {
         }
 
         if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-            if (cherryPickConflictPopup) cherryPickConflictPopup.open();
+            if (cherryPickConflictPopup) cherryPickConflictPopup.show();
             if (root.notificationController) {
                 root.notificationController.warning("Cherry-pick conflicts detected. Please resolve them.", "Cherry-Pick", 4000);
             }
