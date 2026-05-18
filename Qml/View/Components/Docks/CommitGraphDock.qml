@@ -510,6 +510,7 @@ DetachablePanel {
 
     function update() {
         graphCanvas.requestPaint()
+
     }
 
     function reloadAll() {
@@ -521,8 +522,7 @@ DetachablePanel {
         hasMoreCommits  = true
         isLoadingMore   = false
 
-        var headRes = root.statusController ? root.statusController.getHeadHash() : null
-        root.headHash = (headRes && headRes.success) ? headRes.data : ""
+        root.headHash = root.statusController.getHeadHash()
 
         var commitRes = root.commitController.getCommits(pageSize, commitsOffset)
         if (!commitRes.success || !commitRes.data) return
