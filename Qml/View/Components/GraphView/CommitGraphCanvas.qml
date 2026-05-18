@@ -121,11 +121,6 @@ Item {
                 }
 
                 // Helper functions (local for convenience)
-                function commitColor(commitObj) {
-                    if (commitObj && commitObj.isUncommitted) return "#888888";
-                    if (!commitObj || !commitObj.colorKey) return GraphUtils.getCategoryColor("default");
-                    return GraphUtils.getCategoryColor(commitObj.colorKey);
-                }
                 function edgeColor(edge, commitByHash) {
                     if (commitByHash && edge && edge.from) {
                         var fromCommit = commitByHash[edge.from];
@@ -179,7 +174,7 @@ Item {
                         if (pp) {
                             var parentX = centerOffset + pp.column * root.columnSpacing + root.columnSpacing / 2;
                             var parentY = pp.y + root.commitItemHeight / 2 + root.commitItemSpacing;
-                            var branchColor2 = commitColor(commit2);
+                            var branchColor2 = root.commitColor(commit2);
 
                             ctx.save();
                             ctx.strokeStyle = branchColor2;
@@ -204,7 +199,7 @@ Item {
                             }
                         }
                         if (canDraw) {
-                            var branchColor2 = commitColor(commit2);
+                            var branchColor2 = root.commitColor(commit2);
                             ctx.save();
                             ctx.strokeStyle = branchColor2;
                             ctx.globalAlpha = 0.9;
@@ -294,7 +289,7 @@ Item {
 
                     var centerXForLine = centerOffset + posForLine.column * root.columnSpacing + root.columnSpacing / 2;
                     var centerYForLine = posForLine.y + root.commitItemHeight / 2 + root.commitItemSpacing;
-                    var laneLabelColor = commitColor(commitForLine);
+                    var laneLabelColor = root.commitColor(commitForLine);
 
                     var allLabels = [];
                     if (commitForLine.tagNames && commitForLine.tagNames.length > 0) {
@@ -382,7 +377,7 @@ Item {
 
                     var centerX2 = centerOffset + pos3.column * root.columnSpacing + root.columnSpacing / 2;
                     var centerY2 = pos3.y + root.commitItemHeight / 2 + root.commitItemSpacing;
-                    var branchColor3 = commitColor(commit3);
+                    var branchColor3 = root.commitColor(commit3);
 
                     var isSelected = isCommitSelected(commit3.hash);
                     var isHead = commit3.hash === root.headHash;
@@ -439,6 +434,12 @@ Item {
 
     /* Functions
      * ****************************************************************************************/
+
+    function commitColor(commitObj) {
+        if (commitObj && commitObj.isUncommitted) return "#888888"
+        if (!commitObj || !commitObj.colorKey) return GraphUtils.getCategoryColor("default")
+        return GraphUtils.getCategoryColor(commitObj.colorKey)
+    }
 
     onWidthChanged  :  graphCanvas.requestPaint()
     onHeightChanged : graphCanvas.requestPaint()

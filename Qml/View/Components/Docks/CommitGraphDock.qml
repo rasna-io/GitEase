@@ -265,15 +265,7 @@ DetachablePanel {
                         authorWidth : root.commitsColAuthorWidth
                         dateWidth   : root.commitsColDateWidth
 
-                        indicatorColor: {
-                            if (modelData && modelData.isUncommitted)
-                                return "#888888"
-
-                            if (!modelData || !modelData.colorKey)
-                                return GraphUtils.getCategoryColor("default")
-
-                            return GraphUtils.getCategoryColor(modelData.colorKey)
-                        }
+                        indicatorColor: graphCanvas.commitColor(modelData)
 
                         isSelected  : root.isCommitSelected(modelData.hash)
                         isHead      : modelData ? modelData.hash === root.headHash  : false
