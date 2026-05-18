@@ -865,7 +865,7 @@ DetachablePanel {
             var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
 
             if (root.mergeController.hasMergeConflicts()) {
-                mergeConflictPopup.open()
+                mergeConflictPopup.show()
 
                 root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
 
@@ -904,7 +904,7 @@ DetachablePanel {
             notificationController.success(successMsg, commandName, 3000)
         }
         else if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-            conflictPopup.open();
+            conflictPopup.show();
             notificationController.warning(commandName + " conflicts detected.", commandName, 4000);
         }
         else {
