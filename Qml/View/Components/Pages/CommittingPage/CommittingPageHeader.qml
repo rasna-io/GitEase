@@ -32,6 +32,7 @@ RowLayout {
     RoniaButton {
         id: branchChip
         Layout.preferredHeight: 25
+        maximumWidth: 150
         visible: !headerRow.compact
         icon.name: Style.icons.branch
         text: branchController ? branchController.getCurrentBranchName() : ""
