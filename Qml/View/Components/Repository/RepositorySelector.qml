@@ -273,7 +273,7 @@ Item {
                 let res = root.repositoryController.cloneRepository(root.selectedPath, root.selectedUrl)
                 root.busy = res.success
 
-                if (!res.success) {
+                if (!res.success && res.errorMessage) {
                     notificationController.error(`can't clone ${root.selectedUrl}, ${res.errorMessage}`, ` Repository clone failed`, 5000)
                 }
 
