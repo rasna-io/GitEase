@@ -30,6 +30,11 @@ RowLayout {
 
     /* Children
      * ****************************************************************************************/
+    TextEdit {
+        id: clipboardHelper
+        visible: false
+    }
+
     RoniaButton {
         id: branchChip
         Layout.preferredHeight: 25
@@ -43,6 +48,15 @@ RowLayout {
             function onCurrentRepoChanged() {
                 headerBranchLabel.text = branchController ? branchController.getCurrentBranchName() : ""
             }
+        }
+
+        onClicked: {
+            clipboardHelper.text = branchChip.text
+            clipboardHelper.selectAll()
+            clipboardHelper.copy()
+
+            if (notificationController)
+                notificationController.success(`brach name : ${branchChip.text} copied to clipboard`)
         }
     }
 
