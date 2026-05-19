@@ -1080,3 +1080,36 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
 
     return GitResult(true, fetchResult);
 }
+
+QHash<QString, QString> GitRemote::getRemoteTrackingTipsSnapshot(const QString& remoteName)
+{
+    QHash<QString, QString> tips;
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return tips;
+    }
+
+    git_branch_iterator* it = nullptr;
+    if (git_branch_iterator_new(&it, m_currentRepo->repo, GIT_BRANCH_REMOTE) == GIT_OK && it) {
+        git_reference* ref = nullptr;
+        git_branch_t branchType = GIT_BRANCH_REMOTE;
+        while (git_branch_next(&ref, &branchType, it) == GIT_OK) {
+            const char* shorthand = nullptr;
+            if (git_branch_name(&shorthand, ref) == GIT_OK && shorthand) {
+                const QString fullName = QString::fromUtf8(shorthand); // e.g. origin/main
+                const QString prefix = remoteName + "/";
+                if (fullName.startsWith(prefix)) {
+                    const git_oid* target = git_reference_target(ref);
+                    if (target) {
+                        tips.insert(
+                            fullName.mid(prefix.size()),
+                            QString::fromLatin1(git_oid_tostr_s(target)));
+                    }
+                }
+            }
+            git_reference_free(ref);
+        }
+        git_branch_iterator_free(it);
+    }
+    return tips;
+}
+

@@ -211,6 +211,18 @@ private:
                             std::unique_ptr<IGitAuth> auth);
 
     /**
+     * @brief Captures the current commit IDs for all tracking branches of a specific remote.
+     *
+     * This helper iterates through all remote-tracking branches (e.g., refs/remotes/origin/*)
+     * and stores their current OID. This snapshot is used to compare states before and
+     * after a fetch to determine which branches were updated or newly created.
+     *
+     * @param remoteName The name of the remote to snapshot (e.g., "origin").
+     * @return A QHash mapping branch names (without the remote prefix) to their commit OID strings.
+     */
+    QHash<QString, QString> getRemoteTrackingTipsSnapshot(const QString& remoteName);
+
+    /**
      * @brief Launch asynchronous fetch and wire completion signal.
      */
     GitResult startAsyncFetch(const QString& remoteName,
