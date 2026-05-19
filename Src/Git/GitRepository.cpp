@@ -211,7 +211,7 @@ GitResult GitRepository::cloneInternal(const QString& url,
         if (result != 0) {
             const git_error *err = git_error_last();
             QString msg = err ? err->message : "Unknown git error";
-            return QVariantMap { {"success", false}, {"error", msg} };
+            return QVariantMap { {"success", false}, {"error", msg}, {"path", safePath} };
         }
 
         git_repository_free(repo);
