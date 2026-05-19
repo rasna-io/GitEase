@@ -112,7 +112,7 @@ GitRepository {
             result = clone(url, clonedPath, "")
         }
 
-        root.activeClones[clonedPath] = result.sucess
+        root.activeClones[clonedPath] = result.success
 
         return result
     }
@@ -120,7 +120,7 @@ GitRepository {
     onCloneFinished: function(result) {
         root.activeClones[result.path] = false
 
-        if(result.sucess) {
+        if(result.success) {
             let repoName = result.path.split(/[\/:]/).pop()
             createRepositoryComponent(result.path, repoName)
         }

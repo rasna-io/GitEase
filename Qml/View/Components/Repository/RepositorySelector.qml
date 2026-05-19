@@ -244,7 +244,7 @@ Item {
         target: root.repositoryController
 
         function onCloneFinished(res) {
-            if(!res.sucess)
+            if(!res.success)
                 notificationController.error(`can't clone ${root.selectedUrl}, ${res.error}`, ` Repository clone failed`, 5000)
 
             root.busy = false
