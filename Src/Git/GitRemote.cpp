@@ -949,12 +949,6 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
 
     QHash<QString, QString> beforeTrackingTips = getRemoteTrackingTipsSnapshot(remoteName);
 
-    qDebug().noquote() << QString("[GitRemote][FetchTrace] START remote=%1 headRef=%2 headOid=%3 wt=%4")
-                              .arg(remoteName,
-                                   currentHeadRefName(m_currentRepo->repo),
-                                   currentHeadOid(m_currentRepo->repo),
-                                   workingTreeSummary(m_currentRepo->repo));
-
     result = git_remote_fetch(remote, nullptr, &opts, nullptr);
 
     git_remote_free(remote);
