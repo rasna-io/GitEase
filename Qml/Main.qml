@@ -123,6 +123,9 @@ ApplicationWindow {
                     if (item && item.hasOwnProperty("windowController")) {
                         item.windowController = Qt.binding(function() {return uiSession.windowController})
                     }
+                    if (item.hasOwnProperty("notificationController")) {
+                        item.notificationController = Qt.binding(function() { return uiSession.notificationController })
+                    }
                 }
             }
         }
