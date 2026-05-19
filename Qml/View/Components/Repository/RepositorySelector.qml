@@ -244,6 +244,9 @@ Item {
         target: root.repositoryController
 
         function onCloneFinished(res) {
+            if(!res.sucess)
+                notificationController.error(`can't clone ${root.selectedUrl}, ${res.error}`, ` Repository clone failed`, 5000)
+
             root.busy = false
             root.progress = 0
             root.cloneFinished(res)
@@ -259,13 +262,19 @@ Item {
         switch(root.currentTabIndex) {
             case Enums.RepositorySelectorTab.Recents:
             case Enums.RepositorySelectorTab.Open:
-                return root.repositoryController.openRepository(root.selectedPath)
+                let result = root.repositoryController.openRepository(root.selectedPath)
+
+                if(!result)
+                    notificationController.error(`can't open ${root.selectedPath}, The .git directory is missing, corrupted, or not a valid repository.`, ` Repository open failed`, 5000)
+
+                return result
 
             case Enums.RepositorySelectorTab.Clone: {
                 let res = root.repositoryController.cloneRepository(root.selectedPath, root.selectedUrl)
                 root.busy = res.success
 
                 if (!res.success) {
+                    notificationController.error(`can't clone ${root.selectedUrl}, ${res.errorMessage}`, ` Repository clone failed`, 5000)
                 }
 
                 return false;
