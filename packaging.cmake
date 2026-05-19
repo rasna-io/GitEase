@@ -9,7 +9,6 @@ if(UNIX AND NOT APPLE)
     if(EXISTS "/usr/bin/rpmbuild")
         set(CPACK_GENERATOR "${CPACK_GENERATOR};RPM")
     endif()
-
     set(CPACK_PACKAGE_NAME "GitEase")
     set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
     set(CPACK_GENERATOR "DEB")
