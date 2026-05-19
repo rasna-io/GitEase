@@ -5,6 +5,14 @@ set -e
 source_dir=$(pwd)
 build_dir="$source_dir/build/release"
 
+# ========== Clean build folder ==========
+echo " ======= [Cleaning] ======= "
+if [ -d "$build_dir" ]; then
+    echo "Removing existing build directory: $build_dir"
+    rm -rf "$build_dir"
+fi
+echo "Build directory cleaned"
+
 # ========== Version Configuration ==========
 # Get version from CMakeLists.txt or set manually
 if [ -f "$source_dir/CMakeLists.txt" ]; then
