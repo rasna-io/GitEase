@@ -86,6 +86,7 @@ GitRepository {
      * Clone a repository from URL to the specified local path
      */
     function cloneRepository(path, url) : bool {
+        let result = ({success: false})
         let repoName = extractRepoName(url)
         let protocol = detectGitProtocol(url)
 
@@ -95,17 +96,15 @@ GitRepository {
         let clonedPath = path + repoName
         if (protocol === RepositoryController.GitProtocol.Unknown) {
             if(notificationController)
-                notificationController.warning(`Unsupported Git URL: ${url}`)
-            return false
+                notificationController.error(`Unsupported Git URL: ${url}`)
+            return result
         }
 
         if (root.activeClones[clonedPath]) {
             if(notificationController)
                 notificationController.warning(`Clone already in progress: ${clonedPath}`)
-            return false
+            return result
         }
-
-        let result
 
         if (protocol === RepositoryController.GitProtocol.SSH)
             result = clone(url, clonedPath)
@@ -119,7 +118,7 @@ GitRepository {
     }
 
     onCloneFinished: function(result) {
-        root.activeClones[result.path] = !result.sucess
+        root.activeClones[result.path] = false
 
         if(result.sucess) {
             let repoName = result.path.split(/[\/:]/).pop()
