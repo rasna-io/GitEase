@@ -14,8 +14,9 @@ RowLayout {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property          BranchController branchController:    null
-    readonly property bool             compact:             parent.width < 550
+    property          BranchController       branchController:          null
+    property          NotificationController notificationController:    null
+    readonly property bool                   compact:                   parent.width < 550
 
     /* Object Properties
      * ****************************************************************************************/
