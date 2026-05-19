@@ -6,7 +6,6 @@ set(CPACK_PACKAGE_CONTACT "yasinfaraji100@gmail.com")
 
 if(UNIX AND NOT APPLE)
     set(CPACK_GENERATOR "DEB;TGZ")
-    set(CPACK_GENERATOR "DEB;TGZ")
     if(EXISTS "/usr/bin/rpmbuild")
         set(CPACK_GENERATOR "${CPACK_GENERATOR};RPM")
     endif()
