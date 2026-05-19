@@ -19,6 +19,8 @@ Item {
      * ****************************************************************************************/
     property RepositoryController repositoryController
 
+    property NotificationController notificationController
+
     property FileIO               fileIO
 
     property var recentRepositories

@@ -108,6 +108,7 @@ QtObject {
     property ShellController shellController: ShellController {
         pageController : root.pageController
         repositoryController : root.repositoryController
+        notificationController: root.notificationController
     }
 
     property NotificationController notificationController: NotificationController {

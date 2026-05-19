@@ -15,17 +15,19 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property WindowController      windowController
+    property WindowController       windowController
 
-    property WelcomeController     controller
+    property WelcomeController      controller
 
-    property RepositoryController  repositoryController
+    property RepositoryController   repositoryController
 
-    property UserProfileController userProfileController
+    property NotificationController notificationController
 
-    property AppModel              appModel
+    property UserProfileController  userProfileController
 
-    property int                   contentMargins:  24
+    property AppModel               appModel
+
+    property int                    contentMargins:  24
 
 
     /* Object Properties
@@ -99,6 +101,7 @@ Rectangle {
                     }
                     fileIO: root.appModel.fileIO
                     repositoryController: root.repositoryController
+                    notificationController: root.notificationController
                     defaultPath: appModel.appSettings.generalSettings.defaultPath
                 }
             }

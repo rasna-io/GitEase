@@ -22,6 +22,7 @@ Item {
 
     property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {
         appModel: root.appModel
+        notificationController: root.notificationController
     }
 
     property SettingsPopup              settingsPopup:              SettingsPopup {

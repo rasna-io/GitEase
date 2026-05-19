@@ -13,8 +13,9 @@ QtObject {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property PageController        pageController
-    required property RepositoryController  repositoryController
+    required property PageController            pageController
+    required property RepositoryController      repositoryController
+    required property NotificationController    notificationController
 
     property          var                   arguments:              ({})
     property          string                selectedPath:           ""

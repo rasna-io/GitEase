@@ -21,6 +21,8 @@ IPopup {
 
     property RepositoryController   repositoryController
 
+    property NotificationController notificationController
+
     property AppModel               appModel
 
     property var                    recentRepositories
@@ -64,6 +66,7 @@ IPopup {
                 descriptionText: "Choose how you want to get started with your Git repository"
                 recentRepositories: root.recentRepositories
                 repositoryController: root.repositoryController
+                notificationController: root.notificationController
                 fileIO: root.appModel.fileIO
                 defaultPath: root.appModel?.appSettings?.generalSettings?.defaultPath ?? ""
                 onCloneFinished: root.close()
