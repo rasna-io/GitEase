@@ -35,8 +35,6 @@ Item {
 
     property string selectedUrl: repositoryUrlField.field.text
 
-    property string errorMessage: ""
-
     property bool busy: false
 
     property real progress: 0
@@ -174,8 +172,6 @@ Item {
             Item {
                 id: cloneTab
 
-                property bool hasError: (root.errorMessage !== "" && root.currentTabIndex === Enums.RepositorySelectorTab.Clone)
-
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 0
@@ -185,14 +181,14 @@ Item {
                         Layout.fillWidth: true
                         Layout.topMargin: 10
                         Layout.bottomMargin: 10
-                        text: cloneTab.hasError ? root.errorMessage : "Initialize a new Git repository on your local machine"
+                        text: "Initialize a new Git repository on your local machine"
                         wrapMode: Text.WordWrap
                         font.pixelSize: 13
                         font.family: Style.fontTypes.roboto
                         font.weight: 300
                         font.letterSpacing: 0
                         font.italic: true
-                        color: cloneTab.hasError ? Style.colors.error  : Style.colors.mutedText
+                        color: Style.colors.mutedText
                         horizontalAlignment: Text.AlignHCenter
                     }
 
@@ -270,7 +266,6 @@ Item {
                 root.busy = res.success
 
                 if (!res.success) {
-                    root.errorMessage = res.errorMessage
                 }
 
                 return false;
@@ -289,7 +284,6 @@ Item {
         repositoryUrlField.field.text = ""
         root.selectedPath = ""
         recentRepositoriesList.selectedIndex = -1
-        root.errorMessage = ""
     }
 }
 
