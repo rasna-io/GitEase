@@ -437,7 +437,7 @@ Item {
 
     function commitColor(commitObj) {
         if (commitObj && commitObj.isUncommitted) return "#888888"
-        if (!commitObj || !commitObj.colorKey) return GraphUtils.getCategoryColor("default")
+        if (!commitObj || !commitObj.colorKey) return GraphUtils.getCategoryColor("main")
         return GraphUtils.getCategoryColor(commitObj.colorKey)
     }
 
