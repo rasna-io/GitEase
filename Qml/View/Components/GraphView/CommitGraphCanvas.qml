@@ -91,9 +91,14 @@ Item {
 
                 if (!root.commits || root.commits.length === 0) return;
 
+                // Also handles continuation lines: when a node is not present in the viewport,
+                // a straight line is rendered to preserve visual continuity in the graph.
+                let commitsHash = []
                 var maxCols = 0;
                 for (var i = 0; i < root.commits.length; i++) {
-                    var p = root.commitPositions[root.commits[i].hash];
+                    let hash = root.commits[i].hash
+                    commitsHash.push(hash)
+                    var p = root.commitPositions[hash];
                     if (p && p.column > maxCols) maxCols = p.column;
                 }
 
@@ -115,7 +120,7 @@ Item {
                     if (bc && bc.branchNames && bc.branchNames.length) {
                         for (var bni = 0; bni < bc.branchNames.length; bni++) {
                             var bn = bc.branchNames[bni];
-                            if (bn) branchLatestCommit[bn] = bc.hash;
+                            if (bn && !branchLatestCommit[bn]) branchLatestCommit[bn] = bc.hash;
                         }
                     }
                 }
@@ -193,7 +198,7 @@ Item {
                         // Check if any parent is outside loaded set
                         var canDraw = false;
                         for (var i2 = 0; i2 < commit2.parentHashes.length; i2++) {
-                            if (!root.allCommitsHash || !root.allCommitsHash[commit2.parentHashes[i2]]) {
+                            if (commitsHash.indexOf(commit2.parentHashes[i2]) === -1) {
                                 canDraw = true;
                                 break;
                             }
