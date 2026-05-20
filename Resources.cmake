@@ -41,6 +41,11 @@ set(RESOURCES_CORE
     Qml/Core/Scripts/GraphUtils.js
     Qml/Core/Scripts/GraphLayout.js
     Qml/Core/Scripts/ConflictPopupUtils.js
+    Qml/Core/Scripts/GraphViewPresenter.js
+    Qml/Core/Scripts/CommitGraphDataLoader.js
+    Qml/Core/Scripts/CommitGraphFilter.js
+    Qml/Core/Scripts/CommitGraphNavigation.js
+    Qml/Core/Scripts/CommitGraphMenuBuilder.js
 )
 
 
@@ -153,6 +158,11 @@ set(RESOURCES_COMPONENTS
 
     # Pages Components
     Qml/View/Components/Pages/CommittingPage/CommittingPageHeader.qml
+    Qml/View/Components/GraphView/GraphViewHeader.qml
+    Qml/View/Components/GraphView/DateField.qml
+    Qml/View/Components/GraphView/ResizableColumnHeader.qml
+    Qml/View/Components/GraphView/CommitGraphCanvas.qml
+    Qml/View/Components/GraphView/CommitListDelegate.qml
 )
 
 
@@ -183,6 +193,8 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/MergeMethodPopup.qml
 
     Qml/View/Popups/AddTagPopup.qml
+    Qml/View/Popups/CalendarPopup.qml
+
 )
 
 
