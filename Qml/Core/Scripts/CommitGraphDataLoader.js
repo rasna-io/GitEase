@@ -4,6 +4,10 @@
 // CommitGraphDataLoader – pure data compilation helpers.
 // ====================================================================
 
+// Global map for commit hashes whose branch names will be resolved in later
+// pages. Needed for pagination. Entries are removed once processed.
+let branchAssignmentByHash = {};
+
 /**
  * Compiles graph‑ready commits from raw controller data.
  * @param {Array} rawCommits  – page from commitController.getCommits()
@@ -93,6 +97,37 @@ function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSe
             }
         }
 
+        let haveBranchName = tipHashToBranches[commit.hash]?.length > 0 ?? false
+
+        let branchNames = []
+        if (haveBranchName) {
+            branchNames = tipHashToBranches[commit.hash]
+            for (var pr = 0; pr < commit.parentHashes.length ; ++pr) {
+                if (!branchAssignmentByHash[commit.parentHashes[pr]])
+                    branchAssignmentByHash[commit.parentHashes[pr]] = branchNames
+            }
+        }
+
+        if (!haveBranchName) {
+            if (branchAssignmentByHash && branchAssignmentByHash[commit.hash]) {
+                branchNames = branchAssignmentByHash[commit.hash]
+
+                for (var pr1 = 0; pr1 < commit.parentHashes.length ; ++pr1) {
+                    if (!branchAssignmentByHash[commit.parentHashes[pr1]])
+                        branchAssignmentByHash[commit.parentHashes[pr1]] = branchNames
+                }
+
+                // delete used key
+                delete branchAssignmentByHash[commit.hash]
+            }
+        }
+
+        if (branchNames.length === 0) {
+            if (commit.hash === "__uncommitted__") {
+                branchNames = ["__uncommitted__"]
+            }
+        }
+
         compiled.push({
             hash            : commit.hash,
             shortHash       : commit.shortHash,
@@ -103,9 +138,9 @@ function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSe
             authorDate      : commit.authorDate,
             parentHashes    : commit.parentHashes || [],
             commitType      : (commit.parentHashes && commit.parentHashes.length > 1) ? "merge" : "normal",
-            branchNames     : tipHashToBranches[commit.hash] || [],
+            branchNames     : branchNames,
             tagNames        : hashToTags[commit.hash] || [],
-            colorKey        : "",
+            colorKey        : branchNames[0] || "main",
             isStash         : false,
             stashIndex      : -1,
             stashLabel      : "",
