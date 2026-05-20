@@ -198,7 +198,29 @@ QtObject {
     function saveNotifications() {
         saveNotificationsForRepository(root.currentRepositoryKey)
     }
-    
+
+    function shutdown() {
+        saveNotifications()
+
+        queuedNotifications = []
+
+        var notificationsToClose = activeNotifications.slice()
+        for (var i = 0; i < notificationsToClose.length; i++) {
+            var window = notificationsToClose[i]
+            if (window) {
+                window.close()
+                window.destroy()
+            }
+        }
+        activeNotifications = []
+
+        if (closeAllHeader) {
+            closeAllHeader.close()
+            closeAllHeader.destroy()
+            closeAllHeader = null
+        }
+    }
+
     function saveNotificationsForRepository(repositoryKey) {
         var filePath = getNotificationFilePathForRepository(repositoryKey)
         

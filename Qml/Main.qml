@@ -33,8 +33,18 @@ ApplicationWindow {
     
     /* Event Handlers
      * ****************************************************************************************/
-    onClosing: {
-        uiSession?.notificationController?.saveNotifications()
+    onClosing: function(close) {
+        close.accepted = true
+
+        try {
+            uiSession?.notificationController?.shutdown()
+        } catch (e) {
+            console.error("[MainWindow] notification shutdown failed:", e)
+        }
+
+        Qt.callLater(function() {
+            Qt.exit(0)
+        })
     }
 
 
