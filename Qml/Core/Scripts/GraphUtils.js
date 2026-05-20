@@ -79,7 +79,7 @@ function clearTagColorCache() {
  */
 function getCategoryColor(key) {
     if (!key)
-        key = "default";
+        key = "main";
 
     if (categoryColorCache[key])
         return categoryColorCache[key];
