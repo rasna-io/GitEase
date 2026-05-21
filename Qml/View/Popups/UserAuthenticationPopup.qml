@@ -14,6 +14,7 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property bool isConfirmed: false
 
     /* Signals
      * ****************************************************************************************/
@@ -25,6 +26,25 @@ IPopup {
     width: parent.width / 2
     height: 180
     padding: 20
+
+    modal: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+    Overlay.modal: Rectangle {
+        color: Qt.rgba(0, 0, 0, 0.5)
+    }
+
+    onOpened: {
+        isConfirmed = false
+        textField.field.text = ""
+    }
+
+    onClosed: {
+        if (!isConfirmed) {
+            root.rejected()
+        }
+        textField.field.text = ""
+    }
 
     /* Children
      * ****************************************************************************************/
@@ -86,9 +106,9 @@ IPopup {
                 }
 
                 onClicked: {
-                    root.close()
+                    root.isConfirmed = true
                     root.passwordConfirm(textField.text)
-                    textField.field.text = ""
+                    root.close()
                 }
             }
 
@@ -115,8 +135,6 @@ IPopup {
                 }
 
                 onClicked: {
-                    textField.field.text = ""
-                    root.rejected()
                     root.close()
                 }
             }
