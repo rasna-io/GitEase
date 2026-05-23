@@ -127,6 +127,26 @@ Item {
 
             changesFileLists.updateStatus()
         }
+
+        function onPushFinished(result) {
+            if (!result || result.remote !== "origin")
+                return
+
+            root.isFetching = false
+            root.authPurpose = "push"
+
+            if (result.success) {
+                let isForce = root.authPurpose === "pushForce"
+                if (root.notificationController)
+                    root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
+            } else {
+                errorMessageLabel.text = result.errorMessage ?? "Push error"
+                if (root.notificationController)
+                    root.notificationController.error(errorMessageLabel.text, "Push Error", 5000)
+            }
+
+            changesFileLists.updateStatus()
+        }
     }
 
     Connections {
@@ -152,11 +172,11 @@ Item {
                     } else {
                         failed.push({ name: name, message: res.errorMessage || "Unknown error" })
                         root.fetchBatchResults.push({
-                            remote: name,
-                            success: false,
-                            errorMessage: res.errorMessage || "Unknown error",
-                            data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                        })
+                                                        remote: name,
+                                                        success: false,
+                                                        errorMessage: res.errorMessage || "Unknown error",
+                                                        data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
+                                                    })
                     }
                 }
                 if (failed.length > 0 && root.notificationController) {
@@ -196,23 +216,14 @@ Item {
                 errorMessageLabel.text = "current Branch Name invalid!"
             }else{
                 let isForce = root.authPurpose === "pushForce"
-                let remoteRes = remoteController.push(
-                    "origin",
-                    branchName,
-                    password,
-                    isForce)
-
-                if(!remoteRes.success){
-                    root.notificationController.error(remoteRes.errorMessage || "Push failed", isForce ? "Push Force Error" : "Push Error", 5000)
-                    errorMessageLabel.text = remoteRes.errorMessage ?? "push error"
-                }else{
-                    root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
-                    commitTextArea.text = ""
-                }
+                remoteController.push(
+                        "origin",
+                        branchName,
+                        password,
+                        isForce)
+                root.notificationController.success("Push operation started", "Push", 3000)
             }
             root.authPurpose = "push"
-
-            changesFileLists.updateStatus()
         }
 
         function onRejected() {
@@ -255,33 +266,33 @@ Item {
                         spacing: 10
 
                         ContextMenu {
-                                id: commitOptionsMenu
-                                parent: commitPanel
-                                menuModel: [
-                                    {
-                                        text: "Push Force",
-                                        icon: Style.icons.arrowUp,
-                                        action: function() {
-                                            root.pushAndUpdate(true)
-                                        }
-                                    },
-                                    {
-                                        text: "Fetch",
-                                        icon: Style.icons.download,
-                                        enabled: !root.isFetching,
-                                        action: function() {
-                                            root.fetch()
-                                        }
-                                    },
-                                    {
-                                        text: "Pull",
-                                        icon: Style.icons.arrowDown,
-                                        enabled: !root.isFetching,
-                                        action: function() {
-                                            root.pullAndUpdate()
-                                        }
+                            id: commitOptionsMenu
+                            parent: commitPanel
+                            menuModel: [
+                                {
+                                    text: "Push Force",
+                                    icon: Style.icons.arrowUp,
+                                    action: function() {
+                                        root.pushAndUpdate(true)
                                     }
-                                ]
+                                },
+                                {
+                                    text: "Fetch",
+                                    icon: Style.icons.download,
+                                    enabled: !root.isFetching,
+                                    action: function() {
+                                        root.fetch()
+                                    }
+                                },
+                                {
+                                    text: "Pull",
+                                    icon: Style.icons.arrowDown,
+                                    enabled: !root.isFetching,
+                                    action: function() {
+                                        root.pullAndUpdate()
+                                    }
+                                }
+                            ]
                         }
 
                         ModernInputArea {
@@ -524,11 +535,11 @@ Item {
                     let msg = res.errorMessage || "Fetch failed"
                     sshFailed.push({ name: remote.name, message: msg })
                     root.fetchBatchResults.push({
-                        remote: remote.name,
-                        success: false,
-                        errorMessage: msg,
-                        data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                    })
+                                                    remote: remote.name,
+                                                    success: false,
+                                                    errorMessage: msg,
+                                                    data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
+                                                })
                 }
                 break
             }
@@ -584,13 +595,8 @@ Item {
         switch (protocol) {
         case RepositoryController.GitProtocol.SSH: {
             let branchName = branchController.getCurrentBranchName()
-            let pushRes = remoteController.push("origin", branchName, force)
-            if (!pushRes.success) {
-                root.notificationController.error(pushRes.errorMessage || `${force ? "Force" : ""} Push failed`, `${force ? "Force" : ""} Push Error`, 5000)
-                errorMessageLabel.text = pushRes.errorMessage ?? `${force ? "Force" : ""} Push Error`
-            } else {
-                root.notificationController.success(`Changes ${force ? "force" : ""} pushed successfully`, `${force ? "Force" : ""} Push`, 3000)
-            }
+            remoteController.push("origin", branchName, force)
+            root.notificationController.success("Push operation started", "Push", 3000)
             break
         }
         case RepositoryController.GitProtocol.HTTPS:
@@ -605,7 +611,7 @@ Item {
 
     function pushAndUpdate(force) {
         root.push(force)
-        changesFileLists.updateStatus()
+        //changesFileLists.updateStatus()
     }
 
     function pull(secret: string) {
@@ -674,7 +680,7 @@ Item {
         diffView.readOnly = isStaged
 
         Qt.callLater(() => {
-            diffView.scrollPosition = oldY;
-        });
+                         diffView.scrollPosition = oldY;
+                     });
     }
 }

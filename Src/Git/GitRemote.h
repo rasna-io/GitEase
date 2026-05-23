@@ -195,6 +195,10 @@ private:
                            std::unique_ptr<IGitAuth> auth,
                            bool force);
 
+    GitResult pushStartAsyncInternal(const QString& remoteName,
+                                     const QString& branchName,
+                                     std::unique_ptr<IGitAuth> auth,
+                                     bool force);
     /**
      * @brief Internal implementation for fetching from a remote.
      *
@@ -251,8 +255,10 @@ private:
 
 signals:
     void pullFinished(QVariantMap result);
+    void pushFinished(QVariantMap result);
 
 private:
     bool m_pullInProgress = false;
+    bool m_pushInProgress = false;
 
 };
