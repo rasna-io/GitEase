@@ -139,6 +139,7 @@ Item {
                 let isForce = root.authPurpose === "pushForce"
                 if (root.notificationController)
                     root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
+                errorMessageLabel.text = ""
             } else {
                 errorMessageLabel.text = result.errorMessage ?? "Push error"
                 if (root.notificationController)
@@ -216,12 +217,17 @@ Item {
                 errorMessageLabel.text = "current Branch Name invalid!"
             }else{
                 let isForce = root.authPurpose === "pushForce"
-                remoteController.push(
+                let pushRes = remoteController.push(
                         "origin",
                         branchName,
                         password,
                         isForce)
-                root.notificationController.success("Push operation started", "Push", 3000)
+                if (!pushRes.success) {
+                    root.notificationController.error(pushRes.errorMessage, "Push Error", 5000)
+                    errorMessageLabel.text = pushRes.errorMessage ?? "Push Error"
+                } else {
+                    root.notificationController.success("Push operation started", "Push", 3000)
+                }
             }
             root.authPurpose = "push"
         }
@@ -595,8 +601,14 @@ Item {
         switch (protocol) {
         case RepositoryController.GitProtocol.SSH: {
             let branchName = branchController.getCurrentBranchName()
-            remoteController.push("origin", branchName, force)
-            root.notificationController.success("Push operation started", "Push", 3000)
+            let pushRes = remoteController.push("origin", branchName, force)
+            if (!pushRes.success) {
+                root.notificationController.error(pushRes.errorMessage, "Push Error", 5000)
+                errorMessageLabel.text = pushRes.errorMessage ?? "Push Error"
+            } else {
+                root.notificationController.success("Push operation started", "Push", 3000)
+            }
+
             break
         }
         case RepositoryController.GitProtocol.HTTPS:
