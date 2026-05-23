@@ -35,7 +35,7 @@ QtObject {
     property          Colors        modernLightColors:          Colors {}
 
     property          Colors        modernDarkColors:           Colors {
-        accent:              "#01468c"
+        accent:              Qt.lighter(modernLightColors.accent, 1.4)
         primaryBackground:   "#282828"
         secondaryBackground: "#383838"
         foreground:          "#fdfdfd"
