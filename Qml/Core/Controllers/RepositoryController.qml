@@ -15,7 +15,9 @@ GitRepository {
     required property            AppModel                         appModel
     property                     NotificationController           notificationController: null
 
-    property int maxRecentLength: 10
+    property int maxRecentLength:   10
+    property var activeClones:      ({})
+
 
     enum GitProtocol {
         Unknown = 0,
@@ -84,26 +86,44 @@ GitRepository {
      * Clone a repository from URL to the specified local path
      */
     function cloneRepository(path, url) : bool {
+        let result = ({success: false})
         let repoName = extractRepoName(url)
         let protocol = detectGitProtocol(url)
 
+        if(path && path.slice(-1) !== "/")
+            path = path + "/"
+
+        let clonedPath = path + repoName
         if (protocol === RepositoryController.GitProtocol.Unknown) {
-            console.warn("Unsupported Git URL:", url)
-            return false
+            if(notificationController)
+                notificationController.error(`Unsupported Git URL: ${url}`)
+            return result
         }
-        let result
+
+        if (root.activeClones[clonedPath]) {
+            if(notificationController)
+                notificationController.warning(`Clone already in progress: ${clonedPath}`)
+            return result
+        }
 
         if (protocol === RepositoryController.GitProtocol.SSH)
-            result = clone(url, path + "/" + repoName)
+            result = clone(url, clonedPath)
         else if (protocol === RepositoryController.GitProtocol.HTTP || protocol === RepositoryController.GitProtocol.HTTPS) {
-            result = clone(url, path + "/" + repoName, "")
+            result = clone(url, clonedPath, "")
         }
 
-        if(result.success){
-            createRepositoryComponent(path + "/" + repoName, repoName)
-        }
+        root.activeClones[clonedPath] = result.success
 
         return result
+    }
+
+    onCloneFinished: function(result) {
+        root.activeClones[result.path] = false
+
+        if(result.success) {
+            let repoName = result.path.split(/[\/:]/).pop()
+            createRepositoryComponent(result.path, repoName)
+        }
     }
 
     /**

@@ -19,6 +19,8 @@ Item {
      * ****************************************************************************************/
     property RepositoryController repositoryController
 
+    property NotificationController notificationController
+
     property FileIO               fileIO
 
     property var recentRepositories
@@ -32,8 +34,6 @@ Item {
     property string selectedPath: ""
 
     property string selectedUrl: repositoryUrlField.field.text
-
-    property string errorMessage: ""
 
     property bool busy: false
 
@@ -172,8 +172,6 @@ Item {
             Item {
                 id: cloneTab
 
-                property bool hasError: (root.errorMessage !== "" && root.currentTabIndex === Enums.RepositorySelectorTab.Clone)
-
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 0
@@ -183,14 +181,14 @@ Item {
                         Layout.fillWidth: true
                         Layout.topMargin: 10
                         Layout.bottomMargin: 10
-                        text: cloneTab.hasError ? root.errorMessage : "Initialize a new Git repository on your local machine"
+                        text: "Initialize a new Git repository on your local machine"
                         wrapMode: Text.WordWrap
                         font.pixelSize: 13
                         font.family: Style.fontTypes.roboto
                         font.weight: 300
                         font.letterSpacing: 0
                         font.italic: true
-                        color: cloneTab.hasError ? Style.colors.error  : Style.colors.mutedText
+                        color: Style.colors.mutedText
                         horizontalAlignment: Text.AlignHCenter
                     }
 
@@ -246,6 +244,9 @@ Item {
         target: root.repositoryController
 
         function onCloneFinished(res) {
+            if(!res.success)
+                notificationController.error(`can't clone ${root.selectedUrl}, ${res.error}`, ` Repository clone failed`, 5000)
+
             root.busy = false
             root.progress = 0
             root.cloneFinished(res)
@@ -261,14 +262,19 @@ Item {
         switch(root.currentTabIndex) {
             case Enums.RepositorySelectorTab.Recents:
             case Enums.RepositorySelectorTab.Open:
-                return root.repositoryController.openRepository(root.selectedPath)
+                let result = root.repositoryController.openRepository(root.selectedPath)
+
+                if(!result)
+                    notificationController.error(`can't open ${root.selectedPath}, The .git directory is missing, corrupted, or not a valid repository.`, ` Repository open failed`, 5000)
+
+                return result
 
             case Enums.RepositorySelectorTab.Clone: {
                 let res = root.repositoryController.cloneRepository(root.selectedPath, root.selectedUrl)
                 root.busy = res.success
 
-                if (!res.success) {
-                    root.errorMessage = res.errorMessage
+                if (!res.success && res.errorMessage) {
+                    notificationController.error(`can't clone ${root.selectedUrl}, ${res.errorMessage}`, ` Repository clone failed`, 5000)
                 }
 
                 return false;
@@ -287,7 +293,6 @@ Item {
         repositoryUrlField.field.text = ""
         root.selectedPath = ""
         recentRepositoriesList.selectedIndex = -1
-        root.errorMessage = ""
     }
 }
 

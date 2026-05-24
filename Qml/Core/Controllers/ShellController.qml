@@ -13,8 +13,9 @@ QtObject {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property PageController        pageController
-    required property RepositoryController  repositoryController
+    required property PageController            pageController
+    required property RepositoryController      repositoryController
+    required property NotificationController    notificationController
 
     property          var                   arguments:              ({})
     property          string                selectedPath:           ""
@@ -44,6 +45,11 @@ QtObject {
             root.commandExecuted = repositoryController?.gitInit(root.selectedPath)
         } else { // --open
             root.commandExecuted = repositoryController?.openRepository(root.selectedPath)
+        }
+
+        if(!root.commandExecuted) {
+            let action = root.arguments["init"] ? "init" : "open"
+            notificationController.error(`can't ${action} ${root.arguments["path"]}`, ` Repository ${action} failed`, 5000)
         }
 
         // --page=page name
