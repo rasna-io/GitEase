@@ -479,33 +479,8 @@ DetachablePanel {
 
     function loadData(items) {
         var positions = layoutCommits(items)
-        assignLaneColorKeys(items, positions)
         root.commitPositions = positions
         root.commits = items.slice(0)
-    }
-
-    function assignLaneColorKeys(items, positions) {
-        var colorKeyByHash = {}
-        for (var i = items.length - 1; i >= 0; i--) {
-            var c = items[i]
-            var pos = positions[c.hash]
-            if (!pos) continue
-
-            var inherited = ""
-            if (c.parentHashes && c.parentHashes.length) {
-                for (var p = 0; p < c.parentHashes.length; p++) {
-                    var parentHash = c.parentHashes[p]
-                    var parentPos = positions[parentHash]
-                    if (parentPos && parentPos.column === pos.column) {
-                        inherited = colorKeyByHash[parentHash] || ""
-                        break
-                    }
-                }
-            }
-
-            c.colorKey = inherited ? inherited : ("lane-seg:" + pos.column + ":" + c.hash)
-            colorKeyByHash[c.hash] = c.colorKey
-        }
     }
 
     function update() {
