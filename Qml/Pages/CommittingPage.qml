@@ -51,6 +51,7 @@ Item {
     // Exposed to MainWindow's header area (see MainWindow.qml)
     property Component headerContent: CommittingPageHeader {
         branchController: root.branchController
+        notificationController: root.notificationController
     }
 
     onStatusControllerChanged: {

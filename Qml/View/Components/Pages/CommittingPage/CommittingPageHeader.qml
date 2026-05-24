@@ -14,8 +14,9 @@ RowLayout {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property          BranchController branchController:    null
-    readonly property bool             compact:             parent.width < 550
+    property          BranchController       branchController:          null
+    property          NotificationController notificationController:    null
+    readonly property bool                   compact:                   parent.width < 550
 
     /* Object Properties
      * ****************************************************************************************/
@@ -29,9 +30,15 @@ RowLayout {
 
     /* Children
      * ****************************************************************************************/
+    TextEdit {
+        id: clipboardHelper
+        visible: false
+    }
+
     RoniaButton {
         id: branchChip
         Layout.preferredHeight: 25
+        maximumWidth: 150
         visible: !headerRow.compact
         icon.name: Style.icons.branch
         text: branchController ? branchController.getCurrentBranchName() : ""
@@ -41,6 +48,15 @@ RowLayout {
             function onCurrentRepoChanged() {
                 headerBranchLabel.text = branchController ? branchController.getCurrentBranchName() : ""
             }
+        }
+
+        onClicked: {
+            clipboardHelper.text = branchChip.text
+            clipboardHelper.selectAll()
+            clipboardHelper.copy()
+
+            if (notificationController)
+                notificationController.success(`brach name : ${branchChip.text} copied to clipboard`)
         }
     }
 
