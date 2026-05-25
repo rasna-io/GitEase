@@ -15,6 +15,9 @@ Popup {
      * ****************************************************************************************/
     property var menuModel: [] // Format: [{ text: "Checkout", icon: "\uf00c", action: function(){}, enabled: true }]
 
+    property var    pendingSubModel : null
+    property real   pendingSubY     : 0
+
     /* Object Properties
      * ****************************************************************************************/
     modal: false
@@ -188,5 +191,17 @@ Popup {
         id: subMenuCloseTimer
         interval: 150
         onTriggered: subMenuPopup.close()
+    }
+
+    Timer {
+        id: subMenuOpenTimer
+        interval: 200
+        onTriggered: {
+            if (root.pendingSubModel) {
+                subMenuPopup.subModel   = root.pendingSubModel;
+                subMenuPopup.y          = root.pendingSubY;
+                subMenuPopup.open();
+            }
+        }
     }
 }
