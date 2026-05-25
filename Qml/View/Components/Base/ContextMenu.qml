@@ -154,8 +154,13 @@ Popup {
                         subMenuPopup.y = menuOption.mapToItem(root.contentItem, 0, 0).y - 6
                         subMenuPopup.open()
                     } else if (!isSep) {
-                        if (subMenuPopup.opened) {
-                            subMenuCloseTimer.restart();
+                        if (menuOption.parent === root.contentItem) {
+                            if (subMenuPopup.opened) {
+                                subMenuCloseTimer.restart();
+                            }
+                        }
+                        else{
+                            subMenuCloseTimer.stop();
                         }
                     }
                 }
