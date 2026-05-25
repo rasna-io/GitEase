@@ -64,7 +64,10 @@ Popup {
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: true
-                onEntered: subMenuCloseTimer.stop()
+                onEntered: {
+                    subMenuCloseTimer.stop()
+                    subMenuOpenTimer.stop()
+                }
             }
 
             Column {
