@@ -1179,7 +1179,8 @@ GitResult GitStatus::revertFile(const QString &filePath)
 
     // GIT_CHECKOUT_FORCE ensures we overwrite local workdir changes.
     // GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH prevents accidental glob expansion.
-    opts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+    // GIT_CHECKOUT_REMOVE_UNTRACKED removes untracked files not in index
+    opts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH | GIT_CHECKOUT_REMOVE_UNTRACKED;
 
     // Convert QString path to the format required by git_strarray
     QByteArray pathUtf8 = filePath.toUtf8();
@@ -1318,8 +1319,10 @@ GitResult GitStatus::revertAll()
 
     // FORCE: Overwrite all local changes
     // RECREATE_MISSING: Restore files that were deleted in workdir
+    // GIT_CHECKOUT_REMOVE_UNTRACKED removes untracked files not in index
     opts.checkout_strategy = GIT_CHECKOUT_FORCE |
                              GIT_CHECKOUT_RECREATE_MISSING |
+                             GIT_CHECKOUT_REMOVE_UNTRACKED |
                              GIT_CHECKOUT_DONT_UPDATE_INDEX;
 
     // Passing NULL to the second parameter tells libgit2 to use HEAD
@@ -1331,7 +1334,7 @@ GitResult GitStatus::revertAll()
                          QString("Failed to revert all changes: %1").arg(e ? e->message : "Unknown error"));
     }
 
-    emitGitCommand("git reset --hard HEAD");
+    emitGitCommand("git reset --hard HEAD && git clean -fd");
 
     return GitResult(true, QVariant(), "All changes discarded.");
 }
