@@ -132,6 +132,16 @@ GitResult GitRemote::push(const QString& remote,
                         std::make_unique<GitHttpsAuth>(token), force);
 }
 
+bool GitRemote::isPushInProgress() const
+{
+    return m_pushInProgress;
+}
+
+bool GitRemote::isForcePush() const
+{
+    return m_forcePush;
+}
+
 GitResult GitRemote::pushInternal(const QString& remoteName,
                                   const QString& branchName,
                                   std::unique_ptr<IGitAuth> auth,
@@ -234,6 +244,10 @@ GitResult GitRemote::pushStartAsyncInternal(const QString& remoteName,
     }
 
     m_pushInProgress = true;
+    emit pushInProgressChanged();
+
+    m_forcePush = force;
+    emit forcePushChanged();
 
     const QString safeRemote = remoteName;
     const QString safeBranch = branchName;
@@ -257,6 +271,7 @@ GitResult GitRemote::pushStartAsyncInternal(const QString& remoteName,
     auto* watcher = new QFutureWatcher<QVariantMap>(this);
     connect(watcher, &QFutureWatcher<QVariantMap>::finished, this, [this, watcher]() {
         m_pushInProgress = false;
+        emit pushInProgressChanged();
         emit pushFinished(watcher->result());
         watcher->deleteLater();
     });

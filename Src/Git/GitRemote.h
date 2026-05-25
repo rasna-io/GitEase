@@ -10,6 +10,8 @@ class GitResult;
 class GitRemote : public IGitController
 {
     Q_OBJECT
+    Q_PROPERTY(bool pushInProgress READ isPushInProgress NOTIFY pushInProgressChanged FINAL)
+    Q_PROPERTY(bool forcePush READ isForcePush NOTIFY forcePushChanged FINAL)
     QML_ELEMENT
 public:
     explicit GitRemote(QObject *parent = nullptr);
@@ -47,6 +49,18 @@ public:
                                const QString& branch,
                                const QString& token,
                                bool force = false);
+
+    /**
+     * @brief Checks if a push operation is currently in progress
+     * @return true if a push operation is actively running, false otherwise
+     */
+    Q_INVOKABLE bool isPushInProgress() const;
+
+    /**
+     * @brief Checks if force push mode is enabled
+     * @return true if future pushes will use --force flag, false otherwise
+     */
+    Q_INVOKABLE bool isForcePush() const;
 
     /**
      * @brief Fetch changes from a remote repository.
@@ -117,7 +131,7 @@ public:
      * \return QVariantMap with operation result
      */
     Q_INVOKABLE GitResult addRemote(const QString &name,
-                                      const QString &url);
+                                    const QString &url);
 
     /**
      * \brief Remove a remote
@@ -231,9 +245,9 @@ private:
      */
     GitResult startAsyncFetch(const QString& remoteName,
                               std::unique_ptr<IGitAuth> auth);
-                
 
-     /**                         
+
+    /**
      * @brief Internal implementation for pull.
      *
      * Pull is implemented as fetch + merge analysis + fast-forward update.
@@ -256,9 +270,11 @@ private:
 signals:
     void pullFinished(QVariantMap result);
     void pushFinished(QVariantMap result);
+    void pushInProgressChanged();
+    void forcePushChanged();
 
 private:
     bool m_pullInProgress = false;
     bool m_pushInProgress = false;
-
+    bool m_forcePush = false;
 };

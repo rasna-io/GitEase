@@ -52,6 +52,7 @@ Item {
     property Component headerContent: CommittingPageHeader {
         branchController: root.branchController
         notificationController: root.notificationController
+        remoteController: root.remoteController
     }
 
     onStatusControllerChanged: {
@@ -133,10 +134,9 @@ Item {
                 return
 
             root.isFetching = false
-            root.authPurpose = "push"
 
             if (result.success) {
-                let isForce = root.authPurpose === "pushForce"
+                let isForce =  result.data.force === true
                 if (root.notificationController)
                     root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
                 errorMessageLabel.text = ""
@@ -217,17 +217,12 @@ Item {
                 errorMessageLabel.text = "current Branch Name invalid!"
             }else{
                 let isForce = root.authPurpose === "pushForce"
-                let pushRes = remoteController.push(
+                remoteController.push(
                         "origin",
                         branchName,
                         password,
                         isForce)
-                if (!pushRes.success) {
-                    root.notificationController.error(pushRes.errorMessage, "Push Error", 5000)
-                    errorMessageLabel.text = pushRes.errorMessage ?? "Push Error"
-                } else {
-                    root.notificationController.success("Push operation started", "Push", 3000)
-                }
+                root.notificationController.info("Push operation started", "Push", 3000)
             }
             root.authPurpose = "push"
         }
@@ -601,13 +596,8 @@ Item {
         switch (protocol) {
         case RepositoryController.GitProtocol.SSH: {
             let branchName = branchController.getCurrentBranchName()
-            let pushRes = remoteController.push("origin", branchName, force)
-            if (!pushRes.success) {
-                root.notificationController.error(pushRes.errorMessage, "Push Error", 5000)
-                errorMessageLabel.text = pushRes.errorMessage ?? "Push Error"
-            } else {
-                root.notificationController.success("Push operation started", "Push", 3000)
-            }
+            remoteController.push("origin", branchName, force)
+            root.notificationController.info("Push operation started", "Push", 3000)
 
             break
         }
@@ -623,7 +613,6 @@ Item {
 
     function pushAndUpdate(force) {
         root.push(force)
-        //changesFileLists.updateStatus()
     }
 
     function pull(secret: string) {

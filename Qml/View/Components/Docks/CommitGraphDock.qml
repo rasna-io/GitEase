@@ -24,22 +24,24 @@ DetachablePanel {
      * ****************************************************************************************/
     property AppModel               appModel                : null
 
-    property BranchController       branchController        : null
-    property MergeController        mergeController         : null
-    property RebaseController       rebaseController        : null
-    property CherryPickController   cherryPickController    : null
-    property ConflictController     conflictController      : null
-    property TagController          tagController           : null
-    property StatusController       statusController        : null
-    property CommitController       commitController        : null
-    property RepositoryController   repositoryController    : null
-    property NotificationController notificationController  : null
-    property StashController        stashController         : null
+    property BranchController        branchController        : null
+    property RemoteController        remoteController        : null
+    property UserAuthenticationPopup userAuthenticationPopup: null
+    property MergeController         mergeController         : null
+    property RebaseController        rebaseController        : null
+    property CherryPickController    cherryPickController    : null
+    property ConflictController      conflictController      : null
+    property TagController           tagController           : null
+    property StatusController        statusController        : null
+    property CommitController        commitController        : null
+    property RepositoryController    repositoryController    : null
+    property NotificationController  notificationController  : null
+    property StashController         stashController         : null
 
-    property AddBranchPopup         addBranchPopup          : null
-    property AddTagPopup            addTagPopup             : null
+    property AddBranchPopup          addBranchPopup          : null
+    property AddTagPopup             addTagPopup             : null
 
-
+    property bool   isForcePush: false
     property var    allCommits      : []
     property var    commits         : []
     property var    allCommitsHash  : ({})
@@ -303,6 +305,42 @@ DetachablePanel {
     ContextMenu {
         id: contextMenu
         width: 250
+    }
+
+    Connections {
+        target: remoteController
+
+        function onPushFinished(result) {
+            if (!result || result.remote !== "origin")
+                return
+
+            if (result.success) {
+                let isForce =  result.data.force === true
+                if (root.notificationController)
+                    root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
+            } else {
+                if (root.notificationController)
+                    root.notificationController.error(result.errorMessage, "Push Error", 5000)
+            }
+        }
+    }
+
+    Connections {
+        target: userAuthenticationPopup
+
+        function onPasswordConfirm(password){
+            let branchName = branchController.getCurrentBranchName()
+            if(branchName.length === 0){
+                root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
+            }else{
+                remoteController.push(
+                        "origin",
+                        branchName,
+                        password,
+                        isForcePush)
+                root.notificationController.info("Push operation started", "Push", 3000)
+            }
+        }
     }
 
     Connections {
@@ -703,6 +741,7 @@ DetachablePanel {
             isHead              : isHead,
             shortHash           : shortHash,
             fullHash            : commitData.hash,
+            pushEnabled         : !remoteController.pushInProgress && isHead,
             branchNames         : branches,
             isStash             : commitData.isStash || false,
             canCherryPick       : !commitData.isStash && !isHead,
@@ -740,16 +779,18 @@ DetachablePanel {
                 return { separator: true }
 
             var result = {
-                text    : item.text,
-                icon    : resolveMenuIcon(item.icon),
-                enabled : item.enabled !== false
+                text           : item.text,
+                icon           : resolveMenuIcon(item.icon),
+                enabled        : item.enabled !== false,
+                hasCheckBox    : item.hasCheckBox,
+                checkBoxText   : item.checkBoxText,
             }
 
             if (item.subItems) {
                 result.subItems = buildContextMenuModel(item.subItems)
             } else {
-                result.action = function() {
-                    root.executeMenuAction(item)
+                result.action = function(checked) {
+                    root.executeMenuAction(item, checked)
                 }
             }
 
@@ -765,6 +806,12 @@ DetachablePanel {
 
             case "hash":
                 return Style.icons.hash
+
+            case "arrowUp":
+                return Style.icons.arrowUp
+
+            case "circleExclamation":
+                return Style.icons.circleExclamation
 
             case "branchPlus":
                 return Style.icons.branchPlus
@@ -785,7 +832,7 @@ DetachablePanel {
         }
     }
 
-    function executeMenuAction(item) {
+    function executeMenuAction(item, checked) {
         switch (item.action) {
 
         case "checkoutBranch":
@@ -794,6 +841,11 @@ DetachablePanel {
 
         case "checkoutCommit":
             executeCheckoutCommit(item.payload.hash)
+            break
+
+        case "push":
+            isForcePush = checked
+            executePush(item.payload.branch)
             break
 
         case "newBranch":
@@ -828,6 +880,29 @@ DetachablePanel {
     function executeCheckoutCommit(commitHash) {
         handleContextResponse(root.branchController.checkoutCommit(commitHash), "Checked out commit " + commitHash.substring(0, 7))
     }
+
+    function executePush(branchName) {
+        let urlRes = remoteController.getRemoteUrl("origin")
+        if (!urlRes.success) {
+            root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${isForcePush ? "Force" : ""} Push Error`, 5000)
+            return
+        }
+        let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
+        switch (protocol) {
+        case RepositoryController.GitProtocol.SSH: {
+            remoteController.push("origin", branchName, isForcePush)
+            root.notificationController.info("Push operation started", "Push", 3000)
+            break
+        }
+        case RepositoryController.GitProtocol.HTTPS:
+        case RepositoryController.GitProtocol.HTTP:
+            userAuthenticationPopup.open()
+            break
+        default:
+            root.notificationController.error("Unsupported protocol", `${isForcePush ? "Force" : ""} Push Error`, 5000)
+        }
+    }
+
 
     function executeNewBranch(commitHash) {
         if (!root.addBranchPopup)

@@ -18,22 +18,24 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var                    page                    : null
-    property AppModel               appModel                : null
+    property var                     page                    : null
+    property AppModel                appModel                : null
 
-    property BranchController       branchController        : null
-    property CommitController       commitController        : null
-    property StatusController       statusController        : null
-    property RepositoryController   repositoryController    : null
-    property NotificationController notificationController  : null
-    property UiSessionPopups        uiSessionPopups         : null
-    property StashController        stashController         : null
-    property ConflictController     conflictController      : null
-    property MergeController        mergeController         : null
-    property RebaseController       rebaseController        : null
-    property CherryPickController   cherryPickController    : null
+    property BranchController        branchController        : null
+    property RemoteController        remoteController        : null
+    property UserAuthenticationPopup userAuthenticationPopup : null
+    property CommitController        commitController        : null
+    property StatusController        statusController        : null
+    property RepositoryController    repositoryController    : null
+    property NotificationController  notificationController  : null
+    property UiSessionPopups         uiSessionPopups         : null
+    property StashController         stashController         : null
+    property ConflictController      conflictController      : null
+    property MergeController         mergeController         : null
+    property RebaseController        rebaseController        : null
+    property CherryPickController    cherryPickController    : null
 
-    property alias                  graphRef                : commitGraph
+    property alias                   graphRef                : commitGraph
 
     // Header exposed to MainWindow
     property Component headerContent: Component {
@@ -96,6 +98,8 @@ Item {
                 repositoryController    : root.repositoryController
                 appModel                : root.appModel
                 branchController        : root.branchController
+                remoteController        : root.remoteController
+                userAuthenticationPopup : root.userAuthenticationPopup
                 mergeController         : root.mergeController
                 rebaseController        : root.rebaseController
                 cherryPickController    : root.cherryPickController
@@ -142,6 +146,7 @@ Item {
 
         if (!appModel)               missing.push("AppModel")
         if (!branchController)       missing.push("BranchController")
+        if (!remoteController)       missing.push("RemoteController")
         if (!commitController)       missing.push("CommitController")
         if (!statusController)       missing.push("StatusController")
         if (!repositoryController)   missing.push("RepositoryController")

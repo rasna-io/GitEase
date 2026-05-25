@@ -44,6 +44,16 @@ function buildMenu(state) {
         });
     }
 
+    model.push({
+        text: "Push",
+        icon: "arrowUp",
+        action: "push",
+        enabled: state.pushEnabled,
+        hasCheckBox: true,
+        checkBoxText: "Force",
+        payload: { branch: state.currentBranch }
+    });
+
     // New Branch / Tag
     model.push({
         text: "New Branch from here",

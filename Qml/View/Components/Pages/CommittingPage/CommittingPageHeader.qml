@@ -16,6 +16,7 @@ RowLayout {
      * ****************************************************************************************/
     property          BranchController       branchController:          null
     property          NotificationController notificationController:    null
+    property          RemoteController       remoteController:          null
     readonly property bool                   compact:                   parent.width < 550
 
     /* Object Properties
@@ -83,13 +84,35 @@ RowLayout {
     RoniaButton {
         id: pushBtnHeader
         Layout.preferredHeight: 26
+        Layout.minimumWidth: 30
+        Material.accent: Style.colors.accent
 
-        icon.name: Style.icons.arrowUp
-        text: "Push"
-        tooltip: "Push to origin"
-        compact:headerRow.compact
+        property bool isBusy: remoteController?.pushInProgress && !remoteController?.forcePush
 
-        onClicked: root.pushAndUpdate()
+        background: Rectangle {
+            radius: 5
+            color: pushBtnHeader.down ? Style.colors.surfaceMuted :
+                   pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+        }
+
+        BusyIndicator {
+            id: pushBusyIndicator
+            anchors.centerIn: parent
+            width: 30
+            height: 30
+            running: remoteController?.pushInProgress && !remoteController?.forcePush
+            visible: running
+        }
+
+        enabled: !remoteController?.pushInProgress
+        icon.name: !isBusy ? Style.icons.arrowUp : ""
+        text: !isBusy ? "Push" : ""
+        tooltip: !isBusy ? "Push to origin" : "Pushing..."
+        compact: headerRow.compact
+
+        onClicked: {
+            root.pushAndUpdate()
+        }
     }
 
     Item {
@@ -113,12 +136,34 @@ RowLayout {
     RoniaButton {
         id: pushForceBtnHeader
         Layout.preferredHeight: 26
+        Layout.minimumWidth: 30
+        Material.accent: Style.colors.accent
 
-        icon.name: Style.icons.arrowUp
-        text: "Push Force"
-        tooltip: "Force push to origin"
+        property bool isBusy: remoteController?.pushInProgress && remoteController?.forcePush
+
+        background: Rectangle {
+            radius: 5
+            color: pushForceBtnHeader.down ? Style.colors.surfaceMuted :
+                   pushForceBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+        }
+
+        BusyIndicator {
+            id: pushForceBusyIndicator
+            anchors.centerIn: parent
+            width: 30
+            height: 30
+            running: remoteController?.pushInProgress && remoteController?.forcePush
+            visible: remoteController?.pushInProgress && remoteController?.forcePush
+        }
+
+        enabled: !remoteController?.pushInProgress
+        icon.name: !isBusy ? Style.icons.arrowUp : ""
+        text: !isBusy ? "Push Force" : ""
+        tooltip: !isBusy ? "Force push to origin" : "Force Pushing..."
         compact: headerRow.compact
 
-        onClicked: root.pushAndUpdate(true)
+        onClicked: {
+            root.pushAndUpdate(true)
+        }
     }
 }
