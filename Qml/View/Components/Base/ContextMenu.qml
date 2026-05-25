@@ -54,13 +54,25 @@ Popup {
             border.width: 1
         }
 
-        contentItem: Column {
-            spacing: 2
-            width: parent.width
+        contentItem: Item {
+            implicitWidth: subMenuColumn.implicitWidth
+            implicitHeight: subMenuColumn.implicitHeight
 
-            Repeater {
-                model: subMenuPopup.subModel
-                delegate: menuDelegateComponent
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onEntered: subMenuCloseTimer.stop()
+            }
+
+            Column {
+                id: subMenuColumn
+                width: parent.width
+                spacing: 2
+
+                Repeater {
+                    model: subMenuPopup.subModel
+                    delegate: menuDelegateComponent
+                }
             }
         }
     }
