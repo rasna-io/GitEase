@@ -156,10 +156,18 @@ Popup {
                 hoverEnabled: isEnabled
                 onEntered: {
                     if (hasSub) {
-                        subMenuPopup.subModel = modelData.subItems
-                        subMenuPopup.y = menuOption.mapToItem(root.contentItem, 0, 0).y - 6
-                        subMenuPopup.open()
+                        if (menuOption.parent === root.contentItem && subMenuPopup.opened) {
+                            root.pendingSubModel    = modelData.subItems;
+                            root.pendingSubY        = menuOption.mapToItem(root.contentItem, 0, 0).y - 6;
+                            subMenuOpenTimer.restart();
+                        } else {
+                            subMenuOpenTimer.stop();
+                            subMenuPopup.subModel   = modelData.subItems;
+                            subMenuPopup.y          = menuOption.mapToItem(root.contentItem, 0, 0).y - 6;
+                            subMenuPopup.open();
+                        }
                     } else if (!isSep) {
+                        subMenuOpenTimer.stop();
                         if (menuOption.parent === root.contentItem) {
                             if (subMenuPopup.opened) {
                                 subMenuCloseTimer.restart();
@@ -170,6 +178,7 @@ Popup {
                         }
                     }
                 }
+
                 onClicked: {
                     if (isEnabled && !hasSub) {
                         modelData.action();
