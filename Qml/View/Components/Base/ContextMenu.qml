@@ -142,7 +142,9 @@ Popup {
                         subMenuPopup.y = menuOption.mapToItem(root.contentItem, 0, 0).y - 6
                         subMenuPopup.open()
                     } else if (!isSep) {
-                        subMenuPopup.close()
+                        if (subMenuPopup.opened) {
+                            subMenuCloseTimer.restart();
+                        }
                     }
                 }
                 onClicked: {
@@ -163,5 +165,11 @@ Popup {
             model: root.menuModel
             delegate: menuDelegateComponent
         }
+    }
+
+    Timer {
+        id: subMenuCloseTimer
+        interval: 150
+        onTriggered: subMenuPopup.close()
     }
 }
