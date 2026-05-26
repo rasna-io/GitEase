@@ -200,49 +200,42 @@ DetachablePanel {
                 Layout.fillHeight: true
                 spacing: 0
 
-                Item {
+                Flickable {
+                    id: graphFlickable
                     Layout.preferredWidth: root.commitsColGraphWidth + root.commitsColBranchTagWidth
                     Layout.fillHeight: true
+                    contentWidth: children[0].width
+                    contentHeight: children[0].height
+                    clip: true
+                    interactive: false
+                    contentY: commitsListView.contentY
+                    flickableDirection: Flickable.VerticalFlick
 
-                    Flickable {
-                        id: graphFlickable
-                        Layout.preferredWidth: root.commitsColGraphWidth + root.commitsColBranchTagWidth
+                    MouseArea {
                         anchors.fill: parent
-                        contentWidth: children[0].width
-                        contentHeight: commitsListView.contentHeight
-
-                        clip: true
-
-                        interactive: true
-                        flickableDirection: Flickable.VerticalFlick
-
-                        property bool syncScroll: false
-
-                        onContentYChanged: {
-                            if (!syncScroll) {
-                                commitsListView.syncScroll = true
-                                commitsListView.contentY = contentY
-                                commitsListView.syncScroll = false
-                            }
+                        onWheel: function(wheel) {
+                            var newY = commitsListView.contentY - wheel.angleDelta.y
+                            var maxY = Math.max(0, commitsListView.contentHeight - commitsListView.height)
+                            commitsListView.contentY = Math.max(0, Math.min(newY, maxY))
                         }
+                    }
 
-                        CommitGraphCanvas {
-                            id: graphCanvas
-                            width: root.commitsColGraphWidth + root.commitsColBranchTagWidth
-                            height: Math.max(commitsListView.contentHeight, graphFlickable.height)
-                            commits: root.commits
-                            commitPositions: root.commitPositions
-                            columnSpacing: root.columnSpacing
-                            commitItemHeight: root.commitItemHeight
-                            commitItemSpacing: root.commitItemSpacing
-                            selectedHashes: root.selectedCommitHashes
-                            headHash: root.headHash
-                            showAvatar: root.appModel?.appSettings?.generalSettings?.showAvatar ?? true
-                            graphColumnWidth: root.commitsColGraphWidth
-                            branchTagColumnWidth: root.commitsColBranchTagWidth
-                            allCommitsHash: root.allCommitsHash
-                            onInfiniteScroll: root.loadMoreCommits()
-                        }
+                    CommitGraphCanvas {
+                        id: graphCanvas
+                        width: root.commitsColGraphWidth + root.commitsColBranchTagWidth
+                        height: Math.max(commitsListView.contentHeight, graphFlickable.height)
+                        commits: root.commits
+                        commitPositions: root.commitPositions
+                        columnSpacing: root.columnSpacing
+                        commitItemHeight: root.commitItemHeight
+                        commitItemSpacing: root.commitItemSpacing
+                        selectedHashes: root.selectedCommitHashes
+                        headHash: root.headHash
+                        showAvatar: root.appModel?.appSettings?.generalSettings?.showAvatar ?? true
+                        graphColumnWidth: root.commitsColGraphWidth
+                        branchTagColumnWidth: root.commitsColBranchTagWidth
+                        allCommitsHash: root.allCommitsHash
+                        onInfiniteScroll: root.loadMoreCommits()
                     }
                 }
 
@@ -256,16 +249,8 @@ DetachablePanel {
                     model   : root.commits
                     clip    : true
 
-                    property bool syncScroll: false
-
                     // Sync scroll position with graph
                     onContentYChanged: {
-                        if (!syncScroll) {
-                            graphFlickable.syncScroll = true
-                            graphFlickable.contentY = contentY
-                            graphFlickable.syncScroll = false
-                        }
-
                         // Infinite scroll trigger (list side)
                         if (!root.isLoadingMore && root.hasMoreCommits) {
                             var remaining = commitsListView.contentHeight - (commitsListView.contentY + commitsListView.height)
@@ -363,6 +348,16 @@ DetachablePanel {
             root.selectedCommitHashes   = []
             root.lastSelectedIndex      = -1
             root.reloadAll()
+        }
+    }
+
+    Connections {
+        target: root.tagController
+        function onPushTagFinished(result) {
+            if (result.success)
+                notificationController.success("Tag created and pushed", "Success", 3000)
+            else
+                notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
         }
     }
 

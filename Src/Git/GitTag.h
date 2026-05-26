@@ -48,14 +48,14 @@ public:
     Q_INVOKABLE GitResult remove(const QString &name);
 
     /**
-     * @brief Pushes a specific tag to the remote repository (origin).
+     * @brief Pushes a specific tag asynchronously to the remote repository (origin).
      * @param name The name of the tag to push
      * @return GitResult indicating success or failure
      */
     Q_INVOKABLE GitResult pushTag(const QString &name);
 
     /**
-    * @brief Deletes a specific tag from the remote repository (origin).
+    * @brief Deletes a specific tag asynchronously from the remote repository (origin).
     * @param name The name of the tag to delete from remote
     * @return GitResult indicating success or failure
     */
@@ -66,6 +66,16 @@ signals:
      * @brief Notifies the UI (Graph/Utility Card) that tags have changed.
      */
     void tagsChanged();
+
+    /**
+     * @brief Notifies the UI (Graph/Utility Card) that tag has been created.
+     */
+    void pushTagFinished(GitResult result);
+
+    /**
+     * @brief Notifies the UI (Graph/Utility Card) that tag has been deleted.
+     */
+    void pushDeleteTagFinished(GitResult result, QString tagName);
 
 private:
     /**
@@ -80,4 +90,25 @@ private:
      * @brief Static callback required by libgit2 to iterate over tags.
      */
     static int tagForeachCallback(const char *name, git_oid *oid, void *payload);
+
+
+    /**
+     * @brief Internal implementation for pushing a specific tag to remote repository (origin).
+     * @param name The name of the tag to push
+     * @return GitResult indicating success or failure
+     */
+    GitResult pushTagInternal(const QString &name);
+    GitResult pushTagStartAsyncInternal(const QString &name);
+
+    /**
+     * @brief Internal implementation for deleting a specific tag from the remote repository (origin).
+    * @param name The name of the tag to delete from remote
+    * @return GitResult indicating success or failure
+    */
+    GitResult pushDeleteTagInternal(const QString &name);
+    GitResult pushDeleteTagStartAsyncInternal(const QString &name);
+
+private:
+    bool m_pushTagInProgress{false};
+    bool m_pushDeleteTagInProgress{false};
 };

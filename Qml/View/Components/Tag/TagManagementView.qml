@@ -129,15 +129,7 @@ UtilitiesCard {
 
                             if (notif) notif.info("Deleting tag from remote...", "Remote", 1500);
 
-                            let res = ctrl.pushDeleteTag(modelData.name);
-
-                            if (res.success) {
-                                if (notif) notif.success("Tag deleted from remote", "Success", 3000);
-                                ctrl.remove(modelData.name);
-                                root.update();
-                            } else {
-                                if (notif) notif.error("Failed to delete from remote: " + res.errorMessage, "Error", 5000);
-                            }
+                            ctrl.pushDeleteTag(modelData.name);
                         }
                     }
                 }
@@ -202,6 +194,32 @@ UtilitiesCard {
     Connections {
         target: (typeof uiSession !== "undefined") ? uiSession : null
         function onTagControllerChanged() { root.update() }
+    }
+
+    Connections {
+        target: root.tagController || uiSession.tagController
+
+        function onPushTagFinished(result) {
+            if (result.success)
+            {
+                if (root.notificationController) root.notificationController.success("Tag created and pushed", "Success", 3000)
+                root.update()
+            }
+            else
+                if (root.notificationController) root.notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+        }
+
+        function onPushDeleteTagFinished(result, tagName) {
+            if (result.success)
+            {
+                let ctrl = root.tagController || uiSession.tagController;
+                if (root.notificationController) root.notificationController.success("Tag deleted from remote", "Success", 3000);
+                ctrl.remove(tagName);
+                root.update();
+            }
+            else
+                if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + res.errorMessage, "Error", 5000);
+        }
     }
 
     Timer {
