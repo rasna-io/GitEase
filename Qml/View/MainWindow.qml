@@ -192,6 +192,7 @@ Rectangle {
                     onStatusChanged: {
                         if (status === Loader.Error)
                             console.error("[MainWindow] Failed to load page:", source)
+                        }
                     }
                 }
             }
