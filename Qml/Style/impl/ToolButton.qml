@@ -47,4 +47,38 @@ T.ToolButton {
         active: control.enabled && (control.down || control.visualFocus || control.hovered)
         color: control.Material.rippleColor
     }
+
+    /* Animations
+     * ****************************************************************************************/
+    states: [
+        State {
+            name: "pressed"
+            PropertyChanges {
+                target: control
+                scale: 0.8
+            }
+        }
+    ]
+
+    transitions: [
+        Transition {
+            from: ""
+            to: "pressed"
+            NumberAnimation { properties: "scale"; duration: 100}
+        },
+        Transition {
+            from: "pressed"
+            to: ""
+            NumberAnimation {
+                properties: "scale";
+                duration: 200;
+                easing.type: Easing.OutElastic;
+                easing.amplitude: 0.6
+            }
+        }
+    ]
+
+    onPressed: state = "pressed"
+    onReleased: state = ""
+    onCanceled: state = ""
 }

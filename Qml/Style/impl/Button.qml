@@ -23,8 +23,8 @@ T.Button {
     icon.width: 24
     icon.height: 24
     icon.color: !enabled ? Material.hintTextColor :
-        (control.flat && control.highlighted) || (control.checked && !control.highlighted) ? Material.accentColor :
-        highlighted ? Material.primaryHighlightedTextColor : Material.foreground
+                           (control.flat && control.highlighted) || (control.checked && !control.highlighted) ? Material.accentColor :
+                                                                                                                highlighted ? Material.primaryHighlightedTextColor : Material.foreground
 
     readonly property bool hasIcon: icon.name.length > 0 || icon.source.toString().length > 0
 
@@ -40,8 +40,8 @@ T.Button {
         text: control.text
         font: control.font
         color: !control.enabled ? control.Material.hintTextColor :
-            (control.flat && control.highlighted) || (control.checked && !control.highlighted) ? control.Material.accentColor :
-            control.highlighted ? control.Material.primaryHighlightedTextColor : control.Material.foreground
+                                  (control.flat && control.highlighted) || (control.checked && !control.highlighted) ? control.Material.accentColor :
+                                                                                                                       control.highlighted ? control.Material.primaryHighlightedTextColor : control.Material.foreground
     }
 
     background: Rectangle {
@@ -50,7 +50,7 @@ T.Button {
 
         radius: control.Material.roundedScale === Material.FullScale ? height / 2 : control.Material.roundedScale
         color: control.Material.buttonColor(control.Material.theme, control.Material.background,
-            control.Material.accent, control.enabled, control.flat, control.highlighted, control.checked)
+                                            control.Material.accent, control.enabled, control.flat, control.highlighted, control.checked)
 
         // The layer is disabled when the button color is transparent so you can do
         // Material.background: "transparent" and get a proper flat button without needing
@@ -72,4 +72,38 @@ T.Button {
             color: control.flat && control.highlighted ? control.Material.highlightedRippleColor : control.Material.rippleColor
         }
     }
+
+    /* Animations
+     * ****************************************************************************************/
+    states: [
+        State {
+            name: "pressed"
+            PropertyChanges {
+                target: control
+                scale: 0.8
+            }
+        }
+    ]
+
+    transitions: [
+        Transition {
+            from: ""
+            to: "pressed"
+            NumberAnimation { properties: "scale"; duration: 100}
+        },
+        Transition {
+            from: "pressed"
+            to: ""
+            NumberAnimation {
+                properties: "scale";
+                duration: 200;
+                easing.type: Easing.OutElastic;
+                easing.amplitude: 0.6
+            }
+        }
+    ]
+
+    onPressed: state = "pressed"
+    onReleased: state = ""
+    onCanceled: state = ""
 }
