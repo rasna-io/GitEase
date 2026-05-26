@@ -29,6 +29,9 @@ IPopup {
 
     onOpened:{
         textArea.text = commitController.getLastCommitMessage()
+
+        textArea.forceActiveFocus()
+        textArea.cursorPosition = textArea.length
     }
 
     /* Children
