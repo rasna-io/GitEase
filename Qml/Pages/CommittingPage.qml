@@ -160,6 +160,11 @@ Item {
 
         commitController        : root.commitController
         notificationController  : root.notificationController
+
+        onAmendSuccessful: {
+            changesFileLists.updateStatus()
+            commitTextArea.text = ""
+        }
     }
 
     Connections {

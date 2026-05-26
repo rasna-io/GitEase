@@ -17,6 +17,10 @@ IPopup {
     property NotificationController notificationController  : null
     property CommitController       commitController        : null
 
+    /* signals
+     * ****************************************************************************************/
+    signal amendSuccessful()
+
     /* Object Properties
      * ****************************************************************************************/
     width: parent.width / 2
@@ -102,12 +106,13 @@ IPopup {
                     onClicked: {
                         let res = commitController.commit(textArea.text.trim(), true, false)
 
-                        if(res.success)
+                        if(res.success){
                             notificationController.success("Commit amended successfully", "Commit Amend", 3000)
+                            root.amendSuccessful()
+                            root.close()
+                        }
                         else
                             notificationController.error(res.errorMessage || "Amend failed", "Commit Amend Error", 5000)
-
-                        root.close()
                     }
                 }
             }
