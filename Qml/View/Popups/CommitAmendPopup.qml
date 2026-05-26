@@ -76,11 +76,10 @@ IPopup {
             }
         }
 
-        Row {
+        RowLayout  {
             id: buttonsRow
-            spacing: 6
-            anchors.horizontalCenter: parent.horizontalCenter
-            topPadding: 10
+            width: parent.width
+            spacing: 10
 
             Rectangle {
                 id: amendBtn
