@@ -82,29 +82,36 @@ IPopup {
             anchors.horizontalCenter: parent.horizontalCenter
             topPadding: 10
 
-            Button {
-                id: confirmButton
-                width: root.width / 4
-                height: 40
-                hoverEnabled: true
-                text: "Amend"
+            Rectangle {
+                id: amendBtn
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
 
-                contentItem: Text {
-                    text: confirmButton.text
-                    font: confirmButton.font
-                    color: Style.colors.secondaryForeground
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
+                radius: 4
 
-                background: Rectangle {
-                    radius: 3
-                    color: confirmButton.down ? Style.colors.accentHover : confirmButton.hovered ? Style.colors.accentHover : Style.colors.accent
-                }
+                readonly property bool canAmend: textArea.text.trim().length > 0
+                color: canAmend ? Style.colors.accent : Style.colors.disabledButton
 
-                MouseArea{
+                MouseArea {
+                    id: amendBtnMouse
                     anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    cursorShape: parent.canAmend ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    enabled: parent.canAmend
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 4
+                        color: amendBtnMouse.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Amend"
+                        color: Style.colors.secondaryForeground
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 12
+                    }
 
                     onClicked: {
                         let res = commitController.commit(textArea.text.trim(), true, false)
