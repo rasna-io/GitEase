@@ -127,33 +127,34 @@ IPopup {
                 }
             }
 
-            Button {
-                id: cancelButton
-                width: root.width / 4
-                height: 40
-                hoverEnabled: true
-                text: "Cancel"
+            Rectangle {
+                id: cancelBtn
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
+                radius: 4
+                color: "transparent"
 
-                contentItem: Text {
-                    text: cancelButton.text
-                    font: cancelButton.font
-                    color: Style.colors.foreground
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                background: Rectangle {
-                    radius: 3
-                    border.width: 1
-                    border.color: Style.colors.primaryBorder
-                    color: cancelButton.down ? Style.colors.surfaceMuted: cancelButton.hovered ? Style.colors.cardBackground : Style.colors.surfaceLight
-                }
-
-                MouseArea{
+                MouseArea {
+                    id: cancelBtnMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
 
-                    onClicked: root.close()
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 4
+                        color: cancelBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.05) : Qt.rgba(255, 255, 255, 0.12)
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Cancel"
+                        color: Style.colors.secondaryForeground
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 12
+                    }
+
+                    onClicked: root.close();
                 }
             }
         }
