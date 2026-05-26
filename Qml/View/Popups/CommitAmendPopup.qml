@@ -17,6 +17,7 @@ IPopup {
     property NotificationController notificationController  : null
     property CommitController       commitController        : null
 
+
     /* signals
      * ****************************************************************************************/
     signal amendSuccessful()
@@ -26,6 +27,10 @@ IPopup {
     width: parent.width / 2
     height: 300
     padding: 20
+
+    modal           : true
+    closePolicy     : Popup.NoAutoClose
+    anchors.centerIn: Overlay.overlay
 
     onOpened:{
         textArea.text = commitController.getLastCommitMessage()
