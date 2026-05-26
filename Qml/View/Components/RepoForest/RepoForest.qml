@@ -29,6 +29,14 @@ Rectangle {
     property   bool                   isProcessingQueue:        false
     property   var                    scannedRepositories:      []
 
+    property   bool                   fetchFlowActive:          false
+    property   int                    fetchFlowItemIndex:       -1
+    property   string                 fetchFlowPat:             ""
+    property   var                    fetchFlowRemotes:         []
+    property   int                    fetchFlowRemoteIndex:     0
+    property   string                 fetchFlowCurrentRemote:   ""
+
+
     readonly property bool allSelected:     reposModel.length > 0 && selectedIndexes.length === reposModel.length
     readonly property bool noneSelected:    selectedIndexes.length === 0
     readonly property bool someSelected:    !allSelected && !noneSelected
@@ -130,44 +138,61 @@ Rectangle {
             return
         }
 
-        remotesRes.data.forEach(remote => {
-            let remoteUrlRes = scanRemoteController.getRemoteUrl(remote.name)
+        root.fetchFlowActive        = true
+        root.fetchFlowItemIndex     = itemIndex
+        root.fetchFlowPat           = pat
+        root.fetchFlowRemotes       = remotesRes.data
+        root.fetchFlowRemoteIndex   = 0
+        root.fetchFlowCurrentRemote = ""
 
-            if(!remoteUrlRes.success) {
-                root.updateStatus(itemIndex, "Canceled")
-                processNextOperation()
-                return
-            }
+        fetchStartNextRemote()
+    }
 
-            let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
+    function fetchStartNextRemote() {
+        if (!root.fetchFlowActive)
+            return
 
-            if (protocol !== RepositoryController.GitProtocol.SSH && pat === "") {
-                root.updateStatus(itemIndex, "PAT waiting")
-                processNextOperation()
-                return
-            }
+        if (root.fetchFlowRemoteIndex >= root.fetchFlowRemotes.length) {
+            finishFetchFlow("Done")
+            return
+        }
 
-            let onFetchFinished = (result) => {
-                root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
-                scanRemoteController.fetchFinished.disconnect(onFetchFinished)
-                processNextOperation()
-            }
+        let remote = root.fetchFlowRemotes[root.fetchFlowRemoteIndex]
+        root.fetchFlowRemoteIndex += 1
+        root.fetchFlowCurrentRemote = remote.name
 
-           scanRemoteController.fetchFinished.connect(onFetchFinished)
+        let remoteUrlRes = scanRemoteController.getRemoteUrl(remote.name)
+        if(!remoteUrlRes.success) {
+            finishFetchFlow("Canceled")
 
-            let fetchRes
-            if (protocol === RepositoryController.GitProtocol.SSH) {
-                fetchRes = scanRemoteController.fetch(remote.name)
-            } else{
-                fetchRes = scanRemoteController.fetchWithToken(remote.name, pat)
-            }
+            return
+        }
 
-            if(!fetchRes || !fetchRes.success) {
-                root.updateStatus(itemIndex, "Canceled")
-                scanRemoteController.fetchFinished.disconnect(onFetchFinished)
-                processNextOperation()
-            }
-        })
+        let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
+
+        if (protocol !== RepositoryController.GitProtocol.SSH && root.fetchFlowPat === "") {
+            root.finishFetchFlow("PAT waiting")
+            return
+        }
+
+        if (protocol === RepositoryController.GitProtocol.SSH) {
+            scanRemoteController.fetch(remote.name)
+        } else {
+            scanRemoteController.fetchWithToken(remote.name, root.fetchFlowPat)
+        }
+    }
+
+    function finishFetchFlow(status: string) {
+        let idx = root.fetchFlowItemIndex
+        root.fetchFlowActive        = false
+        root.fetchFlowItemIndex     = -1
+        root.fetchFlowPat           = ""
+        root.fetchFlowRemotes       = []
+        root.fetchFlowRemoteIndex   = 0
+        root.fetchFlowCurrentRemote = ""
+
+        root.updateStatus(idx, status)
+        processNextOperation()
     }
 
     function executePull(itemIndex: int, pat: string) {
@@ -258,6 +283,24 @@ Rectangle {
 
     RemoteController {
         id: scanRemoteController
+    }
+
+    Connections {
+        target: scanRemoteController
+
+        function onFetchFinished(result) {
+            if (!root.fetchFlowActive || !result || !result.remote)
+                return
+
+            if (result.remote !== root.fetchFlowCurrentRemote)
+                return
+
+            if (!result.success) {
+                finishFetchFlow("Canceled")
+            }else {
+                fetchStartNextRemote()
+            }
+        }
     }
 
     Connections {

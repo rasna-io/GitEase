@@ -946,12 +946,8 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
 
     opts.callbacks.payload = &payload;
     auth->applyFetch(opts);
-    
-    qDebug().noquote() << QString("[GitRemote][FetchTrace] START remote=%1 headRef=%2 headOid=%3 wt=%4")
-                              .arg(remoteName,
-                                   currentHeadRefName(m_currentRepo->repo),
-                                   currentHeadOid(m_currentRepo->repo),
-                                   workingTreeSummary(m_currentRepo->repo));
+
+    QHash<QString, QString> beforeTrackingTips = getRemoteTrackingTipsSnapshot(remoteName);
 
     result = git_remote_fetch(remote, nullptr, &opts, nullptr);
 
@@ -959,18 +955,18 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
 
     if (result != GIT_OK) {
         qDebug().noquote() << QString("[GitRemote][FetchTrace] FAIL remote=%1 rc=%2 err=%3")
-                                  .arg(remoteName)
-                                  .arg(result)
-                                  .arg(lastGitErrorMessage());
+        .arg(remoteName)
+            .arg(result)
+            .arg(lastGitErrorMessage());
         if (result == GIT_EUSER) {
             return GitResult(false, QVariant(),
-                           "Authentication failed. Check your credentials or SSH keys.");
+                             "Authentication failed. Check your credentials or SSH keys.");
         } else if (result == GIT_EEXISTS) {
             return GitResult(false, QVariant(),
-                           "Fetch conflict: Unable to update refs");
+                             "Fetch conflict: Unable to update refs");
         } else if (result == GIT_EUNBORNBRANCH) {
             return GitResult(false, QVariant(),
-                           "Cannot fetch: repository has no commits");
+                             "Cannot fetch: repository has no commits");
         }
 
         // Get libgit2 error message if available
@@ -987,21 +983,17 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
     fetchResult["remote"] = remoteName;
     fetchResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     fetchResult["status"] = "Successfully fetched from remote";
-    qDebug().noquote() << QString("[GitRemote][FetchTrace] DONE remote=%1 headRef=%2 headOid=%3 wt=%4")
-                              .arg(remoteName,
-                                   currentHeadRefName(m_currentRepo->repo),
-                                   currentHeadOid(m_currentRepo->repo),
-                                   workingTreeSummary(m_currentRepo->repo));
 
-    // Collect fetched heads with before/after info 
+    // Collect fetched heads with before/after info
     QVariantList fetchedHeads;
     QStringList logLines;
+
     struct FetchHeadPayload {
-        git_repository* repo;
+        QHash<QString, QString>* beforeTips;
         QVariantList* heads;
         QString remoteName;
         QStringList* logs;
-    } headPayload { m_currentRepo->repo, &fetchedHeads, remoteName, &logLines };
+    } headPayload { &beforeTrackingTips, &fetchedHeads, remoteName, &logLines };
 
     auto fetchHeadCb = [](const char* ref_name,
                           const char* remote_url,
@@ -1009,7 +1001,7 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
                           unsigned int is_merge,
                           void* payload) -> int {
         auto* data = static_cast<FetchHeadPayload*>(payload);
-        auto* repo = data->repo;
+        auto* beforeTips = data->beforeTips;
         auto* heads = data->heads;
         auto* logs = data->logs;
         const QString remoteName = data->remoteName;
@@ -1029,43 +1021,36 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
         QString trackingRef = QString("refs/remotes/%1/%2").arg(remoteName, branchName);
         entry["trackingRef"] = trackingRef;
 
-        git_reflog* log = nullptr;
-        if (git_reflog_read(&log, repo, trackingRef.toUtf8().constData()) == 0 && log) {
-            size_t count = git_reflog_entrycount(log);
-            if (count > 0) {
-                const git_reflog_entry* latest = git_reflog_entry_byindex(log, 0);
-                const git_oid* oldOid = git_reflog_entry_id_old(latest);
-                const git_oid* newOid = git_reflog_entry_id_new(latest);
-                char bufOld[GIT_OID_HEXSZ + 1] = {0};
-                char bufNew[GIT_OID_HEXSZ + 1] = {0};
-                if (oldOid) git_oid_tostr(bufOld, sizeof(bufOld), oldOid);
-                if (newOid) git_oid_tostr(bufNew, sizeof(bufNew), newOid);
-                entry["oldCommit"] = QString::fromLatin1(bufOld);
-                entry["newCommit"] = QString::fromLatin1(bufNew);
-                QString shortOld = entry["oldCommit"].toString().left(7);
-                QString shortNew = entry["newCommit"].toString().left(7);
-                QString summary;
-                if (shortOld.isEmpty() || shortOld == "0000000") {
-                    summary = QString(" * [new branch]     %1 -> %2/%1 (%3)")
-                                  .arg(branchName,
-                                       remoteName,
-                                       shortNew.isEmpty() ? "0000000" : shortNew);
-                } else if (shortOld == shortNew) {
-                    summary = QString(" = up to date       %1 (%2)")
-                                  .arg(branchName,
-                                       shortNew.isEmpty() ? "0000000" : shortNew);
-                } else {
-                    summary = QString("   %1..%2  %3 -> %4/%3")
-                                  .arg(shortOld.isEmpty() ? "0000000" : shortOld,
-                                       shortNew.isEmpty() ? "0000000" : shortNew,
-                                       branchName,
-                                       remoteName);
-                }
-                entry["summary"] = summary;
-                if (logs) logs->append(summary);
-            }
-            git_reflog_free(log);
+        const QString newCommit = entry["commit"].toString();
+        const QString oldCommit = beforeTips ? beforeTips->value(branchName) : QString();
+        entry["oldCommit"] = oldCommit;
+        entry["newCommit"] = newCommit;
+
+        QString shortOld = oldCommit.left(7);
+        QString shortNew = newCommit.left(7);
+        QString summary;
+
+        if (oldCommit.isEmpty() || shortOld == "0000000") {
+            summary = QString(" * [new branch]     %1 -> %2/%1 (%3)")
+            .arg(branchName,
+                 remoteName,
+                 shortNew.isEmpty() ? "0000000" : shortNew);
+        } else if (oldCommit  == newCommit) {
+            summary.clear();
+        } else {
+            summary = QString("   %1..%2  %3 -> %4/%3")
+            .arg(shortOld.isEmpty() ? "0000000" : shortOld,
+                 shortNew.isEmpty() ? "0000000" : shortNew,
+                 branchName,
+                 remoteName);
         }
+
+        if (summary.isEmpty())
+            return 0;
+
+        entry["summary"] = summary;
+        if (logs)
+            logs->append(summary);
 
         heads->append(entry);
         return 0;
@@ -1080,3 +1065,36 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
 
     return GitResult(true, fetchResult);
 }
+
+QHash<QString, QString> GitRemote::getRemoteTrackingTipsSnapshot(const QString& remoteName)
+{
+    QHash<QString, QString> tips;
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return tips;
+    }
+
+    git_branch_iterator* it = nullptr;
+    if (git_branch_iterator_new(&it, m_currentRepo->repo, GIT_BRANCH_REMOTE) == GIT_OK && it) {
+        git_reference* ref = nullptr;
+        git_branch_t branchType = GIT_BRANCH_REMOTE;
+        while (git_branch_next(&ref, &branchType, it) == GIT_OK) {
+            const char* shorthand = nullptr;
+            if (git_branch_name(&shorthand, ref) == GIT_OK && shorthand) {
+                const QString fullName = QString::fromUtf8(shorthand); // e.g. origin/main
+                const QString prefix = remoteName + "/";
+                if (fullName.startsWith(prefix)) {
+                    const git_oid* target = git_reference_target(ref);
+                    if (target) {
+                        tips.insert(
+                            fullName.mid(prefix.size()),
+                            QString::fromLatin1(git_oid_tostr_s(target)));
+                    }
+                }
+            }
+            git_reference_free(ref);
+        }
+        git_branch_iterator_free(it);
+    }
+    return tips;
+}
+
