@@ -100,7 +100,7 @@ IPopup {
                     cursorShape: Qt.PointingHandCursor
 
                     onClicked: {
-                        let res = commitController.commit(textArea.text, true, false)
+                        let res = commitController.commit(textArea.text.trim(), true, false)
 
                         if(res.success)
                             notificationController.success("Commit amended successfully", "Commit Amend", 3000)
