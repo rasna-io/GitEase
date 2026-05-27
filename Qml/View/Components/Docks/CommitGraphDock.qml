@@ -24,19 +24,19 @@ DetachablePanel {
      * ****************************************************************************************/
     property AppModel               appModel                : null
 
-    property BranchController        branchController        : null
-    property RemoteController        remoteController        : null
-    property UserAuthenticationPopup userAuthenticationPopup: null
-    property MergeController         mergeController         : null
-    property RebaseController        rebaseController        : null
-    property CherryPickController    cherryPickController    : null
-    property ConflictController      conflictController      : null
-    property TagController           tagController           : null
-    property StatusController        statusController        : null
-    property CommitController        commitController        : null
-    property RepositoryController    repositoryController    : null
-    property NotificationController  notificationController  : null
-    property StashController         stashController         : null
+    property BranchController       branchController        : null
+    property RemoteController        remoteController       : null
+    property UserAuthenticationPopup userAuthenticationPopup : null
+    property MergeController        mergeController         : null
+    property RebaseController       rebaseController        : null
+    property CherryPickController   cherryPickController    : null
+    property ConflictController     conflictController      : null
+    property TagController          tagController           : null
+    property StatusController       statusController        : null
+    property CommitController       commitController        : null
+    property RepositoryController   repositoryController    : null
+    property NotificationController notificationController  : null
+    property StashController        stashController         : null
 
     property AddBranchPopup          addBranchPopup          : null
     property AddTagPopup             addTagPopup             : null
@@ -316,11 +316,9 @@ DetachablePanel {
 
             if (result.success) {
                 let isForce =  result.data.force === true
-                if (root.notificationController)
-                    root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
+                root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
             } else {
-                if (root.notificationController)
-                    root.notificationController.error(result.errorMessage, "Push Error", 5000)
+                root.notificationController.error(result.errorMessage, "Push Error", 5000)
             }
         }
     }
@@ -779,18 +777,16 @@ DetachablePanel {
                 return { separator: true }
 
             var result = {
-                text           : item.text,
-                icon           : resolveMenuIcon(item.icon),
-                enabled        : item.enabled !== false,
-                hasCheckBox    : item.hasCheckBox,
-                checkBoxText   : item.checkBoxText,
+                text    : item.text,
+                icon    : resolveMenuIcon(item.icon),
+                enabled : item.enabled !== false
             }
 
             if (item.subItems) {
                 result.subItems = buildContextMenuModel(item.subItems)
             } else {
-                result.action = function(checked) {
-                    root.executeMenuAction(item, checked)
+                result.action = function() {
+                    root.executeMenuAction(item)
                 }
             }
 
@@ -832,7 +828,7 @@ DetachablePanel {
         }
     }
 
-    function executeMenuAction(item, checked) {
+    function executeMenuAction(item) {
         switch (item.action) {
 
         case "checkoutBranch":
@@ -844,8 +840,11 @@ DetachablePanel {
             break
 
         case "push":
-            isForcePush = checked
-            executePush(item.payload.branch)
+            executePush(item.payload.branch, false)
+            break
+
+        case "forcePush":
+            executePush(item.payload.branch, true)
             break
 
         case "newBranch":
@@ -881,7 +880,8 @@ DetachablePanel {
         handleContextResponse(root.branchController.checkoutCommit(commitHash), "Checked out commit " + commitHash.substring(0, 7))
     }
 
-    function executePush(branchName) {
+    function executePush(branchName, force) {
+        isForcePush = force
         let urlRes = remoteController.getRemoteUrl("origin")
         if (!urlRes.success) {
             root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${isForcePush ? "Force" : ""} Push Error`, 5000)
@@ -894,6 +894,8 @@ DetachablePanel {
             root.notificationController.info("Push operation started", "Push", 3000)
             break
         }
+
+        // Fall-through: both HTTP/HTTPS require auth popup
         case RepositoryController.GitProtocol.HTTPS:
         case RepositoryController.GitProtocol.HTTP:
             userAuthenticationPopup.open()
@@ -930,7 +932,7 @@ DetachablePanel {
             var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
 
             if (root.mergeController.hasMergeConflicts()) {
-                mergeConflictPopup.show()
+                mergeConflictPopup.open()
 
                 root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
 

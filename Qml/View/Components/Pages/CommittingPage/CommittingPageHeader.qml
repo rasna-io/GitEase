@@ -100,8 +100,8 @@ RowLayout {
             anchors.centerIn: parent
             width: 30
             height: 30
-            running: remoteController?.pushInProgress && !remoteController?.forcePush
-            visible: running
+            running: isBusy
+            visible: isBusy
         }
 
         enabled: !remoteController?.pushInProgress
@@ -152,8 +152,8 @@ RowLayout {
             anchors.centerIn: parent
             width: 30
             height: 30
-            running: remoteController?.pushInProgress && remoteController?.forcePush
-            visible: remoteController?.pushInProgress && remoteController?.forcePush
+            running: isBusy
+            visible: isBusy
         }
 
         enabled: !remoteController?.pushInProgress

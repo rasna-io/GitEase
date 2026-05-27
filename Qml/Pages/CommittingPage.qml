@@ -601,6 +601,8 @@ Item {
 
             break
         }
+
+        // Fall-through: both HTTP/HTTPS require auth popup
         case RepositoryController.GitProtocol.HTTPS:
         case RepositoryController.GitProtocol.HTTP:
             root.authPurpose = force ? "pushForce" : "push"

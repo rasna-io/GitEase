@@ -71,7 +71,7 @@ Popup {
         Item {
             id: menuOption
             width: parent.width
-            height: modelData.separator ? 9 : 40
+            height: modelData.separator ? 9 : 30
             visible: modelData.visible !== false
             readonly property bool isSep:     !!modelData.separator
             readonly property bool isEnabled: !isSep && modelData.enabled !== false
@@ -125,19 +125,6 @@ Popup {
                     Layout.fillWidth: true
                 }
 
-                CheckBox {
-                    id: checkBox
-                    text: modelData.checkBoxText
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
-                    Layout.preferredHeight: 40
-                    Material.accent: Style.colors.accent
-                    Material.foreground: Style.colors.foreground
-                    checked: false
-                    z: 1
-                    visible: modelData.hasCheckBox === true
-                }
-
                 Text {
                     text: "❯"
                     visible: hasSub
@@ -160,7 +147,7 @@ Popup {
                 }
                 onClicked: {
                     if (isEnabled && !hasSub) {
-                        modelData.action(checkBox.checked);
+                        modelData.action();
                         subMenuPopup.close();
                         root.close();
                     }
