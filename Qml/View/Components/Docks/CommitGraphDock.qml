@@ -806,9 +806,6 @@ DetachablePanel {
             case "arrowUp":
                 return Style.icons.arrowUp
 
-            case "circleExclamation":
-                return Style.icons.circleExclamation
-
             case "branchPlus":
                 return Style.icons.branchPlus
 
