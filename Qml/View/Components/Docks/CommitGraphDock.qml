@@ -38,8 +38,8 @@ DetachablePanel {
     property NotificationController notificationController  : null
     property StashController        stashController         : null
 
-    property AddBranchPopup          addBranchPopup          : null
-    property AddTagPopup             addTagPopup             : null
+    property AddBranchPopup          addBranchPopup         : null
+    property AddTagPopup             addTagPopup            : null
 
     property bool   isForcePush: false
     property var    allCommits      : []
