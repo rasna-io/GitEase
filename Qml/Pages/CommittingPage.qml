@@ -328,6 +328,33 @@ Item {
 
                             readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
 
+                            onCommitEnabledChanged: {
+                                let items = []
+
+                                items.push({
+                                    text: commitEnabled ? "Commit Amend" : "Change commit message",
+                                    icon: Style.icons.penToSquare,
+                                    action: function() {
+                                        amendPopup.open();
+                                    }
+                                })
+
+                                if (commitEnabled) {
+                                    items.push({
+                                        text: "Commit && Push",
+                                        icon: Style.icons.arrowUp,
+                                        action: function() {
+                                            if(!root.commitAndUpdate())
+                                                return
+
+                                            root.pushAndUpdate()
+                                        }
+                                    })
+                                }
+
+                                commitDropMenu.menuModel = items
+                            }
+
                             Rectangle {
                                 id: commitBtn
                                 Layout.fillWidth: true
@@ -382,8 +409,7 @@ Item {
                                     anchors.bottom: parent.bottom
                                     width: 28
                                     hoverEnabled: true
-                                    cursorShape: parent.parent.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    enabled: parent.parent.commitEnabled
+                                    cursorShape: Qt.PointingHandCursor
 
                                     Rectangle {
                                         anchors.fill: parent
@@ -412,20 +438,10 @@ Item {
                                     parent: commitPanel
                                     menuModel: [
                                         {
-                                            text: "Commit Amend",
+                                            text: parent.parent.commitEnabled ? "Commit Amend" : "Change commit message",
                                             icon: Style.icons.penToSquare,
                                             action: function() {
                                                 amendPopup.open();
-                                            }
-                                        },
-                                        {
-                                            text: "Commit && Push",
-                                            icon: Style.icons.arrowUp,
-                                            action: function() {
-                                                if(!root.commitAndUpdate())
-                                                    return
-
-                                                root.pushAndUpdate()
                                             }
                                         }
                                     ]
