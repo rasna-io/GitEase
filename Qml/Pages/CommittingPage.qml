@@ -323,6 +323,7 @@ Item {
                         }
 
                         RowLayout {
+                            id: committingButton
                             Layout.fillWidth: true
                             spacing: 6
 
@@ -360,7 +361,7 @@ Item {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
                                 radius: 4
-                                color: parent.commitEnabled ? Style.colors.accent : Style.colors.disabledButton
+                                color: committingButton.commitEnabled ? Style.colors.accent : Style.colors.disabledButton
 
                                 MouseArea {
                                     id: commitBtnMouse
@@ -369,8 +370,8 @@ Item {
                                     anchors.bottom: parent.bottom
                                     width: parent.width - 29
                                     hoverEnabled: true
-                                    cursorShape: parent.parent.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    enabled: parent.parent.commitEnabled
+                                    cursorShape: committingButton.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: committingButton.commitEnabled
 
                                     Rectangle {
                                         anchors.fill: parent
@@ -438,7 +439,7 @@ Item {
                                     parent: commitPanel
                                     menuModel: [
                                         {
-                                            text: parent.parent.commitEnabled ? "Commit Amend" : "Change commit message",
+                                            text: committingButton.commitEnabled ? "Commit Amend" : "Change commit message",
                                             icon: Style.icons.penToSquare,
                                             action: function() {
                                                 amendPopup.open();
