@@ -15,9 +15,6 @@ Popup {
      * ****************************************************************************************/
     property var menuModel: [] // Format: [{ text: "Checkout", icon: "\uf00c", action: function(){}, enabled: true }]
 
-    property var    pendingSubModel : null
-    property real   pendingSubY     : 0
-
     /* Object Properties
      * ****************************************************************************************/
     modal: false
@@ -57,28 +54,13 @@ Popup {
             border.width: 1
         }
 
-        contentItem: Item {
-            implicitWidth: subMenuColumn.implicitWidth
-            implicitHeight: subMenuColumn.implicitHeight
+        contentItem: Column {
+            spacing: 2
+            width: parent.width
 
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onEntered: {
-                    subMenuCloseTimer.stop()
-                    subMenuOpenTimer.stop()
-                }
-            }
-
-            Column {
-                id: subMenuColumn
-                width: parent.width
-                spacing: 2
-
-                Repeater {
-                    model: subMenuPopup.subModel
-                    delegate: menuDelegateComponent
-                }
+            Repeater {
+                model: subMenuPopup.subModel
+                delegate: menuDelegateComponent
             }
         }
     }
@@ -156,29 +138,13 @@ Popup {
                 hoverEnabled: isEnabled
                 onEntered: {
                     if (hasSub) {
-                        if (menuOption.parent === root.contentItem && subMenuPopup.opened) {
-                            root.pendingSubModel    = modelData.subItems;
-                            root.pendingSubY        = menuOption.mapToItem(root.contentItem, 0, 0).y - 6;
-                            subMenuOpenTimer.restart();
-                        } else {
-                            subMenuOpenTimer.stop();
-                            subMenuPopup.subModel   = modelData.subItems;
-                            subMenuPopup.y          = menuOption.mapToItem(root.contentItem, 0, 0).y - 6;
-                            subMenuPopup.open();
-                        }
+                        subMenuPopup.subModel = modelData.subItems
+                        subMenuPopup.y = menuOption.mapToItem(root.contentItem, 0, 0).y - 6
+                        subMenuPopup.open()
                     } else if (!isSep) {
-                        subMenuOpenTimer.stop();
-                        if (menuOption.parent === root.contentItem) {
-                            if (subMenuPopup.opened) {
-                                subMenuCloseTimer.restart();
-                            }
-                        }
-                        else{
-                            subMenuCloseTimer.stop();
-                        }
+                        subMenuPopup.close()
                     }
                 }
-
                 onClicked: {
                     if (isEnabled && !hasSub) {
                         modelData.action();
@@ -196,24 +162,6 @@ Popup {
         Repeater {
             model: root.menuModel
             delegate: menuDelegateComponent
-        }
-    }
-
-    Timer {
-        id: subMenuCloseTimer
-        interval: 150
-        onTriggered: subMenuPopup.close()
-    }
-
-    Timer {
-        id: subMenuOpenTimer
-        interval: 200
-        onTriggered: {
-            if (root.pendingSubModel) {
-                subMenuPopup.subModel   = root.pendingSubModel;
-                subMenuPopup.y          = root.pendingSubY;
-                subMenuPopup.open();
-            }
         }
     }
 }
