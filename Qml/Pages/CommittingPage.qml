@@ -414,9 +414,10 @@ Item {
                                     cursorShape: Qt.PointingHandCursor
 
                                     Rectangle {
+                                        radius: 3
                                         anchors.fill: parent
-                                        radius: 4
-                                        color: commitCaretZone.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
+                                        color: committingButton.commitEnabled ?
+                                                   commitCaretZone.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent" : Style.colors.accent
                                     }
 
                                     Text {
