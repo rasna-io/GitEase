@@ -16,6 +16,7 @@ IPopup {
      * ****************************************************************************************/
     property NotificationController notificationController  : null
     property CommitController       commitController        : null
+    property bool                   changeCommitMessage     : false
 
 
     /* signals
@@ -121,7 +122,7 @@ IPopup {
                         let res = commitController.commit(textArea.text.trim(), true, false)
 
                         if(res.success){
-                            notificationController.success("Commit amended successfully", "Commit Amend", 3000)
+                            notificationController.success(root.changeCommitMessage ? "Commit Message Changes successfully" : "Commit amended successfully", "Commit Amend", 3000)
                             root.amendSuccessful()
                             root.close()
                         }

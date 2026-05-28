@@ -160,6 +160,7 @@ Item {
 
         commitController        : root.commitController
         notificationController  : root.notificationController
+        changeCommitMessage     : !committingButton.commitEnabled
 
         onAmendSuccessful: {
             changesFileLists.updateStatus()
