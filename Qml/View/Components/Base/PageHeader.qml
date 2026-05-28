@@ -45,6 +45,7 @@ Item {
         height: 45
         flat: true
         Material.foreground: Style.colors.foreground
+        z: 1
 
         background: Rectangle {
             implicitWidth: 45
