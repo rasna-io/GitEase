@@ -100,8 +100,8 @@ RowLayout {
             anchors.centerIn: parent
             width: 30
             height: 30
-            running: isBusy
-            visible: isBusy
+            running: pushBtnHeader.isBusy
+            visible: pushBtnHeader.isBusy
         }
 
         enabled: !remoteController?.pushInProgress
@@ -152,8 +152,8 @@ RowLayout {
             anchors.centerIn: parent
             width: 30
             height: 30
-            running: isBusy
-            visible: isBusy
+            running: pushForceBtnHeader.isBusy
+            visible: pushForceBtnHeader.isBusy
         }
 
         enabled: !remoteController?.pushInProgress
