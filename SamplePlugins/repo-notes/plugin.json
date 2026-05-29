@@ -1,0 +1,10 @@
+{
+  "id": "com.gitease.repo-notes",
+  "name": "Repo Notes",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["dock"],
+  "author": "GitEase",
+  "description": "A simple per-repository notepad dock.",
+  "qmlEntry": "qml/NotesDock.qml"
+}
