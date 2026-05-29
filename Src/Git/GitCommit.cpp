@@ -236,18 +236,38 @@ GitResult GitCommit::commit(const QString& message,
 
     QByteArray messageUtf8 = message.trimmed().toUtf8();
 
-    int result = git_commit_create(
-        &newCommitOid,                      // Output: new commit's SHA-1
-        m_currentRepo->repo,                // Repository to create in
-        "HEAD",                             // Update HEAD reference
-        author,                             // Who wrote the changes
-        author,                             // Who committed them
-        nullptr,                            // Default encoding (UTF-8)
-        messageUtf8.constData(),            // Commit message
-        tree,                               // Tree snapshot
-        parents.count,                      // Number of parents
-        (const git_commit**)parents.commits // Parent commits
+    int result = 0;
+    if (amend) {
+        if (!parents.amendedCommit) {
+            cleanupCommitResources(author, tree, parents);
+            return GitResult(false, QVariant(), "Cannot amend: no commits yet (unborn branch).");
+        }
+
+        result = git_commit_amend(
+            &newCommitOid,
+            parents.amendedCommit,              // The commit to amend
+            "HEAD",                             // Update HEAD reference
+            author,                             // Who wrote the changes
+            author,                             // Who committed them
+            nullptr,                            // Default encoding (UTF-8)
+            messageUtf8.constData(),            // Commit message
+            tree                                // Tree snapshot
         );
+    }
+    else{
+        result = git_commit_create(
+            &newCommitOid,                      // Output: new commit's SHA-1
+            m_currentRepo->repo,                // Repository to create in
+            "HEAD",                             // Update HEAD reference
+            author,                             // Who wrote the changes
+            author,                             // Who committed them
+            nullptr,                            // Default encoding (UTF-8)
+            messageUtf8.constData(),            // Commit message
+            tree,                               // Tree snapshot
+            parents.count,                      // Number of parents
+            (const git_commit**)parents.commits // Parent commits
+        );
+    }
 
     if (result != GIT_OK) {
         // Cleanup on failure
@@ -555,4 +575,28 @@ QStringList GitCommit::getAllParents(git_commit *gitCommit)
     }
 
     return parentHashes;
+}
+
+QString GitCommit::getLastCommitMessage()
+{
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return "";
+    }
+
+    git_reference* headRef = nullptr;
+    if (git_repository_head(&headRef, m_currentRepo->repo) != 0) {
+        return "";
+    }
+
+    git_commit* headCommit = nullptr;
+    int result = git_reference_peel((git_object**)&headCommit, headRef, GIT_OBJECT_COMMIT);
+    git_reference_free(headRef);
+
+    QString message = "";
+    if (result == 0 && headCommit) {
+        message = QString::fromUtf8(git_commit_message(headCommit));
+        git_commit_free(headCommit);
+    }
+
+    return message;
 }

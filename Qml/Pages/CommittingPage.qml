@@ -40,7 +40,6 @@ Item {
 
     property var                     pluginController:        null
 
-
     property bool                    isFetching:             false
     property var                     activeFetchRemotes:     []
     property string                  authPurpose:            "push"  // "push" | "fetch"
@@ -150,6 +149,20 @@ Item {
             }
 
             changesFileLists.updateStatus()
+        }
+    }
+
+    CommitAmendPopup {
+        id: amendPopup
+        anchors.centerIn: parent
+
+        commitController        : root.commitController
+        notificationController  : root.notificationController
+        changeCommitMessage     : !committingButton.commitEnabled
+
+        onAmendSuccessful: {
+            changesFileLists.updateStatus()
+            commitTextArea.text = ""
         }
     }
 
@@ -309,17 +322,45 @@ Item {
                         }
 
                         RowLayout {
+                            id: committingButton
                             Layout.fillWidth: true
                             spacing: 6
 
                             readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
+
+                            Component.onCompleted: buildCommitMenu()
+
+                            onCommitEnabledChanged: buildCommitMenu()
+
+                            function buildCommitMenu() {
+                                let items = []
+
+                                items.push({
+                                    text: commitEnabled ? "Commit Amend" : "Change commit message",
+                                    icon: Style.icons.penToSquare,
+                                    action: function() { amendPopup.open() }
+                                })
+
+                                if (commitEnabled) {
+                                    items.push({
+                                        text: "Commit && Push",
+                                        icon: Style.icons.arrowUp,
+                                        action: function() {
+                                            if (!root.commitAndUpdate()) return
+                                            root.pushAndUpdate()
+                                        }
+                                    })
+                                }
+
+                                commitDropMenu.menuModel = items
+                            }
 
                             Rectangle {
                                 id: commitBtn
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
                                 radius: 4
-                                color: parent.commitEnabled ? Style.colors.accent : Style.colors.disabledButton
+                                color: committingButton.commitEnabled ? Style.colors.accent : Style.colors.disabledButton
 
                                 MouseArea {
                                     id: commitBtnMouse
@@ -328,8 +369,8 @@ Item {
                                     anchors.bottom: parent.bottom
                                     width: parent.width - 29
                                     hoverEnabled: true
-                                    cursorShape: parent.parent.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    enabled: parent.parent.commitEnabled
+                                    cursorShape: committingButton.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    enabled: committingButton.commitEnabled
 
                                     Rectangle {
                                         anchors.fill: parent
@@ -368,13 +409,13 @@ Item {
                                     anchors.bottom: parent.bottom
                                     width: 28
                                     hoverEnabled: true
-                                    cursorShape: parent.parent.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    enabled: parent.parent.commitEnabled
+                                    cursorShape: Qt.PointingHandCursor
 
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: 4
-                                        color: commitCaretZone.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
+                                        radius: 3
+                                        color: committingButton.commitEnabled ?
+                                                   commitCaretZone.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent" : Style.colors.accent
                                     }
 
                                     Text {
@@ -396,23 +437,6 @@ Item {
                                 ContextMenu {
                                     id: commitDropMenu
                                     parent: commitPanel
-                                    menuModel: [
-                                        {
-                                            text: "Commit Amend",
-                                            icon: Style.icons.penToSquare,
-                                            action: function() {root.commitAndUpdate(true)}
-                                        },
-                                        {
-                                            text: "Commit && Push",
-                                            icon: Style.icons.arrowUp,
-                                            action: function() {
-                                                if(!root.commitAndUpdate())
-                                                    return
-
-                                                root.pushAndUpdate()
-                                            }
-                                        }
-                                    ]
                                 }
                             }
 

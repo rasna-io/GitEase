@@ -181,6 +181,8 @@ Rectangle {
                         }
                         if (item.hasOwnProperty("windowController")) {
                             item.windowController = Qt.binding(function() {return root.uiSession?.windowController})
+                        if (item.hasOwnProperty("commitAmendPopup")) {
+                            item.commitAmendPopup = Qt.binding(function() { return root.uiSession?.popups?.commitAmendPopup })
                         }
                         if (item.hasOwnProperty("pluginController")) {
                             item.pluginController = Qt.binding(function() { return root.uiSession?.pluginController })
@@ -190,6 +192,7 @@ Rectangle {
                     onStatusChanged: {
                         if (status === Loader.Error)
                             console.error("[MainWindow] Failed to load page:", source)
+                        }
                     }
                 }
             }
