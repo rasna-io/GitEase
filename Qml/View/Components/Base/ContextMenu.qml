@@ -33,12 +33,13 @@ Popup {
     }
 
     onClosed: {
-        subMenuPopup.close()
+        subMenuPopup.subModel = []
     }
 
     Popup {
         id: subMenuPopup
         property var subModel: []
+        visible: subMenuPopup.subModel.length > 0
         width: 200
         padding: 6
         x: root.width - 4
@@ -140,15 +141,14 @@ Popup {
                     if (hasSub) {
                         subMenuPopup.subModel = modelData.subItems
                         subMenuPopup.y = menuOption.mapToItem(root.contentItem, 0, 0).y - 6
-                        subMenuPopup.open()
-                    } else if (!isSep) {
-                        subMenuPopup.close()
+                    } else if (parent.parent === mainMenuColumn) {
+                        subMenuPopup.subModel = []
                     }
                 }
                 onClicked: {
                     if (isEnabled && !hasSub) {
                         modelData.action();
-                        subMenuPopup.close();
+                        subMenuPopup.subModel = []
                         root.close();
                     }
                 }
@@ -157,6 +157,7 @@ Popup {
     }
 
     contentItem: Column {
+        id: mainMenuColumn
         spacing: 2
         width: parent.width
         Repeater {
