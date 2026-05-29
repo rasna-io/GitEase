@@ -40,6 +40,7 @@ QtObject {
             cherryPickController.currentRepo = currentRepo
             conflictController.currentRepo = currentRepo
             tagController.currentRepo = currentRepo
+            pluginController.currentRepo = currentRepo
         }
 
         onRepositorySelected: function(repo) {
@@ -138,6 +139,10 @@ QtObject {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
         }
+    }
+
+    property PluginController pluginController: PluginController {
+        notificationController: root.notificationController
     }
 
     property UiSessionPopups      popups

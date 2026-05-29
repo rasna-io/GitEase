@@ -182,6 +182,9 @@ Rectangle {
                         if (item.hasOwnProperty("windowController")) {
                             item.windowController = Qt.binding(function() {return root.uiSession?.windowController})
                         }
+                        if (item.hasOwnProperty("pluginController")) {
+                            item.pluginController = Qt.binding(function() { return root.uiSession?.pluginController })
+                        }
                     }
 
                     onStatusChanged: {

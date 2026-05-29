@@ -38,6 +38,9 @@ Item {
     
     property UiSessionPopups         uiSessionPopups:         null
 
+    property var                     pluginController:        null
+
+
     property bool                    isFetching:             false
     property var                     activeFetchRemotes:     []
     property string                  authPurpose:            "push"  // "push" | "fetch"
@@ -483,6 +486,7 @@ Item {
             chunkMode: true
             contextLines: 0
             expandLines: 10
+
             onRequestStage: function (start, end, type) {
                 let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
                 if (res.success) {
@@ -501,6 +505,18 @@ Item {
                     root.notificationController.error(res.errorMessage || "Failed to revert selected lines", "Revert Error", 5000)
                 }
                 changesFileLists.updateStatus()
+            }
+        }
+
+        // Non-visual loader: fetches the plugin's colorizer QtObject
+        Loader {
+            id: colorizerLoader
+            visible: false
+            onLoaded: {
+                diffView.textColorizer = item ? function(text) { return item.colorize(text) } : null
+            }
+            onSourceChanged: {
+                if (source === "") diffView.textColorizer = null
             }
         }
     }
@@ -666,24 +682,26 @@ Item {
     }
 
     function updateDiff(isStaged) {
-        let oldY = diffView.scrollPosition;
+        // Load colorizer plugin for this file extension (or clear if none)
+        const ext         = root.selectedFilePath.split('.').pop().toLowerCase()
+        const colorizerUrl = root.pluginController?.pluginManager?.colorizerUrlFor(ext) ?? ""
+        if (colorizerLoader.source !== colorizerUrl)
+            colorizerLoader.source = colorizerUrl
 
-        if(diffView.chunkMode){
+        let oldY = diffView.scrollPosition
+
+        if (diffView.chunkMode) {
             let res = root.statusController.getChunkedDiffView(root.selectedFilePath, isStaged)
-            if (res.success) {
+            if (res.success)
                 diffView.chunkData = res.data.chunks
-            }
-        }else{
+        } else {
             let res = root.statusController.getDiffView(root.selectedFilePath, isStaged)
-            if (res.success) {
+            if (res.success)
                 diffView.diffData = res.data.lines
-            }
         }
 
         diffView.readOnly = isStaged
 
-        Qt.callLater(() => {
-                         diffView.scrollPosition = oldY;
-                     });
+        Qt.callLater(() => { diffView.scrollPosition = oldY })
     }
 }

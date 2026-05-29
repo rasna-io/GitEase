@@ -1,0 +1,10 @@
+{
+  "id": "gitease.qml-highlighter",
+  "name": "QML Highlighter",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["dock"],
+  "author": "GitEase",
+  "description": "IDE-style QML syntax highlighting viewer.",
+  "cppEntry": "lib/qml-highlighter-plugin"
+}

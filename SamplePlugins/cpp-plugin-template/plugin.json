@@ -1,0 +1,10 @@
+{
+  "id": "com.gitease.repo-notes",
+  "name": "Repo Notes",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["dock"],
+  "author": "Your Name",
+  "description": "Per-repository notepad.",
+  "cppEntry": "lib/repo-notes-plugin"
+}
