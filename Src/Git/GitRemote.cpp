@@ -119,7 +119,7 @@ GitResult GitRemote::push(const QString& remote,
                           const QString& branch,
                           bool force)
 {
-    return pushInternal(remote, branch,
+    return pushStartAsyncInternal(remote, branch,
                         std::make_unique<GitSshAuth>(), force);
 }
 
@@ -128,8 +128,18 @@ GitResult GitRemote::push(const QString& remote,
                           const QString& token,
                           bool force)
 {
-    return pushInternal(remote, branch,
+    return pushStartAsyncInternal(remote, branch,
                         std::make_unique<GitHttpsAuth>(token), force);
+}
+
+bool GitRemote::isPushInProgress() const
+{
+    return m_pushInProgress;
+}
+
+bool GitRemote::isForcePush() const
+{
+    return m_forcePush;
 }
 
 GitResult GitRemote::pushInternal(const QString& remoteName,
@@ -222,6 +232,52 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
                             quoteCommandArg(branchName)));
 
     return GitResult(true, pushResult);
+}
+
+GitResult GitRemote::pushStartAsyncInternal(const QString& remoteName,
+                                 const QString& branchName,
+                                 std::unique_ptr<IGitAuth> auth,
+                                 bool force)
+{
+    if (m_pushInProgress) {
+        return GitResult(false, QVariant(), "Push already in progress");
+    }
+
+    m_pushInProgress = true;
+    emit pushInProgressChanged();
+
+    m_forcePush = force;
+    emit forcePushChanged();
+
+    const QString safeRemote = remoteName;
+    const QString safeBranch = branchName;
+
+    auto future = QtConcurrent::run(
+        [this,
+         safeRemote,
+         safeBranch,
+         force,
+         auth = std::move(auth)]() mutable -> QVariantMap {
+            GitResult res = pushInternal(safeRemote, safeBranch, std::move(auth), force);
+            QVariantMap out;
+            out["success"] = res.success();
+            out["errorMessage"] = res.errorMessage();
+            out["data"] = res.data();
+            out["remote"] = safeRemote;
+            out["branch"] = safeBranch;
+            return out;
+        });
+
+    auto* watcher = new QFutureWatcher<QVariantMap>(this);
+    connect(watcher, &QFutureWatcher<QVariantMap>::finished, this, [this, watcher]() {
+        m_pushInProgress = false;
+        emit pushInProgressChanged();
+        emit pushFinished(watcher->result());
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
+
+    return GitResult(true, QVariant(), "Push started");
 }
 
 GitResult GitRemote::getRemoteUrl(const QString& remoteName)

@@ -148,7 +148,7 @@ Popup {
                 onClicked: {
                     if (isEnabled && !hasSub) {
                         modelData.action();
-                        subMenuPopup.subModel = []
+                        subMenuPopup.close();
                         root.close();
                     }
                 }

@@ -44,6 +44,27 @@ function buildMenu(state) {
         });
     }
 
+    var pushSubMenu = []
+    pushSubMenu.push({
+        text: "Push",
+        icon: "arrowUp",
+        action: "push",
+        payload: { branch: state.currentBranch }
+    },
+    {
+       text: "Force Push",
+        icon: "arrowUp",
+        action: "forcePush",
+        payload: { branch: state.currentBranch }
+    });
+
+    model.push({
+        text: "Push",
+        icon: "arrowUp",
+        enabled: state.pushEnabled,
+        subItems: pushSubMenu
+    });
+
     // New Branch / Tag
     model.push({
         text: "New Branch from here",
