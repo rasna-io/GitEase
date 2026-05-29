@@ -36,6 +36,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/CherryPickController.qml
     Qml/Core/Controllers/ConflictController.qml
     Qml/Core/Controllers/TagController.qml
+    Qml/Core/Controllers/PluginController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js

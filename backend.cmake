@@ -32,6 +32,9 @@ set(SOURCES_BACKEND
     Src/Git/Auth/GitHttpsAuth.cpp
     Src/Git/Utilities/GitProtocolDetector.cpp
     Src/Utilities/SshKeyManager/SshKeyManager.cpp
+
+    Src/Plugins/PluginContext.cpp
+    Src/Plugins/PluginManager.cpp
 )
 
 set(HEADERS_BACKEND
@@ -71,6 +74,17 @@ set(HEADERS_BACKEND
 
     Src/Git/Utilities/GitProtocolDetector.h
     Src/Utilities/SshKeyManager/SshKeyManager.h
+
+    Src/Plugins/IPluginContext.h
+    Src/Plugins/IPlugin.h
+    Src/Plugins/IDockPlugin.h
+    Src/Plugins/ICommandPlugin.h
+    Src/Plugins/IAuthPlugin.h
+    Src/Plugins/IDiffPlugin.h
+    Src/Plugins/IServicePlugin.h
+    Src/Plugins/PluginInfo.h
+    Src/Plugins/PluginContext.h
+    Src/Plugins/PluginManager.h
 )
 
 set(INCLUDE_DIRS_BACKEND
@@ -83,6 +97,7 @@ set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Utilities/windowsManager/
     ${CMAKE_SOURCE_DIR}/Src
     ${CMAKE_SOURCE_DIR}/Src/Git/
+    ${CMAKE_SOURCE_DIR}/Src/Plugins/
 )
 
 #Add libgit2 include path to all backend files
