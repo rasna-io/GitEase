@@ -38,6 +38,8 @@ Item {
     property RebaseController           rebaseController            : null
     property ConflictController         conflictController          : null
 
+    property var                        pluginController            : null
+
     /* Object Properties
      * ****************************************************************************************/
     anchors.fill: parent
@@ -149,8 +151,31 @@ Item {
                     notificationController  : root.notificationController
                     statusController        : root.statusController
                 }
+            }
 
+            // ── Plugin docks ─────────────────────────────────────────────────
+            Repeater {
+                model: root.pluginController?.pluginManager?.registeredDocks ?? []
 
+                delegate: Loader {
+                    width:  330
+                    height: 390
+
+                    source: modelData.url
+
+                    onLoaded: {
+                        if (!item) return
+                        if (item.hasOwnProperty("pluginManager"))
+                            item.pluginManager = root.pluginController?.pluginManager
+                        if (item.hasOwnProperty("pluginId"))
+                            item.pluginId = modelData.id
+                    }
+
+                    onStatusChanged: {
+                        if (status === Loader.Error)
+                            console.error("[PluginDock] Failed to load:", source)
+                    }
+                }
             }
         }
     }
