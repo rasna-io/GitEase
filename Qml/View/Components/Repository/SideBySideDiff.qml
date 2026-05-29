@@ -27,6 +27,7 @@ Item {
     property var diffModel
 
     property bool readOnly: false
+    property var  textColorizer: null
 
     property real horizontalOffset: 0
 
@@ -128,14 +129,14 @@ Item {
                     Text {
                         id: leftDisplay
                         x: -delegateRoot.horizontalOffset
-                        text: leftContent
+                        text: delegateRoot.textColorizer ? delegateRoot.textColorizer(leftContent) : leftContent
+                        textFormat: delegateRoot.textColorizer ? Text.RichText : Text.PlainText
                         color: Style.colors.editorForeground
                         font.family: Style.fontTypes.roboto
                         font.pixelSize: 11
                         topPadding: 2
                         leftPadding: 8
-                        TextMetrics { id: leftTextMetrics; text: leftDisplay.text; font: leftDisplay.font;}
-
+                        TextMetrics { id: leftTextMetrics; text: leftContent; font: leftDisplay.font;}
                     }
                 }
             }
@@ -262,8 +263,23 @@ Item {
                     height: parent.height
                     width: parent.width - 45
                     clip: true
+
+                    // Colorized read-only view (shown when plugin active + readOnly)
+                    Text {
+                        visible: !!delegateRoot.textColorizer && delegateRoot.readOnly
+                        x: -delegateRoot.horizontalOffset + 8
+                        y: 2
+                        text: (delegateRoot.textColorizer && delegateRoot.readOnly)
+                              ? delegateRoot.textColorizer(rightContent) : ""
+                        textFormat: Text.RichText
+                        color: Style.colors.editorForeground
+                        font.family: "Cascadia Mono"
+                        font.pixelSize: 13
+                    }
+
                     TextArea {
                         id: rightTextEdit
+                        visible: !delegateRoot.textColorizer || !delegateRoot.readOnly
                         x: -delegateRoot.horizontalOffset
                         width: 2000
                         text: rightContent
@@ -282,30 +298,24 @@ Item {
                         Material.accent: Style.colors.accent
 
                         Keys.onPressed: (event) => {
-                                            // Enter Key -> Split Line
                                             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                                                 event.accepted = true
                                                 var pos = cursorPosition
                                                 var txtAfter = text.substring(pos)
                                                 delegateRoot.requestSplit(pos, txtAfter)
                                             }
-                                            // Up Arrow -> Go to prev row
                                             else if (event.key === Qt.Key_Up) {
-                                                // If on first line of wrapped text, move up
                                                 if (cursorRectangle.y <= topPadding + 2) {
                                                     event.accepted = true
                                                     delegateRoot.requestFocusPrev()
                                                 }
                                             }
-                                            // Down Arrow -> Go to next row
                                             else if (event.key === Qt.Key_Down) {
-                                                // If on last line of wrapped text
                                                 if (cursorRectangle.y + cursorRectangle.height >= height - bottomPadding) {
                                                     event.accepted = true
                                                     delegateRoot.requestFocusNext()
                                                 }
                                             }
-                                            // Backspace at start -> Merge Up
                                             else if (event.key === Qt.Key_Backspace) {
                                                 if (cursorPosition === 0) {
                                                     event.accepted = true
