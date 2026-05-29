@@ -183,15 +183,7 @@ IPopup {
                             if (root.pushAfterCreate) {
                                 if (notif) notif.info("Pushing tag to GitHub...", "Tag", 1500);
 
-                                let pushRes = ctrl.pushTag(tagName);
-
-                                if (pushRes && pushRes.success) {
-                                    if (notif) notif.success("Tag '" + tagName + "' created and pushed", "Success", 3000);
-                                } else {
-                                    if (notif) notif.warning("Tag created locally but failed to push", "Sync Warning", 5000);
-                                }
-                            } else {
-                                if (notif) notif.success("Tag '" + tagName + "' created locally", "Success", 3000);
+                                ctrl.pushTag(tagName);
                             }
 
                             root.tagCreatedSuccessfully();
@@ -204,6 +196,7 @@ IPopup {
             }
         }
     }
+
 
     // Reset state on close
     onAboutToHide: {

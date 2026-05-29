@@ -375,6 +375,16 @@ DetachablePanel {
     }
 
     Connections {
+        target: root.tagController
+        function onPushTagFinished(result) {
+            if (result.success)
+                notificationController.success("Tag created and pushed", "Success", 3000)
+            else
+                notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+        }
+    }
+
+    Connections {
         target: root.appModel?.appSettings?.generalSettings ?? null
         function onShowAvatarChanged() {
             graphCanvas.requestPaint()

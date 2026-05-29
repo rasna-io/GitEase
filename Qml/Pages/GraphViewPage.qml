@@ -34,6 +34,8 @@ Item {
     property MergeController         mergeController         : null
     property RebaseController        rebaseController        : null
     property CherryPickController    cherryPickController    : null
+    property TagController          tagController           : null
+
 
     property alias                   graphRef                : commitGraph
 
@@ -100,6 +102,7 @@ Item {
                 branchController        : root.branchController
                 remoteController        : root.remoteController
                 userAuthenticationPopup : root.userAuthenticationPopup
+                tagController            : root.tagController
                 mergeController         : root.mergeController
                 rebaseController        : root.rebaseController
                 cherryPickController    : root.cherryPickController

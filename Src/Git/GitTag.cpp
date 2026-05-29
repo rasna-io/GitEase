@@ -1,6 +1,8 @@
 #include "GitTag.h"
 
 #include <algorithm>
+#include <QFutureWatcher>
+#include <QtConcurrent>
 
 GitTag::GitTag(QObject *parent)
     : IGitController(parent)
@@ -43,11 +45,23 @@ GitResult GitTag::create(const QString &name, const QString &targetId, const QSt
     git_oid tag_oid;
     int error = 0;
 
-    if (git_oid_fromstr(&target_oid, targetId.toUtf8().constData()) < 0)
-        return GitResult(false, QVariant(), "Invalid Commit ID");
+    if (strcmp(targetId.toUtf8().constData(), "HEAD") == 0) {
+        error = git_revparse_single(&target_obj, m_currentRepo->repo, "HEAD^{commit}");
+        if (error != 0)
+            return GitResult(false, "Failed to resolve HEAD");
 
-    if (git_object_lookup(&target_obj, m_currentRepo->repo, &target_oid, GIT_OBJECT_ANY) < 0)
-        return GitResult(false);
+        const git_oid *oid = git_object_id(target_obj);
+        git_oid_cpy(&target_oid, oid);
+    } else {
+        if (git_oid_fromstr(&target_oid, targetId.toUtf8().constData()) < 0)
+            return GitResult(false, QVariant(), "Invalid Commit ID");
+
+        if (git_object_lookup(&target_obj, m_currentRepo->repo, &target_oid, GIT_OBJECT_ANY) < 0)
+        {
+            git_object_free(target_obj);
+            return GitResult(false);
+        }
+    }
 
     if (message.isEmpty()) {
         error = git_tag_create_lightweight(&tag_oid, m_currentRepo->repo, name.toUtf8().constData(), target_obj, force ? 1 : 0);
@@ -101,6 +115,11 @@ int credentials_cb(git_credential **out, const char *url, const char *user_from_
 
 GitResult GitTag::pushTag(const QString &name)
 {
+    return pushTagStartAsyncInternal(name);
+}
+
+GitResult GitTag::pushTagInternal(const QString &name)
+{
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, "Repository not open");
 
@@ -131,7 +150,38 @@ GitResult GitTag::pushTag(const QString &name)
     return GitResult(true);
 }
 
+GitResult GitTag::pushTagStartAsyncInternal(const QString &name)
+{
+    if(m_pushTagInProgress)
+        return GitResult(false, "Pushing tag already in progress");
+
+    m_pushTagInProgress = true;
+
+    QString safeName = name;
+
+    auto future = QtConcurrent::run(
+        [this,
+         safeName]() {
+            return pushTagInternal(safeName);
+        });
+
+    auto* watcher = new QFutureWatcher<GitResult>(this);
+    connect(watcher, &QFutureWatcher<GitResult>::finished, this, [this, watcher]() {
+        m_pushTagInProgress = false;
+        emit pushTagFinished(watcher->result());
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
+
+    return GitResult(true);
+}
+
 GitResult GitTag::pushDeleteTag(const QString &name)
+{
+    return pushDeleteTagStartAsyncInternal(name);
+}
+
+GitResult GitTag::pushDeleteTagInternal(const QString &name)
 {
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, "Repository not open");
@@ -163,6 +213,32 @@ GitResult GitTag::pushDeleteTag(const QString &name)
         QString errorDetail = lastError ? QString::fromUtf8(lastError->message) : "Unknown error";
         return GitResult(false, "Remote delete failed: " + errorDetail);
     }
+
+    return GitResult(true);
+}
+
+GitResult GitTag::pushDeleteTagStartAsyncInternal(const QString &name)
+{
+    if(m_pushDeleteTagInProgress)
+        return GitResult(false, "Deleting tag already in progress");
+
+    m_pushDeleteTagInProgress = true;
+
+    QString safeName = name;
+
+    auto future = QtConcurrent::run(
+        [this,
+         safeName]() {
+            return pushDeleteTagInternal(safeName);
+        });
+
+    auto* watcher = new QFutureWatcher<GitResult>(this);
+    connect(watcher, &QFutureWatcher<GitResult>::finished, this, [this, safeName, watcher]() {
+        m_pushDeleteTagInProgress = false;
+        emit pushDeleteTagFinished(watcher->result(), safeName);
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
 
     return GitResult(true);
 }
