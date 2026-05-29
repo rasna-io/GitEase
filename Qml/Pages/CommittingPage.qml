@@ -1,4 +1,4 @@
-import QtQuick
+﻿import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -39,8 +39,6 @@ Item {
     property UiSessionPopups         uiSessionPopups:         null
 
     property var                     pluginController:        null
-
-    property CommitAmendPopup        commitAmendPopup:        null
 
     property bool                    isFetching:             false
     property var                     activeFetchRemotes:     []
@@ -330,15 +328,17 @@ Item {
 
                             readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
 
-                            onCommitEnabledChanged: {
+                            Component.onCompleted: buildCommitMenu()
+
+                            onCommitEnabledChanged: buildCommitMenu()
+
+                            function buildCommitMenu() {
                                 let items = []
 
                                 items.push({
                                     text: commitEnabled ? "Commit Amend" : "Change commit message",
                                     icon: Style.icons.penToSquare,
-                                    action: function() {
-                                        amendPopup.open();
-                                    }
+                                    action: function() { amendPopup.open() }
                                 })
 
                                 if (commitEnabled) {
@@ -346,9 +346,7 @@ Item {
                                         text: "Commit && Push",
                                         icon: Style.icons.arrowUp,
                                         action: function() {
-                                            if(!root.commitAndUpdate())
-                                                return
-
+                                            if (!root.commitAndUpdate()) return
                                             root.pushAndUpdate()
                                         }
                                     })
@@ -414,8 +412,8 @@ Item {
                                     cursorShape: Qt.PointingHandCursor
 
                                     Rectangle {
-                                        radius: 3
                                         anchors.fill: parent
+                                        radius: 3
                                         color: committingButton.commitEnabled ?
                                                    commitCaretZone.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent" : Style.colors.accent
                                     }
@@ -439,15 +437,6 @@ Item {
                                 ContextMenu {
                                     id: commitDropMenu
                                     parent: commitPanel
-                                    menuModel: [
-                                        {
-                                            text: committingButton.commitEnabled ? "Commit Amend" : "Change commit message",
-                                            icon: Style.icons.penToSquare,
-                                            action: function() {
-                                                amendPopup.open();
-                                            }
-                                        }
-                                    ]
                                 }
                             }
 
