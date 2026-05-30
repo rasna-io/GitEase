@@ -124,9 +124,21 @@ if (BUILD_TESTING)
 endif()
 
 if(UNIX AND NOT APPLE)
+    set_target_properties(GitEase PROPERTIES
+        INSTALL_RPATH "\$ORIGIN/../lib"
+        BUILD_WITH_INSTALL_RPATH FALSE
+    )
+
     install(TARGETS ${MAIN_TARGET_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-    install(PROGRAMS gitease-launcher.sh DESTINATION ${CMAKE_INSTALL_BINDIR})
+    # install(PROGRAMS gitease-launcher.sh DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+    qt_generate_deploy_qml_app_script(
+        TARGET GitEase
+        OUTPUT_SCRIPT deploy_script
+        NO_UNSUPPORTED_PLATFORM_ERROR
+    )
+    install(SCRIPT ${deploy_script})
 
     install(FILES gitease.desktop DESTINATION share/applications)
 
