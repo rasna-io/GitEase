@@ -44,25 +44,14 @@ function buildMenu(state) {
         });
     }
 
-    var pushSubMenu = []
-    pushSubMenu.push({
-        text: "Push",
-        icon: "arrowUp",
-        action: "push",
-        payload: { branch: state.currentBranch }
-    },
-    {
-       text: "Force Push",
-        icon: "arrowUp",
-        action: "forcePush",
-        payload: { branch: state.currentBranch }
-    });
-
     model.push({
         text: "Push",
         icon: "arrowUp",
+        action: "push",
         enabled: state.pushEnabled,
-        subItems: pushSubMenu
+        hasCheckBox: true,
+        checkBoxText: "Force",
+        payload: { branch: state.currentBranch }
     });
 
     // New Branch / Tag
