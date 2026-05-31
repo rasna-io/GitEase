@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
 
-    app.setWindowIcon(QIcon(":/GitEase/Resources/Images/Logo.png"));
+    app.setWindowIcon(QIcon(":/GitEase/Resources/Images/LogoSVG.svg"));
 
     QQmlApplicationEngine engine;
 
