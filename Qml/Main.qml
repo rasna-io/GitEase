@@ -157,4 +157,16 @@ ApplicationWindow {
             }
         }
     }
+
+    Connections {
+        target: uiSession.appModel
+
+        function onCurrentRepositoryChanged() {
+            let currentRepo = uiSession.appModel.currentRepository
+
+            if (currentRepo) {
+                TaskbarHelper.setRepoInfo(currentRepo.color, currentRepo.name)
+            }
+        }
+    }
 }
