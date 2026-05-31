@@ -137,6 +137,8 @@ GitRepository {
             var repoComponent = Qt.createComponent("qrc:/GitEase/Qml/Core/Models/Repository.qml")
             if (repoComponent.status === Component.Ready) {
 
+                repo = appModel.recentRepositories.find(r => r.path === path)
+
                 if (name === "")
                     name = path.split('/').pop() || path.split('\\').pop() || "Repository"
 
@@ -144,7 +146,7 @@ GitRepository {
                     id: "repo_" + Date.now(),
                     path: path,
                     name: name,
-                    color: randomRepoColor()
+                    color: repo ? repo.color : randomRepoColor()
                 })
                 
                 // Add to repositories array
