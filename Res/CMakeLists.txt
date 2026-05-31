@@ -8,6 +8,7 @@ qt_add_qml_module(${MAIN_TARGET_NAME}.Resources
 
     RESOURCES
         "Images/Logo.png"
+        "Images/LogoSVG.svg"
         "Images/Logo.svg"
         "Images/defaultUserIcon.svg"
 
