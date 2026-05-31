@@ -20,7 +20,7 @@ include(libgit.cmake)
 # Flatten generation of all sub-dependent libraries
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Qml)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Quick Gui Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick Gui Concurrent Svg)
 
 # Dependencies
 add_subdirectory(Res/)
@@ -97,6 +97,7 @@ target_link_libraries(${MAIN_TARGET_NAME} PRIVATE
     Qt6::Quick
     Qt6::Gui
     Qt6::Concurrent
+    Qt6::Svg
     ${MAIN_TARGET_NAME}_Styleplugin
     ${MAIN_TARGET_NAME}_Style_Implplugin
     ${MAIN_TARGET_NAME}.Resourcesplugin
@@ -142,7 +143,7 @@ if(UNIX AND NOT APPLE)
 
     install(FILES gitease.desktop DESTINATION share/applications)
 
-    install(FILES Res/Images/Logo.png DESTINATION share/icons/hicolor/256x256/apps RENAME gitease.png)
+    install(FILES Res/Images/LogoSVG.svg DESTINATION share/icons/hicolor/256x256/apps RENAME LogoSVG.svg)
 endif()
 
 include(packaging.cmake)
