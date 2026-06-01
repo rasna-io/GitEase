@@ -130,3 +130,13 @@ void TaskbarHelper::applyInfoToWindow(QWindow *window) {
     }
 }
 
+void TaskbarHelper::launchNewInstance(const QString &repoPath) {
+    if (repoPath.isEmpty()) {
+        return;
+    }
+
+    QString pathArg = QString("--path=%1").arg(repoPath);
+
+    QProcess::startDetached(QCoreApplication::applicationFilePath(), {pathArg});
+}
+

@@ -22,6 +22,8 @@ public:
 
     void applyInfoToWindow(QWindow *window);
 
+    Q_INVOKABLE void launchNewInstance(const QString &repoPath);
+
 private:
     HICON createTintedIcon(const QColor &tintColor) const;
     void applyInfoToAllWindows();
