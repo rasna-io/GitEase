@@ -82,6 +82,11 @@ public:
     Q_INVOKABLE GitResult rebaseStatus();
 
 private:
+    GitResult startRebase(const QString& onto,
+                          const QString& upstream,
+                          QString branch,
+                          const QSet<QString>& skippedCommits);
+
     GitResult runRebase(git_rebase* rebase, bool continueCurrentOperation);
     GitResult conflictResult(git_rebase* rebase, const QString& message);
     GitResult openRebase(git_rebase** rebase) const;

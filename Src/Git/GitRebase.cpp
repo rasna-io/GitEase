@@ -29,104 +29,7 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
                                 const QString& upstream,
                                 QString branch)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
-        return GitResult(false, QVariant(), "Repository not found.");
-    }
-
-    if (upstream.trimmed().isEmpty()) {
-        return GitResult(false, QVariant(), "Upstream reference is required.");
-    }
-
-    if (isRebaseInProgress()) {
-        return GitResult(false, QVariant(),
-                         "A rebase is already in progress. Continue or abort it first.");
-    }
-
-    QString originalBranch = branch;
-    bool hasBranch = !branch.trimmed().isEmpty();
-
-    // If a branch is provided, ensure it is checked out
-    if (hasBranch) {
-        QString currentBranch = getCurrentBranchName();
-        if (currentBranch != originalBranch) {
-            GitResult checkoutResult = checkoutBranch(branch);
-            if (!checkoutResult.success()) {
-                return checkoutResult;
-            }
-        }
-        // After checkout, we want to use the current HEAD, so we clear 'branch'
-        // to prevent creating a separate annotated commit for it.
-        branch = QString();
-    }
-
-    git_rebase* rebase = nullptr;
-    git_annotated_commit* branchCommit = nullptr;
-    git_annotated_commit* ontoCommit = nullptr;
-    git_annotated_commit* upstreamCommit = nullptr;
-
-    int result = git_annotated_commit_from_revspec(
-        &upstreamCommit, m_currentRepo->repo, upstream.trimmed().toUtf8().constData());
-    if (result != GIT_OK) {
-        return GitResult(false, QVariant(),
-                         QString("Invalid upstream '%1'.").arg(upstream));
-    }
-
-    if (!branch.trimmed().isEmpty()) {
-        result = git_annotated_commit_from_revspec(
-            &branchCommit, m_currentRepo->repo, branch.trimmed().toUtf8().constData());
-        if (result != GIT_OK) {
-            git_annotated_commit_free(upstreamCommit);
-            return GitResult(false, QVariant(),
-                             QString("Invalid branch '%1'.").arg(branch));
-        }
-    }
-
-    if (!onto.trimmed().isEmpty()) {
-        result = git_annotated_commit_from_revspec(
-            &ontoCommit, m_currentRepo->repo, onto.trimmed().toUtf8().constData());
-        if (result != GIT_OK) {
-            git_annotated_commit_free(branchCommit);
-            git_annotated_commit_free(upstreamCommit);
-            return GitResult(false, QVariant(),
-                             QString("Invalid onto '%1'.").arg(onto));
-        }
-    }
-
-    git_rebase_options rebaseOpts = GIT_REBASE_OPTIONS_INIT;
-    rebaseOpts.checkout_options.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
-
-    result = git_rebase_init(&rebase,
-                             m_currentRepo->repo,
-                             branchCommit,
-                             upstreamCommit,
-                             ontoCommit,
-                             &rebaseOpts);
-
-    git_annotated_commit_free(branchCommit);
-    git_annotated_commit_free(upstreamCommit);
-    git_annotated_commit_free(ontoCommit);
-
-    if (result != GIT_OK) {
-        return GitResult(false, QVariant(),
-                         QString("Failed to start rebase: %1").arg(GitUtils::getLastError()));
-    }
-
-    GitResult rebaseResult = runRebase(rebase, false);
-    git_rebase_free(rebase);
-
-    if (rebaseResult.success()) {
-        QString command = "git rebase";
-        if (!onto.trimmed().isEmpty()) {
-            command += " --onto " + quoteCommandArg(onto);
-        }
-        command += " " + quoteCommandArg(upstream);
-        if (hasBranch) {
-            command += " " + quoteCommandArg(originalBranch);
-        }
-        emitGitCommand(command);
-    }
-
-    return rebaseResult;
+    return startRebase(onto, upstream, branch, {});
 }
 
 GitResult GitRebase::previewRebasePlan(const QString& onto,
@@ -258,6 +161,114 @@ GitResult GitRebase::rebaseWithPlan(const QString& onto,
     }
 
     return startRebase(onto, upstream, branch, skippedCommits);
+}
+
+GitResult GitRebase::startRebase(const QString& onto,
+                                 const QString& upstream,
+                                 QString branch,
+                                 const QSet<QString>& skippedCommits)
+{
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "Repository not found.");
+    }
+
+    if (upstream.trimmed().isEmpty()) {
+        return GitResult(false, QVariant(), "Upstream reference is required.");
+    }
+
+    if (isRebaseInProgress()) {
+        return GitResult(false, QVariant(),
+                         "A rebase is already in progress. Continue or abort it first.");
+    }
+
+    QString originalBranch  = branch;
+    bool hasBranch          = !branch.trimmed().isEmpty();
+
+    // If a branch is provided, ensure it is checked out
+    if (hasBranch) {
+        QString currentBranch = getCurrentBranchName();
+        if (currentBranch != originalBranch) {
+            GitResult checkoutResult = checkoutBranch(branch);
+            if (!checkoutResult.success()) {
+                return checkoutResult;
+            }
+        }
+        // After checkout, we want to use the current HEAD, so we clear 'branch'
+        // to prevent creating a separate annotated commit for it.
+        branch = QString();
+    }
+
+    git_rebase* rebase                  = nullptr;
+    git_annotated_commit* branchCommit  = nullptr;
+    git_annotated_commit* ontoCommit    = nullptr;
+    git_annotated_commit* upstreamCommit= nullptr;
+
+    int result = git_annotated_commit_from_revspec(
+        &upstreamCommit, m_currentRepo->repo, upstream.trimmed().toUtf8().constData());
+    if (result != GIT_OK) {
+        return GitResult(false, QVariant(),
+                         QString("Invalid upstream '%1'.").arg(upstream));
+    }
+
+    if (!branch.trimmed().isEmpty()) {
+        result = git_annotated_commit_from_revspec(
+            &branchCommit, m_currentRepo->repo, branch.trimmed().toUtf8().constData());
+        if (result != GIT_OK) {
+            git_annotated_commit_free(upstreamCommit);
+            return GitResult(false, QVariant(),
+                             QString("Invalid branch '%1'.").arg(branch));
+        }
+    }
+
+    if (!onto.trimmed().isEmpty()) {
+        result = git_annotated_commit_from_revspec(
+            &ontoCommit, m_currentRepo->repo, onto.trimmed().toUtf8().constData());
+        if (result != GIT_OK) {
+            git_annotated_commit_free(branchCommit);
+            git_annotated_commit_free(upstreamCommit);
+            return GitResult(false, QVariant(),
+                             QString("Invalid onto '%1'.").arg(onto));
+        }
+    }
+
+    git_rebase_options rebaseOpts = GIT_REBASE_OPTIONS_INIT;
+    rebaseOpts.checkout_options.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+
+    result = git_rebase_init(&rebase,
+                             m_currentRepo->repo,
+                             branchCommit,
+                             upstreamCommit,
+                             ontoCommit,
+                             &rebaseOpts);
+
+    git_annotated_commit_free(branchCommit);
+    git_annotated_commit_free(upstreamCommit);
+    git_annotated_commit_free(ontoCommit);
+
+    if (result != GIT_OK) {
+        return GitResult(false, QVariant(),
+                         QString("Failed to start rebase: %1").arg(GitUtils::getLastError()));
+    }
+
+    GitResult rebaseResult = runRebase(rebase, false, skippedCommits);
+    git_rebase_free(rebase);
+
+    if (rebaseResult.success()) {
+        QString command = skippedCommits.isEmpty() ? "git rebase" : "git rebase -i";
+        if (!onto.trimmed().isEmpty()) {
+            command += " --onto " + quoteCommandArg(onto);
+        }
+        command += " " + quoteCommandArg(upstream);
+        if (hasBranch) {
+            command += " " + quoteCommandArg(originalBranch);
+        }
+        if (!skippedCommits.isEmpty()) {
+            command += QString("  # skipped %1 commit(s)").arg(skippedCommits.count());
+        }
+        emitGitCommand(command);
+    }
+
+    return rebaseResult;
 }
 
 GitResult GitRebase::continueOp()
