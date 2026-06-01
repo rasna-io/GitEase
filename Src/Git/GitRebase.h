@@ -87,7 +87,10 @@ private:
                           QString branch,
                           const QSet<QString>& skippedCommits);
 
-    GitResult runRebase(git_rebase* rebase, bool continueCurrentOperation);
+    GitResult runRebase(git_rebase* rebase,
+                        bool continueCurrentOperation,
+                        const QSet<QString>& skippedCommits = {});
+
     GitResult conflictResult(git_rebase* rebase, const QString& message);
     GitResult openRebase(git_rebase** rebase) const;
     QVariantMap rebaseProgressData(git_rebase* rebase) const;

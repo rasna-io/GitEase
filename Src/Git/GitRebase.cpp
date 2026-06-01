@@ -410,7 +410,9 @@ GitResult GitRebase::rebaseStatus()
     return GitResult(true, data);
 }
 
-GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation)
+GitResult GitRebase::runRebase(git_rebase* rebase,
+                               bool continueCurrentOperation,
+                               const QSet<QString>& skippedCommits)
 {
     if (!rebase) {
         return GitResult(false, QVariant(), "Invalid rebase state.");
@@ -424,6 +426,7 @@ GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation
     }
 
     QVariantList rebasedCommits;
+    QVariantList skippedCommitList;
     QVariantMap rebaseData;
     rebaseData["totalOperations"] = static_cast<int>(git_rebase_operation_entrycount(rebase));
 
@@ -457,6 +460,21 @@ GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation
                          QString("Failed to create rebased commit: %1").arg(GitUtils::getLastError()));
     };
 
+    auto operationHashByIndex = [&](size_t index) -> QString {
+        if (index == GIT_REBASE_NO_OPERATION) {
+            return QString();
+        }
+
+        git_rebase_operation* operation = git_rebase_operation_byindex(rebase, index);
+        if (!operation) {
+            return QString();
+        }
+
+        char oidStr[GIT_OID_HEXSZ + 1] = {0};
+        git_oid_tostr(oidStr, sizeof(oidStr), &operation->id);
+        return QString::fromUtf8(oidStr);
+    };
+
     if (continueCurrentOperation && git_rebase_operation_current(rebase) != GIT_REBASE_NO_OPERATION) {
         GitResult commitResult = commitCurrent();
         if (!commitResult.success()) {
@@ -475,6 +493,17 @@ GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation
 
         if (result != GIT_OK) {
             if (repositoryHasConflicts()) {
+                const QString currentHash = operationHashByIndex(git_rebase_operation_current(rebase));
+                if (!currentHash.isEmpty() && skippedCommits.contains(currentHash)) {
+                    GitResult resetResult = resetWorktreeToHead();
+                    if (!resetResult.success()) {
+                        git_signature_free(signature);
+                        return resetResult;
+                    }
+                    skippedCommitList.push_back(currentHash);
+                    continue;
+                }
+
                 git_signature_free(signature);
                 return conflictResult(rebase,
                                       "Rebase stopped due to conflicts. Resolve conflicts and continue.");
@@ -485,7 +514,19 @@ GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation
                              QString("Failed to apply rebase operation: %1").arg(GitUtils::getLastError()));
         }
 
-        Q_UNUSED(operation)
+        char operationId[GIT_OID_HEXSZ + 1] = {0};
+        git_oid_tostr(operationId, sizeof(operationId), &operation->id);
+        const QString operationHash = QString::fromUtf8(operationId);
+
+        if (skippedCommits.contains(operationHash)) {
+            GitResult resetResult = resetWorktreeToHead();
+            if (!resetResult.success()) {
+                git_signature_free(signature);
+                return resetResult;
+            }
+            skippedCommitList.push_back(operationHash);
+            continue;
+        }
 
         GitResult commitResult = commitCurrent();
         if (!commitResult.success()) {
@@ -502,9 +543,11 @@ GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation
                          QString("Failed to finish rebase: %1").arg(GitUtils::getLastError()));
     }
 
-    rebaseData["rebasedCommits"] = rebasedCommits;
-    rebaseData["appliedCount"] = rebasedCommits.count();
-    rebaseData["status"] = "completed";
+    rebaseData["rebasedCommits"]= rebasedCommits;
+    rebaseData["skippedCommits"]= skippedCommitList;
+    rebaseData["appliedCount"]  = rebasedCommits.count();
+    rebaseData["skippedCount"]  = skippedCommitList.count();
+    rebaseData["status"]        = "completed";
 
     return GitResult(true, rebaseData, "Rebase completed.");
 }
