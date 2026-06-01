@@ -36,7 +36,7 @@ RowLayout {
         visible: false
     }
 
-    RoniaButton {
+    RButton {
         id: branchChip
         Layout.preferredHeight: 25
         maximumWidth: 150
@@ -69,7 +69,7 @@ RowLayout {
         visible: !headerRow.compact
     }
 
-    RoniaButton {
+    RButton {
         id: pullBtn
         Layout.preferredHeight: 26
 
@@ -81,7 +81,7 @@ RowLayout {
         onClicked: root.pullAndUpdate()
     }
 
-    RoniaButton {
+    RButton {
         id: pushBtnHeader
         Layout.preferredHeight: 26
         Layout.minimumWidth: 30
@@ -119,7 +119,7 @@ RowLayout {
         Layout.fillWidth: true
     }
 
-    RoniaButton {
+    RButton {
         id: fetchBtnHeader
         Layout.preferredHeight: 26
 
@@ -133,7 +133,7 @@ RowLayout {
         onClicked: root.fetch()
     }
 
-    RoniaButton {
+    RButton {
         id: pushForceBtnHeader
         Layout.preferredHeight: 26
         Layout.minimumWidth: 30

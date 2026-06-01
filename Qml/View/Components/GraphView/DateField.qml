@@ -47,7 +47,7 @@ Item {
         enabled: text.trim().length > 0
     }
 
-    RoniaTextIcon {
+    RTextIcon {
         id: caret
         anchors.right: parent.right
         anchors.rightMargin: 6

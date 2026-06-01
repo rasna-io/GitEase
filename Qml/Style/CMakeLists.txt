@@ -55,8 +55,8 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style_Impl
     ${MODULE_CACHEGEN_STATE}
 
     QML_FILES
-        impl/RoniaTextIcon.qml
-        impl/RoniaButton.qml
+    impl/RTextIcon.qml
+    impl/RButton.qml
         impl/Button.qml
         impl/ComboBox.qml
         impl/TabButton.qml
