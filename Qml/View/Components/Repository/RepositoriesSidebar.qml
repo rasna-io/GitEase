@@ -122,7 +122,41 @@ Rectangle {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     hoverEnabled: true
-                                    onClicked: root.repositoryController.selectRepository(modelData.id)
+
+                                    property real pressX: 0
+                                    property real pressY: 0
+                                    property bool dragged: false
+
+                                    onPressed: {
+                                        pressX = mouseX
+                                        pressY = mouseY
+                                        dragged = false
+                                    }
+
+                                    onPositionChanged: {
+                                        if (pressed) {
+                                            repoMouseArea.cursorShape = Qt.SizeAllCursor
+
+                                            let dx = mouseX - pressX
+                                            let dy = mouseY - pressY
+                                            if (!dragged && Math.sqrt(dx*dx + dy*dy) >= 100) {
+                                                dragged = true
+                                                TaskbarHelper.launchNewInstance(modelData.path)
+                                                // todo
+                                                // implement auto close after implement repo close
+                                            }
+                                        }
+                                    }
+
+                                    onReleased: {
+                                        dragged = false
+                                        repoMouseArea.cursorShape = Qt.PointingHandCursor
+                                    }
+
+                                    onClicked: {
+                                        if (!dragged)
+                                            root.repositoryController.selectRepository(modelData.id)
+                                    }
                                 }
                             }
                         }
