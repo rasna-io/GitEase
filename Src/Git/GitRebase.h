@@ -55,6 +55,11 @@ public:
                                      const QString& upstream,
                                      QString branch = QString());
 
+    /// Build an interactive rebase plan without changing the repository.
+    Q_INVOKABLE GitResult previewRebasePlan(const QString& onto,
+                                            const QString& upstream,
+                                            const QString& branch = QString());
+
     /// Continue an in-progress rebase (`git rebase --continue`).
     Q_INVOKABLE GitResult continueOp();
 

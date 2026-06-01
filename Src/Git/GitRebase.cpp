@@ -3,10 +3,13 @@
 #include "GitUtils.h"
 
 #include <git2/annotated_commit.h>
+#include <git2/commit.h>
 #include <git2/checkout.h>
 #include <git2/index.h>
 #include <git2/rebase.h>
 #include <git2/repository.h>
+#include <git2/revparse.h>
+#include <git2/revwalk.h>
 #include <git2/signature.h>
 
 #include <QVariantList>
@@ -124,6 +127,115 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
     }
 
     return rebaseResult;
+}
+
+GitResult GitRebase::previewRebasePlan(const QString& onto,
+                                       const QString& upstream,
+                                       const QString& branch)
+{
+    Q_UNUSED(onto)
+
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "Repository not found.");
+    }
+
+    if (upstream.trimmed().isEmpty()) {
+        return GitResult(false, QVariant(), "Upstream reference is required.");
+    }
+
+    git_object* upstreamObject = nullptr;
+    int result = git_revparse_single(&upstreamObject,
+                                     m_currentRepo->repo,
+                                     upstream.trimmed().toUtf8().constData());
+    if (result != GIT_OK || !upstreamObject) {
+        return GitResult(false, QVariant(),
+                         QString("Invalid upstream '%1'.").arg(upstream));
+    }
+
+    QString branchSpec = branch.trimmed();
+    if (branchSpec.isEmpty()) {
+        branchSpec = "HEAD";
+    }
+
+    git_object* branchObject = nullptr;
+    result = git_revparse_single(&branchObject,
+                                 m_currentRepo->repo,
+                                 branchSpec.toUtf8().constData());
+    if (result != GIT_OK || !branchObject) {
+        git_object_free(upstreamObject);
+        return GitResult(false, QVariant(),
+                         QString("Invalid branch '%1'.").arg(branchSpec));
+    }
+
+    git_revwalk* walk = nullptr;
+    result = git_revwalk_new(&walk, m_currentRepo->repo);
+    if (result != GIT_OK || !walk) {
+        git_object_free(branchObject);
+        git_object_free(upstreamObject);
+        return GitResult(false, QVariant(),
+                         QString("Failed to prepare rebase plan: %1").arg(GitUtils::getLastError()));
+    }
+
+    git_revwalk_sorting(walk, GIT_SORT_TOPOLOGICAL | GIT_SORT_TIME);
+    git_revwalk_push(walk, git_object_id(branchObject));
+    git_revwalk_hide(walk, git_object_id(upstreamObject));
+
+    QVariantList commits;
+    git_oid oid;
+    while (git_revwalk_next(&oid, walk) == GIT_OK) {
+        git_commit* commit = nullptr;
+        if (git_commit_lookup(&commit, m_currentRepo->repo, &oid) != GIT_OK || !commit) {
+            continue;
+        }
+
+        char hash[GIT_OID_HEXSZ + 1] = {0};
+        git_oid_tostr(hash, sizeof(hash), git_commit_id(commit));
+
+        QStringList parentHashes;
+        const unsigned int parentCount = git_commit_parentcount(commit);
+        for (unsigned int i = 0; i < parentCount; ++i) {
+            const git_oid* parentOid = git_commit_parent_id(commit, i);
+            if (!parentOid) {
+                continue;
+            }
+
+            char parentHash[GIT_OID_HEXSZ + 1] = {0};
+            git_oid_tostr(parentHash, sizeof(parentHash), parentOid);
+            parentHashes.append(QString::fromUtf8(parentHash));
+        }
+
+        const git_signature* author = git_commit_author(commit);
+        const QString message       = QString::fromUtf8(git_commit_message(commit));
+
+        QVariantMap item;
+        item["action"]          = "pick";
+        item["hash"]            = QString::fromUtf8(hash);
+        item["shortHash"]       = QString::fromUtf8(hash).left(7);
+        item["summary"]         = message.split('\n').first();
+        item["message"]         = message;
+        item["author"]          = author && author->name ? QString::fromUtf8(author->name) : QString();
+        item["authorEmail"]     = author && author->email ? QString::fromUtf8(author->email) : QString();
+        item["authorDate"]      = author ? QDateTime::fromSecsSinceEpoch(author->when.time).toString(Qt::ISODate) : QString();
+        item["parentHashes"]    = parentHashes;
+        item["parentHash"]      = parentHashes.isEmpty() ? QString() : parentHashes.first();
+        item["isMerge"]         = parentCount > 1;
+
+        commits.prepend(item);
+        git_commit_free(commit);
+    }
+
+    git_revwalk_free(walk);
+    git_object_free(branchObject);
+    git_object_free(upstreamObject);
+
+    QVariantMap data;
+    data["commits"]             = commits;
+    data["upstream"]            = upstream.trimmed();
+    data["onto"]                = onto.trimmed();
+    data["branch"]              = branch.trimmed();
+    data["supportedActions"]    = QStringList{"pick", "skip"};
+
+    return GitResult(true, data);
 }
 
 GitResult GitRebase::continueOp()
