@@ -60,6 +60,12 @@ public:
                                             const QString& upstream,
                                             const QString& branch = QString());
 
+    /// Start a rebase using a prepared plan. Supported actions: pick, skip.
+    Q_INVOKABLE GitResult rebaseWithPlan(const QString& onto,
+                                         const QString& upstream,
+                                         QString branch,
+                                         const QVariantList& operations);
+
     /// Continue an in-progress rebase (`git rebase --continue`).
     Q_INVOKABLE GitResult continueOp();
 

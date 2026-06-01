@@ -238,6 +238,28 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
     return GitResult(true, data);
 }
 
+GitResult GitRebase::rebaseWithPlan(const QString& onto,
+                                    const QString& upstream,
+                                    QString branch,
+                                    const QVariantList& operations)
+{
+    QSet<QString> skippedCommits;
+
+    for (const QVariant& operationVariant : operations) {
+        const QVariantMap operation = operationVariant.toMap();
+        const QString hash          = operation.value("hash").toString();
+        const QString action        = operation.value("action").toString().trimmed().toLower();
+
+        if (hash.isEmpty())
+            continue;
+
+        if (action == "skip")
+            skippedCommits.insert(hash);
+    }
+
+    return startRebase(onto, upstream, branch, skippedCommits);
+}
+
 GitResult GitRebase::continueOp()
 {
     if (!m_currentRepo || !m_currentRepo->repo) {
