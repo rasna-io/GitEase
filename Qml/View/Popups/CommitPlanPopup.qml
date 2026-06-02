@@ -31,6 +31,10 @@ IPopup {
     width   : Math.min(1180 , Overlay.overlay   ? Overlay.overlay.width - 80    : 1180)
     height  : Math.min(760  , Overlay.overlay   ? Overlay.overlay.height - 80   : 760)
 
+    modal           : true
+    closePolicy     : Popup.NoAutoClose
+    anchors.centerIn: Overlay.overlay
+
     /* Children
      * ****************************************************************************************/
     contentItem: Rectangle {
