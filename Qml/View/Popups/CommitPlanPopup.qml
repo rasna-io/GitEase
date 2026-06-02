@@ -179,10 +179,27 @@ IPopup {
                                 }
 
                                 RowLayout {
+                                    id: layout
                                     anchors.fill: parent
                                     anchors.leftMargin: 8
                                     anchors.rightMargin: 8
                                     spacing: 8
+
+                                    readonly property color actionColor: {
+                                        const a = actionCombo.currentText
+                                        switch (a){
+                                            case "pick":
+                                                return Style.colors.foreground
+
+                                            case "skip":
+                                                return Style.colors.mutedText
+
+                                            default:
+                                                return Style.colors.accent
+                                        }
+                                    }
+
+                                    readonly property bool isDimmed: actionCombo.currentText === "skip"
 
                                     // Action combo (pick / skip)
                                     ComboBox {
@@ -201,7 +218,7 @@ IPopup {
 
                                         Text {
                                             text: shortHash
-                                            color: actionCombo.currentText === "skip" ? Style.colors.mutedText : Style.colors.accent
+                                            color: Style.colors.accent
                                             font.family: Style.fontTypes.roboto
                                             font.pixelSize: 11
                                             Layout.alignment: Qt.AlignVCenter
@@ -209,7 +226,8 @@ IPopup {
 
                                         Text {
                                             text: summary
-                                            color: actionCombo.currentText === "skip" ? Style.colors.mutedText : Style.colors.foreground
+                                            color: layout.actionColor
+                                            opacity: layout.isDimmed ? 0.5 : 1.0
                                             font.pixelSize: 12
                                             elide: Text.ElideRight
                                             Layout.fillWidth: true
@@ -220,7 +238,8 @@ IPopup {
                                     // Author
                                     Text {
                                         text: author
-                                        color: actionCombo.currentText === "skip" ? Style.colors.mutedText : Style.colors.foreground
+                                        color: layout.actionColor
+                                        opacity: layout.isDimmed ? 0.5 : 1.0
                                         font.pixelSize: 11
                                         elide: Text.ElideRight
                                         Layout.preferredWidth: 130
@@ -230,7 +249,8 @@ IPopup {
                                     // Date
                                     Text {
                                         text: authorDate ? Qt.formatDateTime(new Date(authorDate), "yyyy-MM-dd hh:mm") : ""
-                                        color: actionCombo.currentText === "skip" ? Style.colors.mutedText : Style.colors.secondaryText
+                                        color: layout.actionColor
+                                        opacity: layout.isDimmed ? 0.5 : 1.0
                                         font.pixelSize: 10
                                         elide: Text.ElideRight
                                         Layout.preferredWidth: 130
