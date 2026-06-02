@@ -49,6 +49,49 @@ IPopup {
             anchors.margins: 16
             spacing: 12
 
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+
+                    Text {
+                        text: "Interactive Rebase Plan"
+                        color: Style.colors.foreground
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 18
+                        font.bold: true
+                    }
+
+                    Text {
+                        text: planSummary()
+                        color: Style.colors.mutedText
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+                }
+
+                Rectangle {
+                    Layout.preferredWidth: 120
+                    Layout.preferredHeight: 32
+                    color: Style.colors.surfaceMuted
+                    border.color: Style.colors.primaryBorder
+                    radius: 16
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: pickedCount() + " pick / " + skippedCount() + " skip"
+                        color: Style.colors.secondaryText
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 11
+                    }
+                }
+            }
+
             // Main content: vertical split
             SplitView {
                 Layout.fillWidth: true
@@ -226,6 +269,16 @@ IPopup {
         id: commitModel
     }
 
+    function planSummary() {
+        var upstream    = planData.upstream || ""
+        var onto        = planData.onto || ""
+        var branch      = planData.branch || "current branch"
+
+        return onto.length > 0
+               ? branch + " after " + upstream + " onto " + onto
+               : branch + " onto " + upstream
+    }
+
     function pickedCount() {
         var count = 0
         for (var i = 0; i < commitModel.count; i++) {
@@ -233,6 +286,10 @@ IPopup {
                 count++
         }
         return count
+    }
+
+    function skippedCount() {
+        return commitModel.count - pickedCount()
     }
 
     function showPlan(data) {
