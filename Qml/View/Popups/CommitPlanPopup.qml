@@ -111,6 +111,49 @@ IPopup {
                         anchors.fill: parent
                         spacing: 0
 
+                        // Column header
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 30
+                            color: Style.colors.primaryBackground
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 10
+                                anchors.rightMargin: 10
+                                spacing: 8
+
+                                Text {
+                                    text: "Action"
+                                    Layout.preferredWidth: 78
+                                    font.bold: true
+                                    color: Style.colors.foreground
+                                    font.pixelSize: 11
+                                }
+
+                                Text {
+                                    text: "Commit"
+                                    Layout.fillWidth: true
+                                    font.bold: true; color: Style.colors.foreground
+                                    font.pixelSize: 11
+                                }
+
+                                Text {
+                                    text: "Author"
+                                    Layout.preferredWidth: 130
+                                    font.bold: true; color: Style.colors.foreground
+                                    font.pixelSize: 11
+                                }
+
+                                Text {
+                                    text: "Date"
+                                    Layout.preferredWidth: 130
+                                    font.bold: true; color: Style.colors.foreground
+                                    font.pixelSize: 11
+                                }
+                            }
+                        }
+
                         ListView {
                             id: commitList
                             Layout.fillWidth: true
@@ -146,8 +189,7 @@ IPopup {
                                         id: actionCombo
                                         Layout.preferredWidth: 78
                                         Layout.preferredHeight: 26
-                                        model: root.planData.supportedActions
-                                        currentIndex: actionCombo.currentText === "skip" ? 1 : 0
+                                        model: root.planData.supportedActions || []
                                         font.pixelSize: 11
                                         onActivated: commitModel.setProperty(index, "action", currentText)
                                     }
