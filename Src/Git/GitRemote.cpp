@@ -1000,7 +1000,26 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
         auth.get()
     };
 
+    auto progressCallback = [](const git_indexer_progress *stats, void *p) -> int {
+        auto *data = static_cast<GitRepository::GitPayload*>(p);
+
+        if (stats->total_objects > 0) {
+            int percent = static_cast<int>(
+                (100.0 * stats->received_objects) / stats->total_objects
+                );
+
+            QMetaObject::invokeMethod(
+                data->parentThread,
+                "fetchProgress",
+                Qt::QueuedConnection,
+                Q_ARG(int, percent)
+                );
+        }
+        return 0;
+    };
+
     opts.callbacks.payload = &payload;
+    opts.callbacks.transfer_progress = progressCallback;
     auth->applyFetch(opts);
 
     QHash<QString, QString> beforeTrackingTips = getRemoteTrackingTipsSnapshot(remoteName);
