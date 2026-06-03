@@ -83,6 +83,9 @@ Rectangle {
 
                 Rectangle {
                     id: status
+
+                    property int progress: root.modelData.progress || -1
+
                     property color statusTextColor: {
                         switch(root.modelData.status) {
                             case "Canceled":
@@ -129,11 +132,31 @@ Rectangle {
                         }
                     }
 
+                    property color progressFillColor: Qt.darker(statusBgColor, 2.5)
+
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredWidth: statusText.contentWidth + 30
                     Layout.preferredHeight: 20
                     radius: 5
                     color: status.statusBgColor
+
+                    Rectangle {
+                        id: progressFill
+                        anchors.left: status.left
+                        anchors.top: status.top
+                        anchors.bottom: status.bottom
+                        implicitWidth: status.width * (status.progress / 100)
+                        color: status.progressFillColor
+                        radius: status.radius
+                        opacity: 0.25
+
+                        Behavior on width {
+                            NumberAnimation {
+                                duration: 250
+                                easing.type: Easing.InOutQuad
+                            }
+                        }
+                    }
 
                     RowLayout {
                         anchors.centerIn: parent
@@ -150,7 +173,8 @@ Rectangle {
                         Text {
                             id: statusText
                             Layout.alignment: Qt.AlignVCenter
-                            text: root.modelData.status
+                            text: (status.progress > 0 && status.progress <= 100) ?
+                                      `${root.modelData.status} ${status.progress} %` : root.modelData.status
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 12
                             font.weight: 300
