@@ -301,6 +301,13 @@ Rectangle {
                 fetchStartNextRemote()
             }
         }
+
+        function onFetchProgress(progress) {
+            let idx = root.fetchFlowItemIndex
+
+            root.reposModel[idx].progress = progress
+            root.reposModel = root.reposModel.slice()
+        }
     }
 
     Connections {
