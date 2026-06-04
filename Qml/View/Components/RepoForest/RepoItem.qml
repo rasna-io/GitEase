@@ -149,6 +149,7 @@ Rectangle {
                         color: status.progressFillColor
                         radius: status.radius
                         opacity: 0.25
+                        visible: !(status.progress === 100)
 
                         Behavior on width {
                             NumberAnimation {
