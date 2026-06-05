@@ -29,29 +29,17 @@ Item {
     property bool readOnly: false
     property var  textColorizer: null
 
+    property int selectionStart: -1
+    property int selectionEnd: -1
+    property int selectedSide: SelectionSide.None
+
     property real horizontalOffset: 0
 
     readonly property bool isAdd: diffType === GitDiff.Added
     readonly property bool isDel: diffType === GitDiff.Deleted
     readonly property bool isMod: diffType === GitDiff.Modified
     readonly property bool isUnchanged: diffType === GitDiff.Context
-    readonly property bool hasAction: {
-        if (readOnly || isUnchanged)
-            return false;
-        if (index === 0)
-            return true;
-
-        let model = diffModel || fileModel;
-        if (!model)
-            return false;
-
-        let prevItem = model.get(index - 1);
-        if (!prevItem)
-            return false;
-
-        return prevItem.rowType !== "diff";
-    }
-
+    property bool hasAction: false
 
     /* Signals
      * ****************************************************************************************/
@@ -62,16 +50,19 @@ Item {
     signal requestStage(int start, int end, int type)
     signal requestRevert(int start, int end, int type)
     signal requestStash(int start, int end, int type)
+    signal requestTextChange(string newText)
 
     /* Object Properties
      * ****************************************************************************************/
 
     // Auto-height based on content
-    height: Math.max(hasAction ? 90 : 24, Math.max(leftTextMetrics.height, rightTextEdit.contentHeight + 4))
+    implicitHeight: Math.max(hasAction ? 50 : 24, Math.max(leftTextMetrics.height, rightTextEdit.contentHeight + 4))
 
     onIsCurrentItemChanged: {
         if (isCurrentItem && !isDel) {
-            rightTextEdit.forceActiveFocus()
+            Qt.callLater(function() {
+                rightTextEdit.forceActiveFocus()
+            })
         }
     }
 
@@ -126,6 +117,17 @@ Item {
                     height: parent.height
                     width: parent.width - 45
                     clip: true
+
+                    Rectangle {
+                        anchors.fill: parent
+                        property bool inSelection:
+                            (index >= Math.min(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
+                            (index <= Math.max(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
+                            selectedSide === Enums.DiffViewSelectionSide.Left
+
+                        color: inSelection ? Style.colors.accent : "transparent"
+                        opacity: 0.8
+                    }
 
                     Text {
                         id: leftDisplay
@@ -288,6 +290,17 @@ Item {
                     width: parent.width - 45
                     clip: true
 
+                    Rectangle {
+                        anchors.fill: parent
+                        property bool inSelection:
+                            (index >= Math.min(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
+                            (index <= Math.max(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
+                            selectedSide === Enums.DiffViewSelectionSide.Right
+
+                        color: inSelection ? Style.colors.accent : "transparent"
+                        opacity: 0.8
+                    }
+
                     // Colorized read-only view (shown when plugin active + readOnly)
                     Text {
                         visible: !!delegateRoot.textColorizer && delegateRoot.readOnly
@@ -321,6 +334,8 @@ Item {
 
                         Material.accent: Style.colors.accent
 
+                        onTextChanged: delegateRoot.requestTextChange(rightTextEdit.text)
+
                         Keys.onPressed: (event) => {
                                             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                                                 event.accepted = true
@@ -347,10 +362,6 @@ Item {
                                                 }
                                             }
                                         }
-
-                        onEditingFinished: {
-                            // TODO save changes
-                        }
                     }
                 }
             }

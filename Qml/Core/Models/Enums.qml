@@ -21,4 +21,10 @@ QtObject {
         Open,
         Clone
     }
+
+    enum DiffViewSelectionSide {
+        None,
+        Left,
+        Right
+    }
 }

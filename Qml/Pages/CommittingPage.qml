@@ -510,19 +510,27 @@ Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
             chunkMode: true
+            selectEnabled: false
             contextLines: 0
             expandLines: 10
 
             currentRepositoryName: root.appModel.currentRepository.name || ""
 
-            onRequestStage: function (start, end, type) {
-                let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
-                if (res.success) {
-                    root.notificationController.success("Selected lines staged", "Stage", 2000)
-                } else {
-                    root.notificationController.error(res.errorMessage || "Failed to stage selected lines", "Stage Error", 5000)
+            onRequestStage: function (start, end, type, rows) {
+                let saveRes = root.statusController.saveFile(root.selectedFilePath, rows)
+                if(saveRes.success)
+                {
+                    let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
+                    if (res.success) {
+                        root.notificationController.success("Selected lines staged", "Stage", 2000)
+                    } else {
+                        root.notificationController.error(res.errorMessage || "Failed to stage selected lines", "Stage Error", 5000)
+                    }
+                    changesFileLists.updateStatus()
                 }
-                changesFileLists.updateStatus()
+                else {
+                    root.notificationController.error(res.errorMessage, "File Save Error", 5000)
+                }
             }
 
             onRequestRevert: function (start, end, type) {

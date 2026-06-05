@@ -623,6 +623,34 @@ GitResult GitStatus::getDiffView(const QString &filePath, bool staged)
     }
 }
 
+GitResult GitStatus::saveFile(const QString& filePath, const QStringList& rows)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "No repository available.");
+
+    const char* workdir = git_repository_workdir(m_currentRepo->repo);
+    if (!workdir)
+        return GitResult(false, QVariant(), "No working directory");
+
+    QString repoPath = QString::fromUtf8(workdir);
+    QString fullPath = QDir(repoPath).filePath(filePath);
+
+    QFile file(fullPath);
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return GitResult(false, QVariant(), file.errorString());
+    }
+
+    QTextStream out(&file);
+
+    for (const QString &line : rows) {
+        out << line << "\n";
+    }
+
+    file.close();
+    return GitResult(true, QVariant(), "File saved successfully");
+}
+
 GitResult GitStatus::getUnstagedDiffView(const QString &filePath)
 {
     // old/index text
