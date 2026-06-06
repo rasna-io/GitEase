@@ -18,6 +18,7 @@ Rectangle {
     required property       int     index
     required property       var     modelData
     property                bool    isSelected: false
+    property                bool    isProcessing: false
     readonly property       bool    patNeeded:  root.modelData.status === "PAT waiting"
     property                string  pat:        ""
 
@@ -186,6 +187,7 @@ Rectangle {
 
                 ActionIconButton {
                     visible: !root.patNeeded || root.pat.length > 0
+                    enabled: !root.isProcessing
                     iconText: Style.icons.arrowDown
                     tooltip: "Pull"
                     backgroundColor: Qt.darker(Style.colors.surfaceLight, 1.4)
@@ -195,6 +197,7 @@ Rectangle {
 
                 ActionIconButton {
                     visible: !root.patNeeded || root.pat.length > 0
+                    enabled: !root.isProcessing
                     Layout.rightMargin: 10
                     iconText: Style.icons.download
                     tooltip: "Fetch"
@@ -340,6 +343,7 @@ Rectangle {
     }
 
     TapHandler {
+        enabled: !root.isProcessing
         onTapped: root.clicked(root.index)
     }
 }
