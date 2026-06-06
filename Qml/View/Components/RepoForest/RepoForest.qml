@@ -36,6 +36,8 @@ Rectangle {
     property   int                    fetchFlowRemoteIndex:     0
     property   string                 fetchFlowCurrentRemote:   ""
 
+    property   var                    operationLogs:            []
+
 
     readonly property bool allSelected:     reposModel.length > 0 && selectedIndexes.length === reposModel.length
     readonly property bool noneSelected:    selectedIndexes.length === 0
@@ -123,6 +125,19 @@ Rectangle {
         root.reposModel = root.reposModel.slice()
     }
 
+    function logOperation(repoName, remoteName, operation, status, message) {
+        let entry = {
+            repoName: repoName,
+            remoteName: remoteName,
+            operation: operation,
+            status: status,
+            message: message,
+            timestamp: new Date().toLocaleTimeString(Qt.locale(), "hh:mm:ss")
+        }
+        root.operationLogs.push(entry)
+        root.operationLogs = root.operationLogs.slice()
+    }
+
     function enqueueOperation(operation, itemIndex, pat) {
         root.operationQueue.push({ operation: operation, index: itemIndex, pat: pat})
         root.operationQueue = root.operationQueue.slice()
@@ -155,10 +170,9 @@ Rectangle {
 
         let repoItem = root.reposModel[itemIndex]
 
-
-
         if(!repoItem.repo) {
             root.updateStatus(itemIndex, "Canceled")
+            root.logOperation(repoItem.name, "", "fetch", "Canceled", "Repository not available")
             processNextOperation()
             return
         }
@@ -169,12 +183,14 @@ Rectangle {
 
         if(!remotesRes.success) {
             root.updateStatus(itemIndex, "Canceled")
+            root.logOperation(repoItem.name, "", "fetch", "Canceled", "Failed to get remotes")
             processNextOperation()
             return
         }
 
         if (remotesRes.data.length === 0) {
             root.updateStatus(itemIndex, "Done")
+            root.logOperation(repoItem.name, "", "fetch", "Done", "No remotes to fetch")
             processNextOperation()
             return
         }
@@ -203,10 +219,12 @@ Rectangle {
         root.fetchFlowRemoteIndex += 1
         root.fetchFlowCurrentRemote = remote.name
 
+        root.logOperation(repoName, remote.name, "fetch", "Pending", "Starting fetch...")
+
         let remoteUrlRes = scanRemoteController.getRemoteUrl(remote.name)
         if(!remoteUrlRes.success) {
+            root.logOperation(repoName, remote.name, "fetch", "Canceled", "Failed to get remote URL")
             finishFetchFlow("Canceled")
-
             return
         }
 
@@ -215,6 +233,7 @@ Rectangle {
         if (protocol !== RepositoryController.GitProtocol.SSH && root.fetchFlowPat === "") {
             root.reposModel[root.fetchFlowItemIndex].pendingOperation = "fetch"
             root.reposModel = root.reposModel.slice()
+            root.logOperation(repoName, remote.name, "fetch", "Canceled", "PAT required for HTTPS")
             root.finishFetchFlow("PAT waiting")
             return
         }
@@ -228,6 +247,15 @@ Rectangle {
 
     function finishFetchFlow(status: string) {
         let idx = root.fetchFlowItemIndex
+        let repoName = root.reposModel[idx].name
+        if (status === "Done") {
+            root.logOperation(repoName, "", "fetch", "Done", "All remotes fetched successfully")
+        } else if (status === "Canceled") {
+            root.logOperation(repoName, root.fetchFlowCurrentRemote, "fetch", "Canceled", "Fetch canceled or failed")
+        } else if (status === "PAT waiting") {
+            root.logOperation(repoName, root.fetchFlowCurrentRemote, "fetch", "Canceled", "Waiting for PAT")
+        }
+
         root.fetchFlowActive        = false
         root.fetchFlowItemIndex     = -1
         root.fetchFlowPat           = ""
@@ -242,13 +270,11 @@ Rectangle {
     function executePull(itemIndex: int, pat: string) {
         root.updateStatus(itemIndex, "Pulling")
 
-        let repo = root.reposModel[itemIndex]
-
         let repoItem = root.reposModel[itemIndex]
 
-
-        if(!repoItem) {
+        if(!repoItem || !repoItem.repo) {
             root.updateStatus(itemIndex, "Canceled")
+            root.logOperation("Unknown", "", "pull", "Canceled", "Repository not available")
             processNextOperation()
             return
         }
@@ -258,12 +284,14 @@ Rectangle {
 
         if(!remotesRes.success) {
             root.updateStatus(itemIndex, "Canceled")
+            root.logOperation(repoItem.name, "", "pull", "Canceled", "Failed to get remotes")
             processNextOperation()
             return
         }
 
         if (remotesRes.data.length === 0) {
             root.updateStatus(itemIndex, "Done")
+            root.logOperation(repoItem.name, "", "pull", "Done", "No remotes to pull")
             processNextOperation()
             return
         }
@@ -273,6 +301,7 @@ Rectangle {
 
             if(!remoteUrlRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
+                root.logOperation(repoItem.name, remote.name, "pull", "Canceled", "Failed to get remote URL")
                 processNextOperation()
                 return
             }
@@ -291,8 +320,10 @@ Rectangle {
                 let onPullFinished = (result) => {
                     if (result.success) {
                         root.updateStatus(itemIndex, "Done")
+                        root.logOperation(repoItem.name, remote.name, "pull", "Success", "Pull completed successfully")
                     } else {
                         root.updateStatus(itemIndex, "Canceled")
+                        root.logOperation(repoItem.name, remote.name, "pull", "Failed", result.error || "Pull failed")
                     }
                     scanRemoteController.pullFinished.disconnect(onPullFinished)
                     processNextOperation()
@@ -303,11 +334,30 @@ Rectangle {
                 let pullRes = scanRemoteController.pull(remote.name)
                 if(!pullRes.success) {
                     root.updateStatus(itemIndex, "Canceled")
+                    root.logOperation(repoItem.name, remote.name, "pull", "Canceled", "Failed to start pull")
                     scanRemoteController.pullFinished.disconnect(onPullFinished)
                     processNextOperation()
                 }
             } else {
-                // TODO
+                let onPullFinished = (result) => {
+                    if (result.success) {
+                        root.updateStatus(itemIndex, "Done")
+                        root.logOperation(repoItem.name, remote.name, "pull", "Success", "Pull completed successfully")
+                    } else {
+                        root.updateStatus(itemIndex, "Canceled")
+                        root.logOperation(repoItem.name, remote.name, "pull", "Failed", result.error || "Pull failed")
+                    }
+                    scanRemoteController.pullFinished.disconnect(onPullFinished)
+                    processNextOperation()
+                }
+                scanRemoteController.pullFinished.connect(onPullFinished)
+                let pullRes = scanRemoteController.pull(remote.name, "", pat)
+                if(!pullRes.success) {
+                    root.updateStatus(itemIndex, "Canceled")
+                    root.logOperation(repoItem.name, remote.name, "pull", "Canceled", "Failed to start pull")
+                    scanRemoteController.pullFinished.disconnect(onPullFinished)
+                    processNextOperation()
+                }
             }
         })
     }
@@ -352,10 +402,13 @@ Rectangle {
             if (result.remote !== root.fetchFlowCurrentRemote)
                 return
 
-            if (!result.success) {
-                finishFetchFlow("Canceled")
-            }else {
+            let repoName = root.reposModel[root.fetchFlowItemIndex].name
+            if (result.success) {
+                root.logOperation(repoName, result.remote, "fetch", "Success", "Fetch completed successfully")
                 fetchStartNextRemote()
+            } else {
+                root.logOperation(repoName, result.remote, "fetch", "Failed", result.error || "Fetch failed")
+                finishFetchFlow("Canceled")
             }
         }
 
@@ -733,12 +786,23 @@ Rectangle {
 
                     delegate: RepoItem {
                         isSelected: root.selectedIndexes.indexOf(index) !== -1
+                        isProcessing: root.isProcessingQueue
 
                         onClicked: (i) => root.toggleSelection(i)
                         onFetchRequested: (i, pat) => root.fetch(i, pat)
                         onPullRequested: (i, pat) => root.pull(i, pat)
                     }
                 }
+            }
+        }
+
+        RepoForestLogs {
+            Layout.fillWidth: true
+            visible: root.operationLogs.length > 0
+            operationLogs: root.operationLogs
+
+            onClearLogsRequested: {
+                root.operationLogs = []
             }
         }
     }
