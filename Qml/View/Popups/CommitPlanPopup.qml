@@ -224,8 +224,84 @@ IPopup {
                                         Layout.preferredHeight: 26
                                         model: root.planData.supportedActions || []
                                         font.pixelSize: 11
+
+                                        background: Rectangle {
+                                            color: Style.colors.secondaryBackground
+                                            border.color: Style.colors.primaryBorder
+                                            border.width: 1
+                                            radius: 4
+                                        }
+
+                                        contentItem: Text {
+                                            text: actionCombo.displayText
+                                            color: Style.colors.foreground
+                                            font.pixelSize: 11
+                                            verticalAlignment: Text.AlignVCenter
+                                            leftPadding: 8
+                                            rightPadding: actionCombo.indicator.width + 8
+                                            elide: Text.ElideRight
+                                        }
+
+                                        indicator: Canvas {
+                                            id: comboIndicator
+                                            x: actionCombo.width - width - 8
+                                            y: (actionCombo.height - height) / 2
+                                            width: 10
+                                            height: 6
+                                            contextType: "2d"
+
+                                            onPaint: {
+                                                context.reset()
+                                                context.moveTo(0, 0)
+                                                context.lineTo(width, 0)
+                                                context.lineTo(width / 2, height)
+                                                context.closePath()
+                                                context.fillStyle = Style.colors.foreground
+                                                context.fill()
+                                            }
+                                        }
+
+                                        popup: Popup {
+                                            y: actionCombo.height
+                                            width: actionCombo.width
+                                            implicitHeight: contentItem.implicitHeight
+                                            padding: 1
+
+                                            contentItem: ListView {
+                                                clip: true
+                                                implicitHeight: contentHeight
+                                                model: actionCombo.popup.visible ? actionCombo.delegateModel : null
+                                                currentIndex: actionCombo.highlightedIndex
+                                            }
+
+                                            background: Rectangle {
+                                                color: Style.colors.secondaryBackground
+                                                border.color: Style.colors.primaryBorder
+                                                border.width: 1
+                                                radius: 4
+                                            }
+                                        }
+
+                                        delegate: ItemDelegate {
+                                            width: actionCombo.width
+                                            contentItem: Text {
+                                                text: modelData
+                                                color: Style.colors.foreground
+                                                font.pixelSize: 11
+                                                verticalAlignment: Text.AlignVCenter
+                                                elide: Text.ElideRight
+                                            }
+
+                                            background: Rectangle {
+                                                color: highlighted
+                                                       ? Style.colors.hoverTitle
+                                                       : Style.colors.secondaryBackground
+                                            }
+                                        }
+
                                         onActivated: commitModel.setProperty(index, "action", currentText)
                                     }
+
 
                                     // Commit info (short hash + message)
                                     RowLayout {
