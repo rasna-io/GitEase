@@ -98,6 +98,22 @@ IPopup {
                 Layout.fillHeight: true
                 orientation: Qt.Vertical
 
+                handle: Rectangle {
+                    implicitWidth: 6
+                    implicitHeight: 6
+                    color: SplitHandle.pressed ? Style.colors.resizeHandlePressed
+                         : SplitHandle.hovered ? Style.colors.resizeHandle
+                         : "transparent"
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width
+                        height: 2
+                        radius: 1
+                        color: SplitHandle.pressed ? Style.colors.accent : Style.colors.primaryBorder
+                    }
+                }
+
                 // Top: commit list (full width)
                 Rectangle {
                     SplitView.preferredHeight: 300
@@ -265,6 +281,22 @@ IPopup {
                 // Bottom: file changes + diff view side‑by‑side
                 SplitView {
                     orientation: Qt.Horizontal
+
+                    handle: Rectangle {
+                        implicitWidth: 6
+                        implicitHeight: 6
+                        color: SplitHandle.pressed ? Style.colors.resizeHandlePressed
+                             : SplitHandle.hovered ? Style.colors.resizeHandle
+                             : "transparent"
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 2
+                            height: parent.height
+                            radius: 1
+                            color: SplitHandle.pressed ? Style.colors.accent : Style.colors.primaryBorder
+                        }
+                    }
 
                     FileChangesDock {
                         id: fileChangesDock
