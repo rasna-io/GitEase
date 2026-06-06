@@ -21,6 +21,7 @@ Rectangle {
     property                bool    isProcessing: false
     readonly property       bool    patNeeded:  root.modelData.status === "PAT waiting"
     property                string  pat:        ""
+    readonly property       string  pendingOperation: root.modelData.pendingOperation || ""
 
     /* Signals
      * ****************************************************************************************/
@@ -331,6 +332,11 @@ Rectangle {
                         root.pat = textField.text
                         confirmButton.visible = false
                         textField.enabled = false
+                        if (root.pendingOperation === "fetch") {
+                            root.fetchRequested(root.index, root.pat)
+                        } else if (root.pendingOperation === "pull") {
+                            root.pullRequested(root.index, root.pat)
+                        }
                     }
                 }
             }

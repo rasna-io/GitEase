@@ -41,6 +41,47 @@ Rectangle {
     readonly property bool noneSelected:    selectedIndexes.length === 0
     readonly property bool someSelected:    !allSelected && !noneSelected
 
+    readonly property int selectedCount:    root.selectedIndexes.length
+
+    readonly property int completedCount: {
+        let count = 0
+        root.selectedIndexes.forEach(idx => {
+            let status = root.reposModel[idx] ? root.reposModel[idx].status : ""
+            if (status === "Done" || status === "Canceled") {
+                count++
+            }
+        })
+        return count
+    }
+
+    readonly property int progressPercent: root.selectedCount > 0 ? Math.round((root.completedCount / root.selectedCount) * 100) : 0
+
+    readonly property int pendingFetchCount: {
+        let count = 0
+        root.operationQueue.forEach(op => {
+            if (op.operation === "fetch")
+                count++
+        })
+
+        if (root.fetchFlowActive)
+            count++
+
+        return count
+    }
+
+    readonly property int pendingPullCount: {
+        let count = 0
+        root.operationQueue.forEach(op => {
+            if (op.operation === "pull")
+                count++
+        })
+        root.selectedIndexes.forEach(idx => {
+            if (root.reposModel[idx] && root.reposModel[idx].status === "Pulling")
+                count++
+        })
+        return count
+    }
+
     /* Signals
     * ****************************************************************************************/
     signal closeRequested()
@@ -158,6 +199,7 @@ Rectangle {
         }
 
         let remote = root.fetchFlowRemotes[root.fetchFlowRemoteIndex]
+        let repoName = root.reposModel[root.fetchFlowItemIndex].name
         root.fetchFlowRemoteIndex += 1
         root.fetchFlowCurrentRemote = remote.name
 
@@ -171,6 +213,8 @@ Rectangle {
         let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
 
         if (protocol !== RepositoryController.GitProtocol.SSH && root.fetchFlowPat === "") {
+            root.reposModel[root.fetchFlowItemIndex].pendingOperation = "fetch"
+            root.reposModel = root.reposModel.slice()
             root.finishFetchFlow("PAT waiting")
             return
         }
@@ -209,7 +253,8 @@ Rectangle {
             return
         }
 
-        let remotesRes =scanRemoteController.getRemotes()
+        scanRemoteController.currentRepo = repoItem.repo
+        let remotesRes = scanRemoteController.getRemotes()
 
         if(!remotesRes.success) {
             root.updateStatus(itemIndex, "Canceled")
@@ -223,8 +268,8 @@ Rectangle {
             return
         }
 
-        let remote = remotesRes.data.forEach(remote => {
-            let remoteUrlRes =scanRemoteController.getRemoteUrl(remote.name)
+        remotesRes.data.forEach(remote => {
+            let remoteUrlRes = scanRemoteController.getRemoteUrl(remote.name)
 
             if(!remoteUrlRes.success) {
                 root.updateStatus(itemIndex, "Canceled")
@@ -234,19 +279,31 @@ Rectangle {
 
             let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
 
+            if (protocol !== RepositoryController.GitProtocol.SSH && pat === "") {
+                root.reposModel[itemIndex].pendingOperation = "pull"
+                root.reposModel = root.reposModel.slice()
+                root.updateStatus(itemIndex, "PAT waiting")
+                processNextOperation()
+                return
+            }
+
             if (protocol === RepositoryController.GitProtocol.SSH) {
                 let onPullFinished = (result) => {
-                    root.updateStatus(itemIndex, result.success ? "Done" : "Canceled")
-                   scanRemoteController.pullFinished.disconnect(onPullFinished)
+                    if (result.success) {
+                        root.updateStatus(itemIndex, "Done")
+                    } else {
+                        root.updateStatus(itemIndex, "Canceled")
+                    }
+                    scanRemoteController.pullFinished.disconnect(onPullFinished)
                     processNextOperation()
                 }
 
-               scanRemoteController.pullFinished.connect(onPullFinished)
+                scanRemoteController.pullFinished.connect(onPullFinished)
 
-                let pullRes =scanRemoteController.pull(remote.name)
+                let pullRes = scanRemoteController.pull(remote.name)
                 if(!pullRes.success) {
                     root.updateStatus(itemIndex, "Canceled")
-                   scanRemoteController.pullFinished.disconnect(onPullFinished)
+                    scanRemoteController.pullFinished.disconnect(onPullFinished)
                     processNextOperation()
                 }
             } else {
@@ -371,7 +428,7 @@ Rectangle {
     }
 
     ColumnLayout {
-        spacing: 8
+        spacing: 4
         anchors.fill: parent
         anchors.margins: 20
 
@@ -546,6 +603,82 @@ Rectangle {
                     }
                 }
                 onClicked: root.closeRequested()
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 50
+            color: Style.colors.secondaryBackground
+            radius: 6
+            visible: root.selectedCount > 0
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 8
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 6
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+
+                    Text {
+                        text: "Selected: " + root.selectedCount
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 11
+                        color: Style.colors.foreground
+                    }
+                    Text {
+                        text: "Pending Fetch: " + root.pendingFetchCount
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 11
+                        color: Style.colors.repoItemStatusFetchingText
+                    }
+                    Text {
+                        text: "Pending Pull: " + root.pendingPullCount
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 11
+                        color: Style.colors.repoItemStatusPullingText
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    BusyIndicator {
+                        id: queueSpinner
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
+                        running: root.isProcessingQueue
+                        visible: root.isProcessingQueue
+                        Material.accent: Style.colors.accent
+                    }
+
+                    Text {
+                        text: root.progressPercent + "%"
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 12
+                        font.weight: Font.Bold
+                        color: Style.colors.accent
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 4
+                    radius: 2
+                    color: Style.colors.primaryBorder
+
+                    Rectangle {
+                        height: parent.height
+                        width: parent.width * (root.progressPercent / 100)
+                        radius: 2
+                        color: Style.colors.accent
+                        Behavior on width { NumberAnimation { duration: 200 } }
+                    }
+                }
             }
         }
 
