@@ -423,7 +423,13 @@ IPopup {
                         border.color: Style.colors.accent
                         radius: 6
                     }
-                    onClicked: root.close()
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: root.close()
+                    }
                 }
 
                 Button {
@@ -439,9 +445,15 @@ IPopup {
                                : Style.colors.disabledButton
                         radius: 6
                     }
-                    onClicked: {
-                        root.accepted(root.operations())
-                        root.close()
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: {
+                            root.accepted(root.operations())
+                            root.close()
+                        }
                     }
                 }
             }
