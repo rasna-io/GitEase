@@ -298,9 +298,21 @@ IPopup {
                                                        ? Style.colors.hoverTitle
                                                        : Style.colors.secondaryBackground
                                             }
+
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                acceptedButtons: Qt.NoButton
+                                            }
                                         }
 
                                         onActivated: commitModel.setProperty(index, "action", currentText)
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            acceptedButtons: Qt.NoButton
+                                        }
                                     }
 
 
