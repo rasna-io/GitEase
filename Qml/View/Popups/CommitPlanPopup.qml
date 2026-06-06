@@ -284,6 +284,7 @@ IPopup {
 
                                         delegate: ItemDelegate {
                                             width: actionCombo.width
+                                            hoverEnabled: true
                                             contentItem: Text {
                                                 text: modelData
                                                 color: Style.colors.foreground
@@ -293,7 +294,7 @@ IPopup {
                                             }
 
                                             background: Rectangle {
-                                                color: highlighted
+                                                color: hovered
                                                        ? Style.colors.hoverTitle
                                                        : Style.colors.secondaryBackground
                                             }
