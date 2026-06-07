@@ -19,20 +19,17 @@ Rectangle {
     required property       var     modelData
     property                bool    isSelected: false
     property                bool    isProcessing: false
-    readonly property       bool    patNeeded:  root.modelData.status === "PAT waiting"
-    property                string  pat:        ""
-    readonly property       string  pendingOperation: root.modelData.pendingOperation || ""
 
     /* Signals
      * ****************************************************************************************/
     signal clicked(index: int)
-    signal fetchRequested(index: int, pat: string)
-    signal pullRequested(index: int, pat: string)
+    signal fetchRequested(index: int)
+    signal pullRequested(index: int)
 
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillWidth: true
-    Layout.preferredHeight: root.patNeeded ? 120 : 70
+    Layout.preferredHeight: 70
     color: {
         if (msa.hovered) {
                 return Qt.darker(Style.colors.surfaceLight, 1.05)
@@ -104,10 +101,8 @@ Rectangle {
                                 return Style.colors.repoItemStatusDirtyText
                             case "Conflict":
                                 return Style.colors.repoItemStatusConflictText
-                            case "PAT waiting":
-                                return Style.colors.repoItemStatusPATText
                             default:
-                                return Style.colors.repoItemStatusPendingText
+                                return Style.colors.repoItemStatusCanceledText
                         }
                     }
 
@@ -127,10 +122,8 @@ Rectangle {
                                 return Style.colors.repoItemStatusDirtyBg
                             case "Conflict":
                                 return Style.colors.repoItemStatusConflictBg
-                            case "PAT waiting":
-                                return Style.colors.repoItemStatusPATBg
                             default:
-                                return Style.colors.repoItemStatusPendingBg
+                                return Style.colors.repoItemStatusCanceledBg
                         }
                     }
 
@@ -187,24 +180,22 @@ Rectangle {
                 }
 
                 ActionIconButton {
-                    visible: !root.patNeeded || root.pat.length > 0
                     enabled: !root.isProcessing
                     iconText: Style.icons.arrowDown
                     tooltip: "Pull"
                     backgroundColor: Qt.darker(Style.colors.surfaceLight, 1.4)
                     textColor: Style.colors.foreground
-                    onClicked: root.pullRequested(root.index, root.pat)
+                    onClicked: root.pullRequested(root.index)
                 }
 
                 ActionIconButton {
-                    visible: !root.patNeeded || root.pat.length > 0
                     enabled: !root.isProcessing
                     Layout.rightMargin: 10
                     iconText: Style.icons.download
                     tooltip: "Fetch"
                     backgroundColor: Qt.darker(Style.colors.surfaceLight, 1.4)
                     textColor: Style.colors.foreground
-                    onClicked: root.fetchRequested(root.index, root.pat)
+                    onClicked: root.fetchRequested(root.index)
                 }
             }
 
@@ -279,65 +270,6 @@ Rectangle {
                     color: Style.colors.mutedText
                     font.weight: 400
                     font.letterSpacing: 0
-                }
-            }
-
-            // PAT
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: 10
-                spacing: 15
-
-                visible: root.patNeeded
-
-                FormInputField {
-                    id: textField
-                    field.implicitHeight: 30
-                    Layout.fillWidth: true
-                    Layout.rightMargin: 10
-                    placeholderText: "Personal Access Token"
-                    icon: "\uF023"
-                    echoMode: TextInput.Password
-                }
-
-                Button {
-                    id: confirmButton
-                    implicitWidth: 60
-                    Layout.preferredHeight: 25
-                    Layout.rightMargin: 10
-                    hoverEnabled: true
-                    visible: textField.field.text.length > 0
-
-                    topInset: 0
-                    bottomInset: 0
-                    leftPadding: 0
-                    rightPadding: 0
-                    topPadding: 0
-                    bottomPadding: 0
-
-                    contentItem: Text {
-                        text: "Confirm"
-                        font: confirmButton.font
-                        color: Style.colors.secondaryForeground
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    background: Rectangle {
-                        radius: 3
-                        color: confirmButton.down ? Style.colors.accentHover : confirmButton.hovered ? Style.colors.accentHover : Style.colors.accent
-                    }
-
-                    onClicked: {
-                        root.pat = textField.text
-                        confirmButton.visible = false
-                        textField.enabled = false
-                        if (root.pendingOperation === "fetch") {
-                            root.fetchRequested(root.index, root.pat)
-                        } else if (root.pendingOperation === "pull") {
-                            root.pullRequested(root.index, root.pat)
-                        }
-                    }
                 }
             }
         }
