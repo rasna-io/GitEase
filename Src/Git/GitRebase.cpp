@@ -1039,3 +1039,55 @@ void GitRebase::interactiveSkip()
     m_isCherryPickActive = false;
     QTimer::singleShot(0, this, &GitRebase::processNextOperation);
 }
+
+void GitRebase::interactiveAbort()
+{
+    if (!m_interactiveInProgress)
+        return;
+
+    // If we were mid‑cherry‑pick, abort it first
+    if (m_isCherryPickActive) {
+        abortCherryPick();
+    }
+
+    // Reset to the original HEAD
+    if (m_originalHeadRef) {
+        git_object* target = nullptr;
+        if (git_reference_peel(&target, m_originalHeadRef, GIT_OBJ_COMMIT) == GIT_OK) {
+            // Checkout the tree first
+            git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+            opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+            git_checkout_tree(m_currentRepo->repo, target, &opts);
+            // Then reset HEAD to the original ref
+            git_repository_set_head(m_currentRepo->repo, git_reference_name(m_originalHeadRef));
+            git_object_free(target);
+        }
+    } else {
+        if (m_originalHeadDetached) {
+            // Reset to the original detached commit
+            git_commit* target = nullptr;
+            if (git_commit_lookup(&target, m_currentRepo->repo, &m_originalHeadOid) == GIT_OK) {
+                resetToCommit(target);
+                git_commit_free(target);
+            }
+        } else if (m_originalHeadRef) {
+            // Reset to the original branch
+            git_object* target = nullptr;
+            if (git_reference_peel(&target, m_originalHeadRef, GIT_OBJ_COMMIT) == GIT_OK) {
+                resetToCommit(reinterpret_cast<git_commit*>(target));
+                git_object_free(target);
+            }
+            // Checkout the branch and update HEAD
+            git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+            opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+            if (git_reference_peel(&target, m_originalHeadRef, GIT_OBJ_COMMIT) == GIT_OK) {
+                git_checkout_tree(m_currentRepo->repo, target, &opts);
+                git_object_free(target);
+            }
+            git_repository_set_head(m_currentRepo->repo, git_reference_name(m_originalHeadRef));
+        }
+    }
+
+    cleanupInteractiveState();
+    emit rebaseAborted();
+}
