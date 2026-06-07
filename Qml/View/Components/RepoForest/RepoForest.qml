@@ -15,31 +15,39 @@ import GitEase_Style_Impl
 Rectangle {
     id: root
 
+    enum QueueState {
+        Ready,
+        Running,
+        Pause,
+        PauseRequested,
+        Stop
+    }
+
     /* Property Declarations
      * ****************************************************************************************/
-    property   RepositoryController   repositoryController
-    property   BranchController       branchController
-    property   RemoteController       remoteController
-    property   string                 rootPath
-    property   GitScanner             gitScanner
-    property   var                    reposModel:               []
-    property   var                    selectedIndexes:          []
-    property   bool                   isRunning:                false
-    property   var                    operationQueue:           []
-    property   bool                   isProcessingQueue:        false
-    property   var                    scannedRepositories:      []
-
-    property   bool                   fetchFlowActive:          false
-    property   int                    fetchFlowItemIndex:       -1
-    property   string                 fetchFlowPat:             ""
-    property   var                    fetchFlowRemotes:         []
-    property   int                    fetchFlowRemoteIndex:     0
-    property   string                 fetchFlowCurrentRemote:   ""
-
-    property   var                    operationLogs:            []
+    property   RepositoryController         repositoryController
+    property   BranchController             branchController
+    property   RemoteController             remoteController
     property   UserAuthenticationPopup      userAuthenticationPopup
+    property   string                       rootPath
+    property   GitScanner                   gitScanner
+    property   var                          reposModel:               []
+    property   var                          selectedIndexes:          []
+    property   bool                         isRunning:                false
+    property   var                          operationQueue:           []
+    property   int                          queueState:               RepoForest.QueueState.Ready
+    property   var                          scannedRepositories:      []
+
     property   string                       pat:                      ""
     property   string                       pendingOperation:         ""
+
+    property   bool                         fetchFlowActive:          false
+    property   int                          fetchFlowItemIndex:       -1
+    property   var                          fetchFlowRemotes:         []
+    property   int                          fetchFlowRemoteIndex:     0
+    property   string                       fetchFlowCurrentRemote:   ""
+
+    property   var                          operationLogs:            []
 
 
     readonly property bool allSelected:     reposModel.length > 0 && selectedIndexes.length === reposModel.length
@@ -154,18 +162,49 @@ Rectangle {
         root.operationQueue = root.operationQueue.slice()
         root.updateStatus(itemIndex, "Pending")
 
-        if (!root.isProcessingQueue) {
+        if (root.queueState === RepoForest.QueueState.Ready) {
             processNextOperation()
         }
     }
 
     function processNextOperation() {
         if (root.operationQueue.length === 0) {
-            root.isProcessingQueue = false
+            root.queueState = RepoForest.QueueState.Ready
             return
         }
 
-        root.isProcessingQueue = true
+        if (root.queueState === RepoForest.QueueState.PauseRequested) {
+            root.queueState = RepoForest.QueueState.Pause
+            return
+        }
+
+        if (root.queueState === RepoForest.QueueState.Pause) {
+            return
+        }
+
+        if (root.queueState === RepoForest.QueueState.Stop) {
+            let queue = root.operationQueue.slice()
+
+            root.logOperation("","", "Stop", "Info", "Queue Stop")
+
+            root.operationQueue = []
+            root.operationQueue = root.operationQueue.slice()
+            for (let i = 0; i < queue.length; i++) {
+                root.updateStatus(queue[i].index, "Stoped")
+            }
+
+            root.queueState = RepoForest.QueueState.Ready
+            root.fetchFlowActive = false
+            root.fetchFlowItemIndex = -1
+            root.fetchFlowRemotes = []
+            root.fetchFlowRemoteIndex = 0
+            root.fetchFlowCurrentRemote = ""
+            root._currentOperation = ""
+            root._patWaitingIndexs = []
+            return
+        }
+
+        root.queueState = RepoForest.QueueState.Running
         let item = root.operationQueue.shift()
         root.operationQueue = root.operationQueue.slice()
 
@@ -178,7 +217,22 @@ Rectangle {
         }
     }
 
-    function executeFetch(itemIndex: int, pat: string) {
+    function pauseQueue() {
+        root.queueState = RepoForest.QueueState.PauseRequested
+        root.logOperation("","", "pause", "Info", "Queue paused")
+    }
+
+    function resumeQueue() {
+        if (root.queueState === RepoForest.QueueState.Pause) {
+            root.logOperation("","", "resume", "Info", "Queue resumed")
+            root.queueState = RepoForest.QueueState.Ready
+            if (root.operationQueue.length > 0) {
+                processNextOperation()
+            }
+        }
+    }
+
+    function executeFetch(itemIndex: int) {
         root.updateStatus(itemIndex, "Fetching")
 
         let repoItem = root.reposModel[itemIndex]
@@ -577,7 +631,8 @@ Rectangle {
                 Layout.preferredWidth: 26
                 Layout.preferredHeight: 26
 
-                enabled: !root.noneSelected && !root.isProcessingQueue
+                enabled: !root.noneSelected && root.queueState === RepoForest.QueueState.Ready
+                visible: root.queueState === RepoForest.QueueState.Ready
                 hoverEnabled: true
 
                 contentItem: Text {
@@ -630,7 +685,8 @@ Rectangle {
                 Layout.preferredWidth: 26
                 Layout.preferredHeight: 26
 
-                enabled: !root.noneSelected && !root.isProcessingQueue
+                enabled: !root.noneSelected && root.queueState === RepoForest.QueueState.Ready
+                visible: root.queueState === RepoForest.QueueState.Ready
                 hoverEnabled: true
 
                 contentItem: Text {
@@ -676,6 +732,125 @@ Rectangle {
                 }
 
                 onClicked: root.pullSelectedIndexes()
+            }
+
+            ToolButton {
+                id: pauseResumeButton
+
+                property bool isQueuePaused: root.queueState === RepoForest.QueueState.Pause
+
+                Layout.preferredWidth: 26
+                Layout.preferredHeight: 26
+                visible: root.queueState === RepoForest.QueueState.Running || root.queueState === RepoForest.QueueState.Pause
+                enabled: (root.queueState === RepoForest.QueueState.Running || root.queueState === RepoForest.QueueState.Pause) && root.queueState !== RepoForest.QueueState.PauseRequested
+                hoverEnabled: true
+
+                contentItem: Text {
+                    anchors.centerIn: parent
+                    text: pauseResumeButton.isQueuePaused ? Style.icons.play : Style.icons.pause
+                    font.pixelSize: 15
+                    font.family: Style.fontTypes.font6ProSolid
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                background: Rectangle {
+                    radius: 5
+                    color: pauseResumeButton.down ? Style.colors.surfaceMuted :
+                           pauseResumeButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
+
+                ToolTip {
+                    visible: pauseResumeButton.hovered
+                    delay: 100
+                    timeout: 2000
+
+                    x: (parent.width - width) / 2
+                    y: -height - 6
+
+                    padding: 6
+
+                    contentItem: Text {
+                        text: pauseResumeButton.isQueuePaused ? "Resume" : "Pause"
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 11
+                        color: "#ffffff"
+                    }
+
+                    background: Rectangle {
+                        radius: 6
+                        color: Qt.rgba(0, 0, 0, 0.85)
+                        border.color: Qt.rgba(1, 1, 1, 0.12)
+                        border.width: 1
+                    }
+                }
+
+                onClicked: {
+                    if (pauseResumeButton.isQueuePaused) {
+                        root.resumeQueue()
+                    } else {
+                        root.pauseQueue()
+                    }
+                }
+            }
+
+            ToolButton {
+                id: stopButton
+                Layout.preferredWidth: 26
+                Layout.preferredHeight: 26
+                visible: root.queueState === RepoForest.QueueState.Running || root.queueState === RepoForest.QueueState.Pause
+                enabled: (root.queueState === RepoForest.QueueState.Running || root.queueState === RepoForest.QueueState.Pause) && root.queueState !== RepoForest.QueueState.PauseRequested
+                hoverEnabled: true
+
+                contentItem: Text {
+                    anchors.centerIn: parent
+                    text: Style.icons.stop
+                    font.pixelSize: 15
+                    font.family: Style.fontTypes.font6ProSolid
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                background: Rectangle {
+                    radius: 5
+                    color: stopButton.down ? Style.colors.surfaceMuted :
+                           stopButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                }
+
+                ToolTip {
+                    visible: stopButton.hovered
+                    delay: 100
+                    timeout: 2000
+
+                    x: (parent.width - width) / 2
+                    y: -height - 6
+
+                    padding: 6
+
+                    contentItem: Text {
+                        text: "Stop All"
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 11
+                        color: "#ffffff"
+                    }
+
+                    background: Rectangle {
+                        radius: 6
+                        color: Qt.rgba(0, 0, 0, 0.85)
+                        border.color: Qt.rgba(1, 1, 1, 0.12)
+                        border.width: 1
+                    }
+                }
+
+                onClicked: {
+                    let lastState = root.queueState
+                    root.queueState = RepoForest.QueueState.Stop
+                    if (lastState === RepoForest.QueueState.Pause) {
+                        processNextOperation()
+                    }
+                }
             }
 
             WindowsButton {
@@ -756,8 +931,8 @@ Rectangle {
                         id: queueSpinner
                         Layout.preferredWidth: 24
                         Layout.preferredHeight: 24
-                        running: root.isProcessingQueue
-                        visible: root.isProcessingQueue
+                        running: root.queueState !== RepoForest.QueueState.Ready && root.queueState !== RepoForest.QueueState.Pause
+                        visible: queueSpinner.running
                         Material.accent: Style.colors.accent
                     }
 
@@ -838,7 +1013,7 @@ Rectangle {
 
                     delegate: RepoItem {
                         isSelected: root.selectedIndexes.indexOf(index) !== -1
-                        isProcessing: root.isProcessingQueue
+                        isProcessing: root.queueState !== RepoForest.QueueState.Ready
 
                         onClicked: (i) => root.toggleSelection(i)
                         onFetchRequested: (i) => root.fetch(i)
