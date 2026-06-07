@@ -15,6 +15,12 @@
 #include <QVariantList>
 #include <git2/branch.h>
 
+#include <QDateTime>
+#include <QStringList>
+#include <QVariantMap>
+#include <QTimer>
+#include <git2/cherrypick.h>
+
 GitRebase::GitRebase(QObject* parent)
     : IGitController{parent}
 {
