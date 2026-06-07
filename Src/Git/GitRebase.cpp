@@ -898,3 +898,103 @@ void GitRebase::startInteractiveRebase(const QString& onto,
     m_currentPlanIndex = 0;
     QTimer::singleShot(0, this, &GitRebase::processNextOperation);
 }
+
+void GitRebase::processNextOperation()
+{
+    if (!m_interactiveInProgress)
+        return;
+
+    // If we've processed everything, finish the rebase
+    if (m_currentPlanIndex >= m_interactivePlan.size()) {
+        // If we started on a branch, move it to the new HEAD
+        if (m_originalHeadRef) {
+            git_oid headOid;
+            if (git_reference_name_to_id(&headOid, m_currentRepo->repo, "HEAD") == GIT_OK) {
+                git_reference* newRef = nullptr;
+                int err = git_reference_set_target(&newRef, m_originalHeadRef, &headOid, "rebase completed");
+                if (err == GIT_OK) {
+                    git_reference_free(m_originalHeadRef);
+                    m_originalHeadRef = newRef;
+                }
+            }
+        }
+        cleanupInteractiveState();
+        emit rebaseFinished(true);
+        return;
+    }
+
+    // Get the next plan entry
+    QVariantMap op = m_interactivePlan[m_currentPlanIndex].toMap();
+    QString action = op.value("action").toString().toLower();
+    QString hash   = op.value("hash").toString();
+
+    // Handle skip
+    if (action == "skip") {
+        emit rebaseOperationSkipped(hash);
+        m_currentPlanIndex++;
+        QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+        return;
+    }
+
+    if (action == "pick") {
+        emit rebaseOperationStarted(hash);
+        m_currentOpHash = hash;
+
+        git_commit* commit = lookupCommit(hash);
+        if (!commit) {
+            cleanupInteractiveState();
+            emit rebaseFinished(false);
+            return;
+        }
+
+        int cpResult = cherryPickCommit(commit);
+        if (cpResult == GIT_OK) {
+            // Check whether the cherry-pick actually left conflicts in the index
+            bool hasConflicts = false;
+
+            git_index* index = nullptr;
+            if (git_repository_index(&index, m_currentRepo->repo) == GIT_OK) {
+                hasConflicts = git_index_has_conflicts(index);
+                git_index_free(index);
+            }
+
+            if (hasConflicts) {
+                // Treat as a conflict – do not try to commit
+                git_commit_free(commit);
+                m_isCherryPickActive = true;
+                emit rebaseConflict(hash);
+                return;
+            }
+
+            // Proceed with commit
+            if (!commitCherryPick(commit)) {
+                git_commit_free(commit);
+                abortCherryPick();
+                git_repository_state_cleanup(m_currentRepo->repo);
+                cleanupInteractiveState();
+                emit rebaseFinished(false);
+                return;
+            }
+
+            git_repository_state_cleanup(m_currentRepo->repo);
+            git_commit_free(commit);
+            emit rebaseOperationCompleted(hash);
+            m_currentPlanIndex++;
+            m_isCherryPickActive = false;
+            QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+        } else if (cpResult == GIT_EMERGECONFLICT) {
+            git_commit_free(commit);
+            m_isCherryPickActive = true;
+            emit rebaseConflict(hash);
+        } else {
+            git_commit_free(commit);
+            abortCherryPick();
+            git_repository_state_cleanup(m_currentRepo->repo);
+            cleanupInteractiveState();
+            emit rebaseFinished(false);
+        }
+        return;
+    }
+    m_currentPlanIndex++;
+    QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+}
