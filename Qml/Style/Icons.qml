@@ -78,4 +78,8 @@ QtObject{
     property string resetSoft:         "\uf0e2" // undo
     property string resetMixed:        "\uf021" // rotate / reset index
     property string resetHard:         "\uf12d" // eraser
+
+    property string play:              "\uf04b" // play
+    property string pause:             "\uf28b" // pause
+    property string stop:              "\uf04d" // stop
 }
