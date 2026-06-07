@@ -38,6 +38,8 @@ Rectangle {
 
     property   var                    operationLogs:            []
     property   UserAuthenticationPopup      userAuthenticationPopup
+    property   string                       pat:                      ""
+    property   string                       pendingOperation:         ""
 
 
     readonly property bool allSelected:     reposModel.length > 0 && selectedIndexes.length === reposModel.length
@@ -85,6 +87,18 @@ Rectangle {
         return count
     }
 
+    /* Private Properties
+     * ****************************************************************************************/
+    property string _currentOperation: ""
+    property var    _patWaitingIndexs: []
+    property bool   _showUserAuthenticationPopup: false
+
+    on_ShowUserAuthenticationPopupChanged: {
+        if (root._showUserAuthenticationPopup && root.pat === "") {
+            root.userAuthenticationPopup.open()
+        }
+    }
+
     /* Signals
     * ****************************************************************************************/
     signal closeRequested()
@@ -119,10 +133,6 @@ Rectangle {
     function updateStatus(itemIndex: int, status: string) {
         root.reposModel[itemIndex].status = status
 
-        if (status === "Canceled" || status === "Done") {
-            repositoryController.closeRepository(root.reposModel[itemIndex].repo)
-        }
-
         root.reposModel = root.reposModel.slice()
     }
 
@@ -139,8 +149,8 @@ Rectangle {
         root.operationLogs = root.operationLogs.slice()
     }
 
-    function enqueueOperation(operation, itemIndex, pat) {
-        root.operationQueue.push({ operation: operation, index: itemIndex, pat: pat})
+    function enqueueOperation(operation, itemIndex) {
+        root.operationQueue.push({ operation: operation, index: itemIndex})
         root.operationQueue = root.operationQueue.slice()
         root.updateStatus(itemIndex, "Pending")
 
@@ -160,9 +170,11 @@ Rectangle {
         root.operationQueue = root.operationQueue.slice()
 
         if (item.operation === "fetch") {
-            executeFetch(item.index, item.pat)
+            root._currentOperation = item.operation
+            executeFetch(item.index)
         } else if (item.operation === "pull") {
-            executePull(item.index, item.pat)
+            root._currentOperation = item.operation
+            executePull(item.index)
         }
     }
 
@@ -198,7 +210,6 @@ Rectangle {
 
         root.fetchFlowActive        = true
         root.fetchFlowItemIndex     = itemIndex
-        root.fetchFlowPat           = pat
         root.fetchFlowRemotes       = remotesRes.data
         root.fetchFlowRemoteIndex   = 0
         root.fetchFlowCurrentRemote = ""
@@ -220,7 +231,7 @@ Rectangle {
         root.fetchFlowRemoteIndex += 1
         root.fetchFlowCurrentRemote = remote.name
 
-        root.logOperation(repoName, remote.name, "fetch", "Pending", "Starting fetch...")
+        root.logOperation(repoName, remote.name, "fetch", "Fetching", "Starting fetch...")
 
         let remoteUrlRes = scanRemoteController.getRemoteUrl(remote.name)
         if(!remoteUrlRes.success) {
@@ -231,18 +242,24 @@ Rectangle {
 
         let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
 
-        if (protocol !== RepositoryController.GitProtocol.SSH && root.fetchFlowPat === "") {
-            root.reposModel[root.fetchFlowItemIndex].pendingOperation = "fetch"
-            root.reposModel = root.reposModel.slice()
-            root.logOperation(repoName, remote.name, "fetch", "Canceled", "PAT required for HTTPS")
-            root.finishFetchFlow("PAT waiting")
-            return
+        if (protocol !== RepositoryController.GitProtocol.SSH) {
+            if (root.pat === "") {
+                root._patWaitingIndexs.push(root.fetchFlowItemIndex)
+
+                root._showUserAuthenticationPopup = true
+                root.finishFetchFlow("PAT waiting")
+                return
+            } else if (root.pat === "skip") {
+                root.logOperation(repoName, remote.name, "fetch", "Canceled", "HTTPS Skipped")
+                root.finishFetchFlow("Skipped")
+                return
+            }
         }
 
         if (protocol === RepositoryController.GitProtocol.SSH) {
             scanRemoteController.fetch(remote.name)
         } else {
-            scanRemoteController.fetchWithToken(remote.name, root.fetchFlowPat)
+            scanRemoteController.fetchWithToken(remote.name, root.pat)
         }
     }
 
@@ -259,7 +276,6 @@ Rectangle {
 
         root.fetchFlowActive        = false
         root.fetchFlowItemIndex     = -1
-        root.fetchFlowPat           = ""
         root.fetchFlowRemotes       = []
         root.fetchFlowRemoteIndex   = 0
         root.fetchFlowCurrentRemote = ""
@@ -363,23 +379,23 @@ Rectangle {
         })
     }
 
-    function fetch(itemIndex: int, pat: string) {
-        enqueueOperation("fetch", itemIndex, pat)
+    function fetch(itemIndex: int) {
+        enqueueOperation("fetch", itemIndex)
     }
 
-    function pull(itemIndex: int, pat: string) {
-        enqueueOperation("pull", itemIndex, pat)
+    function pull(itemIndex: int) {
+        enqueueOperation("pull", itemIndex)
     }
 
     function fetchSelectedIndexes() {
         root.selectedIndexes.forEach(index => {
-            root.fetch(index, "")
+            root.fetch(index)
         })
     }
 
     function pullSelectedIndexes() {
         root.selectedIndexes.forEach(index => {
-            root.pull(index, "")
+            root.pull(index)
         })
     }
 
@@ -472,6 +488,41 @@ Rectangle {
                 root.reposModel = root.reposModel.slice()
                 root.isRunning = false
             }
+        }
+    }
+
+    Connections {
+        target: root.userAuthenticationPopup
+
+        function onPasswordConfirm(password){
+            root.pat = password
+
+            root._patWaitingIndexs.forEach(index => {
+                if (root._currentOperation === "fetch") {
+                    root.fetch(index)
+                } else if (root._currentOperation === "pull"){
+                    root.pull(index)
+                }
+            })
+
+            root._patWaitingIndexs = []
+        }
+
+        function onRejected() {
+            root.pat = "skip"
+
+            root._patWaitingIndexs.forEach(index => {
+                root.updateStatus(index, "Skipped")
+                let repoName = root.reposModel[index].name || ""
+                if (repoName !== "")
+                    root.logOperation(repoName, "", "fetch", "Canceled", "HTTPS Skipped")
+            })
+
+            root._patWaitingIndexs = []
+        }
+
+        function onClosed() {
+            root._showUserAuthenticationPopup = false
         }
     }
 
@@ -790,8 +841,8 @@ Rectangle {
                         isProcessing: root.isProcessingQueue
 
                         onClicked: (i) => root.toggleSelection(i)
-                        onFetchRequested: (i, pat) => root.fetch(i, pat)
-                        onPullRequested: (i, pat) => root.pull(i, pat)
+                        onFetchRequested: (i) => root.fetch(i)
+                        onPullRequested: (i) => root.pull(i)
                     }
                 }
             }
