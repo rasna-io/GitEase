@@ -16,6 +16,8 @@ DetachablePanel {
      * ****************************************************************************************/
     property var diffData: []   // used when chunkMode = false
     property var chunkData: []  // used when chunkMode = true
+    property var originalFileBuffer: []
+    property var editedFileBuffer: []
 
     /* Chunking configuration */
     property bool chunkMode     : false
@@ -25,12 +27,20 @@ DetachablePanel {
     property bool readOnly: false
     property var  textColorizer: null   // JS function (text) => richHtml, set by host
     property int currentIndex: -1
+    property bool fileIsEdited: false
+    property string selectedFile: ""
+    property bool checkBoxVisible: false
 
     // Properties used for selection
     property bool selectEnabled: true // used to disable mouse area so that it does not block editing file
     property int selectionStart: -1
     property int selectionEnd: -1
-    property int selectedSide: Enums.DiffViewSelectionSide.None
+    enum DiffViewSelectionSide {
+        None,
+        Left,
+        Right
+    }
+    property int selectedSide: DiffView.DiffViewSelectionSide.Right
     property bool dragging: false
 
     property alias scrollPosition: diffListView.contentY
@@ -38,12 +48,17 @@ DetachablePanel {
     /* Object Properties
      * ****************************************************************************************/
     title: qsTr("Diff View")
+    fileName: root.selectedFile
+    hasCheckBox: root.checkBoxVisible
+    checkBoxIsChecked: root.chunkMode
 
     /* Signals
      * ****************************************************************************************/
-    signal requestStage(int start, int end, int type, var rows)
+    signal requestStage(int start, int end, int type)
     signal requestRevert(int start, int end, int type)
     signal requestStash(int start, int end, int type)
+    signal fileEdited(bool isEdited)
+    signal chunkModeUpdated(bool isChunkMode)
 
     /* Children
      * ****************************************************************************************/
@@ -79,8 +94,8 @@ DetachablePanel {
             updateMaxContentWidth(right);
         }
 
-        selectionStart = -1
-        selectionEnd = -1
+        root.fileIsEdited = false
+        root.clearSelection()
     }
 
     onChunkDataChanged: {
@@ -89,8 +104,52 @@ DetachablePanel {
 
         buildChunkModel()
 
-        selectionStart = -1
-        selectionEnd = -1
+        root.fileIsEdited = false
+        root.clearSelection()
+    }
+
+    onChunkModeChanged: {
+        if (!chunkMode)
+        {
+            fileModel.clear()
+
+            for(var i = 0; i < diffData.length; i++) {
+                var diff = diffData[i];
+
+                var left = diff.content;
+                var right = (diff.type === GitDiff.Modified) ? diff.newContent : diff.content;
+
+                // Visual "Gaps"
+                if (diff.type === GitDiff.Added)
+                    left = "";
+                if (diff.type === GitDiff.Deleted)
+                    right = "";
+
+                appendRow(fileModel, diff.type, left, right, diff.oldLine, diff.newLine);
+
+                updateMaxContentWidth(left);
+                updateMaxContentWidth(right);
+            }
+        }
+        else {
+            buildChunkModel()
+        }
+
+        root.fileIsEdited = false
+        root.clearSelection()
+    }
+
+    onFileIsEditedChanged: {
+        if(root.fileIsEdited)
+        {
+            if(!root.selectedFile.includes("●")) root.selectedFile += " ●"
+        } else {
+            if(root.selectedFile.slice(-1) === "●") root.selectedFile = root.selectedFile.slice(0, -2);
+        }
+    }
+
+    onCheckChanged: (checked) => {
+        root.chunkModeUpdated(checked)
     }
 
     TextMetrics {
@@ -142,16 +201,19 @@ DetachablePanel {
                 z: 1
                 focus: true
                 Keys.enabled: true
-                enabled: root.selectEnabled
-                visible: root.selectEnabled
+                enabled: root.selectEnabled || root.readOnly || root.chunkMode
+                visible: root.selectEnabled || root.readOnly || root.chunkMode
 
                 onPressed: (mouse) => {
                    diffListView.interactive = false // Disable flicking during selection
-                   var item = diffListView.itemAt(mouse.x, mouse.y + diffListView.contentY)
                    var idx = diffListView.indexAt(mouse.x, mouse.y + diffListView.contentY)
                    var row = diffListView.model.get(idx)
 
-                   if(idx < 0) return
+                   if (idx < 0) {
+                       root.clearSelection()
+                       return
+                   }
+
                    if(row.rowType === "hidden")
                        return
 
@@ -167,7 +229,7 @@ DetachablePanel {
                    }
 
                     // Checks which side of diffview is selected
-                    selectedSide = mouse.x < selectMsa.width / 2 ? Enums.DiffViewSelectionSide.Left : Enums.DiffViewSelectionSide.Right
+                    root.selectedSide = mouse.x < selectMsa.width / 2 ? DiffView.DiffViewSelectionSide.Left : DiffView.DiffViewSelectionSide.Right
                 }
 
                 onPositionChanged: (mouse) => {
@@ -216,25 +278,7 @@ DetachablePanel {
                     if (event.key === Qt.Key_A &&
                         (event.modifiers & Qt.ControlModifier))
                     {
-                        var first = -1
-                        var last = -1
-
-                        for (var i = 0; i < diffListView.model.count; ++i) {
-                            var row = diffListView.model.get(i)
-
-                            if (row.rowType === "hidden")
-                                continue
-
-                            if (first === -1)
-                                first = i
-
-                            last = i
-                        }
-
-                        if (first !== -1) {
-                            root.selectionStart = first
-                            root.selectionEnd = last
-                        }
+                        selectAll()
 
                         event.accepted = true
                         return
@@ -243,30 +287,14 @@ DetachablePanel {
                     if (event.key === Qt.Key_C &&
                         (event.modifiers & Qt.ControlModifier))
                     {
-                        var min = Math.min(root.selectionStart, root.selectionEnd)
-                        var max = Math.max(root.selectionStart, root.selectionEnd)
+                        copyRowsText()
 
-                        var copied = ""
+                        event.accepted = true
+                        return
+                    }
 
-                        for (var i = min; i <= max; i++) {
-                            var row = diffListView.model.get(i)
-
-                            if (!row || row.rowType === "hidden")
-                                continue
-
-                            var text = ""
-                            if(root.selectedSide === Enums.DiffViewSelectionSide.Left)
-                                text += row.leftText
-                            else if(root.selectedSide === Enums.DiffViewSelectionSide.Right)
-                                text += row.rightText
-
-                            copied += text + "\n"
-                        }
-
-                        clipboardHelper.text = copied
-                        clipboardHelper.selectAll()
-                        clipboardHelper.copy()
-
+                    if (event.key === Qt.Key_Escape) {
+                        clearSelection()
                         event.accepted = true
                         return
                     }
@@ -300,7 +328,7 @@ DetachablePanel {
                     visible: model.rowType !== "hidden"
                     horizontalOffset: diffListView.horizontalScrollOffset
                     textColorizer: root.textColorizer
-                    readOnly: root.readOnly
+                    readOnly: root.readOnly || root.chunkMode
                     diffModel: diffListView.model
                     diffType: (model.diffType !== undefined) ? model.diffType : GitDiff.Context
                     leftContent:  model.leftText  || ""
@@ -314,11 +342,11 @@ DetachablePanel {
                     hasAction: checkHasAction(diffListView.model, index, diffType)
 
                     onRequestTextChange: (newText) => root.changeText(index, newText)
-                    onRequestSplit:  (pos, txt) => root.splitLine(index, pos, txt)
+                    onRequestSplit: (pos, txt) => root.splitLine(index, pos, txt)
                     onRequestMergeUp: root.mergeLineUp(index)
                     onRequestFocusNext: diffListView.currentIndex = index + 1
                     onRequestFocusPrev: diffListView.currentIndex = index - 1
-                    onRequestStage: (start, end, type) => root.requestStage(start, end, type, getFileRows(diffListView.model))
+                    onRequestStage: (start, end, type) => root.requestStage(start, end, type)
                     onRequestRevert: (start, end, type) => root.requestRevert(start, end, type)
                     onRequestStash: (start, end, type) => root.requestStash(start, end, type)
                 }
@@ -416,9 +444,6 @@ DetachablePanel {
         let modified = row.leftText !== row.rightText
 
         model.setProperty(index, "diffType", modified ? GitDiff.Modified : GitDiff.Context)
-
-        if (chunkMode)
-            model.setProperty(index, "rowType", modified ? "diff" : "unchanged")
     }
 
     function checkHasAction(model, index, type) {
@@ -434,13 +459,15 @@ DetachablePanel {
         if (!prevItem)
             return false;
 
-        return prevItem.rowType !== "diff";
+        return prevItem.diffType === GitDiff.Context;
     }
 
     // Called when user interacts with the textEdit
-    function changeText(index, newText)
+    function changeText(index, lineNumber, newText)
     {
-        let model = chunkMode ? chunkModel : fileModel
+        if(chunkMode)
+            return
+        let model = fileModel
         let row = model.get(index)
         if (!row)
             return
@@ -449,22 +476,20 @@ DetachablePanel {
         model.setProperty(index, "rightText", newText)
 
         // Dont update the row state to modified if it is an added line
-        if (row.diffType === GitDiff.Added)
-            return
-
-        updateRowState(model, index)
-
-        for (var i = 0; i < model.count; i++) {
-            row = model.get(i);
-            if (true) {
-                model.setProperty(i, "hasAction", checkHasAction(model, i, row.diffType))
-            }
+        if (row.diffType !== GitDiff.Added)
+        {
+            updateRowState(model, index)
         }
+
+        root.fileIsEdited = isFileEdited()
+        root.fileEdited(root.fileIsEdited)
     }
 
     // Called by Delegate when user presses Enter
-    function splitLine(index, cursorPosition, textAfterCursor) {
-        let model = chunkMode ? chunkModel : fileModel
+    function splitLine(index, lineNumber, cursorPosition, textAfterCursor) {
+        if(chunkMode)
+            return
+        let model = fileModel
 
         // Update the current row to contain only text BEFORE cursor
         var currentRow = model.get(index)
@@ -485,24 +510,13 @@ DetachablePanel {
             updateRowState(model, index + 1)
         }
         else {
-            if(chunkModel) {
-                model.insert(index + 1, {
-                    rowType     : "diff",
-                    diffType    : GitDiff.Added,
-                    leftText    : "",
-                    rightText   : textAfterCursor,
-                    oldLineNum  : -1,
-                    newLineNum  : newLineNum
-                })
-            } else {
-                model.insert(index + 1, {
-                     "diffType": GitDiff.Added,
-                     "leftText": "",
-                     "rightText": textAfterCursor,
-                     "oldLineNum": -1,
-                     "newLineNum": newLineNum
-                })
-            }
+            model.insert(index + 1, {
+                 "diffType": GitDiff.Added,
+                 "leftText": "",
+                 "rightText": textAfterCursor,
+                 "oldLineNum": -1,
+                 "newLineNum": newLineNum
+            })
         }
 
         // Move focus to the new line (handled in Delegate via onAdded)
@@ -514,12 +528,17 @@ DetachablePanel {
                 model.setProperty(i, "newLineNum", row.newLineNum + 1);
             }
         }
+
+        root.fileIsEdited = isFileEdited()
+        root.fileEdited(root.fileIsEdited)
     }
 
     // Called by Delegate when user presses Backspace at start
-    function mergeLineUp(index)
+    function mergeLineUp(index, lineNumber)
     {
-        let model = chunkMode ? chunkModel : fileModel
+        if(chunkMode)
+            return
+        let model = fileModel
 
         if (index === 0)
             return
@@ -567,6 +586,9 @@ DetachablePanel {
 
         // Move focus up
         root.currentIndex = index - 1
+
+        root.fileIsEdited = isFileEdited()
+        root.fileEdited(root.fileIsEdited)
     }
 
     function updateMaxContentWidth(newText) {
@@ -774,33 +796,84 @@ DetachablePanel {
         }
     }
 
+    function selectAll() {
+        var first = -1
+        var last = -1
+
+        for (var i = 0; i < diffListView.model.count; ++i) {
+            var row = diffListView.model.get(i)
+
+            if (row.rowType === "hidden")
+                continue
+
+            if (first === -1)
+                first = i
+
+            last = i
+        }
+
+        if (first !== -1) {
+            root.selectionStart = first
+            root.selectionEnd = last
+        }
+    }
+
+    function clearSelection() {
+        root.selectionStart = -1
+        root.selectionEnd = -1
+    }
+
+    function copyRowsText() {
+        var min = Math.min(root.selectionStart, root.selectionEnd)
+        var max = Math.max(root.selectionStart, root.selectionEnd)
+
+        var copied = ""
+
+        for (var i = min; i <= max; i++) {
+            var row = diffListView.model.get(i)
+
+            if (!row || row.rowType === "hidden")
+                continue
+
+            var text = ""
+            if(root.selectedSide === DiffView.DiffViewSelectionSide.Left)
+                text += row.leftText
+            else if(root.selectedSide === DiffView.DiffViewSelectionSide.Right)
+                text += row.rightText
+
+            copied += text + "\n"
+        }
+
+        clipboardHelper.text = copied
+        clipboardHelper.selectAll()
+        clipboardHelper.copy()
+    }
+
     // Returns the lines of the rightTextEdit currentText used for saving the file
-    function getFileRows(model) {
-        let rows = []
 
-        if (chunkMode) {
-            let i = 0
 
-            // keep expanding until no hidden rows exist
-            while (i < model.count) {
-                let row = model.get(i)
+    function isFileEdited() {
+        if(chunkMode)
+            return false
 
-                if (row && row.rowType === "hidden") {
-                    expandHiddenBlock(i, row.direction, Infinity)
-                    i = 0 // restart scan because model changed
-                    continue
-                }
+        root.editedFileBuffer = []
 
-                i++
+        for (let i = 0; i < fileModel.count; i++) {
+            let row = fileModel.get(i)
+            if (row)
+                root.editedFileBuffer.push(row.rightText || "")
+        }
+
+        if (root.editedFileBuffer.length !== root.originalFileBuffer.length) {
+            return true
+        }
+
+        for (let i = 0; i < root.editedFileBuffer.length; i++) {
+            if (root.editedFileBuffer[i] !== root.originalFileBuffer[i]) {
+                return true
             }
         }
 
-        for (let i = 0; i < model.count; i++) {
-            let row = model.get(i)
-            if (row)
-                rows.push(row.rightText || "")
-        }
-
-        return rows
+        return false
     }
 }

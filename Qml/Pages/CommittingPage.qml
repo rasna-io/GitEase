@@ -47,6 +47,8 @@ Item {
     property string                  authPurpose:            "push"  // "push" | "fetch"
     property var                     pendingFetchRemoteNames: []    // HTTP/HTTPS remotes to fetch with token
     property var                     fetchBatchResults:      []
+    property bool                    isChunkMode: true
+    property bool                    currentFileEdited: false
 
     property string                  selectedFilePath:        ""
 
@@ -496,10 +498,29 @@ Item {
                     statusController: root.statusController
                     notificationController: root.notificationController
                     stashController: root.stashController
+                    hasUnsavedChanges: root.currentFileEdited && !root.isChunkMode
+                    currentFile: root.selectedFilePath
+                    fileBuffer: diffView.editedFileBuffer
+                    showSaveDialog: root.showSaveDialog
 
                     onFileSelected: function(filePath, isStaged) {
-                        root.selectedFilePath = filePath
-                        root.updateDiff(isStaged)
+                        if (filePath === root.selectedFilePath)
+                        {
+                            root.selectedFilePath = filePath
+                            root.updateDiff(isStaged)
+                            return
+                        }
+
+                        root.showSaveDialog(
+                                    () => {
+                                        root.selectedFilePath = filePath
+                                        root.updateDiff(isStaged)
+                                    }
+                        )
+                    }
+
+                    onChangesSaved: {
+                        root.currentFileEdited = false
                     }
                 }
             }
@@ -510,6 +531,7 @@ Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
             chunkMode: true
+            hasCheckBox: true
             selectEnabled: false
             contextLines: 0
             expandLines: 10
@@ -517,30 +539,35 @@ Item {
             currentRepositoryName: root.appModel.currentRepository.name || ""
 
             onRequestStage: function (start, end, type, rows) {
-                let saveRes = root.statusController.saveFile(root.selectedFilePath, rows)
-                if(saveRes.success)
-                {
-                    let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
-                    if (res.success) {
-                        root.notificationController.success("Selected lines staged", "Stage", 2000)
-                    } else {
-                        root.notificationController.error(res.errorMessage || "Failed to stage selected lines", "Stage Error", 5000)
-                    }
-                    changesFileLists.updateStatus()
-                }
-                else {
-                    root.notificationController.error(res.errorMessage, "File Save Error", 5000)
-                }
+                root.showSaveDialog(
+                            () => {
+                                let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
+                                if (res.success) {
+                                    root.notificationController.success("Selected lines staged", "Stage", 2000)
+                                } else {
+                                    root.notificationController.error(res.errorMessage || "Failed to stage selected lines", "Stage Error", 5000)
+                                }
+                                changesFileLists.updateStatus()
+                            }
+                )
             }
 
             onRequestRevert: function (start, end, type) {
-                let res = root.statusController.revertSelectedLines(root.selectedFilePath, start, end, type)
-                if (res.success) {
-                    root.notificationController.success("Selected lines reverted", "Revert", 2000)
-                } else {
-                    root.notificationController.error(res.errorMessage || "Failed to revert selected lines", "Revert Error", 5000)
-                }
-                changesFileLists.updateStatus()
+                root.showSaveDialog(
+                            () => {
+                                let res = root.statusController.revertSelectedLines(root.selectedFilePath, start, end, type)
+                                if (res.success) {
+                                    root.notificationController.success("Selected lines reverted", "Revert", 2000)
+                                } else {
+                                    root.notificationController.error(res.errorMessage || "Failed to revert selected lines", "Revert Error", 5000)
+                                }
+                                changesFileLists.updateStatus()
+                            }
+                )
+            }
+
+            onFileEdited: function (isEdited) {
+                root.currentFileEdited = isEdited
             }
 
             onRequestStash: function (start, end, type) {
@@ -564,6 +591,29 @@ Item {
             onSourceChanged: {
                 if (source === "") diffView.textColorizer = null
             }
+        }
+    }
+
+    Component {
+        id: unsavedChnagesDialogComp
+        UnsavedChangesDialog { }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+S"
+        context: Qt.ApplicationShortcut
+
+        onActivated: {
+            let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
+
+            if (res.success) {
+                root.currentFileEdited = false
+                root.notificationController.success("File saved successfully", "Save", 3000)
+            } else {
+                root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
+            }
+
+            changesFileLists.updateStatus()
         }
     }
 
@@ -736,18 +786,65 @@ Item {
 
         let oldY = diffView.scrollPosition
 
-        if (diffView.chunkMode) {
-            let res = root.statusController.getChunkedDiffView(root.selectedFilePath, isStaged)
-            if (res.success)
-                diffView.chunkData = res.data.chunks
-        } else {
-            let res = root.statusController.getDiffView(root.selectedFilePath, isStaged)
-            if (res.success)
-                diffView.diffData = res.data.lines
+        let res = root.statusController.getChunkedDiffView(root.selectedFilePath, isStaged)
+        if (res.success)
+            diffView.chunkData = res.data.chunks
+        res = root.statusController.getDiffView(root.selectedFilePath, isStaged)
+        if (res.success)
+            diffView.diffData = res.data.lines
+
+        let fileRows = []
+        for(var i =0;i<res.data.lines.length;i++)
+        {
+            let line = res.data.lines[i]
+            let right   = (line.type === GitDiff.Deleted)   ? "" :
+                          (line.type === GitDiff.Modified   ? line.newContent : line.content)
+            fileRows.push(right)
         }
+
+        diffView.selectedFile = root.selectedFilePath
+        diffView.originalFileBuffer = fileRows.slice()
+        diffView.editedFileBuffer = fileRows.slice()
 
         diffView.readOnly = isStaged
 
         Qt.callLater(() => { diffView.scrollPosition = oldY })
+    }
+
+    function showSaveDialog(nextAction) {
+        if (!root.currentFileEdited) {
+            nextAction()
+            return
+        }
+
+        let d = unsavedChnagesDialogComp.createObject(root)
+
+        d.title = "Unsaved Changes"
+        d.message = "You have unsaved changes in: " + root.selectedFilePath
+
+        d.saved.connect(() => {
+            let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
+
+            if (res.success) {
+                root.currentFileEdited = false
+                root.notificationController.success("File saved successfully", "Save", 3000)
+            } else {
+                root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
+            }
+
+            d.destroy()
+            nextAction()
+        })
+
+        d.aborted.connect(() => {
+            d.destroy()
+            nextAction()
+        })
+
+        d.cancelled.connect(() => {
+            d.destroy()
+        })
+
+        d.open()
     }
 }

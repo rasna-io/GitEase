@@ -31,7 +31,12 @@ Item {
 
     property int selectionStart: -1
     property int selectionEnd: -1
-    property int selectedSide: SelectionSide.None
+    enum DiffViewSelectionSide {
+        None,
+        Left,
+        Right
+    }
+    property int selectedSide: SideBySideDiff.DiffViewSelectionSide.None
 
     property real horizontalOffset: 0
 
@@ -123,7 +128,7 @@ Item {
                         property bool inSelection:
                             (index >= Math.min(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
                             (index <= Math.max(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
-                            selectedSide === Enums.DiffViewSelectionSide.Left
+                            selectedSide === SideBySideDiff.DiffViewSelectionSide.Left
 
                         color: inSelection ? Style.colors.accent : "transparent"
                         opacity: 0.8
@@ -295,7 +300,7 @@ Item {
                         property bool inSelection:
                             (index >= Math.min(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
                             (index <= Math.max(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
-                            selectedSide === Enums.DiffViewSelectionSide.Right
+                            selectedSide === SideBySideDiff.DiffViewSelectionSide.Right
 
                         color: inSelection ? Style.colors.accent : "transparent"
                         opacity: 0.8
@@ -375,7 +380,7 @@ Item {
 
         for (let i = index; i < model.count; i++) {
             let item = model.get(i);
-            if (!item || item.type === GitDiff.Context ||
+            if (!item || item.diffType === GitDiff.Context ||
                 (item.rowType && item.rowType !== "diff")) break;
             endIdx = i;
         }
@@ -388,12 +393,12 @@ Item {
         let gitStart = firstItem.oldLineNum > 0 ? firstItem.oldLineNum : firstItem.newLineNum;
         let gitEnd = Math.max(lastItem.oldLineNum, lastItem.newLineNum);
 
-        if (firstItem.type === GitDiff.Deleted) {
+        if (firstItem.diffType === GitDiff.Deleted) {
             gitStart = firstItem.oldLineNum;
-        } else if (firstItem.type === GitDiff.Added) {
+        } else if (firstItem.diffType === GitDiff.Added) {
             gitStart = firstItem.newLineNum;
         }
 
-        return { start: gitStart, end: gitEnd, type: firstItem.type };
+        return { start: gitStart, end: gitEnd, type: firstItem.diffType };
     }
 }

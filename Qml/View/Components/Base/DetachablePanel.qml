@@ -16,13 +16,16 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string          currentRepositoryName
-    property bool            detached: false
-    property string          title: ""
-    property int             headerHeight: 32
-    property int             minWindowWidth: 420
-    property int             minWindowHeight: 320
-    property bool            showInlineHeader: true
+    property string     currentRepositoryName
+    property bool       detached: false
+    property string     title: ""
+    property int        headerHeight: 32
+    property int        minWindowWidth: 420
+    property int        minWindowHeight: 320
+    property bool       showInlineHeader: true
+    property string     fileName: ""
+    property bool       hasCheckBox: false
+    property bool       checkBoxIsChecked: true
 
     // Default content slot for panel contents
     default property alias content: contentRoot.data
@@ -31,6 +34,10 @@ Item {
      * ****************************************************************************************/
     property int lastWidth: 600
     property int lastHeight: 400
+
+    /* Signals
+     * ****************************************************************************************/
+    signal checkChanged(bool checked)
 
     /* Functions
      * ****************************************************************************************/
@@ -81,8 +88,8 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.minimumHeight: 20
-            Layout.maximumHeight: 20
+            Layout.minimumHeight: 35
+            Layout.maximumHeight: 35
             visible: root.showInlineHeader && !root.detached
             color: Style.colors.secondaryBackground
 
@@ -93,13 +100,44 @@ Item {
                 spacing: 8
 
                 Label {
-                    Layout.fillWidth: true
                     text: root.title
                     color: Style.colors.foreground
                     font.family: Style.fontTypes.roboto
                     font.weight: 500
                     font.pixelSize: 10
                     elide: Text.ElideRight
+                }
+
+                CheckBox {
+                    id: checkBox
+                    text: "Chunk View"
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: 12
+                    Layout.preferredHeight: 35
+                    Material.accent: Style.colors.accent
+                    Material.foreground: Style.colors.foreground
+                    checked: true
+                    visible: root.hasCheckBox
+
+                    onClicked: {
+                        root.checkChanged(checked)
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Label {
+                    text: root.fileName
+                    color: Style.colors.foreground
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: 12
+                    visible: root.fileName !== ""
+                }
+
+                Item {
+                    Layout.fillWidth: true
                 }
 
                 ToolButton {

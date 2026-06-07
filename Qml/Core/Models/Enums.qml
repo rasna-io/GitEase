@@ -9,7 +9,7 @@ import QtQuick
 QtObject {
     /* Enumerations
      * ****************************************************************************************/
-    
+
     enum WelcomePages {
         WelcomeBanner,
         SetupProfle,
@@ -20,11 +20,5 @@ QtObject {
         Recents,
         Open,
         Clone
-    }
-
-    enum DiffViewSelectionSide {
-        None,
-        Left,
-        Right
     }
 }

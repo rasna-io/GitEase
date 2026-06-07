@@ -20,15 +20,24 @@ Item {
 
     property var unstagedModel: []
     property var stagedModel: []
+    property bool hasUnsavedChanges: false
+    property string currentFile: ""
+    property var fileBuffer: []
+    property var showSaveDialog
 
     /* Signals
      * ****************************************************************************************/
     signal fileSelected(string filePath, bool isStaged)
+    signal changesSaved()
 
     /* Object Properties
      * ****************************************************************************************/
     implicitWidth: 1
     implicitHeight: 1
+
+    onCurrentFileChanged: {
+        //unstagedSection.selectedFilePath = root.currentFile
+    }
 
     Component.onCompleted: Qt.callLater(function() {root.updateStatus()})
 
@@ -48,11 +57,15 @@ Item {
             model: root.stagedModel
 
             onUnstageFileRequested: function(filePath) {
-                let res = statusController.unstageFile(filePath)
-                if (!res.success) {
-                    root.notificationController.error(res.errorMessage || "Failed to unstage file", "Unstage Error", 5000)
-                }
-                root.updateStatus()
+                root.showSaveDialog(
+                            () => {
+                                let res = statusController.unstageFile(filePath)
+                                if (!res.success) {
+                                    root.notificationController.error(res.errorMessage || "Failed to unstage file", "Unstage Error", 5000)
+                                }
+                                root.updateStatus()
+                            }
+                )
             }
 
             onOpenFileRequested: function(filePath) {
@@ -60,32 +73,40 @@ Item {
             }
 
             onUnstageAllRequested: function() {
-                let failedFiles = []
-                root.stagedModel.forEach((file)=>{
-                    let res = statusController.unstageFile(file.path)
-                    if (!res.success) {
-                        failedFiles.push(file.path)
-                    }
-                })
-                if (failedFiles.length > 0) {
-                    root.notificationController.error("Failed to unstage some files", "Unstage Error", 5000)
-                } else if (root.unstagedModel.length > 0) {
-                    root.notificationController.success("All files unstaged successfully", "Unstage All", 3000)
-                }
-                root.updateStatus()
+                root.showSaveDialog(
+                            () => {
+                                let failedFiles = []
+                                root.stagedModel.forEach((file)=>{
+                                    let res = statusController.unstageFile(file.path)
+                                    if (!res.success) {
+                                        failedFiles.push(file.path)
+                                    }
+                                })
+                                if (failedFiles.length > 0) {
+                                    root.notificationController.error("Failed to unstage some files", "Unstage Error", 5000)
+                                } else if (root.unstagedModel.length > 0) {
+                                    root.notificationController.success("All files unstaged successfully", "Unstage All", 3000)
+                                }
+                                root.updateStatus()
+                            }
+                )
             }
 
             onStashAllRequested: function() {
-                let message = "Stash staged changes";
-                let result = stashController.save(message, true);
+                root.showSaveDialog(
+                            () => {
+                                let message = "Stash staged changes";
+                                let result = stashController.save(message, true);
 
-                if (result.success) {
-                    root.notificationController.success("Changes stashed successfully", "Stash", 3000)
-                    root.updateStatus();
-                } else {
-                    root.notificationController.error(result.errorMessage || "Stash failed", "Stash Error", 5000)
-                    errorMessageLabel.text = result.errorMessage ?? "Stash failed";
-                }
+                                if (result.success) {
+                                    root.notificationController.success("Changes stashed successfully", "Stash", 3000)
+                                    root.updateStatus();
+                                } else {
+                                    root.notificationController.error(result.errorMessage || "Stash failed", "Stash Error", 5000)
+                                    errorMessageLabel.text = result.errorMessage ?? "Stash failed";
+                                }
+                            }
+                )
             }
 
             onFileSelected: function(filePath) {
@@ -104,11 +125,15 @@ Item {
             model: root.unstagedModel
 
             onStageFileRequested: function(filePath) {
-                let res = statusController.stageFile(filePath)
-                if (!res.success) {
-                    root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
-                }
-                root.updateStatus()
+                root.showSaveDialog(
+                            () => {
+                                let res = statusController.stageFile(filePath)
+                                if (!res.success) {
+                                    root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
+                                }
+                                root.updateStatus()
+                            }
+                )
             }
 
             onStashFileRequested: function(filePath) {
@@ -123,27 +148,50 @@ Item {
             }
 
             onDiscardFileRequested: function(filePath) {
-                let res = statusController.revertFile(filePath)
-                if (res.success) {
-                    root.notificationController.success("File changes discarded successfully", "Discard", 3000)
-                } else {
-                    root.notificationController.error(res.errorMessage || "Failed to discard file changes", "Discard Error", 5000)
+                function discardFile() {
+                    let res = statusController.revertFile(filePath)
+                    if (res.success) {
+                        root.notificationController.success("File changes discarded successfully", "Discard", 3000)
+                    } else {
+                        root.notificationController.error(res.errorMessage || "Failed to discard file changes", "Discard Error", 5000)
+                    }
+                    root.updateStatus()
                 }
-                root.updateStatus()
+
+                if(root.currentFile === filePath)
+                {
+                    root.changesSaved()
+                    discardFile()
+                    return
+                }
+
+                root.showSaveDialog(
+                            () => {
+                                discardFile()
+                            }
+                )
             }
 
             onOpenFileRequested: function(filePath) {
-                root.fileSelected(filePath, false)
+                root.showSaveDialog(
+                            () => {
+                                root.fileSelected(filePath, false)
+                            }
+                )
             }
 
             onStageAllRequested: function() {
-                let res = statusController.stageAll()
-                if (res.success) {
-                    root.notificationController.success("All files staged successfully", "Stage All", 3000)
-                } else {
-                    root.notificationController.error(res.errorMessage || "Failed to stage all files", "Stage Error", 5000)
-                }
-                root.updateStatus()
+                root.showSaveDialog(
+                            () => {
+                                let res = statusController.stageAll()
+                                if (res.success) {
+                                    root.notificationController.success("All files staged successfully", "Stage All", 3000)
+                                } else {
+                                    root.notificationController.error(res.errorMessage || "Failed to stage all files", "Stage Error", 5000)
+                                }
+                                root.updateStatus()
+                            }
+                )
             }
 
             onDiscardAllRequested: function() {
@@ -157,16 +205,20 @@ Item {
             }
 
             onStashAllRequested: function() {
-                let message = "Stash unstaged changes"
-                let result = stashController.save(message, false);
+                root.showSaveDialog(
+                            () => {
+                                let message = "Stash unstaged changes"
+                                let result = stashController.save(message, false);
 
-                if (result.success) {
-                    root.notificationController.success("Changes stashed successfully", "Stash", 3000)
-                    root.updateStatus();
-                } else {
-                    root.notificationController.error(result.errorMessage || "Stash failed", "Stash Error", 5000)
-                    errorMessageLabel.text = result.errorMessage ?? "Stash failed";
-                }
+                                if (result.success) {
+                                    root.notificationController.success("Changes stashed successfully", "Stash", 3000)
+                                    root.updateStatus();
+                                } else {
+                                    root.notificationController.error(result.errorMessage || "Stash failed", "Stash Error", 5000)
+                                    errorMessageLabel.text = result.errorMessage ?? "Stash failed";
+                                }
+                            }
+                )
             }
 
             onFileSelected: function(filePath) {
