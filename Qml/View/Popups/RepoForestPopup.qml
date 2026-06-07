@@ -48,10 +48,13 @@ IPopup {
     /* Functions
      * ****************************************************************************************/
     function resetRepoForest() {
+        repoForest.reposModel = []
+        repoForest.pat = ""
+        repoForest.pendingOperation = ""
         repoForest.selectedIndexes = []
         repoForest.isRunning = false
         repoForest.operationQueue = []
-        repoForest.isProcessingQueue = false
+        repoForest.queueState = RepoForest.QueueState.Ready
         gitScanner.stop()
     }
 }
