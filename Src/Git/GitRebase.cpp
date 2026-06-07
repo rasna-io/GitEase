@@ -1104,3 +1104,10 @@ git_commit* GitRebase::lookupCommit(const QString& hash) const
 
     return commit;
 }
+
+int GitRebase::cherryPickCommit(git_commit* commit)
+{
+    git_cherrypick_options opts = GIT_CHERRYPICK_OPTIONS_INIT;
+    opts.checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+    return git_cherrypick(m_currentRepo->repo, commit, &opts);
+}
