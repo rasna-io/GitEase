@@ -47,7 +47,6 @@ Item {
     property string                  authPurpose:            "push"  // "push" | "fetch"
     property var                     pendingFetchRemoteNames: []    // HTTP/HTTPS remotes to fetch with token
     property var                     fetchBatchResults:      []
-    property bool                    isChunkMode: true
     property bool                    currentFileEdited: false
 
     property string                  selectedFilePath:        ""
@@ -498,9 +497,8 @@ Item {
                     statusController: root.statusController
                     notificationController: root.notificationController
                     stashController: root.stashController
-                    hasUnsavedChanges: root.currentFileEdited && !root.isChunkMode
+                    hasUnsavedChanges: root.currentFileEdited
                     currentFile: root.selectedFilePath
-                    fileBuffer: diffView.editedFileBuffer
                     showSaveDialog: root.showSaveDialog
 
                     onFileSelected: function(filePath, isStaged) {

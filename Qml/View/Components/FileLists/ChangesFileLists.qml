@@ -22,7 +22,6 @@ Item {
     property var stagedModel: []
     property bool hasUnsavedChanges: false
     property string currentFile: ""
-    property var fileBuffer: []
     property var showSaveDialog
 
     /* Signals
@@ -34,10 +33,6 @@ Item {
      * ****************************************************************************************/
     implicitWidth: 1
     implicitHeight: 1
-
-    onCurrentFileChanged: {
-        //unstagedSection.selectedFilePath = root.currentFile
-    }
 
     Component.onCompleted: Qt.callLater(function() {root.updateStatus()})
 

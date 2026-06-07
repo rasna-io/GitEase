@@ -50,7 +50,6 @@ DetachablePanel {
     title: qsTr("Diff View")
     fileName: root.selectedFile
     hasCheckBox: root.checkBoxVisible
-    checkBoxIsChecked: root.chunkMode
 
     /* Signals
      * ****************************************************************************************/
@@ -463,7 +462,7 @@ DetachablePanel {
     }
 
     // Called when user interacts with the textEdit
-    function changeText(index, lineNumber, newText)
+    function changeText(index, newText)
     {
         if(chunkMode)
             return
@@ -486,7 +485,7 @@ DetachablePanel {
     }
 
     // Called by Delegate when user presses Enter
-    function splitLine(index, lineNumber, cursorPosition, textAfterCursor) {
+    function splitLine(index, cursorPosition, textAfterCursor) {
         if(chunkMode)
             return
         let model = fileModel
@@ -534,7 +533,7 @@ DetachablePanel {
     }
 
     // Called by Delegate when user presses Backspace at start
-    function mergeLineUp(index, lineNumber)
+    function mergeLineUp(index)
     {
         if(chunkMode)
             return

@@ -25,7 +25,6 @@ Item {
     property bool       showInlineHeader: true
     property string     fileName: ""
     property bool       hasCheckBox: false
-    property bool       checkBoxIsChecked: true
 
     // Default content slot for panel contents
     default property alias content: contentRoot.data
