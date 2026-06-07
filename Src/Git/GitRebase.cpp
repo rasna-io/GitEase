@@ -1026,3 +1026,16 @@ void GitRebase::interactiveContinue()
     m_isCherryPickActive = false;
     QTimer::singleShot(0, this, &GitRebase::processNextOperation);
 }
+
+void GitRebase::interactiveSkip()
+{
+    if (!m_interactiveInProgress || !m_isCherryPickActive)
+        return;
+
+    // Abort the cherry‑pick (reset index and worktree)
+    abortCherryPick();
+    emit rebaseOperationSkipped(m_currentOpHash);
+    m_currentPlanIndex++;
+    m_isCherryPickActive = false;
+    QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+}
