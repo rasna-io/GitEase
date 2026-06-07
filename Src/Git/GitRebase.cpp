@@ -1111,3 +1111,79 @@ int GitRebase::cherryPickCommit(git_commit* commit)
     opts.checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
     return git_cherrypick(m_currentRepo->repo, commit, &opts);
 }
+
+bool GitRebase::commitCherryPick(git_commit* originalCommit)
+{
+    git_oid headOid;
+    if (git_reference_name_to_id(&headOid, m_currentRepo->repo, "HEAD") != GIT_OK) {
+        qWarning() << "commitCherryPick: failed to get HEAD OID";
+        return false;
+    }
+
+    git_commit* parent = nullptr;
+    if (git_commit_lookup(&parent, m_currentRepo->repo, &headOid) != GIT_OK) {
+        qWarning() << "commitCherryPick: failed to lookup parent commit";
+        return false;
+    }
+
+    const git_signature* author = git_commit_author(originalCommit);
+    const char* message = git_commit_message(originalCommit);
+
+    git_index* index = nullptr;
+    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK) {
+        qWarning() << "commitCherryPick: failed to get repository index";
+        git_commit_free(parent);
+        return false;
+    }
+
+    if (git_index_has_conflicts(index)) {
+        git_index_free(index);
+        git_commit_free(parent);
+        return false;
+    }
+
+    git_oid treeOid;
+    if (git_index_write_tree(&treeOid, index) != GIT_OK) {
+        const git_error *err = git_error_last();
+        qWarning() << "commitCherryPick: failed to write tree:" << (err ? err->message : "unknown");
+        git_index_free(index);
+        git_commit_free(parent);
+        return false;
+    }
+
+    git_tree* tree = nullptr;
+    if (git_tree_lookup(&tree, m_currentRepo->repo, &treeOid) != GIT_OK) {
+        qWarning() << "commitCherryPick: failed to lookup tree";
+        git_index_free(index);
+        git_commit_free(parent);
+        return false;
+    }
+
+    const git_commit* parents[1] = { parent };
+
+    git_oid newCommitOid;
+    int result = git_commit_create(
+        &newCommitOid,
+        m_currentRepo->repo,
+        "HEAD",
+        author,
+        m_defaultSignature,
+        "UTF-8",
+        message,
+        tree,
+        1,
+        parents
+        );
+
+    git_tree_free(tree);
+    git_index_free(index);
+    git_commit_free(parent);
+
+    if (result != GIT_OK) {
+        const git_error *err = git_error_last();
+        qWarning() << "commitCherryPick: git_commit_create failed:" << (err ? err->message : "unknown");
+        return false;
+    }
+
+    return true;
+}
