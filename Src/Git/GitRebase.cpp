@@ -1187,3 +1187,23 @@ bool GitRebase::commitCherryPick(git_commit* originalCommit)
 
     return true;
 }
+
+void GitRebase::abortCherryPick()
+{
+    // Reset index and worktree to HEAD
+    git_object* headObj = nullptr;
+    if (git_revparse_single(&headObj, m_currentRepo->repo, "HEAD") != GIT_OK)
+        return;
+
+    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+    opts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_RECREATE_MISSING;
+    git_checkout_tree(m_currentRepo->repo, headObj, &opts);
+    git_object_free(headObj);
+
+    // Also reset the index
+    git_index* index = nullptr;
+    if (git_repository_index(&index, m_currentRepo->repo) == GIT_OK) {
+        git_index_read(index, true); // force reload from disk
+        git_index_free(index);
+    }
+}
