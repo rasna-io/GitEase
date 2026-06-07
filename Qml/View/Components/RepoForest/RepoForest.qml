@@ -107,6 +107,10 @@ Rectangle {
         }
     }
 
+    onFetchFlowItemIndexChanged: {
+        repoListView.focusOnIndex()
+    }
+
     /* Signals
     * ****************************************************************************************/
     signal closeRequested()
@@ -997,29 +1001,47 @@ Rectangle {
             }
         }
 
-        ScrollView {
+        ListView {
+            id: repoListView
+
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: root.reposModel && root.reposModel.length > 0 && !root.gitScanner.busy && !root.isRunning
             clip: true
+            spacing: 4
 
-            ColumnLayout {
-                width: parent.width
-                spacing: 4
+            visible: root.reposModel && root.reposModel.length > 0 && !root.gitScanner.busy && !root.isRunning
 
-                Repeater {
-                    id: repositoryRepeater
-                    model: root.reposModel
+            cacheBuffer: 800
+            reuseItems: true
 
-                    delegate: RepoItem {
-                        isSelected: root.selectedIndexes.indexOf(index) !== -1
-                        isProcessing: root.queueState !== RepoForest.QueueState.Ready
+            model: root.reposModel
 
-                        onClicked: (i) => root.toggleSelection(i)
-                        onFetchRequested: (i) => root.fetch(i)
-                        onPullRequested: (i) => root.pull(i)
-                    }
-                }
+            highlightMoveDuration: 500
+            preferredHighlightBegin: height / 2
+            preferredHighlightEnd: height / 2
+            highlightRangeMode: ListView.ApplyRange
+
+            delegate: RepoItem {
+                width: ListView.view.width
+                height: 70
+
+                isSelected: root.selectedIndexes.indexOf(index) !== -1
+                isProcessing: root.queueState !== RepoForest.QueueState.Ready
+
+                onClicked: (i) => root.toggleSelection(i)
+                onFetchRequested: (i) => root.fetch(i)
+                onPullRequested: (i) => root.pull(i)
+            }
+
+            onCountChanged: repoListView.focusOnIndex()
+
+            function focusOnIndex() {
+                if (root.fetchFlowItemIndex < 0 || root.fetchFlowItemIndex >= count)
+                    return
+
+                Qt.callLater(() => {
+                    positionViewAtIndex(root.fetchFlowItemIndex, ListView.Beginning)
+                })
             }
         }
 

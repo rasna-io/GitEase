@@ -28,8 +28,6 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    Layout.fillWidth: true
-    Layout.preferredHeight: 70
     color: {
         if (msa.hovered) {
                 return Qt.darker(Style.colors.surfaceLight, 1.05)
