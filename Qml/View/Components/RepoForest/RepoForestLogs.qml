@@ -106,6 +106,8 @@ ColumnLayout {
                 model: root.operationLogs
                 spacing: 4
 
+                highlightMoveDuration: 150
+
                 delegate: RowLayout {
                     width: ListView.width
                     spacing: 6
@@ -159,6 +161,12 @@ ColumnLayout {
                             return Style.colors.foreground
                         }
                         elide: Text.ElideRight
+                    }
+                }
+
+                onCountChanged: {
+                    if (count > 0) {
+                        positionViewAtIndex(count - 1, ListView.End)
                     }
                 }
             }
