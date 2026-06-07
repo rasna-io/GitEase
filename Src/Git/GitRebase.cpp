@@ -761,3 +761,140 @@ QString GitRebase::getCurrentBranchName()
 
     return branchName;  // "main", "master", or Detached HEAD if detached
 }
+
+void GitRebase::startInteractiveRebase(const QString& onto,
+                                       const QString& upstream,
+                                       const QString& branch,
+                                       const QVariantList& operations)
+{
+    if (m_interactiveInProgress) {
+        emit rebaseFinished(false);
+        return;
+    }
+
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        emit rebaseFinished(false);
+        return;
+    }
+
+    if (isRebaseInProgress()) {
+        emit rebaseFinished(false);
+        return;
+    }
+
+    // Check for uncommitted changes
+    git_status_list* statusList = nullptr;
+    git_status_options statusOpts = GIT_STATUS_OPTIONS_INIT;
+    statusOpts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED;
+    if (git_status_list_new(&statusList, m_currentRepo->repo, &statusOpts) == GIT_OK) {
+        size_t count = git_status_list_entrycount(statusList);
+        git_status_list_free(statusList);
+        if (count > 0) {
+            cleanupInteractiveState();
+            emit rebaseFinished(false);
+            return;
+        }
+    }
+
+    // Store the plan
+    m_interactivePlan = operations;
+
+    m_interactiveOnto     = onto.trimmed();
+    m_interactiveUpstream = upstream.trimmed();
+    m_interactiveBranch   = branch.trimmed();
+
+    // Save original HEAD reference
+    git_reference* headRef = nullptr;
+    if (git_repository_head(&headRef, m_currentRepo->repo) == GIT_OK) {
+        m_originalHeadRef = headRef;
+    } else {
+        m_originalHeadRef = nullptr;
+    }
+
+    if (m_originalHeadRef == nullptr) {
+        // Detached HEAD – save the commit OID
+        git_oid headOid;
+        if (git_reference_name_to_id(&headOid, m_currentRepo->repo, "HEAD") == GIT_OK) {
+            m_originalHeadOid = headOid;
+            m_originalHeadDetached = true;
+        } else {
+            // Should not happen, but if it does, abort
+            cleanupInteractiveState();
+            emit rebaseFinished(false);
+            return;
+        }
+    } else {
+        m_originalHeadDetached = false;
+    }
+
+    // Checkout target branch if necessary
+    QString actualBranch = m_interactiveBranch;
+    bool hasBranch = !actualBranch.isEmpty();
+    if (hasBranch) {
+        QString currentBranch = getCurrentBranchName();
+        if (currentBranch != actualBranch) {
+            GitResult checkoutRes = checkoutBranch(actualBranch);
+            if (!checkoutRes.success()) {
+                cleanupInteractiveState();
+                emit rebaseFinished(false);
+                return;
+            }
+        }
+        actualBranch.clear(); // after checkout we use HEAD
+    }
+
+    // Resolve the new base commit
+    QString baseRef = m_interactiveOnto.isEmpty() ? m_interactiveUpstream : m_interactiveOnto;
+    if (baseRef.isEmpty()) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return;
+    }
+
+    git_object* baseObj = nullptr;
+    int result = git_revparse_single(&baseObj, m_currentRepo->repo, baseRef.toUtf8().constData());
+    if (result != GIT_OK || !baseObj) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return;
+    }
+
+    // It must be a commit
+    if (git_object_type(baseObj) != GIT_OBJ_COMMIT) {
+        git_object_free(baseObj);
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return;
+    }
+
+    m_newBaseCommit = reinterpret_cast<git_commit*>(baseObj); // we own it now
+
+    // Checkout the new base (detach HEAD)
+    git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
+    checkoutOpts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+    result = git_checkout_tree(m_currentRepo->repo, reinterpret_cast<git_object*>(m_newBaseCommit), &checkoutOpts);
+    if (result != GIT_OK) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return;
+    }
+
+    // Set HEAD to the new base commit (detached)
+    result = git_repository_set_head_detached(m_currentRepo->repo, git_commit_id(m_newBaseCommit));
+    if (result != GIT_OK) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return;
+    }
+
+    // Create default committer signature
+    git_signature* sig = nullptr;
+    if (git_signature_default(&sig, m_currentRepo->repo) == GIT_OK) {
+        m_defaultSignature = sig;
+    }
+
+    // Kick off processing
+    m_interactiveInProgress = true;
+    m_currentPlanIndex = 0;
+    QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+}
