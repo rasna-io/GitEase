@@ -1207,3 +1207,13 @@ void GitRebase::abortCherryPick()
         git_index_free(index);
     }
 }
+
+bool GitRebase::resetToCommit(git_commit* target)
+{
+    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+    opts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_RECREATE_MISSING;
+    int result = git_checkout_tree(m_currentRepo->repo, reinterpret_cast<git_object*>(target), &opts);
+    if (result != GIT_OK)
+        return false;
+    return git_repository_set_head_detached(m_currentRepo->repo, git_commit_id(target)) == GIT_OK;
+}
