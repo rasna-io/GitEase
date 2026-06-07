@@ -998,3 +998,31 @@ void GitRebase::processNextOperation()
     m_currentPlanIndex++;
     QTimer::singleShot(0, this, &GitRebase::processNextOperation);
 }
+
+void GitRebase::interactiveContinue()
+{
+    if (!m_interactiveInProgress || !m_isCherryPickActive)
+        return;
+
+    // Look up the original commit again to preserve its metadata
+    git_commit* originalCommit = lookupCommit(m_currentOpHash);
+    if (!originalCommit) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return;
+    }
+
+    // The user resolved conflicts – commit the result
+    if (!commitCherryPick(originalCommit)) {
+        git_commit_free(originalCommit);
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return;
+    }
+
+    git_commit_free(originalCommit);
+    emit rebaseOperationCompleted(m_currentOpHash);
+    m_currentPlanIndex++;
+    m_isCherryPickActive = false;
+    QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+}
