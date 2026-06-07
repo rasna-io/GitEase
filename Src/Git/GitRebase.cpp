@@ -1217,3 +1217,25 @@ bool GitRebase::resetToCommit(git_commit* target)
         return false;
     return git_repository_set_head_detached(m_currentRepo->repo, git_commit_id(target)) == GIT_OK;
 }
+
+void GitRebase::cleanupInteractiveState()
+{
+    if (m_newBaseCommit) {
+        git_commit_free(m_newBaseCommit);
+        m_newBaseCommit = nullptr;
+    }
+    if (m_originalHeadRef) {
+        git_reference_free(m_originalHeadRef);
+        m_originalHeadRef = nullptr;
+    }
+    m_interactiveInProgress = false;
+    m_isCherryPickActive = false;
+    m_interactivePlan.clear();
+    m_currentPlanIndex = 0;
+    m_currentOpHash.clear();
+
+    if (m_defaultSignature) {
+        git_signature_free(m_defaultSignature);
+        m_defaultSignature = nullptr;
+    }
+}
