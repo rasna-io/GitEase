@@ -1091,3 +1091,16 @@ void GitRebase::interactiveAbort()
     cleanupInteractiveState();
     emit rebaseAborted();
 }
+
+git_commit* GitRebase::lookupCommit(const QString& hash) const
+{
+    git_oid oid;
+    if (git_oid_fromstr(&oid, hash.toUtf8().constData()) != GIT_OK)
+        return nullptr;
+
+    git_commit* commit = nullptr;
+    if (git_commit_lookup(&commit, m_currentRepo->repo, &oid) != GIT_OK)
+        return nullptr;
+
+    return commit;
+}
