@@ -37,6 +37,7 @@ Rectangle {
     property   string                 fetchFlowCurrentRemote:   ""
 
     property   var                    operationLogs:            []
+    property   UserAuthenticationPopup      userAuthenticationPopup
 
 
     readonly property bool allSelected:     reposModel.length > 0 && selectedIndexes.length === reposModel.length
