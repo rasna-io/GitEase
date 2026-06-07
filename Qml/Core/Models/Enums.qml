@@ -9,7 +9,7 @@ import QtQuick
 QtObject {
     /* Enumerations
      * ****************************************************************************************/
-
+    
     enum WelcomePages {
         WelcomeBanner,
         SetupProfle,
