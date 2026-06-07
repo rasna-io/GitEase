@@ -75,20 +75,11 @@ IPopup {
                     }
                 }
 
-                Rectangle {
-                    Layout.preferredWidth: 120
-                    Layout.preferredHeight: 32
-                    color: Style.colors.surfaceMuted
-                    border.color: Style.colors.primaryBorder
-                    radius: 16
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: pickedCount() + " pick / " + skippedCount() + " skip"
-                        color: Style.colors.secondaryText
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 11
-                    }
+                Text {
+                    text: pickedCount() + " pick / " + skippedCount() + " skip"
+                    color: Style.colors.secondaryText
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: 11
                 }
             }
 
