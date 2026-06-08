@@ -17,7 +17,7 @@ DetachablePanel {
     property var diffData: []   // used when chunkMode = false
     property var chunkData: []  // used when chunkMode = true
     property var originalFileBuffer: []
-    property var editedFileBuffer: []
+    property var editedFileBuffer: [] // holds the value of the edited file
 
     /* Chunking configuration */
     property bool chunkMode     : false
@@ -50,6 +50,7 @@ DetachablePanel {
     title: qsTr("Diff View")
     fileName: root.selectedFile
     hasCheckBox: root.checkBoxVisible
+    checkBoxIsChecked: true
 
     /* Signals
      * ****************************************************************************************/
@@ -57,7 +58,7 @@ DetachablePanel {
     signal requestRevert(int start, int end, int type)
     signal requestStash(int start, int end, int type)
     signal fileEdited(bool isEdited)
-    signal chunkModeUpdated(bool isChunkMode)
+    signal saveFile()
 
     /* Children
      * ****************************************************************************************/
@@ -148,7 +149,22 @@ DetachablePanel {
     }
 
     onCheckChanged: (checked) => {
-        root.chunkModeUpdated(checked)
+        if(root.fileIsEdited) {
+            var d = unsavedChangesDialogComp.createObject(root)
+            d.title = "Unsaved Changes"
+            d.message = "You have unsaved changes in: " + root.selectedFile
+            d.saved.connect(() => {
+                                root.saveFile()
+                                root.chunkMode = checked
+                            })
+            d.aborted.connect(() => { root.chunkMode = checked })
+            d.cancelled.connect(() => {
+                                    checkBoxIsChecked = false
+                                })
+            d.open()
+        } else {
+            root.chunkMode = checked
+        }
     }
 
     TextMetrics {
@@ -424,6 +440,10 @@ DetachablePanel {
         }
     }
 
+    Component {
+        id: unsavedChangesDialogComp
+        UnsavedChangesDialog { }
+    }
     /* Functions
      * ****************************************************************************************/
     function appendRow(model, type, lTxt, rTxt, lNum, rNum) {
@@ -848,9 +868,7 @@ DetachablePanel {
         clipboardHelper.copy()
     }
 
-    // Returns the lines of the rightTextEdit currentText used for saving the file
-
-
+    // Checks if the selected file is edited
     function isFileEdited() {
         if(chunkMode)
             return false

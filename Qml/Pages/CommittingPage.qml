@@ -51,8 +51,6 @@ Item {
 
     property string                  selectedFilePath:        ""
 
-    property var                     actionResult:            ({})
-
     // Exposed to MainWindow's header area (see MainWindow.qml)
     property Component headerContent: CommittingPageHeader {
         branchController: root.branchController
@@ -497,7 +495,6 @@ Item {
                     statusController: root.statusController
                     notificationController: root.notificationController
                     stashController: root.stashController
-                    hasUnsavedChanges: root.currentFileEdited
                     currentFile: root.selectedFilePath
                     showSaveDialog: root.showSaveDialog
 
@@ -517,7 +514,7 @@ Item {
                         )
                     }
 
-                    onChangesSaved: {
+                    onChangesAborted: {
                         root.currentFileEdited = false
                     }
                 }
@@ -593,7 +590,7 @@ Item {
     }
 
     Component {
-        id: unsavedChnagesDialogComp
+        id: unsavedChangesDialogComp
         UnsavedChangesDialog { }
     }
 
@@ -815,21 +812,13 @@ Item {
             return
         }
 
-        let d = unsavedChnagesDialogComp.createObject(root)
+        let d = unsavedChangesDialogComp.createObject(root)
 
         d.title = "Unsaved Changes"
         d.message = "You have unsaved changes in: " + root.selectedFilePath
 
         d.saved.connect(() => {
-            let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
-
-            if (res.success) {
-                root.currentFileEdited = false
-                root.notificationController.success("File saved successfully", "Save", 3000)
-            } else {
-                root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
-            }
-
+            root.saveFile()
             d.destroy()
             nextAction()
         })
@@ -844,5 +833,16 @@ Item {
         })
 
         d.open()
+    }
+
+    function saveFile() {
+        let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
+
+        if (res.success) {
+            root.currentFileEdited = false
+            root.notificationController.success("File saved successfully", "Save", 3000)
+        } else {
+            root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
+        }
     }
 }

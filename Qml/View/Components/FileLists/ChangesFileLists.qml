@@ -20,14 +20,13 @@ Item {
 
     property var unstagedModel: []
     property var stagedModel: []
-    property bool hasUnsavedChanges: false
     property string currentFile: ""
     property var showSaveDialog
 
     /* Signals
      * ****************************************************************************************/
     signal fileSelected(string filePath, bool isStaged)
-    signal changesSaved()
+    signal changesAborted()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -155,7 +154,7 @@ Item {
 
                 if(root.currentFile === filePath)
                 {
-                    root.changesSaved()
+                    root.changesAborted()
                     discardFile()
                     return
                 }

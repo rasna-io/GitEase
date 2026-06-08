@@ -25,6 +25,7 @@ Item {
     property bool       showInlineHeader: true
     property string     fileName: ""
     property bool       hasCheckBox: false
+    property bool       checkBoxIsChecked: false
 
     // Default content slot for panel contents
     default property alias content: contentRoot.data
@@ -115,7 +116,7 @@ Item {
                     Layout.preferredHeight: 35
                     Material.accent: Style.colors.accent
                     Material.foreground: Style.colors.foreground
-                    checked: true
+                    checked: root.checkBoxIsChecked
                     visible: root.hasCheckBox
 
                     onClicked: {
