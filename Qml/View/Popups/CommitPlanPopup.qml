@@ -273,6 +273,7 @@ IPopup {
                                         Layout.preferredHeight: 26
                                         model: root.planData.supportedActions || []
                                         font.pixelSize: 11
+                                        enabled: root.currentRebaseState !== rebaseState.running
 
                                         background: Rectangle {
                                             color: Style.colors.secondaryBackground
@@ -355,7 +356,13 @@ IPopup {
                                             }
                                         }
 
-                                        onActivated: commitModel.setProperty(index, "action", currentText)
+                                        Component.onCompleted: {
+                                            currentIndex = model.indexOf(commitModel.get(index).action)
+                                        }
+
+                                        onActivated: function(i) {
+                                            commitModel.setProperty(index, "action", model[i])
+                                        }
 
                                         MouseArea {
                                             anchors.fill: parent
