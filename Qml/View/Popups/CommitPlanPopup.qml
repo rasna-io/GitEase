@@ -537,6 +537,49 @@ IPopup {
         id: commitModel
     }
 
+    Connections {
+        target: root.rebaseController
+
+        function onRebaseOperationStarted(hash) {
+            setCommitStatus(hash, commitStatus.inProgress);
+
+            scrollToCommit(hash);
+
+            var idx = findCommitIndex(hash);
+            if (idx >= 0)
+                commitList.currentIndex = idx;
+        }
+
+        function onRebaseOperationCompleted(hash) {
+            setCommitStatus(hash, commitStatus.rebased);
+        }
+
+        function onRebaseOperationSkipped(hash) {
+            setCommitStatus(hash, commitStatus.skipped);
+        }
+
+        function onRebaseConflict(hash) {
+            setCommitStatus(hash, commitStatus.conflict);
+
+            scrollToCommit(hash);
+
+            root.conflictPopup.interactiveMode  = true;
+            root.conflictPopup.currentOperation = ConflictPopup.OperationType.Rebase;
+            root.conflictPopup.show();
+        }
+
+        function onRebaseFinished(success) {
+            root.currentRebaseState = success ? rebaseState.completed : rebaseState.failed;
+        }
+
+        function onRebaseAborted() {
+            root.currentRebaseState = rebaseState.idle;
+
+            for (var i = 0; i < commitModel.count; i++)
+                commitModel.setProperty(i, "status", commitStatus.pending);
+        }
+    }
+
     function planSummary() {
         var upstream    = planData.upstream || ""
         var onto        = planData.onto || ""
