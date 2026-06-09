@@ -141,6 +141,8 @@ Item {
                 height: 390
                 branchController        : root.branchController
                 rebaseController        : root.rebaseController
+                commitController        : root.commitController
+                statusController        : root.statusController
                 notificationController  : root.notificationController
 
                 conflictPopup: ConflictPopup {
