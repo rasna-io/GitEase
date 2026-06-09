@@ -450,6 +450,14 @@ DetachablePanel {
         }
     }
 
+    CommitPlanPopup {
+        id: commitPlanPopup
+        statusController: root.statusController
+        commitController: root.commitController
+        rebaseController: root.rebaseController
+        conflictPopup   : rebaseConflictPopup
+    }
+
     /* Functions
      * ****************************************************************************************/
     function emptyStateDetailsText() {
