@@ -221,6 +221,14 @@ IPopup {
                                     font.bold: true; color: Style.colors.foreground
                                     font.pixelSize: 11
                                 }
+
+                                Text {
+                                    text: (root.currentRebaseState !== rebaseState.idle) ? "Status" : ""
+                                    Layout.preferredWidth: (root.currentRebaseState !== rebaseState.idle) ? 80 : 0
+                                    font.bold: true
+                                    color: Style.colors.foreground
+                                    font.pixelSize: 11
+                                }
                             }
                         }
 
@@ -400,6 +408,16 @@ IPopup {
                                         font.pixelSize: 10
                                         elide: Text.ElideRight
                                         Layout.preferredWidth: 130
+                                        Layout.alignment: Qt.AlignVCenter
+                                    }
+
+                                    Text {
+                                        text: status
+                                        color: commitStatus.colorOf(status)
+                                        font.pixelSize: 10
+                                        elide: Text.ElideRight
+                                        Layout.preferredWidth: (root.currentRebaseState !== rebaseState.idle) ? 80 : 0
+                                        visible: root.currentRebaseState !== rebaseState.idle
                                         Layout.alignment: Qt.AlignVCenter
                                     }
                                 }
