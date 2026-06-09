@@ -250,21 +250,8 @@ IPopup {
                                     anchors.rightMargin: 8
                                     spacing: 8
 
-                                    readonly property color actionColor: {
-                                        const a = actionCombo.currentText
-                                        switch (a){
-                                            case "pick":
-                                                return Style.colors.foreground
-
-                                            case "skip":
-                                                return Style.colors.mutedText
-
-                                            default:
-                                                return Style.colors.accent
-                                        }
-                                    }
-
-                                    readonly property bool isDimmed: actionCombo.currentText === "skip"
+                                    readonly property bool isDimmed     : action === actionType.skip
+                                    readonly property color actionColor : actionType.colorOf(action)
 
                                     // Action combo (pick / skip)
                                     ComboBox {
