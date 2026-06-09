@@ -52,6 +52,26 @@ IPopup {
         readonly property string failed    : "Start Rebase"
     }
 
+    QtObject {
+        id: actionType
+
+        readonly property string pick: "pick"
+        readonly property string skip: "skip"
+
+        function colorOf(action) {
+            switch (action) {
+            case pick:
+                return Style.colors.foreground
+
+            case skip:
+                return Style.colors.mutedText
+
+            default:
+                return Style.colors.accent
+            }
+        }
+    }
+
     /* Property Declarations
      * ****************************************************************************************/
     property StatusController statusController: null
