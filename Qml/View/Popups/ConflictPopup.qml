@@ -15,6 +15,13 @@ import "qrc:/GitEase/Qml/Core/Scripts/ConflictPopupUtils.js" as ConflictUtils
 Window {
     id: root
 
+    enum InteractiveAction {
+        None,
+        Continue,
+        Skip,
+        Abort
+    }
+
     /* Property Declarations
      * ****************************************************************************************/
     property MergeController        mergeController         : null
