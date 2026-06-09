@@ -223,55 +223,57 @@ UtilitiesCard {
         }
     }
 
-    // Perform the rebase
-    function startRebase(upstream, onto, advanced, currentIndexBranchCombo) {
-        if (!rebaseController)
+    function previewRebase(upstream, onto, advanced, currentIndexBranchCombo) {
+        if (!validateInputs(upstream, onto, advanced, currentIndexBranchCombo))
             return
 
+        upstream    = upstream.trim()
+        onto        = advanced ? onto.trim() : ""
+
+        var branchValue = currentBranchValue(currentIndexBranchCombo)
+        var res = rebaseController.previewRebasePlan(onto, upstream, branchValue)
+
+        if (!res || !res.success) {
+            notificationController.error(res ? res.errorMessage : "Could not prepare rebase plan", "Rebase", 5000)
+            return
+        }
+
+        if (!res.data || !res.data.commits || res.data.commits.length === 0) {
+            notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000)
+            return
+        }
+
+        commitPlanPopup.showPlan(res.data)
+    }
+
+    function validateInputs(upstream, onto, advanced, currentIndexBranchCombo) {
         upstream = upstream.trim()
         if (upstream.length === 0) {
-            if (notificationController)
-                notificationController.error("Upstream is required.", "Rebase", 4000)
-            return
+            notificationController.error("Upstream is required.", "Rebase", 4000)
+            return false
         }
 
-        if(!branchModel.count > 0)
-            return
-
-        var branchValue = branchModel.get(currentIndexBranchCombo).value
-
-        var res
-        if (advanced) {
-
-            onto = onto.trim()
-            if (onto.length === 0) {
-                if (notificationController)
-                    notificationController.error("Onto is required in advanced mode.", "Rebase", 4000)
-                return
-            }
-
-            res = rebaseController.rebaseOnto(onto, upstream, branchValue)
-        }
-        else {
-            res = rebaseController.rebase(upstream, branchValue)
+        if (branchModel.count <= 0) {
+            notificationController.error("No local branch is available to rebase.", "Rebase", 4000)
+            return false
         }
 
-        if (res && res.success) {
-            if (notificationController)
-                notificationController.success("Rebase completed successfully", "Rebase", 3000)
-            return
+        if (currentBranchValue(currentIndexBranchCombo).length === 0)
+            return false
+
+        if (advanced && onto.trim().length === 0) {
+            notificationController.error("Onto is required in advanced mode.", "Rebase", 4000)
+            return false
         }
 
-        if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-            if (conflictPopup)
-                conflictPopup.show()
-            if (notificationController)
-                notificationController.warning("Rebase conflicts detected. Please resolve them.", "Rebase", 4000)
-            return
-        }
+        return true
+    }
 
-        if (notificationController)
-            notificationController.error(res?.errorMessage || "Rebase failed", "Rebase", 5000)
+    function currentBranchValue(currentIndexBranchCombo) {
+        if (branchModel.count <= 0 || currentIndexBranchCombo < 0 || currentIndexBranchCombo >= branchModel.count)
+            return ""
+
+        return branchModel.get(currentIndexBranchCombo).value
     }
 
     onBranchControllerChanged: refreshBranches()
