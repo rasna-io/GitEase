@@ -177,7 +177,7 @@ UtilitiesCard {
                 }
             }
 
-            onClicked: startRebase(upstreamInput.text, ontoInput.text, advancedToggle.checked, branchCombo.currentIndex)
+            onClicked: previewRebase(upstreamInput.text, ontoInput.text, advancedToggle.checked, branchCombo.currentIndex)
         }
     }
 
