@@ -17,6 +17,8 @@ UtilitiesCard {
      * ****************************************************************************************/
     property BranchController       branchController:       null
     property RebaseController       rebaseController:       null
+    property CommitController       commitController:       null
+    property StatusController       statusController:       null
     property NotificationController notificationController: null
     property ConflictPopup          conflictPopup:          null
 
