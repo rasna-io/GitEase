@@ -68,9 +68,12 @@ Window {
         }
     }
 
+    property bool interactiveMode: false
+
     /* Signals
      * ****************************************************************************************/
     signal operationCompleted();
+    signal interactiveActionRequested(int action)
 
     /* Object Properties
      * ****************************************************************************************/
