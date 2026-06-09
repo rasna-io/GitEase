@@ -630,4 +630,43 @@ IPopup {
         }
         return result
     }
+
+    function beginRebase() {
+        if (root.currentRebaseState === rebaseState.running)
+            return;
+
+        root.currentRebaseState = rebaseState.running;
+
+        var ops         = operations();
+        ops.reverse();
+
+        var onto        = planData.onto     || "";
+        var upstream    = planData.upstream || "";
+        var branch      = planData.branch   || "";
+
+        rebaseController.startInteractiveRebase(onto, upstream, branch, ops);
+    }
+
+    function setCommitStatus(hash, status) {
+        for (var i = 0; i < commitModel.count; i++) {
+            if (commitModel.get(i).hash === hash) {
+                commitModel.setProperty(i, "status", status);
+                break;
+            }
+        }
+    }
+
+    function scrollToCommit(hash) {
+        var idx = findCommitIndex(hash);
+        if (idx >= 0)
+            commitList.positionViewAtIndex(idx, ListView.Contain);
+    }
+
+    function findCommitIndex(hash) {
+        for (var i = 0; i < commitModel.count; i++)
+            if (commitModel.get(i).hash === hash)
+                return i;
+
+        return -1;
+    }
 }
