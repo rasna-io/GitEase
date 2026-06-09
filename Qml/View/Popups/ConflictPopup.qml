@@ -547,6 +547,11 @@ Window {
     }
 
     function continueOperation() {
+        if (interactiveMode) {
+            interactiveActionRequested(ConflictPopup.InteractiveAction.Continue);
+            return;
+        }
+
         let res = currentController.continueOp()
 
         if (res.success) {
@@ -570,6 +575,11 @@ Window {
     }
 
     function skipOperation() {
+        if (interactiveMode) {
+            interactiveActionRequested(ConflictPopup.InteractiveAction.Skip);
+            return;
+        }
+
         let res = currentController.skipOp()
 
         if (res.success) {
@@ -593,6 +603,11 @@ Window {
     }
 
     function abortOperation() {
+        if (interactiveMode) {
+            interactiveActionRequested(ConflictPopup.InteractiveAction.Abort);
+            return;
+        }
+
         let res = currentController.abortOp()
 
         if (res.success) {
