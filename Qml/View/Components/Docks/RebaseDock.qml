@@ -185,6 +185,14 @@ UtilitiesCard {
         id: branchModel
     }
 
+    CommitPlanPopup {
+        id: commitPlanPopup
+        statusController: root.statusController
+        commitController: root.commitController
+        rebaseController: root.rebaseController
+        conflictPopup   : root.conflictPopup
+    }
+
     /* Functions
      * ****************************************************************************************/
 
