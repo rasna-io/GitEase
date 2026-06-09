@@ -580,6 +580,32 @@ IPopup {
         }
     }
 
+    Connections {
+        target: root.conflictPopup
+
+        function onInteractiveActionRequested(action) {
+            switch (action) {
+
+            case ConflictPopup.InteractiveAction.Continue:
+                root.rebaseController.interactiveContinue()
+                break
+
+            case ConflictPopup.InteractiveAction.Skip:
+                root.rebaseController.interactiveSkip()
+                break
+
+            case ConflictPopup.InteractiveAction.Abort:
+                root.rebaseController.interactiveAbort()
+                break
+
+            default:
+                return
+            }
+
+            root.conflictPopup.close()
+        }
+    }
+
     function planSummary() {
         var upstream    = planData.upstream || ""
         var onto        = planData.onto || ""
