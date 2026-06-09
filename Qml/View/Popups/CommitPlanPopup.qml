@@ -649,7 +649,8 @@ IPopup {
                 author      : commit.author     || "",
                 authorDate  : commit.authorDate || "",
                 parentHash  : commit.parentHash || "",
-                isMerge     : commit.isMerge    || false
+                isMerge     : commit.isMerge    || false,
+                status      : commitStatus.pending
             })
         }
 
