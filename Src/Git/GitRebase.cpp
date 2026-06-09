@@ -85,7 +85,7 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
                          QString("Failed to prepare rebase plan: %1").arg(GitUtils::getLastError()));
     }
 
-    git_revwalk_sorting(walk, GIT_SORT_TOPOLOGICAL | GIT_SORT_REVERSE);
+    git_revwalk_sorting(walk, GIT_SORT_TOPOLOGICAL | GIT_SORT_TIME);
     git_revwalk_push(walk, git_object_id(branchObject));
     git_revwalk_hide(walk, git_object_id(upstreamObject));
 
