@@ -14,6 +14,35 @@ import GitEase_Style_Impl
 IPopup {
     id: root
 
+    QtObject {
+        id: commitStatus
+
+        readonly property string pending   : "Pending"
+        readonly property string inProgress: "In Progress"
+        readonly property string rebased   : "Rebased"
+        readonly property string skipped   : "Skipped"
+        readonly property string conflict  : "Conflict"
+
+        function colorOf(status){
+            switch (status) {
+                case inProgress:
+                    return "#FFA500"
+
+                case rebased:
+                    return "#2ECC40"
+
+                case conflict:
+                    return "#FF4136"
+
+                case skipped:
+                    return Style.colors.mutedText
+
+                default:
+                    return Style.colors.mutedText
+            }
+        }
+    }
+
     /* Property Declarations
      * ****************************************************************************************/
     property StatusController statusController: null
