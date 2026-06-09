@@ -43,6 +43,15 @@ IPopup {
         }
     }
 
+    QtObject {
+        id: rebaseState
+
+        readonly property string idle      : "Start Rebase"
+        readonly property string running   : "Rebasing..."
+        readonly property string completed : "Close"
+        readonly property string failed    : "Start Rebase"
+    }
+
     /* Property Declarations
      * ****************************************************************************************/
     property StatusController statusController: null
