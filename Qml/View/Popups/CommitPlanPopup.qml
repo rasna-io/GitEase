@@ -74,11 +74,16 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property StatusController statusController: null
-    property CommitController commitController: null
+    property StatusController   statusController: null
+    property CommitController   commitController: null
+    property RebaseController   rebaseController: null
+    property ConflictPopup      conflictPopup   : null
+
 
     property var    planData            : ({})
     property string selectedCommitHash  : ""
+
+    property string currentRebaseState  : rebaseState.idle
 
     /* Signals
      * ****************************************************************************************/
