@@ -487,15 +487,20 @@ IPopup {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
 
-                        onClicked: root.close()
+                        onClicked: {
+                            root.rebaseController.interactiveAbort()
+                            root.close()
+                        }
                     }
                 }
 
                 Button {
                     id: startButton
-                    text: "Start Rebase"
+                    text: root.currentRebaseState
                     Layout.preferredWidth: 130
-                    enabled: commitModel.count > 0 && pickedCount() > 0
+                    enabled: commitModel.count > 0  &&
+                             root.currentRebaseState !== rebaseState.running
+
                     Material.foreground: Style.colors.textButton
                     background: Rectangle {
                         implicitHeight: 34
@@ -507,11 +512,20 @@ IPopup {
 
                     MouseArea {
                         anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
+                        cursorShape: startButton.enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
 
                         onClicked: {
-                            root.accepted(root.operations())
-                            root.close()
+                            if (root.currentRebaseState === rebaseState.completed) {
+                                root.close();
+
+                            }
+                            else if (root.currentRebaseState === rebaseState.idle || root.currentRebaseState === rebaseState.failed) {
+                                if (root.currentRebaseState === rebaseState.failed) {
+                                    for (var i = 0; i < commitModel.count; i++)
+                                        commitModel.setProperty(i, "status", commitStatus.pending);
+                                }
+                                beginRebase();
+                            }
                         }
                     }
                 }
