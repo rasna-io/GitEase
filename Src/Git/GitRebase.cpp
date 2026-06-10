@@ -240,7 +240,7 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
     data["commits"] = commits;
     data["upstream"] = upstream.trimmed();
     data["onto"] = onto.trimmed();
-    data["branch"] = branchSpec;
+    data["branch"] = branch.trimmed();
     data["supportedActions"] = QStringList{ "pick", "skip" };
 
     return GitResult(true, data);
