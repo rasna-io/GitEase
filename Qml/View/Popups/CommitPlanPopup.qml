@@ -721,7 +721,11 @@ IPopup {
         var upstream    = planData.upstream || "";
         var branch      = planData.branch   || "";
 
-        rebaseController.startInteractiveRebase(onto, upstream, branch, ops);
+        var res = rebaseController.startInteractiveRebase(onto, upstream, branch, ops);
+        if (!res.success) {
+            root.currentRebaseState = rebaseState.failed;
+            notificationController.error(res.errorMessage || "Rebased failed", "Rebase", 5000);
+        }
     }
 
     function setCommitStatus(hash, status) {
