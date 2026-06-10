@@ -159,6 +159,34 @@ Rectangle {
                                     }
                                 }
                             }
+
+                            ToolTip {
+                                id: tip
+                                parent: repositoryRow
+                                visible: repoMouseArea.containsMouse
+                                delay: 200
+                                timeout: 5000
+                                text: modelData.path
+
+                                x: (repositoryRow.width - width) / 2
+                                y: -height + 10
+
+                                padding: 6
+
+                                contentItem: Text {
+                                    text: tip.text
+                                    font.family: Style.fontTypes.roboto
+                                    font.pixelSize: 11
+                                    color: "#ffffff"
+                                }
+
+                                background: Rectangle {
+                                    radius: 6
+                                    color: Qt.rgba(0, 0, 0, 0.85)
+                                    border.color: Qt.rgba(1, 1, 1, 0.12)
+                                    border.width: 1
+                                }
+                            }
                         }
                     }
                 }
