@@ -746,24 +746,24 @@ QString GitRebase::getCurrentBranchName()
     return branchName;  // "main", "master", or Detached HEAD if detached
 }
 
-void GitRebase::startInteractiveRebase(const QString& onto,
+GitResult GitRebase::startInteractiveRebase(const QString& onto,
                                        const QString& upstream,
                                        const QString& branch,
                                        const QVariantList& operations)
 {
     if (m_interactiveInProgress) {
         emit rebaseFinished(false);
-        return;
+        return GitResult(false, {}, "An interactive rebase is already in progress.");
     }
 
     if (!m_currentRepo || !m_currentRepo->repo) {
         emit rebaseFinished(false);
-        return;
+        return GitResult(false, {}, "Repository not found.");
     }
 
     if (isRebaseInProgress()) {
         emit rebaseFinished(false);
-        return;
+                return GitResult(false, {}, "A rebase is already in progress. Abort or continue it first.");
     }
 
     // Check for uncommitted changes
@@ -776,7 +776,7 @@ void GitRebase::startInteractiveRebase(const QString& onto,
         if (count > 0) {
             cleanupInteractiveState();
             emit rebaseFinished(false);
-            return;
+            return GitResult(false, {}, "Working directory is not clean. Commit or stash changes first.");
         }
     }
 
@@ -805,7 +805,7 @@ void GitRebase::startInteractiveRebase(const QString& onto,
             // Should not happen, but if it does, abort
             cleanupInteractiveState();
             emit rebaseFinished(false);
-            return;
+            return GitResult(false, {}, "Could not read HEAD.");
         }
     } else {
         m_originalHeadDetached = false;
@@ -821,7 +821,7 @@ void GitRebase::startInteractiveRebase(const QString& onto,
             if (!checkoutRes.success()) {
                 cleanupInteractiveState();
                 emit rebaseFinished(false);
-                return;
+                return GitResult(false, {}, checkoutRes.errorMessage());
             }
         }
         actualBranch.clear(); // after checkout we use HEAD
@@ -832,7 +832,7 @@ void GitRebase::startInteractiveRebase(const QString& onto,
     if (baseRef.isEmpty()) {
         cleanupInteractiveState();
         emit rebaseFinished(false);
-        return;
+        return GitResult(false, {}, "No base reference provided.");
     }
 
     git_object* baseObj = nullptr;
@@ -840,7 +840,7 @@ void GitRebase::startInteractiveRebase(const QString& onto,
     if (result != GIT_OK || !baseObj) {
         cleanupInteractiveState();
         emit rebaseFinished(false);
-        return;
+        return GitResult(false, {}, QString("Invalid base reference '%1'.").arg(baseRef));
     }
 
     // It must be a commit
@@ -848,7 +848,7 @@ void GitRebase::startInteractiveRebase(const QString& onto,
         git_object_free(baseObj);
         cleanupInteractiveState();
         emit rebaseFinished(false);
-        return;
+        return GitResult(false, {}, "Base reference does not point to a commit.");
     }
 
     m_newBaseCommit = reinterpret_cast<git_commit*>(baseObj); // we own it now
@@ -860,7 +860,7 @@ void GitRebase::startInteractiveRebase(const QString& onto,
     if (result != GIT_OK) {
         cleanupInteractiveState();
         emit rebaseFinished(false);
-        return;
+        return GitResult(false, {}, "Failed to checkout the base commit.");
     }
 
     // Set HEAD to the new base commit (detached)
@@ -868,19 +868,24 @@ void GitRebase::startInteractiveRebase(const QString& onto,
     if (result != GIT_OK) {
         cleanupInteractiveState();
         emit rebaseFinished(false);
-        return;
+        return GitResult(false, {}, "Failed to detach HEAD.");
     }
 
     // Create default committer signature
     git_signature* sig = nullptr;
-    if (git_signature_default(&sig, m_currentRepo->repo) == GIT_OK) {
-        m_defaultSignature = sig;
+    if (git_signature_default(&sig, m_currentRepo->repo) != GIT_OK) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return GitResult(false, {}, "Could not read Git user identity (user.name / user.email).");
     }
+    m_defaultSignature = sig;
 
     // Kick off processing
     m_interactiveInProgress = true;
     m_currentPlanIndex = 0;
     QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+
+    return GitResult(true);
 }
 
 void GitRebase::processNextOperation()

@@ -89,7 +89,7 @@ public:
      * @param branch      Optional branch to rebase (empty = current HEAD).
      * @param operations  The interactive plan in user‑specified order.
      */
-    Q_INVOKABLE void startInteractiveRebase(const QString& onto,
+    Q_INVOKABLE GitResult startInteractiveRebase(const QString& onto,
                                             const QString& upstream,
                                             const QString& branch,
                                             const QVariantList& operations);
