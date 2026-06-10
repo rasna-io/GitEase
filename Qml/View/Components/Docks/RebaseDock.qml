@@ -20,7 +20,7 @@ UtilitiesCard {
     property CommitController       commitController:       null
     property StatusController       statusController:       null
     property NotificationController notificationController: null
-    property ConflictPopup          conflictPopup:          null
+    property ConflictController     conflictController:     null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -190,7 +190,8 @@ UtilitiesCard {
         statusController: root.statusController
         commitController: root.commitController
         rebaseController: root.rebaseController
-        conflictPopup   : root.conflictPopup
+        conflictController: root.conflictController
+        notificationController: root.notificationController
     }
 
     /* Functions
