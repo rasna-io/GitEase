@@ -77,7 +77,8 @@ IPopup {
     property StatusController   statusController: null
     property CommitController   commitController: null
     property RebaseController   rebaseController: null
-    property ConflictPopup      conflictPopup   : null
+    property ConflictController conflictController: null
+    property NotificationController notificationController: null
 
 
     property var    planData            : ({})
@@ -544,6 +545,17 @@ IPopup {
         id: commitModel
     }
 
+    ConflictPopup {
+        id : rebaseConflictPopup
+
+        currentOperation: ConflictPopup.OperationType.Rebase
+
+        rebaseController        : root.rebaseController
+        conflictController      : root.conflictController
+        notificationController  : root.notificationController
+        statusController        : root.statusController
+    }
+
     Connections {
         target: root.rebaseController
 
@@ -570,9 +582,8 @@ IPopup {
 
             scrollToCommit(hash);
 
-            root.conflictPopup.interactiveMode  = true;
-            root.conflictPopup.currentOperation = ConflictPopup.OperationType.Rebase;
-            root.conflictPopup.show();
+            rebaseConflictPopup.interactiveMode  = true;
+            rebaseConflictPopup.show();
         }
 
         function onRebaseFinished(success) {
@@ -588,7 +599,7 @@ IPopup {
     }
 
     Connections {
-        target: root.conflictPopup
+        target: rebaseConflictPopup
 
         function onInteractiveActionRequested(action) {
             switch (action) {
@@ -609,7 +620,7 @@ IPopup {
                 return
             }
 
-            root.conflictPopup.close()
+            rebaseConflictPopup.close()
         }
     }
 
