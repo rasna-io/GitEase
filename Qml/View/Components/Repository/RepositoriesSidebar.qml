@@ -272,9 +272,15 @@ Rectangle {
                                 Behavior on color { ColorAnimation { duration: 120 } }
                                 Behavior on border.color { ColorAnimation { duration: 120 } }
 
-                                Text {
+                                ScrollingText {
                                     property string initials: root.repositoryInitials(modelData)
 
+                                    anchors {
+                                        fill: parent
+                                        margins: root.expanded ? 4 : 3
+                                    }
+
+                                    running: root.expanded
                                     text: root.expanded ? modelData.name : initials
                                     font.family: Style.fontTypes.roboto
                                     font.weight: 400
@@ -289,7 +295,6 @@ Rectangle {
                                     color: Style.theme == Style.Light ?
                                                Qt.darker(repositoryAvatar.repoColor, 2.0) :
                                                Qt.lighter(repositoryAvatar.repoColor, 2.0)
-                                    elide: Text.ElideRight
 
                                     x: root.expanded ? 5 : ((repositoryAvatar.width - width) / 2)
                                     y: (repositoryAvatar.height - height) / 2
