@@ -144,15 +144,7 @@ Item {
                 commitController        : root.commitController
                 statusController        : root.statusController
                 notificationController  : root.notificationController
-
-                conflictPopup: ConflictPopup {
-                    currentOperation: ConflictPopup.OperationType.Rebase
-
-                    rebaseController        : root.rebaseController
-                    conflictController      : root.conflictController
-                    notificationController  : root.notificationController
-                    statusController        : root.statusController
-                }
+                conflictController      : root.conflictController
             }
 
             // ── Plugin docks ─────────────────────────────────────────────────
