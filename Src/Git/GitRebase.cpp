@@ -42,107 +42,205 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
                                        const QString& upstream,
                                        const QString& branch)
 {
-    Q_UNUSED(onto)
-
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository not found.");
-    }
 
-    if (upstream.trimmed().isEmpty()) {
+    if (upstream.trimmed().isEmpty())
         return GitResult(false, QVariant(), "Upstream reference is required.");
-    }
 
-    git_object* upstreamObject = nullptr;
-    int result = git_revparse_single(&upstreamObject,
-                                     m_currentRepo->repo,
-                                     upstream.trimmed().toUtf8().constData());
-    if (result != GIT_OK || !upstreamObject) {
+    git_repository* repo = m_currentRepo->repo;
+
+    git_object* upstreamObject  = nullptr;
+    git_object* ontoObject      = nullptr;
+    git_object* branchObject    = nullptr;
+    git_revwalk* walk           = nullptr;
+
+    // Resolve upstream
+    if (git_revparse_single(&upstreamObject, repo,
+                            upstream.trimmed().toUtf8().constData()) != GIT_OK)
+    {
         return GitResult(false, QVariant(),
                          QString("Invalid upstream '%1'.").arg(upstream));
     }
 
-    QString branchSpec = branch.trimmed();
-    if (branchSpec.isEmpty()) {
-        branchSpec = "HEAD";
+    // Resolve onto (fallback = upstream)
+    QString ontoSpec = onto.trimmed();
+    if (ontoSpec.isEmpty()) {
+        ontoObject = upstreamObject;
+    } else {
+        if (git_revparse_single(&ontoObject, repo,
+                                ontoSpec.toUtf8().constData()) != GIT_OK)
+        {
+            git_object_free(upstreamObject);
+            return GitResult(false, QVariant(),
+                             QString("Invalid onto '%1'.").arg(ontoSpec));
+        }
     }
 
-    git_object* branchObject = nullptr;
-    result = git_revparse_single(&branchObject,
-                                 m_currentRepo->repo,
-                                 branchSpec.toUtf8().constData());
-    if (result != GIT_OK || !branchObject) {
+    // Resolve branch (default HEAD)
+    QString branchSpec = branch.trimmed().isEmpty() ? "HEAD" : branch.trimmed();
+    if (git_revparse_single(&branchObject, repo,
+                            branchSpec.toUtf8().constData()) != GIT_OK)
+    {
+        if (ontoObject != upstreamObject)
+            git_object_free(ontoObject);
         git_object_free(upstreamObject);
+
         return GitResult(false, QVariant(),
                          QString("Invalid branch '%1'.").arg(branchSpec));
     }
 
-    git_revwalk* walk = nullptr;
-    result = git_revwalk_new(&walk, m_currentRepo->repo);
-    if (result != GIT_OK || !walk) {
-        git_object_free(branchObject);
+    // STEP 1: Collect patch-ids from ONTO history
+    QSet<QByteArray> upstreamPatchIds;
+
+    git_revwalk* upstreamWalk = nullptr;
+    git_revwalk_new(&upstreamWalk, repo);
+    git_revwalk_sorting(upstreamWalk, GIT_SORT_TOPOLOGICAL);
+    git_revwalk_push(upstreamWalk, git_object_id(ontoObject));
+
+    git_oid upstreamOid;
+    while (git_revwalk_next(&upstreamOid, upstreamWalk) == GIT_OK)
+    {
+        git_commit* commit = nullptr;
+        if (git_commit_lookup(&commit, repo, &upstreamOid) != GIT_OK)
+            continue;
+
+        // Skip root commits and merges (like Git does)
+        if (git_commit_parentcount(commit) == 1)
+        {
+            git_commit* parent = nullptr;
+            git_commit_parent(&parent, commit, 0);
+
+            git_tree* tree = nullptr;
+            git_tree* parentTree = nullptr;
+            git_commit_tree(&tree, commit);
+            git_commit_tree(&parentTree, parent);
+
+            git_diff* diff = nullptr;
+            git_diff_tree_to_tree(&diff, repo, parentTree, tree, nullptr);
+
+            git_oid patchId;
+            if (git_diff_patchid(&patchId, diff, nullptr) == GIT_OK)
+            {
+                upstreamPatchIds.insert(
+                    QByteArray(reinterpret_cast<char*>(patchId.id),
+                               GIT_OID_RAWSZ));
+            }
+
+            git_diff_free(diff);
+            git_tree_free(tree);
+            git_tree_free(parentTree);
+            git_commit_free(parent);
+        }
+
+        git_commit_free(commit);
+    }
+
+    git_revwalk_free(upstreamWalk);
+
+    // STEP 2: Walk upstream..branch commits
+    if (git_revwalk_new(&walk, repo) != GIT_OK)
+    {
+        if (ontoObject != upstreamObject)
+            git_object_free(ontoObject);
         git_object_free(upstreamObject);
+        git_object_free(branchObject);
+
         return GitResult(false, QVariant(),
-                         QString("Failed to prepare rebase plan: %1").arg(GitUtils::getLastError()));
+                         "Failed to prepare rebase plan.");
     }
 
     git_revwalk_sorting(walk, GIT_SORT_TOPOLOGICAL | GIT_SORT_TIME);
-    git_revwalk_push(walk, git_object_id(branchObject));
-    git_revwalk_hide(walk, git_object_id(upstreamObject));
+
+    QString range = QString("%1..%2")
+                        .arg(upstream.trimmed())
+                        .arg(branchSpec);
+
+    git_revwalk_push_range(walk, range.toUtf8().constData());
 
     QVariantList commits;
     git_oid oid;
-    while (git_revwalk_next(&oid, walk) == GIT_OK) {
+
+    while (git_revwalk_next(&oid, walk) == GIT_OK)
+    {
         git_commit* commit = nullptr;
-        if (git_commit_lookup(&commit, m_currentRepo->repo, &oid) != GIT_OK || !commit) {
+        if (git_commit_lookup(&commit, repo, &oid) != GIT_OK)
             continue;
-        }
 
         char hash[GIT_OID_HEXSZ + 1] = {0};
-        git_oid_tostr(hash, sizeof(hash), git_commit_id(commit));
-
-        QStringList parentHashes;
-        const unsigned int parentCount = git_commit_parentcount(commit);
-        for (unsigned int i = 0; i < parentCount; ++i) {
-            const git_oid* parentOid = git_commit_parent_id(commit, i);
-            if (!parentOid) {
-                continue;
-            }
-
-            char parentHash[GIT_OID_HEXSZ + 1] = {0};
-            git_oid_tostr(parentHash, sizeof(parentHash), parentOid);
-            parentHashes.append(QString::fromUtf8(parentHash));
-        }
+        git_oid_tostr(hash, sizeof(hash), &oid);
 
         const git_signature* author = git_commit_author(commit);
-        const QString message       = QString::fromUtf8(git_commit_message(commit));
+        QString message = QString::fromUtf8(git_commit_message(commit));
+
+        bool alreadyApplied = false;
+
+        // Only compute patch-id for non-merge commits
+        if (git_commit_parentcount(commit) == 1)
+        {
+            git_commit* parent = nullptr;
+            git_commit_parent(&parent, commit, 0);
+
+            git_tree* tree = nullptr;
+            git_tree* parentTree = nullptr;
+            git_commit_tree(&tree, commit);
+            git_commit_tree(&parentTree, parent);
+
+            git_diff* diff = nullptr;
+            git_diff_tree_to_tree(&diff, repo, parentTree, tree, nullptr);
+
+            git_oid patchId;
+            if (git_diff_patchid(&patchId, diff, nullptr) == GIT_OK)
+            {
+                QByteArray id(reinterpret_cast<char*>(patchId.id),
+                              GIT_OID_RAWSZ);
+
+                if (upstreamPatchIds.contains(id))
+                    alreadyApplied = true;
+            }
+
+            git_diff_free(diff);
+            git_tree_free(tree);
+            git_tree_free(parentTree);
+            git_commit_free(parent);
+        }
 
         QVariantMap item;
-        item["action"]          = "pick";
-        item["hash"]            = QString::fromUtf8(hash);
-        item["shortHash"]       = QString::fromUtf8(hash).left(7);
-        item["summary"]         = message.split('\n').first();
-        item["message"]         = message;
-        item["author"]          = author && author->name ? QString::fromUtf8(author->name) : QString();
-        item["authorEmail"]     = author && author->email ? QString::fromUtf8(author->email) : QString();
-        item["authorDate"]      = author ? QDateTime::fromSecsSinceEpoch(author->when.time).toString(Qt::ISODate) : QString();
-        item["parentHashes"]    = parentHashes;
-        item["parentHash"]      = parentHashes.isEmpty() ? QString() : parentHashes.first();
-        item["isMerge"]         = parentCount > 1;
+        item["action"]      = alreadyApplied ? "skip" : "pick";
+        item["hash"]        = QString::fromUtf8(hash);
+        item["shortHash"]   = QString::fromUtf8(hash).left(7);
+        item["summary"]     = message.split('\n').first();
+        item["message"]     = message;
+        item["author"]      = author && author->name
+                             ? QString::fromUtf8(author->name) : QString();
+
+        item["authorEmail"] = author && author->email
+                                  ? QString::fromUtf8(author->email) : QString();
+
+        item["authorDate"]  = author
+                                 ? QDateTime::fromSecsSinceEpoch(
+                                       author->when.time).toString(Qt::ISODate)
+                                 : QString();
+
+        item["isMerge"]     = git_commit_parentcount(commit) > 1;
 
         commits.append(item);
         git_commit_free(commit);
     }
 
+    // Cleanup
     git_revwalk_free(walk);
     git_object_free(branchObject);
+    if (ontoObject != upstreamObject)
+        git_object_free(ontoObject);
     git_object_free(upstreamObject);
 
     QVariantMap data;
-    data["commits"]             = commits;
-    data["upstream"]            = upstream.trimmed();
-    data["onto"]                = onto.trimmed();
-    data["branch"]              = branch.trimmed();
-    data["supportedActions"]    = QStringList{"pick", "skip"};
+    data["commits"] = commits;
+    data["upstream"] = upstream.trimmed();
+    data["onto"] = onto.trimmed();
+    data["branch"] = branchSpec;
+    data["supportedActions"] = QStringList{ "pick", "skip" };
 
     return GitResult(true, data);
 }
