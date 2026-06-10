@@ -142,8 +142,7 @@ Rectangle {
                                             if (!dragged && Math.sqrt(dx*dx + dy*dy) >= 100) {
                                                 dragged = true
                                                 TaskbarHelper.launchNewInstance(modelData.path)
-                                                // todo
-                                                // implement auto close after implement repo close
+                                                root.repositoryController.closeRepo(modelData.path)
                                             }
                                         }
                                     }

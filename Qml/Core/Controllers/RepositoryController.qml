@@ -126,6 +126,15 @@ GitRepository {
         }
     }
 
+    function closeRepo(path) {
+        const idx = root.appModel.repositories.findIndex(repo => repo && repo.path === path)
+        if (idx < 0)
+            return
+
+        root.appModel.repositories.splice(idx, 1)
+        root.appModel.repositories = root.appModel.repositories.slice()
+    }
+
     /**
      * Create and initialize a Repository component for the given path
      */
