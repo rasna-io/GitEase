@@ -113,7 +113,7 @@ install(TARGETS ${MAIN_TARGET_NAME}
 )
 
 if (WIN32)
-    target_link_libraries(${MAIN_TARGET_NAME} PRIVATE dwmapi)
+    target_link_libraries(${MAIN_TARGET_NAME} PRIVATE dwmapi shell32 ole32)
 endif()
 
 # Make Qt Creator aware of where the QML modules live
