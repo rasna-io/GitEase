@@ -455,6 +455,8 @@ DetachablePanel {
         statusController: root.statusController
         commitController: root.commitController
         rebaseController: root.rebaseController
+        conflictController: root.conflictController
+        notificationController: root.notificationController
     }
 
     /* Functions
