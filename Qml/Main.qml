@@ -165,7 +165,7 @@ ApplicationWindow {
             let currentRepo = uiSession.appModel.currentRepository
 
             if (currentRepo) {
-                TaskbarHelper.setRepoInfo(currentRepo.color, currentRepo.name)
+                Qt.callLater(() => TaskbarHelper.setRepoInfo(currentRepo.color, currentRepo.name))
             }
         }
     }
