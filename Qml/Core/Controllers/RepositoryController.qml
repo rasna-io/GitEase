@@ -133,6 +133,8 @@ GitRepository {
 
         root.appModel.repositories.splice(idx, 1)
         root.appModel.repositories = root.appModel.repositories.slice()
+
+        selectRepository(root.appModel.repositories[0].id)
     }
 
     /**
