@@ -1107,6 +1107,8 @@ void GitRebase::interactiveContinue()
         return;
     }
 
+    git_repository_state_cleanup(m_currentRepo->repo)
+
     git_commit_free(originalCommit);
     emit rebaseOperationCompleted(m_currentOpHash);
     m_currentPlanIndex++;
