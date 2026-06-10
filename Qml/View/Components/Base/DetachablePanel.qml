@@ -187,7 +187,7 @@ Item {
 
                     Label {
                         Layout.fillWidth: true
-                        text: root.title
+                        text: root.title  + ` [${root.currentRepositoryName}]`
                         color: Style.colors.foreground
                         font.family: Style.fontTypes.roboto
                         font.weight: 500
