@@ -25,8 +25,11 @@ public:
     Q_INVOKABLE void launchNewInstance(const QString &repoPath);
 
 private:
+    QString appUserModelId() const;
     HICON createTintedIcon(const QColor &tintColor) const;
-    void applyInfoToAllWindows();
+    void  initializeProcessTaskbarIdentity() const;
+    void  applyInfoToAllWindows();
+    void  setWindowAppUserModelId(HWND hwnd) const;
     void  setWindowIcons(HWND hwnd);
     void  setWindowTitles(HWND hwnd);
 

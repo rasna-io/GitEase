@@ -1,10 +1,45 @@
 #include "taskbarhelper.hpp"
 
+#include <QCoreApplication>
 #include <QGuiApplication>
 #include <QSvgRenderer>
 #include <QPainter>
 #include <QPixmap>
 #include <QImage>
+#include <QProcess>
+#include <QRegularExpression>
+#include <QSvgRenderer>
+
+#include <objbase.h>
+#include <propkey.h>
+#include <propsys.h>
+#include <shellapi.h>
+
+namespace {
+
+    class ScopedComInitialization
+    {
+        public:
+            ScopedComInitialization()
+                : m_result(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED))
+            {
+            }
+
+            ~ScopedComInitialization()
+            {
+                if (SUCCEEDED(m_result))
+                    CoUninitialize();
+            }
+
+            bool isUsable() const
+            {
+                return SUCCEEDED(m_result) || m_result == RPC_E_CHANGED_MODE;
+            }
+
+        private:
+            HRESULT m_result;
+    };
+}
 
 TaskbarHelper *TaskbarHelper::s_instance = nullptr;
 
@@ -13,6 +48,7 @@ TaskbarHelper::TaskbarHelper(QObject *parent)
     , m_color(QColor(0, 0, 255, 127))
     , m_repoName("main")
 {
+    initializeProcessTaskbarIdentity();
     s_instance = this;
 }
 
@@ -37,6 +73,17 @@ void TaskbarHelper::setRepoInfo(const QColor &color, const QString &name) {
     m_currentIcon = newIcon;
 
     applyInfoToAllWindows();
+}
+
+QString TaskbarHelper::appUserModelId() const
+{
+    return QStringLiteral("GitEase.Instance.%1").arg(GetCurrentProcessId());
+}
+
+void TaskbarHelper::initializeProcessTaskbarIdentity() const
+{
+    const std::wstring appId = appUserModelId().toStdWString();
+    SetCurrentProcessExplicitAppUserModelID(appId.c_str());
 }
 
 bool TaskbarHelper::isValidHwnd(HWND hwnd) const {
@@ -118,6 +165,36 @@ void TaskbarHelper::applyInfoToAllWindows() {
     }
 }
 
+void TaskbarHelper::setWindowAppUserModelId(HWND hwnd) const {
+    if (!isValidHwnd(hwnd))
+        return;
+
+    ScopedComInitialization com;
+    if (!com.isUsable())
+        return;
+
+    IPropertyStore *propertyStore = nullptr;
+    HRESULT result = SHGetPropertyStoreForWindow(
+        hwnd,
+        IID_IPropertyStore,
+        reinterpret_cast<void **>(&propertyStore));
+
+    if (FAILED(result) || !propertyStore)
+        return;
+
+    const std::wstring appId = appUserModelId().toStdWString();
+
+    PROPVARIANT value = {};
+    value.vt = VT_LPWSTR;
+    value.pwszVal = const_cast<PWSTR>(appId.c_str());
+
+    result = propertyStore->SetValue(PKEY_AppUserModel_ID, value);
+    if (SUCCEEDED(result))
+        propertyStore->Commit();
+
+    propertyStore->Release();
+}
+
 void TaskbarHelper::applyInfoToWindow(QWindow *window) {
     if (!window)
         return;
@@ -125,6 +202,7 @@ void TaskbarHelper::applyInfoToWindow(QWindow *window) {
     HWND hwnd = reinterpret_cast<HWND>(window->winId());
 
     if (isValidHwnd(hwnd)) {
+        setWindowAppUserModelId(hwnd);
         setWindowIcons(hwnd);
         setWindowTitles(hwnd);
     }
