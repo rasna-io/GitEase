@@ -23,6 +23,7 @@ FileListRow {
     signal stageRequested(string filePath)
     signal discardRequested(string filePath)
     signal openRequested(string filePath)
+    signal stashRequested(string filePath)
 
     /* Children
      * ****************************************************************************************/
@@ -43,6 +44,13 @@ FileListRow {
                 NumberAnimation {
                     duration: 100
                 }
+            }
+
+            ActionIconButton {
+                iconText: Style.icons.archive
+                tooltip: "Stash file"
+                textColor: Style.colors.mutedText
+                onClicked: root.stashRequested(root.filePath)
             }
 
             ActionIconButton {

@@ -26,7 +26,8 @@ public:
      * \param keepIndex Whether to keep staged changes in index
      * \return GitResult
      */
-    Q_INVOKABLE GitResult save(const QString &message = "", bool keepIndex = false);
+    Q_INVOKABLE GitResult save    (const QString &message = "", bool keepIndex = false);
+    Q_INVOKABLE GitResult saveFile(const QString &filePath, const QString &message = "");
 
     /**
      * \brief Get list of all stashes

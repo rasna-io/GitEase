@@ -111,6 +111,16 @@ Item {
                 root.updateStatus()
             }
 
+            onStashFileRequested: function(filePath) {
+                let res = stashController.saveFile(filePath)
+                if (res.success) {
+                    root.notificationController.success("File stashed: " + filePath, "Stash File", 3000)
+                } else {
+                    root.notificationController.error(res.errorMessage || "Failed to stash file", "Stash Error", 5000)
+                }
+                root.updateStatus()
+            }
+
             onDiscardFileRequested: function(filePath) {
                 let res = statusController.revertFile(filePath)
                 if (res.success) {
