@@ -124,6 +124,8 @@ Item {
             FileChangesDock {
                 id: fileChangesDock
 
+                currentRepositoryName: root.appModel.currentRepository.name || ""
+
                 repositoryController: root.repositoryController
                 statusController: root.statusController
 
@@ -132,6 +134,8 @@ Item {
 
             DiffView {
                 id: diffView
+
+                currentRepositoryName: root.appModel.currentRepository.name || ""
                 readOnly: true
             }
         }

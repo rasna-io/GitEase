@@ -18,6 +18,8 @@ Item {
      * ****************************************************************************************/
     property var                     page:                    null
 
+    property AppModel                appModel:                null
+
     property RepositoryController    repositoryController:    null
 
     property StatusController        statusController:        null
@@ -510,6 +512,8 @@ Item {
             chunkMode: true
             contextLines: 0
             expandLines: 10
+
+            currentRepositoryName: root.appModel.currentRepository.name || ""
 
             onRequestStage: function (start, end, type) {
                 let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
