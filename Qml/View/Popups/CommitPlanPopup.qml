@@ -26,19 +26,19 @@ IPopup {
         function colorOf(status){
             switch (status) {
                 case inProgress:
-                    return "#FFA500"
+                    return Style.colors.rebaseStatusInProgress
 
                 case rebased:
-                    return "#2ECC40"
+                    return Style.colors.rebaseStatusRebased
 
                 case conflict:
-                    return "#FF4136"
+                    return Style.colors.rebaseStatusConflict
 
                 case skipped:
-                    return Style.colors.mutedText
+                    return Style.colors.rebaseStatusSkipped
 
                 default:
-                    return Style.colors.mutedText
+                    return Style.colors.rebaseStatusPending
             }
         }
     }
