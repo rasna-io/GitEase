@@ -423,16 +423,6 @@ DetachablePanel {
     MergeMethodPopup { id: mergeMethodPopup }
 
     ConflictPopup {
-        id: rebaseConflictPopup
-        currentOperation        : ConflictPopup.OperationType.Rebase
-        rebaseController        : root.rebaseController
-        conflictController      : root.conflictController
-        notificationController  : root.notificationController
-        statusController        : root.statusController
-        // onOperationCompleted    : reloadAll()        //TODO
-    }
-
-    ConflictPopup {
         id: cherryPickConflictPopup
         currentOperation        : ConflictPopup.OperationType.CherryPick
         cherryPickController    : root.cherryPickController
