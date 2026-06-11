@@ -612,6 +612,8 @@ Rectangle {
                 Layout.fillWidth: false
                 text: "Select All"
 
+                visible: root.queueState === RepoForest.QueueState.Ready
+
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 12
 
