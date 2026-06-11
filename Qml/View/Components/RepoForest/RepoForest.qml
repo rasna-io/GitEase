@@ -108,7 +108,8 @@ Rectangle {
     }
 
     onFetchFlowItemIndexChanged: {
-        repoListView.focusOnIndex()
+        if (autoScrollingCheckBox.checked)
+            repoListView.focusOnIndex()
     }
 
     /* Signals
@@ -630,6 +631,22 @@ Rectangle {
                 }
             }
 
+            CheckBox {
+                id: autoScrollingCheckBox
+                Layout.fillWidth: false
+                text: "Auto Scroll"
+
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 12
+
+                Material.accent: Style.colors.accent
+                Material.foreground: Style.colors.foreground
+
+                palette {
+                    text: Style.colors.foreground
+                }
+            }
+
             ToolButton {
                 id: fetchButton
                 Layout.preferredWidth: 26
@@ -1033,7 +1050,10 @@ Rectangle {
                 onPullRequested: (i) => root.pull(i)
             }
 
-            onCountChanged: repoListView.focusOnIndex()
+            onCountChanged: {
+                if (autoScrollingCheckBox.checked)
+                    repoListView.focusOnIndex()
+            }
 
             function focusOnIndex() {
                 if (root.fetchFlowItemIndex < 0 || root.fetchFlowItemIndex >= count)
