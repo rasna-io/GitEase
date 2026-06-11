@@ -31,12 +31,7 @@ Item {
 
     property int selectionStart: -1
     property int selectionEnd: -1
-    enum DiffViewSelectionSide {
-        None,
-        Left,
-        Right
-    }
-    property int selectedSide: SideBySideDiff.DiffViewSelectionSide.None
+    property int selectedSide: DiffView.DiffViewSelectionSide.None
 
     property real horizontalOffset: 0
 
@@ -128,7 +123,7 @@ Item {
                         property bool inSelection:
                             (index >= Math.min(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
                             (index <= Math.max(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
-                            selectedSide === SideBySideDiff.DiffViewSelectionSide.Left
+                            selectedSide === DiffView.DiffViewSelectionSide.Left
 
                         color: inSelection ? Style.colors.accent : "transparent"
                         opacity: 0.8
@@ -300,7 +295,7 @@ Item {
                         property bool inSelection:
                             (index >= Math.min(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
                             (index <= Math.max(delegateRoot.selectionStart, delegateRoot.selectionEnd)) &&
-                            selectedSide === SideBySideDiff.DiffViewSelectionSide.Right
+                            selectedSide === DiffView.DiffViewSelectionSide.Right
 
                         color: inSelection ? Style.colors.accent : "transparent"
                         opacity: 0.8
