@@ -58,6 +58,7 @@ Rectangle {
                 }
             }
             showBackButton: root.controller ? root.controller.canGoBack : false
+            backButtonText: root.appModel?.appSettings?.hasCompletedWelcome ? Style.icons.close : Style.icons.angleLeft
             onBackClicked: {
                 if(root.appModel?.appSettings?.hasCompletedWelcome)
                 {
