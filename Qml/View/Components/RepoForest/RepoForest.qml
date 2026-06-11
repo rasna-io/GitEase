@@ -112,6 +112,14 @@ Rectangle {
             repoListView.focusOnIndex()
     }
 
+    onVisibleChanged: {
+        if (visible) {
+            root.reposModel = []
+            root.selectedIndexes = []
+            gitScanner.scan(root.rootPath)
+        }
+    }
+
     /* Signals
     * ****************************************************************************************/
     signal closeRequested()
@@ -583,12 +591,6 @@ Rectangle {
         function onClosed() {
             root._showUserAuthenticationPopup = false
         }
-    }
-
-    onRootPathChanged: {
-        root.reposModel = []
-        root.selectedIndexes = []
-        gitScanner.scan(root.rootPath)
     }
 
     ColumnLayout {
