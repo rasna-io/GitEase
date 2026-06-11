@@ -946,7 +946,7 @@ DetachablePanel {
             var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
 
             if (root.mergeController.hasMergeConflicts()) {
-                mergeConflictPopup.open()
+                mergeConflictPopup.show()
 
                 root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
 
