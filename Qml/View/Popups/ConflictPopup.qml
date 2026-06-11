@@ -77,15 +77,29 @@ Window {
 
     /* Object Properties
      * ****************************************************************************************/
+    modality: Qt.ApplicationModal
+    color: "transparent"
+
     width: 800
     height: 650
 
-    modality: Qt.ApplicationModal
-    color: "transparent"
+    onWidthChanged: {
+        if (visible && width != 800)
+            width = 800
+    }
+    onHeightChanged: {
+        if (visible && height != 650)
+            height = 650
+    }
 
     onVisibleChanged: {
         if(!visible)
             return
+
+        Qt.callLater(function() {
+            x = (Screen.width - width) / 2
+            y = (Screen.height - height) / 2
+        })
 
         if (!notificationController) {
             console.error("ConflictPopup: missing required controllers")
