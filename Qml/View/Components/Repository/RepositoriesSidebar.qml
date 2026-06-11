@@ -204,6 +204,10 @@ Rectangle {
                                                     && modelData
                                                     && root.detachRepositoryPath === modelData.path
 
+                        HoverHandler {
+                            id: hoverHandler
+                        }
+
                         Row {
                             id: repositoryRow
                             anchors.fill: parent
@@ -243,7 +247,8 @@ Rectangle {
                                 radius: 6
                                 clip: true
 
-                                width: root.expanded ? repositoryRow.width - (repositoryRow.spacing + 2 + repositoryRow.anchors.margins) : 33
+                                width: root.expanded ?
+                                           repositoryRow.width - (repositoryRow.spacing + 2 + repositoryRow.anchors.margins) - closeButton.width : 33
                                 scale: repoMouseArea.pressed
                                        ? 0.96
                                        : (repoMouseArea.containsMouse ? 1.035 : 1.0)
@@ -376,6 +381,40 @@ Rectangle {
                                         } else if (root.repositoryController) {
                                             root.repositoryController.selectRepository(modelData.id)
                                         }
+                                    }
+                                }
+                            }
+
+                            WindowsButton {
+                                id: closeButton
+                                Material.accent: Style.colors.windowsClose
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: 30
+                                width: visible ? 20 : 0
+                                radius: 6
+                                visible: hoverHandler.hovered && root.repositories.length > 1
+                                onClicked: root.repositoryController.closeRepo(modelData.path)
+                                content: Item {
+                                    anchors.centerIn: parent
+                                    width: 10
+                                    height: 10
+
+                                    Rectangle {
+                                        width: 12
+                                        height: 2
+                                        radius: 1
+                                        color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                                        anchors.centerIn: parent
+                                        rotation: 45
+                                    }
+
+                                    Rectangle {
+                                        width: 12
+                                        height: 2
+                                        radius: 1
+                                        color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                                        anchors.centerIn: parent
+                                        rotation: -45
                                     }
                                 }
                             }
