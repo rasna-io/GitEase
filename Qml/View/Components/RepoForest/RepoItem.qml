@@ -167,7 +167,7 @@ Rectangle {
                         Text {
                             id: statusText
                             Layout.alignment: Qt.AlignVCenter
-                            text: (status.progress > 0 && status.progress <= 100) ?
+                            text: (status.progress > 0 && status.progress <= 99) ?
                                       `${root.modelData.status} ${status.progress} %` : root.modelData.status
                             font.family: Style.fontTypes.roboto
                             font.pixelSize: 12
