@@ -48,9 +48,16 @@ FileListRow {
 
             ActionIconButton {
                 iconText: Style.icons.archive
-                tooltip: "Stash file"
+                tooltip: "Stash"
                 textColor: Style.colors.mutedText
                 onClicked: root.stashRequested(root.filePath)
+            }
+
+            ActionIconButton {
+                iconText: Style.icons.trash
+                tooltip: "Discard"
+                textColor: Style.colors.error
+                onClicked: root.discardRequested(root.filePath)
             }
 
             ActionIconButton {
@@ -60,13 +67,6 @@ FileListRow {
                             Qt.darker(Style.colors.addedFile, 1.5) :
                             Qt.lighter(Style.colors.addedFile, 1.5)
                 onClicked: root.stageRequested(root.filePath)
-            }
-
-            ActionIconButton {
-                iconText: Style.icons.trash
-                tooltip: "Discard"
-                textColor: Style.colors.error
-                onClicked: root.discardRequested(root.filePath)
             }
 
             ActionIconButton {
