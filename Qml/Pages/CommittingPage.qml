@@ -62,6 +62,26 @@ Item {
         branchController.getCurrentBranchName()
     }
 
+    onPageChanged: {
+        if (root.page) {
+            root.page.onPageChange = function(callback) {
+                if (!root.currentFileEdited) {
+                    callback(true)
+                    return
+                }
+                var d = unsavedChangesDialogComp.createObject(root)
+                d.title = "Unsaved Changes"
+                d.message = "You have unsaved changes in: " + root.selectedFilePath
+                d.saved.connect(() => {
+                    root.saveFile()
+                    callback(true)
+                })
+                d.aborted.connect(() => { callback(true) })
+                d.cancelled.connect(() => { callback(false) })
+                d.open()
+            }
+        }
+    }
     /* Object Properties
      * ****************************************************************************************/
     anchors.fill: parent
