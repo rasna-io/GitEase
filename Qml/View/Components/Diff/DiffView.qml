@@ -29,7 +29,7 @@ DetachablePanel {
     property int currentIndex: -1
     property bool fileIsEdited: false
     property string selectedFile: ""
-    property bool checkBoxVisible: false
+    property bool hasHeaderMiddleComponent: false
 
     // Properties used for selection
     property bool selectEnabled: true // used to disable mouse area so that it does not block editing file
@@ -40,7 +40,7 @@ DetachablePanel {
         Left,
         Right
     }
-    property int selectedSide: DiffView.DiffViewSelectionSide.Right
+    property int selectedSide: DiffView.DiffViewSelectionSide.None
     property bool dragging: false
 
     property alias scrollPosition: diffListView.contentY
@@ -48,9 +48,7 @@ DetachablePanel {
     /* Object Properties
      * ****************************************************************************************/
     title: qsTr("Diff View")
-    fileName: root.selectedFile
-    hasCheckBox: root.checkBoxVisible
-    checkBoxIsChecked: true
+    middleAccessory: root.hasHeaderMiddleComponent ? headerMiddleComp : null
 
     /* Signals
      * ****************************************************************************************/
@@ -145,25 +143,6 @@ DetachablePanel {
             if(!root.selectedFile.includes("●")) root.selectedFile += " ●"
         } else {
             if(root.selectedFile.slice(-1) === "●") root.selectedFile = root.selectedFile.slice(0, -2);
-        }
-    }
-
-    onCheckChanged: (checked) => {
-        if(root.fileIsEdited) {
-            var d = unsavedChangesDialogComp.createObject(root)
-            d.title = "Unsaved Changes"
-            d.message = "You have unsaved changes in: " + root.selectedFile
-            d.saved.connect(() => {
-                                root.saveFile()
-                                root.chunkMode = checked
-                            })
-            d.aborted.connect(() => { root.chunkMode = checked })
-            d.cancelled.connect(() => {
-                                    checkBoxIsChecked = false
-                                })
-            d.open()
-        } else {
-            root.chunkMode = checked
         }
     }
 
@@ -381,6 +360,48 @@ DetachablePanel {
             onPositionChanged: {
                 // Calculate the pixel offset based on scrollbar position
                 diffListView.horizontalScrollOffset = position * diffListView.maxContentWidth
+            }
+        }
+    }
+
+    Component {
+        id: headerMiddleComp
+        RowLayout {
+            CheckBox {
+                text: "Chunk View"
+                Layout.alignment: Qt.AlignLeft
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 12
+                Layout.preferredHeight: 35
+                Material.accent: Style.colors.accent
+                Material.foreground: Style.colors.foreground
+                checked: true
+
+                onClicked: {
+                    if(root.fileIsEdited) {
+                        var d = unsavedChangesDialogComp.createObject(root)
+                        d.title = "Unsaved Changes"
+                        d.message = "You have unsaved changes in: " + root.selectedFile
+                        d.saved.connect(() => {
+                                            root.saveFile()
+                                            root.chunkMode = checked
+                                        })
+                        d.aborted.connect(() => { root.chunkMode = checked })
+                        d.cancelled.connect(() => {
+                                                checked = false
+                                            })
+                        d.open()
+                    } else {
+                        root.chunkMode = checked
+                    }
+                }
+            }
+
+            Label {
+                text: root.selectedFile
+                color: Style.colors.foreground
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 12
             }
         }
     }

@@ -526,7 +526,7 @@ Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
             chunkMode: true
-            hasCheckBox: true
+            hasHeaderMiddleComponent: true
             selectEnabled: false
             contextLines: 0
             expandLines: 10

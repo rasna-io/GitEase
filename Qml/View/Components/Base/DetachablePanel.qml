@@ -23,9 +23,9 @@ Item {
     property int        minWindowWidth: 420
     property int        minWindowHeight: 320
     property bool       showInlineHeader: true
-    property string     fileName: ""
-    property bool       hasCheckBox: false
-    property bool       checkBoxIsChecked: false
+
+    // Optional elements in the middle of header
+    property Component  middleAccessory: null
 
     // Default content slot for panel contents
     default property alias content: contentRoot.data
@@ -34,10 +34,6 @@ Item {
      * ****************************************************************************************/
     property int lastWidth: 600
     property int lastHeight: 400
-
-    /* Signals
-     * ****************************************************************************************/
-    signal checkChanged(bool checked)
 
     /* Functions
      * ****************************************************************************************/
@@ -101,6 +97,7 @@ Item {
 
                 Label {
                     text: root.title
+                    Layout.alignment: Qt.AlignLeft
                     color: Style.colors.foreground
                     font.family: Style.fontTypes.roboto
                     font.weight: 500
@@ -108,40 +105,17 @@ Item {
                     elide: Text.ElideRight
                 }
 
-                CheckBox {
-                    id: checkBox
-                    text: "Chunk View"
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
-                    Layout.preferredHeight: 35
-                    Material.accent: Style.colors.accent
-                    Material.foreground: Style.colors.foreground
-                    checked: root.checkBoxIsChecked
-                    visible: root.hasCheckBox
-
-                    onClicked: {
-                        root.checkChanged(checked)
-                    }
-                }
-
-                Item {
+                Loader {
+                    id: accessoryLoader
+                    Layout.alignment: Qt.AlignCenter
                     Layout.fillWidth: true
-                }
-
-                Label {
-                    text: root.fileName
-                    color: Style.colors.foreground
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
-                    visible: root.fileName !== ""
-                }
-
-                Item {
-                    Layout.fillWidth: true
+                    active: root.middleAccessory !== null
+                    sourceComponent: root.middleAccessory
                 }
 
                 ToolButton {
                     id: detachButton
+                    Layout.alignment: Qt.AlignRight
                     Layout.preferredWidth: 18
                     Layout.preferredHeight: 18
                     hoverEnabled: true
