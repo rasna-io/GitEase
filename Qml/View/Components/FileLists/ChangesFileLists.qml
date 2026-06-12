@@ -112,7 +112,7 @@ Item {
             }
 
             onStashFileRequested: function(filePath) {
-                let res = stashController.saveFile(filePath)
+                let res = stashController.stashFile(filePath)
                 if (res.success) {
                     root.notificationController.success("File stashed: " + filePath, "Stash File", 3000)
                 } else {
