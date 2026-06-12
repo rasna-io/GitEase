@@ -35,7 +35,7 @@ DetachablePanel {
      * ****************************************************************************************/
     signal requestStage(int start, int end, int type)
     signal requestRevert(int start, int end, int type)
-
+    signal requestStash(int start, int end, int type)
 
     /* Children
      * ****************************************************************************************/
@@ -155,6 +155,7 @@ DetachablePanel {
                     onRequestFocusPrev: diffListView.currentIndex = index - 1
                     onRequestStage: (start, end, type) => root.requestStage(start, end, type)
                     onRequestRevert: (start, end, type) => root.requestRevert(start, end, type)
+                    onRequestStash: (start, end, type) => root.requestStash(start, end, type)
                 }
             }
         }

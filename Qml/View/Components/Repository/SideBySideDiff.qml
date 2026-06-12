@@ -61,12 +61,13 @@ Item {
     signal requestFocusPrev()
     signal requestStage(int start, int end, int type)
     signal requestRevert(int start, int end, int type)
+    signal requestStash(int start, int end, int type)
 
     /* Object Properties
      * ****************************************************************************************/
 
     // Auto-height based on content
-    height: Math.max(hasAction ? 50 : 24, Math.max(leftTextMetrics.height, rightTextEdit.contentHeight + 4))
+    height: Math.max(hasAction ? 90 : 24, Math.max(leftTextMetrics.height, rightTextEdit.contentHeight + 4))
 
     onIsCurrentItemChanged: {
         if (isCurrentItem && !isDel) {
@@ -210,6 +211,29 @@ Item {
                             let range = getRange()
 
                             requestRevert(range.start, range.end, range.type);
+                        }
+                    }
+                }
+
+                Label {
+                    text: Style.icons.archive
+                    font.family: Style.fontTypes.font6ProSolid
+                    color: stashMsa.containsMouse ? Style.colors.secondaryForeground : Qt.darker(Style.colors.secondaryForeground, 1.4)
+                    padding: 5
+                    background: Rectangle {
+                        color: stashMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
+                        radius: 5
+                    }
+
+                    MouseArea {
+                        id: stashMsa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: "PointingHandCursor"
+                        onClicked: {
+                            let range = getRange()
+
+                            requestStash(range.start, range.end, range.type);
                         }
                     }
                 }
