@@ -313,7 +313,6 @@ GitResult GitStash::stashSelectedLines(const QString &filePath, const QString &m
         git_commit_free(headCommit);
     };
 
-    // Hold the QByteArray in a named variable — constData() pointer must outlive the call
     QByteArray blobBytes = blob.toUtf8();
     git_oid blobOid;
     if (git_blob_create_frombuffer(&blobOid, repo,
