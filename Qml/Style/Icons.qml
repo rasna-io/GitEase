@@ -70,9 +70,6 @@ QtObject{
     property string arrowDownToLine:   "\uf33d"
 
     property string close:              "\uf00d" // close
-    property string play:              "\uf04b" // play
-    property string pause:             "\uf28b" // pause
-    property string stop:              "\uf04d" // stop
 
     property string reset:             "\uf2ea" // reset
     property string resetSoft:         "\uf0e2" // undo
