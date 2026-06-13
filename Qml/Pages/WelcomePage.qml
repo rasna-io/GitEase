@@ -58,8 +58,13 @@ Rectangle {
                 }
             }
             showBackButton: root.controller ? root.controller.canGoBack : false
+            backButtonText: root.appModel?.appSettings?.hasCompletedWelcome ? Style.icons.close : Style.icons.angleLeft
             onBackClicked: {
-                if (root.controller) {
+                if(root.appModel?.appSettings?.hasCompletedWelcome)
+                {
+                    Qt.quit()
+                }
+                else if (root.controller) {
                     root.controller.previousPage()
                 }
             }
@@ -69,7 +74,7 @@ Rectangle {
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            
+
             StackLayout {
                 anchors.fill: parent
                 currentIndex: root.controller ? root.controller.currentPageIndex : Enums.WelcomePages.WelcomeBanner

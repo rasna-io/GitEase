@@ -19,6 +19,7 @@ Item {
     property string             pageTitle:          ""
     property bool               showBackButton:     true
     property bool               showBrand:          true
+    property string             backButtonText:     ""
 
     /* Signals
      * ****************************************************************************************/
@@ -38,13 +39,14 @@ Item {
         visible: root.showBackButton
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
-        text: Style.icons.angleLeft
+        text: root.backButtonText
         font.family: Style.fontTypes.font6Pro
         font.pixelSize: 16
         width: 45
         height: 45
         flat: true
         Material.foreground: Style.colors.foreground
+        z: 1
 
         background: Rectangle {
             implicitWidth: 45

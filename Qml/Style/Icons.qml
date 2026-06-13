@@ -68,4 +68,6 @@ QtObject{
 
     property string arrowUpToLine:     "\uf341"
     property string arrowDownToLine:   "\uf33d"
+
+    property string close:              "\uf00d" // close
 }
