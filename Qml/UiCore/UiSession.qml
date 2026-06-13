@@ -41,6 +41,7 @@ QtObject {
             conflictController.currentRepo = currentRepo
             tagController.currentRepo = currentRepo
             pluginController.currentRepo = currentRepo
+            resetController.currentRepo = currentRepo
         }
 
         onRepositorySelected: function(repo) {
@@ -131,6 +132,12 @@ QtObject {
     }
 
     property CherryPickController cherryPickController: CherryPickController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
+
+    property ResetController resetController: ResetController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
         }

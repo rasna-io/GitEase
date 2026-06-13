@@ -37,6 +37,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/ConflictController.qml
     Qml/Core/Controllers/TagController.qml
     Qml/Core/Controllers/PluginController.qml
+    Qml/Core/Controllers/ResetController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js

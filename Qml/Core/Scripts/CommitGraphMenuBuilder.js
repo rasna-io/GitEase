@@ -116,7 +116,7 @@ function buildMenu(state) {
 
     // Reset
     model.push({
-        text: "Reset onto" + state.shortHash,
+        text: "Reset " + state.currentBranch + " to this commit",
         icon: "reset",
         action: "reset",
         subItems: [
