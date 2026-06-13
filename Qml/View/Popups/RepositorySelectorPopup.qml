@@ -53,6 +53,7 @@ IPopup {
             PageHeader {
                 pageTitle: "Open a Repository"
                 showBackButton: true
+                backButtonText: Style.icons.close
                 onBackClicked: {
                    root.close()
                 }
