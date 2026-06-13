@@ -170,7 +170,7 @@ Item {
                 Label {
                     text: Style.icons.plus
                     font.family: Style.fontTypes.font6ProSolid
-                    color: stageMsa.containsMouse ? Style.colors.secondaryForeground : Qt.darker(Style.colors.secondaryForeground, 1.4)
+                    color: stageMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
                     padding: 5
                     background: Rectangle {
                         color: stageMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
@@ -195,7 +195,7 @@ Item {
                 Label {
                     text: Style.icons.arrowRight
                     font.family: Style.fontTypes.font6ProSolid
-                    color: revertMsa.containsMouse ? Style.colors.secondaryForeground : Qt.darker(Style.colors.secondaryForeground, 1.4)
+                    color: revertMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
                     padding: 5
                     background: Rectangle {
                         color: revertMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
@@ -218,7 +218,7 @@ Item {
                 Label {
                     text: Style.icons.archive
                     font.family: Style.fontTypes.font6ProSolid
-                    color: stashMsa.containsMouse ? Style.colors.secondaryForeground : Qt.darker(Style.colors.secondaryForeground, 1.4)
+                    color: stashMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
                     padding: 5
                     background: Rectangle {
                         color: stashMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
