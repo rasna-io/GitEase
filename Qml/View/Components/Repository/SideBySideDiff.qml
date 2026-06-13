@@ -56,7 +56,7 @@ Item {
      * ****************************************************************************************/
 
     // Auto-height based on content
-    implicitHeight: Math.max(hasAction ? 50 : 24, Math.max(leftTextMetrics.height, rightTextEdit.contentHeight + 4))
+    implicitHeight: Math.max(hasAction ? 90 : 24, Math.max(leftTextMetrics.height, rightTextEdit.contentHeight + 4))
 
     onIsCurrentItemChanged: {
         if (isCurrentItem && !isDel) {
