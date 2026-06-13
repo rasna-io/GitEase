@@ -89,6 +89,7 @@ QtObject {
     }
 
     property StashController  stashController : StashController  {
+        statusController: root.statusController
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
         }

@@ -534,6 +534,16 @@ Item {
                 }
                 changesFileLists.updateStatus()
             }
+
+            onRequestStash: function (start, end, type) {
+                let res = root.stashController.stashLines(root.selectedFilePath, start, end, type)
+                if (res.success) {
+                    root.notificationController.success("Selected lines stashed", "Stash", 2000)
+                } else {
+                    root.notificationController.error(res.errorMessage || "Failed to stash selected lines", "Stash Error", 5000)
+                }
+                changesFileLists.updateStatus()
+            }
         }
 
         // Non-visual loader: fetches the plugin's colorizer QtObject

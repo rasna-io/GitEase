@@ -22,6 +22,7 @@ FileListSection {
     signal stageFileRequested(string filePath)
     signal discardFileRequested(string filePath)
     signal openFileRequested(string filePath)
+    signal stashFileRequested(string filePath)
     signal stageAllRequested()
     signal discardAllRequested()
     signal stashAllRequested()
@@ -80,6 +81,10 @@ FileListSection {
 
             onDiscardRequested: function(filePath) {
                 root.discardFileRequested(filePath)
+            }
+
+            onStashRequested: function(filePath) {
+                root.stashFileRequested(filePath)
             }
 
             onOpenRequested: function(filePath) {

@@ -29,6 +29,23 @@ public:
     Q_INVOKABLE GitResult save(const QString &message = "", bool keepIndex = false);
 
     /**
+     * \brief Stahes the selected file
+     * \param filePath Selected file path
+     * \param message Optional stash message
+     * \return GitResult
+     */
+    Q_INVOKABLE GitResult stashFile(const QString &filePath, const QString &message = "");
+
+    /**
+     * \brief Stahes the selected lines of a file
+     * \param filePath Selected file path
+     * \param message Optional stash message
+     * \param blob The file content representing the partial state to be stored in the stash.
+     * \return GitResult
+     */
+    Q_INVOKABLE GitResult stashSelectedLines(const QString &filePath, const QString &message, const QString &blob);
+
+    /**
      * \brief Get list of all stashes
      * \return GitResult with list of StashEntry objects
      */

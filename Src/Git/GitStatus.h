@@ -144,6 +144,21 @@ public:
     Q_INVOKABLE GitResult stageSelectedLines(const QString &filePath, int startLine, int endLine, int mode);
 
     /**
+     * @brief Builds the file content for a partial line selection.
+     *
+     * Generates a new version of the file by applying only the selected line
+     * changes from the working directory to the index version of the file.
+     *
+     * @param filePath Relative path of the file.
+     * @param startLine The first line number in the selection.
+     * @param endLine The last line number in the selection.
+     * @param mode The Git delta type (1: Added, 2: Deleted, 4: Modified).
+     * @return The generated file content, or an empty string if the content
+     *         could not be constructed.
+     */
+    Q_INVOKABLE QString buildSelectedLinesContent(const QString &filePath, int startLine, int endLine, int mode);
+
+    /**
      * @brief Discards all unstaged changes in a file, resetting it to the index state.
      * @param filePath Path to the file to revert.
      * @return GitResult indicating success or failure.

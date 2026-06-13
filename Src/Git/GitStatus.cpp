@@ -900,49 +900,12 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "No repository available.");
 
-    const git_delta_t type = static_cast<git_delta_t>(mode);
+    QString stagedText = buildSelectedLinesContent(filePath, startLine, endLine, mode);
+    if (stagedText.isEmpty())
+        return GitResult(false, QVariant(), "Failed to build selected lines.");
+
     uint32_t baseMode = 0;
-    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
-
-    if (!indexBlob) {
-        return GitResult(false, QVariant(), "File does not exist in the index.");
-    }
-
-    const auto indexLines = readBlobLines(indexBlob.get());
-
-    git_diff* diffRaw = nullptr;
-    git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
-    diffOpts.flags |= (GIT_DIFF_PATIENCE | GIT_DIFF_MINIMAL);
-
-    // If the file is physically gone (DELETED), we need a diff that represents the
-    // total removal, so we can pick which "removals" to stage.
-    if (type == GIT_DELTA_DELETED) {
-        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
-    } else {
-        QByteArray pathUtf8 = filePath.toUtf8();
-        char* path = const_cast<char*>(pathUtf8.constData());
-        diffOpts.pathspec.strings = &path;
-        diffOpts.pathspec.count = 1;
-        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
-    }
-
-    UniqueDiff diff(diffRaw);
-    git_patch* patchRaw = nullptr;
-    if (git_patch_from_diff(&patchRaw, diff.get(), 0) != GIT_OK)
-        return GitResult(false, QVariant(), "Could not generate patch for selection.");
-
-    UniquePatch patch(patchRaw);
-
-    const auto stagedLines = applySelectedFromPatch(indexLines, patch.get(), startLine, endLine);
-    QString stagedText = joinLines(stagedLines);
-
-    const char* rawContent = static_cast<const char*>(git_blob_rawcontent(indexBlob.get()));
-    git_object_size_t rawSize = git_blob_rawsize(indexBlob.get());
-    QByteArray originalData = QByteArray::fromRawData(rawContent, static_cast<int>(rawSize));
-
-    if (originalData.contains("\r\n")) {
-        stagedText.replace("\n", "\r\n");
-    }
+    getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
 
     GitResult writeResult = writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
     if (writeResult.success()) {
@@ -950,6 +913,48 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
     }
 
     return writeResult;
+}
+
+QString GitStatus::buildSelectedLinesContent(const QString &filePath, int startLine, int endLine, int mode)
+{
+    const git_delta_t type = static_cast<git_delta_t>(mode);
+    uint32_t baseMode = 0;
+    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
+    if (!indexBlob)
+        return {};
+
+    const auto indexLines = readBlobLines(indexBlob.get());
+
+    git_diff *diffRaw = nullptr;
+    git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
+    diffOpts.flags |= (GIT_DIFF_PATIENCE | GIT_DIFF_MINIMAL);
+
+    if (type == GIT_DELTA_DELETED) {
+        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
+    } else {
+        QByteArray pathUtf8 = filePath.toUtf8();
+        char *path = const_cast<char *>(pathUtf8.constData());
+        diffOpts.pathspec.strings = &path;
+        diffOpts.pathspec.count = 1;
+        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
+    }
+
+    UniqueDiff diff(diffRaw);
+    git_patch *patchRaw = nullptr;
+    if (git_patch_from_diff(&patchRaw, diff.get(), 0) != GIT_OK)
+        return {};
+
+    UniquePatch patch(patchRaw);
+    const auto selectedLines = applySelectedFromPatch(indexLines, patch.get(), startLine, endLine);
+    QString selectedText = joinLines(selectedLines);
+
+    const char *rawContent = static_cast<const char *>(git_blob_rawcontent(indexBlob.get()));
+    git_object_size_t rawSize = git_blob_rawsize(indexBlob.get());
+    QByteArray originalData = QByteArray::fromRawData(rawContent, static_cast<int>(rawSize));
+    if (originalData.contains("\r\n"))
+        selectedText.replace("\n", "\r\n");
+
+    return selectedText;
 }
 
 GitResult GitStatus::writeIndexFromBuffer(git_repository* repo,

@@ -23,6 +23,7 @@ FileListRow {
     signal stageRequested(string filePath)
     signal discardRequested(string filePath)
     signal openRequested(string filePath)
+    signal stashRequested(string filePath)
 
     /* Children
      * ****************************************************************************************/
@@ -46,12 +47,10 @@ FileListRow {
             }
 
             ActionIconButton {
-                iconText: Style.icons.plus
-                tooltip: "Stage"
-                textColor: Style.theme == Style.Light ?
-                            Qt.darker(Style.colors.addedFile, 1.5) :
-                            Qt.lighter(Style.colors.addedFile, 1.5)
-                onClicked: root.stageRequested(root.filePath)
+                iconText: Style.icons.archive
+                tooltip: "Stash"
+                textColor: Style.colors.mutedText
+                onClicked: root.stashRequested(root.filePath)
             }
 
             ActionIconButton {
@@ -59,6 +58,15 @@ FileListRow {
                 tooltip: "Discard"
                 textColor: Style.colors.error
                 onClicked: root.discardRequested(root.filePath)
+            }
+
+            ActionIconButton {
+                iconText: Style.icons.plus
+                tooltip: "Stage"
+                textColor: Style.theme == Style.Light ?
+                            Qt.darker(Style.colors.addedFile, 1.5) :
+                            Qt.lighter(Style.colors.addedFile, 1.5)
+                onClicked: root.stageRequested(root.filePath)
             }
 
             ActionIconButton {

@@ -1,4 +1,13 @@
 #include "GitStash.h"
+#include <git2/strarray.h>
+#include <git2/blob.h>
+#include <git2/index.h>
+#include <git2/refs.h>
+#include <git2/revparse.h>
+#include <git2/checkout.h>
+#include <git2/reset.h>
+#include <git2/tree.h>
+#include <git2/oid.h>
 
 GitStash::GitStash(QObject *parent)
     : IGitController{parent}
@@ -48,6 +57,316 @@ GitResult GitStash::save(const QString &message, bool keepIndex)
     return GitResult(true, {}, "Stash saved successfully.");
 }
 
+
+// Build a tree that is identical to baseTree except for one file replaced by fileOid.
+// Handles nested paths by using an in-memory index.
+static bool buildModifiedTree(git_oid *out, git_repository *repo,
+                              git_tree *baseTree, const char *path,
+                              const git_oid *fileOid)
+{
+    git_index *idx = nullptr;
+    if (git_index_new(&idx) != GIT_OK) return false;
+
+    if (git_index_read_tree(idx, baseTree) != GIT_OK) {
+        git_index_free(idx);
+        return false;
+    }
+
+    git_blob *blob = nullptr;
+    if (git_blob_lookup(&blob, repo, fileOid) != GIT_OK) {
+        git_index_free(idx);
+        return false;
+    }
+    git_off_t blobSize = git_blob_rawsize(blob);
+    git_blob_free(blob);
+
+    git_index_entry entry = {};
+    entry.path      = path;
+    entry.mode      = GIT_FILEMODE_BLOB;
+    entry.file_size = (uint32_t)blobSize;
+    git_oid_cpy(&entry.id, fileOid);
+
+    if (git_index_add(idx, &entry) != GIT_OK) {
+        git_index_free(idx);
+        return false;
+    }
+
+    int rc = git_index_write_tree_to(out, idx, repo);
+    git_index_free(idx);
+    return rc == GIT_OK;
+}
+
+// Resolves HEAD to a commit and retrieves the three resources needed by stash
+static GitResult getHeadContext(git_repository *repo, git_commit **headCommit,
+                                git_signature **sig, git_tree **headTree)
+{
+    git_object *headObj = nullptr;
+    if (git_revparse_single(&headObj, repo, "HEAD") != GIT_OK)
+        return GitResult(false, {}, "No HEAD commit found.");
+
+    git_object *peeled = nullptr;
+    if (git_object_peel(&peeled, headObj, GIT_OBJECT_COMMIT) != GIT_OK) {
+        git_object_free(headObj);
+        return GitResult(false, {}, "HEAD does not resolve to a commit.");
+    }
+    git_object_free(headObj);
+    *headCommit = (git_commit *)peeled;
+
+    if (git_signature_default(sig, repo) != GIT_OK) {
+        git_commit_free(*headCommit);
+        return GitResult(false, {}, "Failed to create signature.");
+    }
+
+    if (git_commit_tree(headTree, *headCommit) != GIT_OK) {
+        git_signature_free(*sig);
+        git_commit_free(*headCommit);
+        return GitResult(false, {}, "Failed to get HEAD tree.");
+    }
+
+    return GitResult(true, {}, "");
+}
+
+// Builds the two commits that make up a git stash entry and points refs/stash at the result.
+static GitResult createStashCommits(
+    git_repository *repo,
+    git_commit *headCommit,
+    git_signature *sig,
+    const git_oid *wipTreeOid,
+    const git_oid *indexTreeOid,
+    const QString &message)
+{
+    git_reference *headRef = nullptr;
+    QString branch = "HEAD";
+    if (git_repository_head(&headRef, repo) == GIT_OK) {
+        if (git_reference_is_branch(headRef))
+            branch = QString::fromUtf8(git_reference_shorthand(headRef));
+        git_reference_free(headRef);
+    }
+
+    char shortHash[9] = {};
+    git_oid_tostr(shortHash, 8, git_commit_id(headCommit));
+    QString summary  = QString::fromUtf8(git_commit_summary(headCommit));
+    QString stashMsg = message.isEmpty()
+                           ? QString("WIP on %1: %2 %3").arg(branch, shortHash, summary)
+                           : message;
+    QString indexMsg = QString("index on %1: %2 %3").arg(branch, shortHash, summary);
+
+    // Index commit
+    git_tree *indexTree = nullptr;
+    if (git_tree_lookup(&indexTree, repo, indexTreeOid) != GIT_OK)
+        return GitResult(false, {}, "Failed to lookup index tree.");
+
+    git_oid indexCommitOid;
+    const git_commit *indexParents[] = { headCommit };
+    int rc = git_commit_create(&indexCommitOid, repo, nullptr, sig, sig,
+                               "UTF-8", indexMsg.toUtf8().constData(),
+                               indexTree, 1, indexParents);
+    git_tree_free(indexTree);
+    if (rc != GIT_OK)
+        return GitResult(false, {}, "Failed to create index commit.");
+
+    // WIP commit
+    git_commit *indexCommit = nullptr;
+    if (git_commit_lookup(&indexCommit, repo, &indexCommitOid) != GIT_OK)
+        return GitResult(false, {}, "Failed to lookup index commit.");
+
+    git_tree *wipTree = nullptr;
+    if (git_tree_lookup(&wipTree, repo, wipTreeOid) != GIT_OK) {
+        git_commit_free(indexCommit);
+        return GitResult(false, {}, "Failed to lookup WIP tree.");
+    }
+
+    git_oid wipOid;
+    const git_commit *wipParents[] = { headCommit, indexCommit };
+    rc = git_commit_create(&wipOid, repo, nullptr, sig, sig,
+                           "UTF-8", stashMsg.toUtf8().constData(),
+                           wipTree, 2, wipParents);
+    git_tree_free(wipTree);
+    git_commit_free(indexCommit);
+    if (rc != GIT_OK)
+        return GitResult(false, {}, "Failed to create stash commit.");
+
+    // Update refs/stash
+    git_reference *stashRef = nullptr;
+    int refRc = git_reference_create(&stashRef, repo, "refs/stash", &wipOid, 1,
+                                     stashMsg.toUtf8().constData());
+    if (stashRef) git_reference_free(stashRef);
+    if (refRc != GIT_OK)
+        return GitResult(false, {}, "Failed to update refs/stash.");
+
+    return GitResult(true, {}, "");
+}
+
+GitResult GitStash::stashFile(const QString &filePath, const QString &message)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, {}, "Repository not found.");
+
+    git_repository *repo = m_currentRepo->repo;
+    QByteArray pathBytes = filePath.toUtf8();
+    const char *path = pathBytes.constData();
+
+    git_commit *headCommit = nullptr;
+    git_signature *sig = nullptr;
+    git_tree *headTree = nullptr;
+    GitResult ctx = getHeadContext(repo, &headCommit, &sig, &headTree);
+    if (!ctx.success())
+        return ctx;
+
+    auto cleanup = [&]() {
+        git_tree_free(headTree);
+        git_signature_free(sig);
+        git_commit_free(headCommit);
+    };
+
+    // Blob from workdir
+    git_oid blobOid;
+    if (git_blob_create_from_workdir(&blobOid, repo, path) != GIT_OK) {
+        cleanup();
+        return GitResult(false, {}, git_error_last() ? git_error_last()->message : "Failed to read file.");
+    }
+
+    // WIP tree
+    git_oid wipTreeOid;
+    if (!buildModifiedTree(&wipTreeOid, repo, headTree, path, &blobOid)) {
+        cleanup();
+        return GitResult(false, {}, "Failed to build WIP tree.");
+    }
+
+    // Index tree: compare staged blob against HEAD blob for this path
+    git_index *repoIdx = nullptr;
+    git_repository_index(&repoIdx, repo);
+    git_index_read(repoIdx, 1);
+    const git_index_entry *staged = git_index_get_bypath(repoIdx, path, 0);
+
+    git_oid indexTreeOid;
+    bool hasDistinctStagedVersion = false;
+
+    if (staged) {
+        // Look up the blob OID for this path in the HEAD tree
+        git_tree_entry *headEntry = nullptr;
+        if (git_tree_entry_bypath(&headEntry, headTree, path) == GIT_OK) {
+            hasDistinctStagedVersion =
+                git_oid_cmp(&staged->id, git_tree_entry_id(headEntry)) != 0;
+            git_tree_entry_free(headEntry);
+        } else {
+            // File didn't exist in HEAD, so staging it is definitely a change
+            hasDistinctStagedVersion = true;
+        }
+    }
+
+    if (hasDistinctStagedVersion) {
+        if (!buildModifiedTree(&indexTreeOid, repo, headTree, path, &staged->id)) {
+            git_index_free(repoIdx);
+            cleanup();
+            return GitResult(false, {}, "Failed to build index tree.");
+        }
+    } else {
+        git_oid_cpy(&indexTreeOid, git_tree_id(headTree));
+    }
+    git_index_free(repoIdx);
+
+    GitResult result = createStashCommits(repo, headCommit, sig, &wipTreeOid, &indexTreeOid, message);
+    cleanup();
+
+    if (!result.success())
+        return result;
+
+    // Reset index entry to HEAD
+    const char *pathspecs[] = { path };
+    git_strarray pathArr = { const_cast<char **>(pathspecs), 1 };
+    git_object *headForReset = nullptr;
+    if (git_revparse_single(&headForReset, repo, "HEAD") == GIT_OK) {
+        git_reset_default(repo, headForReset, &pathArr);
+        git_object_free(headForReset);
+    }
+
+    // Checkout workdir from index
+    git_checkout_options coOpts = GIT_CHECKOUT_OPTIONS_INIT;
+    coOpts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+    coOpts.paths = pathArr;
+    git_checkout_index(repo, nullptr, &coOpts);
+
+    emitGitCommand(QString("git stash push -- %1").arg(filePath));
+    return GitResult(true, {}, QString("File stashed: %1").arg(filePath));
+}
+
+GitResult GitStash::stashSelectedLines(const QString &filePath, const QString &message, const QString &blob)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, {}, "Repository not found.");
+
+    git_repository *repo = m_currentRepo->repo;
+    QByteArray pathBytes = filePath.toUtf8();
+    const char *path = pathBytes.constData();
+
+    git_commit *headCommit = nullptr;
+    git_signature *sig = nullptr;
+    git_tree *headTree = nullptr;
+    GitResult ctx = getHeadContext(repo, &headCommit, &sig, &headTree);
+    if (!ctx.success())
+        return ctx;
+
+    auto cleanup = [&]() {
+        git_tree_free(headTree);
+        git_signature_free(sig);
+        git_commit_free(headCommit);
+    };
+
+    QByteArray blobBytes = blob.toUtf8();
+    git_oid blobOid;
+    if (git_blob_create_frombuffer(&blobOid, repo,
+                                   blobBytes.constData(), blobBytes.size()) != GIT_OK) {
+        cleanup();
+        return GitResult(false, {}, "Failed to create blob from selected lines.");
+    }
+
+    // Build WIP tree
+    git_oid wipTreeOid;
+    if (!buildModifiedTree(&wipTreeOid, repo, headTree, path, &blobOid)) {
+        cleanup();
+        return GitResult(false, {}, "Failed to build WIP tree.");
+    }
+
+    // Build index tree — compare staged blob against HEAD blob for this path
+    git_index *repoIdx = nullptr;
+    git_repository_index(&repoIdx, repo);
+    git_index_read(repoIdx, 1);
+    const git_index_entry *staged = git_index_get_bypath(repoIdx, path, 0);
+
+    git_oid indexTreeOid;
+    bool hasDistinctStagedVersion = false;
+
+    if (staged) {
+        git_tree_entry *headEntry = nullptr;
+        if (git_tree_entry_bypath(&headEntry, headTree, path) == GIT_OK) {
+            hasDistinctStagedVersion =
+                git_oid_cmp(&staged->id, git_tree_entry_id(headEntry)) != 0;
+            git_tree_entry_free(headEntry);
+        } else {
+            hasDistinctStagedVersion = true;
+        }
+    }
+
+    if (hasDistinctStagedVersion) {
+        if (!buildModifiedTree(&indexTreeOid, repo, headTree, path, &staged->id)) {
+            git_index_free(repoIdx);
+            cleanup();
+            return GitResult(false, {}, "Failed to build index tree.");
+        }
+    } else {
+        git_oid_cpy(&indexTreeOid, git_tree_id(headTree));
+    }
+    git_index_free(repoIdx);
+
+    GitResult result = createStashCommits(repo, headCommit, sig, &wipTreeOid, &indexTreeOid, message);
+    cleanup();
+    if (!result.success())
+        return result;
+
+    emitGitCommand(QString("git stash push -- %1").arg(filePath));
+    return GitResult(true, {}, "Selected lines stashed successfully.");
+}
 
 GitResult GitStash::list()
 {
