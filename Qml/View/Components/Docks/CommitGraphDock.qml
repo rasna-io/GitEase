@@ -1012,16 +1012,49 @@ DetachablePanel {
     function executeResetSoft(commitHash) {
         // TODO
         console.log("\t git reset --Soft", commitHash)
+
+        let result = {
+            success: false
+        }
+
+        // TODO
+        if (result.success) {
+            root.notificationController.success("git reset --Soft", "git reset")
+        } else {
+            root.notificationController.error("git reset --Soft", "git reset")
+        }
     }
 
     function executeResetMixed(commitHash) {
         // TODO
         console.log("\t git reset --Mixed", commitHash)
+
+        let result = {
+            success: true
+        }
+
+        // TODO
+        if (result.success) {
+            root.notificationController.success("git reset --Mixed", "git reset")
+        } else {
+            root.notificationController.error("git reset --Mixed", "git reset")
+        }
     }
 
     function executeResetHard(commitHash) {
         // TODO
         console.log("\t git reset --Hard", commitHash)
+
+        let result = {
+            success: true
+        }
+
+        // TODO
+        if (result.success) {
+            root.notificationController.success("git reset --Hard", "git reset")
+        } else {
+            root.notificationController.error("git reset --Hard", "git reset")
+        }
     }
 
     function handleGitControllerResult(res, successMsg, conflictPopup, commandName) {
