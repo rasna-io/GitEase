@@ -818,37 +818,7 @@ DetachablePanel {
     }
 
     function resolveMenuIcon(iconName) {
-        switch (iconName) {
-
-            case "gitBranch":
-                return Style.icons.gitBranch
-
-            case "hash":
-                return Style.icons.hash
-
-            case "arrowUp":
-                return Style.icons.arrowUp
-
-            case "branchPlus":
-                return Style.icons.branchPlus
-
-            case "tag":
-                return Style.icons.tag
-
-            case "arowLeftRight":
-                return Style.icons.arowLeftRight
-
-            case "clockRotateLeft":
-                return Style.icons.clockRotateLeft
-
-            case "copy":
-                return Style.icons.copy
-
-            case "filter":
-                return Style.icons.filter
-
-            default: return ""
-        }
+        return Style.icons[iconName]
     }
 
     function executeMenuAction(item, checked) {
