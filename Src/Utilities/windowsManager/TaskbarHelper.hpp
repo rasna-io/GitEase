@@ -1,10 +1,14 @@
 #pragma once
+
 #include <QObject>
 #include <QColor>
 #include <QtQmlIntegration>
 #include <QWindow>
+
+#ifdef Q_OS_WIN
 #include <windows.h>
 #include <shobjidl.h>
+#endif
 
 class TaskbarHelper final : public QObject {
     Q_OBJECT
@@ -26,14 +30,17 @@ public:
 
 private:
     QString appUserModelId() const;
+
+#ifdef Q_OS_WIN
     HICON createTintedIcon(const QColor &tintColor) const;
-    void  initializeProcessTaskbarIdentity() const;
-    void  applyInfoToAllWindows();
-    void  setWindowAppUserModelId(HWND hwnd) const;
-    void  setWindowIcons(HWND hwnd);
-    void  setWindowTitles(HWND hwnd);
+    void initializeProcessTaskbarIdentity() const;
+    void applyInfoToAllWindows();
+    void setWindowAppUserModelId(HWND hwnd) const;
+    void setWindowIcons(HWND hwnd);
+    void setWindowTitles(HWND hwnd);
 
     bool isValidHwnd(HWND hwnd) const;
+#endif
 
 private:
     static TaskbarHelper *s_instance;
@@ -41,5 +48,7 @@ private:
     QColor m_color;
     QString m_repoName;
 
-    HICON  m_currentIcon = nullptr;
+#ifdef Q_OS_WIN
+    HICON m_currentIcon = nullptr;
+#endif
 };
