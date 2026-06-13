@@ -29,6 +29,7 @@ Rectangle {
     width: 20
     height: 20
     radius: 4
+    opacity: root.enabled ? 1.0 : 0.4
 
     property color hoverBackgroundColor: {
         if (backgroundColor == "transparent" || Qt.colorEqual(backgroundColor, "transparent")) {
@@ -67,8 +68,9 @@ Rectangle {
     MouseArea {
         id: mouse
         anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+        enabled: root.enabled
+        hoverEnabled: root.enabled
+        cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.clicked()
     }
 

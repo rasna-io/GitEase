@@ -51,7 +51,9 @@ UtilitiesCard {
     icon: Style.icons.upload
 
     Connections {
+        id: userAuthenticationPopupConnection
         target: userAuthenticationPopup
+        enabled: false
 
         function onPasswordConfirm(password){
             if (root.authPurpose === "pull") {
@@ -88,6 +90,10 @@ UtilitiesCard {
         function onRejected() {
             root.authPurpose = "fetch"
             root.isFetching = root.activeFetchRemotes.length > 0
+        }
+
+        function onClosed() {
+            userAuthenticationPopupConnection.enabled = false
         }
     }
 
@@ -283,6 +289,7 @@ UtilitiesCard {
                                     case RepositoryController.GitProtocol.HTTP:
                                         root.isFetching = true
                                         root.authPurpose = "fetch"
+                                        userAuthenticationPopupConnection.enabled = true
                                         userAuthenticationPopup.open()
                                         break;
                                     }
@@ -317,6 +324,7 @@ UtilitiesCard {
                                     case RepositoryController.GitProtocol.HTTPS:
                                     case RepositoryController.GitProtocol.HTTP:
                                         root.authPurpose = "pull"
+                                        userAuthenticationPopupConnection.enabled = true
                                         userAuthenticationPopup.open()
                                         break
                                     }

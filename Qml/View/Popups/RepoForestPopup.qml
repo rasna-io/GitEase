@@ -15,11 +15,12 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property   RepositoryController   repositoryController
-    property   BranchController       branchController
-    property   RemoteController       remoteController
-    property   string                 rootPath
-    property   GitScanner             gitScanner:               GitScanner{}
+    property   RepositoryController         repositoryController
+    property   BranchController             branchController
+    property   RemoteController             remoteController
+    property   UserAuthenticationPopup      userAuthenticationPopup
+    property   string                       rootPath
+    property   GitScanner                   gitScanner:               GitScanner{}
 
     /* Object Properties
      * ****************************************************************************************/
@@ -34,6 +35,7 @@ IPopup {
         repositoryController: root.repositoryController
         branchController: root.branchController
         remoteController: root.remoteController
+        userAuthenticationPopup: root.userAuthenticationPopup
         rootPath: root.rootPath
         gitScanner: root.gitScanner
 
@@ -46,10 +48,13 @@ IPopup {
     /* Functions
      * ****************************************************************************************/
     function resetRepoForest() {
+        repoForest.reposModel = []
+        repoForest.pat = ""
+        repoForest.pendingOperation = ""
         repoForest.selectedIndexes = []
         repoForest.isRunning = false
         repoForest.operationQueue = []
-        repoForest.isProcessingQueue = false
+        repoForest.queueState = RepoForest.QueueState.Ready
         gitScanner.stop()
     }
 }

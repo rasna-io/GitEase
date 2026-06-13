@@ -268,6 +268,7 @@ private:
                                      std::unique_ptr<IGitAuth> auth);
 
 signals:
+    void fetchProgress(int progress);
     void pullFinished(QVariantMap result);
     void pushFinished(QVariantMap result);
     void pushInProgressChanged();
