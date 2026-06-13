@@ -157,4 +157,16 @@ ApplicationWindow {
             }
         }
     }
+
+    Connections {
+        target: uiSession.appModel
+
+        function onCurrentRepositoryChanged() {
+            let currentRepo = uiSession.appModel.currentRepository
+
+            if (currentRepo) {
+                Qt.callLater(() => TaskbarHelper.setRepoInfo(currentRepo.color, currentRepo.name))
+            }
+        }
+    }
 }

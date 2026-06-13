@@ -1,5 +1,6 @@
 #pragma once
 #include "borderlesswindowhelper.h"
+#include "TaskbarHelper.hpp"
 
 #include <QtCore/QObject>
 #include <QtGui/QWindow>
@@ -34,8 +35,12 @@ public:
             m_helper = nullptr;
         }
 
-        if (m_window)
+        if (m_window) {
             m_helper = new BorderlessWindowHelper(m_window, this);
+
+            if (TaskbarHelper::instance())
+                TaskbarHelper::instance()->applyInfoToWindow(m_window);
+        }
 
         emit windowChanged();
     }

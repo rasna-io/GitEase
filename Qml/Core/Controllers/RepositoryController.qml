@@ -126,6 +126,17 @@ GitRepository {
         }
     }
 
+    function closeRepo(path) {
+        const idx = root.appModel.repositories.findIndex(repo => repo && repo.path === path)
+        if (idx < 0)
+            return
+
+        root.appModel.repositories.splice(idx, 1)
+        root.appModel.repositories = root.appModel.repositories.slice()
+
+        selectRepository(root.appModel.repositories[0].id)
+    }
+
     /**
      * Create and initialize a Repository component for the given path
      */
@@ -137,6 +148,8 @@ GitRepository {
             var repoComponent = Qt.createComponent("qrc:/GitEase/Qml/Core/Models/Repository.qml")
             if (repoComponent.status === Component.Ready) {
 
+                repo = appModel.recentRepositories.find(r => r.path === path)
+
                 if (name === "")
                     name = path.split('/').pop() || path.split('\\').pop() || "Repository"
 
@@ -144,7 +157,7 @@ GitRepository {
                     id: "repo_" + Date.now(),
                     path: path,
                     name: name,
-                    color: randomRepoColor()
+                    color: repo ? repo.color : randomRepoColor()
                 })
                 
                 // Add to repositories array
