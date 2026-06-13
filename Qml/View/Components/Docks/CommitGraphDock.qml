@@ -858,6 +858,18 @@ DetachablePanel {
         case "cherryPickSingle":
             executeCherryPickSingle(item.payload.hash)
             break
+
+        case "resetSoft":
+            executeResetSoft(item.payload.hash)
+            break
+
+        case "resetMixed":
+            executeResetMixed(item.payload.hash)
+            break
+
+        case "resetHard":
+            executeResetHard(item.payload.hash)
+            break
         }
     }
 
@@ -995,6 +1007,21 @@ DetachablePanel {
         var res = cherryPickController.cherryPickCommit(commitHash);
 
         handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
+    }
+
+    function executeResetSoft(commitHash) {
+        // TODO
+        console.log("\t git reset --Soft", commitHash)
+    }
+
+    function executeResetMixed(commitHash) {
+        // TODO
+        console.log("\t git reset --Mixed", commitHash)
+    }
+
+    function executeResetHard(commitHash) {
+        // TODO
+        console.log("\t git reset --Hard", commitHash)
     }
 
     function handleGitControllerResult(res, successMsg, conflictPopup, commandName) {
