@@ -484,6 +484,7 @@ IPopup {
                     text: "Cancel"
                     flat: true
                     Layout.preferredWidth: 100
+                    visible: root.currentRebaseState !== rebaseState.completed
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
@@ -674,6 +675,8 @@ IPopup {
 
         if (commitModel.count > 0)
             selectCommit(0)
+
+        root.currentRebaseState = rebaseState.idle;
 
         root.open()
     }

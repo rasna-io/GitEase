@@ -1005,6 +1005,7 @@ void GitRebase::processNextOperation()
                     m_originalHeadRef = newRef;
                 }
             }
+            git_repository_set_head(m_currentRepo->repo, git_reference_name(m_originalHeadRef));
         }
         cleanupInteractiveState();
         emit rebaseFinished(true);
