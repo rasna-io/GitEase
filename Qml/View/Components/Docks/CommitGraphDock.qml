@@ -88,6 +88,7 @@ DetachablePanel {
     /* Object Properties
      * ****************************************************************************************/
     title: qsTr("Commit Graph")
+    currentRepositoryName: root.appModel.currentRepository.name || ""
 
     /* Children
      * ****************************************************************************************/

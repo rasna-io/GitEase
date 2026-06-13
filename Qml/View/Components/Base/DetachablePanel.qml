@@ -16,12 +16,13 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property bool       detached: false
-    property string     title: ""
-    property int        headerHeight: 32
-    property int        minWindowWidth: 420
-    property int        minWindowHeight: 320
-    property bool       showInlineHeader: true
+    property string          currentRepositoryName
+    property bool            detached: false
+    property string          title: ""
+    property int             headerHeight: 32
+    property int             minWindowWidth: 420
+    property int             minWindowHeight: 320
+    property bool            showInlineHeader: true
 
     // Default content slot for panel contents
     default property alias content: contentRoot.data
@@ -186,7 +187,7 @@ Item {
 
                     Label {
                         Layout.fillWidth: true
-                        text: root.title
+                        text: root.title  + ` [${root.currentRepositoryName}]`
                         color: Style.colors.foreground
                         font.family: Style.fontTypes.roboto
                         font.weight: 500
