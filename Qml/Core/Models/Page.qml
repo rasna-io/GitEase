@@ -22,6 +22,9 @@ QtObject {
 
     // Icon glyph (usually from Style.icons.*)
     property string icon: ""
+
+    // Optional navigation guard. If set, called before leaving the page.
+    property var onPageChange
 }
 
 

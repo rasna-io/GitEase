@@ -16,13 +16,16 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string          currentRepositoryName
-    property bool            detached: false
-    property string          title: ""
-    property int             headerHeight: 32
-    property int             minWindowWidth: 420
-    property int             minWindowHeight: 320
-    property bool            showInlineHeader: true
+    property string     currentRepositoryName
+    property bool       detached: false
+    property string     title: ""
+    property int        headerHeight: 32
+    property int        minWindowWidth: 420
+    property int        minWindowHeight: 320
+    property bool       showInlineHeader: true
+
+    // Optional elements in the middle of header
+    property Component  middleAccessory: null
 
     // Default content slot for panel contents
     default property alias content: contentRoot.data
@@ -81,8 +84,8 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.minimumHeight: 20
-            Layout.maximumHeight: 20
+            Layout.minimumHeight: 35
+            Layout.maximumHeight: 35
             visible: root.showInlineHeader && !root.detached
             color: Style.colors.secondaryBackground
 
@@ -93,8 +96,8 @@ Item {
                 spacing: 8
 
                 Label {
-                    Layout.fillWidth: true
                     text: root.title
+                    Layout.alignment: Qt.AlignLeft
                     color: Style.colors.foreground
                     font.family: Style.fontTypes.roboto
                     font.weight: 500
@@ -102,8 +105,17 @@ Item {
                     elide: Text.ElideRight
                 }
 
+                Loader {
+                    id: accessoryLoader
+                    Layout.alignment: Qt.AlignCenter
+                    Layout.fillWidth: true
+                    active: root.middleAccessory !== null
+                    sourceComponent: root.middleAccessory
+                }
+
                 ToolButton {
                     id: detachButton
+                    Layout.alignment: Qt.AlignRight
                     Layout.preferredWidth: 18
                     Layout.preferredHeight: 18
                     hoverEnabled: true

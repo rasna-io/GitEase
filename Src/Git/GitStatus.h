@@ -130,6 +130,13 @@ public:
      * @param staged If true, show staged diff (HEAD to index); if false, show unstaged diff (index to workdir).
      */
     Q_INVOKABLE GitResult getDiffView(const QString& filePath, bool staged = false);
+
+    /**
+     * @brief Saves a file with the provided lines of text.
+     * @param filePath Absolute or relative path to the file to save.
+     * @param rows Lines of the file content after editing.
+    */
+    Q_INVOKABLE GitResult saveFile(const QString& filePath, const QStringList& rows);
     
     /**
      * @brief Surgically stages a specific range of lines from a file.

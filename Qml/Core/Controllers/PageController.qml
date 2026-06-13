@@ -106,6 +106,12 @@ QtObject {
         if (!page)
             return
 
-        root.appModel.currentPage = page
+        const current = root.appModel.currentPage
+
+        if (current?.onPageChange) {
+            current.onPageChange(accepted => { if (accepted) root.appModel.currentPage = page })
+        } else {
+            root.appModel.currentPage = page
+        }
     }
 }
