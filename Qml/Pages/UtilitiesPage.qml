@@ -18,7 +18,6 @@ Item {
      * ****************************************************************************************/
     property var page: null
 
-    property RepoForestPopup            repoForestPopup             : null
     property BranchController           branchController            : null
     property BundleController           bundleController            : null
     property RemoteController           remoteController            : null
@@ -178,15 +177,6 @@ Item {
                 onHoveredChanged: flow.updateDockHovered()
             }
 
-            RepoForestDock {
-                width: 330
-                height: 390
-                repositoryController: root.repositoryController
-                branchController: root.branchController
-                remoteController: root.remoteController
-                repoForestPopup: root.repoForestPopup
-            }
-            
             RebaseDock {
                 width: 330
                 height: 390
