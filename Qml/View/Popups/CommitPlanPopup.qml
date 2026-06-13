@@ -676,6 +676,8 @@ IPopup {
         if (commitModel.count > 0)
             selectCommit(0)
 
+        root.currentRebaseState = rebaseState.idle;
+
         root.open()
     }
 
