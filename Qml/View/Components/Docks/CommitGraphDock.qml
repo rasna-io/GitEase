@@ -789,14 +789,16 @@ DetachablePanel {
             var result = {
                 text    : item.text,
                 icon    : resolveMenuIcon(item.icon),
-                enabled : item.enabled !== false
+                enabled : item.enabled !== false,
+                hasCheckBox: item.hasCheckBox,
+                checkBoxText: item.checkBoxText
             }
 
             if (item.subItems) {
                 result.subItems = buildContextMenuModel(item.subItems)
             } else {
-                result.action = function() {
-                    root.executeMenuAction(item)
+                result.action = function(checked) {
+                    root.executeMenuAction(item, checked)
                 }
             }
 
@@ -835,7 +837,7 @@ DetachablePanel {
         }
     }
 
-    function executeMenuAction(item) {
+    function executeMenuAction(item, checked) {
         switch (item.action) {
 
         case "checkoutBranch":
@@ -847,11 +849,7 @@ DetachablePanel {
             break
 
         case "push":
-            executePush(item.payload.branch, false)
-            break
-
-        case "forcePush":
-            executePush(item.payload.branch, true)
+            executePush(item.payload.branch, checked)
             break
 
         case "newBranch":
