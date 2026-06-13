@@ -47,7 +47,7 @@ RowLayout {
         Connections {
             target: repositoryController
             function onCurrentRepoChanged() {
-                headerBranchLabel.text = branchController ? branchController.getCurrentBranchName() : ""
+                branchChip.text = branchController ? branchController.getCurrentBranchName() : ""
             }
         }
 
