@@ -197,6 +197,8 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/AddTagPopup.qml
     Qml/View/Popups/CalendarPopup.qml
 
+    Qml/View/Popups/CommitPlanPopup.qml
+
 )
 
 

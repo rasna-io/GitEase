@@ -143,6 +143,13 @@ QtObject {
         conflictMarkerText:     "#E0E0E0"  // Brighter text for headers
         hintText:               "#a0a0a0"
         lineNumberColor:        "#a0a0a0"
+
+        // Interactive rebase status colors
+        property color rebaseStatusPending:    secondaryText
+        property color rebaseStatusInProgress: "#FFA500"        // bright orange
+        property color rebaseStatusRebased:    "#2ECC40"        // bright green
+        property color rebaseStatusConflict:   "#FF4136"        // bright red
+        property color rebaseStatusSkipped:    mutedText        // dimmed
     }
 
     property           string       currentTheme:               "Modern Light"

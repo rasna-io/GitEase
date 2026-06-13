@@ -3,14 +3,24 @@
 #include "GitUtils.h"
 
 #include <git2/annotated_commit.h>
+#include <git2/commit.h>
 #include <git2/checkout.h>
 #include <git2/index.h>
 #include <git2/rebase.h>
 #include <git2/repository.h>
+#include <git2/revparse.h>
+#include <git2/revwalk.h>
 #include <git2/signature.h>
+#include <git2/reset.h>
 
 #include <QVariantList>
 #include <git2/branch.h>
+
+#include <QDateTime>
+#include <QStringList>
+#include <QVariantMap>
+#include <QTimer>
+#include <git2/cherrypick.h>
 
 GitRebase::GitRebase(QObject* parent)
     : IGitController{parent}
@@ -26,6 +36,221 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
                                 const QString& upstream,
                                 QString branch)
 {
+    return startRebase(onto, upstream, branch, {});
+}
+
+GitResult GitRebase::previewRebasePlan(const QString& onto,
+                                       const QString& upstream,
+                                       const QString& branch)
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return GitResult(false, QVariant(), "Repository not found.");
+
+    if (upstream.trimmed().isEmpty())
+        return GitResult(false, QVariant(), "Upstream reference is required.");
+
+    git_repository* repo = m_currentRepo->repo;
+
+    git_object* upstreamObject  = nullptr;
+    git_object* ontoObject      = nullptr;
+    git_object* branchObject    = nullptr;
+    git_revwalk* walk           = nullptr;
+
+    // Resolve upstream
+    if (git_revparse_single(&upstreamObject, repo,
+                            upstream.trimmed().toUtf8().constData()) != GIT_OK)
+    {
+        return GitResult(false, QVariant(),
+                         QString("Invalid upstream '%1'.").arg(upstream));
+    }
+
+    // Resolve onto (fallback = upstream)
+    QString ontoSpec = onto.trimmed();
+    if (ontoSpec.isEmpty()) {
+        ontoObject = upstreamObject;
+    } else {
+        if (git_revparse_single(&ontoObject, repo,
+                                ontoSpec.toUtf8().constData()) != GIT_OK)
+        {
+            git_object_free(upstreamObject);
+            return GitResult(false, QVariant(),
+                             QString("Invalid onto '%1'.").arg(ontoSpec));
+        }
+    }
+
+    // Resolve branch (default HEAD)
+    QString branchSpec = branch.trimmed().isEmpty() ? "HEAD" : branch.trimmed();
+    if (git_revparse_single(&branchObject, repo,
+                            branchSpec.toUtf8().constData()) != GIT_OK)
+    {
+        if (ontoObject != upstreamObject)
+            git_object_free(ontoObject);
+        git_object_free(upstreamObject);
+
+        return GitResult(false, QVariant(),
+                         QString("Invalid branch '%1'.").arg(branchSpec));
+    }
+
+    // STEP 1: Collect patch-ids from ONTO history
+    QSet<QByteArray> upstreamPatchIds;
+
+    git_revwalk* upstreamWalk = nullptr;
+    git_revwalk_new(&upstreamWalk, repo);
+    git_revwalk_sorting(upstreamWalk, GIT_SORT_TOPOLOGICAL);
+    git_revwalk_push(upstreamWalk, git_object_id(ontoObject));
+
+    git_oid upstreamOid;
+    while (git_revwalk_next(&upstreamOid, upstreamWalk) == GIT_OK)
+    {
+        git_commit* commit = nullptr;
+        if (git_commit_lookup(&commit, repo, &upstreamOid) != GIT_OK)
+            continue;
+
+        // Skip root commits and merges (like Git does)
+        if (git_commit_parentcount(commit) == 1)
+        {
+            git_commit* parent = nullptr;
+            git_commit_parent(&parent, commit, 0);
+
+            git_tree* tree = nullptr;
+            git_tree* parentTree = nullptr;
+            git_commit_tree(&tree, commit);
+            git_commit_tree(&parentTree, parent);
+
+            git_diff* diff = nullptr;
+            git_diff_tree_to_tree(&diff, repo, parentTree, tree, nullptr);
+
+            git_oid patchId;
+            if (git_diff_patchid(&patchId, diff, nullptr) == GIT_OK)
+            {
+                upstreamPatchIds.insert(
+                    QByteArray(reinterpret_cast<char*>(patchId.id),
+                               GIT_OID_RAWSZ));
+            }
+
+            git_diff_free(diff);
+            git_tree_free(tree);
+            git_tree_free(parentTree);
+            git_commit_free(parent);
+        }
+
+        git_commit_free(commit);
+    }
+
+    git_revwalk_free(upstreamWalk);
+
+    // STEP 2: Walk upstream..branch commits
+    if (git_revwalk_new(&walk, repo) != GIT_OK)
+    {
+        if (ontoObject != upstreamObject)
+            git_object_free(ontoObject);
+        git_object_free(upstreamObject);
+        git_object_free(branchObject);
+
+        return GitResult(false, QVariant(),
+                         "Failed to prepare rebase plan.");
+    }
+
+    git_revwalk_sorting(walk, GIT_SORT_TOPOLOGICAL | GIT_SORT_TIME);
+
+    QString range = QString("%1..%2")
+                        .arg(upstream.trimmed())
+                        .arg(branchSpec);
+
+    git_revwalk_push_range(walk, range.toUtf8().constData());
+
+    QVariantList commits;
+    git_oid oid;
+
+    while (git_revwalk_next(&oid, walk) == GIT_OK)
+    {
+        git_commit* commit = nullptr;
+        if (git_commit_lookup(&commit, repo, &oid) != GIT_OK)
+            continue;
+
+        char hash[GIT_OID_HEXSZ + 1] = {0};
+        git_oid_tostr(hash, sizeof(hash), &oid);
+
+        const git_signature* author = git_commit_author(commit);
+        QString message = QString::fromUtf8(git_commit_message(commit));
+
+        bool alreadyApplied = false;
+
+        // Only compute patch-id for non-merge commits
+        if (git_commit_parentcount(commit) == 1)
+        {
+            git_commit* parent = nullptr;
+            git_commit_parent(&parent, commit, 0);
+
+            git_tree* tree = nullptr;
+            git_tree* parentTree = nullptr;
+            git_commit_tree(&tree, commit);
+            git_commit_tree(&parentTree, parent);
+
+            git_diff* diff = nullptr;
+            git_diff_tree_to_tree(&diff, repo, parentTree, tree, nullptr);
+
+            git_oid patchId;
+            if (git_diff_patchid(&patchId, diff, nullptr) == GIT_OK)
+            {
+                QByteArray id(reinterpret_cast<char*>(patchId.id),
+                              GIT_OID_RAWSZ);
+
+                if (upstreamPatchIds.contains(id))
+                    alreadyApplied = true;
+            }
+
+            git_diff_free(diff);
+            git_tree_free(tree);
+            git_tree_free(parentTree);
+            git_commit_free(parent);
+        }
+
+        QVariantMap item;
+        item["action"]      = alreadyApplied ? "skip" : "pick";
+        item["hash"]        = QString::fromUtf8(hash);
+        item["shortHash"]   = QString::fromUtf8(hash).left(7);
+        item["summary"]     = message.split('\n').first();
+        item["message"]     = message;
+        item["author"]      = author && author->name
+                             ? QString::fromUtf8(author->name) : QString();
+
+        item["authorEmail"] = author && author->email
+                                  ? QString::fromUtf8(author->email) : QString();
+
+        item["authorDate"]  = author
+                                 ? QDateTime::fromSecsSinceEpoch(
+                                       author->when.time).toString(Qt::ISODate)
+                                 : QString();
+
+        item["isMerge"]     = git_commit_parentcount(commit) > 1;
+
+        commits.append(item);
+        git_commit_free(commit);
+    }
+
+    // Cleanup
+    git_revwalk_free(walk);
+    git_object_free(branchObject);
+    if (ontoObject != upstreamObject)
+        git_object_free(ontoObject);
+    git_object_free(upstreamObject);
+
+    QVariantMap data;
+    data["commits"] = commits;
+    data["upstream"] = upstream.trimmed();
+    data["onto"] = onto.trimmed();
+    data["branch"] = branch.trimmed();
+    data["supportedActions"] = QStringList{ "pick", "skip" };
+
+    return GitResult(true, data);
+}
+
+GitResult GitRebase::startRebase(const QString& onto,
+                                 const QString& upstream,
+                                 QString branch,
+                                 const QSet<QString>& skippedCommits)
+{
     if (!m_currentRepo || !m_currentRepo->repo) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
@@ -39,8 +264,8 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
                          "A rebase is already in progress. Continue or abort it first.");
     }
 
-    QString originalBranch = branch;
-    bool hasBranch = !branch.trimmed().isEmpty();
+    QString originalBranch  = branch;
+    bool hasBranch          = !branch.trimmed().isEmpty();
 
     // If a branch is provided, ensure it is checked out
     if (hasBranch) {
@@ -56,10 +281,10 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
         branch = QString();
     }
 
-    git_rebase* rebase = nullptr;
-    git_annotated_commit* branchCommit = nullptr;
-    git_annotated_commit* ontoCommit = nullptr;
-    git_annotated_commit* upstreamCommit = nullptr;
+    git_rebase* rebase                  = nullptr;
+    git_annotated_commit* branchCommit  = nullptr;
+    git_annotated_commit* ontoCommit    = nullptr;
+    git_annotated_commit* upstreamCommit= nullptr;
 
     int result = git_annotated_commit_from_revspec(
         &upstreamCommit, m_currentRepo->repo, upstream.trimmed().toUtf8().constData());
@@ -108,17 +333,20 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
                          QString("Failed to start rebase: %1").arg(GitUtils::getLastError()));
     }
 
-    GitResult rebaseResult = runRebase(rebase, false);
+    GitResult rebaseResult = runRebase(rebase, false, skippedCommits);
     git_rebase_free(rebase);
 
     if (rebaseResult.success()) {
-        QString command = "git rebase";
+        QString command = skippedCommits.isEmpty() ? "git rebase" : "git rebase -i";
         if (!onto.trimmed().isEmpty()) {
             command += " --onto " + quoteCommandArg(onto);
         }
         command += " " + quoteCommandArg(upstream);
         if (hasBranch) {
             command += " " + quoteCommandArg(originalBranch);
+        }
+        if (!skippedCommits.isEmpty()) {
+            command += QString("  # skipped %1 commit(s)").arg(skippedCommits.count());
         }
         emitGitCommand(command);
     }
@@ -265,7 +493,9 @@ GitResult GitRebase::rebaseStatus()
     return GitResult(true, data);
 }
 
-GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation)
+GitResult GitRebase::runRebase(git_rebase* rebase,
+                               bool continueCurrentOperation,
+                               const QSet<QString>& skippedCommits)
 {
     if (!rebase) {
         return GitResult(false, QVariant(), "Invalid rebase state.");
@@ -279,6 +509,7 @@ GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation
     }
 
     QVariantList rebasedCommits;
+    QVariantList skippedCommitList;
     QVariantMap rebaseData;
     rebaseData["totalOperations"] = static_cast<int>(git_rebase_operation_entrycount(rebase));
 
@@ -312,6 +543,21 @@ GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation
                          QString("Failed to create rebased commit: %1").arg(GitUtils::getLastError()));
     };
 
+    auto operationHashByIndex = [&](size_t index) -> QString {
+        if (index == GIT_REBASE_NO_OPERATION) {
+            return QString();
+        }
+
+        git_rebase_operation* operation = git_rebase_operation_byindex(rebase, index);
+        if (!operation) {
+            return QString();
+        }
+
+        char oidStr[GIT_OID_HEXSZ + 1] = {0};
+        git_oid_tostr(oidStr, sizeof(oidStr), &operation->id);
+        return QString::fromUtf8(oidStr);
+    };
+
     if (continueCurrentOperation && git_rebase_operation_current(rebase) != GIT_REBASE_NO_OPERATION) {
         GitResult commitResult = commitCurrent();
         if (!commitResult.success()) {
@@ -330,6 +576,17 @@ GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation
 
         if (result != GIT_OK) {
             if (repositoryHasConflicts()) {
+                const QString currentHash = operationHashByIndex(git_rebase_operation_current(rebase));
+                if (!currentHash.isEmpty() && skippedCommits.contains(currentHash)) {
+                    GitResult resetResult = resetWorktreeToHead();
+                    if (!resetResult.success()) {
+                        git_signature_free(signature);
+                        return resetResult;
+                    }
+                    skippedCommitList.push_back(currentHash);
+                    continue;
+                }
+
                 git_signature_free(signature);
                 return conflictResult(rebase,
                                       "Rebase stopped due to conflicts. Resolve conflicts and continue.");
@@ -340,7 +597,19 @@ GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation
                              QString("Failed to apply rebase operation: %1").arg(GitUtils::getLastError()));
         }
 
-        Q_UNUSED(operation)
+        char operationId[GIT_OID_HEXSZ + 1] = {0};
+        git_oid_tostr(operationId, sizeof(operationId), &operation->id);
+        const QString operationHash = QString::fromUtf8(operationId);
+
+        if (skippedCommits.contains(operationHash)) {
+            GitResult resetResult = resetWorktreeToHead();
+            if (!resetResult.success()) {
+                git_signature_free(signature);
+                return resetResult;
+            }
+            skippedCommitList.push_back(operationHash);
+            continue;
+        }
 
         GitResult commitResult = commitCurrent();
         if (!commitResult.success()) {
@@ -357,9 +626,11 @@ GitResult GitRebase::runRebase(git_rebase* rebase, bool continueCurrentOperation
                          QString("Failed to finish rebase: %1").arg(GitUtils::getLastError()));
     }
 
-    rebaseData["rebasedCommits"] = rebasedCommits;
-    rebaseData["appliedCount"] = rebasedCommits.count();
-    rebaseData["status"] = "completed";
+    rebaseData["rebasedCommits"]= rebasedCommits;
+    rebaseData["skippedCommits"]= skippedCommitList;
+    rebaseData["appliedCount"]  = rebasedCommits.count();
+    rebaseData["skippedCount"]  = skippedCommitList.count();
+    rebaseData["status"]        = "completed";
 
     return GitResult(true, rebaseData, "Rebase completed.");
 }
@@ -572,4 +843,483 @@ QString GitRebase::getCurrentBranchName()
     emitGitCommand("git rev-parse --abbrev-ref HEAD");
 
     return branchName;  // "main", "master", or Detached HEAD if detached
+}
+
+GitResult GitRebase::startInteractiveRebase(const QString& onto,
+                                       const QString& upstream,
+                                       const QString& branch,
+                                       const QVariantList& operations)
+{
+    if (m_interactiveInProgress) {
+        emit rebaseFinished(false);
+        return GitResult(false, {}, "An interactive rebase is already in progress.");
+    }
+
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        emit rebaseFinished(false);
+        return GitResult(false, {}, "Repository not found.");
+    }
+
+    if (isRebaseInProgress()) {
+        emit rebaseFinished(false);
+                return GitResult(false, {}, "A rebase is already in progress. Abort or continue it first.");
+    }
+
+    // Check for uncommitted changes
+    git_status_list* statusList = nullptr;
+    git_status_options statusOpts = GIT_STATUS_OPTIONS_INIT;
+    statusOpts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED;
+    if (git_status_list_new(&statusList, m_currentRepo->repo, &statusOpts) == GIT_OK) {
+        size_t count = git_status_list_entrycount(statusList);
+        git_status_list_free(statusList);
+        if (count > 0) {
+            cleanupInteractiveState();
+            emit rebaseFinished(false);
+            return GitResult(false, {}, "Working directory is not clean. Commit or stash changes first.");
+        }
+    }
+
+    // Store the plan
+    m_interactivePlan = operations;
+
+    m_interactiveOnto     = onto.trimmed();
+    m_interactiveUpstream = upstream.trimmed();
+    m_interactiveBranch   = branch.trimmed();
+
+    // Save original HEAD reference
+    git_reference* headRef = nullptr;
+    if (git_repository_head(&headRef, m_currentRepo->repo) == GIT_OK) {
+        m_originalHeadRef = headRef;
+    } else {
+        m_originalHeadRef = nullptr;
+    }
+
+    if (m_originalHeadRef == nullptr) {
+        // Detached HEAD – save the commit OID
+        git_oid headOid;
+        if (git_reference_name_to_id(&headOid, m_currentRepo->repo, "HEAD") == GIT_OK) {
+            m_originalHeadOid = headOid;
+            m_originalHeadDetached = true;
+        } else {
+            // Should not happen, but if it does, abort
+            cleanupInteractiveState();
+            emit rebaseFinished(false);
+            return GitResult(false, {}, "Could not read HEAD.");
+        }
+    } else {
+        m_originalHeadDetached = false;
+    }
+
+    // Checkout target branch if necessary
+    QString actualBranch = m_interactiveBranch;
+    bool hasBranch = !actualBranch.isEmpty();
+    if (hasBranch) {
+        QString currentBranch = getCurrentBranchName();
+        if (currentBranch != actualBranch) {
+            GitResult checkoutRes = checkoutBranch(actualBranch);
+            if (!checkoutRes.success()) {
+                cleanupInteractiveState();
+                emit rebaseFinished(false);
+                return GitResult(false, {}, checkoutRes.errorMessage());
+            }
+        }
+        actualBranch.clear(); // after checkout we use HEAD
+    }
+
+    // Resolve the new base commit
+    QString baseRef = m_interactiveOnto.isEmpty() ? m_interactiveUpstream : m_interactiveOnto;
+    if (baseRef.isEmpty()) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return GitResult(false, {}, "No base reference provided.");
+    }
+
+    git_object* baseObj = nullptr;
+    int result = git_revparse_single(&baseObj, m_currentRepo->repo, baseRef.toUtf8().constData());
+    if (result != GIT_OK || !baseObj) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return GitResult(false, {}, QString("Invalid base reference '%1'.").arg(baseRef));
+    }
+
+    // It must be a commit
+    if (git_object_type(baseObj) != GIT_OBJ_COMMIT) {
+        git_object_free(baseObj);
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return GitResult(false, {}, "Base reference does not point to a commit.");
+    }
+
+    m_newBaseCommit = reinterpret_cast<git_commit*>(baseObj); // we own it now
+
+    // Checkout the new base (detach HEAD)
+    git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
+    checkoutOpts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+    result = git_checkout_tree(m_currentRepo->repo, reinterpret_cast<git_object*>(m_newBaseCommit), &checkoutOpts);
+    if (result != GIT_OK) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return GitResult(false, {}, "Failed to checkout the base commit.");
+    }
+
+    // Set HEAD to the new base commit (detached)
+    result = git_repository_set_head_detached(m_currentRepo->repo, git_commit_id(m_newBaseCommit));
+    if (result != GIT_OK) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return GitResult(false, {}, "Failed to detach HEAD.");
+    }
+
+    // Create default committer signature
+    git_signature* sig = nullptr;
+    if (git_signature_default(&sig, m_currentRepo->repo) != GIT_OK) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return GitResult(false, {}, "Could not read Git user identity (user.name / user.email).");
+    }
+    m_defaultSignature = sig;
+
+    // Kick off processing
+    m_interactiveInProgress = true;
+    m_currentPlanIndex = 0;
+    QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+
+    return GitResult(true);
+}
+
+void GitRebase::processNextOperation()
+{
+    if (!m_interactiveInProgress)
+        return;
+
+    // If we've processed everything, finish the rebase
+    if (m_currentPlanIndex >= m_interactivePlan.size()) {
+        // If we started on a branch, move it to the new HEAD
+        if (m_originalHeadRef) {
+            git_oid headOid;
+            if (git_reference_name_to_id(&headOid, m_currentRepo->repo, "HEAD") == GIT_OK) {
+                git_reference* newRef = nullptr;
+                int err = git_reference_set_target(&newRef, m_originalHeadRef, &headOid, "rebase completed");
+                if (err == GIT_OK) {
+                    git_reference_free(m_originalHeadRef);
+                    m_originalHeadRef = newRef;
+                }
+            }
+        }
+        cleanupInteractiveState();
+        emit rebaseFinished(true);
+        return;
+    }
+
+    // Get the next plan entry
+    QVariantMap op = m_interactivePlan[m_currentPlanIndex].toMap();
+    QString action = op.value("action").toString().toLower();
+    QString hash   = op.value("hash").toString();
+
+    // Handle skip
+    if (action == "skip") {
+        emit rebaseOperationSkipped(hash);
+        m_currentPlanIndex++;
+        QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+        return;
+    }
+
+    if (action == "pick") {
+        emit rebaseOperationStarted(hash);
+        m_currentOpHash = hash;
+
+        git_commit* commit = lookupCommit(hash);
+        if (!commit) {
+            cleanupInteractiveState();
+            emit rebaseFinished(false);
+            return;
+        }
+
+        int cpResult = cherryPickCommit(commit);
+        if (cpResult == GIT_OK) {
+            // Check whether the cherry-pick actually left conflicts in the index
+            bool hasConflicts = false;
+
+            git_index* index = nullptr;
+            if (git_repository_index(&index, m_currentRepo->repo) == GIT_OK) {
+                hasConflicts = git_index_has_conflicts(index);
+                git_index_free(index);
+            }
+
+            if (hasConflicts) {
+                // Treat as a conflict – do not try to commit
+                git_commit_free(commit);
+                m_isCherryPickActive = true;
+                emit rebaseConflict(hash);
+                return;
+            }
+
+            // Proceed with commit
+            if (!commitCherryPick(commit)) {
+                git_commit_free(commit);
+                abortCherryPick();
+                git_repository_state_cleanup(m_currentRepo->repo);
+                cleanupInteractiveState();
+                emit rebaseFinished(false);
+                return;
+            }
+
+            git_repository_state_cleanup(m_currentRepo->repo);
+            git_commit_free(commit);
+            emit rebaseOperationCompleted(hash);
+            m_currentPlanIndex++;
+            m_isCherryPickActive = false;
+            QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+        } else if (cpResult == GIT_EMERGECONFLICT) {
+            git_commit_free(commit);
+            m_isCherryPickActive = true;
+            emit rebaseConflict(hash);
+        } else {
+            git_commit_free(commit);
+            abortCherryPick();
+            git_repository_state_cleanup(m_currentRepo->repo);
+            cleanupInteractiveState();
+            emit rebaseFinished(false);
+        }
+        return;
+    }
+    m_currentPlanIndex++;
+    QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+}
+
+void GitRebase::interactiveContinue()
+{
+    if (!m_interactiveInProgress || !m_isCherryPickActive)
+        return;
+
+    // Look up the original commit again to preserve its metadata
+    git_commit* originalCommit = lookupCommit(m_currentOpHash);
+    if (!originalCommit) {
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return;
+    }
+
+    // The user resolved conflicts – commit the result
+    if (!commitCherryPick(originalCommit)) {
+        git_commit_free(originalCommit);
+        cleanupInteractiveState();
+        emit rebaseFinished(false);
+        return;
+    }
+
+    git_repository_state_cleanup(m_currentRepo->repo);
+
+    git_commit_free(originalCommit);
+    emit rebaseOperationCompleted(m_currentOpHash);
+    m_currentPlanIndex++;
+    m_isCherryPickActive = false;
+    QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+}
+
+void GitRebase::interactiveSkip()
+{
+    if (!m_interactiveInProgress || !m_isCherryPickActive)
+        return;
+
+    // Abort the cherry‑pick (reset index and worktree)
+    abortCherryPick();
+    emit rebaseOperationSkipped(m_currentOpHash);
+    m_currentPlanIndex++;
+    m_isCherryPickActive = false;
+    QTimer::singleShot(0, this, &GitRebase::processNextOperation);
+}
+
+void GitRebase::interactiveAbort()
+{
+    if (!m_interactiveInProgress || !m_currentRepo || !m_currentRepo->repo)
+        return;
+
+    if (m_isCherryPickActive) {
+        abortCherryPick();
+    } else {
+        git_repository_state_cleanup(m_currentRepo->repo);
+    }
+
+    git_object* targetObj = nullptr;
+
+    if (m_originalHeadRef) {
+        git_reference_peel(&targetObj, m_originalHeadRef, GIT_OBJ_COMMIT);
+    } else if (m_originalHeadDetached) {
+        git_commit_lookup((git_commit**)&targetObj, m_currentRepo->repo, &m_originalHeadOid);
+    }
+
+    if (targetObj) {
+        git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+        opts.checkout_strategy = GIT_CHECKOUT_FORCE; // Ensure all rebase remnants are wiped
+
+        git_reset(m_currentRepo->repo, targetObj, GIT_RESET_HARD, &opts);
+
+        if (m_originalHeadRef) {
+            git_repository_set_head(m_currentRepo->repo, git_reference_name(m_originalHeadRef));
+        }
+
+        git_object_free(targetObj);
+    }
+
+    git_repository_state_cleanup(m_currentRepo->repo);
+    cleanupInteractiveState();
+    emit rebaseAborted();
+}
+
+
+git_commit* GitRebase::lookupCommit(const QString& hash) const
+{
+    git_oid oid;
+    if (git_oid_fromstr(&oid, hash.toUtf8().constData()) != GIT_OK)
+        return nullptr;
+
+    git_commit* commit = nullptr;
+    if (git_commit_lookup(&commit, m_currentRepo->repo, &oid) != GIT_OK)
+        return nullptr;
+
+    return commit;
+}
+
+int GitRebase::cherryPickCommit(git_commit* commit)
+{
+    git_cherrypick_options opts = GIT_CHERRYPICK_OPTIONS_INIT;
+    opts.checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
+    return git_cherrypick(m_currentRepo->repo, commit, &opts);
+}
+
+bool GitRebase::commitCherryPick(git_commit* originalCommit)
+{
+    git_oid headOid;
+    if (git_reference_name_to_id(&headOid, m_currentRepo->repo, "HEAD") != GIT_OK) {
+        qWarning() << "commitCherryPick: failed to get HEAD OID";
+        return false;
+    }
+
+    git_commit* parent = nullptr;
+    if (git_commit_lookup(&parent, m_currentRepo->repo, &headOid) != GIT_OK) {
+        qWarning() << "commitCherryPick: failed to lookup parent commit";
+        return false;
+    }
+
+    const git_signature* author = git_commit_author(originalCommit);
+    const char* message = git_commit_message(originalCommit);
+
+    git_index* index = nullptr;
+    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK) {
+        qWarning() << "commitCherryPick: failed to get repository index";
+        git_commit_free(parent);
+        return false;
+    }
+
+    if (git_index_has_conflicts(index)) {
+        git_index_free(index);
+        git_commit_free(parent);
+        return false;
+    }
+
+    git_oid treeOid;
+    if (git_index_write_tree(&treeOid, index) != GIT_OK) {
+        const git_error *err = git_error_last();
+        qWarning() << "commitCherryPick: failed to write tree:" << (err ? err->message : "unknown");
+        git_index_free(index);
+        git_commit_free(parent);
+        return false;
+    }
+
+    git_tree* tree = nullptr;
+    if (git_tree_lookup(&tree, m_currentRepo->repo, &treeOid) != GIT_OK) {
+        qWarning() << "commitCherryPick: failed to lookup tree";
+        git_index_free(index);
+        git_commit_free(parent);
+        return false;
+    }
+
+    const git_commit* parents[1] = { parent };
+
+    git_oid newCommitOid;
+    int result = git_commit_create(
+        &newCommitOid,
+        m_currentRepo->repo,
+        "HEAD",
+        author,
+        m_defaultSignature,
+        "UTF-8",
+        message,
+        tree,
+        1,
+        parents
+        );
+
+    git_tree_free(tree);
+    git_index_free(index);
+    git_commit_free(parent);
+
+    if (result != GIT_OK) {
+        const git_error *err = git_error_last();
+        qWarning() << "commitCherryPick: git_commit_create failed:" << (err ? err->message : "unknown");
+        return false;
+    }
+
+    return true;
+}
+
+void GitRebase::abortCherryPick()
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return;
+
+    git_repository* repo = m_currentRepo->repo;
+
+    git_object* headObj = nullptr;
+    if (git_revparse_single(&headObj, repo, "HEAD") == GIT_OK) {
+        git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+
+        opts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_RECREATE_MISSING;
+        git_checkout_tree(repo, headObj, &opts);
+        git_object_free(headObj);
+    }
+
+    git_index* index = nullptr;
+    if (git_repository_index(&index, repo) == GIT_OK) {
+        git_index_read(index, true);
+        git_index_conflict_cleanup(index);
+        git_index_write(index);
+        git_index_free(index);
+    }
+
+    git_repository_state_cleanup(repo);
+}
+
+
+bool GitRebase::resetToCommit(git_commit* target)
+{
+    git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+    opts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_RECREATE_MISSING;
+    int result = git_checkout_tree(m_currentRepo->repo, reinterpret_cast<git_object*>(target), &opts);
+    if (result != GIT_OK)
+        return false;
+    return git_repository_set_head_detached(m_currentRepo->repo, git_commit_id(target)) == GIT_OK;
+}
+
+void GitRebase::cleanupInteractiveState()
+{
+    if (m_newBaseCommit) {
+        git_commit_free(m_newBaseCommit);
+        m_newBaseCommit = nullptr;
+    }
+    if (m_originalHeadRef) {
+        git_reference_free(m_originalHeadRef);
+        m_originalHeadRef = nullptr;
+    }
+    m_interactiveInProgress = false;
+    m_isCherryPickActive = false;
+    m_interactivePlan.clear();
+    m_currentPlanIndex = 0;
+    m_currentOpHash.clear();
+
+    if (m_defaultSignature) {
+        git_signature_free(m_defaultSignature);
+        m_defaultSignature = nullptr;
+    }
 }

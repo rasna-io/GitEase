@@ -423,16 +423,6 @@ DetachablePanel {
     MergeMethodPopup { id: mergeMethodPopup }
 
     ConflictPopup {
-        id: rebaseConflictPopup
-        currentOperation        : ConflictPopup.OperationType.Rebase
-        rebaseController        : root.rebaseController
-        conflictController      : root.conflictController
-        notificationController  : root.notificationController
-        statusController        : root.statusController
-        // onOperationCompleted    : reloadAll()        //TODO
-    }
-
-    ConflictPopup {
         id: cherryPickConflictPopup
         currentOperation        : ConflictPopup.OperationType.CherryPick
         cherryPickController    : root.cherryPickController
@@ -448,6 +438,15 @@ DetachablePanel {
         onBranchSelected: function(branchName) {
             root.handleCheckoutBranchOrCreate(branchName, checkoutBranchSelector.commitHash)
         }
+    }
+
+    CommitPlanPopup {
+        id: commitPlanPopup
+        statusController: root.statusController
+        commitController: root.commitController
+        rebaseController: root.rebaseController
+        conflictController: root.conflictController
+        notificationController: root.notificationController
     }
 
     /* Functions
@@ -937,7 +936,7 @@ DetachablePanel {
             var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
 
             if (root.mergeController.hasMergeConflicts()) {
-                mergeConflictPopup.open()
+                mergeConflictPopup.show()
 
                 root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
 
@@ -953,9 +952,19 @@ DetachablePanel {
     }
 
     function executeRebase(commitHash) {
-        var res = rebaseController.rebase(commitHash);
+        var res = rebaseController.previewRebasePlan("", commitHash, "");
 
-        handleGitControllerResult(res, "Rebase completed", rebaseConflictPopup, "Rebase");
+        if (!res || !res.success) {
+            notificationController.error(res ? res.errorMessage : "Could not prepare rebase plan", "Rebase", 5000);
+            return;
+        }
+
+        if (!res.data || !res.data.commits || res.data.commits.length === 0) {
+            notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000);
+            return;
+        }
+
+        commitPlanPopup.showPlan(res.data);
     }
 
     function executeCherryPickSelected() {

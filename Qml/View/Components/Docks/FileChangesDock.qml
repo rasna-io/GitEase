@@ -64,6 +64,7 @@ DetachablePanel {
         anchors.fill: parent
         color: Style.colors.primaryBackground
         visible: root.files && root.files.length > 0
+        clip: true
 
         ColumnLayout {
             anchors.fill: parent

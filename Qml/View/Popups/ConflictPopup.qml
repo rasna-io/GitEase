@@ -15,6 +15,13 @@ import "qrc:/GitEase/Qml/Core/Scripts/ConflictPopupUtils.js" as ConflictUtils
 Window {
     id: root
 
+    enum InteractiveAction {
+        None,
+        Continue,
+        Skip,
+        Abort
+    }
+
     /* Property Declarations
      * ****************************************************************************************/
     property MergeController        mergeController         : null
@@ -61,21 +68,38 @@ Window {
         }
     }
 
+    property bool interactiveMode: false
+
     /* Signals
      * ****************************************************************************************/
     signal operationCompleted();
+    signal interactiveActionRequested(int action)
 
     /* Object Properties
      * ****************************************************************************************/
+    modality: Qt.ApplicationModal
+    color: "transparent"
+
     width: 800
     height: 650
 
-    modality: Qt.ApplicationModal
-    color: "transparent"
+    onWidthChanged: {
+        if (visible && width != 800)
+            width = 800
+    }
+    onHeightChanged: {
+        if (visible && height != 650)
+            height = 650
+    }
 
     onVisibleChanged: {
         if(!visible)
             return
+
+        Qt.callLater(function() {
+            x = (Screen.width - width) / 2
+            y = (Screen.height - height) / 2
+        })
 
         if (!notificationController) {
             console.error("ConflictPopup: missing required controllers")
@@ -537,6 +561,11 @@ Window {
     }
 
     function continueOperation() {
+        if (interactiveMode) {
+            interactiveActionRequested(ConflictPopup.InteractiveAction.Continue);
+            return;
+        }
+
         let res = currentController.continueOp()
 
         if (res.success) {
@@ -560,6 +589,11 @@ Window {
     }
 
     function skipOperation() {
+        if (interactiveMode) {
+            interactiveActionRequested(ConflictPopup.InteractiveAction.Skip);
+            return;
+        }
+
         let res = currentController.skipOp()
 
         if (res.success) {
@@ -583,6 +617,11 @@ Window {
     }
 
     function abortOperation() {
+        if (interactiveMode) {
+            interactiveActionRequested(ConflictPopup.InteractiveAction.Abort);
+            return;
+        }
+
         let res = currentController.abortOp()
 
         if (res.success) {
