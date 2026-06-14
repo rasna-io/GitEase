@@ -151,6 +151,11 @@ private:
     QString getCurrentBranchName();
 
 
+    /// Build an interactive rebase plan without changing the repository.
+    GitResult previewRebasePlan(const QString& onto,
+                                const QString& upstream,
+                                const QString& branch = QString());
+
     /**
      * @brief Process the next entry in the plan.
      *
