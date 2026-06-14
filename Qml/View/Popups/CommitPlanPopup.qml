@@ -100,6 +100,14 @@ IPopup {
     closePolicy     : Popup.NoAutoClose
     anchors.centerIn: Overlay.overlay
 
+    onOpened: {
+        loading = true;
+    }
+
+    onClosed: {
+        resetPopupState()
+    }
+
     /* Children
      * ****************************************************************************************/
     contentItem: Rectangle {
@@ -631,6 +639,16 @@ IPopup {
 
             rebaseConflictPopup.close()
         }
+    }
+
+    function resetPopupState() {
+        commitModel.clear()
+
+        root.planData           = {}
+        diffView.diffData       = null
+        fileChangesDock.files   = []
+        root.selectedCommitHash = ""
+        root.currentRebaseState = rebaseState.idle
     }
 
     function planSummary() {
