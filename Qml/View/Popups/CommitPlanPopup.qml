@@ -275,6 +275,7 @@ IPopup {
 
                                     readonly property bool isDimmed     : action === actionType.skip
                                     readonly property color actionColor : actionType.colorOf(action)
+                                    readonly property bool  isRebased   : status === commitStatus.rebased
 
                                     // Action combo (pick / skip)
                                     ComboBox {
@@ -382,50 +383,72 @@ IPopup {
                                     }
 
 
-                                    // Commit info (short hash + message)
-                                    RowLayout {
+                                    Item {
                                         Layout.fillWidth: true
-                                        spacing: 6
+                                        Layout.alignment: Qt.AlignVCenter
+                                        implicitHeight: textRow.implicitHeight
 
-                                        Text {
-                                            text: shortHash
-                                            color: Style.colors.accent
-                                            font.family: Style.fontTypes.roboto
-                                            font.pixelSize: 11
-                                            Layout.alignment: Qt.AlignVCenter
+                                        RowLayout {
+                                            id: textRow
+                                            anchors.fill: parent
+                                            spacing: 8
+
+                                            // Commit info (short hash + message)
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 6
+
+                                                Text {
+                                                    text: shortHash
+                                                    color: Style.colors.accent
+                                                    font.family: Style.fontTypes.roboto
+                                                    font.pixelSize: 11
+                                                    Layout.alignment: Qt.AlignVCenter
+                                                }
+
+                                                Text {
+                                                    text: summary
+                                                    color: layout.actionColor
+                                                    opacity: layout.isDimmed ? 0.5 : 1.0
+                                                    font.pixelSize: 12
+                                                    elide: Text.ElideRight
+                                                    Layout.fillWidth: true
+                                                    Layout.alignment: Qt.AlignVCenter
+                                                }
+                                            }
+
+                                            // Author
+                                            Text {
+                                                text: author
+                                                color: layout.actionColor
+                                                opacity: layout.isDimmed ? 0.5 : 1.0
+                                                font.pixelSize: 11
+                                                elide: Text.ElideRight
+                                                Layout.preferredWidth: 130
+                                                Layout.alignment: Qt.AlignVCenter
+                                            }
+
+                                            // Date
+                                            Text {
+                                                text: authorDate ? Qt.formatDateTime(new Date(authorDate), "yyyy-MM-dd hh:mm") : ""
+                                                color: layout.actionColor
+                                                opacity: layout.isDimmed ? 0.5 : 1.0
+                                                font.pixelSize: 10
+                                                elide: Text.ElideRight
+                                                Layout.preferredWidth: 130
+                                                Layout.alignment: Qt.AlignVCenter
+                                            }
                                         }
 
-                                        Text {
-                                            text: summary
+                                        Rectangle {
+                                            visible: layout.isRebased
+                                            anchors.left: parent.left
+                                            anchors.right: parent.right
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            height: 1
                                             color: layout.actionColor
                                             opacity: layout.isDimmed ? 0.5 : 1.0
-                                            font.pixelSize: 12
-                                            elide: Text.ElideRight
-                                            Layout.fillWidth: true
-                                            Layout.alignment: Qt.AlignVCenter
                                         }
-                                    }
-
-                                    // Author
-                                    Text {
-                                        text: author
-                                        color: layout.actionColor
-                                        opacity: layout.isDimmed ? 0.5 : 1.0
-                                        font.pixelSize: 11
-                                        elide: Text.ElideRight
-                                        Layout.preferredWidth: 130
-                                        Layout.alignment: Qt.AlignVCenter
-                                    }
-
-                                    // Date
-                                    Text {
-                                        text: authorDate ? Qt.formatDateTime(new Date(authorDate), "yyyy-MM-dd hh:mm") : ""
-                                        color: layout.actionColor
-                                        opacity: layout.isDimmed ? 0.5 : 1.0
-                                        font.pixelSize: 10
-                                        elide: Text.ElideRight
-                                        Layout.preferredWidth: 130
-                                        Layout.alignment: Qt.AlignVCenter
                                     }
 
                                     Text {
