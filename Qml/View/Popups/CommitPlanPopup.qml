@@ -86,6 +86,7 @@ IPopup {
 
     property string currentRebaseState  : rebaseState.idle
 
+    property bool   loading             : false
     /* Signals
      * ****************************************************************************************/
     signal accepted(var operations)
@@ -540,6 +541,13 @@ IPopup {
                 }
             }
         }
+    }
+
+    BusyIndicator {
+        anchors.centerIn: parent
+        running: root.loading
+        visible: root.loading
+        z: 10
     }
 
     ListModel {
