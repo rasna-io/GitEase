@@ -210,6 +210,19 @@ private:
     git_signature*  m_defaultSignature      = nullptr;
 
 signals:
+
+    /**
+     * @brief Emitted when the asynchronous rebase plan generation finishes.
+     *
+     * This signal is emitted after a call to startPreviewRebasePlan completes
+     * its background work.  The `result` parameter contains the GitResult
+     * object produced by the plan computation; on success its data field holds
+     * the plan map (commits, upstream, onto, branch, etc.).
+     *
+     * @param result The result of the plan generation.
+     */
+    void previewRebasePlanReady(GitResult result);
+
     /**
      * @brief Emitted when a rebase operation begins for a commit.
      *
