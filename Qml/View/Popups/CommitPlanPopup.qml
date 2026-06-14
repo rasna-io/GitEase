@@ -667,6 +667,8 @@ IPopup {
     }
 
     function planSummary() {
+        if (loading)
+            return "Preparing rebase plan..."
 
         var upstream    = planData.upstream || ""
         var onto        = planData.onto || ""
@@ -691,7 +693,6 @@ IPopup {
     }
 
     function showPlan(data) {
-        commitModel.clear()
         loading = false
 
         if (!data || !data.commits || data.commits.length === 0) {
