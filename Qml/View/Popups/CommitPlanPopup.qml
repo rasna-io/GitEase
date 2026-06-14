@@ -576,6 +576,21 @@ IPopup {
     Connections {
         target: root.rebaseController
 
+        function onPreviewRebasePlanReady(result) {
+            if (!result.success) {
+                notificationController.error(result.errorMessage || "Failed to load rebase plan", "Rebase", 5000)
+                root.close()
+                return
+            }
+            var data = result.data
+            if (!data || !data.commits || data.commits.length === 0) {
+                notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000)
+                root.close()
+                return
+            }
+            showPlan(data)
+        }
+
         function onRebaseOperationStarted(hash) {
             setCommitStatus(hash, commitStatus.inProgress);
 
@@ -652,6 +667,7 @@ IPopup {
     }
 
     function planSummary() {
+
         var upstream    = planData.upstream || ""
         var onto        = planData.onto || ""
         var branch      = planData.branch || "current branch"
@@ -676,11 +692,15 @@ IPopup {
 
     function showPlan(data) {
         commitModel.clear()
+        loading = false
 
-        root.planData           = data || {}
-        diffView.diffData       = null
-        fileChangesDock.files   = []
-        root.selectedCommitHash = ""
+        if (!data || !data.commits || data.commits.length === 0) {
+            notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000)
+            root.close()
+            return
+        }
+
+        root.planData = data
 
         var commits = root.planData.commits || []
         for (var i = 0; i < commits.length; i++) {
@@ -701,10 +721,6 @@ IPopup {
 
         if (commitModel.count > 0)
             selectCommit(0)
-
-        root.currentRebaseState = rebaseState.idle;
-
-        root.open()
     }
 
     function selectCommit(index) {
