@@ -128,6 +128,11 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
     git_revwalk_sorting(upstreamWalk, GIT_SORT_TOPOLOGICAL);
     git_revwalk_push(upstreamWalk, git_object_id(ontoObject));
 
+    git_oid mergeBase;
+    if (git_merge_base(&mergeBase, repo, git_object_id(branchObject), git_object_id(ontoObject)) == GIT_OK) {
+        git_revwalk_hide(upstreamWalk, &mergeBase);
+    }
+
     git_oid upstreamOid;
     while (git_revwalk_next(&upstreamOid, upstreamWalk) == GIT_OK)
     {
