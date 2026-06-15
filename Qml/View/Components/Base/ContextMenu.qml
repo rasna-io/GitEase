@@ -40,7 +40,7 @@ Popup {
         id: subMenuPopup
         property var subModel: []
         visible: subMenuPopup.subModel.length > 0
-        width: 250
+        width: 240
         padding: 6
         x: root.width - 4
         y: -padding
