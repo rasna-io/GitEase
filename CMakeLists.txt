@@ -91,6 +91,7 @@ qt_add_qml_module(${MAIN_TARGET_NAME}
     SOURCES
         ${HEADERS_BACKEND}
         ${SOURCES_BACKEND}
+        QML_FILES Qml/Core/Controllers/ResetController.qml
 )
 
 target_link_libraries(${MAIN_TARGET_NAME} PRIVATE

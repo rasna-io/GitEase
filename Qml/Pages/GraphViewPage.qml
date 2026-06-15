@@ -210,7 +210,7 @@ Item {
         if (!rebaseController)       missing.push("RebaseController")
         if (!cherryPickController)   missing.push("CherryPickController")
         if (!conflictController)     missing.push("ConflictController")
-        // if (!resetController)        missing.push("ResetController")
+        if (!resetController)        missing.push("ResetController")
 
         if (missing.length > 0) {
             notificationController.error(
