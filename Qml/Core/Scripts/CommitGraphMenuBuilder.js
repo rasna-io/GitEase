@@ -54,6 +54,31 @@ function buildMenu(state) {
         payload: { branch: state.currentBranch }
     });
 
+    if (state.branchNames.length > 0) {
+        var showBranchSubMenu = state.branchNames.map(function(bName) {
+            return {
+                text: bName,
+                icon: "filter",
+                action: "showOnlyBranch",
+                payload: { branch: bName }
+            };
+        });
+
+        if (state.branchFilter) {
+            showBranchSubMenu.push({
+                text: "Show all branches",
+                icon: "gitBranch",
+                action: "showAllBranches"
+            });
+        }
+
+        model.push({
+            text: "Show only this branch",
+            icon: "filter",
+            subItems: showBranchSubMenu
+        });
+    }
+
     // New Branch / Tag
     model.push({
         text: "New Branch from here",
