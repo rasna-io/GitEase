@@ -481,6 +481,10 @@ DetachablePanel {
                 parts.push("date until " + end)
         }
 
+        var branch = (root.branchFilter || "").trim()
+        if (branch.length > 0)
+            parts.push("branch is '" + branch + "'")
+
         if (parts.length === 0)
             return "No commits match your filter."
 
