@@ -190,11 +190,8 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
 
     git_revwalk_sorting(walk, GIT_SORT_TOPOLOGICAL | GIT_SORT_TIME);
 
-    QString range = QString("%1..%2")
-                        .arg(upstream.trimmed())
-                        .arg(branchSpec);
-
-    git_revwalk_push_range(walk, range.toUtf8().constData());
+    git_revwalk_push(walk, git_object_id(branchObject));
+    git_revwalk_hide(walk, git_object_id(upstreamObject));
 
     QVariantList commits;
     git_oid oid;
