@@ -6,7 +6,7 @@
 
 // Global map for commit hashes whose branch names will be resolved in later
 // pages. Needed for pagination. Entries are removed once processed.
-let branchAssignmentByHash = {};
+let branchAssignmentByHash = new Map();
 
 /**
  * Compiles graph‑ready commits from raw controller data.
@@ -101,24 +101,24 @@ function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSe
 
         let branchNames = []
         if (haveBranchName) {
-            branchNames = tipHashToBranches[commit.hash]
-            for (var pr = 0; pr < commit.parentHashes.length ; ++pr) {
-                if (!branchAssignmentByHash[commit.parentHashes[pr]])
-                    branchAssignmentByHash[commit.parentHashes[pr]] = branchNames
+            branchNames = tipHashToBranches[commit.hash];
+            for (let pr = 0; pr < commit.parentHashes.length; ++pr) {
+                if (!branchAssignmentByHash.has(commit.parentHashes[pr]))
+                    branchAssignmentByHash.set(commit.parentHashes[pr], branchNames);
             }
         }
 
         if (!haveBranchName) {
-            if (branchAssignmentByHash && branchAssignmentByHash[commit.hash]) {
-                branchNames = branchAssignmentByHash[commit.hash]
+            if (branchAssignmentByHash.has(commit.hash)) {
+                branchNames = branchAssignmentByHash.get(commit.hash)
 
-                for (var pr1 = 0; pr1 < commit.parentHashes.length ; ++pr1) {
-                    if (!branchAssignmentByHash[commit.parentHashes[pr1]])
-                        branchAssignmentByHash[commit.parentHashes[pr1]] = branchNames
+                for (let pr1 = 0; pr1 < commit.parentHashes.length; ++pr1) {
+                    if (!branchAssignmentByHash.has(commit.parentHashes[pr1]))
+                        branchAssignmentByHash.set(commit.parentHashes[pr1], branchNames)
                 }
 
                 // delete used key
-                delete branchAssignmentByHash[commit.hash]
+                branchAssignmentByHash.delete(commit.hash);
             }
         }
 
