@@ -86,7 +86,6 @@ IPopup {
 
     property string currentRebaseState  : rebaseState.idle
 
-    property bool   loading             : false
     /* Signals
      * ****************************************************************************************/
     signal accepted(var operations)
@@ -99,10 +98,6 @@ IPopup {
     modal           : true
     closePolicy     : Popup.NoAutoClose
     anchors.centerIn: Overlay.overlay
-
-    onOpened: {
-        loading = true;
-    }
 
     onClosed: {
         resetPopupState()
@@ -576,8 +571,8 @@ IPopup {
 
     BusyIndicator {
         anchors.centerIn: parent
-        running: root.loading
-        visible: root.loading
+        running: commitModel.count === 0
+        visible: commitModel.count === 0
         Material.accent: Style.colors.accent
         z: 10
     }
@@ -691,7 +686,7 @@ IPopup {
     }
 
     function planSummary() {
-        if (loading)
+        if (commitModel.count === 0)
             return "Preparing rebase plan..."
 
         var upstream    = planData.upstream || ""
@@ -717,8 +712,6 @@ IPopup {
     }
 
     function showPlan(data) {
-        loading = false
-
         if (!data || !data.commits || data.commits.length === 0) {
             notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000)
             root.close()
