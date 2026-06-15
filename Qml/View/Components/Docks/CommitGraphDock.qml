@@ -1013,11 +1013,11 @@ DetachablePanel {
     function executeResetHead(commitHash, mode) {
         let res = root.resetController.resetHead(commitHash, mode)
 
-        // TODO
         if (res.success) {
-            root.notificationController.success("git reset --Soft", "git reset", 3000)
+            root.notificationController.success("Reset completed successfully", "Reset", 3000)
+            root.reloadAll()
         } else {
-            root.notificationController.error(res.errorMessage, "git reset", 5000)
+            root.notificationController.error(res.errorMessage, "Reset", 5000)
         }
     }
 
