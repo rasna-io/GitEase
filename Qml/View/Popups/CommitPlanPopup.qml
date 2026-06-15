@@ -184,6 +184,7 @@ IPopup {
 
                     ColumnLayout {
                         anchors.fill: parent
+                        anchors.margins: 4
                         spacing: 0
 
                         // Column header
