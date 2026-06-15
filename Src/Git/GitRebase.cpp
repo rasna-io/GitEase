@@ -120,6 +120,9 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
                          QString("Invalid branch '%1'.").arg(branchSpec));
     }
 
+    git_diff_options diff_opts = GIT_DIFF_OPTIONS_INIT;
+    diff_opts.flags = GIT_DIFF_SKIP_BINARY_CHECK | GIT_DIFF_DISABLE_PATHSPEC_MATCH;
+
     // STEP 1: Collect patch-ids from ONTO history
     QSet<QByteArray> upstreamPatchIds;
 
