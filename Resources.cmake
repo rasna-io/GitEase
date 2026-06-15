@@ -38,6 +38,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/TagController.qml
     Qml/Core/Controllers/PluginController.qml
     Qml/Core/Controllers/ResetController.qml
+    Qml/Core/Controllers/NetworkController.qml      # Network Controller
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
