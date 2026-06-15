@@ -116,13 +116,13 @@ function buildMenu(state) {
 
     // Reset
     model.push({
-        text: "Reset " + state.currentBranch + " to this commit",
+        text: "Reset " + state.currentBranch + " into this commit",
         icon: "reset",
         action: "reset",
         subItems: [
            {text: "--Soft (Keep all changes)",  icon: "resetSoft",  action: "resetSoft",  payload: { hash: state.fullHash }},
-           {text: "--Mixed (reset index to commit)", icon: "resetMixed", action: "resetMixed", payload: { hash: state.fullHash }},
-           {text: "--Hard (discard all changes)", icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
+           {text: "--Mixed (Reset index to commit)", icon: "resetMixed", action: "resetMixed", payload: { hash: state.fullHash }},
+           {text: "--Hard (Discard all changes)", icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
         ]
     });
 
