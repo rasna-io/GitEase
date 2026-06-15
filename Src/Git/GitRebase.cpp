@@ -155,7 +155,7 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
             git_commit_tree(&parentTree, parent);
 
             git_diff* diff = nullptr;
-            git_diff_tree_to_tree(&diff, repo, parentTree, tree, nullptr);
+            git_diff_tree_to_tree(&diff, repo, parentTree, tree, &diff_opts);
 
             git_oid patchId;
             if (git_diff_patchid(&patchId, diff, nullptr) == GIT_OK)
@@ -222,7 +222,7 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
             git_commit_tree(&parentTree, parent);
 
             git_diff* diff = nullptr;
-            git_diff_tree_to_tree(&diff, repo, parentTree, tree, nullptr);
+            git_diff_tree_to_tree(&diff, repo, parentTree, tree, &diff_opts);
 
             git_oid patchId;
             if (git_diff_patchid(&patchId, diff, nullptr) == GIT_OK)
