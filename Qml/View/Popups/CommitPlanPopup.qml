@@ -578,6 +578,7 @@ IPopup {
         anchors.centerIn: parent
         running: root.loading
         visible: root.loading
+        Material.accent: Style.colors.accent
         z: 10
     }
 
