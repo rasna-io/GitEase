@@ -104,7 +104,7 @@ function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSe
             branchNames = tipHashToBranches[commit.hash];
             for (let pr = 0; pr < commit.parentHashes.length; ++pr) {
                 if (!branchAssignmentByHash.has(commit.parentHashes[pr]))
-                    branchAssignmentByHash.set(commit.parentHashes[pr], branchNames);
+                    branchAssignmentByHash.set(commit.parentHashes[pr], branchNames)
             }
         }
 
@@ -118,7 +118,7 @@ function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSe
                 }
 
                 // delete used key
-                branchAssignmentByHash.delete(commit.hash);
+                branchAssignmentByHash.delete(commit.hash)
             }
         }
 
