@@ -19,9 +19,8 @@ GitResult GitReset::resetHead(const QString &commit, ResetMode mode)
         );
 
     if (result != GIT_OK) {
-        const git_error *e = git_error_last();
-        return GitResult(false, QVariant(),
-                         e ? e->message : "Failed to resolve commit.");
+        git_object_free(target);
+        return GitResult(false, {}, git_error_last()->message);
     }
 
     git_reset_t resetType;
