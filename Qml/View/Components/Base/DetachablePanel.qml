@@ -252,6 +252,7 @@ Item {
 
             Item {
                 id: windowHost
+                objectName: "windowHost"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
