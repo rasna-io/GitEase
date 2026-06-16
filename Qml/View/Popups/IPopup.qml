@@ -33,4 +33,10 @@ Popup {
         color: "#000000"
         opacity: 0.35
     }
+
+    onParentChanged: {
+        if (root.parent !== "windowHost") {
+            root.parent = Overlay.overlay
+        }
+    }
 }
