@@ -92,8 +92,8 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-    width   : Math.min(1180 , Overlay.overlay   ? Overlay.overlay.width - 80    : 1180)
-    height  : Math.min(760  , Overlay.overlay   ? Overlay.overlay.height - 80   : 760)
+    width   : Math.min(1180 , parent ? parent.width - 80    : 1180)
+    height  : Math.min(760  , parent ? parent.height - 80   : 760)
 
     modal           : true
     closePolicy     : Popup.NoAutoClose
