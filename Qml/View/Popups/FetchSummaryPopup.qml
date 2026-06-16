@@ -33,7 +33,6 @@ IPopup {
      * ****************************************************************************************/
     modal: true
     focus: true
-    anchors.centerIn: Overlay.overlay
 
     width: showRawOutput ? Math.min(parent ? parent.width * 0.9 : 1100, 1150)
                          : Math.min(parent ? parent.width * 0.65 : 700, 750)

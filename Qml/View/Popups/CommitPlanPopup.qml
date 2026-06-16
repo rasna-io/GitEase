@@ -97,7 +97,6 @@ IPopup {
 
     modal           : true
     closePolicy     : Popup.NoAutoClose
-    anchors.centerIn: Overlay.overlay
 
     onClosed: {
         resetPopupState()
