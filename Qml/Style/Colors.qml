@@ -148,7 +148,7 @@ QtObject{
     property color rebaseStatusSkipped:    mutedText       // dimmed
 
     // Plugins page colors
-    property color updateButton:        "#28a745"
-    property color compatible: "#22C55E"   // Green
+    property color updateButton: "#28a745"
+    property color compatible:   "#22C55E"   // Green
     property color incompatible: "#EF4444"   // Red
 }
