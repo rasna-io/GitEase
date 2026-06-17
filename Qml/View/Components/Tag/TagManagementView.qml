@@ -20,6 +20,7 @@ UtilitiesCard {
 
     title: "Tag Management"
     icon:  Style.icons.tag
+    pageScrollBlocking: true
 
     /* Logic */
     function update() {

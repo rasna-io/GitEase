@@ -26,6 +26,7 @@ UtilitiesCard {
      * ****************************************************************************************/
     title: "Branch Management"
     icon: Style.icons.branch
+    pageScrollBlocking: true
 
     content: ColumnLayout {
         id: content

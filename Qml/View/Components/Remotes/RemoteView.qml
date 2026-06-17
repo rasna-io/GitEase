@@ -49,6 +49,7 @@ UtilitiesCard {
 
     title: "Remotes"
     icon: Style.icons.upload
+    pageScrollBlocking: true
 
     Connections {
         id: userAuthenticationPopupConnection
