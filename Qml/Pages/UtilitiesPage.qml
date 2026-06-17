@@ -52,6 +52,7 @@ Item {
         anchors.fill: parent
         clip: true
 
+        interactive: !flow.dockHovered
         flickableDirection: Flickable.VerticalFlick
         boundsBehavior: Flickable.StopAtBounds
 
@@ -66,6 +67,43 @@ Item {
             id: flow
             width: flick.width
             spacing: hSpacing
+
+            property bool dockHovered: false
+
+            function scrollBlockingHovered(item) {
+                return item
+                    && item.visible !== false
+                    && item.hasOwnProperty("pageScrollBlocking")
+                    && item.pageScrollBlocking === true
+                    && item.hasOwnProperty("hovered")
+                    && item.hovered === true
+            }
+
+            function updateDockHovered() {
+                for (let i = 0; i < children.length; ++i) {
+                    const child = children[i]
+                    if (scrollBlockingHovered(child) || scrollBlockingHovered(child.item)) {
+                        flow.dockHovered = true
+                        return
+                    }
+                }
+
+                flow.dockHovered = false
+            }
+
+            function setupPluginDock(item) {
+                if (!item)
+                    return
+
+                if (item.hasOwnProperty("pageScrollBlocking")
+                        && item.pageScrollBlocking === true
+                        && item.hasOwnProperty("onHoveredChanged"))
+                    {
+                    item.onHoveredChanged = flow.updateDockHovered
+                }
+
+                updateDockHovered()
+            }
 
             ImportExportBundleDock {
                 width: 330
@@ -83,6 +121,8 @@ Item {
                 uiSessionPopups: root.uiSessionPopups
                 addEditRemotePopup: uiSessionPopups.addEditRemotePopup
                 notificationController: root.notificationController
+
+                onHoveredChanged: flow.updateDockHovered()
             }
 
 
@@ -92,6 +132,8 @@ Item {
                 branchController: root.branchController
                 addBranchPopup: uiSessionPopups.addBranchPopup
                 notificationController: root.notificationController
+
+                onHoveredChanged: flow.updateDockHovered()
             }
 
 
@@ -105,6 +147,8 @@ Item {
                 manageStashPopup: uiSessionPopups.manageStashPopup
 
                 notificationController: root.notificationController
+
+                onHoveredChanged: flow.updateDockHovered()
             }
 
             TagManagementView {
@@ -113,18 +157,24 @@ Item {
                 tagController: root.tagController
                 addTagPopup: uiSessionPopups.addTagPopup
                 notificationController: root.notificationController
+
+                onHoveredChanged: flow.updateDockHovered()
             }
 
             RecentActivityDock {
                 width: 330
                 height: 390
                 activityController: root.activityController
+
+                onHoveredChanged: flow.updateDockHovered()
             }
 
             RepositoriesHistoryDock {
                 width: 330
                 height: 390
                 repositoryController: root.repositoryController
+
+                onHoveredChanged: flow.updateDockHovered()
             }
 
             RepoForestDock {
@@ -163,6 +213,7 @@ Item {
                             item.pluginManager = root.pluginController?.pluginManager
                         if (item.hasOwnProperty("pluginId"))
                             item.pluginId = modelData.id
+                        flow.setupPluginDock(item)
                     }
 
                     onStatusChanged: {
