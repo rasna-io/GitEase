@@ -18,6 +18,8 @@ RowLayout {
     property string filterText      : ""
     property string filterStartDate : ""
     property string filterEndDate   : ""
+    property var    filterModes     : []
+    property bool   syncingFilterModes: false
 
     readonly property bool  compact         : headerRow.parent ? headerRow.parent.width < 650 : false
     property var            navigationRules : ["Author Email", "Author", "Parent 1", "Branch"]
@@ -112,6 +114,9 @@ RowLayout {
             x = Math.max(0, Math.min(x, parent.width - width))
         }
         onSelectionChanged: function(items) {
+            if (headerRow.syncingFilterModes)
+                return
+
             headerRow.applyFilter()
         }
     }
@@ -294,6 +299,10 @@ RowLayout {
         }
     }
 
+    Component.onCompleted: syncFilterModes()
+
+    onFilterModesChanged: syncFilterModes()
+
     /* Functions
      * ****************************************************************************************/
     function applyFilter() {
@@ -307,6 +316,21 @@ RowLayout {
                                   headerRow.filterEndDate,
                                   modes);
 
+    }
+
+    function syncFilterModes() {
+        if (!filterOptionsModel || filterOptionsModel.count === undefined)
+            return
+
+        var modes = headerRow.filterModes || []
+        headerRow.syncingFilterModes = true
+        for (var i = 0; i < filterOptionsModel.count; ++i) {
+            var item = filterOptionsModel.get(i)
+            filterOptionsModel.setProperty(i, "checked", modes.indexOf(item.text) !== -1)
+        }
+
+        filterOptionsPopup.updateSelection()
+        headerRow.syncingFilterModes = false
     }
 
     function handleDateSelected(dateString, isStart) {
