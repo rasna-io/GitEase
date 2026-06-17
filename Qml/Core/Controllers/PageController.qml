@@ -42,6 +42,12 @@ QtObject {
                         "qrc:/GitEase/Qml/Pages/UtilitiesPage.qml",
                         Style.icons.tools)
 
+            root.createPage(
+                        "plugins",
+                        "Plugins",
+                        "qrc:/GitEase/Qml/Pages/PluginsPage.qml",
+                        Style.icons.plugins)
+
             // root.createPage(
             //             "blank",
             //             "Blank Page",
