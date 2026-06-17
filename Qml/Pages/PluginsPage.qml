@@ -61,6 +61,7 @@ Item {
             policy: ScrollBar.AsNeeded
         }
 
+        // Check how many columns fit inside the current width of the page
         property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
 
         cellWidth: width / columns

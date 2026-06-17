@@ -35,8 +35,9 @@ Rectangle {
         width: 1
         color: Style.colors.primaryBorder
     }
-    scale: root.hovered ? 1.03 : 1.0
 
+    // Scaling animation on hover
+    scale: root.hovered ? 1.03 : 1.0
     Behavior on scale {
         NumberAnimation {
             duration: 150
@@ -47,6 +48,7 @@ Rectangle {
     /* Children
      * ****************************************************************************************/
 
+    // Mouse area handling the hovered property
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
