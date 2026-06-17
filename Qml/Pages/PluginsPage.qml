@@ -57,6 +57,10 @@ Item {
 
         model: pluginsModel
 
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded
+        }
+
         property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
 
         cellWidth: width / columns
