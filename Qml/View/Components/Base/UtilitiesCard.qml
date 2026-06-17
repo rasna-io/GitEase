@@ -20,7 +20,8 @@ Rectangle {
     required property Component content
     required property string    title
     required property string    icon
-
+    property bool               pageScrollBlocking: true
+    readonly property alias     hovered:            contentHoverHandler.hovered
 
     /* Object Properties
      * ****************************************************************************************/
@@ -68,6 +69,11 @@ Rectangle {
             sourceComponent: root.content
             Layout.fillHeight: true
             Layout.fillWidth: true
+
+            HoverHandler {
+                id: contentHoverHandler
+                enabled: root.pageScrollBlocking
+            }
         }
 
     }
