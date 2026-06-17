@@ -75,7 +75,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/DropZone.qml                      # Dock zone
     Qml/View/Components/Base/ScrollingText.qml                 # Single-line auto-scrolling text
     Qml/View/Components/Base/ModernInputArea.qml               # Modern Input Area
-    Qml/View/Components/Base/PluginCard.qml               # Modern Input Area
+    Qml/View/Components/Base/PluginCard.qml
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
@@ -215,7 +215,7 @@ set(RESOURCES_PAGES
     Qml/Pages/CommittingPage.qml    # Commit Page
     Qml/Pages/UtilitiesPage.qml     # UtilitiesPage, import/export
     Qml/Pages/BlankPage.qml         # Blank placeholder page
-    Qml/Pages/PluginsPage.qml         # Plugins page
+    Qml/Pages/PluginsPage.qml       # Plugins page
 )
 
 # Define QML Services
