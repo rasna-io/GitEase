@@ -79,4 +79,11 @@ QtObject{
     property string play:              "\uf04b" // play
     property string pause:             "\uf28b" // pause
     property string stop:              "\uf04d" // stop
+
+    property string plugins:           "\uf12e" // plugins
+    property string install:           "\uf0ed" // install
+    property string uninstall:         "\uf2ed" // uninstall
+    property string update:            "\uf2f1" // update
+    property string compatible:        "\uf058" // compatible
+    property string incompatible:      "\uf057" // incompatible
 }

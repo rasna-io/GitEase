@@ -17,7 +17,6 @@ QtObject{
     property color navButton:           "#F3F3F3"
     property color hoverTitle:          "#E8E8E8"
     property color textButton:          "#FDFDFD"
-
     
     // Files Status
     property color addedFile:           "#B9FAB9"
@@ -147,4 +146,9 @@ QtObject{
     property color rebaseStatusRebased:    "#1B7B3A"       // dark green
     property color rebaseStatusConflict:   "#C0392B"       // deep red
     property color rebaseStatusSkipped:    mutedText       // dimmed
+
+    // Plugins page colors
+    property color updateButton:        "#28a745"
+    property color compatible: "#22C55E"   // Green
+    property color incompatible: "#EF4444"   // Red
 }
