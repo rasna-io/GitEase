@@ -19,6 +19,7 @@ Popup {
     property var selectedItems: []
     property bool anySelected: false
     property bool allSelected: false
+    property bool multiSelection: true
 
     /* Signals
      * ****************************************************************************************/
@@ -110,7 +111,17 @@ Popup {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            itemsRepeater.model.setProperty(index, "checked", !optionRow.isChecked)
+                            if (root.multiSelection) {
+                                itemsRepeater.model.setProperty(index, "checked", !optionRow.isChecked)
+                            } else {
+                                if (optionRow.isChecked) {
+                                    itemsRepeater.model.setProperty(index, "checked", false)
+                                } else {
+                                    for (var i = 0; i < itemsRepeater.model.count; ++i)
+                                        itemsRepeater.model.setProperty(i, "checked", i === index)
+                                }
+                            }
+
                             root.updateSelection()
                         }
                     }
@@ -120,13 +131,15 @@ Popup {
 
         // Divider between fields and actions
         Rectangle {
+            visible: root.multiSelection
             width: parent.width
-            height: 1
+            height: visible ? 1 : 0
             color: Style.colors.primaryBorder
         }
 
         // Bottom actions: Select all / Clear all
         Row {
+            visible: root.multiSelection
             width: parent.width
             spacing: 8
 
@@ -205,6 +218,8 @@ Popup {
     /* Functions
      * ****************************************************************************************/
     function setAllChecked(value) {
+        if (!root.multiSelection)
+            return
         if (!itemsRepeater.model || itemsRepeater.model.count === undefined)
             return
         for (var i = 0; i < itemsRepeater.model.count; ++i)
