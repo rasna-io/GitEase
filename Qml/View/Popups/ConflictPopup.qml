@@ -266,7 +266,33 @@ Window {
                         cacheBuffer: 5000
                         reuseItems: true
                         anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
-                        ScrollBar.vertical: ScrollBar { active: true }
+                        ScrollBar.vertical: ScrollBar {
+                            id: vScrollBar
+                            active: true
+                        }
+
+                        Item {
+                            id: conflictMarkerOverlay
+                            parent: conflictListView
+                            x: vScrollBar.x
+                            y: vScrollBar.y
+                            width: vScrollBar.width
+                            height: vScrollBar.height
+                            z: 100
+                            clip: true
+
+                            Repeater {
+                                model: conflictMarkersModel
+                                delegate: Rectangle {
+                                    x: 0
+                                    y: model.y * conflictMarkerOverlay.height
+                                    width: conflictMarkerOverlay.width
+                                    height: Math.max(2, model.height * conflictMarkerOverlay.height)
+                                    color: Style.colors.conflictMarker
+                                    opacity: 0.85
+                                }
+                            }
+                        }
 
                         delegate: ConflictEditorDelegate {
                             width: conflictListView.width
@@ -379,6 +405,8 @@ Window {
         id: conflictConfirmationDialogComp
         ConflictConfirmationDialog { }
     }
+
+    ListModel { id: conflictMarkersModel }
 
     /* Functions
      * ****************************************************************************************/
