@@ -130,7 +130,7 @@ Window {
         windowController.window = root
         windowController.setMinimumSize(width, height)
 
-        conflictMarkerOverlay.markersUpdateTimer.start()
+        markersUpdateTimer.start()
     }
 
     ListModel { id: displayModel }
