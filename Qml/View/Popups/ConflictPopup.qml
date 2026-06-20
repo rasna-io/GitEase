@@ -717,4 +717,31 @@ Window {
 
         root.close()
     }
+
+    function updateConflictMarkers() {
+        conflictMarkersModel.clear()
+
+        var totalRows = displayModel.count
+        if (totalRows === 0 || conflictMarkerOverlay.height <= 0)
+            return
+
+        var blocks  = []
+        var stack   = []
+        for (var i = 0; i < displayModel.count; i++) {
+            var row = displayModel.get(i)
+
+            if (row.role === "marker-start") {
+                stack.push(i)
+            } else if (row.role === "marker-end" && stack.length > 0) {
+                var startIdx = stack.pop()
+                blocks.push({ startIdx: startIdx, endIdx: i })
+            }
+        }
+
+        for (var b of blocks) {
+            var yNorm = b.startIdx / totalRows
+            var hNorm = (b.endIdx - b.startIdx + 1) / totalRows
+            conflictMarkersModel.append({ y: yNorm, height: hNorm })
+        }
+    }
 }
