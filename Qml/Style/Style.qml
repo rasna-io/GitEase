@@ -144,6 +144,8 @@ QtObject {
         hintText:               "#a0a0a0"
         lineNumberColor:        "#a0a0a0"
 
+        conflictMarker:         "#FF6B6B"
+
         // Interactive rebase status colors
         property color rebaseStatusPending:    secondaryText
         property color rebaseStatusInProgress: "#FFA500"        // bright orange

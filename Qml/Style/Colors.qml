@@ -139,6 +139,7 @@ QtObject{
     property color conflictSeparatorBg:     "transparent"
     property color conflictMarkerText:      "#333333"
     property color lineNumberColor:         "#808080"
+    property color conflictMarker:          "#E05555"
 
     // Interactive rebase status colors
     property color rebaseStatusPending:    mutedText
