@@ -53,6 +53,7 @@ Item {
 
             Loader {
                 Layout.fillWidth: true
+                clip: true
                 sourceComponent: root.content
             }
 
