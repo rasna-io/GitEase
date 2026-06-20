@@ -480,6 +480,10 @@ Window {
                 break
             }
         }
+
+        Qt.callLater(function() {
+            if (conflictMarkerOverlay) root.updateConflictMarkers();
+        });
     }
 
     function acceptBlock(blockIndex, mode) {
