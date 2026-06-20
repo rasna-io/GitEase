@@ -21,11 +21,15 @@ Rectangle {
     property string iconUrl: ""
     property string releaseDate: ""
 
-    property bool   isInstalled: false // TODO
-    property bool   isCompatible: true // TODO
+    property bool   isInstalled: false
+    property bool   isCompatible: false // TODO
     property bool   updateAvailable: true // TODO
-    property bool   isEnabled: false // TODO
+    property bool   isEnabled: false
+
     property bool   hovered: false
+
+    /* Signals
+     * ****************************************************************************************/
 
     /* Object Properties
      * ****************************************************************************************/
@@ -110,6 +114,7 @@ Rectangle {
             Switch {
                 Material.accent: Style.colors.accent
                 visible: root.isInstalled
+                checked: root.isEnabled
 
                 onToggled: {
                     // TODO
@@ -126,10 +131,10 @@ Rectangle {
             Layout.fillWidth: true
         }
 
-        // Size, latest version, install/unistall, update
         RowLayout {
             Layout.fillWidth: true
 
+            // Size
             Label {
                 text: "📦 " + root.size
                 color: Style.colors.mutedText
@@ -143,6 +148,7 @@ Rectangle {
                 Layout.alignment: Qt.AlignHCenter
                 color: Style.colors.primaryBorder
             }
+            // Latest version
             Label {
                 text: "⬆ " + root.latestVersion
                 color: Style.colors.mutedText
@@ -155,13 +161,15 @@ Rectangle {
                 Layout.fillWidth: true
             }
 
+            // Install/Unistall
             Button {
                 Layout.preferredWidth: 90
                 implicitHeight: 40
+                enabled: root.isInstalled ? true : root.isCompatible
 
                 background: Rectangle {
                     radius: 5
-                    color: Style.colors.accent
+                    color: enabled ? Style.colors.accent : Style.colors.disabledButton
                 }
 
                 contentItem: Item {
@@ -197,10 +205,11 @@ Rectangle {
                 }
             }
 
+            // Update
             Button {
                 Layout.preferredWidth: 90
                 implicitHeight: 40
-                enabled: root.updateAvailable
+                enabled: root.isInstalled && root.updateAvailable
 
                 background: Rectangle {
                     radius: 5
@@ -250,17 +259,21 @@ Rectangle {
 
         // Compatability
         RowLayout {
+            id: compatabilityRow
             Layout.fillWidth: true
             spacing: 5
+
+            property bool supported: root.isCompatible || root.isInstalled
+
             Label {
-                text: root.isCompatible ? Style.icons.compatible : Style.icons.incompatible
-                color: root.isCompatible ? Style.colors.compatible : Style.colors.incompatible
+                text: compatabilityRow.supported ? Style.icons.compatible : Style.icons.incompatible
+                color: compatabilityRow.supported ? Style.colors.compatible : Style.colors.incompatible
                 font.pixelSize: 18
                 font.family: Style.fontTypes.font6Pro
                 wrapMode: Text.WordWrap
             }
             Label {
-                text: root.isCompatible ? "Compatible with your version of GitEase" : "Incompatible with your version of GitEase"
+                text: compatabilityRow.supported ? "Compatible with your version of GitEase" : "Incompatible with your version of GitEase"
                 color: Style.colors.placeholderText
                 font.pixelSize: 13
                 font.family: Style.fontTypes.roboto
@@ -268,4 +281,7 @@ Rectangle {
             }
         }
     }
+
+    /* Functions
+     * ****************************************************************************************/
 }
