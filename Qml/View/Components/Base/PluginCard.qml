@@ -257,23 +257,23 @@ Rectangle {
             color: Style.colors.primaryBorder
         }
 
-        // Compatability
+        // Compatibility
         RowLayout {
-            id: compatabilityRow
+            id: compatibilityRow
             Layout.fillWidth: true
             spacing: 5
 
             property bool supported: root.isCompatible || root.isInstalled
 
             Label {
-                text: compatabilityRow.supported ? Style.icons.compatible : Style.icons.incompatible
-                color: compatabilityRow.supported ? Style.colors.compatible : Style.colors.incompatible
+                text: compatibilityRow.supported ? Style.icons.compatible : Style.icons.incompatible
+                color: compatibilityRow.supported ? Style.colors.compatible : Style.colors.incompatible
                 font.pixelSize: 18
                 font.family: Style.fontTypes.font6Pro
                 wrapMode: Text.WordWrap
             }
             Label {
-                text: compatabilityRow.supported ? "Compatible with your version of GitEase" : "Incompatible with your version of GitEase"
+                text: compatibilityRow.supported ? "Compatible with your version of GitEase" : "Incompatible with your version of GitEase"
                 color: Style.colors.placeholderText
                 font.pixelSize: 13
                 font.family: Style.fontTypes.roboto
