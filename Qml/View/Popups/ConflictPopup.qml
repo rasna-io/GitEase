@@ -129,6 +129,8 @@ Window {
     Component.onCompleted: {
         windowController.window = root
         windowController.setMinimumSize(width, height)
+
+        conflictMarkerOverlay.markersUpdateTimer.start()
     }
 
     ListModel { id: displayModel }
@@ -291,6 +293,18 @@ Window {
                                     color: Style.colors.conflictMarker
                                     opacity: 0.85
                                 }
+                            }
+
+                            Timer {
+                                id: markersUpdateTimer
+                                interval: 50
+                                repeat: false
+                                onTriggered: root.updateConflictMarkers()
+                            }
+
+                            onHeightChanged: {
+                                if (height > 0)
+                                    markersUpdateTimer.restart()
                             }
                         }
 
