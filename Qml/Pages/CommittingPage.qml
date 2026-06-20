@@ -94,8 +94,6 @@ Item {
 
         function onCurrentRepoChanged() {
             changesFileLists.updateStatus()
-            currentBranchNameText.text = branchController.getCurrentBranchName()
-            commitPanelBranchText.text = branchController ? branchController.getCurrentBranchName() : ""
         }
     }
 
