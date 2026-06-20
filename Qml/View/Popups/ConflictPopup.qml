@@ -299,8 +299,14 @@ Window {
                             horizontalOffset: conflictListView.horizontalScrollOffset
                             isCurrentItem: ListView.isCurrentItem
 
-                            onSplitRequested        : (cursorPos)           => ConflictUtils.splitLine(displayModel, index, cursorPos, conflictListView)
-                            onMergeUpRequested      : ()                    => ConflictUtils.mergeLineUp(displayModel, index, conflictListView)
+                            onSplitRequested: (cursorPos) => {
+                                ConflictUtils.splitLine(displayModel, index, cursorPos, conflictListView)
+                                root.updateConflictMarkers()
+                            }
+                            onMergeUpRequested: () => {
+                                ConflictUtils.mergeLineUp(displayModel, index, conflictListView)
+                                root.updateConflictMarkers()
+                            }
                             onAcceptBlockRequested  : (blockIndex, mode)    => root.acceptBlock(blockIndex, mode)
                             onMoveFocusUp           : conflictListView.currentIndex = Math.max(0, index - 1)
                             onMoveFocusDown         : conflictListView.currentIndex = Math.min(displayModel.count - 1, index + 1)
