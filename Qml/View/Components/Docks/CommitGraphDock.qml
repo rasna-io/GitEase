@@ -768,8 +768,7 @@ DetachablePanel {
             numSelected         : selectedCommitHashesInOrder().length,
             cherryPickEnabled   : !selectionHasStash() && !selectionHasHead(),
             hasMergeableBranches: mergeable.length > 0,
-            mergeableBranches   : mergeable,
-            branchFilter        : root.branchFilter
+            mergeableBranches   : mergeable
         }
     }
 
@@ -865,14 +864,6 @@ DetachablePanel {
 
         case "push":
             executePush(item.payload.branch, checked)
-            break
-
-        case "showOnlyBranch":
-            executeShowOnlyBranch(item.payload.branch)
-            break
-
-        case "showAllBranches":
-            executeShowAllBranches()
             break
 
         case "newBranch":
