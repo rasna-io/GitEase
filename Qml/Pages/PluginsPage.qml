@@ -55,6 +55,12 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    EmptyStateView {
+        title: "No plugins to show"
+        details: "No plugins available at the moment"
+        visible: !root.pluginsData || root.pluginsData.length === 0
+    }
+
     ListModel {
         id: pluginsModel
     }
