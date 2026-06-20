@@ -50,6 +50,8 @@ Item {
             filterStartDate: root.graphRef ? root.graphRef.filterStartDate : (root.activePageState()?.commitGraph?.filterStartDate || "")
             filterEndDate: root.graphRef ? root.graphRef.filterEndDate : (root.activePageState()?.commitGraph?.filterEndDate || "")
             filterModes: root.graphRef ? root.graphRef.filterMode : (root.activePageState()?.commitGraph?.filterMode || [])
+            branchNames: root.branchNames()
+            branchFilter: root.graphRef ? root.graphRef.branchFilter : (root.activePageState()?.commitGraph?.branchFilter || "")
             navigationRule: root.graphRef ? root.graphRef.navigationRule : (root.activePageState()?.commitGraph?.navigationRule || navigationRules[0])
 
             onFilterRequested: function(text, startDate, endDate, modes) {
@@ -57,6 +59,21 @@ Item {
                     root.graphRef.applyFilter(text, startDate, endDate, modes);
                     root.saveCommitGraphState();
                 }
+            }
+
+            onBranchSelected: function(branchName) {
+                if (!root.graphRef)
+                    return
+
+                if (branchName && branchName.length > 0)
+                    root.graphRef.executeShowOnlyBranch(branchName)
+                else
+                    root.graphRef.executeShowAllBranches()
+
+                if (branchName && branchName.length > 0)
+                    root.graphRef.navigationRule = "Branch"
+
+                root.saveCommitGraphState()
             }
 
             onNextRequested: function(rule) {
@@ -255,5 +272,23 @@ Item {
     function activePageState() {
         var pageModel = root.statePage || root.page
         return pageModel ? pageModel.state : null
+    }
+
+    function branchNames() {
+        if (!root.branchController)
+            return []
+
+        var branches = root.branchController.getBranches()
+        if (!branches)
+            return []
+
+        var names = []
+        for (var i = 0; i < branches.length; i++) {
+            var branch = branches[i]
+            if (branch && branch.name)
+                names.push(branch.name)
+        }
+
+        return names
     }
 }
