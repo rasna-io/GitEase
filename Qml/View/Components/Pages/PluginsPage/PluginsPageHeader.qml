@@ -18,7 +18,7 @@ RowLayout {
 
     /* Signals
      * ****************************************************************************************/
-    signal filterRequested(string text, var modes)
+    signal filterRequested(string text, string mode)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -95,11 +95,11 @@ RowLayout {
     /* Functions
      * ****************************************************************************************/
     function applyFilter() {
-        var selectedItems = filterOptionsPopup.selectedItems;
+        var selectedItem = filterOptionsPopup.selectedItems;
 
-        var modes = selectedItems && selectedItems.length > 0
-                     ? selectedItems.map(function(it) { return it.text })
+        var mode = filterOptionsPopup.selectedItems.length > 0
+                     ? filterOptionsPopup.selectedItems[0].text
                      : [];
-        headerRow.filterRequested(headerRow.filterText, modes);
+        headerRow.filterRequested(headerRow.filterText, mode);
     }
 }
