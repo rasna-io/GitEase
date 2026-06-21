@@ -12,6 +12,7 @@ set(RESOURCES_CORE
     Qml/Core/Models/Page.qml
     Qml/Core/Models/UserProfile.qml           # user profile model
     Qml/Core/Models/NotificationSettings.qml
+    Qml/Core/Models/Plugin.qml
 
     # Controllers
     Qml/Core/Controllers/WelcomeController.qml      # Welcome page controller
