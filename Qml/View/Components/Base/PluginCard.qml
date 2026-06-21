@@ -11,20 +11,7 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string pluginId: ""
-    property string name: ""
-    property string description: ""
-    property string author: ""
-    property string latestVersion: ""
-    property string minAppVersion: ""
-    property string size: ""
-    property string iconUrl: ""
-    property string releaseDate: ""
-
-    property bool   isInstalled: false
-    property bool   isCompatible: false // TODO
-    property bool   updateAvailable: true // TODO
-    property bool   isEnabled: false
+    property var plugin: null
 
     property bool   hovered: false
 
@@ -83,7 +70,7 @@ Rectangle {
                     anchors.centerIn: parent
                     width: 50
                     height: 50
-                    source: root.iconUrl
+                    source: root.plugin.iconUrl
                 }
             }
 
@@ -91,14 +78,14 @@ Rectangle {
             ColumnLayout {
                 spacing: 8
                 Label {
-                    text: root.name
+                    text: root.plugin.name
                     color: Style.colors.foreground
                     font.pixelSize: 16
                     font.bold: true
                     font.family: Style.fontTypes.roboto
                 }
                 Label {
-                    text: root.author
+                    text: root.plugin.author
                     color: Style.colors.mutedText
                     font.pixelSize: 12
                     font.family: Style.fontTypes.roboto
@@ -113,8 +100,8 @@ Rectangle {
             // Plugin enabled
             Switch {
                 Material.accent: Style.colors.accent
-                visible: root.isInstalled
-                checked: root.isEnabled
+                visible: root.plugin.isInstalled
+                checked: root.plugin.isEnabled
 
                 onToggled: {
                     // TODO
@@ -124,7 +111,7 @@ Rectangle {
 
         // Description
         ScrollingText {
-            text: root.description
+            text: root.plugin.description
             color: Style.colors.placeholderText
             font.pixelSize: 13
             font.family: Style.fontTypes.roboto
@@ -136,7 +123,7 @@ Rectangle {
 
             // Size
             Label {
-                text: "📦 " + root.size
+                text: "📦 " + root.plugin.size
                 color: Style.colors.mutedText
                 font.pixelSize: 14
                 font.family: Style.fontTypes.roboto
@@ -150,7 +137,7 @@ Rectangle {
             }
             // Latest version
             Label {
-                text: "⬆ " + root.latestVersion
+                text: "⬆ " + root.plugin.latestVersion
                 color: Style.colors.mutedText
                 font.pixelSize: 14
                 font.family: Style.fontTypes.roboto
@@ -165,7 +152,7 @@ Rectangle {
             Button {
                 Layout.preferredWidth: 90
                 implicitHeight: 40
-                enabled: root.isInstalled ? true : root.isCompatible
+                enabled: root.plugin.isInstalled ? true : root.plugin.isCompatible
 
                 background: Rectangle {
                     radius: 5
@@ -181,7 +168,7 @@ Rectangle {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: root.isInstalled ? Style.icons.uninstall : Style.icons.install
+                            text: root.plugin.isInstalled ? Style.icons.uninstall : Style.icons.install
                             font.family: Style.fontTypes.font6Pro
                             font.pixelSize: 12
                             color: Style.colors.textButton
@@ -191,7 +178,7 @@ Rectangle {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: root.isInstalled ? "Uninstall" : "Install"
+                            text: root.plugin.isInstalled ? "Uninstall" : "Install"
                             color: Style.colors.textButton
                             font.pixelSize: 13
                             horizontalAlignment: Text.AlignHCenter
@@ -209,7 +196,7 @@ Rectangle {
             Button {
                 Layout.preferredWidth: 90
                 implicitHeight: 40
-                enabled: root.isInstalled && root.updateAvailable
+                enabled: root.plugin.isInstalled && root.plugin.updateAvailable
 
                 background: Rectangle {
                     radius: 5
@@ -263,7 +250,7 @@ Rectangle {
             Layout.fillWidth: true
             spacing: 5
 
-            property bool supported: root.isCompatible || root.isInstalled
+            property bool supported: root.plugin.isCompatible || root.plugin.isInstalled
 
             Label {
                 text: compatibilityRow.supported ? Style.icons.compatible : Style.icons.incompatible

@@ -16,7 +16,8 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var pluginsData: []
+    property AppModel appModel: null
+    property var pluginsData: root.appModel.plugins
     readonly property int minCardWidth: 400
     readonly property int minCardHeight: 270
 
@@ -71,7 +72,7 @@ Item {
         anchors.margins: 10
         clip: true
 
-        model: pluginsModel
+        model: root.appModel.plugins
 
         ScrollBar.vertical: ScrollBar {
             policy: ScrollBar.AsNeeded
@@ -91,17 +92,7 @@ Item {
                 anchors.centerIn: parent
                 width: gridView.cellWidth - 20
                 height: gridView.cellHeight - 20
-                pluginId: model.pluginId || ""
-                name: model.name || ""
-                description: model.description || ""
-                author: model.author || ""
-                latestVersion: model.latestVersion || ""
-                minAppVersion: model.minAppVersion || ""
-                size: model.size || ""
-                iconUrl: model.iconUrl || ""
-                releaseDate: model.releaseDate || ""
-                isInstalled: model.isInstalled || false
-                isEnabled: model.isEnabled || false
+                plugin: modelData
             }
         }
     }

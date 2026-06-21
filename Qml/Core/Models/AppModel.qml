@@ -34,6 +34,7 @@ Item {
 
     property                UserProfile       currentUserProfile:       null
 
+    property                var               plugins:                  []
 
     /* Signals
      * ****************************************************************************************/
