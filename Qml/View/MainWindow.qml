@@ -69,6 +69,7 @@ Rectangle {
                 onOpenSettingsRequested: {
                     let settingsPopup = root.uiSession?.popups?.settingsPopup
                     settingsPopup.appModel = root.uiSession.appModel
+                    settingsPopup.updateController = root.uiSession.updateController
                     settingsPopup.fileIO = root.uiSession.appModel.fileIO
                     settingsPopup.open()
                 }

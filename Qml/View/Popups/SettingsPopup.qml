@@ -26,6 +26,8 @@ IPopup {
 
     property SshKeyController       sshKeyController:       null
 
+    property UpdateController       updateController:       null
+
 
     /* Object Properties
      * ****************************************************************************************/
