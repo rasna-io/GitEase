@@ -59,6 +59,7 @@ endif()
 
 target_link_libraries(GitEase PRIVATE Qt6::Core)
 target_include_directories(${MAIN_TARGET_NAME} PRIVATE ${INCLUDE_DIRS_BACKEND})
+target_compile_definitions(${MAIN_TARGET_NAME} PRIVATE GITEASE_VERSION="${PROJECT_VERSION_SHORT}")
 
 # NO_CACHEGEN is set for qt_add_qml_module() in DEBUG mode so we can have a better QML Preview
 # functionality (Only Qt6.6 and later)
