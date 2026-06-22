@@ -17,6 +17,7 @@ NetworkManager::NetworkManager(QObject *parent)
 }
 
 void NetworkManager::sendRequest(
+    const QString &requestKey,
     const QString &url,
     HttpMethod method,
     const QJsonObject &body,
@@ -42,7 +43,7 @@ void NetworkManager::sendRequest(
     timer->start(REQUEST_TIMEOUT);
 
     connect(timer, &QTimer::timeout, this, [=]() {
-        emit timeout();
+        emit timeout(requestKey);
 
         reply->abort();
         timer->deleteLater();
@@ -54,7 +55,7 @@ void NetworkManager::sendRequest(
 
         if(reply->error() != QNetworkReply::NoError)
         {
-            emit requestError(reply->error(), reply->errorString());
+            emit requestError(requestKey, reply->error(), reply->errorString());
 
             timer->deleteLater();
             reply->deleteLater();
@@ -68,7 +69,7 @@ void NetworkManager::sendRequest(
 
         if(parseError.error != QJsonParseError::NoError)
         {
-            emit requestError(-1, parseError.errorString());
+            emit requestError(requestKey, -1, parseError.errorString());
         }
         else
         {
@@ -81,7 +82,7 @@ void NetworkManager::sendRequest(
             {
                 wrapper["data"] = doc.array();
             }
-            emit requestFinished(wrapper);
+            emit requestFinished(requestKey, wrapper);
         }
 
         timer->deleteLater();

@@ -23,6 +23,7 @@ public:
     Q_ENUM(HttpMethod)
 
     Q_INVOKABLE void sendRequest(
+        const QString &requestKey,
         const QString &url,
         HttpMethod method,
         const QJsonObject &body = QJsonObject(),
@@ -30,9 +31,10 @@ public:
     );
 
 signals:
-    void requestFinished(QJsonObject response);
-    void requestError(int code, QString message);
-    void timeout();
+    void requestFinished(QString requestKey, QJsonObject response);
+    void requestError(QString requestKey, int code, QString message);
+    void timeout(QString requestKey);
+    void downloadProgress(QString requestKey, qint64 bytesReceived, qint64 bytesTotal);
 
 private:
     void setHeaders(QNetworkRequest &request, const QVariantMap &headers);
