@@ -66,6 +66,7 @@ IPopup {
                         {id: 0, title: "General", icon: Style.icons.slider},
                         {id: 1, title: "SSH", icon: Style.icons.terminal},
                         {id: 2, title: "Appearence", icon: Style.icons.palette},
+                        {id: 3, title: "Updates", icon: Style.icons.refresh},
                     ]
                     expanded: true
                     onClicked: (modelData) => {
@@ -215,7 +216,205 @@ IPopup {
 
                         }
 
+                        Item {
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.topMargin: 10
+                                anchors.leftMargin: 20
+                                anchors.rightMargin: 20
 
+                                spacing: 20
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: "GitEase Version"
+                                            font.pointSize: Style.appFont.h4Pt
+                                            color: Style.colors.foreground
+                                        }
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: "Installed version: " + (Qt.application.version || "0.0.0")
+                                            font.pointSize: Style.appFont.secondaryPt
+                                            color: Style.colors.mutedText
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Qt.darker(settingsContainer.color, 1.2)
+                                }
+
+                                ButtonItem {
+                                    id: checkUpdatesButton
+                                    Layout.fillWidth: true
+                                    title: "Application Updates"
+                                    description: ""
+                                    buttonTitle: root.updateController?.busy ? "Checking ..." : "Check"
+                                    busy: root.updateController?.busy ?? false
+                                    enabled: root.updateController !== null
+                                             && !(root.updateController?.busy ?? false)
+                                    onClicked: root.checkForApplicationUpdate()
+                                }
+
+                                ButtonItem {
+                                    id: installUpdateButton
+                                    Layout.fillWidth: true
+                                    visible: root.updateController?.updateAvailable === true
+                                    title: "Install Update"
+                                    description: (root.updateController?.latestVersion ?? "") !== ""
+                                                 ? "Download and install version " + root.updateController.latestVersion
+                                                 : "Download and install the available update"
+                                    buttonTitle: root.updateController?.busy ? "Updating ..." : "Update"
+                                    busy: root.updateController?.busy ?? false
+                                    enabled: root.updateController !== null
+                                             && root.updateController.updateAvailable
+                                             && !(root.updateController?.busy ?? false)
+                                    onClicked: root.installApplicationUpdate()
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: Math.max(96, updateReleaseContent.implicitHeight + 20)
+                                    visible: (root.updateController?.latestVersion ?? "") !== ""
+                                             || (root.updateController?.releaseNotes ?? "") !== ""
+                                             || (root.updateController?.downloadSize ?? "") !== ""
+                                    radius: 6
+                                    color: Style.colors.cardBackground
+                                    border.width: 1
+                                    border.color: Style.colors.secondaryBorder
+
+                                    RowLayout {
+                                        id: updateReleaseContent
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 12
+
+                                        readonly property bool isCritical: root.updateController?.isCritical ?? false
+
+                                        Text {
+                                            text: updateReleaseContent.isCritical ? Style.icons.warning : Style.icons.info
+                                            font.family: Style.fontTypes.font6Pro
+                                            font.pixelSize: updateReleaseContent.isCritical ? 13 : 16
+                                            color: updateReleaseContent.isCritical ? Style.colors.notificationWarningText : Style.colors.mutedText
+                                            Layout.alignment: Qt.AlignVCenter
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 8
+
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: updateReleaseContent.isCritical ? "Critical Update" : "Latest Release"
+                                                font.pointSize: Style.appFont.h4Pt
+                                                color: Style.colors.foreground
+                                            }
+
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: {
+                                                    var parts = []
+                                                    if ((root.updateController?.latestVersion ?? "") !== "") {
+                                                        parts.push("Version " + root.updateController.latestVersion)
+                                                    }
+                                                    if ((root.updateController?.downloadSize ?? "") !== "") {
+                                                        parts.push(root.updateController.downloadSize)
+                                                    }
+                                                    if (root.updateController?.updateAvailable === true) {
+                                                        parts.push("Update available")
+                                                    }
+                                                    return parts.join(" | ")
+                                                }
+                                                font.pointSize: Style.appFont.secondaryPt
+                                                color: Style.colors.mutedText
+                                                wrapMode: Text.WordWrap
+                                            }
+
+                                            Text {
+                                                Layout.fillWidth: true
+                                                visible: (root.updateController?.releaseNotes ?? "") !== ""
+                                                text: root.updateController?.releaseNotes ?? ""
+                                                font.pointSize: Style.appFont.secondaryPt
+                                                color: Style.colors.mutedText
+                                                wrapMode: Text.WordWrap
+                                                lineHeight: 1.1
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: updateStatusText.implicitHeight + 18
+                                    radius: 5
+                                    color: {
+                                        switch (root.updateController?.statusType) {
+                                            case "success":
+                                                return Style.colors.notificationSuccess
+                                            case "warning":
+                                                return Style.colors.notificationWarning
+                                            case "error":
+                                                return Style.colors.notificationError
+                                            default :
+                                                return Style.colors.notificationInfo
+                                        }
+                                    }
+
+                                    border.color: {
+                                        switch (root.updateController?.statusType) {
+                                            case "success":
+                                                return Style.colors.notificationSuccessBorder
+                                            case "warning":
+                                                return Style.colors.notificationWarningBorder
+                                            case "error":
+                                                return Style.colors.notificationErrorBorder
+                                            default :
+                                                return Style.colors.notificationInfoBorder
+                                        }
+                                    }
+
+                                    border.width: 1
+
+                                    Text {
+                                        id: updateStatusText
+                                        anchors.fill: parent
+                                        anchors.margins: 9
+                                        text: root.updateController?.statusText ?? "Not checked yet"
+                                        color: {
+                                            switch (root.updateController?.statusType) {
+                                                case "success":
+                                                    return Style.colors.notificationSuccessText
+                                                case "warning":
+                                                    return Style.colors.notificationWarningText
+                                                case "error":
+                                                    return Style.colors.notificationErrorText
+                                                default :
+                                                    return Style.colors.notificationInfoText
+                                            }
+                                        }
+
+                                        font.pointSize: Style.appFont.secondaryPt
+                                        verticalAlignment: Text.AlignVCenter
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -307,6 +506,22 @@ IPopup {
         }
         let positionDisplay = positionMap[root.appSettings?.notificationSettings?.notificationPosition] || "Right Bottom"
         notificationPosition.cmb.currentIndex = notificationPosition.cmb.model.indexOf(positionDisplay)
+    }
+
+    function checkForApplicationUpdate() {
+        if (!root.updateController) {
+            return
+        }
+
+        root.updateController.checkForUpdates()
+    }
+
+    function installApplicationUpdate() {
+        if (!root.updateController) {
+            return
+        }
+
+        root.updateController.installAvailableUpdate()
     }
 
 }
