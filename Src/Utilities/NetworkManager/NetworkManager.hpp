@@ -6,6 +6,7 @@
 #include <QNetworkReply>
 #include <QJsonObject>
 #include <QTimer>
+#include <QVariantMap>
 
 class NetworkManager : public QObject
 {
@@ -27,6 +28,11 @@ public:
         const QString &url,
         HttpMethod method,
         const QJsonObject &body = QJsonObject(),
+        const QVariantMap &headers = QVariantMap()
+    );
+    Q_INVOKABLE void downloadRequest(
+        const QString &requestKey,
+        const QString &url,
         const QVariantMap &headers = QVariantMap()
     );
 

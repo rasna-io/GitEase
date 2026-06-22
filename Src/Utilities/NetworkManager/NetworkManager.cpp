@@ -7,6 +7,8 @@
 #include <QNetworkProxy>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QJsonDocument>
+#include <QStringConverter>
 #include <QTimer>
 
 #define REQUEST_TIMEOUT 5000
@@ -84,6 +86,55 @@ void NetworkManager::sendRequest(
             }
             emit requestFinished(requestKey, wrapper);
         }
+
+        timer->deleteLater();
+        reply->deleteLater();
+    });
+}
+
+void NetworkManager::downloadRequest(
+    const QString &requestKey,
+    const QString &url,
+    const QVariantMap &headers)
+{
+    QNetworkRequest request((QUrl(url)));
+    setHeaders(request, headers);
+
+    QNetworkReply *reply = m_manager.get(request);
+
+    QTimer *timer = new QTimer(reply);
+    timer->setSingleShot(true);
+    timer->start(REQUEST_TIMEOUT);
+
+    connect(timer, &QTimer::timeout, this, [=]() {
+        emit timeout(requestKey);
+
+        reply->abort();
+        timer->deleteLater();
+        reply->deleteLater();
+    });
+
+    connect(reply, &QNetworkReply::downloadProgress, this, [=](qint64 bytesReceived, qint64 bytesTotal) {
+        emit downloadProgress(requestKey, bytesReceived, bytesTotal);
+    });
+
+    connect(reply, &QNetworkReply::finished, this, [=]() {
+        timer->stop();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            emit requestError(requestKey, reply->error(), reply->errorString());
+            timer->deleteLater();
+            reply->deleteLater();
+            return;
+        }
+
+        QByteArray dataBytes = reply->readAll();
+
+        QJsonObject wrapper;
+        QJsonObject data;
+        data["file_data_base64"] = QString::fromLatin1(dataBytes.toBase64());
+        wrapper["data"] = data;
+        emit requestFinished(requestKey, wrapper);
 
         timer->deleteLater();
         reply->deleteLater();
