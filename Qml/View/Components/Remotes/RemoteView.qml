@@ -49,7 +49,6 @@ UtilitiesCard {
 
     title: "Remotes"
     icon: Style.icons.upload
-    pageScrollBlocking: true
 
     Connections {
         id: userAuthenticationPopupConnection
@@ -352,6 +351,8 @@ UtilitiesCard {
                         }
                     }
                 }
+
+                onContentHeightChanged: root.pageScrollBlocking = listView.contentHeight > listView.height + 1
             }
         }
 

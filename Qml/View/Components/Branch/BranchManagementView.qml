@@ -26,7 +26,6 @@ UtilitiesCard {
      * ****************************************************************************************/
     title: "Branch Management"
     icon: Style.icons.branch
-    pageScrollBlocking: true
 
     content: ColumnLayout {
         id: content
@@ -196,6 +195,8 @@ UtilitiesCard {
                     }
                 }
             }
+
+            onContentHeightChanged: root.pageScrollBlocking = listView.contentHeight > listView.height + 1
         }
 
 

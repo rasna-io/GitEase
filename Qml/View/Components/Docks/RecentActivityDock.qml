@@ -13,7 +13,6 @@ UtilitiesCard {
 
     title: "Recent Activity"
     icon: Style.icons.clock
-    pageScrollBlocking: true
 
     content: ColumnLayout {
         anchors.fill: parent
@@ -74,6 +73,8 @@ UtilitiesCard {
                         }
                     }
                 }
+
+                onContentHeightChanged: root.pageScrollBlocking = listView.contentHeight > listView.height + 1
             }
 
             Text {

@@ -36,7 +36,6 @@ UtilitiesCard {
      * ****************************************************************************************/
     title: "Stash Manager"
     icon: Style.icons.archive
-    pageScrollBlocking: true
 
     /* Children
      * ****************************************************************************************/
@@ -183,6 +182,8 @@ UtilitiesCard {
                     }
                 }
             }
+
+            onContentHeightChanged: root.pageScrollBlocking = stashListView.contentHeight > stashListView.height + 1
         }
 
         Button {

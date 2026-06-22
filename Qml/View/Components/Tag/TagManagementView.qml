@@ -20,7 +20,6 @@ UtilitiesCard {
 
     title: "Tag Management"
     icon:  Style.icons.tag
-    pageScrollBlocking: true
 
     /* Logic */
     function update() {
@@ -135,6 +134,8 @@ UtilitiesCard {
                     }
                 }
             }
+
+            onContentHeightChanged: root.pageScrollBlocking = internalListView.contentHeight > internalListView.height + 1
 
             // Empty State
             Label {
