@@ -123,7 +123,6 @@ void TerminalManager::startShell()
 #endif
 
     if (!m_process->waitForStarted(3000)) {
-        emit outputReceived("Failed to start shell.");
         return;
     }
 
@@ -142,8 +141,6 @@ void TerminalManager::startShell()
         m_process->write(" export GIT_TERMINAL_PROMPT=0\n");
     });
 #endif
-
-    emit outputReceived("Shell started.");
 }
 
 void TerminalManager::sendCommand(const QString &command)
@@ -151,6 +148,19 @@ void TerminalManager::sendCommand(const QString &command)
     if (!m_process || m_process->state() != QProcess::Running)
         return;
 
+    m_gitStateUpdateRequired = false;
+
+    if(command.startsWith("cd")) {
+        QJsonArray arr;
+        QJsonObject obj;
+        obj["text"] = "cd command is not currently supported";
+        obj["color"] = "#e6edf3";
+        obj["bold"]  = "false";
+        arr.append(obj);
+
+        emit lineReceived(QJsonDocument(arr).toJson(QJsonDocument::Compact));
+        return;
+    }
 
     const QStringList updateRequiringCommands = {
         "git commit", "git merge", "git rebase", "git cherry-pick", "git revert",
@@ -160,7 +170,6 @@ void TerminalManager::sendCommand(const QString &command)
         "git switch", "git checkout", "git clean", "git apply", "git am"
     };
 
-    m_gitStateUpdateRequired = false;
     for (const QString &cmd : updateRequiringCommands) {
         if (command.trimmed().startsWith(cmd)) {
             m_gitStateUpdateRequired = true;
@@ -189,7 +198,6 @@ void TerminalManager::kill()
     m_process->kill();
     m_process->waitForFinished(1000);
     startShell();
-    emit outputReceived("Shell restarted.");
 }
 
 void TerminalManager::onReadyReadStandardOutput()
@@ -252,9 +260,6 @@ void TerminalManager::onProcessStateChanged(QProcess::ProcessState state)
 {
     m_running = (state == QProcess::Running);
     emit runningChanged();
-
-    if (state == QProcess::NotRunning)
-        emit outputReceived("Shell exited.");
 }
 
 QString TerminalManager::workingDirectory() const
