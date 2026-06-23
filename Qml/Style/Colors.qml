@@ -156,7 +156,7 @@ QtObject{
     property color compatible:   "#22C55E"   // Green
     property color incompatible: "#EF4444"   // Red
     // Terminal colors
-    property color terminalBackground:  "#1e1e1e"
+    property color terminalBackground:  "#1f1f1f"
     property color terminalUserAndHost: "#3fb950"  // GitHub green
     property color terminalWorkDir:     "#58a6ff"  // GitHub blue
     property color terminalCommand:     "#e6edf3"  // GitHub text
