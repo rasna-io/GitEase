@@ -212,6 +212,7 @@ void TerminalManager::onReadyReadStandardOutput()
             m_lastCommand.clear();
             continue;
         }
+        if (trimmed.startsWith("cd")) continue;
         if (trimmed.startsWith("##PROMPT##:")) {
             // Linux — has exit code
             int exitCode = trimmed.mid(11).trimmed().toInt();

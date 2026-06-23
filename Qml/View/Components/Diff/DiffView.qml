@@ -393,7 +393,6 @@ DetachablePanel {
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 10
                 color: Style.colors.mutedText
-                elide: Text.ElideRight
                 anchors.centerIn: parent
                 Layout.maximumWidth: parent.width * 0.4
             }
