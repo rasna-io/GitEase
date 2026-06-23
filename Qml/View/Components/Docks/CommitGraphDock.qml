@@ -38,6 +38,8 @@ DetachablePanel {
     property NotificationController notificationController  : null
     property StashController        stashController         : null
     property ResetController        resetController         : null
+    property TerminalController     terminalController      : null
+
 
     property AddBranchPopup          addBranchPopup         : null
     property AddTagPopup             addTagPopup            : null
@@ -401,6 +403,14 @@ DetachablePanel {
 
         function onShowStashNodesChanged() {
             root.refreshStashNodes()
+        }
+    }
+
+    Connections {
+        target: root.terminalController
+
+        function onGitStateChanged() {
+            root.reloadAll()
         }
     }
 

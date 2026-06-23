@@ -34,8 +34,9 @@ Item {
     property MergeController         mergeController         : null
     property RebaseController        rebaseController        : null
     property CherryPickController    cherryPickController    : null
-    property TagController          tagController           : null
+    property TagController           tagController           : null
     property ResetController         resetController         : null
+    property TerminalController      terminalController      : null
 
 
     property alias                   graphRef                : commitGraph
@@ -161,6 +162,7 @@ Item {
                 stashController         : root.stashController
                 conflictController      : root.conflictController
                 resetController         : root.resetController
+                terminalController      : root.terminalController
 
                 onCommitClicked: function(commitId) { Presenter.handleCommitClicked(commitId) }
             }
@@ -211,6 +213,7 @@ Item {
         if (!cherryPickController)   missing.push("CherryPickController")
         if (!conflictController)     missing.push("ConflictController")
         if (!resetController)        missing.push("ResetController")
+        if (!terminalController)     missing.push("TerminalController")
 
         if (missing.length > 0) {
             notificationController.error(

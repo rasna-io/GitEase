@@ -42,6 +42,8 @@ Item {
 
     property var                     pluginController:        null
 
+    property TerminalController      terminalController:        null
+
     property bool                    isFetching:             false
     property var                     activeFetchRemotes:     []
     property string                  authPurpose:            "push"  // "push" | "fetch"
@@ -270,6 +272,18 @@ Item {
                 root.pendingFetchRemoteNames = []
                 root.pendingPullRemoteNames = []
             }
+        }
+    }
+
+    Connections {
+        target: terminalController
+
+        function onGitStateChanged() {
+            root.showSaveDialog(
+                        () => {
+                            changesFileLists.updateStatus()
+                        }
+            )
         }
     }
 

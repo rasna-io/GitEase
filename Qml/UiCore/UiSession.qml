@@ -42,6 +42,7 @@ QtObject {
             tagController.currentRepo = currentRepo
             pluginController.currentRepo = currentRepo
             resetController.currentRepo = currentRepo
+            terminalController.currentRepo = currentRepo
         }
 
         onRepositorySelected: function(repo) {
@@ -161,6 +162,8 @@ QtObject {
         networkController: root.networkController
         notificationController: root.notificationController
     }
+
+    property TerminalController terminalController: TerminalController {}
 
     property UiSessionPopups      popups
 }
