@@ -150,12 +150,11 @@ void TerminalManager::sendCommand(const QString &command)
 
     m_gitStateUpdateRequired = false;
 
-    if(command.startsWith("cd")) {
+    if(!command.startsWith("git")) {
         QJsonArray arr;
         QJsonObject obj;
-        obj["text"] = "cd command is not currently supported";
+        obj["text"] = "Only git commands are currently supported";
         obj["color"] = "#e6edf3";
-        obj["bold"]  = "false";
         arr.append(obj);
 
         emit lineReceived(QJsonDocument(arr).toJson(QJsonDocument::Compact));
@@ -213,7 +212,6 @@ void TerminalManager::onReadyReadStandardOutput()
             m_lastCommand.clear();
             continue;
         }
-        if (trimmed.startsWith("cd ")) continue;
         if (trimmed.startsWith("##PROMPT##:")) {
             // Linux — has exit code
             int exitCode = trimmed.mid(11).trimmed().toInt();
@@ -224,7 +222,6 @@ void TerminalManager::onReadyReadStandardOutput()
             emit commandFinished();
             continue;
         }
-
         if (trimmed == "##PROMPT##") {
             // Windows — no exit code available
             if (m_gitStateUpdateRequired) {
@@ -234,10 +231,6 @@ void TerminalManager::onReadyReadStandardOutput()
             emit commandFinished();
             continue;
         }
-        if (trimmed.startsWith("export ")) continue;
-        if (trimmed.startsWith("stty ")) continue;
-        if (trimmed.startsWith("Script started")) continue;
-        if (trimmed.startsWith("Script done")) continue;
 
         emit lineReceived(segmentsToJson(parseAnsi(line)));
     }
