@@ -33,6 +33,7 @@ private:
     QString   m_workingDirectory;
     bool      m_running = false;
     bool      m_gitStateUpdateRequired = false;
+    QString   m_lastCommand = "";
 
 private slots:
     void onReadyReadStandardOutput();

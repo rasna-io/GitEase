@@ -10,5 +10,5 @@ QtObject{
     readonly property string roboto:        "Roboto"
     readonly property string font6Pro:      "Font Awesome 6 Pro"
     readonly property string font6ProSolid: "Font Awesome 6 Pro Solid"
-    readonly property string monospace:     "monospace"
+    readonly property string monospace:     Qt.platform.os === "windows" ? "Consolas" : "monospace"
 }

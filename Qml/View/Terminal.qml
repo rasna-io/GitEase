@@ -166,7 +166,9 @@ Item {
                                     color: Style.colors.terminalUserAndHost
                                     font.family: Style.fontTypes.monospace
                                     font.pixelSize: 13
+                                    font.bold: true
                                 }
+
                                 Text {
                                     visible: rowSegments.count === 0
                                     width: visible ? implicitWidth : 0
@@ -174,25 +176,28 @@ Item {
                                     color: Style.colors.terminalWorkDir
                                     font.family: Style.fontTypes.monospace
                                     font.pixelSize: 13
+                                    font.bold: true
                                 }
-                                Text {
+
+                                TextInput {
                                     visible: rowSegments.count === 0
                                     width: visible ? implicitWidth : 0
                                     text: rowText
                                     color: Style.colors.terminalCommand
                                     font.family: Style.fontTypes.monospace
                                     font.pixelSize: 13
+                                    readOnly: true
                                 }
 
                                 Repeater {
                                     model: rowSegments
 
-                                    delegate: Text {
+                                    delegate: TextInput {
                                         text: model.text
                                         color: model.color !== "" ? model.color : Style.colors.terminalCommand
                                         font.family: Style.fontTypes.monospace
                                         font.pixelSize: 13
-                                        font.bold: model.bold
+                                        readOnly: true
                                     }
                                 }
                             }
@@ -222,24 +227,31 @@ Item {
                                 visible: !root.commandRunning
                             }
 
-                            Row {
+                            Item {
                                 visible: root.commandRunning
-                                spacing: 4
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 20
 
-                                Repeater {
-                                    model: 3
-                                    delegate: Rectangle {
-                                        width: 6
-                                        height: 6
-                                        radius: 3
-                                        color: Style.colors.terminalUserAndHost
+                                Row {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 4
 
-                                        SequentialAnimation on opacity {
-                                            running: root.commandRunning
-                                            loops: Animation.Infinite
-                                            NumberAnimation { to: 0.2; duration: 400 }
-                                            NumberAnimation { to: 1.0; duration: 400 }
-                                            PauseAnimation { duration: index * 150 }
+                                    Repeater {
+                                        model: 3
+                                        delegate: Rectangle {
+                                            width: 6
+                                            height: 6
+                                            radius: 3
+                                            color: Style.colors.terminalUserAndHost
+                                            anchors.verticalCenter: parent.verticalCenter
+
+                                            SequentialAnimation on opacity {
+                                                running: root.commandRunning
+                                                loops: Animation.Infinite
+                                                NumberAnimation { to: 0.2; duration: 400 }
+                                                NumberAnimation { to: 1.0; duration: 400 }
+                                                PauseAnimation { duration: index * 150 }
+                                            }
                                         }
                                     }
                                 }
