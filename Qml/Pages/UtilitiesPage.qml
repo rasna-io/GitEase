@@ -28,6 +28,7 @@ Item {
     property UiSessionPopups            uiSessionPopups             : null
     property StashController            stashController             : null
     property TagController              tagController               : null
+    property TerminalController         terminalController          : null
 
     
     property NotificationController     notificationController      : null
@@ -45,6 +46,14 @@ Item {
 
     readonly property int hSpacing: 8
     readonly property int vSpacing: 8
+
+    Connections {
+        target: root.terminalController
+
+        function onGitStateChanged() {
+            root.reload()
+        }
+    }
 
     Flickable {
         id: flick
@@ -127,6 +136,7 @@ Item {
 
 
             BranchManagementView {
+                id: branchManagementView
                 width: 330
                 height: 390
                 branchController: root.branchController
@@ -138,6 +148,7 @@ Item {
 
 
             StashManagerDock {
+                id: stashManagerDock
                 width: 330
                 height: 390
                 stashController: root.stashController
@@ -152,6 +163,7 @@ Item {
             }
 
             TagManagementView {
+                id: tagManagementView
                 width: 330
                 height: 390
                 tagController: root.tagController
@@ -178,6 +190,7 @@ Item {
             }
 
             RebaseDock {
+                id: rebaseDock
                 width: 330
                 height: 390
                 branchController        : root.branchController
@@ -226,5 +239,14 @@ Item {
                 }
             }
         }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function reload() {
+        branchManagementView.update()
+        stashManagerDock.updateStashes()
+        tagManagementView.update()
+        rebaseDock.refreshBranches()
     }
 }
