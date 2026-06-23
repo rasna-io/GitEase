@@ -38,12 +38,7 @@ Item {
     }
 
     onHeightChanged: {
-        if(root.height > headerHeight)
-        {
-            isMinimized = false
-        } else {
-            isMinimized = true
-        }
+        isMinimized = !(root.height > headerHeight)
     }
 
     ListModel { id: historyModel }
@@ -61,7 +56,7 @@ Item {
             // Header
             TerminalHeader {
                 Layout.fillWidth: true
-                height: root.headerHeight
+                Layout.preferredHeight: root.headerHeight
                 color: Style.colors.secondaryBackground
                 isMinimized: root.isMinimized
                 onMinimizeRequested: root.minimizeRequested()
@@ -88,6 +83,19 @@ Item {
                     contentHeight: contentColumn.implicitHeight
                     clip: true
 
+                    ScrollBar.vertical: ScrollBar {
+                        id: vScrollBar
+                        policy: ScrollBar.AsNeeded
+                        contentItem: Rectangle {
+                            implicitWidth: 10
+                            radius: 2
+                            color: vScrollBar.pressed ? "#6e6e6e"
+                                 : vScrollBar.hovered ? "#5a5a5a"
+                                 : "#3e3e3e"
+                        }
+                        background: Rectangle { color: "transparent" }
+                    }
+
                     onContentHeightChanged: {
                         if (contentHeight > height)
                             contentY = contentHeight - height
@@ -108,35 +116,37 @@ Item {
                                 property var rowSegments: model.segments
                                 property var rowText: model.text
 
-                                Text {
+                                // Row showing the entered command, not visible for the outputs of the command
+                                Row {
                                     visible: rowSegments.count === 0
-                                    width: visible ? implicitWidth : 0
-                                    text: root.prompt
-                                    color: Style.colors.terminalUserAndHost
-                                    font.family: Style.fontTypes.monospace
-                                    font.pixelSize: root.fontSize
-                                    font.bold: true
-                                }
 
-                                Text {
-                                    visible: rowSegments.count === 0
-                                    width: visible ? implicitWidth : 0
-                                    text: root.currentPath
-                                    color: Style.colors.terminalWorkDir
-                                    font.family: Style.fontTypes.monospace
-                                    font.pixelSize: root.fontSize
-                                    font.bold: true
-                                }
+                                    Text {
+                                        width: implicitWidth
+                                        text: root.prompt
+                                        color: Style.colors.terminalUserAndHost
+                                        font.family: Style.fontTypes.monospace
+                                        font.pixelSize: root.fontSize
+                                        font.bold: true
+                                    }
 
-                                TextEdit {
-                                    visible: rowSegments.count === 0
-                                    width: visible ? implicitWidth : 0
-                                    text: rowText
-                                    color: Style.colors.terminalCommand
-                                    font.family: Style.fontTypes.monospace
-                                    font.pixelSize: root.fontSize
-                                    wrapMode: TextEdit.WrapAnywhere
-                                    readOnly: true
+                                    Text {
+                                        width: implicitWidth
+                                        text: root.currentPath
+                                        color: Style.colors.terminalWorkDir
+                                        font.family: Style.fontTypes.monospace
+                                        font.pixelSize: root.fontSize
+                                        font.bold: true
+                                    }
+
+                                    TextEdit {
+                                        width: implicitWidth
+                                        text: rowText
+                                        color: Style.colors.terminalCommand
+                                        font.family: Style.fontTypes.monospace
+                                        font.pixelSize: root.fontSize
+                                        wrapMode: TextEdit.WrapAnywhere
+                                        readOnly: true
+                                    }
                                 }
 
                                 Repeater {
@@ -261,31 +271,6 @@ Item {
                             }
                         }
                     }
-                }
-                ScrollBar {
-                    id: vScrollBar
-                    anchors {
-                        right: parent.right
-                        top: parent.top
-                        bottom: parent.bottom
-                        rightMargin: 2
-                    }
-                    policy: ScrollBar.AsNeeded
-                    orientation: Qt.Vertical
-                    contentItem: Rectangle {
-                        implicitWidth: 10
-                        radius: 2
-                        color: vScrollBar.pressed ? "#6e6e6e"
-                             : vScrollBar.hovered ? "#5a5a5a"
-                             : "#3e3e3e"
-                    }
-                    background: Rectangle { color: "transparent" }
-                }
-
-                Binding {
-                    target: flickable
-                    property: "ScrollBar.vertical"
-                    value: vScrollBar
                 }
             }
         }
