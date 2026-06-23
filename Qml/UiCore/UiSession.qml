@@ -151,6 +151,8 @@ QtObject {
 
     property PluginController pluginController: PluginController {
         notificationController: root.notificationController
+        appModel:               root.appModel
+        networkController:      root.networkController
     }
 
     property NetworkController networkController: NetworkController {}
