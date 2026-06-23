@@ -224,5 +224,5 @@ set(RESOURCES_SERVICES
 set(RESOURCES_VIEW
     Qml/View/MainWindow.qml
     Qml/View/FloatingNotificationWindow.qml     # show notifications
-    QML_FILES Qml/View/Terminal.qml
+    Qml/View/Terminal.qml
 )
