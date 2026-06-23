@@ -72,6 +72,9 @@ DetachablePanel {
     }
 
     onAppModelChanged: {
+        if (!root.appModel)
+            return
+
         let gs = appModel.appSettings.generalSettings
         root.contextLines = gs.chunkContextLines
         root.expandLines = gs.chunkExpandLines
