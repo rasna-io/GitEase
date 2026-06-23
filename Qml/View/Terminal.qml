@@ -252,6 +252,11 @@ Item {
                                     historyCursor = -1
                                 }
 
+                                Keys.onTabPressed: {
+                                    // TODO
+                                    return
+                                }
+
                                 Keys.onUpPressed: {
                                     if (historyModel.count === 0) return
                                     if (historyCursor < historyModel.count - 1)
