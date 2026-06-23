@@ -61,6 +61,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Header.qml
     Qml/View/WindowsHeader.qml
     Qml/View/WindowsButton.qml
+    Qml/View/TerminalHeader.qml
 
     Qml/View/Components/ProgressButton.qml
 

@@ -9,15 +9,15 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property int historyCursor: -1
-    property bool isMinimized: false
-    readonly property int headerHeight: 35
+    property int                historyCursor: -1
+    property bool               isMinimized: false
+    property int                fontSize: 13
+    readonly property int       headerHeight: 35
     property TerminalController terminalController: null
-    property string currentPath: terminalController.workingDirectory + "$ "
-    property string prompt: terminalController
-                            ? terminalController.username + "@" + terminalController.hostname + ":"
-                            : "user@host:~$ "
-    property bool commandRunning: false
+    property string             currentPath: terminalController.workingDirectory + "$ "
+    property string             prompt: terminalController ? terminalController.username + "@" + terminalController.hostname + ":"
+                                : "user@host:~$ "
+    property bool               commandRunning: false
 
 
     /* Signals
@@ -29,12 +29,8 @@ Item {
      * ****************************************************************************************/
     Connections {
         target: root.terminalController
-        function onLineReceived(segmentsJson, type) {
+        function onLineReceived(segmentsJson) {
             outputModel.append({ segments: JSON.parse(segmentsJson)})
-        }
-
-        function onOutputReceived(text, type) {
-            outputModel.append({ segments: [{ text: text, color: "", bold: false }]})
         }
 
         function onCommandStarted() { root.commandRunning = true }
@@ -63,62 +59,15 @@ Item {
             spacing: 0
 
             // Header
-            Rectangle {
+            TerminalHeader {
                 Layout.fillWidth: true
                 height: root.headerHeight
                 color: Style.colors.secondaryBackground
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 10
-                    anchors.rightMargin: 10
-                    spacing: 8
-
-                    Label {
-                        text: "Terminal"
-                        color: Style.colors.foreground
-                        font.family: Style.fontTypes.roboto
-                        font.weight: 500
-                        font.pixelSize: 10
-                        Layout.fillWidth: true
-                    }
-
-                    Rectangle {
-                        width: 20
-                        height: 20
-                        radius: 4
-                        color: btnHover.containsMouse ? "#3c3c3c" : "transparent"
-                        Layout.alignment: Qt.AlignVCenter
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.isMinimized ? "▲" : "▼"
-                            color: btnHover.containsMouse ? "#ffffff" : "#aaaaaa"
-                            font.pixelSize: 9
-                        }
-
-                        HoverHandler { id: btnHover }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                if (root.isMinimized) {
-                                    root.expandRequested()
-                                    textInputId.forceActiveFocus()
-                                } else {
-                                    root.minimizeRequested()
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Rectangle {
-                    visible: !root.isMinimized
-                    anchors.bottom: parent.bottom
-                    width: parent.width
-                    height: 1
-                    color: "#333333"
+                isMinimized: root.isMinimized
+                onMinimizeRequested: root.minimizeRequested()
+                onExpandRequested: {
+                    root.expandRequested()
+                    cmdTextInput.forceActiveFocus()
                 }
             }
 
@@ -165,7 +114,7 @@ Item {
                                     text: root.prompt
                                     color: Style.colors.terminalUserAndHost
                                     font.family: Style.fontTypes.monospace
-                                    font.pixelSize: 13
+                                    font.pixelSize: root.fontSize
                                     font.bold: true
                                 }
 
@@ -175,28 +124,30 @@ Item {
                                     text: root.currentPath
                                     color: Style.colors.terminalWorkDir
                                     font.family: Style.fontTypes.monospace
-                                    font.pixelSize: 13
+                                    font.pixelSize: root.fontSize
                                     font.bold: true
                                 }
 
-                                TextInput {
+                                TextEdit {
                                     visible: rowSegments.count === 0
                                     width: visible ? implicitWidth : 0
                                     text: rowText
                                     color: Style.colors.terminalCommand
                                     font.family: Style.fontTypes.monospace
-                                    font.pixelSize: 13
+                                    font.pixelSize: root.fontSize
+                                    wrapMode: TextEdit.WrapAnywhere
                                     readOnly: true
                                 }
 
                                 Repeater {
                                     model: rowSegments
 
-                                    delegate: TextInput {
+                                    delegate: TextEdit {
                                         text: model.text
                                         color: model.color !== "" ? model.color : Style.colors.terminalCommand
                                         font.family: Style.fontTypes.monospace
-                                        font.pixelSize: 13
+                                        font.pixelSize: root.fontSize
+                                        wrapMode: TextEdit.WrapAnywhere
                                         readOnly: true
                                     }
                                 }
@@ -213,7 +164,7 @@ Item {
                                 text: root.prompt
                                 color: Style.colors.terminalUserAndHost
                                 font.family: Style.fontTypes.monospace
-                                font.pixelSize: 13
+                                font.pixelSize: root.fontSize
                                 font.bold: true
                                 visible: !root.commandRunning
                             }
@@ -222,11 +173,12 @@ Item {
                                 text: root.currentPath
                                 color: Style.colors.terminalWorkDir
                                 font.family: Style.fontTypes.monospace
-                                font.pixelSize: 13
+                                font.pixelSize: root.fontSize
                                 font.bold: true
                                 visible: !root.commandRunning
                             }
 
+                            // Busy waiter, showing while command is running
                             Item {
                                 visible: root.commandRunning
                                 Layout.fillWidth: true
@@ -258,15 +210,13 @@ Item {
                             }
 
                             TextInput {
-                                id: textInputId
+                                id: cmdTextInput
                                 Layout.fillWidth: true
                                 color: Style.colors.terminalCommand
                                 font.family: Style.fontTypes.monospace
-                                font.pixelSize: 13
+                                font.pixelSize: root.fontSize
                                 cursorVisible: true
                                 selectByMouse: true
-                                selectionColor: "#264f78"
-                                selectedTextColor: "#ffffff"
                                 focus: true
                                 wrapMode: TextInput.WrapAnywhere
                                 visible: !root.commandRunning
@@ -276,46 +226,37 @@ Item {
 
                                     if (text.trim() === "clear") {
                                         outputModel.clear()
-                                        textInputId.text = ""
+                                        cmdTextInput.text = ""
                                         return
-                                    }
-
-                                    // Track cd commands
-                                    if (text.trim().startsWith("cd ")) {
-                                        // Can't reliably resolve path in QML — ask backend
-                                        root.terminalController.sendCommand("cd " + text.trim().mid(3) + " && pwd")
-                                    } else {
-                                        root.terminalController.sendCommand(text)
                                     }
 
                                     outputModel.append({
                                         segments: [],
-                                        text: textInputId.text
+                                        text: cmdTextInput.text
                                     })
-                                    historyModel.append({ text: textInputId.text })
-                                    textInputId.text = ""
+
+                                    root.terminalController.sendCommand(text)
+
+                                    historyModel.append({ text: cmdTextInput.text })
+                                    cmdTextInput.text = ""
                                     historyCursor = -1
-                                }
-
-                                Keys.onTabPressed: {
-
                                 }
 
                                 Keys.onUpPressed: {
                                     if (historyModel.count === 0) return
                                     if (historyCursor < historyModel.count - 1)
                                         historyCursor++
-                                    textInputId.text = historyModel.get(historyModel.count - 1 - historyCursor).text
+                                    cmdTextInput.text = historyModel.get(historyModel.count - 1 - historyCursor).text
                                 }
 
                                 Keys.onDownPressed: {
                                     if (historyCursor <= 0) {
                                         historyCursor = -1
-                                        textInputId.text = ""
+                                        cmdTextInput.text = ""
                                         return
                                     }
                                     historyCursor--
-                                    textInputId.text = historyModel.get(historyModel.count - 1 - historyCursor).text
+                                    cmdTextInput.text = historyModel.get(historyModel.count - 1 - historyCursor).text
                                 }
                             }
                         }
