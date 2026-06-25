@@ -260,13 +260,15 @@ Item {
         if (root.unstagedModel.length > 0) {
             path = root.unstagedModel[0].path
         } else if (root.stagedModel.length > 0) {
-            isStaged = true
             path = root.stagedModel[0].path
         }
 
-        unstagedSection.selectedFilePath = isStaged ? "" : path
-        stagedSection.selectedFilePath = isStaged ? path : ""
+        const targetPath = root.currentFile || path
+        isStaged = root.stagedModel.some(file => file.path === targetPath)
 
-        root.fileSelected(path, isStaged)
+        unstagedSection.selectedFilePath = isStaged ? "" : targetPath
+        stagedSection.selectedFilePath = isStaged ? targetPath : ""
+
+        root.fileSelected(targetPath, isStaged)
     }
 }
