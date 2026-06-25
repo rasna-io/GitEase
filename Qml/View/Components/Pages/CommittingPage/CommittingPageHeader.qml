@@ -42,12 +42,12 @@ RowLayout {
         maximumWidth: 150
         visible: !headerRow.compact
         icon.name: Style.icons.branch
-        text: branchController ? branchController.getCurrentBranchName() : ""
+        text: branchController ? branchController.getDisplayBranchName() : ""
 
         Connections {
             target: repositoryController
             function onCurrentRepoChanged() {
-                branchChip.text = branchController ? branchController.getCurrentBranchName() : ""
+                branchChip.text = branchController ? branchController.getDisplayBranchName() : ""
             }
         }
 
