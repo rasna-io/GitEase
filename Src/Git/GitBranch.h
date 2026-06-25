@@ -68,6 +68,8 @@ public:
      */
     Q_INVOKABLE QString getCurrentBranchName();
 
+    Q_INVOKABLE QString getDisplayBranchName();
+
     Q_INVOKABLE QString formatRefName(const QString &branchName);
 
     QString resolveBranchName(const QString &branchName);
