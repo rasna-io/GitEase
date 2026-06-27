@@ -138,44 +138,7 @@ bool PluginManager::loadPlugin(const QString& pluginDir)
         return false;
     }
 
-    if (!info.enabled) {
-        m_infos.append(info);
-        emit pluginsChanged();
-        return false;
-    }
-
-    bool ok = true;
-    if (info.hasCppEntry())
-        ok = loadCppPlugin(info);
-
-    if (info.hasQmlEntry()) {
-        if (auto* engine = m_context->qmlEngine())
-            engine->addImportPath(info.pluginDir);
-    }
-
-    // QML-only dock: emit registration directly from the manifest
-    if (!info.hasCppEntry() && info.hasQmlEntry()) {
-        info.loaded = true;
-        if (info.capabilities.contains(QStringLiteral("dock"))) {
-            emit dockRegistered(info.id,
-                                QUrl::fromLocalFile(
-                                    QDir(info.pluginDir).filePath(info.qmlEntry)),
-                                info.name,
-                                {});
-        }
-        m_infos.append(info);
-        emit pluginLoaded(info.id);
-        emit pluginsChanged();
-        return true;
-    }
-
-    if (ok) {
-        info.loaded = true;
-        emit pluginLoaded(info.id);
-    } else {
-        info.errorMessage = QStringLiteral("Failed to load C++ library");
-    }
-
+    const bool ok = info.enabled ? activatePlugin(info) : false;
     m_infos.append(info);
     emit pluginsChanged();
     return ok;
@@ -263,6 +226,80 @@ void PluginManager::setCurrentBranch(const QString& branch)
 
 // ── Management ───────────────────────────────────────────────────────────────
 
+bool PluginManager::activatePlugin(PluginInfo& info)
+{
+    bool ok = true;
+
+    if (info.hasCppEntry())
+        ok = loadCppPlugin(info);
+
+    if (info.hasQmlEntry()) {
+        if (auto* engine = m_context->qmlEngine())
+            engine->addImportPath(info.pluginDir);
+    }
+
+    // QML-only: register dock directly from the manifest
+    if (!info.hasCppEntry() && info.hasQmlEntry()) {
+        info.loaded = true;
+        if (info.capabilities.contains(QStringLiteral("dock"))) {
+            emit dockRegistered(info.id,
+                                QUrl::fromLocalFile(
+                                    QDir(info.pluginDir).filePath(info.qmlEntry)),
+                                info.name,
+                                {});
+        }
+        emit pluginLoaded(info.id);
+        return true;
+    }
+
+    if (ok) {
+        info.loaded = true;
+        emit pluginLoaded(info.id);
+    } else {
+        info.loaded = false;
+        info.errorMessage = QStringLiteral("Failed to load C++ library");
+    }
+
+    return ok;
+}
+
+void PluginManager::deactivatePlugin(const QString& id)
+{
+    // C++ runtime
+    if (m_plugins.contains(id)) {
+        m_plugins[id]->shutdown();
+        m_loaders[id]->unload();
+        delete m_loaders.take(id);
+        m_plugins.remove(id);
+    }
+
+    // Dock registrations
+    for (int i = m_docks.size() - 1; i >= 0; --i) {
+        if (m_docks.at(i).toMap().value(QStringLiteral("id")).toString() == id)
+            m_docks.removeAt(i);
+    }
+
+    // Diff viewer / colorizer extension mappings — matched by plugin dir
+    const QString pluginDir = [&]() -> QString {
+        for (const auto& info : std::as_const(m_infos))
+            if (info.id == id) return info.pluginDir;
+        return {};
+    }();
+
+    if (!pluginDir.isEmpty()) {
+        for (auto it = m_diffPlugins.begin(); it != m_diffPlugins.end(); )
+            it = it.value().toLocalFile().startsWith(pluginDir) ? m_diffPlugins.erase(it) : ++it;
+        for (auto it = m_colorizers.begin(); it != m_colorizers.end(); )
+            it = it.value().toLocalFile().startsWith(pluginDir) ? m_colorizers.erase(it) : ++it;
+    }
+}
+
+void PluginManager::tearDownPlugin(const QString& id)
+{
+    deactivatePlugin(id);
+    m_infos.removeIf([&](const PluginInfo& info) { return info.id == id; });
+}
+
 bool PluginManager::enablePlugin(const QString& id, bool enabled)
 {
     for (auto& info : m_infos) {
@@ -287,11 +324,10 @@ bool PluginManager::enablePlugin(const QString& id, bool enabled)
             }
         }
 
-        if (!enabled && m_plugins.contains(id)) {
-            m_plugins[id]->shutdown();
-            m_loaders[id]->unload();
-            delete m_loaders.take(id);
-            m_plugins.remove(id);
+        if (enabled) {
+            activatePlugin(info);
+        } else {
+            deactivatePlugin(id);
             info.loaded = false;
         }
         emit pluginsChanged();
@@ -371,11 +407,8 @@ bool PluginManager::installPluginFromBase64Zip(const QString& pluginId, const QS
         return false;
     }
 
-    // Unload any existing version before overwriting
-    if (m_plugins.contains(pluginId) || m_loaders.contains(pluginId))
-        unloadPlugin(pluginId);
-
-    m_infos.removeIf([&](const PluginInfo& info) { return info.id == pluginId; });
+    // Tear down any existing version — cleans all member variables, no intermediate signal.
+    tearDownPlugin(pluginId);
 
     // ── libarchive in-memory extraction ───────────────────────────────────────
     struct archive *reader = archive_read_new();
@@ -481,8 +514,8 @@ bool PluginManager::removePlugin(const QString& id)
     if (pluginDir.isEmpty())
         return false;
 
-    unloadPlugin(id);
-    m_infos.removeIf([&](const PluginInfo& info) { return info.id == id; });
+    // Tear down — cleans all member variables, no intermediate signal.
+    tearDownPlugin(id);
 
     const bool ok = QDir(pluginDir).removeRecursively();
     emit pluginsChanged();

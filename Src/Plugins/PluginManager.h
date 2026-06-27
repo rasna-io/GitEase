@@ -105,6 +105,9 @@ private:
     PluginInfo parseManifest(const QString& pluginDir);
     bool       loadCppPlugin(const PluginInfo& info);
     void       wireContext  ();
+    bool       activatePlugin(PluginInfo& info);
+    void       deactivatePlugin(const QString& id);
+    void       tearDownPlugin(const QString& id);
 
     PluginContext* m_context = nullptr;
 
