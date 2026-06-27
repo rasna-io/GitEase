@@ -513,6 +513,7 @@ QtObject {
                         return Object.assign({}, p, {
                                                  isInstalled: false,
                                                  isEnabled: false,
+                                                 isCompatible: true,
                                                  updateAvailable: false,
                                                  busy: false })
 
