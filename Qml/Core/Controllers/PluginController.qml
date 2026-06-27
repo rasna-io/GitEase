@@ -27,9 +27,19 @@ QtObject {
     property bool   appendMode:         false   // true when fetching next page (append vs replace)
     property string lastFetchedSearch:  ""      // used to filter local-only appends on search
 
-    readonly property string pluginApiBaseUrl:       "https://api.your-awesome-app.com/v1"
-    readonly property string fetchPluginsRequestKey: "plugin-fetch"
-    readonly property string checkUpdatesRequestKey: "plugin-check-updates"
+    // server plugin IDs seen so far — used in syncLocalPlugins to distinguish server vs local-only entries
+    property var    serverPluginIds:    ({})
+    // map of in-progress install requests: requestKey → pluginId
+    property var    pendingInstallKeys:   ({})
+    // map of expected MD5 hashes for in-progress downloads: requestKey → md5 hex string
+    property var    pendingInstallHashes: ({})
+
+
+    readonly property string pluginApiBaseUrl:               "http://localhost:3001/api"
+    readonly property string fetchPluginsRequestKey:         "plugin-fetch"
+    readonly property string checkUpdatesRequestKey:         "plugin-check-updates"
+    readonly property string getPluginDownloadKeyPrefix:     "plugin-get-download-"
+    readonly property string downloadPluginKeyPrefix:        "plugin-download-"
 
     /* Plugin manager instance
      * ****************************************************************************************/
@@ -57,6 +67,24 @@ QtObject {
                 default:        root.notificationController.info(message);    break
             }
         }
+
+        onPluginInstalled: function(id) {
+            console.log("[PluginController] Plugin installed:", id)
+            root.setPluginBusy(id, false)
+            root.notificationController.success("Plugin installed successfully.", "Plugins")
+        }
+
+        onPluginRemoved: function(id) {
+            console.log("[PluginController] Plugin removed:", id)
+            root.setPluginBusy(id, false)
+            root.notificationController.info("Plugin uninstalled.", "Plugins")
+        }
+
+        onPluginInstallFailed: function(id, error) {
+            console.warn("[PluginController] Plugin install failed:", id, error)
+            root.setPluginBusy(id, false)
+            root.notificationController.error("Could not install plugin: " + error, "Plugins")
+        }
     }
 
     /* State forwarding
@@ -82,25 +110,55 @@ QtObject {
                 root.handleFetchPluginsResponse(response)
             } else if (requestKey === root.checkUpdatesRequestKey) {
                 root.handleCheckUpdatesResponse(response)
+            } else if (requestKey.startsWith(root.getPluginDownloadKeyPrefix)) {
+                root.handleGetPluginDownloadResponse(requestKey, response)
+            } else if (requestKey.startsWith(root.downloadPluginKeyPrefix)) {
+                root.handlePluginDownloadResponse(requestKey, response)
             }
         }
 
         function onRequestError(requestKey, code, message) {
-            if (requestKey !== root.fetchPluginsRequestKey && requestKey !== root.checkUpdatesRequestKey)
+            if (requestKey === root.fetchPluginsRequestKey || requestKey === root.checkUpdatesRequestKey) {
+                root.busy       = false
+                root.appendMode = false
+                console.warn("[PluginController] Request error:", requestKey, code, message)
                 return
+            }
 
-            root.busy       = false
-            root.appendMode = false
-            console.warn("[PluginController] Request error:", requestKey, code, message)
+            if (requestKey.startsWith(root.getPluginDownloadKeyPrefix)
+                    || requestKey.startsWith(root.downloadPluginKeyPrefix)) {
+                let pluginId = root.pendingInstallKeys[requestKey] ?? ""
+
+                delete root.pendingInstallKeys[requestKey]
+                delete root.pendingInstallHashes[requestKey]
+
+                if (pluginId) {
+                    root.setPluginBusy(pluginId, false)
+                    root.notificationController.error("Plugin operation failed: " + message, "Plugins")
+                }
+            }
         }
 
         function onTimeout(requestKey) {
-            if (requestKey !== root.fetchPluginsRequestKey && requestKey !== root.checkUpdatesRequestKey)
+            if (requestKey === root.fetchPluginsRequestKey || requestKey === root.checkUpdatesRequestKey) {
+                root.busy       = false
+                root.appendMode = false
+                console.warn("[PluginController] Request timed out:", requestKey)
                 return
+            }
 
-            root.busy       = false
-            root.appendMode = false
-            console.warn("[PluginController] Request timed out:", requestKey)
+            if (requestKey.startsWith(root.getPluginDownloadKeyPrefix)
+                    || requestKey.startsWith(root.downloadPluginKeyPrefix)) {
+                let pluginId = root.pendingInstallKeys[requestKey] ?? ""
+
+                delete root.pendingInstallKeys[requestKey]
+                delete root.pendingInstallHashes[requestKey]
+
+                if (pluginId) {
+                    root.setPluginBusy(pluginId, false)
+                    root.notificationController.error("Plugin operation timed out.", "Plugins")
+                }
+            }
         }
     }
 
@@ -154,6 +212,60 @@ QtObject {
         )
     }
 
+    function setPluginBusy(pluginId, busy) {
+        if (!root.appModel)
+            return
+
+        root.appModel.plugins = root.appModel.plugins.map(function(p) {
+            if (p.pluginId !== pluginId)
+                return p
+
+            return Object.assign({}, p, { busy: busy })
+        })
+    }
+
+    function togglePlugin(pluginId, enabled) {
+        pluginManager.enablePlugin(pluginId, enabled)
+
+        let ids = root.appModel.enabledPluginIds ? root.appModel.enabledPluginIds.slice() : []
+        if (enabled) {
+            if (ids.indexOf(pluginId) === -1)
+                ids.push(pluginId)
+        } else {
+            ids = ids.filter(function(id) {
+                return id !== pluginId
+            })
+        }
+        root.appModel.enabledPluginIds = ids
+        root.appModel.save()
+    }
+
+    function installPlugin(pluginId) {
+        if (!root.networkController)
+            return
+
+        root.setPluginBusy(pluginId, true)
+
+        let requestKey = root.getPluginDownloadKeyPrefix + pluginId
+        root.pendingInstallKeys[requestKey] = pluginId
+
+        root.networkController.sendRequest(
+            requestKey,
+            root.pluginApiBaseUrl + "/plugins/" + encodeURIComponent(pluginId) + "/download",
+            root.networkController.GET
+        )
+    }
+
+    function uninstallPlugin(pluginId) {
+        root.setPluginBusy(pluginId, true)
+        if (!pluginManager.removePlugin(pluginId))
+            root.setPluginBusy(pluginId, false)
+    }
+
+    function updatePlugin(pluginId) {
+        root.installPlugin(pluginId)
+    }
+
     function checkUpdates() {
         if (!root.networkController)
             return
@@ -184,13 +296,14 @@ QtObject {
         let payload = response?.data ?? {}
 
         if (payload?.success === false) {
-            console.warn("[PluginController] Fetch plugins failed:", payload?.message ?? "unknown error")
+            console.warn("[PluginController] Fetch plugins failed:", payload?.error ?? "unknown error")
             root.appendMode = false
             return
         }
 
         let serverPlugins = payload?.data ?? []
-        root.hasMorePages = serverPlugins.length >= 50
+        let pagination     = payload?.pagination ?? {}
+        root.hasMorePages  = (pagination.page ?? 1) < (pagination.total_pages ?? 1)
 
         if (root.appendMode) {
             root.appendMode = false
@@ -226,26 +339,81 @@ QtObject {
         })
     }
 
+    function handleGetPluginDownloadResponse(requestKey, response) {
+        let pluginId = root.pendingInstallKeys[requestKey] ?? ""
+
+        delete root.pendingInstallKeys[requestKey]
+
+        if (!pluginId)
+            return
+
+        let payload = response?.data ?? {}
+        if (payload?.success === false) {
+            console.warn("[PluginController] Get plugin download failed:", payload?.error ?? "unknown error")
+            root.setPluginBusy(pluginId, false)
+            root.notificationController.error("Failed to get download link for plugin.", "Plugins")
+            return
+        }
+
+        let downloadUrl = payload?.data?.download_url ?? ""
+        if (!downloadUrl) {
+            console.warn("[PluginController] No download URL in response for:", pluginId)
+            root.setPluginBusy(pluginId, false)
+            root.notificationController.error("Server returned no download URL.", "Plugins")
+            return
+        }
+
+        let expectedMd5 = payload?.data?.checksum_md5 ?? ""
+
+        let dlKey = root.downloadPluginKeyPrefix + pluginId
+        root.pendingInstallKeys[dlKey] = pluginId
+        root.pendingInstallHashes[dlKey] = expectedMd5  // store for verification after download
+        root.networkController.downloadRequest(dlKey, downloadUrl)
+    }
+
+    function handlePluginDownloadResponse(requestKey, response) {
+        let pluginId = root.pendingInstallKeys[requestKey]   ?? ""
+        let expectedMd5 = root.pendingInstallHashes[requestKey] ?? ""
+
+        delete root.pendingInstallKeys[requestKey]
+        delete root.pendingInstallHashes[requestKey]
+
+        if (!pluginId)
+            return
+
+        let payload = response?.data ?? {}
+        let base64Data = payload?.file_data_base64 ?? ""
+
+        if (!base64Data) {
+            console.warn("[PluginController] Empty download data for:", pluginId)
+            root.setPluginBusy(pluginId, false)
+            root.notificationController.error("Download failed for plugin: " + pluginId, "Plugins")
+            return
+        }
+
+        // Pass expectedMd5 — empty string means "skip verification" (server didn't provide a hash)
+        pluginManager.installPluginFromBase64Zip(pluginId, base64Data, expectedMd5)
+    }
+
     // Replaces appModel.plugins with the server list merged with local state.
-    // When a search is active, only locally-installed plugins whose name/description
-    // match the search text are appended (so local results blend in seamlessly).
     function mergePlugins(serverPlugins) {
         if (!root.appModel)
             return
 
         let searchLower = root.lastFetchedSearch.toLowerCase()
-        let serverIds   = new Set()
+        let newServerIds = {}
 
         let merged = serverPlugins.map(function(sp) {
-            serverIds.add(sp.id)
+            newServerIds[sp.id] = true
             let local = root.localPluginMap[sp.id]
             return buildPluginEntry(sp, local)
         })
 
+        root.serverPluginIds = newServerIds
+
         // Append locally-installed plugins absent from the server list.
-        // When searching, restrict to entries that match the search text.
         for (var id in root.localPluginMap) {
-            if (serverIds.has(id))
+            if (newServerIds[id])
                 continue
 
             let local = root.localPluginMap[id]
@@ -264,16 +432,17 @@ QtObject {
     }
 
     // Appends new server results to the existing list (pagination).
-    // Skips entries already present; does not re-append local-only plugins.
     function appendPlugins(serverPlugins) {
         if (!root.appModel)
             return
 
-        let existingIds = new Set(root.appModel.plugins.map(function(p) { return p.pluginId }))
+        let existingIds = {}
+        root.appModel.plugins.forEach(function(p) { existingIds[p.pluginId] = true })
 
         let newItems = serverPlugins
-            .filter(function(sp) { return !existingIds.has(sp.id) })
+            .filter(function(sp) { return !existingIds[sp.id] })
             .map(function(sp) {
+                root.serverPluginIds[sp.id] = true
                 return buildPluginEntry(sp, root.localPluginMap[sp.id])
             })
 
@@ -298,7 +467,8 @@ QtObject {
             isInstalled:     !!local,
             isEnabled:       local ? local.enabled : false,
             isCompatible:    local ? local.loaded  : true,
-            updateAvailable: false
+            updateAvailable: false,
+            busy:            false
         }
     }
 
@@ -317,13 +487,12 @@ QtObject {
             isInstalled:     true,
             isEnabled:       local.enabled,
             isCompatible:    local.loaded,
-            updateAvailable: false
+            updateAvailable: false,
+            busy:            false
         }
     }
 
     // Called whenever PluginManager.pluginsChanged fires.
-    // Rebuilds localPluginMap and either patches existing entries or shows
-    // local plugins as a fallback when no server data has been fetched yet.
     function syncLocalPlugins() {
         if (!root.appModel)
             return
@@ -336,19 +505,28 @@ QtObject {
 
         root.localPluginMap = localMap
 
-        // Server data already loaded — just patch installation state
         if (root.appModel.plugins.length > 0) {
-            root.appModel.plugins = root.appModel.plugins.map(function(p) {
-                let local = localMap[p.pluginId]
-                if (!local)
-                    return p
+            root.appModel.plugins = root.appModel.plugins
+                .map(function(p) {
+                    let local = localMap[p.pluginId]
+                    if (!local)
+                        return Object.assign({}, p, {
+                                                 isInstalled: false,
+                                                 isEnabled: false,
+                                                 updateAvailable: false,
+                                                 busy: false })
 
-                return Object.assign({}, p, {
-                    isInstalled:  true,
-                    isEnabled:    local.enabled,
-                    isCompatible: local.loaded
+                    return Object.assign({}, p, {
+                        isInstalled: true,
+                        isEnabled: local.enabled,
+                        isCompatible: local.loaded
+                    })
                 })
-            })
+
+                // Drop local-only entries that are no longer installed
+                .filter(function(p) {
+                    return root.serverPluginIds[p.pluginId] || p.isInstalled
+                })
             return
         }
 
