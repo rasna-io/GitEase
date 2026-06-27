@@ -407,10 +407,22 @@ bool PluginManager::installPluginFromBase64Zip(const QString& pluginId, const QS
         return false;
     }
 
+    // Write archive bytes to a temp file so libarchive can use open_filename
+    const QString tempPath = QDir::tempPath()
+                             + QStringLiteral("/gitease_plugin_%1.zip").arg(pluginId);
+    {
+        QFile tempFile(tempPath);
+        if (!tempFile.open(QIODevice::WriteOnly)) {
+            emit pluginInstallFailed(pluginId, QStringLiteral("Cannot create temp file"));
+            return false;
+        }
+        tempFile.write(archiveData);
+    }
+
     // Tear down any existing version — cleans all member variables, no intermediate signal.
     tearDownPlugin(pluginId);
 
-    // ── libarchive in-memory extraction ───────────────────────────────────────
+    // ── libarchive extraction ─────────────────────────────────────────────────
     struct archive *reader = archive_read_new();
     struct archive *writer = archive_write_disk_new();
     struct archive_entry *entry  = nullptr;
@@ -423,13 +435,12 @@ bool PluginManager::installPluginFromBase64Zip(const QString& pluginId, const QS
         ARCHIVE_EXTRACT_PERM |
         ARCHIVE_EXTRACT_SECURE_NODOTDOT);
 
-    int r = archive_read_open_memory(reader,
-                                     archiveData.constData(),
-                                     static_cast<size_t>(archiveData.size()));
+    int r = archive_read_open_filename(reader, tempPath.toUtf8().constData(), static_cast<size_t>(archiveData.size()));
     if (r != ARCHIVE_OK) {
         const QString err = QString::fromUtf8(archive_error_string(reader));
         archive_read_free(reader);
         archive_write_free(writer);
+        QFile::remove(tempPath);
         emit pluginInstallFailed(pluginId, QStringLiteral("Cannot open archive: ") + err);
         return false;
     }
@@ -442,29 +453,41 @@ bool PluginManager::installPluginFromBase64Zip(const QString& pluginId, const QS
         const QString absolutePath = targetDir + QChar('/') + entryName;
         archive_entry_set_pathname(entry, absolutePath.toUtf8().constData());
 
-        if (archive_write_header(writer, entry) != ARCHIVE_OK) {
+        int hr = archive_write_header(writer, entry);
+        if (hr == ARCHIVE_FATAL) {
+            qWarning() << "Fatal error writing header for:" << entryName
+                       << QString::fromUtf8(archive_error_string(writer));
             extractOk = false;
             break;
         }
+        if (hr < ARCHIVE_OK)
+            qWarning() << "Warning writing header for:" << entryName
+                       << QString::fromUtf8(archive_error_string(writer));
 
-        const void *buf;
-        size_t bufSize;
-        la_int64_t offset;
-        int dataResult;
+        if (archive_entry_size(entry) > 0) {
+            const void *buf;
+            size_t bufSize;
+            la_int64_t offset;
+            int dataResult;
 
-        while ((dataResult = archive_read_data_block(reader, &buf, &bufSize, &offset)) == ARCHIVE_OK) {
-            if (archive_write_data_block(writer, buf, bufSize, offset) != ARCHIVE_OK) {
+            while ((dataResult = archive_read_data_block(reader, &buf, &bufSize, &offset)) == ARCHIVE_OK) {
+                if (archive_write_data_block(writer, buf, bufSize, offset) != ARCHIVE_OK) {
+                    qWarning() << "Failed to write data for:" << entryName
+                               << QString::fromUtf8(archive_error_string(writer));
+                    extractOk = false;
+                    break;
+                }
+            }
+
+            if (!extractOk)
+                break;
+
+            if (dataResult != ARCHIVE_EOF) {
+                qWarning() << "Unexpected end of data for:" << entryName;
                 extractOk = false;
                 break;
             }
-        }
 
-        if (!extractOk)
-            break;
-
-        if (dataResult != ARCHIVE_EOF) {
-            extractOk = false;
-            break;
         }
 
         archive_write_finish_entry(writer);
@@ -475,6 +498,7 @@ bool PluginManager::installPluginFromBase64Zip(const QString& pluginId, const QS
 
     archive_read_free(reader);
     archive_write_free(writer);
+    QFile::remove(tempPath);
     // ── end extraction ────────────────────────────────────────────────────────
 
     if (!extractOk) {
