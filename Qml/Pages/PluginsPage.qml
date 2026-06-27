@@ -111,6 +111,19 @@ Item {
                 width: gridView.cellWidth - 20
                 height: gridView.cellHeight - 20
                 plugin: model
+
+                onInstallClicked: function(pluginId) {
+                    root.pluginController?.installPlugin(pluginId)
+                }
+                onUninstallClicked: function(pluginId) {
+                    root.pluginController?.uninstallPlugin(pluginId)
+                }
+                onUpdateClicked: function(pluginId) {
+                    root.pluginController?.updatePlugin(pluginId)
+                }
+                onEnableToggled: function(pluginId, enabled) {
+                    root.pluginController?.togglePlugin(pluginId, enabled)
+                }
             }
         }
 
