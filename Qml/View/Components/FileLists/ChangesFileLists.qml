@@ -264,7 +264,7 @@ Item {
         }
 
         const targetPath = root.currentFile || path
-        isStaged = root.stagedModel.some(file => file.path === targetPath)
+        isStaged = !(root.unstagedModel.some(file => file.path === targetPath))
 
         unstagedSection.selectedFilePath = isStaged ? "" : targetPath
         stagedSection.selectedFilePath = isStaged ? targetPath : ""
