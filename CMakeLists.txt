@@ -154,7 +154,7 @@ if(UNIX AND NOT APPLE)
 
     install(FILES gitease.desktop DESTINATION share/applications)
 
-    install(FILES Res/Images/LogoSVG.svg DESTINATION share/icons/hicolor/256x256/apps RENAME LogoSVG.svg)
+    install(FILES Res/Images/LogoSVG.svg DESTINATION share/icons/hicolor/256x256/apps RENAME gitease.svg)
 endif()
 
 include(packaging.cmake)
