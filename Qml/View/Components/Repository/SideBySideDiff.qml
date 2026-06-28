@@ -40,6 +40,7 @@ Item {
     readonly property bool isMod: diffType === GitDiff.Modified
     readonly property bool isUnchanged: diffType === GitDiff.Context
     property bool hasAction: false
+    property int selectedFileStatus: -1
 
     /* Signals
      * ****************************************************************************************/
@@ -167,7 +168,7 @@ Item {
             ColumnLayout {
 
                 anchors.centerIn: parent
-                visible: hasAction
+                visible: hasAction && selectedFileStatus !== GitFileStatus.Deleted
 
                 Label {
                     text: Style.icons.plus

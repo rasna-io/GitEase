@@ -32,6 +32,7 @@ DetachablePanel {
     property int currentIndex: -1
     property bool fileIsEdited: false
     property string selectedFile: ""
+    property int selectedFileStatus: -1
     property bool hasHeaderMiddleComponent: false
 
     // Properties used for selection
@@ -351,6 +352,7 @@ DetachablePanel {
                     selectionEnd: root.selectionEnd
                     selectedSide: root.selectedSide
                     hasAction: checkHasAction(diffListView.model, index, diffType)
+                    selectedFileStatus: root.selectedFileStatus
 
                     onRequestTextChange: (newText) => root.changeText(index, newText)
                     onRequestSplit: (pos, txt) => root.splitLine(index, pos, txt)

@@ -1,4 +1,4 @@
-﻿import QtQuick
+import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -548,6 +548,9 @@ Item {
             hasHeaderMiddleComponent: true
             selectEnabled: false
             appModel: root.appModel
+            contextLines: 0
+            expandLines: 10
+            selectedFileStatus: changesFileLists.currentFileStatus
 
             currentRepositoryName: root.appModel.currentRepository.name || ""
 
