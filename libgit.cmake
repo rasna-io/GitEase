@@ -7,10 +7,9 @@ set(LIBGIT2_ROOT "${THIRD_PARTY_DIR}/libgit2")
 
 if (WIN32)
     set(PLATFORM "Windows")
-elseif (LINUX)
+elseif (UNIX AND NOT APPLE)
     set(PLATFORM "Linux")
 endif()
-
 
 set(LIBGIT2_LIBRARY "${LIBGIT2_ROOT}/lib/${PLATFORM}/libgit2.a")
 set(LIBSSH2_LIBRARY "${LIBSSH2_ROOT}/lib/${PLATFORM}/libssh2.a")
@@ -54,6 +53,7 @@ elseif(UNIX)
         dl
         rt
         m
+        pcre
     )
 endif()
 
