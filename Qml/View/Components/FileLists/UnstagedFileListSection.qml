@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 
 /*! ***********************************************************************************************
@@ -19,7 +20,7 @@ FileListSection {
 
     /* Signals
      * ****************************************************************************************/
-    signal stageFileRequested(string filePath)
+    signal stageFileRequested(string filePath, bool isDeleted)
     signal discardFileRequested(string filePath)
     signal openFileRequested(string filePath)
     signal stashFileRequested(string filePath)
@@ -75,8 +76,8 @@ FileListSection {
 
             onClicked: root.selectFile(text, rowModelData.status)
 
-            onStageRequested: function(filePath) {
-                root.stageFileRequested(filePath)
+            onStageRequested: function(filePath, isDeleted) {
+                root.stageFileRequested(filePath, rowModelData.status === GitFileStatus.Deleted)
             }
 
             onDiscardRequested: function(filePath) {

@@ -119,10 +119,10 @@ Item {
 
             model: root.unstagedModel
 
-            onStageFileRequested: function(filePath) {
+            onStageFileRequested: function(filePath, isDeleted) {
                 root.showSaveDialog(
                             () => {
-                                let res = statusController.stageFile(filePath)
+                                let res = statusController.stageFile(filePath, isDeleted)
                                 if (!res.success) {
                                     root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
                                 }

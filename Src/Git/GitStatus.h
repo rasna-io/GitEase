@@ -37,9 +37,10 @@ public:
     /**
      * \brief Stage a file for commit
      * \param filePath Path to the file to stage
+     * \param isDeleted Flag indicating whether the file is deleted
      * \return GitResult with operation result
      */
-    Q_INVOKABLE GitResult stageFile(const QString &filePath);
+    Q_INVOKABLE GitResult stageFile(const QString &filePath, bool isDeleted = false);
 
     /**
      * \brief Unstage a file
