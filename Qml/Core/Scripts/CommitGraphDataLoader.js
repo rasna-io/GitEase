@@ -141,6 +141,7 @@ function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSe
             branchNames     : branchNames,
             tagNames        : hashToTags[commit.hash] || [],
             colorKey        : branchNames[0] || "main",
+            isHead          : haveBranchName,
             isStash         : false,
             stashIndex      : -1,
             stashLabel      : "",
