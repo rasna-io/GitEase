@@ -33,23 +33,72 @@ Rectangle {
     border.width: 1
     border.color: Style.colors.primaryBorder
 
-    ListView {
-        id: fileListView
+    ScrollView {
         anchors.fill: parent
-        model: root.conflictFiles
-        spacing: 1
-        currentIndex: {
-            for (let i = 0; i < root.conflictFiles.length; ++i)
-                if (root.conflictFiles[i].path === root.currentPath)
-                    return i
-            return -1
-        }
+        clip: true
 
-        delegate: Rectangle {
+        ColumnLayout {
             width: parent.width
-            height: 24
+            spacing: 0
+
+            // Conflict Changes header
+            Text {
+                visible: conflictFiles.length > 0
+                text: "Conflict Changes"
+                color: Style.colors.secondaryText
+                font.family: Style.fontTypes.roboto
+                font.bold: true
+                font.pixelSize: 11
+                leftPadding: 12
+                topPadding: 6
+                bottomPadding: 2
+            }
+
+            Repeater {
+                model: conflictFiles
+                delegate: fileDelegate
+            }
+
+            // Staged Changes header
+            Text {
+                visible: stagedFiles.length > 0
+                text: "Staged Changes"
+                color: Style.colors.secondaryText
+                font.family: Style.fontTypes.roboto
+                font.bold: true
+                font.pixelSize: 11
+                leftPadding: 12
+                topPadding: 6
+                bottomPadding: 2
+            }
+
+            Repeater {
+                model: stagedFiles
+                delegate: fileDelegate
+            }
+        }
+    }
+
+    Component {
+        id: fileDelegate
+        Rectangle {
+            id: delegateItem
+            width: parent.width
+            height: 28
             radius: 3
-            color: ListView.isCurrentItem ? Style.colors.hoverTitle : "transparent"
+            property bool isResolved: modelData && (!modelData.blocks || modelData.blocks.length === 0)
+            property bool isStaged  : root.stagedFiles && root.stagedFiles.some(f => f.path === modelData.path)
+            property bool isCurrent : root.currentPath === modelData.path
+
+            color: {
+                if (isCurrent)
+                    return Style.colors.hoverTitle
+
+                if (isResolved && !isStaged)
+                    return Style.colors.conflictResolvedBg
+
+                return "transparent"
+            }
 
             RowLayout {
                 anchors.fill: parent
@@ -58,7 +107,7 @@ Rectangle {
                 spacing: 8
 
                 Text {
-                    text: (index + 1) + "."
+                    text: ""
                     color: Style.colors.lineNumberColor
                     font.family: Style.fontTypes.roboto
                     font.pixelSize: 12
@@ -73,20 +122,15 @@ Rectangle {
                     font.pixelSize: 13
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                }
+                Item { Layout.fillWidth: true }
 
                 ActionIconButton {
-                    property bool canSave: !modelData.blocks || modelData.blocks.length === 0
-
+                    visible: !isStaged
+                    property bool canSave: isResolved && !isStaged
                     iconText: Style.icons.plus
                     textColor: Style.colors.mutedText
-
                     opacity: canSave ? 1.0 : 0.5
-
                     tooltip: canSave ? "Save and Stage" : "Resolve conflicts to stage"
-
                     onClicked: {
                         if (canSave) {
                             root.fileSelected(modelData.path)
