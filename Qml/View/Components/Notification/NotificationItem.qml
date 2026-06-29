@@ -35,7 +35,7 @@ Rectangle {
      * ****************************************************************************************/
     ColumnLayout {
         id: contentColumn
-        anchors.fill: parent
+        width: parent.width
         spacing: 0
 
         Rectangle {
