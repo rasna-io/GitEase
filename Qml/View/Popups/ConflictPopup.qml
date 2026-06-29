@@ -244,6 +244,7 @@ Window {
                     id: fileListComp
                     conflictFiles: root.conflicts
                     currentPath: root.selectedPath
+                    stagedFiles: root.stagedFiles
                     onFileSelected  : (path) => root.selectFile(path)
                     onStageRequested: (path) => root.saveAndStage(path)
                 }
