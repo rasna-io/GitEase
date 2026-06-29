@@ -1043,10 +1043,11 @@ DetachablePanel {
         if (data.isUncommitted || data.isStash || data.hash === root.headHash)
             return
 
+        let isHead      = data.isHead
         var branches    = data.branchNames || []
         var shortHash   = data.shortHash || data.hash.substring(0, 7)
 
-        if (!branches.length) {
+        if (!isHead) {
             var checkoutCommitRes = root.branchController.checkoutCommit(data.hash)
             handleContextResponse(checkoutCommitRes, "Checked out commit " + shortHash)
             return
