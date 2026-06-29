@@ -184,10 +184,6 @@ Window {
 
             onHeightChanged: {
                 root.contentHeight = height
-                if (root.visible) {
-                    root.positionWindow()
-                    root.heightChanged()
-                }
             }
         }
 
