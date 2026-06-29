@@ -89,6 +89,7 @@ Rectangle {
             property bool isResolved: modelData && (!modelData.blocks || modelData.blocks.length === 0)
             property bool isStaged  : root.stagedFiles && root.stagedFiles.some(f => f.path === modelData.path)
             property bool isCurrent : root.currentPath === modelData.path
+            property bool hovered   : false
 
             color: {
                 if (isCurrent)
@@ -98,6 +99,14 @@ Rectangle {
                     return Style.colors.conflictResolvedBg
 
                 return "transparent"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: root.fileSelected(modelData.path)
+                onEntered: delegateItem.hovered = true
+                onExited: delegateItem.hovered = false
             }
 
             RowLayout {
@@ -150,7 +159,15 @@ Rectangle {
                 Item { Layout.fillWidth: true }
 
                 ActionIconButton {
-                    visible: !isStaged
+                    visible: {
+                        if (isStaged)
+                            return false
+
+                        if (isResolved)
+                            return true
+
+                        return delegateItem.hovered
+                    }
                     property bool canSave: isResolved && !isStaged
                     iconText: Style.icons.plus
                     textColor: Style.colors.mutedText
