@@ -35,6 +35,7 @@ Window {
     property var    selectedConflict: null
     property string selectedPath    : ""
     property var    modifiedFiles   : ({})
+    property var    stagedFiles     : []
 
     property string headerText          : `${currentOperationName} Conflicts`
     property string continueButtonText  : `Continue ${currentOperationName}`
@@ -604,12 +605,10 @@ Window {
 
         notificationController.success("File staged", "Conflict", 2500)
 
-        // Clear memory state since changes are successfully staged
-        let copy = Object.assign({}, modifiedFiles)
-        delete copy[path]
-        modifiedFiles = copy
-
-        loadConflicts(true)
+        let alreadyStaged = root.stagedFiles.some(f => f.path === path)
+        if (!alreadyStaged) {
+            root.stagedFiles.push({ path: path, status: "M" })
+        }
     }
 
     function continueOperation() {
@@ -683,6 +682,7 @@ Window {
             modifiedFiles = ({})
             displayModel.clear()
             selectedPath = ""
+            stagedFiles = []
 
             close()
         }
@@ -702,6 +702,7 @@ Window {
             modifiedFiles = ({})
             displayModel.clear()
             selectedPath = ""
+            stagedFiles = []
 
             close()
         }
