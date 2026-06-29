@@ -46,6 +46,7 @@ QtObject{
     property string undo:              "\uf0E2"
     property string tree:              "\uF1BB" // tree
     property string cloud:             "\uf0c2" // cloud
+    property string laptop:            "\uf109" // laptop
 
     property string palette:           "\uf53f"
     property string terminal:          "\uf120"
