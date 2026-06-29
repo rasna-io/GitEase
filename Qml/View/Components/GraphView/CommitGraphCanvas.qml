@@ -446,6 +446,10 @@ Item {
         return GraphUtils.getCategoryColor(commitObj.colorKey)
     }
 
+    function requestPaint() {
+        graphCanvas.requestPaint()
+    }
+
     onWidthChanged  :  graphCanvas.requestPaint()
     onHeightChanged : graphCanvas.requestPaint()
 }
