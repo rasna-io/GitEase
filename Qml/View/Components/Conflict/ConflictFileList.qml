@@ -107,11 +107,36 @@ Rectangle {
                 spacing: 8
 
                 Text {
-                    text: ""
-                    color: Style.colors.lineNumberColor
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
-                    opacity: 0.7
+                    font.pixelSize: 11
+                    font.bold: true
+                    Layout.preferredWidth: 14
+                    horizontalAlignment: Text.AlignHCenter
+
+                    text: {
+                        if (modelData.blocks && modelData.blocks.length > 0)
+                            return "!"
+
+                        return "M"
+                    }
+
+                    color: {
+                        if (modelData.blocks && modelData.blocks.length > 0)
+                            return Style.colors.error
+
+                        return Style.colors.mutedText
+                    }
+
+                    ToolTip {
+                        text: {
+                            if (modelData.blocks && modelData.blocks.length > 0)
+                                return "Contains unresolved conflicts"
+
+                            return "Index Modified"
+                        }
+                        visible: parent.hovered
+                        delay: 500
+                    }
                 }
 
                 ScrollingText {
