@@ -1043,7 +1043,7 @@ DetachablePanel {
         if (data.isUncommitted || data.isStash || data.hash === root.headHash)
             return
 
-        let isHead      = data.isHead
+        let isHead      = data.isHead || false
         var branches    = data.branchNames || []
         var shortHash   = data.shortHash || data.hash.substring(0, 7)
 
