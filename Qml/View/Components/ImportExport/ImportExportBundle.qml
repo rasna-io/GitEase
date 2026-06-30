@@ -26,7 +26,6 @@ UtilitiesCard {
 
     property NotificationController notificationController: null
 
-
     /* Object Properties
      * ****************************************************************************************/
 
