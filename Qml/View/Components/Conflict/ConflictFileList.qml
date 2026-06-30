@@ -92,24 +92,16 @@ Rectangle {
             property bool isResolved: modelData && (!modelData.blocks || modelData.blocks.length === 0)
             property bool isStaged  : root.stagedFiles && root.stagedFiles.some(f => f.path === modelData.path)
             property bool isCurrent : root.currentPath === modelData.path
-            property bool hovered   : false
 
-            color: {
-                if (isCurrent)
-                    return Style.colors.hoverTitle
+            color: isCurrent ? Style.colors.hoverTitle : "transparent"
 
-                if (isResolved && !isStaged)
-                    return Style.colors.conflictResolvedBg
-
-                return "transparent"
+            HoverHandler {
+                id: hoverHandler
             }
 
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: root.fileSelected(modelData.path)
-                onEntered: delegateItem.hovered = true
-                onExited: delegateItem.hovered = false
+            TapHandler {
+                        gesturePolicy: TapHandler.ReleaseWithinBounds
+                        onTapped: root.fileSelected(modelData.path)
             }
 
             RowLayout {
