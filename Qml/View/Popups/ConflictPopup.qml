@@ -462,6 +462,9 @@ Window {
         } else {
             selectFile(conflicts[0].path)
         }
+
+    function labelFor(file) {
+        return file.indexStatus || "M"
     }
 
     function selectFile(path, forceRebuild = false) {
