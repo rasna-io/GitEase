@@ -18,14 +18,36 @@ RowLayout {
     property string filterText      : ""
     property string filterStartDate : ""
     property string filterEndDate   : ""
+    property var    filterModes     : []
+    property bool   syncingFilterModes: false
+    property var    branchNames     : []
+    property string branchFilter    : ""
+    property bool   suppressBranchSelectorOpen: false
 
     readonly property bool  compact         : headerRow.parent ? headerRow.parent.width < 650 : false
+    readonly property bool  tight           : headerRow.parent ? headerRow.parent.width < 820 : false
+    readonly property bool  crowded         : headerRow.parent ? headerRow.parent.width < 760 : false
+    readonly property bool  branchFilterActive: branchFilter.length > 0
+    readonly property bool  branchSelectorOpen: !suppressBranchSelectorOpen
+                                                 && (branchSelectorArea.hovered || branchCombo.activeFocus || branchCombo.popup.visible)
+    readonly property bool  hasStartDate    : filterStartDate.length > 0
+    readonly property bool  hasEndDate      : filterEndDate.length > 0
+    readonly property bool  hasDateRange    : hasStartDate || hasEndDate
+    readonly property real  branchSelectorClosedWidth: branchFilterActive
+                                                       ? Math.min(compact ? 96 : (tight ? 118 : 150),
+                                                                  Math.max(48, branchChipMetrics.advanceWidth + 42))
+                                                       : 26
+    readonly property real  branchSelectorOpenWidth: compact ? 118 : (tight ? 142 : 174)
+    readonly property real  dateFieldWidth : compact ? 72 : (tight ? 78 : 90)
+    readonly property real  columnWidth    : crowded ? 0 : (tight ? 96 : 112)
+    readonly property int   controlSize     : 26
     property var            navigationRules : ["Author Email", "Author", "Parent 1", "Branch"]
     property string         navigationRule  : navigationRules[0]
 
     /* Signals
      * ****************************************************************************************/
     signal filterRequested(string text, string startDate, string endDate, var modes)
+    signal branchSelected(string branchName)
     signal nextRequested(string rule)
     signal previousRequested(string rule)
     signal reloadRequested()
@@ -45,36 +67,60 @@ RowLayout {
         ListElement { text: "SHA-1";    checked: false }
     }
 
-    TextField {
-        id: textFilterField
-        placeholderTextColor: Style.colors.descriptionText
-        backgroundColor: hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-        Layout.fillWidth: true
-        minHeight: 25
-        placeholderText: {
-            var selected = filterOptionsPopup.selectedItems
-            var display = selected && selected.length > 0
-                          ? selected.map(function(it) { return it.text }).join(", ")
-                          : ""
-            return display.length > 0 ? "Write Filter By " + display : "Write Filter By"
-        }
-        text: headerRow.filterText
+    TextMetrics {
+        id: branchChipMetrics
+        text: headerRow.branchFilter
         font.family: Style.fontTypes.roboto
-        font.weight: 400
-        font.pixelSize: 9
-        borderRadius: 5
-        borderWidth: 0
-        focusBorderWidth: 1
-        onTextChanged: {
-            headerRow.filterText = text
-            headerRow.applyFilter()
+        font.pixelSize: 11
+        font.weight: Font.Medium
+    }
+
+    Item {
+        id: textFilterArea
+        Layout.fillWidth: true
+        Layout.minimumWidth: compact ? 42 : (crowded ? 64 : (tight ? 96 : 100))
+        Layout.preferredHeight: headerRow.controlSize
+        clip: true
+
+        TextField {
+            id: textFilterField
+            width: textFilterArea.width
+            height: textFilterArea.height
+            placeholderTextColor: Style.colors.descriptionText
+            backgroundColor: hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            minHeight: headerRow.controlSize
+            placeholderText: {
+                var selected = filterOptionsPopup.selectedItems
+                var display = selected && selected.length > 0
+                              ? selected.map(function(it) { return it.text }).join(", ")
+                              : ""
+                return display.length > 0 ? "Write Filter By " + display : "Write Filter By"
+            }
+            text: headerRow.filterText
+            font.family: Style.fontTypes.roboto
+            font.weight: 400
+            font.pixelSize: 9
+            borderRadius: 5
+            borderWidth: 0
+            focusBorderWidth: 1
+            onTextChanged: {
+                headerRow.filterText = text
+                headerRow.applyFilter()
+            }
+        }
+
+        Behavior on width {
+            NumberAnimation {
+                duration: 160
+                easing.type: Easing.OutCubic
+            }
         }
     }
 
     ToolButton {
         id: filterButton
-        Layout.preferredWidth: 25
-        Layout.preferredHeight: 25
+        Layout.preferredWidth: headerRow.controlSize
+        Layout.preferredHeight: headerRow.controlSize
         hoverEnabled: true
 
         text: Style.icons.filter
@@ -112,58 +158,98 @@ RowLayout {
             x = Math.max(0, Math.min(x, parent.width - width))
         }
         onSelectionChanged: function(items) {
+            if (headerRow.syncingFilterModes)
+                return
+
             headerRow.applyFilter()
         }
     }
 
     Label {
-        Layout.leftMargin: compact ? 8 : 40
+        id: fromLabel
+        Layout.leftMargin: headerRow.hasDateRange ? (compact ? 4 : (tight ? 8 : 14)) : 0
         color: Style.colors.descriptionText
         text: "From:"
+        opacity: headerRow.hasDateRange && !branchSelectorOpen ? 1 : 0
+        visible: (headerRow.hasDateRange && !branchSelectorOpen) || opacity > 0
         font.family: Style.fontTypes.roboto
         font.weight: 400
-        font.pixelSize: 12
+        font.pixelSize: 11
+
+        Behavior on opacity {
+            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+        }
     }
 
     DateField {
         id: startDateField
-        Layout.preferredWidth: compact ? 22 : 90
-        Layout.preferredHeight: 25
+        Layout.leftMargin: headerRow.hasDateRange ? 0 : (compact ? 4 : (tight ? 8 : 14))
+        Layout.preferredWidth: branchSelectorOpen ? 0 : (headerRow.hasDateRange && headerRow.hasStartDate ? headerRow.dateFieldWidth : headerRow.controlSize)
+        Layout.preferredHeight: headerRow.controlSize
+        opacity: branchSelectorOpen ? 0 : 1
         compact: compact
+        iconOnly: !headerRow.hasStartDate
         placeholder: "2025-08-30"
         dateString: headerRow.filterStartDate
 
         onClicked: calendarPopup.prepareAndOpen(startDateField, true, headerRow.filterStartDate, headerRow.filterEndDate)
 
+        Behavior on Layout.preferredWidth {
+            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        }
+
+        Behavior on opacity {
+            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+        }
     }
 
     Label {
+        id: toLabel
         color: Style.colors.descriptionText
         text: "To:"
+        opacity: headerRow.hasDateRange && !branchSelectorOpen ? 1 : 0
+        visible: (headerRow.hasDateRange && !branchSelectorOpen) || opacity > 0
         font.family: Style.fontTypes.roboto
         font.weight: 400
-        font.pixelSize: 12
+        font.pixelSize: 11
+
+        Behavior on opacity {
+            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+        }
     }
 
     DateField {
         id: endDateField
-        Layout.preferredWidth: compact ? 22 : 90
-        Layout.preferredHeight: 25
+        Layout.preferredWidth: branchSelectorOpen || !headerRow.hasDateRange ? 0 : (headerRow.hasEndDate ? headerRow.dateFieldWidth : headerRow.controlSize)
+        Layout.preferredHeight: headerRow.controlSize
+        opacity: branchSelectorOpen || !headerRow.hasDateRange ? 0 : 1
+        visible: headerRow.hasDateRange || opacity > 0
         compact: compact
+        iconOnly: !headerRow.hasEndDate
         placeholder: "2025-09-30"
         dateString: headerRow.filterEndDate
 
         onClicked: calendarPopup.prepareAndOpen(endDateField, false, headerRow.filterEndDate, headerRow.filterStartDate)
 
+        Behavior on Layout.preferredWidth {
+            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        }
+
+        Behavior on opacity {
+            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+        }
     }
 
     ComboBox {
         id: columnCombo
         model: navigationRules
 
-        Layout.leftMargin: compact ? 6 : 20
-        minHeight: 26
-        visible: !compact
+        Layout.leftMargin: compact || crowded ? 0 : (tight ? 6 : 8)
+        Layout.preferredWidth: branchSelectorOpen ? 0 : headerRow.columnWidth
+        minHeight: headerRow.controlSize
+        visible: !compact && !crowded
+        enabled: !branchSelectorOpen
+        opacity: branchSelectorOpen ? 0 : 1
         borderWidth: 0
         focusBorderWidth: 1
         font.family: Style.fontTypes.roboto
@@ -178,20 +264,27 @@ RowLayout {
             color: columnCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
         }
 
-        Layout.preferredWidth: 120
         currentIndex: navigationRules.indexOf(navigationRule)
         onActivated: function(index) {
             navigationRule = navigationRules[index]
             headerRow.applyFilter()
         }
+
+        Behavior on Layout.preferredWidth {
+            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        }
+
+        Behavior on opacity {
+            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+        }
     }
 
     ToolButton {
         id: downButton
-        Layout.preferredWidth: 26
-        Layout.preferredHeight: 26
+        Layout.preferredWidth: headerRow.controlSize
+        Layout.preferredHeight: headerRow.controlSize
 
-        visible: !compact
+        visible: !compact && !crowded
         enabled: headerRow.isGraphReady
         hoverEnabled: true
 
@@ -220,10 +313,10 @@ RowLayout {
 
     ToolButton {
         id: upButton
-        Layout.preferredWidth: 26
-        Layout.preferredHeight: 26
+        Layout.preferredWidth: headerRow.controlSize
+        Layout.preferredHeight: headerRow.controlSize
 
-        visible: !compact
+        visible: !compact && !crowded
         enabled: headerRow.isGraphReady
         hoverEnabled: true
 
@@ -250,11 +343,135 @@ RowLayout {
         onClicked: headerRow.nextRequested(navigationRule)
     }
 
+    Item {
+        id: branchSelectorArea
+
+        property bool hovered: branchSelectorHover.hovered
+
+        Layout.leftMargin: compact ? 3 : (tight ? 5 : 7)
+        Layout.preferredWidth: branchSelectorOpen
+                               ? headerRow.branchSelectorOpenWidth
+                               : headerRow.branchSelectorClosedWidth
+        Layout.preferredHeight: headerRow.controlSize
+        visible: headerRow.branchNames && headerRow.branchNames.length > 0
+        enabled: headerRow.isGraphReady
+
+        HoverHandler {
+            id: branchSelectorHover
+            onHoveredChanged: {
+                if (!hovered)
+                    headerRow.suppressBranchSelectorOpen = false
+            }
+        }
+
+        ToolButton {
+            id: branchButton
+            anchors.fill: parent
+            enabled: branchSelectorArea.enabled
+            hoverEnabled: false
+            opacity: branchSelectorOpen ? 0 : 1
+
+            text: Style.icons.branch
+            font.family: headerRow.branchFilter.length > 0 || branchSelectorOpen
+                         ? Style.fontTypes.font6ProSolid
+                         : Style.fontTypes.font6Pro
+            font.pixelSize: 14
+
+            contentItem: Item {
+                clip: true
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: headerRow.branchFilterActive ? 5 : 0
+                    height: parent.height
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: branchButton.text
+                        font: branchButton.font
+                        color: branchButton.enabled ? Style.colors.foreground : Style.colors.mutedText
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    Text {
+                        width: Math.max(0, branchSelectorArea.width - 36)
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: headerRow.branchFilterActive
+                        text: headerRow.branchFilter
+                        font.family: Style.fontTypes.roboto
+                        font.weight: Font.Medium
+                        font.pixelSize: 11
+                        color: branchButton.enabled ? Style.colors.foreground : Style.colors.mutedText
+                        elide: Text.ElideRight
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+            }
+
+            background: Rectangle {
+                radius: 5
+                color: !branchButton.enabled ? Style.colors.primaryBackground :
+                       branchSelectorOpen ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            }
+
+            Behavior on opacity {
+                NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+            }
+        }
+
+        ComboBox {
+            id: branchCombo
+            anchors.fill: parent
+            model: headerRow.branchFilterModel()
+
+            minHeight: headerRow.controlSize
+            enabled: headerRow.isGraphReady && branchSelectorOpen
+            opacity: branchSelectorOpen ? 1 : 0
+            clip: true
+            borderWidth: 0
+            focusBorderWidth: 1
+            font.family: Style.fontTypes.roboto
+            font.weight: 400
+            font.pixelSize: 10
+
+            Material.background: Style.colors.primaryBackground
+            Material.foreground: Style.colors.secondaryText
+
+            background: Rectangle {
+                radius: 5
+                color: branchCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            }
+
+            currentIndex: headerRow.branchFilterIndex()
+            onActivated: function(index) {
+                var branchName = index > 0 ? headerRow.branchNames[index - 1] : ""
+                if (branchName.length > 0) {
+                    headerRow.navigationRule = "Branch"
+                    headerRow.syncNavigationRule()
+                }
+
+                headerRow.branchSelected(branchName)
+                branchCombo.popup.close()
+                branchCombo.focus = false
+                headerRow.suppressBranchSelectorOpen = branchSelectorArea.hovered
+            }
+
+            Behavior on opacity {
+                NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+            }
+        }
+
+        Behavior on Layout.preferredWidth {
+            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        }
+    }
+
     ToolButton {
         id: reloadButton
-        Layout.preferredWidth: 26
-        Layout.preferredHeight: 26
-        Layout.leftMargin: 10
+        Layout.preferredWidth: headerRow.controlSize
+        Layout.preferredHeight: headerRow.controlSize
+        Layout.leftMargin: compact ? 3 : (tight ? 5 : 7)
 
         enabled: headerRow.isGraphReady
         hoverEnabled: true
@@ -294,6 +511,14 @@ RowLayout {
         }
     }
 
+    Component.onCompleted: {
+        syncFilterModes()
+        syncNavigationRule()
+    }
+
+    onFilterModesChanged: syncFilterModes()
+    onNavigationRuleChanged: syncNavigationRule()
+
     /* Functions
      * ****************************************************************************************/
     function applyFilter() {
@@ -307,6 +532,40 @@ RowLayout {
                                   headerRow.filterEndDate,
                                   modes);
 
+    }
+
+    function syncFilterModes() {
+        if (!filterOptionsModel || filterOptionsModel.count === undefined)
+            return
+
+        var modes = headerRow.filterModes || []
+        headerRow.syncingFilterModes = true
+        for (var i = 0; i < filterOptionsModel.count; ++i) {
+            var item = filterOptionsModel.get(i)
+            filterOptionsModel.setProperty(i, "checked", modes.indexOf(item.text) !== -1)
+        }
+
+        filterOptionsPopup.updateSelection()
+        headerRow.syncingFilterModes = false
+    }
+
+    function syncNavigationRule() {
+        var index = headerRow.navigationRules.indexOf(headerRow.navigationRule)
+        columnCombo.currentIndex = index >= 0 ? index : 0
+    }
+
+    function branchFilterModel() {
+        return ["All branches"].concat(headerRow.branchNames || [])
+    }
+
+    function branchFilterIndex() {
+        var branch = headerRow.branchFilter || ""
+        if (branch.length === 0)
+            return 0
+
+        var names = headerRow.branchNames || []
+        var index = names.indexOf(branch)
+        return index >= 0 ? index + 1 : 0
     }
 
     function handleDateSelected(dateString, isStart) {

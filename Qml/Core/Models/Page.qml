@@ -23,6 +23,9 @@ QtObject {
     // Icon glyph (usually from Style.icons.*)
     property string icon: ""
 
+    // Page-owned transient state that survives Loader recreation while the app is open.
+    property var state: ({})
+
     // Optional navigation guard. If set, called before leaving the page.
     property var onPageChange
 }

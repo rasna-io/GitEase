@@ -38,6 +38,7 @@ Item {
 
 
     property alias                   graphRef                : commitGraph
+    property var                     statePage               : null
 
     // Header exposed to MainWindow
     property Component headerContent: Component {
@@ -45,11 +46,34 @@ Item {
             id: graphViewHeader
 
             isGraphReady: root.graphRef !== null
+            filterText: root.graphRef ? root.graphRef.filterText : (root.activePageState()?.commitGraph?.filterText || "")
+            filterStartDate: root.graphRef ? root.graphRef.filterStartDate : (root.activePageState()?.commitGraph?.filterStartDate || "")
+            filterEndDate: root.graphRef ? root.graphRef.filterEndDate : (root.activePageState()?.commitGraph?.filterEndDate || "")
+            filterModes: root.graphRef ? root.graphRef.filterMode : (root.activePageState()?.commitGraph?.filterMode || [])
+            branchNames: root.branchNames()
+            branchFilter: root.graphRef ? root.graphRef.branchFilter : (root.activePageState()?.commitGraph?.branchFilter || "")
+            navigationRule: root.graphRef ? root.graphRef.navigationRule : (root.activePageState()?.commitGraph?.navigationRule || navigationRules[0])
 
             onFilterRequested: function(text, startDate, endDate, modes) {
                 if (root.graphRef) {
                     root.graphRef.applyFilter(text, startDate, endDate, modes);
+                    root.saveCommitGraphState();
                 }
+            }
+
+            onBranchSelected: function(branchName) {
+                if (!root.graphRef)
+                    return
+
+                if (branchName && branchName.length > 0)
+                    root.graphRef.executeShowOnlyBranch(branchName)
+                else
+                    root.graphRef.executeShowAllBranches()
+
+                if (branchName && branchName.length > 0)
+                    root.graphRef.navigationRule = "Branch"
+
+                root.saveCommitGraphState()
             }
 
             onNextRequested: function(rule) {
@@ -70,6 +94,28 @@ Item {
      * ****************************************************************************************/
     Component.onCompleted: {
         Qt.callLater(initPresenter)
+    }
+
+    Component.onDestruction: {
+        saveCommitGraphState()
+    }
+
+    onPageChanged: {
+        if (!root.page)
+            return
+
+        if (!root.statePage)
+            root.statePage = root.page
+
+        if (root.page !== root.statePage)
+            return
+
+        root.statePage.onPageChange = function(callback) {
+            root.saveCommitGraphState()
+            callback(true)
+        }
+
+        Qt.callLater(root.restoreCommitGraphState)
     }
 
     Connections {
@@ -178,5 +224,71 @@ Item {
             statusController: statusController,
             commitController: commitController
         })
+    }
+
+    function commitGraphState() {
+        if (!root.graphRef)
+            return null
+
+        return {
+            filterText      : root.graphRef.filterText || "",
+            filterStartDate : root.graphRef.filterStartDate || "",
+            filterEndDate   : root.graphRef.filterEndDate || "",
+            filterMode      : root.graphRef.filterMode ? root.graphRef.filterMode.slice(0) : [],
+            branchFilter    : root.graphRef.branchFilter || "",
+            navigationRule  : root.graphRef.navigationRule || "Message"
+        }
+    }
+
+    function saveCommitGraphState() {
+        if (!root.statePage || !root.graphRef)
+            return
+
+        var state = root.statePage.state || {}
+        state.commitGraph = commitGraphState()
+        root.statePage.state = state
+    }
+
+    function restoreCommitGraphState() {
+        if (!root.statePage || !root.graphRef || !root.statePage.state || !root.statePage.state.commitGraph)
+            return
+
+        var state = root.statePage.state.commitGraph
+        root.graphRef.filterText = state.filterText || ""
+        root.graphRef.filterStartDate = state.filterStartDate || ""
+        root.graphRef.filterEndDate = state.filterEndDate || ""
+        root.graphRef.filterMode = state.filterMode ? state.filterMode.slice(0) : []
+        root.graphRef.branchFilter = state.branchFilter || ""
+        root.graphRef.navigationRule = state.navigationRule || "Message"
+        root.graphRef.refreshBranchFilterHeadHash()
+
+        root.graphRef.applyFilter(
+                root.graphRef.filterText,
+                root.graphRef.filterStartDate,
+                root.graphRef.filterEndDate,
+                root.graphRef.filterMode)
+    }
+
+    function activePageState() {
+        var pageModel = root.statePage || root.page
+        return pageModel ? pageModel.state : null
+    }
+
+    function branchNames() {
+        if (!root.branchController)
+            return []
+
+        var branches = root.branchController.getBranches()
+        if (!branches)
+            return []
+
+        var names = []
+        for (var i = 0; i < branches.length; i++) {
+            var branch = branches[i]
+            if (branch && branch.name)
+                names.push(branch.name)
+        }
+
+        return names
     }
 }

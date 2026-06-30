@@ -56,6 +56,8 @@ DetachablePanel {
     property string filterStartDate : ""
     property string filterEndDate   : ""
     property var    filterMode      : []
+    property string branchFilter    : ""
+    property string branchFilterHeadHash: ""
 
     property int    pageSize        : 200
     property int    commitsOffset   : 0
@@ -79,7 +81,7 @@ DetachablePanel {
     readonly property int minColAuthorWidth     : 60
     readonly property int minColDateWidth       : 80
 
-    readonly property bool hasAnyFilter         : Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate)
+    readonly property bool hasAnyFilter         : Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter)
 
     /* Signals
      * ****************************************************************************************/
@@ -479,6 +481,10 @@ DetachablePanel {
                 parts.push("date until " + end)
         }
 
+        var branch = (root.branchFilter || "").trim()
+        if (branch.length > 0)
+            parts.push("branch is '" + branch + "'")
+
         if (parts.length === 0)
             return "No commits match your filter."
 
@@ -514,7 +520,9 @@ DetachablePanel {
             root.filterStartDate,
             root.filterEndDate,
             root.filterMode,
-            root.selectedCommitHashes
+            root.selectedCommitHashes,
+            root.branchFilter,
+            root.branchFilterHeadHash
         )
 
         loadData(result.filtered)
@@ -524,7 +532,7 @@ DetachablePanel {
             root.lastSelectedIndex = -1
         }
 
-        if (Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate)) {
+        if (Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter)) {
             ensureMinimumResults()
         }
     }
@@ -534,6 +542,8 @@ DetachablePanel {
         root.filterStartDate    = ""
         root.filterEndDate      = ""
         root.filterMode         = []
+        root.branchFilter       = ""
+        root.branchFilterHeadHash = ""
         root.navigationRule     = "Message"
         loadData(root.allCommits.slice(0))
     }
@@ -557,6 +567,7 @@ DetachablePanel {
         commitsOffset   = 0
         hasMoreCommits  = true
         isLoadingMore   = false
+        refreshBranchFilterHeadHash()
 
         root.headHash = root.statusController.getHeadHash()
 
@@ -582,7 +593,7 @@ DetachablePanel {
      * Automatically loads additional pages until we have at least pageSize results or no more commits.
      */
     function ensureMinimumResults() {
-        if (!Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate))
+        if (!Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter))
             return
 
         if ((root.commits ? root.commits.length : 0) >= pageSize)
@@ -833,6 +844,9 @@ DetachablePanel {
             case "copy":
                 return Style.icons.copy
 
+            case "filter":
+                return Style.icons.filter
+
             default: return ""
         }
     }
@@ -910,6 +924,38 @@ DetachablePanel {
         }
     }
 
+    function executeShowOnlyBranch(branchName) {
+        root.branchFilter = branchName || ""
+        refreshBranchFilterHeadHash()
+        root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
+    }
+
+    function executeShowAllBranches() {
+        root.branchFilter = ""
+        root.branchFilterHeadHash = ""
+        root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
+    }
+
+    function refreshBranchFilterHeadHash() {
+        root.branchFilterHeadHash = findBranchHeadHash(root.branchFilter)
+    }
+
+    function findBranchHeadHash(branchName) {
+        if (!branchName || !root.branchController)
+            return ""
+
+        var branches = root.branchController.getBranches()
+        if (!branches)
+            return ""
+
+        for (var i = 0; i < branches.length; i++) {
+            var branch = branches[i]
+            if (branch && branch.name === branchName)
+                return branch.targetHash || ""
+        }
+
+        return ""
+    }
 
     function executeNewBranch(commitHash) {
         if (!root.addBranchPopup)
