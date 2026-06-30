@@ -34,12 +34,15 @@ Rectangle {
     border.color: Style.colors.primaryBorder
 
     ScrollView {
+        id: scroll
         anchors.fill: parent
         clip: true
 
+        contentWidth: availableWidth
+
         ColumnLayout {
-            width: parent.width
             spacing: 0
+            width: scroll.availableWidth
 
             // Conflict Changes header
             Text {
@@ -83,8 +86,8 @@ Rectangle {
         id: fileDelegate
         Rectangle {
             id: delegateItem
-            width: parent.width
-            height: 28
+            Layout.fillWidth: true
+            Layout.preferredHeight: 28
             radius: 3
             property bool isResolved: modelData && (!modelData.blocks || modelData.blocks.length === 0)
             property bool isStaged  : root.stagedFiles && root.stagedFiles.some(f => f.path === modelData.path)
@@ -155,8 +158,6 @@ Rectangle {
                     color: Style.colors.lineNumberColor
                     font.pixelSize: 13
                 }
-
-                Item { Layout.fillWidth: true }
 
                 ActionIconButton {
                     visible: {
