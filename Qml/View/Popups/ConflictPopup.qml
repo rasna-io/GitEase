@@ -500,7 +500,31 @@ Window {
             modifiedFiles = copy
         }
 
-        // 2. Switch File
+        // 2. If it's a staged file, show its current file content
+        if (stagedFiles.some(f => f.path === path)) {
+            selectedConflict = null
+            selectedPath = path
+
+            // fetch current working directory content
+            let statusRes = statusController.getUnstagedDiffView(path)
+            displayModel.clear()
+            if (statusRes && statusRes.success) {
+                let liveContent = statusRes.data && statusRes.data.newText
+                if (liveContent) {
+                    let linesArray = liveContent.split('\n')
+                    for (let i = 0; i < linesArray.length; ++i) {
+                        displayModel.append({
+                            type: "contextLine",
+                            text: linesArray[i],
+                            lineNumber: i + 1
+                        })
+                    }
+                }
+            }
+            return
+        }
+
+        // 3. Otherwise, switch to the conflict file and build its display model
         for (let i = 0; i < conflicts.length; ++i) {
             if (conflicts[i].path === path) {
                 selectedConflict = conflicts[i]
