@@ -444,24 +444,35 @@ Window {
             return
         }
 
-        conflicts = res.data || []
+        let rawConflicts    = res.data || []
+        let newStaged       = []
+        let stagedPaths     = ({})
 
-        if (conflicts.length == 0){
+        let statusRes = statusController.status()
+        if (statusRes.success) {
+            for (let file of statusRes.data) {
+                if (file.isStaged || file.isUntracked) {
+                    stagedPaths[file.path] = true
+                    newStaged.push({ path: file.path, status: labelFor(file) })
+                }
+            }
+        }
+
+        conflicts   = rawConflicts.filter(c => c && c.path && !stagedPaths[c.path])
+        stagedFiles = newStaged
+
+        if (conflicts.length === 0) {
             selectedConflict = null
             selectedPath = ""
             displayModel.clear()
             return
         }
 
-        if (keepSelection && selectedPath) {
-            let exists = conflicts.some(c => c.path === selectedPath)
-            if (exists)
-                selectFile(selectedPath, true)
-            else
-                selectFile(conflicts[0].path)
-        } else {
-            selectFile(conflicts[0].path)
-        }
+        let target = (keepSelection && selectedPath && conflicts.some(c => c.path === selectedPath))
+                     ? selectedPath
+                     : conflicts[0].path
+        selectFile(target, true)
+    }
 
     function labelFor(file) {
         return file.indexStatus || "M"
@@ -609,10 +620,7 @@ Window {
 
         notificationController.success("File staged", "Conflict", 2500)
 
-        let alreadyStaged = root.stagedFiles.some(f => f.path === path)
-        if (!alreadyStaged) {
-            root.stagedFiles.push({ path: path, status: "M" })
-        }
+        loadConflicts(true)
     }
 
     function continueOperation() {
