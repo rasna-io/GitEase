@@ -46,7 +46,8 @@ Rectangle {
 
             // Conflict Changes header
             Text {
-                visible: conflictFiles.length > 0
+                // visible: conflictFiles.length > 0
+                visible: true
                 text: "Conflict Changes"
                 color: Style.colors.secondaryText
                 font.family: Style.fontTypes.roboto
@@ -64,7 +65,8 @@ Rectangle {
 
             // Staged Changes header
             Text {
-                visible: stagedFiles.length > 0
+                // visible: stagedFiles.length > 0
+                visible: true
                 text: "Staged Changes"
                 color: Style.colors.secondaryText
                 font.family: Style.fontTypes.roboto
@@ -89,7 +91,13 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 28
             radius: 3
-            property bool isResolved: modelData && (!modelData.blocks || modelData.blocks.length === 0)
+
+            property bool isResolved: {
+                if (modelData && modelData.blocks !== undefined)
+                    return modelData.blocks.length === 0
+
+                return true
+            }
             property bool isStaged  : root.stagedFiles && root.stagedFiles.some(f => f.path === modelData.path)
             property bool isCurrent : root.currentPath === modelData.path
 
@@ -102,7 +110,7 @@ Rectangle {
             TapHandler {
                         gesturePolicy: TapHandler.ReleaseWithinBounds
                         onTapped: root.fileSelected(modelData.path)
-            }
+                    }
 
             RowLayout {
                 anchors.fill: parent
@@ -118,27 +126,28 @@ Rectangle {
                     horizontalAlignment: Text.AlignHCenter
 
                     text: {
-                        if (modelData.blocks && modelData.blocks.length > 0)
-                            return "!"
-
-                        return "M"
+                        // Determine status based on data source
+                        if (modelData.blocks !== undefined) {
+                            // It's a conflict file
+                            return modelData.blocks.length > 0 ? "!" : "M"
+                        } else {
+                            // It's a staged file (from stagedFiles)
+                            return modelData.status || "M"
+                        }
                     }
-
                     color: {
-                        if (modelData.blocks && modelData.blocks.length > 0)
+                        if (modelData.blocks !== undefined && modelData.blocks.length > 0)
                             return Style.colors.error
-
                         return Style.colors.mutedText
                     }
 
                     ToolTip {
                         text: {
-                            if (modelData.blocks && modelData.blocks.length > 0)
+                            if (modelData.blocks !== undefined && modelData.blocks.length > 0)
                                 return "Contains unresolved conflicts"
-
                             return "Index Modified"
                         }
-                        visible: parent.hovered
+                        visible: hoverHandler.hovered
                         delay: 500
                     }
                 }
@@ -152,20 +161,15 @@ Rectangle {
                 }
 
                 ActionIconButton {
-                    visible: {
-                        if (isStaged)
-                            return false
-
-                        if (isResolved)
-                            return true
-
-                        return delegateItem.hovered
-                    }
                     property bool canSave: isResolved && !isStaged
+                    visible: !isStaged
+                    opacity: isResolved ? 1.0 : (hoverHandler.hovered ? 0.5 : 0.0)
                     iconText: Style.icons.plus
                     textColor: Style.colors.mutedText
-                    opacity: canSave ? 1.0 : 0.5
                     tooltip: canSave ? "Save and Stage" : "Resolve conflicts to stage"
+
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+
                     onClicked: {
                         if (canSave) {
                             root.fileSelected(modelData.path)
@@ -173,11 +177,6 @@ Rectangle {
                         }
                     }
                 }
-            }
-
-            TapHandler {
-                onTapped: root.fileSelected(modelData.path)
-                gesturePolicy: TapHandler.ReleaseWithinBounds
             }
         }
     }
