@@ -146,6 +146,7 @@ Item {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: 8
                         text: "Import will extract and restore the project structure, branches, and commit history from the selected archive."
                         wrapMode: Text.WordWrap
                         font.pixelSize: 11
