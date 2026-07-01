@@ -388,7 +388,7 @@ DetachablePanel {
 
         Item {
 
-            Label {
+            ScrollingText {
                 text: root.selectedFile
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: 10
