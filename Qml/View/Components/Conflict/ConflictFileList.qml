@@ -96,11 +96,24 @@ Rectangle {
 
                 return true
             }
+
             property bool isStaged  : root.stagedFiles && root.stagedFiles.some(f => f.path === modelData.path)
             property bool isCurrent : root.currentPath === modelData.path
             property bool isHovered : hoverHandler.hovered
 
-            color: isCurrent ? Style.colors.hoverTitle : "transparent"
+            color: {
+                if (isCurrent)
+                    return Style.colors.accent
+
+                if (isHovered)
+                    return Style.colors.hoverTitle
+
+                return "transparent"
+            }
+
+            Behavior on color {
+                ColorAnimation { duration: 150 }
+            }
 
             HoverHandler {
                 id: hoverHandler
