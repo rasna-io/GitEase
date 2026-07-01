@@ -609,8 +609,9 @@ Window {
         d.message = "This file still contains unresolved conflict markers.\n" +
                     "Stage it anyway?"
 
-        d.saveTitle = "Stage Anyway"
-        d.saveDescription = "The modification will be saved"
+        d.saveTitle = "Save & Stage"
+        d.saveDescription = "Save the file with conflicts and stage it"
+        d.hasSave = true
 
         d.cancelTitle = "Cancel"
         d.cancelDescription = "Don't save The modification"
