@@ -98,6 +98,7 @@ Rectangle {
             }
             property bool isStaged  : root.stagedFiles && root.stagedFiles.some(f => f.path === modelData.path)
             property bool isCurrent : root.currentPath === modelData.path
+            property bool isHovered : hoverHandler.hovered
 
             color: isCurrent ? Style.colors.hoverTitle : "transparent"
 
