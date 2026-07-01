@@ -106,9 +106,9 @@ Rectangle {
             }
 
             TapHandler {
-                        gesturePolicy: TapHandler.ReleaseWithinBounds
-                        onTapped: root.fileSelected(modelData.path)
-                    }
+                gesturePolicy: TapHandler.ReleaseWithinBounds
+                onTapped: root.fileSelected(modelData.path)
+            }
 
             RowLayout {
                 anchors.fill: parent
