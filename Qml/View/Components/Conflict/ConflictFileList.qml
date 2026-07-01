@@ -137,8 +137,12 @@ Rectangle {
                     }
                     color: {
                         if (modelData.blocks !== undefined && modelData.blocks.length > 0)
-                            return Style.colors.error
-                        return Style.colors.mutedText
+                            return Style.colors.conflictStatusConflictColor
+
+                        if (modelData.status === "A")
+                            return Style.colors.conflictStatusAddedColor
+
+                        return Style.colors.conflictStatusModifiedColor
                     }
 
                     ToolTip {
