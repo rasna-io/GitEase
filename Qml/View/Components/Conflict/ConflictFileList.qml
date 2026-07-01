@@ -117,6 +117,32 @@ Rectangle {
                 anchors.rightMargin: 8
                 spacing: 8
 
+                ScrollingText {
+                    Layout.fillWidth: true
+                    text: modelData.path || ""
+                    font.family: Style.fontTypes.roboto
+                    color: Style.colors.lineNumberColor
+                    font.pixelSize: 13
+                }
+
+                ActionIconButton {
+                    property bool canSave: isResolved && !isStaged
+                    visible: !isStaged && hoverHandler.hovered
+                    opacity: 1.0
+                    iconText: Style.icons.plus
+                    textColor: Style.colors.mutedText
+                    tooltip: canSave ? "Save and Stage" : "Resolve conflicts to stage"
+
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                    onClicked: {
+                        if (canSave) {
+                            root.fileSelected(modelData.path)
+                            root.stageRequested(modelData.path)
+                        }
+                    }
+                }
+
                 Text {
                     font.family: Style.fontTypes.roboto
                     font.pixelSize: 11
@@ -142,32 +168,6 @@ Rectangle {
                             return Style.colors.conflictStatusAddedColor
 
                         return Style.colors.conflictStatusModifiedColor
-                    }
-                }
-
-                ScrollingText {
-                    Layout.fillWidth: true
-                    text: modelData.path || ""
-                    font.family: Style.fontTypes.roboto
-                    color: Style.colors.lineNumberColor
-                    font.pixelSize: 13
-                }
-
-                ActionIconButton {
-                    property bool canSave: isResolved && !isStaged
-                    visible: !isStaged && hoverHandler.hovered
-                    opacity: 1.0
-                    iconText: Style.icons.plus
-                    textColor: Style.colors.mutedText
-                    tooltip: canSave ? "Save and Stage" : "Resolve conflicts to stage"
-
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
-
-                    onClicked: {
-                        if (canSave) {
-                            root.fileSelected(modelData.path)
-                            root.stageRequested(modelData.path)
-                        }
                     }
                 }
             }
