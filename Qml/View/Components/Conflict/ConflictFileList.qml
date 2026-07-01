@@ -46,8 +46,7 @@ Rectangle {
 
             // Conflict Changes header
             Text {
-                // visible: conflictFiles.length > 0
-                visible: true
+                visible: conflictFiles.length > 0
                 text: "Conflict Changes"
                 color: Style.colors.secondaryText
                 font.family: Style.fontTypes.roboto
@@ -65,8 +64,7 @@ Rectangle {
 
             // Staged Changes header
             Text {
-                // visible: stagedFiles.length > 0
-                visible: true
+                visible: stagedFiles.length > 0
                 text: "Staged Changes"
                 color: Style.colors.secondaryText
                 font.family: Style.fontTypes.roboto
