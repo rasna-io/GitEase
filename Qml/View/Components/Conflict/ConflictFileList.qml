@@ -164,7 +164,7 @@ Rectangle {
 
                 ActionIconButton {
                     property bool canSave: isResolved && !isStaged
-                    visible: !isStaged
+                    visible: !isStaged && hoverHandler.hovered
                     opacity: 1.0
                     iconText: Style.icons.plus
                     textColor: Style.colors.mutedText
