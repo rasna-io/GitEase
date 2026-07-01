@@ -142,16 +142,6 @@ Rectangle {
 
                         return Style.colors.conflictStatusModifiedColor
                     }
-
-                    ToolTip {
-                        text: {
-                            if (modelData.blocks !== undefined && modelData.blocks.length > 0)
-                                return "Contains unresolved conflicts"
-                            return "Index Modified"
-                        }
-                        visible: hoverHandler.hovered
-                        delay: 500
-                    }
                 }
 
                 ScrollingText {
