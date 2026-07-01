@@ -145,6 +145,9 @@ QtObject {
         lineNumberColor:        "#a0a0a0"
 
         conflictMarker:         "#FF6B6B"
+        conflictStatusConflictColor : "#FF6B6B"
+        conflictStatusModifiedColor : "#FFD966"
+        conflictStatusAddedColor     : "#4DB85D"
 
         // Interactive rebase status colors
         property color rebaseStatusPending:    secondaryText

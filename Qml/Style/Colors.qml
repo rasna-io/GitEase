@@ -140,6 +140,10 @@ QtObject{
     property color lineNumberColor:         "#808080"
     property color conflictMarker:          "#E05555"
 
+    property color conflictStatusConflictColor  :  "#E05555"
+    property color conflictStatusModifiedColor  :  "#FFA500"
+    property color conflictStatusAddedColor     :     "#3BDB6A"
+
     // Interactive rebase status colors
     property color rebaseStatusPending:    mutedText
     property color rebaseStatusInProgress: "#E67E00"       // warm orange
