@@ -167,7 +167,7 @@ Rectangle {
                 ActionIconButton {
                     property bool canSave: isResolved && !isStaged
                     visible: !isStaged
-                    opacity: isResolved ? 1.0 : (hoverHandler.hovered ? 0.5 : 0.0)
+                    opacity: 1.0
                     iconText: Style.icons.plus
                     textColor: Style.colors.mutedText
                     tooltip: canSave ? "Save and Stage" : "Resolve conflicts to stage"
