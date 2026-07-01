@@ -145,20 +145,17 @@ Rectangle {
                 }
 
                 ActionIconButton {
-                    property bool canSave: isResolved && !isStaged
                     visible: true
                     opacity: !isStaged && isHovered
                     iconText: Style.icons.plus
                     textColor: Style.colors.mutedText
-                    tooltip: canSave ? "Save and Stage" : "Resolve conflicts to stage"
+                    tooltip: "Stage Changes"
 
                     Behavior on opacity { NumberAnimation { duration: 150 } }
 
                     onClicked: {
-                        if (canSave) {
-                            root.fileSelected(modelData.path)
-                            root.stageRequested(modelData.path)
-                        }
+                        root.fileSelected(modelData.path)
+                        root.stageRequested(modelData.path)
                     }
                 }
 
