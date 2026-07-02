@@ -21,6 +21,10 @@ Rectangle {
     property int    maxLines            : 10
     property real   lineHeightMultiplier: 1.2
 
+    readonly property real  effectiveLineHeight : commitTextArea.font.pixelSize * lineHeightMultiplier
+    readonly property int   counterHeight       : 24
+    readonly property int   verticalPadding     : 24
+
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
