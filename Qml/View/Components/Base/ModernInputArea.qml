@@ -32,6 +32,12 @@ Rectangle {
     border.width: 1
     border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
 
+    implicitHeight: {
+        var lines = commitTextArea.lineCount
+        var desiredLines = Math.min(maxLines, Math.max(minLines, lines))
+        return desiredLines * effectiveLineHeight + verticalPadding + counterHeight
+    }
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
