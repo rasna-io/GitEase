@@ -45,6 +45,7 @@ Rectangle {
         spacing: 0
 
         ScrollView {
+            id: scrollView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
