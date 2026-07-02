@@ -19,7 +19,7 @@ Rectangle {
 
     property int    minLines            : 3
     property int    maxLines            : 10
-
+    property real   lineHeightMultiplier: 1.2
 
     /* Object Properties
      * ****************************************************************************************/
