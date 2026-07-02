@@ -51,6 +51,7 @@ Rectangle {
 
             TextArea {
                 id: commitTextArea
+                width: parent.width
                 placeholderTextColor: Style.colors.placeholderText
                 color: Style.colors.foreground
                 font.family: Style.fontTypes.roboto
