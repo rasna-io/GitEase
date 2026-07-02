@@ -17,6 +17,10 @@ Rectangle {
     property alias text:        commitTextArea.text
     property alias placeholder: commitTextArea.placeholderText
 
+    property int    minLines            : 3
+    property int    maxLines            : 10
+
+
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
