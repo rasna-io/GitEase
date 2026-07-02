@@ -59,6 +59,7 @@ Rectangle {
                 leftPadding: 12;
                 topPadding: 12;
                 rightPadding: 12
+                bottomPadding: 12
                 selectByMouse: true
                 background: null
                 selectionColor: Style.colors.accent
