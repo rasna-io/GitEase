@@ -292,11 +292,13 @@ Item {
                 Rectangle {
                     id: commitPanel
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 140
+                    Layout.preferredHeight: commitColumn.implicitHeight + 24
+                    Layout.maximumHeight: 300
                     color: Style.colors.secondaryBackground
                     radius: 2
 
                     ColumnLayout {
+                        id: commitColumn
                         anchors.fill: parent
                         anchors.margins: 12
                         spacing: 10
@@ -335,7 +337,6 @@ Item {
                             id: commitTextArea
 
                             Layout.fillWidth: true
-                            Layout.fillHeight: true
 
                             placeholder: "What did you change?..."
                         }
