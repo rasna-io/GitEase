@@ -132,7 +132,7 @@ Rectangle {
 
                 // Summary text
                 Label {
-                    text: commitData ? (commitData.summary || "") : ""
+                    text: (commitData && commitData.summary) ? commitData.summary + (isHead ? "  ～" : "") : ""
                     color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
                     font.pixelSize: 10

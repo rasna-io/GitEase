@@ -153,11 +153,6 @@ QtObject {
         notificationController: root.notificationController
     }
 
-    property ResetController resetController: ResetController {
-        onGitCommandGenerated: function(command){
-            activityController.addActivity(command)
-        }
-    }
 
     property UiSessionPopups      popups
 }
