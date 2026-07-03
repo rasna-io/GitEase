@@ -129,6 +129,8 @@ Window {
     Component.onCompleted: {
         windowController.window = root
         windowController.setMinimumSize(width, height)
+
+        markersUpdateTimer.start()
     }
 
     ListModel { id: displayModel }
@@ -266,15 +268,59 @@ Window {
                         cacheBuffer: 5000
                         reuseItems: true
                         anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
-                        ScrollBar.vertical: ScrollBar { active: true }
+                        ScrollBar.vertical: ScrollBar {
+                            id: vScrollBar
+                            active: true
+                        }
+
+                        Item {
+                            id: conflictMarkerOverlay
+                            parent: conflictListView
+                            x: vScrollBar.x
+                            y: vScrollBar.y
+                            width: vScrollBar.width
+                            height: vScrollBar.height
+                            z: 100
+                            clip: true
+
+                            Repeater {
+                                model: conflictMarkersModel
+                                delegate: Rectangle {
+                                    x: 0
+                                    y: model.y * conflictMarkerOverlay.height
+                                    width: conflictMarkerOverlay.width
+                                    height: Math.max(2, model.height * conflictMarkerOverlay.height)
+                                    color: Style.colors.conflictMarker
+                                    opacity: 0.85
+                                }
+                            }
+
+                            Timer {
+                                id: markersUpdateTimer
+                                interval: 50
+                                repeat: false
+                                onTriggered: root.updateConflictMarkers()
+                            }
+
+                            onHeightChanged: {
+                                if (height > 0)
+                                    markersUpdateTimer.restart()
+                            }
+                        }
 
                         delegate: ConflictEditorDelegate {
                             width: conflictListView.width
                             horizontalOffset: conflictListView.horizontalScrollOffset
                             isCurrentItem: ListView.isCurrentItem
 
-                            onSplitRequested        : (cursorPos)           => ConflictUtils.splitLine(displayModel, index, cursorPos, conflictListView)
-                            onMergeUpRequested      : ()                    => ConflictUtils.mergeLineUp(displayModel, index, conflictListView)
+                            onSplitRequested: (cursorPos) => {
+                                ConflictUtils.splitLine(displayModel, index, cursorPos, conflictListView)
+                                root.updateConflictMarkers()
+                            }
+                            onMergeUpRequested: () => {
+                                ConflictUtils.mergeLineUp(displayModel, index, conflictListView)
+                                root.updateConflictMarkers()
+                            }
                             onAcceptBlockRequested  : (blockIndex, mode)    => root.acceptBlock(blockIndex, mode)
                             onMoveFocusUp           : conflictListView.currentIndex = Math.max(0, index - 1)
                             onMoveFocusDown         : conflictListView.currentIndex = Math.min(displayModel.count - 1, index + 1)
@@ -380,6 +426,8 @@ Window {
         ConflictConfirmationDialog { }
     }
 
+    ListModel { id: conflictMarkersModel }
+
     /* Functions
      * ****************************************************************************************/
 
@@ -452,6 +500,10 @@ Window {
                 break
             }
         }
+
+        Qt.callLater(function() {
+            if (conflictMarkerOverlay) root.updateConflictMarkers();
+        });
     }
 
     function acceptBlock(blockIndex, mode) {
@@ -688,5 +740,32 @@ Window {
             notificationController.success("All modifications saved locally", "Save", 2500)
 
         root.close()
+    }
+
+    function updateConflictMarkers() {
+        conflictMarkersModel.clear()
+
+        var totalRows = displayModel.count
+        if (totalRows === 0 || conflictMarkerOverlay.height <= 0)
+            return
+
+        var blocks  = []
+        var stack   = []
+        for (var i = 0; i < displayModel.count; i++) {
+            var row = displayModel.get(i)
+
+            if (row.role === "marker-start") {
+                stack.push(i)
+            } else if (row.role === "marker-end" && stack.length > 0) {
+                var startIdx = stack.pop()
+                blocks.push({ startIdx: startIdx, endIdx: i })
+            }
+        }
+
+        for (var b of blocks) {
+            var yNorm = b.startIdx / totalRows
+            var hNorm = (b.endIdx - b.startIdx + 1) / totalRows
+            conflictMarkersModel.append({ y: yNorm, height: hNorm })
+        }
     }
 }
