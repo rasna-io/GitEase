@@ -153,6 +153,7 @@ QtObject {
         notificationController: root.notificationController
     }
 
+    property NetworkController networkController: NetworkController {}
 
     property UiSessionPopups      popups
 }
