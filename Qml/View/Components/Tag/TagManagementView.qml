@@ -203,12 +203,12 @@ UtilitiesCard {
 
         function onPushTagFinished(result) {
             if (result.success)
-            {
                 if (root.notificationController) root.notificationController.success("Tag created and pushed", "Success", 3000)
-                root.update()
-            }
+
             else
                 if (root.notificationController) root.notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+
+            root.update()
         }
 
         function onPushDeleteTagFinished(result, tagName) {
