@@ -216,7 +216,7 @@ UpdateManager {
         var updateData = payload?.data ?? payload
 
         if (payload?.success === false) {
-            var serverMessage = payload?.message ?? "The update server returned an unsuccessful response."
+            var serverMessage = payload?.error ?? "The update server returned an unsuccessful response."
             console.warn("[AppUpdater] Application update request failed:", requestType, serverMessage)
             root.handleUpdateRequestFailed(requestType, -1, serverMessage)
             return

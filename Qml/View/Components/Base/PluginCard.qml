@@ -11,12 +11,16 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var plugin: null
-
-    property bool   hovered: false
+    property var  plugin:     null
+    property bool hovered:    false
+    property bool pluginBusy: root.plugin?.busy ?? false
 
     /* Signals
      * ****************************************************************************************/
+    signal installClicked  (string pluginId)
+    signal uninstallClicked(string pluginId)
+    signal updateClicked   (string pluginId)
+    signal enableToggled   (string pluginId, bool enabled)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -66,11 +70,29 @@ Rectangle {
                     width: 1
                     color: Style.colors.primaryBorder
                 }
-                Image {
+                Item {
                     anchors.centerIn: parent
                     width: 50
                     height: 50
-                    source: root.plugin.iconUrl
+
+                    Image {
+                        id: pluginIconImage
+                        anchors.fill: parent
+                        source: root.plugin.iconUrl || ""
+                        fillMode: Image.PreserveAspectFit
+                        visible: status === Image.Ready
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        visible: pluginIconImage.status !== Image.Ready
+                        text: Style.icons.plugins
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: 28
+                        color: Style.colors.mutedText
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
             }
 
@@ -104,7 +126,7 @@ Rectangle {
                 checked: root.plugin.isEnabled
 
                 onToggled: {
-                    // TODO
+                    root.enableToggled(root.plugin.pluginId, checked)
                 }
             }
         }
@@ -148,11 +170,19 @@ Rectangle {
                 Layout.fillWidth: true
             }
 
+            BusyIndicator {
+                visible: root.pluginBusy
+                running: root.pluginBusy
+                Layout.preferredWidth: 32
+                Layout.preferredHeight: 32
+                Material.accent: Style.colors.accent
+            }
+
             // Install/Unistall
             Button {
                 Layout.preferredWidth: 90
                 implicitHeight: 40
-                enabled: root.plugin.isInstalled ? true : root.plugin.isCompatible
+                enabled: !root.pluginBusy && (root.plugin.isInstalled ? true : root.plugin.isCompatible)
 
                 background: Rectangle {
                     radius: 5
@@ -188,7 +218,10 @@ Rectangle {
                 }
 
                 onClicked: {
-                    // TODO
+                    if (root.plugin.isInstalled)
+                        root.uninstallClicked(root.plugin.pluginId)
+                    else
+                        root.installClicked(root.plugin.pluginId)
                 }
             }
 
@@ -196,7 +229,8 @@ Rectangle {
             Button {
                 Layout.preferredWidth: 90
                 implicitHeight: 40
-                enabled: root.plugin.isInstalled && root.plugin.updateAvailable
+                visible: root.plugin.updateAvailable
+                enabled: !root.pluginBusy
 
                 background: Rectangle {
                     radius: 5
@@ -232,7 +266,7 @@ Rectangle {
                 }
 
                 onClicked: {
-                    // TODO
+                    root.updateClicked(root.plugin.pluginId)
                 }
             }
         }

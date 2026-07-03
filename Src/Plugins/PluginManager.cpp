@@ -7,7 +7,11 @@
 #include "IDiffPlugin.h"
 #include "IServicePlugin.h"
 
+#include <archive.h>
+#include <archive_entry.h>
+
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
@@ -16,6 +20,7 @@
 #include <QQmlEngine>
 #include <QStandardPaths>
 #include <QCoreApplication>
+#include <QCryptographicHash>
 
 // ── Construction / destruction ───────────────────────────────────────────────
 
@@ -133,44 +138,7 @@ bool PluginManager::loadPlugin(const QString& pluginDir)
         return false;
     }
 
-    if (!info.enabled) {
-        m_infos.append(info);
-        emit pluginsChanged();
-        return false;
-    }
-
-    bool ok = true;
-    if (info.hasCppEntry())
-        ok = loadCppPlugin(info);
-
-    if (info.hasQmlEntry()) {
-        if (auto* engine = m_context->qmlEngine())
-            engine->addImportPath(info.pluginDir);
-    }
-
-    // QML-only dock: emit registration directly from the manifest
-    if (!info.hasCppEntry() && info.hasQmlEntry()) {
-        info.loaded = true;
-        if (info.capabilities.contains(QStringLiteral("dock"))) {
-            emit dockRegistered(info.id,
-                                QUrl::fromLocalFile(
-                                    QDir(info.pluginDir).filePath(info.qmlEntry)),
-                                info.name,
-                                {});
-        }
-        m_infos.append(info);
-        emit pluginLoaded(info.id);
-        emit pluginsChanged();
-        return true;
-    }
-
-    if (ok) {
-        info.loaded = true;
-        emit pluginLoaded(info.id);
-    } else {
-        info.errorMessage = QStringLiteral("Failed to load C++ library");
-    }
-
+    const bool ok = info.enabled ? activatePlugin(info) : false;
     m_infos.append(info);
     emit pluginsChanged();
     return ok;
@@ -258,16 +226,108 @@ void PluginManager::setCurrentBranch(const QString& branch)
 
 // ── Management ───────────────────────────────────────────────────────────────
 
+bool PluginManager::activatePlugin(PluginInfo& info)
+{
+    bool ok = true;
+
+    if (info.hasCppEntry())
+        ok = loadCppPlugin(info);
+
+    if (info.hasQmlEntry()) {
+        if (auto* engine = m_context->qmlEngine())
+            engine->addImportPath(info.pluginDir);
+    }
+
+    // QML-only: register dock directly from the manifest
+    if (!info.hasCppEntry() && info.hasQmlEntry()) {
+        info.loaded = true;
+        if (info.capabilities.contains(QStringLiteral("dock"))) {
+            emit dockRegistered(info.id,
+                                QUrl::fromLocalFile(
+                                    QDir(info.pluginDir).filePath(info.qmlEntry)),
+                                info.name,
+                                {});
+        }
+        emit pluginLoaded(info.id);
+        return true;
+    }
+
+    if (ok) {
+        info.loaded = true;
+        emit pluginLoaded(info.id);
+    } else {
+        info.loaded = false;
+        info.errorMessage = QStringLiteral("Failed to load C++ library");
+    }
+
+    return ok;
+}
+
+void PluginManager::deactivatePlugin(const QString& id)
+{
+    // C++ runtime
+    if (m_plugins.contains(id)) {
+        m_plugins[id]->shutdown();
+        m_loaders[id]->unload();
+        delete m_loaders.take(id);
+        m_plugins.remove(id);
+    }
+
+    // Dock registrations
+    for (int i = m_docks.size() - 1; i >= 0; --i) {
+        if (m_docks.at(i).toMap().value(QStringLiteral("id")).toString() == id)
+            m_docks.removeAt(i);
+    }
+
+    // Diff viewer / colorizer extension mappings — matched by plugin dir
+    const QString pluginDir = [&]() -> QString {
+        for (const auto& info : std::as_const(m_infos))
+            if (info.id == id) return info.pluginDir;
+        return {};
+    }();
+
+    if (!pluginDir.isEmpty()) {
+        for (auto it = m_diffPlugins.begin(); it != m_diffPlugins.end(); )
+            it = it.value().toLocalFile().startsWith(pluginDir) ? m_diffPlugins.erase(it) : ++it;
+        for (auto it = m_colorizers.begin(); it != m_colorizers.end(); )
+            it = it.value().toLocalFile().startsWith(pluginDir) ? m_colorizers.erase(it) : ++it;
+    }
+}
+
+void PluginManager::tearDownPlugin(const QString& id)
+{
+    deactivatePlugin(id);
+    m_infos.removeIf([&](const PluginInfo& info) { return info.id == id; });
+}
+
 bool PluginManager::enablePlugin(const QString& id, bool enabled)
 {
     for (auto& info : m_infos) {
-        if (info.id != id) continue;
+        if (info.id != id)
+            continue;
+
         info.enabled = enabled;
-        if (!enabled && m_plugins.contains(id)) {
-            m_plugins[id]->shutdown();
-            m_loaders[id]->unload();
-            delete m_loaders.take(id);
-            m_plugins.remove(id);
+
+        const QString manifestPath = QDir(info.pluginDir).filePath(QStringLiteral("plugin.json"));
+        QFile mf(manifestPath);
+
+        if (mf.open(QIODevice::ReadOnly)) {
+            auto doc = QJsonDocument::fromJson(mf.readAll());
+            mf.close();
+
+            if (doc.isObject()) {
+                QJsonObject obj = doc.object();
+                obj[QStringLiteral("enabled")] = enabled;
+
+                if (mf.open(QIODevice::WriteOnly | QIODevice::Truncate))
+                    mf.write(QJsonDocument(obj).toJson());
+            }
+        }
+
+        if (enabled) {
+            activatePlugin(info);
+        } else {
+            deactivatePlugin(id);
             info.loaded = false;
         }
         emit pluginsChanged();
@@ -317,6 +377,177 @@ QUrl PluginManager::diffPluginUrlFor(const QString& extension) const
 QUrl PluginManager::colorizerUrlFor(const QString& extension) const
 {
     return m_colorizers.value(extension.toLower());
+}
+
+bool PluginManager::installPluginFromBase64Zip(const QString& pluginId, const QString& base64Data,
+                                               const QString& expectedMd5)
+{
+    const QByteArray archiveData = QByteArray::fromBase64(base64Data.toLatin1());
+    if (archiveData.isEmpty()) {
+        emit pluginInstallFailed(pluginId, QStringLiteral("Empty download data"));
+        return false;
+    }
+
+    // Verify MD5 checksum when the server provided one
+    if (!expectedMd5.isEmpty()) {
+        const QString actualMd5 = QCryptographicHash::hash(archiveData, QCryptographicHash::Md5).toHex();
+        if (actualMd5 != expectedMd5.trimmed().toLower()) {
+            emit pluginInstallFailed(pluginId,
+                QStringLiteral("Checksum mismatch — file may be corrupted or tampered "
+                               "(expected: %1, got: %2)").arg(expectedMd5, actualMd5));
+            return false;
+        }
+    }
+
+    const QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    const QString targetDir = base + QStringLiteral("/plugins/") + pluginId;
+
+    if (!QDir().mkpath(targetDir)) {
+        emit pluginInstallFailed(pluginId, QStringLiteral("Cannot create plugin directory"));
+        return false;
+    }
+
+    // Write archive bytes to a temp file so libarchive can use open_filename
+    const QString tempPath = QDir::tempPath()
+                             + QStringLiteral("/gitease_plugin_%1.zip").arg(pluginId);
+    {
+        QFile tempFile(tempPath);
+        if (!tempFile.open(QIODevice::WriteOnly)) {
+            emit pluginInstallFailed(pluginId, QStringLiteral("Cannot create temp file"));
+            return false;
+        }
+        tempFile.write(archiveData);
+    }
+
+    // Tear down any existing version — cleans all member variables, no intermediate signal.
+    tearDownPlugin(pluginId);
+
+    // ── libarchive extraction ─────────────────────────────────────────────────
+    struct archive *reader = archive_read_new();
+    struct archive *writer = archive_write_disk_new();
+    struct archive_entry *entry  = nullptr;
+
+    archive_read_support_format_all(reader);
+    archive_read_support_filter_all(reader);
+
+    archive_write_disk_set_options(writer,
+        ARCHIVE_EXTRACT_TIME |
+        ARCHIVE_EXTRACT_PERM |
+        ARCHIVE_EXTRACT_SECURE_NODOTDOT);
+
+    int r = archive_read_open_filename(reader, tempPath.toUtf8().constData(), static_cast<size_t>(archiveData.size()));
+    if (r != ARCHIVE_OK) {
+        const QString err = QString::fromUtf8(archive_error_string(reader));
+        archive_read_free(reader);
+        archive_write_free(writer);
+        QFile::remove(tempPath);
+        emit pluginInstallFailed(pluginId, QStringLiteral("Cannot open archive: ") + err);
+        return false;
+    }
+
+    bool extractOk = true;
+
+    while ((r = archive_read_next_header(reader, &entry)) == ARCHIVE_OK) {
+        // Rebase the entry path under the plugin's target directory
+        const QString entryName = QString::fromUtf8(archive_entry_pathname(entry));
+        const QString absolutePath = targetDir + QChar('/') + entryName;
+        archive_entry_set_pathname(entry, absolutePath.toUtf8().constData());
+
+        int hr = archive_write_header(writer, entry);
+        if (hr == ARCHIVE_FATAL) {
+            qWarning() << "Fatal error writing header for:" << entryName
+                       << QString::fromUtf8(archive_error_string(writer));
+            extractOk = false;
+            break;
+        }
+        if (hr < ARCHIVE_OK)
+            qWarning() << "Warning writing header for:" << entryName
+                       << QString::fromUtf8(archive_error_string(writer));
+
+        if (archive_entry_size(entry) > 0) {
+            const void *buf;
+            size_t bufSize;
+            la_int64_t offset;
+            int dataResult;
+
+            while ((dataResult = archive_read_data_block(reader, &buf, &bufSize, &offset)) == ARCHIVE_OK) {
+                if (archive_write_data_block(writer, buf, bufSize, offset) != ARCHIVE_OK) {
+                    qWarning() << "Failed to write data for:" << entryName
+                               << QString::fromUtf8(archive_error_string(writer));
+                    extractOk = false;
+                    break;
+                }
+            }
+
+            if (!extractOk)
+                break;
+
+            if (dataResult != ARCHIVE_EOF) {
+                qWarning() << "Unexpected end of data for:" << entryName;
+                extractOk = false;
+                break;
+            }
+
+        }
+
+        archive_write_finish_entry(writer);
+    }
+
+    if (r != ARCHIVE_EOF)
+        extractOk = false;
+
+    archive_read_free(reader);
+    archive_write_free(writer);
+    QFile::remove(tempPath);
+    // ── end extraction ────────────────────────────────────────────────────────
+
+    if (!extractOk) {
+        emit pluginInstallFailed(pluginId, QStringLiteral("Failed to extract plugin archive"));
+        return false;
+    }
+
+    // Some archives wrap files in a top-level subdirectory — find where plugin.json actually lives
+    QString actualPluginDir = targetDir;
+    if (!QFile::exists(targetDir + QStringLiteral("/plugin.json"))) {
+        QDirIterator it(targetDir, {QStringLiteral("plugin.json")},
+                        QDir::Files, QDirIterator::Subdirectories);
+        if (it.hasNext()) {
+            it.next();
+            actualPluginDir = QFileInfo(it.filePath()).absolutePath();
+        }
+    }
+
+    const bool ok = loadPlugin(actualPluginDir);
+    if (ok)
+        emit pluginInstalled(pluginId);
+    else
+        emit pluginInstallFailed(pluginId, QStringLiteral("Plugin extracted but failed to load"));
+    return ok;
+}
+
+bool PluginManager::removePlugin(const QString& id)
+{
+    QString pluginDir;
+    for (const auto& info : std::as_const(m_infos)) {
+        if (info.id == id) {
+            pluginDir = info.pluginDir;
+            break;
+        }
+    }
+
+    if (pluginDir.isEmpty())
+        return false;
+
+    // Tear down — cleans all member variables, no intermediate signal.
+    tearDownPlugin(id);
+
+    const bool ok = QDir(pluginDir).removeRecursively();
+    emit pluginsChanged();
+
+    if (ok)
+        emit pluginRemoved(id);
+
+    return ok;
 }
 
 template<typename T>

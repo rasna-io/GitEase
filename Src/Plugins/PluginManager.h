@@ -59,6 +59,9 @@ public:
     // ── Management ───────────────────────────────────────────────────────────
     Q_INVOKABLE bool enablePlugin(const QString& id, bool enabled);
     Q_INVOKABLE void unloadPlugin(const QString& id);
+    Q_INVOKABLE bool installPluginFromBase64Zip(const QString& pluginId, const QString& base64Data,
+                                                const QString& expectedMd5 = {});
+    Q_INVOKABLE bool removePlugin(const QString& id);
 
     // ── Diff plugin lookup (called from QML when file selection changes) ────────
     Q_INVOKABLE QUrl diffPluginUrlFor  (const QString& extension) const;
@@ -85,6 +88,9 @@ signals:
     void docksChanged     ();
     void pluginLoaded     (const QString& id);
     void pluginError      (const QString& id, const QString& error);
+    void pluginInstalled  (const QString& id);
+    void pluginRemoved    (const QString& id);
+    void pluginInstallFailed(const QString& id, const QString& error);
 
     // Forwarded from PluginContext — consumed by PluginController
     void notifyRequested  (const QString& message, const QString& type);
@@ -99,6 +105,9 @@ private:
     PluginInfo parseManifest(const QString& pluginDir);
     bool       loadCppPlugin(const PluginInfo& info);
     void       wireContext  ();
+    bool       activatePlugin(PluginInfo& info);
+    void       deactivatePlugin(const QString& id);
+    void       tearDownPlugin(const QString& id);
 
     PluginContext* m_context = nullptr;
 

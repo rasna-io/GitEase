@@ -16,6 +16,7 @@ set(MAIN_TARGET_URI ${MAIN_TARGET_NAME})
 set(THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/Ext" CACHE PATH "Path to third-party libraries")
 
 include(libgit.cmake)
+include(libarchive.cmake)
 
 # Flatten generation of all sub-dependent libraries
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Qml)
@@ -99,6 +100,7 @@ target_link_libraries(${MAIN_TARGET_NAME} PRIVATE
     Qt6::Gui
     Qt6::Concurrent
     Qt6::Svg
+    libarchive
     ${MAIN_TARGET_NAME}_Styleplugin
     ${MAIN_TARGET_NAME}_Style_Implplugin
     ${MAIN_TARGET_NAME}.Resourcesplugin
@@ -115,6 +117,14 @@ install(TARGETS ${MAIN_TARGET_NAME}
 
 if (WIN32)
     target_link_libraries(${MAIN_TARGET_NAME} PRIVATE dwmapi shell32 ole32)
+
+    # Copy archive.dll next to the executable after every build
+    add_custom_command(TARGET ${MAIN_TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${LIBARCHIVE_DLL}"
+            "$<TARGET_FILE_DIR:${MAIN_TARGET_NAME}>/archive.dll"
+        COMMENT "Copying archive.dll to output directory"
+    )
 endif()
 
 # Make Qt Creator aware of where the QML modules live
