@@ -37,6 +37,7 @@ Rectangle {
      * ****************************************************************************************/
     signal itemClicked(int mouseButton, int mouseModifiers, int _index, real mouseX, real mouseY)
     signal itemDoubleClicked(int mouseButton, int mouseModifiers, var _index)
+    signal resetHeadOne()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -68,6 +69,22 @@ Rectangle {
 
     /* Children
      * ****************************************************************************************/
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+        onClicked: (mouse) => {
+            var pos = parentRoot ? commitItem.mapToItem(parentRoot, mouse.x, mouse.y) : Qt.point(mouse.x, mouse.y)
+            commitItem.itemClicked(mouse.button, mouse.modifiers, index, pos.x, pos.y)
+        }
+
+        onDoubleClicked: (mouse) => {
+            commitItem.itemDoubleClicked(mouse.button, mouse.modifiers, index)
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
@@ -132,7 +149,7 @@ Rectangle {
 
                 // Summary text
                 Label {
-                    text: (commitData && commitData.summary) ? commitData.summary + (isHead ? "  ～" : "") : ""
+                    text: (commitData && commitData.summary) ? commitData.summary : ""
                     color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
                     font.pixelSize: 10
@@ -143,6 +160,37 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.leftMargin: 6
                     elide: Text.ElideRight
+                }
+
+                // Reset HEAD~1 button — only on HEAD commit
+                Rectangle {
+                    visible: commitItem.isHead
+                    Layout.preferredWidth: 22
+                    Layout.preferredHeight: 18
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.rightMargin: 6
+                    Layout.leftMargin: 4
+                    radius: 3
+                    color: resetBtnArea.containsMouse ? Qt.rgba(1,1,1,0.12) : Qt.rgba(1,1,1,0.06)
+                    border.color: Qt.rgba(1,1,1,0.15)
+                    z: 1
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "~"
+                        color: resetBtnArea.containsMouse ? Style.colors.foreground : Qt.rgba(1,1,1,0.55)
+                        font.pixelSize: 11
+                        font.family: Style.fontTypes.roboto
+                        font.weight: Font.Medium
+                    }
+
+                    MouseArea {
+                        id: resetBtnArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: commitItem.resetHeadOne()
+                    }
                 }
             }
         }
@@ -203,19 +251,4 @@ Rectangle {
         }
     }
 
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-        onClicked: (mouse) => {
-            var pos = parentRoot ? commitItem.mapToItem(parentRoot, mouse.x, mouse.y) : Qt.point(mouse.x, mouse.y)
-            commitItem.itemClicked(mouse.button, mouse.modifiers, index, pos.x, pos.y)
-        }
-
-        onDoubleClicked: (mouse) => {
-            commitItem.itemDoubleClicked(mouse.button, mouse.modifiers, index)
-        }
-    }
 }

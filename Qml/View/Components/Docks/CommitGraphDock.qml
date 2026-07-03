@@ -300,6 +300,10 @@ DetachablePanel {
                         onItemDoubleClicked: function(button, modifiers, idx) {
                             root.handleItemDoubleClick(modelData, button, modifiers, idx)
                         }
+
+                        onResetHeadOne: {
+                            root.executeResetHead("HEAD~1", ResetController.ResetMode.Mixed)
+                        }
                     }
                 }
             }
