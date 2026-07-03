@@ -46,14 +46,13 @@ Item {
 
     /* Lifecycle
      * ****************************************************************************************/
-    onPluginControllerChanged: {
-        if (!root.pluginController)
-            return
 
-        root.isSearchActive = false
-        root.currentSearch  = ""
-        root.currentMode    = ""
-        root.pluginController.fetchAvailablePlugins(1, "")
+
+    onPluginControllerChanged: refreshPlugins()
+
+    onVisibleChanged: {
+        if (visible)
+            refreshPlugins()
     }
 
     onPluginsDataChanged: {
@@ -180,6 +179,16 @@ Item {
 
         root.fetchingMore = true
         root.pluginController.fetchNextPage(root.pluginController.currentPage + 1, currentSearch)
+    }
+
+    function refreshPlugins() {
+        if (!root.pluginController)
+            return
+
+        root.isSearchActive = false
+        root.currentSearch  = ""
+        root.currentMode    = ""
+        root.pluginController.fetchAvailablePlugins(1, "")
     }
 
     // Refills pluginsModel from appModel.plugins, applying the active mode filter.

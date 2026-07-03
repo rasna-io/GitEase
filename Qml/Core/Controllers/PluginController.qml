@@ -35,7 +35,7 @@ QtObject {
     property var    pendingInstallHashes: ({})
 
 
-    readonly property string pluginApiBaseUrl:               "http://localhost:3001/api"
+    readonly property string pluginApiBaseUrl:               "https://gitease.app/api"
     readonly property string fetchPluginsRequestKey:         "plugin-fetch"
     readonly property string checkUpdatesRequestKey:         "plugin-check-updates"
     readonly property string getPluginDownloadKeyPrefix:     "plugin-get-download-"
@@ -166,6 +166,8 @@ QtObject {
      * ****************************************************************************************/
     // Fetches page 1 and REPLACES the current list (initial load or new search).
     function fetchAvailablePlugins(page, search) {
+        console.warn("[fetchAvailablePlugins]", page, search)
+
         if (!root.networkController)
             return
 
