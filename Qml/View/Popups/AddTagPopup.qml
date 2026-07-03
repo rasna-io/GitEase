@@ -93,7 +93,7 @@ IPopup {
             // Target Info (Visual hint of what we are tagging)
             Text {
                 text: root.targetHash !== "" ? "Target: " + root.targetHash.substring(0, 8) : "Target: HEAD"
-                color: "#949494"
+                color: Style.colors.mutedText
                 font.pixelSize: 11
                 Layout.fillWidth: true
             }
