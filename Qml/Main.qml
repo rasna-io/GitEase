@@ -62,7 +62,12 @@ ApplicationWindow {
         id: uiSession
         popups: uiSessionPopups
 
-        Component.onCompleted: uiSession.windowController.window = window
+        Component.onCompleted: {
+            uiSession.windowController.window = window
+            Qt.callLater(function() {
+                uiSession.updateController.checkForUpdatesOnStartup()
+            })
+        }
     }
 
     UiSessionPopups {

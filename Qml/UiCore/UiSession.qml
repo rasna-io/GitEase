@@ -155,6 +155,11 @@ QtObject {
 
     property NetworkController networkController: NetworkController {}
 
+    property UpdateController updateController: UpdateController {
+        networkController: root.networkController
+        notificationController: root.notificationController
+    }
+
     property UiSessionPopups      popups
 }
 
