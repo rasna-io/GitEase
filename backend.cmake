@@ -21,6 +21,7 @@ set(SOURCES_BACKEND
     Src/Git/GitMerge.cpp
     Src/Git/GitConflict.cpp
     Src/Git/GitTag.cpp
+    Src/Git/GitReset.cpp
 
     Src/Git/Models/Remote.cpp
     Src/Git/Models/Commit.cpp
@@ -62,6 +63,7 @@ set(HEADERS_BACKEND
     Src/Git/GitMerge.h
     Src/Git/GitConflict.h
     Src/Git/GitTag.h
+    Src/Git/GitReset.h
 
     Src/Git/Models/Remote.h
     Src/Git/Models/Commit.h

@@ -41,6 +41,7 @@ QtObject {
             conflictController.currentRepo = currentRepo
             tagController.currentRepo = currentRepo
             pluginController.currentRepo = currentRepo
+            resetController.currentRepo = currentRepo
         }
 
         onRepositorySelected: function(repo) {
@@ -136,6 +137,12 @@ QtObject {
         }
     }
 
+    property ResetController resetController: ResetController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
+
     property ConflictController conflictController: ConflictController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
@@ -145,6 +152,7 @@ QtObject {
     property PluginController pluginController: PluginController {
         notificationController: root.notificationController
     }
+
 
     property UiSessionPopups      popups
 }
