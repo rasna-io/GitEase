@@ -135,6 +135,8 @@ UtilitiesCard {
                 }
             }
 
+            onContentHeightChanged: root.pageScrollBlocking = internalListView.contentHeight > internalListView.height + 1
+
             // Empty State
             Label {
                 anchors.centerIn: parent

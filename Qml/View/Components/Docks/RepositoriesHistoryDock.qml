@@ -29,28 +29,26 @@ UtilitiesCard {
         anchors.fill: parent
         spacing: 8
 
-        ScrollView {
+        ListView {
+            id: scrollView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
 
-            ColumnLayout {
-                width: parent.width
-                spacing: 7
-
-                Repeater {
-                    model: root.repositoryController.appModel.repositoriesHistory
-                    delegate: RepositoryListItem {
-                        id: item
-                        name: modelData.split('/').pop() || modelData.split('\\').pop()
-                        path: modelData
-                        isExists: root.repositoryController.appModel.fileIO.isFileExist(modelData)
-                        onClicked: {
-                            root.repositoryController.openRepository(item.path)
-                        }
-                    }
+            model: root.repositoryController.appModel.repositoriesHistory
+            delegate: RepositoryListItem {
+                id: item
+                implicitWidth: parent.width
+                implicitHeight: 50
+                name: modelData.split('/').pop() || modelData.split('\\').pop()
+                path: modelData
+                isExists: root.repositoryController.appModel.fileIO.isFileExist(modelData)
+                onClicked: {
+                    root.repositoryController.openRepository(item.path)
                 }
             }
+
+            onContentHeightChanged: root.pageScrollBlocking = scrollView.contentHeight > scrollView.height + 1
         }
 
         Button {

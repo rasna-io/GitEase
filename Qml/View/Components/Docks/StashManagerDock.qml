@@ -182,6 +182,8 @@ UtilitiesCard {
                     }
                 }
             }
+
+            onContentHeightChanged: root.pageScrollBlocking = stashListView.contentHeight > stashListView.height + 1
         }
 
         Button {
