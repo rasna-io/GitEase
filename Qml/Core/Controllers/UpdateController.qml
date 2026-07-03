@@ -34,7 +34,7 @@ UpdateManager {
     property string downloadSize:           ""
     property string releaseNotes:           ""
 
-    readonly property string appUpdateApiBaseUrl:                    "https://api.your-awesome-app.com/v1"
+    readonly property string appUpdateApiBaseUrl:                    "https://gitease.app/api"
     readonly property string checkApplicationUpdateRequestKey:       "check-application-update"
     readonly property string getApplicationUpdateDownloadRequestKey: "get-application-update-download"
     readonly property string downloadApplicationInstallerRequestKey: "download-application-installer"
