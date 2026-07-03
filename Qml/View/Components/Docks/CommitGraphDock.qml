@@ -291,7 +291,7 @@ DetachablePanel {
                         isSelected  : root.isCommitSelected(modelData.hash)
                         isHead      : modelData ? modelData.hash === root.headHash  : false
                         isStash     : modelData ? modelData.isStash === true        : false
-                        parentRoot  : root
+                        parentRoot  : root.activeItem
 
                         onItemClicked: function(button, modifiers, idx, mouseX, mouseY) {
                             root.handleItemClick(modelData, button, modifiers, idx, mouseX, mouseY)
@@ -313,6 +313,7 @@ DetachablePanel {
     ContextMenu {
         id: contextMenu
         width: 250
+        parent : root.activeItem
     }
 
     Connections {
@@ -904,6 +905,7 @@ DetachablePanel {
         // Fall-through: both HTTP/HTTPS require auth popup
         case RepositoryController.GitProtocol.HTTPS:
         case RepositoryController.GitProtocol.HTTP:
+            userAuthenticationPopup.parent = Qt.binding(() => {return root.activeItem})
             userAuthenticationPopup.open()
             break
         default:
@@ -950,6 +952,7 @@ DetachablePanel {
 
         root.addBranchPopup.branchController    = root.branchController
         root.addBranchPopup.targetHash          = commitHash
+        root.addBranchPopup.parent              = Qt.binding(() => {return root.activeItem})
         root.addBranchPopup.open()
     }
 
@@ -959,6 +962,7 @@ DetachablePanel {
 
         root.addTagPopup.tagController  = root.tagController || null
         root.addTagPopup.targetHash     = commitHash
+        root.addTagPopup.parent         = Qt.binding(() => {return root.activeItem})
         root.addTagPopup.open()
     }
 
@@ -982,6 +986,7 @@ DetachablePanel {
             mergeMethodPopup.accepted.disconnect(arguments.callee)
         })
 
+        mergeMethodPopup.parent = Qt.binding(() => {return root.activeItem})
         mergeMethodPopup.open()
     }
 
@@ -1070,6 +1075,7 @@ DetachablePanel {
         } else {
             checkoutBranchSelector.commitHash = data.hash
             checkoutBranchSelector.branches = deduped
+            checkoutBranchSelector.parent = Qt.binding(() => {return root.activeItem})
             checkoutBranchSelector.open()
         }
     }

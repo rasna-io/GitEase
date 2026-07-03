@@ -31,7 +31,6 @@ IPopup {
 
     modal           : true
     closePolicy     : Popup.NoAutoClose
-    anchors.centerIn: Overlay.overlay
 
     onOpened:{
         textArea.text = commitController.getLastCommitMessage()

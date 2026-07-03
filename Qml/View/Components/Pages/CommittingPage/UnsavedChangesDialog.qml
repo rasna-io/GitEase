@@ -41,7 +41,6 @@ IPopup {
     focus: true
     width: 580
     height: 350
-    anchors.centerIn: Overlay.overlay
     closePolicy: Popup.NoAutoClose
 
     onClosed: destroy()

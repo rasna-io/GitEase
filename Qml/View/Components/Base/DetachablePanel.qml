@@ -30,6 +30,8 @@ Item {
     // Default content slot for panel contents
     default property alias content: contentRoot.data
 
+    readonly property Item activeItem: root.detached ? windowHost : inlineHost
+
     /* Internal State
      * ****************************************************************************************/
     property int lastWidth: 600
@@ -250,6 +252,7 @@ Item {
 
             Item {
                 id: windowHost
+                objectName: "windowHost"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
