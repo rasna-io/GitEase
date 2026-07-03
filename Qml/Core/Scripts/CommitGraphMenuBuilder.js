@@ -114,5 +114,17 @@ function buildMenu(state) {
         });
     }
 
+    // Reset
+    model.push({
+        text: "Reset onto" + state.shortHash,
+        icon: "reset",
+        action: "reset",
+        subItems: [
+            {text: "--Soft (Keep all changes)",  icon: "resetSoft",  action: "resetSoft",  payload: { hash: state.fullHash }},
+            {text: "--Mixed (reset only index)", icon: "resetMixed", action: "resetMixed", payload: { hash: state.fullHash }},
+            {text: "--Hard (discard and reset)", icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
+        ]
+    });
+
     return model;
 }
