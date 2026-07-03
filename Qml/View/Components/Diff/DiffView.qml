@@ -4,6 +4,7 @@ import QtQuick.Layouts
 
 import GitEase
 import GitEase_Style
+import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * DiffView
@@ -18,6 +19,8 @@ DetachablePanel {
     property var chunkData: []  // used when chunkMode = true
     property var originalFileBuffer: []
     property var editedFileBuffer: [] // holds the value of the edited file
+
+    property AppModel appModel: null
 
     /* Chunking configuration */
     property bool chunkMode     : false
@@ -66,6 +69,15 @@ DetachablePanel {
 
     ListModel {
         id: chunkModel
+    }
+
+    onAppModelChanged: {
+        if (!root.appModel)
+            return
+
+        let gs = appModel.appSettings.generalSettings
+        root.contextLines = gs.chunkContextLines
+        root.expandLines = gs.chunkExpandLines
     }
 
     onDiffDataChanged: {
@@ -144,6 +156,11 @@ DetachablePanel {
         } else {
             if(root.selectedFile.slice(-1) === "●") root.selectedFile = root.selectedFile.slice(0, -2);
         }
+    }
+
+    onContextLinesChanged: {
+        if (chunkMode)
+            buildChunkModel()
     }
 
     TextMetrics {
@@ -366,42 +383,108 @@ DetachablePanel {
 
     Component {
         id: headerMiddleComp
-        RowLayout {
-            CheckBox {
-                text: "Chunk View"
-                Layout.alignment: Qt.AlignLeft
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
-                Layout.preferredHeight: 35
-                Material.accent: Style.colors.accent
-                Material.foreground: Style.colors.foreground
-                checked: true
 
-                onClicked: {
-                    if(root.fileIsEdited) {
-                        var d = unsavedChangesDialogComp.createObject(root)
-                        d.title = "Unsaved Changes"
-                        d.message = "You have unsaved changes in: " + root.selectedFile
-                        d.saved.connect(() => {
-                                            root.saveFile()
-                                            root.chunkMode = checked
-                                        })
-                        d.aborted.connect(() => { root.chunkMode = checked })
-                        d.cancelled.connect(() => {
-                                                checked = false
-                                            })
-                        d.open()
-                    } else {
-                        root.chunkMode = checked
-                    }
-                }
-            }
+        Item {
 
             Label {
                 text: root.selectedFile
-                color: Style.colors.foreground
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
+                font.pixelSize: 10
+                color: Style.colors.mutedText
+                elide: Text.ElideRight
+                anchors.centerIn: parent
+                Layout.maximumWidth: parent.width * 0.4
+            }
+
+            ActionIconButton{
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                iconText: Style.icons.gear
+                textColor: Style.colors.secondaryText
+
+                onClicked: settingsPopup.open()
+            }
+
+            Popup {
+                id: settingsPopup
+                y: parent.height + 4
+                x: parent.width - width - 8
+                width: 350
+                padding: 12
+                modal: false
+                closePolicy: Popup.CloseOnPressOutside | Popup.CloseOnEscape
+
+                background: Rectangle {
+                    color: Style.colors.secondaryBackground
+                    border.color: Style.colors.primaryBorder
+                    radius: 6
+                }
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 10
+
+                    CheckboxItem {
+                        id: chunkViewCheck
+                        Layout.fillWidth: true
+                        title: "Chunk View"
+                        description: "Enable chunk-based diff display"
+                        checked: root.chunkMode
+
+                        onCheckedChanged: {
+                            if (root.fileIsEdited) {
+                                var d = unsavedChangesDialogComp.createObject(root)
+                                d.title = "Unsaved Changes"
+                                d.message = "You have unsaved changes in: " + root.selectedFile
+                                d.saved.connect(() => {
+                                    root.saveFile()
+                                    root.chunkMode = checked
+                                })
+                                d.aborted.connect(() => {
+                                    root.chunkMode = checked
+                                })
+                                d.cancelled.connect(() => {
+                                    checked = Qt.binding(() => root.chunkMode)
+                                })
+                                d.open()
+                            } else {
+                                root.chunkMode = checked
+                            }
+                        }
+                    }
+
+                    SpinboxItem {
+                        id: contextSpin
+                        Layout.fillWidth: true
+                        title: "Context Lines"
+                        description: "Number of context lines around changes"
+                        from: 0
+                        to: 100
+                        value: root.contextLines
+                        enabled: root.chunkMode
+                        onValueChanged:
+                            if (root.contextLines !== value) {
+                                root.contextLines = value
+                                root.persistSettings()
+                            }
+                    }
+
+                    SpinboxItem {
+                        id: expandSpin
+                        Layout.fillWidth: true
+                        title: "Expand Step"
+                        description: "Lines to show when expanding"
+                        from: 1
+                        to: 500
+                        value: root.expandLines
+                        enabled: root.chunkMode
+                        onValueChanged:
+                            if (root.expandLines !== value) {
+                                root.expandLines = value
+                                root.persistSettings()
+                            }
+                    }
+                }
             }
         }
     }
@@ -913,5 +996,19 @@ DetachablePanel {
         }
 
         return false
+    }
+
+    function persistSettings() {
+        if (!appModel)
+            return
+
+        let gs = appModel.appSettings.generalSettings
+        if (gs.chunkContextLines !== root.contextLines) {
+            gs.chunkContextLines = root.contextLines
+        }
+        if (gs.chunkExpandLines !== root.expandLines) {
+            gs.chunkExpandLines = root.expandLines
+        }
+        appModel.save()
     }
 }

@@ -546,8 +546,7 @@ Item {
             chunkMode: true
             hasHeaderMiddleComponent: true
             selectEnabled: false
-            contextLines: 0
-            expandLines: 10
+            appModel: root.appModel
 
             currentRepositoryName: root.appModel.currentRepository.name || ""
 

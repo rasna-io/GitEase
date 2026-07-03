@@ -200,13 +200,20 @@ Item {
                     spacing: 8
 
                     Label {
-                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignLeft
                         text: root.title  + ` [${root.currentRepositoryName}]`
                         color: Style.colors.foreground
                         font.family: Style.fontTypes.roboto
                         font.weight: 500
                         font.pixelSize: 12
                         elide: Text.ElideRight
+                    }
+
+                    Loader {
+                        Layout.alignment: Qt.AlignCenter
+                        Layout.fillWidth: true
+                        active: root.middleAccessory !== null
+                        sourceComponent: root.middleAccessory
                     }
 
                     ToolButton {
@@ -236,6 +243,7 @@ Item {
                     }
 
                     WindowsHeader {
+                        Layout.alignment: Qt.AlignRight
                         Layout.preferredWidth: 96
                         windowController: detachedWindowController
                     }
