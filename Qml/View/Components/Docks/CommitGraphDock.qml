@@ -986,19 +986,10 @@ DetachablePanel {
     }
 
     function executeRebase(commitHash) {
-        var res = rebaseController.previewRebasePlan("", commitHash, "");
 
-        if (!res || !res.success) {
-            notificationController.error(res ? res.errorMessage : "Could not prepare rebase plan", "Rebase", 5000);
-            return;
-        }
+        commitPlanPopup.open()
 
-        if (!res.data || !res.data.commits || res.data.commits.length === 0) {
-            notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000);
-            return;
-        }
-
-        commitPlanPopup.showPlan(res.data);
+        rebaseController.startPreviewRebasePlan("", commitHash, "")
     }
 
     function executeCherryPickSelected() {

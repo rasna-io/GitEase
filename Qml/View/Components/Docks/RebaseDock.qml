@@ -232,19 +232,10 @@ UtilitiesCard {
         onto        = advanced ? onto.trim() : ""
 
         var branchValue = currentBranchValue(currentIndexBranchCombo)
-        var res = rebaseController.previewRebasePlan(onto, upstream, branchValue)
 
-        if (!res || !res.success) {
-            notificationController.error(res ? res.errorMessage : "Could not prepare rebase plan", "Rebase", 5000)
-            return
-        }
+        commitPlanPopup.open()
 
-        if (!res.data || !res.data.commits || res.data.commits.length === 0) {
-            notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000)
-            return
-        }
-
-        commitPlanPopup.showPlan(res.data)
+        rebaseController.startPreviewRebasePlan(onto, upstream, branchValue)
     }
 
     function validateInputs(upstream, onto, advanced, currentIndexBranchCombo) {

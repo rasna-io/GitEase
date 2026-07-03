@@ -99,6 +99,10 @@ IPopup {
     closePolicy     : Popup.NoAutoClose
     anchors.centerIn: Overlay.overlay
 
+    onClosed: {
+        resetPopupState()
+    }
+
     /* Children
      * ****************************************************************************************/
     contentItem: Rectangle {
@@ -180,6 +184,7 @@ IPopup {
 
                     ColumnLayout {
                         anchors.fill: parent
+                        anchors.margins: 4
                         spacing: 0
 
                         // Column header
@@ -266,6 +271,7 @@ IPopup {
 
                                     readonly property bool isDimmed     : action === actionType.skip
                                     readonly property color actionColor : actionType.colorOf(action)
+                                    readonly property bool  isRebased   : status === commitStatus.rebased
 
                                     // Action combo (pick / skip)
                                     ComboBox {
@@ -373,50 +379,72 @@ IPopup {
                                     }
 
 
-                                    // Commit info (short hash + message)
-                                    RowLayout {
+                                    Item {
                                         Layout.fillWidth: true
-                                        spacing: 6
+                                        Layout.alignment: Qt.AlignVCenter
+                                        implicitHeight: textRow.implicitHeight
 
-                                        Text {
-                                            text: shortHash
-                                            color: Style.colors.accent
-                                            font.family: Style.fontTypes.roboto
-                                            font.pixelSize: 11
-                                            Layout.alignment: Qt.AlignVCenter
+                                        RowLayout {
+                                            id: textRow
+                                            anchors.fill: parent
+                                            spacing: 8
+
+                                            // Commit info (short hash + message)
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 6
+
+                                                Text {
+                                                    text: shortHash
+                                                    color: Style.colors.accent
+                                                    font.family: Style.fontTypes.roboto
+                                                    font.pixelSize: 11
+                                                    Layout.alignment: Qt.AlignVCenter
+                                                }
+
+                                                Text {
+                                                    text: summary
+                                                    color: layout.actionColor
+                                                    opacity: layout.isDimmed ? 0.5 : 1.0
+                                                    font.pixelSize: 12
+                                                    elide: Text.ElideRight
+                                                    Layout.fillWidth: true
+                                                    Layout.alignment: Qt.AlignVCenter
+                                                }
+                                            }
+
+                                            // Author
+                                            Text {
+                                                text: author
+                                                color: layout.actionColor
+                                                opacity: layout.isDimmed ? 0.5 : 1.0
+                                                font.pixelSize: 11
+                                                elide: Text.ElideRight
+                                                Layout.preferredWidth: 130
+                                                Layout.alignment: Qt.AlignVCenter
+                                            }
+
+                                            // Date
+                                            Text {
+                                                text: authorDate ? Qt.formatDateTime(new Date(authorDate), "yyyy-MM-dd hh:mm") : ""
+                                                color: layout.actionColor
+                                                opacity: layout.isDimmed ? 0.5 : 1.0
+                                                font.pixelSize: 10
+                                                elide: Text.ElideRight
+                                                Layout.preferredWidth: 130
+                                                Layout.alignment: Qt.AlignVCenter
+                                            }
                                         }
 
-                                        Text {
-                                            text: summary
+                                        Rectangle {
+                                            visible: layout.isRebased
+                                            anchors.left: parent.left
+                                            anchors.right: parent.right
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            height: 1
                                             color: layout.actionColor
                                             opacity: layout.isDimmed ? 0.5 : 1.0
-                                            font.pixelSize: 12
-                                            elide: Text.ElideRight
-                                            Layout.fillWidth: true
-                                            Layout.alignment: Qt.AlignVCenter
                                         }
-                                    }
-
-                                    // Author
-                                    Text {
-                                        text: author
-                                        color: layout.actionColor
-                                        opacity: layout.isDimmed ? 0.5 : 1.0
-                                        font.pixelSize: 11
-                                        elide: Text.ElideRight
-                                        Layout.preferredWidth: 130
-                                        Layout.alignment: Qt.AlignVCenter
-                                    }
-
-                                    // Date
-                                    Text {
-                                        text: authorDate ? Qt.formatDateTime(new Date(authorDate), "yyyy-MM-dd hh:mm") : ""
-                                        color: layout.actionColor
-                                        opacity: layout.isDimmed ? 0.5 : 1.0
-                                        font.pixelSize: 10
-                                        elide: Text.ElideRight
-                                        Layout.preferredWidth: 130
-                                        Layout.alignment: Qt.AlignVCenter
                                     }
 
                                     Text {
@@ -542,6 +570,14 @@ IPopup {
         }
     }
 
+    BusyIndicator {
+        anchors.centerIn: parent
+        running: commitModel.count === 0
+        visible: commitModel.count === 0
+        Material.accent: Style.colors.accent
+        z: 10
+    }
+
     ListModel {
         id: commitModel
     }
@@ -559,6 +595,21 @@ IPopup {
 
     Connections {
         target: root.rebaseController
+
+        function onPreviewRebasePlanReady(result) {
+            if (!result.success) {
+                notificationController.error(result.errorMessage || "Failed to load rebase plan", "Rebase", 5000)
+                root.close()
+                return
+            }
+            var data = result.data
+            if (!data || !data.commits || data.commits.length === 0) {
+                notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000)
+                root.close()
+                return
+            }
+            showPlan(data)
+        }
 
         function onRebaseOperationStarted(hash) {
             setCommitStatus(hash, commitStatus.inProgress);
@@ -625,7 +676,20 @@ IPopup {
         }
     }
 
+    function resetPopupState() {
+        commitModel.clear()
+
+        root.planData           = {}
+        diffView.diffData       = null
+        fileChangesDock.files   = []
+        root.selectedCommitHash = ""
+        root.currentRebaseState = rebaseState.idle
+    }
+
     function planSummary() {
+        if (commitModel.count === 0)
+            return "Preparing rebase plan..."
+
         var upstream    = planData.upstream || ""
         var onto        = planData.onto || ""
         var branch      = planData.branch || "current branch"
@@ -649,12 +713,13 @@ IPopup {
     }
 
     function showPlan(data) {
-        commitModel.clear()
+        if (!data || !data.commits || data.commits.length === 0) {
+            notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000)
+            root.close()
+            return
+        }
 
-        root.planData           = data || {}
-        diffView.diffData       = null
-        fileChangesDock.files   = []
-        root.selectedCommitHash = ""
+        root.planData = data
 
         var commits = root.planData.commits || []
         for (var i = 0; i < commits.length; i++) {
@@ -675,10 +740,6 @@ IPopup {
 
         if (commitModel.count > 0)
             selectCommit(0)
-
-        root.currentRebaseState = rebaseState.idle;
-
-        root.open()
     }
 
     function selectCommit(index) {
