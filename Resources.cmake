@@ -12,6 +12,7 @@ set(RESOURCES_CORE
     Qml/Core/Models/Page.qml
     Qml/Core/Models/UserProfile.qml           # user profile model
     Qml/Core/Models/NotificationSettings.qml
+    Qml/Core/Models/Plugin.qml
 
     # Controllers
     Qml/Core/Controllers/WelcomeController.qml      # Welcome page controller
@@ -75,6 +76,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/DropZone.qml                      # Dock zone
     Qml/View/Components/Base/ScrollingText.qml                 # Single-line auto-scrolling text
     Qml/View/Components/Base/ModernInputArea.qml               # Modern Input Area
+    Qml/View/Components/Base/PluginCard.qml
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
@@ -164,6 +166,7 @@ set(RESOURCES_COMPONENTS
     # Pages Components
     Qml/View/Components/Pages/CommittingPage/CommittingPageHeader.qml
     Qml/View/Components/Pages/CommittingPage/UnsavedChangesDialog.qml
+    Qml/View/Components/Pages/PluginsPage/PluginsPageHeader.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
     Qml/View/Components/GraphView/ResizableColumnHeader.qml
@@ -214,6 +217,7 @@ set(RESOURCES_PAGES
     Qml/Pages/CommittingPage.qml    # Commit Page
     Qml/Pages/UtilitiesPage.qml     # UtilitiesPage, import/export
     Qml/Pages/BlankPage.qml         # Blank placeholder page
+    Qml/Pages/PluginsPage.qml       # Plugins page
 )
 
 # Define QML Services
