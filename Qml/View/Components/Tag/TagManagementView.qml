@@ -64,7 +64,7 @@ UtilitiesCard {
                         text: Style.icons.tag || "#"
                         font.family: Style.fontTypes.font6Pro
                         font.pixelSize: 14
-                        color: modelData.isAnnotated ? Style.colors.accent : Style.colors.secondaryForeground
+                        color: modelData.isAnnotated ? Style.colors.accent : Style.colors.secondaryText
                         Layout.alignment: Qt.AlignVCenter
                     }
 
@@ -141,7 +141,7 @@ UtilitiesCard {
             Label {
                 anchors.centerIn: parent
                 text: "No tags available"
-                color: Style.colors.secondaryForeground
+                color: Style.colors.secondaryText
                 visible: internalListView.count === 0
                 font.pixelSize: 12
             }
