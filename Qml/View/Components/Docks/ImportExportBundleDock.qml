@@ -16,6 +16,7 @@ Item {
     property BranchController branchController: null
     property BundleController bundleController: null
     property NotificationController notificationController: null
+    property GuideController  guideController:  null
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -31,6 +32,7 @@ Item {
         branchController: root.branchController
         bundleController: root.bundleController
         notificationController: root.notificationController
+        guideController: root.guideController
     }
 
     /* Functions
