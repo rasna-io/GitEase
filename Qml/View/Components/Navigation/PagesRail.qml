@@ -22,10 +22,31 @@ Rectangle {
 
     property var   currentId
 
+    property GuideController   guideController: null
+
     /* Signals
      * ****************************************************************************************/
 
     signal clicked(var modelData);
+
+    /* Guide
+     * ****************************************************************************************/
+    GuideHoverTrigger {
+        guideController: root.guideController
+        guideId: "pages_rail_tutorial"
+        guideName: "Pages Rail"
+        guideIcon: Style.icons.list
+        stepsFactory: function() {
+            return [
+                {
+                    targetProvider: function() { return root },
+                    icon: Style.icons.list,
+                    title: "Pages",
+                    description: "Switch between the app's pages — like Committing and Graph View — from this list. Hover the rail to see full names, or click a page to jump to it."
+                }
+            ]
+        }
+    }
 
     /* Children
      * ****************************************************************************************/
