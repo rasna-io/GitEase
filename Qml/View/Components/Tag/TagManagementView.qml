@@ -13,10 +13,11 @@ UtilitiesCard {
     id: root
 
     /* Property Declarations */
-    property TagController tagController: null
-    property var           addTagPopup:   null
+    property TagController          tagController:          null
+    property var                    addTagPopup:            null
     property NotificationController notificationController: null
-    property var           tagListModel:  []
+    property var                    tagListModel:           []
+    property GuideController        guideController:        null
 
     title: "Tag Management"
     icon:  Style.icons.tag
@@ -37,6 +38,31 @@ UtilitiesCard {
     content: ColumnLayout {
         anchors.fill: parent
         spacing: 12
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "tag_management_tutorial"
+            guideName: "Tag Management"
+            guideIcon: Style.icons.tag
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return internalListView },
+                        icon: Style.icons.tag,
+                        title: "Your Tags",
+                        description: "Every tag in the repository is listed here. The first trash icon deletes it locally; the second deletes it from the remote too."
+                    },
+                    {
+                        targetProvider: function() { return addTagBtn },
+                        icon: Style.icons.plus,
+                        title: "Create a Tag",
+                        description: "Mark the current commit with a version label like v1.0.0 — handy for marking releases.",
+                        commands: [{ command: "git tag <name>" }]
+                    }
+                ]
+            }
+        }
 
         ListView {
             id: internalListView
