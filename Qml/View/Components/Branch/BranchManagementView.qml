@@ -22,6 +22,8 @@ UtilitiesCard {
     
     property NotificationController notificationController: null
 
+    property GuideController  guideController: null
+
     /* Object Properties
      * ****************************************************************************************/
     title: "Branch Management"
@@ -38,6 +40,31 @@ UtilitiesCard {
 
         anchors.fill: parent
         spacing: 12
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "branch_management_tutorial"
+            guideName: "Branch Management"
+            guideIcon: Style.icons.branch
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return listView },
+                        icon: Style.icons.branch,
+                        title: "All Branches",
+                        description: "Every local and remote-tracking branch appears here. Click Checkout to switch to one, or the trash icon to delete it."
+                    },
+                    {
+                        targetProvider: function() { return addBranchBtn },
+                        icon: Style.icons.branchPlus,
+                        title: "Create a Branch",
+                        description: "Start a new branch from your current commit — useful for isolating a feature or fix from the branch you're on.",
+                        commands: [{ command: "git branch <name>" }]
+                    }
+                ]
+            }
+        }
 
         Connections {
             target: root
@@ -183,6 +210,7 @@ UtilitiesCard {
         }
 
         Button {
+            id: addBranchBtn
             Layout.fillWidth: true
             implicitHeight: 44
             visible: content.currentIndex === 0
