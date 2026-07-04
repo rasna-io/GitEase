@@ -10,6 +10,7 @@ UtilitiesCard {
     id: root
 
     property ActivityController activityController: null
+    property GuideController    guideController:    null
 
     title: "Recent Activity"
     icon: Style.icons.clock
@@ -17,6 +18,24 @@ UtilitiesCard {
     content: ColumnLayout {
         anchors.fill: parent
         spacing: 16
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "recent_activity_tutorial"
+            guideName: "Recent Activity"
+            guideIcon: Style.icons.clock
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return listView },
+                        icon: Style.icons.clock,
+                        title: "Command History",
+                        description: "Every git command GitEase runs on your behalf is logged here with a timestamp — handy for auditing what happened or learning the underlying git commands."
+                    }
+                ]
+            }
+        }
 
         Rectangle {
             Layout.fillWidth: true
