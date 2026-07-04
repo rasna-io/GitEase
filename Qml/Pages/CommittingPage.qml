@@ -42,7 +42,9 @@ Item {
 
     property var                     pluginController:        null
 
-    property TerminalController      terminalController:        null
+    property TerminalController      terminalController:      null
+
+    property GuideController         guideController:         null
 
     property bool                    isFetching:             false
     property var                     activeFetchRemotes:     []
@@ -58,6 +60,7 @@ Item {
         branchController: root.branchController
         notificationController: root.notificationController
         remoteController: root.remoteController
+        guideController: root.guideController
     }
 
     onStatusControllerChanged: {
@@ -323,6 +326,49 @@ Item {
                     color: Style.colors.secondaryBackground
                     radius: 2
 
+                    GuideHoverTrigger {
+                        guideController: root.guideController
+                        guideId: "commit_panel_tutorial"
+                        guideName: "Commit Panel"
+                        guideIcon: Style.icons.penToSquare
+                        guidePage: "committing"
+                        stepsFactory: function() {
+                            return [
+                                {
+                                    targetProvider: function() { return commitTextArea },
+                                    icon: Style.icons.penToSquare,
+                                    title: "Commit Message",
+                                    description: "Describe your change in the present tense — 'Fix login timeout' not 'Fixed login timeout'. Keep the summary under 72 characters."
+                                },
+                                {
+                                    targetProvider: function() { return commitBtn },
+                                    icon: Style.icons.arrowRight,
+                                    title: "Commit",
+                                    description: "Records every staged file as a permanent snapshot in history. Nothing leaves your machine — this is a local operation only.",
+                                    commands: [{ command: "git commit -m \"…\"" }]
+                                },
+                                {
+                                    targetProvider: function() { return commitCaretZone },
+                                    icon: Style.icons.caretDown,
+                                    title: "Commit Extras  ·  ▾ dropdown",
+                                    description: "Commit & Push runs git commit then git push in one step. Commit Amend runs git commit --amend — rewrites the most recent local commit (message or content) instead of creating a new one."
+                                },
+                                {
+                                    targetProvider: function() { return moreOptionsBtn },
+                                    icon: Style.icons.arrowRight,
+                                    title: "Remote Operations  ·  ⋮ menu",
+                                    description: "Push uploads your local commits. Force Push rewrites the remote branch with your local history, but safely aborts if someone else pushed first. Fetch downloads remote changes without merging. Pull fetches and merges in one step.",
+                                    commands: [
+                                        { label: "Push",       command: "git push" },
+                                        { label: "Force Push", command: "git push --force-with-lease" },
+                                        { label: "Fetch",      command: "git fetch --all" },
+                                        { label: "Pull",       command: "git pull" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+
                     ColumnLayout {
                         id: commitColumn
                         anchors.fill: parent
@@ -487,6 +533,7 @@ Item {
                             }
 
                             Rectangle {
+                                id: moreOptionsBtn
                                 Layout.preferredWidth: 30
                                 Layout.preferredHeight: 30
                                 radius: 4
@@ -537,6 +584,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
+                    guideController: root.guideController
                     statusController: root.statusController
                     notificationController: root.notificationController
                     stashController: root.stashController
@@ -578,6 +626,7 @@ Item {
             expandLines: 10
             selectedFileStatus: changesFileLists.currentFileStatus
 
+            guideController: root.guideController
             currentRepositoryName: root.appModel.currentRepository.name || ""
 
             onRequestStage: function (start, end, type, rows) {
