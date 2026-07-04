@@ -22,6 +22,7 @@ UtilitiesCard {
     property NotificationController notificationController: null
     property ConflictController     conflictController:     null
     property LayoutController       layoutController:       null
+    property GuideController        guideController:        null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -30,6 +31,44 @@ UtilitiesCard {
 
     content: ColumnLayout {
         spacing: 10
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "rebase_dock_tutorial"
+            guideName: "Rebase"
+            guideIcon: Style.icons.copy
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return upstreamInput },
+                        icon: Style.icons.copy,
+                        title: "Upstream",
+                        description: "The branch, tag, or commit you want to replay your commits onto."
+                    },
+                    {
+                        targetProvider: function() { return branchCombo },
+                        icon: Style.icons.branch,
+                        title: "Branch to Rebase",
+                        description: "Choose which local branch gets rebased. Defaults to your current branch."
+                    },
+                    {
+                        targetProvider: function() { return advancedToggle },
+                        icon: Style.icons.filter,
+                        title: "Advanced: --onto",
+                        description: "Enable this to move only a range of commits onto a different base, instead of replaying the whole upstream history.",
+                        commands: [{ command: "git rebase --onto <newbase> <upstream> <branch>" }]
+                    },
+                    {
+                        targetProvider: function() { return startRebaseBtn },
+                        icon: Style.icons.copy,
+                        title: "Preview & Run",
+                        description: "Shows exactly which commits will be replayed before anything happens, so you can confirm the plan before committing to the rebase.",
+                        commands: [{ command: "git rebase <upstream>" }]
+                    }
+                ]
+            }
+        }
 
         // Upstream field (required)
         ColumnLayout {
@@ -141,6 +180,7 @@ UtilitiesCard {
 
         // Rebase button
         Button {
+            id: startRebaseBtn
             Layout.fillWidth: true
             implicitHeight: 44
             enabled: upstreamInput.text.trim().length > 0
@@ -194,6 +234,7 @@ UtilitiesCard {
         conflictController: root.conflictController
         notificationController: root.notificationController
         layoutController: root.layoutController
+        guideController: root.guideController
     }
 
     /* Functions
