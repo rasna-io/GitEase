@@ -617,6 +617,8 @@ Window {
             modifiedFiles = copy
 
             loadConflicts(true)
+
+            Qt.callLater(restoreScrollPosition)
         }
     }
 
