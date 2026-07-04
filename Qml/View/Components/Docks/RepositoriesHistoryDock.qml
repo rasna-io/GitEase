@@ -16,6 +16,7 @@ UtilitiesCard {
     /* Property Declarations
      * ****************************************************************************************/
     property RepositoryController repositoryController: null
+    property GuideController      guideController:      null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -28,6 +29,30 @@ UtilitiesCard {
         id: content
         anchors.fill: parent
         spacing: 8
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "repositories_history_tutorial"
+            guideName: "Repositories History"
+            guideIcon: Style.icons.clock
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return scrollView },
+                        icon: Style.icons.clock,
+                        title: "Recently Opened",
+                        description: "Every repository you've opened is listed here, even after restarting GitEase. Click one to reopen it instantly."
+                    },
+                    {
+                        targetProvider: function() { return actionBtn },
+                        icon: Style.icons.trash,
+                        title: "Clear History",
+                        description: "Removes every entry from this list. This only clears the list — it doesn't touch your actual repositories on disk."
+                    }
+                ]
+            }
+        }
 
         ListView {
             id: scrollView
