@@ -21,7 +21,8 @@ UtilitiesCard {
     property AddStashPopup          addStashPopup:          null
     property NotificationController notificationController: null
     property ManageStashPopup       manageStashPopup:       null
-    
+    property GuideController        guideController:        null
+
     property var                    stashes:                []
     property var                    selectedStash:          null
     property var                    stashFiles:             []
@@ -43,6 +44,31 @@ UtilitiesCard {
         id: content
         anchors.fill: parent
         spacing: 8
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "stash_manager_tutorial"
+            guideName: "Stash Manager"
+            guideIcon: Style.icons.archive
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return stashListView },
+                        icon: Style.icons.archive,
+                        title: "Your Stashes",
+                        description: "Shelved changes appear here. Open previews the stash's files, Pop applies it and removes it from the list, Apply keeps it in the list, and the trash icon drops it permanently."
+                    },
+                    {
+                        targetProvider: function() { return actionBtn },
+                        icon: Style.icons.plus,
+                        title: "Create a Stash",
+                        description: "Shelve your current uncommitted changes so you can switch branches or pull cleanly, then bring them back later.",
+                        commands: [{ command: "git stash" }]
+                    }
+                ]
+            }
+        }
 
         Connections {
             target: root
