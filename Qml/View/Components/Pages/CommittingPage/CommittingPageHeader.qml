@@ -17,6 +17,7 @@ RowLayout {
     property          BranchController       branchController:          null
     property          NotificationController notificationController:    null
     property          RemoteController       remoteController:          null
+    property          GuideController        guideController:           null
     readonly property bool                   compact:                   parent.width < 550
 
     /* Object Properties
@@ -164,6 +165,56 @@ RowLayout {
 
         onClicked: {
             root.pushAndUpdate(true)
+        }
+    }
+
+    /* Guide
+     * ****************************************************************************************/
+    GuideHoverTrigger {
+        guideController: headerRow.guideController
+        guideId: "committing_header_tutorial"
+        guideName: "Committing Header"
+        guideIcon: Style.icons.arrowUp
+        guidePage: "committing"
+        stepsFactory: function() {
+            var steps = []
+            if (!headerRow.compact) {
+                steps.push({
+                    targetProvider: function() { return branchChip },
+                    icon: Style.icons.branch,
+                    title: "Current Branch",
+                    description: "Shows the branch you are committing to. Click to copy the name to the clipboard — handy for PR titles or referencing in messages."
+                })
+            }
+            steps.push({
+                targetProvider: function() { return pullBtn },
+                icon: Style.icons.arrowDown,
+                title: "Pull",
+                description: "Downloads commits from the remote and merges them into your current branch. Run this before starting work to stay in sync with your team.",
+                commands: [{ command: "git pull" }]
+            })
+            steps.push({
+                targetProvider: function() { return pushBtnHeader },
+                icon: Style.icons.arrowUp,
+                title: "Push",
+                description: "Uploads your local commits to the remote so teammates can fetch or pull them. Only commits that are already saved locally will be sent.",
+                commands: [{ command: "git push" }]
+            })
+            steps.push({
+                targetProvider: function() { return fetchBtnHeader },
+                icon: Style.icons.download,
+                title: "Fetch",
+                description: "Downloads all remote changes and updates your remote-tracking branches without touching your working tree or current branch. Always safe to run.",
+                commands: [{ command: "git fetch --all" }]
+            })
+            steps.push({
+                targetProvider: function() { return pushForceBtnHeader },
+                icon: Style.icons.arrowUp,
+                title: "Force Push",
+                description: "Rewrites the remote branch with your local history. --force-with-lease is safer than --force: it aborts automatically if someone else has pushed since your last fetch, protecting their work.",
+                commands: [{ command: "git push --force-with-lease" }]
+            })
+            return steps
         }
     }
 }
