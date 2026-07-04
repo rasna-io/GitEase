@@ -17,6 +17,7 @@ Rectangle {
     /* Property Declarations
      * ****************************************************************************************/
     property RepositoryController    repositoryController: null
+    property GuideController         guideController:      null
     property var                     repositories:         []
     property Repository              currentRepository:    null
     property var                     recentRepositories:   []
@@ -50,6 +51,31 @@ Rectangle {
     /* Signals
      * ****************************************************************************************/
     signal newRepositoryRequested()
+
+    /* Guide
+     * ****************************************************************************************/
+    GuideHoverTrigger {
+        guideController: root.guideController
+        guideId: "repositories_sidebar_tutorial"
+        guideName: "Repositories Sidebar"
+        guideIcon: Style.icons.folder
+        stepsFactory: function() {
+            return [
+                {
+                    targetProvider: function() { return flickable },
+                    icon: Style.icons.folder,
+                    title: "Open Repositories",
+                    description: "Each square is an open repository. Click one to switch to it, or drag it outward and release to launch it in its own window."
+                },
+                {
+                    targetProvider: function() { return addButton },
+                    icon: Style.icons.plus,
+                    title: "Add a Repository",
+                    description: "Click here to open an existing repository or clone a new one."
+                }
+            ]
+        }
+    }
 
     /* JavaScript Functions
      * ****************************************************************************************/
