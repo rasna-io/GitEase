@@ -30,6 +30,7 @@ Window {
     property CherryPickController   cherryPickController    : null
     property StatusController       statusController        : null
     property NotificationController notificationController  : null
+    property GuideController        guideController         : null
 
     property var    conflicts       : []
     property var    selectedConflict: null
@@ -153,6 +154,37 @@ Window {
         clip: true
         border.color: Style.colors.accent
         border.width: 1
+
+        /* Guide
+         * ****************************************************************************************/
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "conflict_resolution_tutorial"
+            guideName: "Resolving Conflicts"
+            guideIcon: Style.icons.warning
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return fileListComp },
+                        icon: Style.icons.file,
+                        title: "Conflicted Files",
+                        description: "Every file with unresolved conflicts is listed here. Click one to open it in the editor on the right; the checkmark stages a file once you're happy with it."
+                    },
+                    {
+                        targetProvider: function() { return conflictListView },
+                        icon: Style.icons.penToSquare,
+                        title: "Resolve a Conflict",
+                        description: "Each conflicting block shows both versions. Accept ours, theirs, or both, or edit the text directly like a normal editor."
+                    },
+                    {
+                        targetProvider: function() { return continueBtn },
+                        icon: Style.icons.check,
+                        title: "Continue",
+                        description: "Once every file is resolved and staged, click here to continue the operation. Skip moves past this commit, and the close button lets you abort entirely."
+                    }
+                ]
+            }
+        }
 
         ColumnLayout {
             spacing: 8
@@ -420,6 +452,14 @@ Window {
                     }
                 }
             }
+        }
+
+        // ConflictPopup is its own top-level Window, so the shared GuideOverlay embedded in
+        // MainWindow can't reach into it — this instance renders the spotlight/tooltip locally.
+        GuideOverlay {
+            anchors.fill: parent
+            z: 1000
+            guideController: root.guideController
         }
     }
 
