@@ -61,10 +61,41 @@ DetachablePanel {
     }
 
     Rectangle{
+        id: filesContainer
         anchors.fill: parent
         color: Style.colors.primaryBackground
         visible: root.files && root.files.length > 0
         clip: true
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "file_changes_tutorial"
+            guideName: "File Changes"
+            guideIcon: Style.icons.list
+            guidePage: "graph"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return header },
+                        icon: Style.icons.list,
+                        title: "File Changes",
+                        description: "Every file touched by the selected commit is listed here, along with its extension, status, and how many lines were added or removed."
+                    },
+                    {
+                        targetProvider: function() { return statusHeaderCol },
+                        icon: Style.icons.info,
+                        title: "Status",
+                        description: "A color-coded badge shows whether the file was Added, Modified, Deleted, Renamed, or is Untracked."
+                    },
+                    {
+                        targetProvider: function() { return filesListView },
+                        icon: Style.icons.arrowRight,
+                        title: "Preview a File",
+                        description: "Click any row to preview that file's diff in the panel next to this list."
+                    }
+                ]
+            }
+        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -238,6 +269,7 @@ DetachablePanel {
                     }
 
                     Rectangle {
+                        id: statusHeaderCol
                         Layout.preferredWidth: root.filesColStatusWidth
                         Layout.fillHeight: true
                         color: statusHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
