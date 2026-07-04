@@ -23,6 +23,9 @@ Item {
     property string editingUsername: ""
     property string editingEmail:    ""
 
+    readonly property alias guideAddButton:    addUserBtn
+    readonly property alias guideProfilesList: profileListArea
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
@@ -110,6 +113,7 @@ Item {
 
             // Add User Button
             Button {
+                id: addUserBtn
                 visible: !root.showAddEditForm
                 Layout.preferredHeight: 30
                 Layout.preferredWidth: 95
@@ -338,6 +342,7 @@ Item {
 
         // User List Section
         Rectangle {
+            id: profileListArea
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: !root.showAddEditForm
