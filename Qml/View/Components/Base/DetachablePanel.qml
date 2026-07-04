@@ -16,18 +16,17 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string     currentRepositoryName
-    property bool       detached: false
-    property string     layoutId: ""
-    property string     title: ""
-    property int        headerHeight: 32
-    property int        minWindowWidth: 420
-    property int        minWindowHeight: 320
-    property bool       showInlineHeader: true
-    property bool       minimizable: false
-    property bool       isMinimized: false
-    property string     icon: ""
-    property LayoutController layoutController: null
+    property string                 layoutId:               ""
+    property string                 icon:                   ""
+    property LayoutController       layoutController:       null
+    property string                 currentRepositoryName
+    property bool                   detached:               false
+    property string                 title:                  ""
+    property int                    headerHeight:           32
+    property int                    minWindowWidth:         420
+    property int                    minWindowHeight:        320
+    property bool                   showInlineHeader:       true
+    property GuideController        guideController:        null
 
     // Optional elements in the middle of header
     property Component  middleAccessory: null
@@ -41,6 +40,8 @@ Item {
      * ****************************************************************************************/
     property int lastWidth: 600
     property int lastHeight: 400
+    property bool guideDetached: false
+    property bool showLocalGuide: false
 
     /* Object Properties
      * ****************************************************************************************/
@@ -69,9 +70,12 @@ Item {
     }
 
     onDetachedChanged: {
-        if (detached)
+        if (detached) {
             updateWindowGeometry()
-
+        } else {
+            showLocalGuide = false
+            guideDetached = false
+        }
         moveContentTo(detached ? windowHost : inlineHost)
     }
 
@@ -119,11 +123,45 @@ Item {
         spacing: 0
 
         Rectangle {
+            id: inlineHeader
             Layout.fillWidth: true
             Layout.minimumHeight: 35
             Layout.maximumHeight: 35
             visible: root.showInlineHeader && !root.detached
             color: Style.colors.secondaryBackground
+
+            GuideHoverTrigger {
+                guideController: root.guideController
+                guideId: "detachable_panel_tutorial"
+                guideName: "Detachable Panels"
+                guideIcon: Style.icons.arrowRight
+                guidePage: "graph"
+                stepsFactory: function() {
+                    return [
+                        {
+                            targetProvider: function() { return inlineHeader },
+                            icon: Style.icons.arrowRight,
+                            title: "Detachable Panels",
+                            description: "Each panel can be popped into its own floating window — ideal for multi-monitor setups or focusing on a single view."
+                        },
+                        {
+                            targetProvider: function() { return detachButton },
+                            icon: Style.icons.arrowRight,
+                            title: "Detach to Window",
+                            description: "Click this button to move the panel into its own floating window. You can drag, resize, and position it anywhere on screen.",
+                            onNext: function() {
+                                if (!root)
+                                    return
+
+                                root.guideDetached = true
+                                root.showLocalGuide = true
+                                root.detached = true
+                                Qt.callLater(function() { localGuideCtrl.show() })
+                            }
+                        }
+                    ]
+                }
+            }
 
             RowLayout {
                 anchors.fill: parent
@@ -315,6 +353,58 @@ Item {
         WindowController {
             id: detachedWindowController
             window: detachedWindow
+        }
+
+        QtObject {
+            id: localGuideCtrl
+            signal guideStepChanged(var sd)
+            signal guideDismissed()
+
+            function next()    {
+                guideDismissed()
+                root.detached = false
+            }
+
+            function dismiss() {
+                guideDismissed()
+                root.detached = false
+            }
+
+            function back() {}
+
+            function show() {
+                guideStepChanged({
+                    target: attachButton,
+                    isInPopup: false,
+                    icon: Style.icons.undo,
+                    title: "Re-attach Panel",
+                    description: "Use this button in the floating window header to snap the panel back into the main layout.",
+                    showBack: false,
+                    showSkip: true,
+                    stepIndex: 0,
+                    totalSteps: 1
+                })
+            }
+        }
+
+        GuideOverlay {
+            anchors.fill: parent
+            z: 100
+            guideController: localGuideCtrl
+        }
+    }
+
+    /* Guide
+     * ****************************************************************************************/
+    Connections {
+        target: root.guideController
+        ignoreUnknownSignals: true
+
+        function onGuideDismissed() {
+            if (root.guideDetached && !root.showLocalGuide) {
+                root.detached = false
+                root.guideDetached = false
+            }
         }
     }
 }
