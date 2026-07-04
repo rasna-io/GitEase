@@ -617,7 +617,7 @@ IPopup {
                                             description: "Turn contextual tutorials on or off — when enabled, each one pops up automatically the first time you encounter it.",
                                             isInPopup: true,
                                             activationDelay: 700,
-                                            onActivate: function() { root.currentPage = 3 }
+                                            onActivate: function() { root.currentPage = 4 }
                                         },
                                         {
                                             targetProvider: function() { return resetGuidesButton },
