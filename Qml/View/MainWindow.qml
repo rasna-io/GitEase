@@ -57,6 +57,8 @@ Rectangle {
                 repositoryController: root.uiSession?.repositoryController
                 userProfileController: root.uiSession?.userProfileController
                 notificationController: root.uiSession?.notificationController
+                guideController: root.uiSession?.guideController
+                userInfoSelectionPopup: root.uiSession?.popups?.userInfoSelectionPopup
 
                 onNewRepositoryRequested: function () {
                     let popup = root.uiSession?.popups?.repositorySelectorPopup
@@ -71,15 +73,11 @@ Rectangle {
                     settingsPopup.appModel = root.uiSession.appModel
                     settingsPopup.updateController = root.uiSession.updateController
                     settingsPopup.fileIO = root.uiSession.appModel.fileIO
+                    settingsPopup.guideController = root.uiSession.guideController
+                    settingsPopup.pageController = root.uiSession.pageController
                     settingsPopup.open()
                 }
-
-                onOpenUserSelectionRequested: {
-                    let userInfoSelectionPopup = root.uiSession?.popups?.userInfoSelectionPopup
-                    userInfoSelectionPopup.userProfileController = root.uiSession.userProfileController
-                    userInfoSelectionPopup.open()
-                }
-
+                
                 onOpenNotificationsRequested: {
                     let notificationPopup = root.uiSession?.popups?.notificationCenterPopup
                     if (notificationPopup) {
@@ -178,9 +176,6 @@ Rectangle {
                             if (item.hasOwnProperty("repoForestPopup")) {
                                 item.repoForestPopup = Qt.binding(function() { return root.uiSession?.popups?.repoForestPopup })
                             }
-                            if (item.hasOwnProperty("conflictController")) {
-                                item.conflictController = Qt.binding(function() { return root.uiSession?.conflictController })
-                            }
                             if (item.hasOwnProperty("rebaseController")) {
                                 item.rebaseController = Qt.binding(function() { return root.uiSession?.rebaseController })
                             }
@@ -204,6 +199,12 @@ Rectangle {
                             }
                             if (item.hasOwnProperty("layoutController")) {
                                 item.layoutController = Qt.binding(function() { return root.uiSession?.layoutController })
+                            }
+                            if (item.hasOwnProperty("resetController")) {
+                                item.resetController = Qt.binding(function() { return root.uiSession?.resetController })
+                            }
+                            if (item.hasOwnProperty("guideController")) {
+                                item.guideController = Qt.binding(function() { return root.uiSession?.guideController })
                             }
                         }
 
@@ -231,5 +232,12 @@ Rectangle {
         MinimizedPanels {
             layoutController: root.uiSession?.layoutController
         }
+    }
+
+    // Guide overlay — sits above all content; spotlight + tooltip rendered here
+    GuideOverlay {
+        anchors.fill: parent
+        z: 100
+        guideController: root.uiSession?.guideController
     }
 }
