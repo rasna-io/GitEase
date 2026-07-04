@@ -14,6 +14,10 @@ IPopup {
 
     property UserProfileController              userProfileController
 
+    /* Guide target aliases — resolved after popup content is instantiated */
+    readonly property alias guideAddButton:    selectorItem.guideAddButton
+    readonly property alias guideProfilesList: selectorItem.guideProfilesList
+
     /* Property Declarations
      * ****************************************************************************************/
 
@@ -36,6 +40,7 @@ IPopup {
     }
 
     contentItem: UserInfoSelector {
+        id: selectorItem
         userProfileController: root.userProfileController
     }
 }
