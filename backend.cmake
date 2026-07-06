@@ -3,7 +3,6 @@ set(SOURCES_BACKEND
     Src/Utilities/windowsManager/borderlesswindowhelper.cpp
     Src/Utilities/windowsManager/TaskbarHelper.cpp
     Src/Utilities/FileManager/FileIO.cpp
-    Src/Utilities/GitScanner/GitScanner.cpp
     Src/Utilities/NetworkManager/NetworkManager.cpp
     Src/Utilities/UpdateManager/UpdateManager.cpp
 
@@ -47,7 +46,6 @@ set(HEADERS_BACKEND
     Src/Utilities/windowsManager/TaskbarHelper.hpp
     Src/Utilities/windowsManager/borderlesswindowhelper.h
     Src/Utilities/FileManager/FileIO.hpp
-    Src/Utilities/GitScanner/GitScanner.hpp
     Src/Utilities/NetworkManager/NetworkManager.hpp
     Src/Utilities/UpdateManager/UpdateManager.hpp
 
