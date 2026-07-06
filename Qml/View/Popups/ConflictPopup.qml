@@ -548,6 +548,25 @@ Window {
         });
     }
 
+    function findBlockRowRange(model, blockIndex) {
+        let start = -1, end = -1
+        for (let i = 0; i < model.count; ++i) {
+            if (model.get(i).blockIndex === blockIndex) {
+                if (start < 0) start = i
+                end = i
+            }
+        }
+        return { start, end }
+    }
+
+    function findBlockByIndex(blocks, idx) {
+        for (let i = 0; i < blocks.length; ++i) {
+            if (blocks[i].index === idx)
+                return { block: blocks[i], pos: i }
+        }
+        return null
+    }
+
     function restoreScrollPosition() {
         if (pendingRestoreLineNumber < 0)
             return
