@@ -223,3 +223,33 @@ function mergeLineUp(displayModel, rowIndex, conflictListView) {
     conflictListView.currentIndex = rowIndex - 1;
 }
 
+/**
+ * Finds the start and end indices of a conflict block in the display model.
+ * @param model      - ListModel to search
+ * @param blockIndex - The block's index property (1‑based)
+ * @returns { start: number, end: number } or { start: -1, end: -1 } if not found
+ */
+function findBlockRowRange(model, blockIndex) {
+    let start = -1, end = -1
+    for (let i = 0; i < model.count; ++i) {
+        if (model.get(i).blockIndex === blockIndex) {
+            if (start < 0) start = i
+            end = i
+        }
+    }
+    return { start, end }
+}
+
+/**
+ * Finds a block object in an array by its index property.
+ * @param blocks - Array of block objects (from selectedConflict.blocks)
+ * @param idx    - The index property to look for
+ * @returns { block: object, pos: number } or null
+ */
+function findBlockByIndex(blocks, idx) {
+    for (let i = 0; i < blocks.length; ++i) {
+        if (blocks[i].index === idx)
+            return { block: blocks[i], pos: i }
+    }
+    return null
+}

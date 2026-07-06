@@ -550,7 +550,7 @@ Window {
         if (!selectedPath || !selectedConflict)
             return
 
-        let found = findBlockByIndex(selectedConflict.blocks, blockIndex)
+        let found = ConflictUtils.findBlockByIndex(selectedConflict.blocks, blockIndex)
         if (!found)
             return
         let block = found.block
@@ -597,14 +597,6 @@ Window {
         notificationController.success("Conflicts Resolved", "Conflict", 2000)
     }
 
-    function findBlockByIndex(blocks, idx) {
-        for (let i = 0; i < blocks.length; ++i) {
-            if (blocks[i].index === idx)
-                return { block: blocks[i], pos: i }
-        }
-        return null
-    }
-
     function computeResolvedLines(block, mode) {
         if (mode === "ours")
             return block.currentText  ? block.currentText.split("\n")  : []
@@ -622,7 +614,7 @@ Window {
     }
 
     function replaceBlockInModel(blockIndex, block, resolvedLines) {
-        let { start, end } = findBlockRowRange(displayModel, blockIndex)
+        let { start, end } = ConflictUtils.findBlockRowRange(displayModel, blockIndex)
         if (start < 0)
             return
 
@@ -661,17 +653,6 @@ Window {
                 displayModel.setProperty(i, "blockIndex", bi - 1)
             }
         }
-    }
-
-    function findBlockRowRange(model, blockIndex) {
-        let start = -1, end = -1
-        for (let i = 0; i < model.count; ++i) {
-            if (model.get(i).blockIndex === blockIndex) {
-                if (start < 0) start = i
-                end = i
-            }
-        }
-        return { start, end }
     }
 
     function updateRemainingBlocks(selectedConflict, blockIndex, resolvedPos, lineDelta, blockEndLine) {
