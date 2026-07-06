@@ -9,12 +9,12 @@ GitStatus::GitStatus(QObject *parent)
     : IGitController{parent}
 {}
 
-GitResult GitStatus::stageFile(const QString &filePath)
+GitResult GitStatus::stageFile(const QString &filePath, bool isDeleted)
 {
     if (filePath.isEmpty())
         return GitResult(false, QVariant(), "File path cannot be empty");
 
-    GitResult result = addToIndex(filePath);  // Stage the file
+    GitResult result = addToIndex(filePath, isDeleted);  // Stage the file
     if (result.success()) {
         emitGitCommand(QString("git add -- %1").arg(quoteCommandArg(filePath)));
     }
@@ -75,7 +75,7 @@ GitResult GitStatus::stageAll(bool includeUntrackedFiles)
     // Stage all unstaged files
     for (const GitFileStatus& file : files) {
         if (file.isUnstaged()) {
-            GitResult result = addToIndex(file.path());  // Stage the unstaged file
+            GitResult result = addToIndex(file.path(), file.status() == GitFileStatus::Deleted);  // Stage the unstaged file
             if (result.success()) {
                 stagedCount++;
                 stagedFiles.append(file.path());
