@@ -287,6 +287,18 @@ Item {
         }
     }
 
+    Connections {
+        target: Qt.application
+        
+        function onStateChanged() {
+            if (Qt.application.state === Qt.ApplicationActive) {
+                changesFileLists.updateStatus()
+            }
+        }
+    }
+
+
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 8
