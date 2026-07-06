@@ -40,7 +40,7 @@ Rectangle {
 
     /* Signals
      * ****************************************************************************************/
-    signal fileSelected(string filePath)
+    signal fileSelected(string filePath, int fileStatus)
     signal toggled(bool expanded)
 
     /* Children
@@ -242,11 +242,11 @@ Rectangle {
 
     /* Functions
      * ****************************************************************************************/
-    function selectFile(filePath) {
+    function selectFile(filePath, fileStatus) {
         if (!filePath || filePath === "")
             return
 
         root.selectedFilePath = filePath
-        root.fileSelected(filePath)
+        root.fileSelected(filePath, fileStatus)
     }
 }

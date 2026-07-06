@@ -21,6 +21,7 @@ Item {
     property var unstagedModel: []
     property var stagedModel: []
     property string currentFile: ""
+    property int currentFileStatus: -1
     property var showSaveDialog
 
     /* Signals
@@ -215,8 +216,9 @@ Item {
                 )
             }
 
-            onFileSelected: function(filePath) {
+            onFileSelected: function(filePath, fileStatus) {
                 stagedSection.selectedFilePath = ""
+                root.currentFileStatus = fileStatus
                 root.fileSelected(filePath, false)
             }
         }

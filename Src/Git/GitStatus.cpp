@@ -957,15 +957,11 @@ QString GitStatus::buildSelectedLinesContent(const QString &filePath, int startL
     git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
     diffOpts.flags |= (GIT_DIFF_PATIENCE | GIT_DIFF_MINIMAL);
 
-    if (type == GIT_DELTA_DELETED) {
-        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
-    } else {
-        QByteArray pathUtf8 = filePath.toUtf8();
-        char *path = const_cast<char *>(pathUtf8.constData());
-        diffOpts.pathspec.strings = &path;
-        diffOpts.pathspec.count = 1;
-        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
-    }
+    QByteArray pathUtf8 = filePath.toUtf8();
+    char *path = const_cast<char *>(pathUtf8.constData());
+    diffOpts.pathspec.strings = &path;
+    diffOpts.pathspec.count = 1;
+    git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
 
     UniqueDiff diff(diffRaw);
     git_patch *patchRaw = nullptr;

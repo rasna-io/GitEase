@@ -73,7 +73,7 @@ FileListSection {
             status: rowModelData && rowModelData.status ? rowModelData.status : GitFileStatus.Unknown
             selected: root.selectedFilePath !== "" && root.selectedFilePath === (rowModelData && rowModelData.path ? rowModelData.path : "")
 
-            onClicked: root.selectFile(text)
+            onClicked: root.selectFile(text, rowModelData.status)
 
             onStageRequested: function(filePath) {
                 root.stageFileRequested(filePath)
