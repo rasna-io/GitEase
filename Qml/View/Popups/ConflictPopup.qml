@@ -71,8 +71,6 @@ Window {
 
     property bool interactiveMode: false
 
-    property int pendingRestoreLineNumber: -1
-
     /* Signals
      * ****************************************************************************************/
     signal operationCompleted();
@@ -565,32 +563,6 @@ Window {
                 return { block: blocks[i], pos: i }
         }
         return null
-    }
-
-    function restoreScrollPosition() {
-        if (pendingRestoreLineNumber < 0)
-            return
-
-        var targetLine = pendingRestoreLineNumber
-        pendingRestoreLineNumber = -1
-
-        if (displayModel.count === 0)
-            return
-
-        var targetIndex = -1
-        for (var i = 0; i < displayModel.count; i++) {
-            var item = displayModel.get(i)
-            if (item.lineNumber !== undefined && item.lineNumber >= targetLine) {
-                targetIndex = i
-                break
-            }
-        }
-
-        if (targetIndex < 0) {
-            targetIndex = displayModel.count - 1
-        }
-
-        conflictListView.positionViewAtIndex(targetIndex, ListView.Beginning)
     }
 
     function acceptBlock(blockIndex, mode) {
