@@ -267,7 +267,7 @@ Item {
 
                     Button {
                         text: "Cancel"
-                        Layout.preferredWidth: parent.width * 0.45
+                        Layout.fillWidth: true
                         flat: true
 
                         background: Rectangle {
