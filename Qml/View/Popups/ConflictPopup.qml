@@ -582,103 +582,19 @@ Window {
         }
 
         // Compute the text to keep
-        let resolvedLines = computeResolvedLines(block, mode)
+        let resolvedLines = ConflictUtils.computeResolvedLines(block, mode)
 
         // Update the ListModel in place
-        replaceBlockInModel(blockIndex, block, resolvedLines)
+        ConflictUtils.replaceBlockInModel(displayModel, blockIndex, block, resolvedLines)
 
         // Update the cached block objects
         let lineDelta = resolvedLines.length - (block.endLine - block.startLine + 1)
-        updateRemainingBlocks(selectedConflict, blockIndex, found.pos, lineDelta, block.endLine)
+        ConflictUtils.updateRemainingBlocks(selectedConflict, blockIndex, found.pos, lineDelta, block.endLine)
 
         // Keep the raw lines array in sync
-        updateLinesArray(selectedConflict, block, resolvedLines)
+        selectedConflict.lines = ConflictUtils.updateLinesArray(selectedConflict.lines, block, resolvedLines)
 
         notificationController.success("Conflicts Resolved", "Conflict", 2000)
-    }
-
-    function computeResolvedLines(block, mode) {
-        if (mode === "ours")
-            return block.currentText  ? block.currentText.split("\n")  : []
-
-        if (mode === "theirs")
-            return block.incomingText ? block.incomingText.split("\n") : []
-
-        if (mode === "both") {
-            let ours   = block.currentText  ? block.currentText.split("\n")  : []
-            let theirs = block.incomingText ? block.incomingText.split("\n") : []
-            return ours.concat(theirs)
-        }
-
-        return []
-    }
-
-    function replaceBlockInModel(blockIndex, block, resolvedLines) {
-        let { start, end } = ConflictUtils.findBlockRowRange(displayModel, blockIndex)
-        if (start < 0)
-            return
-
-        let removedRowCount     = end - start + 1
-        let originalLineCount   = block.endLine - block.startLine + 1
-        let lineDelta           = resolvedLines.length - originalLineCount
-
-        // Remove old conflict rows
-        displayModel.remove(start, removedRowCount)
-
-        // Insert resolved rows
-        for (let i = 0; i < resolvedLines.length; ++i) {
-            displayModel.insert(start + i, {
-                type: "line",
-                text: resolvedLines[i],
-                lineNumber: block.startLine + i,
-                blockIndex: -1,
-                role: "resolved"
-            })
-        }
-
-        // Shift line numbers of rows after the block
-        if (lineDelta !== 0) {
-            for (let i = start + resolvedLines.length; i < displayModel.count; ++i) {
-                let row = displayModel.get(i)
-                if (row.lineNumber !== undefined && row.lineNumber !== null) {
-                    displayModel.setProperty(i, "lineNumber", row.lineNumber + lineDelta)
-                }
-            }
-        }
-
-        // Decrement blockIndex for later blocks
-        for (let i = 0; i < displayModel.count; ++i) {
-            let bi = displayModel.get(i).blockIndex
-            if (bi !== undefined && bi > blockIndex) {
-                displayModel.setProperty(i, "blockIndex", bi - 1)
-            }
-        }
-    }
-
-    function updateRemainingBlocks(selectedConflict, blockIndex, resolvedPos, lineDelta, blockEndLine) {
-        for (let i = 0; i < selectedConflict.blocks.length; ++i) {
-            if (i === resolvedPos)
-                continue
-
-            let b = selectedConflict.blocks[i]
-            if (b.index > blockIndex)
-                b.index -= 1
-
-            if (b.startLine > blockEndLine) {
-                b.startLine += lineDelta
-                b.endLine   += lineDelta
-            }
-        }
-        selectedConflict.blocks.splice(resolvedPos, 1)
-    }
-
-    function updateLinesArray(selectedConflict, block, resolvedLines) {
-        if (!selectedConflict.lines)
-            return
-
-        let prefix = selectedConflict.lines.slice(0, block.startLine - 1)
-        let suffix = selectedConflict.lines.slice(block.endLine)
-        selectedConflict.lines = prefix.concat(resolvedLines, suffix)
     }
 
     function saveAndStage(path) {
