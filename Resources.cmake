@@ -112,8 +112,6 @@ set(RESOURCES_COMPONENTS
 
     Qml/View/Components/Docks/RepositoriesHistoryDock.qml       # All Repositories Dock
 
-    Qml/View/Components/Docks/RepoForestDock.qml                # Fetch/ Pull all Repositories
-
     # File list components (commit UI)
     Qml/View/Components/FileLists/UnstagedFileListSection.qml  # Unstaged File Status Section
     Qml/View/Components/FileLists/UnstagedFileListRow.qml      # Unstaged File Status Section Row Item
@@ -154,11 +152,6 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Notification/NotificationItem.qml
     Qml/View/Components/Notification/NotificationCloseAllHeader.qml
 
-    # Repo Forest
-    Qml/View/Components/RepoForest/RepoForest.qml
-    Qml/View/Components/RepoForest/RepoForestLogs.qml
-    Qml/View/Components/RepoForest/RepoItem.qml
-
     # Conflict Components
     Qml/View/Components/Conflict/ConflictFileList.qml
     Qml/View/Components/Conflict/ConflictConfirmationDialog.qml
@@ -198,7 +191,6 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/NotificationCenterPopup.qml
     Qml/View/Popups/ManageStashPopup.qml
     Qml/View/Popups/FetchSummaryPopup.qml
-    Qml/View/Popups/RepoForestPopup.qml
     Qml/View/Popups/ConflictPopup.qml
     Qml/View/Popups/MergeMethodPopup.qml
     Qml/View/Popups/CommitAmendPopup.qml

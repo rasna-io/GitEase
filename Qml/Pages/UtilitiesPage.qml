@@ -18,7 +18,6 @@ Item {
      * ****************************************************************************************/
     property var page: null
 
-    property RepoForestPopup            repoForestPopup             : null
     property BranchController           branchController            : null
     property BundleController           bundleController            : null
     property RemoteController           remoteController            : null
@@ -178,15 +177,6 @@ Item {
                 onHoveredChanged: flow.updateDockHovered()
             }
 
-            RepoForestDock {
-                width: 330
-                height: 390
-                repositoryController: root.repositoryController
-                branchController: root.branchController
-                remoteController: root.remoteController
-                repoForestPopup: root.repoForestPopup
-            }
-            
             RebaseDock {
                 width: 330
                 height: 390
@@ -211,10 +201,22 @@ Item {
                     onLoaded: {
                         if (!item) return
                         if (item.hasOwnProperty("pluginManager"))
-                            item.pluginManager = root.pluginController?.pluginManager
+                            item.pluginManager = Qt.binding(function() { return root.pluginController?.pluginManager })
                         if (item.hasOwnProperty("pluginId"))
                             item.pluginId = modelData.id
                         flow.setupPluginDock(item)
+                        if (item.hasOwnProperty("repositoryController"))
+                            item.repositoryController = Qt.binding(function() { return root.repositoryController })
+                        if (item.hasOwnProperty("branchController"))
+                            item.branchController = Qt.binding(function() { return root.branchController })
+                        if (item.hasOwnProperty("remoteController"))
+                            item.remoteController = Qt.binding(function() { return root.remoteController })
+                        if (item.hasOwnProperty("userAuthenticationPopup"))
+                            item.userAuthenticationPopup = Qt.binding(function() { return root.userAuthenticationPopup })
+                        if (item.hasOwnProperty("uiSessionPopups"))
+                            item.uiSessionPopups = Qt.binding(function() { return root.uiSessionPopups })
+                        if (item.hasOwnProperty("notificationController"))
+                            item.notificationController = Qt.binding(function() { return root.notificationController })
                     }
 
                     onStatusChanged: {

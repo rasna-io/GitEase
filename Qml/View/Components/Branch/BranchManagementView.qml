@@ -171,8 +171,6 @@ UtilitiesCard {
                     }
                 }
             }
-
-            onContentHeightChanged: root.pageScrollBlocking = listView.contentHeight > listView.height + 1
         }
 
         BranchesList {
