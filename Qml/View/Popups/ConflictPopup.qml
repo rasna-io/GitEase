@@ -546,6 +546,123 @@ Window {
         });
     }
 
+    function acceptBlock(blockIndex, mode) {
+        if (!selectedPath || !selectedConflict)
+            return
+
+        let found = findBlockByIndex(selectedConflict.blocks, blockIndex)
+        if (!found)
+            return
+        let block = found.block
+
+        // Write current editor content and perform C++ resolution
+        let currentContent = ConflictUtils.buildFullContent(displayModel)
+        conflictController.writeWorkingFile(selectedPath, currentContent)
+
+        let res
+        switch (mode) {
+            case "ours":
+                res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
+                break
+
+            case "theirs":
+                res = conflictController.acceptBlockTheirs(selectedPath, blockIndex)
+                break
+
+            case "both":
+                res = conflictController.acceptBlockBoth(selectedPath, blockIndex)
+                break
+
+            default:
+                return
+        }
+        if (!res.success) {
+            notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
+            return
+        }
+
+        // Compute the text to keep
+        let resolvedLines = computeResolvedLines(block, mode)
+
+        // Update the ListModel in place
+        replaceBlockInModel(blockIndex, block, resolvedLines)
+
+        // Update the cached block objects
+        let lineDelta = resolvedLines.length - (block.endLine - block.startLine + 1)
+        updateRemainingBlocks(selectedConflict, blockIndex, found.pos, lineDelta, block.endLine)
+
+        // Keep the raw lines array in sync
+        updateLinesArray(selectedConflict, block, resolvedLines)
+
+        notificationController.success("Conflicts Resolved", "Conflict", 2000)
+    }
+
+    function findBlockByIndex(blocks, idx) {
+        for (let i = 0; i < blocks.length; ++i) {
+            if (blocks[i].index === idx)
+                return { block: blocks[i], pos: i }
+        }
+        return null
+    }
+
+    function computeResolvedLines(block, mode) {
+        if (mode === "ours")
+            return block.currentText  ? block.currentText.split("\n")  : []
+
+        if (mode === "theirs")
+            return block.incomingText ? block.incomingText.split("\n") : []
+
+        if (mode === "both") {
+            let ours   = block.currentText  ? block.currentText.split("\n")  : []
+            let theirs = block.incomingText ? block.incomingText.split("\n") : []
+            return ours.concat(theirs)
+        }
+
+        return []
+    }
+
+    function replaceBlockInModel(blockIndex, block, resolvedLines) {
+        let { start, end } = findBlockRowRange(displayModel, blockIndex)
+        if (start < 0)
+            return
+
+        let removedRowCount     = end - start + 1
+        let originalLineCount   = block.endLine - block.startLine + 1
+        let lineDelta           = resolvedLines.length - originalLineCount
+
+        // Remove old conflict rows
+        displayModel.remove(start, removedRowCount)
+
+        // Insert resolved rows
+        for (let i = 0; i < resolvedLines.length; ++i) {
+            displayModel.insert(start + i, {
+                type: "line",
+                text: resolvedLines[i],
+                lineNumber: block.startLine + i,
+                blockIndex: -1,
+                role: "resolved"
+            })
+        }
+
+        // Shift line numbers of rows after the block
+        if (lineDelta !== 0) {
+            for (let i = start + resolvedLines.length; i < displayModel.count; ++i) {
+                let row = displayModel.get(i)
+                if (row.lineNumber !== undefined && row.lineNumber !== null) {
+                    displayModel.setProperty(i, "lineNumber", row.lineNumber + lineDelta)
+                }
+            }
+        }
+
+        // Decrement blockIndex for later blocks
+        for (let i = 0; i < displayModel.count; ++i) {
+            let bi = displayModel.get(i).blockIndex
+            if (bi !== undefined && bi > blockIndex) {
+                displayModel.setProperty(i, "blockIndex", bi - 1)
+            }
+        }
+    }
+
     function findBlockRowRange(model, blockIndex) {
         let start = -1, end = -1
         for (let i = 0; i < model.count; ++i) {
@@ -557,112 +674,30 @@ Window {
         return { start, end }
     }
 
-    function findBlockByIndex(blocks, idx) {
-        for (let i = 0; i < blocks.length; ++i) {
-            if (blocks[i].index === idx)
-                return { block: blocks[i], pos: i }
-        }
-        return null
-    }
-
-    function acceptBlock(blockIndex, mode) {
-        if (!selectedPath || !selectedConflict)
-            return
-
-        let found = findBlockByIndex(selectedConflict.blocks, blockIndex)
-        if (!found)
-            return
-        let block = found.block
-
-        let currentContent = ConflictUtils.buildFullContent(displayModel)
-        conflictController.writeWorkingFile(selectedPath, currentContent)
-
-        let res
-        switch (mode) {
-            case "ours":   res = conflictController.acceptBlockOurs(selectedPath, blockIndex); break
-            case "theirs": res = conflictController.acceptBlockTheirs(selectedPath, blockIndex); break
-            case "both":   res = conflictController.acceptBlockBoth(selectedPath, blockIndex); break
-            default: return
-        }
-        if (!res.success) {
-            notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
-            return
-        }
-
-        // Compute resolved lines
-        let resolvedLines = []
-        if (mode === "ours")   resolvedLines = block.currentText  ? block.currentText.split("\n")  : []
-        if (mode === "theirs") resolvedLines = block.incomingText ? block.incomingText.split("\n") : []
-        if (mode === "both") {
-            resolvedLines = (block.currentText ? block.currentText.split("\n") : [])
-                             .concat(block.incomingText ? block.incomingText.split("\n") : [])
-        }
-
-        // Locate the rows belonging to this block in the display model
-        let { start, end } = findBlockRowRange(displayModel, blockIndex)
-        if (start < 0) return
-
-        let removedRowCount   = end - start + 1
-        let originalLineCount = block.endLine - block.startLine + 1
-        let lineDelta          = resolvedLines.length - originalLineCount
-
-        // Replace the block's rows with resolved lines
-        displayModel.remove(start, removedRowCount)
-        for (let i = 0; i < resolvedLines.length; ++i) {
-            displayModel.insert(start + i, {
-                type: "line",
-                text: resolvedLines[i],
-                lineNumber: block.startLine + i,
-                blockIndex: -1,
-                role: "resolved"
-            })
-        }
-
-        // Shift line numbers of later rows
-        if (lineDelta !== 0) {
-            for (let i = start + resolvedLines.length; i < displayModel.count; ++i) {
-                let row = displayModel.get(i)
-                if (row.lineNumber !== undefined && row.lineNumber !== null) {
-                    displayModel.setProperty(i, "lineNumber", row.lineNumber + lineDelta)
-                }
-            }
-        }
-
-        // Renumber blockIndex for later blocks
-        for (let i = 0; i < displayModel.count; ++i) {
-            let bi = displayModel.get(i).blockIndex
-            if (bi !== undefined && bi > blockIndex) {
-                displayModel.setProperty(i, "blockIndex", bi - 1)
-            }
-        }
-
-        // Update cached block objects
+    function updateRemainingBlocks(selectedConflict, blockIndex, resolvedPos, lineDelta, blockEndLine) {
         for (let i = 0; i < selectedConflict.blocks.length; ++i) {
-            if (i === found.pos) continue
+            if (i === resolvedPos)
+                continue
+
             let b = selectedConflict.blocks[i]
-            if (b.index > blockIndex) b.index -= 1
-            if (b.startLine > block.endLine) {
+            if (b.index > blockIndex)
+                b.index -= 1
+
+            if (b.startLine > blockEndLine) {
                 b.startLine += lineDelta
                 b.endLine   += lineDelta
             }
         }
-        selectedConflict.blocks.splice(found.pos, 1)
+        selectedConflict.blocks.splice(resolvedPos, 1)
+    }
 
-        // Keep the raw lines array in sync
-        if (selectedConflict.lines) {
-            let prefix = selectedConflict.lines.slice(0, block.startLine - 1)
-            let suffix = selectedConflict.lines.slice(block.endLine)
-            selectedConflict.lines = prefix.concat(resolvedLines, suffix)
-        }
+    function updateLinesArray(selectedConflict, block, resolvedLines) {
+        if (!selectedConflict.lines)
+            return
 
-        if (selectedConflict.blocks.length === 0) {
-            conflicts = conflicts.filter(c => c.path !== selectedPath)
-            let copy = Object.assign({}, modifiedFiles)
-            delete copy[selectedPath]
-            modifiedFiles = copy
-        }
-
-        notificationController.success("Conflicts Resolved", "Conflict", 2000)
+        let prefix = selectedConflict.lines.slice(0, block.startLine - 1)
+        let suffix = selectedConflict.lines.slice(block.endLine)
+        selectedConflict.lines = prefix.concat(resolvedLines, suffix)
     }
 
     function saveAndStage(path) {
