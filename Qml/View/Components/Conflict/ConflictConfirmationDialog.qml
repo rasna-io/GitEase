@@ -29,6 +29,8 @@ IPopup {
 
     property bool hasAbort              : true
 
+    property bool hasSave               : false
+
     /* Signals
      * ****************************************************************************************/
     signal saved()
@@ -104,7 +106,7 @@ IPopup {
                 Layout.preferredHeight: saveRow.implicitHeight + 16
                 border.color: saveMouseArea.containsMouse ? Style.colors.accent : "transparent"
                 radius: 6
-                visible: false  //TODO, next version
+                visible: dialog.hasSave
                 color: Style.colors.primaryBackground
 
                 MouseArea {

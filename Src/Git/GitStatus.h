@@ -195,12 +195,13 @@ public:
     /// Returns a QVariantList of chunk objects ready for QML
     Q_INVOKABLE GitResult getChunkedDiffView(const QString &filePath, bool staged);
 
-private:
     /**
      * @brief Get unstaged diff view (index to workdir).
      * @param filePath Path to the file to inspect.
      */
-    GitResult getUnstagedDiffView(const QString &filePath);
+    Q_INVOKABLE GitResult getUnstagedDiffView(const QString &filePath);
+
+private:
 
     /**
      * @brief Get staged diff view (HEAD to index).

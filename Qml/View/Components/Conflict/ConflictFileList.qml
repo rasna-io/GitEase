@@ -17,6 +17,7 @@ Rectangle {
      * ****************************************************************************************/
     property var    conflictFiles   : []
     property string currentPath     : ""
+    property var    stagedFiles     : []
 
     /* Signals
      * ****************************************************************************************/
@@ -32,37 +33,108 @@ Rectangle {
     border.width: 1
     border.color: Style.colors.primaryBorder
 
-    ListView {
-        id: fileListView
+    ScrollView {
+        id: scroll
         anchors.fill: parent
-        model: root.conflictFiles
-        spacing: 1
-        currentIndex: {
-            for (let i = 0; i < root.conflictFiles.length; ++i)
-                if (root.conflictFiles[i].path === root.currentPath)
-                    return i
-            return -1
-        }
+        clip: true
 
-        delegate: Rectangle {
-            width: parent.width
-            height: 24
+        contentWidth: availableWidth
+
+        ColumnLayout {
+            spacing: 0
+            width: scroll.availableWidth
+
+            // Conflict Changes header
+            Text {
+                visible: conflictFiles.length > 0
+                text: "Conflict Changes"
+                color: Style.colors.secondaryText
+                font.family: Style.fontTypes.roboto
+                font.bold: true
+                font.pixelSize: 11
+                leftPadding: 12
+                topPadding: 6
+                bottomPadding: 2
+            }
+
+            Repeater {
+                model: conflictFiles
+                delegate: fileDelegate
+            }
+
+            // Staged Changes header
+            Text {
+                visible: stagedFiles.length > 0
+                text: "Staged Changes"
+                color: Style.colors.secondaryText
+                font.family: Style.fontTypes.roboto
+                font.bold: true
+                font.pixelSize: 11
+                leftPadding: 12
+                topPadding: 6
+                bottomPadding: 2
+            }
+
+            Repeater {
+                model: stagedFiles
+                delegate: fileDelegate
+            }
+        }
+    }
+
+    Component {
+        id: fileDelegate
+        Rectangle {
+            id: delegateItem
+            Layout.fillWidth: true
+            Layout.preferredHeight: 28
             radius: 3
-            color: ListView.isCurrentItem ? Style.colors.hoverTitle : "transparent"
+
+            property bool isResolved: {
+                if (modelData && modelData.blocks !== undefined)
+                    return modelData.blocks.length === 0
+
+                return true
+            }
+
+            property bool isStaged  : root.stagedFiles && root.stagedFiles.some(f => f.path === modelData.path)
+            property bool isCurrent : root.currentPath === modelData.path
+            property bool isHovered : hoverHandler.hovered
+
+            color: {
+                if (isCurrent)
+                    return Style.colors.accent
+
+                if (isHovered)
+                    return Style.colors.hoverTitle
+
+                return "transparent"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                acceptedButtons: Qt.NoButton
+            }
+
+            Behavior on color {
+                ColorAnimation { duration: 150 }
+            }
+
+            HoverHandler {
+                id: hoverHandler
+            }
+
+            TapHandler {
+                gesturePolicy: TapHandler.ReleaseWithinBounds
+                onTapped: root.fileSelected(modelData.path)
+            }
 
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
                 spacing: 8
-
-                Text {
-                    text: (index + 1) + "."
-                    color: Style.colors.lineNumberColor
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
-                    opacity: 0.7
-                }
 
                 ScrollingText {
                     Layout.fillWidth: true
@@ -72,32 +144,48 @@ Rectangle {
                     font.pixelSize: 13
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                }
-
                 ActionIconButton {
-                    property bool canSave: !modelData.blocks || modelData.blocks.length === 0
-
+                    visible: true
+                    opacity: !isStaged && isHovered
                     iconText: Style.icons.plus
                     textColor: Style.colors.mutedText
+                    tooltip: "Stage Changes"
 
-                    opacity: canSave ? 1.0 : 0.5
-
-                    tooltip: canSave ? "Save and Stage" : "Resolve conflicts to stage"
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
 
                     onClicked: {
-                        if (canSave) {
-                            root.fileSelected(modelData.path)
-                            root.stageRequested(modelData.path)
-                        }
+                        root.fileSelected(modelData.path)
+                        root.stageRequested(modelData.path)
                     }
                 }
-            }
 
-            TapHandler {
-                onTapped: root.fileSelected(modelData.path)
-                gesturePolicy: TapHandler.ReleaseWithinBounds
+                Text {
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: 11
+                    font.bold: true
+                    Layout.preferredWidth: 14
+                    horizontalAlignment: Text.AlignHCenter
+
+                    text: {
+                        // Determine status based on data source
+                        if (modelData.blocks !== undefined) {
+                            // It's a conflict file
+                            return modelData.blocks.length > 0 ? "!" : "M"
+                        } else {
+                            // It's a staged file (from stagedFiles)
+                            return modelData.status || "M"
+                        }
+                    }
+                    color: {
+                        if (modelData.blocks !== undefined && modelData.blocks.length > 0)
+                            return Style.colors.conflictStatusConflictColor
+
+                        if (modelData.status === "A")
+                            return Style.colors.conflictStatusAddedColor
+
+                        return Style.colors.conflictStatusModifiedColor
+                    }
+                }
             }
         }
     }

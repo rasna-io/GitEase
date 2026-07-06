@@ -35,6 +35,7 @@ Window {
     property var    selectedConflict: null
     property string selectedPath    : ""
     property var    modifiedFiles   : ({})
+    property var    stagedFiles     : []
 
     property string headerText          : `${currentOperationName} Conflicts`
     property string continueButtonText  : `Continue ${currentOperationName}`
@@ -243,6 +244,7 @@ Window {
                     id: fileListComp
                     conflictFiles: root.conflicts
                     currentPath: root.selectedPath
+                    stagedFiles: root.stagedFiles
                     onFileSelected  : (path) => root.selectFile(path)
                     onStageRequested: (path) => root.saveAndStage(path)
                 }
@@ -442,24 +444,38 @@ Window {
             return
         }
 
-        conflicts = res.data || []
+        let rawConflicts    = res.data || []
+        let newStaged       = []
+        let stagedPaths     = ({})
 
-        if (conflicts.length == 0){
+        let statusRes = statusController.status()
+        if (statusRes.success) {
+            for (let file of statusRes.data) {
+                if (file.isStaged || file.isUntracked) {
+                    stagedPaths[file.path] = true
+                    newStaged.push({ path: file.path, status: labelFor(file) })
+                }
+            }
+        }
+
+        conflicts   = rawConflicts.filter(c => c && c.path && !stagedPaths[c.path])
+        stagedFiles = newStaged
+
+        if (conflicts.length === 0) {
             selectedConflict = null
             selectedPath = ""
             displayModel.clear()
             return
         }
 
-        if (keepSelection && selectedPath) {
-            let exists = conflicts.some(c => c.path === selectedPath)
-            if (exists)
-                selectFile(selectedPath, true)
-            else
-                selectFile(conflicts[0].path)
-        } else {
-            selectFile(conflicts[0].path)
-        }
+        let target = (keepSelection && selectedPath && conflicts.some(c => c.path === selectedPath))
+                     ? selectedPath
+                     : conflicts[0].path
+        selectFile(target, true)
+    }
+
+    function labelFor(file) {
+        return file.indexStatus || "M"
     }
 
     function selectFile(path, forceRebuild = false) {
@@ -484,7 +500,31 @@ Window {
             modifiedFiles = copy
         }
 
-        // 2. Switch File
+        // 2. If it's a staged file, show its current file content
+        if (stagedFiles.some(f => f.path === path)) {
+            selectedConflict = null
+            selectedPath = path
+
+            // fetch current working directory content
+            let statusRes = statusController.getUnstagedDiffView(path)
+            displayModel.clear()
+            if (statusRes && statusRes.success) {
+                let liveContent = statusRes.data && statusRes.data.newText
+                if (liveContent) {
+                    let linesArray = liveContent.split('\n')
+                    for (let i = 0; i < linesArray.length; ++i) {
+                        displayModel.append({
+                            type: "contextLine",
+                            text: linesArray[i],
+                            lineNumber: i + 1
+                        })
+                    }
+                }
+            }
+            return
+        }
+
+        // 3. Otherwise, switch to the conflict file and build its display model
         for (let i = 0; i < conflicts.length; ++i) {
             if (conflicts[i].path === path) {
                 selectedConflict = conflicts[i]
@@ -569,8 +609,9 @@ Window {
         d.message = "This file still contains unresolved conflict markers.\n" +
                     "Stage it anyway?"
 
-        d.saveTitle = "Stage Anyway"
-        d.saveDescription = "The modification will be saved"
+        d.saveTitle = "Save & Stage"
+        d.saveDescription = "Save the file with conflicts and stage it"
+        d.hasSave = true
 
         d.cancelTitle = "Cancel"
         d.cancelDescription = "Don't save The modification"
@@ -603,11 +644,6 @@ Window {
         }
 
         notificationController.success("File staged", "Conflict", 2500)
-
-        // Clear memory state since changes are successfully staged
-        let copy = Object.assign({}, modifiedFiles)
-        delete copy[path]
-        modifiedFiles = copy
 
         loadConflicts(true)
     }
@@ -683,6 +719,7 @@ Window {
             modifiedFiles = ({})
             displayModel.clear()
             selectedPath = ""
+            stagedFiles = []
 
             close()
         }
@@ -702,6 +739,7 @@ Window {
             modifiedFiles = ({})
             displayModel.clear()
             selectedPath = ""
+            stagedFiles = []
 
             close()
         }
