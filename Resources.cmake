@@ -144,6 +144,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Remotes/RemoteView.qml
 
     Qml/View/Components/Branch/BranchManagementView.qml
+    Qml/View/Components/Branch/BranchesList.qml
     Qml/View/Components/Tag/TagManagementView.qml
 
     # DockPanel Docks

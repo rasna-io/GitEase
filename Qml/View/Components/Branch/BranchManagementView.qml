@@ -29,6 +29,13 @@ UtilitiesCard {
 
     content: ColumnLayout {
         id: content
+
+        property int currentIndex: 0
+        property var localBranches: []
+        property var remoteBranches: []
+
+        onCurrentIndexChanged: content.updateModel()
+
         anchors.fill: parent
         spacing: 12
 
@@ -56,142 +63,111 @@ UtilitiesCard {
             }
         }
 
-        ListView {
-            id: listView
+        ButtonGroup {
+            id: headerButtonGroup
+            exclusive: true
+        }
+
+        // View Control
+        Rectangle {
+            id: viewControl
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 8
-            clip: true
+            Layout.preferredHeight: 40
+            radius: 10
+            color: Style.colors.cardBackground
 
-            delegate: Rectangle {
-                id: branchDelegate
-                property var branch: modelData
+            RowLayout {
+                anchors.fill: parent
+                spacing: 4
+                anchors.margins: 5
 
-                width: listView.width
-                height: 38
-                radius: 6
-                color: Style.colors.secondaryBackground
-                border.color: branch.name === root.currentBranch ? Style.colors.accent : "transparent"
-                border.width: 1
+                Button {
+                    id: localBtn
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 10
+                    topInset: 0
+                    bottomInset:0
+                    verticalPadding: 6
 
-                    // Active Indicator Dot
-                    Rectangle {
-                        width: 8
-                        height: 8
-                        radius: 4
-                        color: Style.colors.accent
-                        visible: branch.name === root.currentBranch
-                    }
+                    checkable: true
+                    checked: content.currentIndex === 0
+                    ButtonGroup.group: headerButtonGroup
 
-                    ScrollingText {
-                        text: branch.name
-                        Layout.fillWidth: true
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 12
-                        font.bold: branch.name === root.currentBranch
-                        color: Style.colors.foreground
-                    }
+                    onClicked: content.currentIndex = 0
 
-                    RowLayout {
-                        spacing: 8
-                        Layout.alignment: Qt.AlignVCenter
+                    contentItem: Item {
+                        anchors.fill: parent
 
                         RowLayout {
-                            spacing: 4
-                            visible: branch.name !== root.currentBranch
+                            anchors.centerIn: parent
+                            spacing: 8
 
-                            MouseArea {
-                                id: checkoutArea
-                                Layout.preferredWidth: checkoutRow.implicitWidth
-                                Layout.preferredHeight: checkoutRow.implicitHeight
-                                cursorShape: Qt.PointingHandCursor
+                            Text {
+                                text: Style.icons.laptop
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 12
+                                color: Style.colors.foreground
+                                Layout.alignment: Qt.AlignVCenter
+                            }
 
-                                onClicked: {
-                                    if (branch.name.startsWith("origin/")) {
-                                        // Extract the local name (everything after 'origin/')
-                                        let localName = branch.name.split('/').slice(1).join('/');
-
-                                        // Create a local branch pointing to the remote's SHA
-                                        let res = root.branchController.createBranch(branch.targetHash, localName);
-
-                                        if (res.success) {
-                                            // Checkout the newly created local branch
-                                            let checkoutRes = root.branchController.checkoutBranch(localName);
-                                            if (checkoutRes.success && root.notificationController) {
-                                                root.notificationController.success("Checked out branch '" + localName + "'", "Checkout", 3000)
-                                            } else if (!checkoutRes.success && root.notificationController) {
-                                                root.notificationController.error(checkoutRes.errorMessage || "Failed to checkout branch", "Checkout Error", 5000)
-                                            }
-                                        } else {
-                                            if (root.notificationController) {
-                                                root.notificationController.error(res.errorMessage || "Failed to track remote branch", "Branch Error", 5000)
-                                            }
-                                        }
-                                    } else {
-                                        // Normal local checkout
-                                        let res = root.branchController.checkoutBranch(branch.name);
-                                        if (res.success && root.notificationController) {
-                                            root.notificationController.success("Checked out branch '" + branch.name + "'", "Checkout", 3000)
-                                        } else if (!res.success && root.notificationController) {
-                                            root.notificationController.error(res.errorMessage || "Failed to checkout branch", "Checkout Error", 5000)
-                                        }
-                                    }
-
-                                    content.update();
-                                }
-
-                                RowLayout {
-                                    id: checkoutRow
-                                    anchors.fill: parent
-                                    spacing: 4
-
-                                    Text {
-                                        text: Style.icons.check
-                                        font.family: Style.fontTypes.font6Pro
-                                        color: Style.colors.accent
-                                        font.pixelSize: 12
-                                        Layout.alignment: Qt.AlignVCenter
-                                    }
-
-                                    Text {
-                                        text: "Checkout"
-                                        font.family: Style.fontTypes.roboto
-                                        color: Style.colors.accent
-                                        font.pixelSize: 11
-                                        font.bold: true
-                                        Layout.alignment: Qt.AlignVCenter
-                                    }
-                                }
+                            Text {
+                                text: "Local"
+                                font.pixelSize: Style.appFont.h3Pt
+                                color: Style.colors.foreground
+                                Layout.alignment: Qt.AlignVCenter
                             }
                         }
+                    }
 
-                        // Delete Button
-                        ActionIconButton {
-                            iconText: Style.icons.trash
-                            textColor: Style.colors.deletededFile
-                            tooltip: "Delete Branch"
-                            visible: branch.name !== root.currentBranch
-                            Layout.alignment: Qt.AlignVCenter
-                            onClicked: {
-                                let res = root.branchController.deleteBranch(branch.name)
+                    background: Rectangle {
+                        radius: viewControl.radius
+                        color: localBtn.checked ? Style.colors.primaryBackground : "transparent"
+                    }
+                }
 
-                                if (res.success) {
-                                    if (root.notificationController) {
-                                        root.notificationController.success("Branch '" + branch.name + "' deleted successfully", "Branch", 3000)
-                                    }
-                                    content.update();
-                                } else {
-                                    if (root.notificationController) {
-                                        root.notificationController.error(res.errorMessage || "Failed to delete branch", "Branch Error", 5000)
-                                    }
-                                }
+                Button {
+                    id: remoteBtn
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    topInset: 0
+                    bottomInset:0
+                    verticalPadding: 6
+
+                    checkable: true
+                    checked: content.currentIndex === 1
+                    ButtonGroup.group: headerButtonGroup
+
+                    onClicked: content.currentIndex = 1
+
+                    contentItem: Item {
+                        anchors.fill: parent
+
+                        RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 8
+
+                            Text {
+                                text: Style.icons.cloud
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 12
+                                color: Style.colors.foreground
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+
+                            Text {
+                                text: "Remote"
+                                font.pixelSize: Style.appFont.h3Pt
+                                color: Style.colors.foreground
+                                Layout.alignment: Qt.AlignVCenter
                             }
                         }
+                    }
+
+                    background: Rectangle {
+                        radius: viewControl.radius
+                        color: remoteBtn.checked ? Style.colors.primaryBackground : "transparent"
                     }
                 }
             }
@@ -199,10 +175,19 @@ UtilitiesCard {
             onContentHeightChanged: root.pageScrollBlocking = listView.contentHeight > listView.height + 1
         }
 
+        BranchesList {
+            id: branchesList
+            isLocal: content.currentIndex === 0
+            currentBranch: root.currentBranch
+            branchController: root.branchController
+            notificationController: root.notificationController
+            onUpdateRequested: content.update()
+        }
 
         Button {
             Layout.fillWidth: true
             implicitHeight: 44
+            visible: content.currentIndex === 0
 
             background: Rectangle {
                 radius: 8
@@ -246,8 +231,16 @@ UtilitiesCard {
             if (branchController) {
                 root.currentBranch = branchController.getCurrentBranchName()
                 let res = branchController.getBranches();
-                listView.model = res
+
+                content.localBranches = res.filter(branch => branch["isLocal"])
+                content.remoteBranches = res.filter(branch => branch["isRemote"])
+
+                content.updateModel(res)
             }
+        }
+
+        function updateModel(res) {
+            branchesList.model = content.currentIndex === 0 ? content.localBranches : content.remoteBranches
         }
     }
 

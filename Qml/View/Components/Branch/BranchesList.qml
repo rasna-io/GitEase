@@ -1,0 +1,168 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+
+import GitEase
+import GitEase_Style
+import GitEase_Style_Impl
+
+/*! ***********************************************************************************************
+ * BranchesList
+ * Displays the local/remote branches based on the given model
+ * ************************************************************************************************/
+
+ListView {
+    id: root
+
+    /* Property Declarations
+     * ****************************************************************************************/
+    property bool isLocal: false
+    property string currentBranch: ""
+    property var branchController: null
+    property var notificationController: null
+
+    /* Signals
+     * ****************************************************************************************/
+    signal updateRequested()
+
+    /* Object Properties
+     * ****************************************************************************************/
+    Layout.fillWidth: true
+    Layout.fillHeight: true
+    spacing: 8
+    clip: true
+
+    ScrollBar.vertical: ScrollBar {
+        policy: ScrollBar.AsNeeded
+    }
+
+    delegate: Rectangle {
+        id: branchDelegate
+        property var branch: modelData
+        property bool hovered: false
+
+        width: root.width
+        height: 38
+        radius: 6
+        color: branch.name === root.currentBranch ? Style.colors.accent
+             : hoverHandler.hovered ? Style.colors.surfaceLight
+             : Style.colors.secondaryBackground
+
+        HoverHandler {
+            id: hoverHandler
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 8
+            spacing: 10
+
+            ScrollingText {
+                text: branch.name
+                Layout.fillWidth: true
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 12
+                font.bold: branch.name === root.currentBranch
+                color: Style.colors.foreground
+            }
+
+            RowLayout {
+                spacing: 8
+                Layout.alignment: Qt.AlignVCenter
+
+                RowLayout {
+                    spacing: 4
+                    visible: branch.name !== root.currentBranch
+
+                    MouseArea {
+                        id: checkoutArea
+                        Layout.preferredWidth: checkoutRow.implicitWidth
+                        Layout.preferredHeight: checkoutRow.implicitHeight
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: {
+                            if (branch.name.startsWith("origin/")) {
+                                // Extract the local name (everything after 'origin/')
+                                let localName = branch.name.split('/').slice(1).join('/');
+
+                                // Create a local branch pointing to the remote's SHA
+                                let res = root.branchController.createBranch(branch.targetHash, localName);
+
+                                if (res.success) {
+                                    // Checkout the newly created local branch
+                                    let checkoutRes = root.branchController.checkoutBranch(localName);
+                                    if (checkoutRes.success && root.notificationController) {
+                                        root.notificationController.success("Checked out branch '" + localName + "'", "Checkout", 3000)
+                                    } else if (!checkoutRes.success && root.notificationController) {
+                                        root.notificationController.error(checkoutRes.errorMessage || "Failed to checkout branch", "Checkout Error", 5000)
+                                    }
+                                } else {
+                                    if (root.notificationController) {
+                                        root.notificationController.error(res.errorMessage || "Failed to track remote branch", "Branch Error", 5000)
+                                    }
+                                }
+                            } else {
+                                // Normal local checkout
+                                let res = root.branchController.checkoutBranch(branch.name);
+                                if (res.success && root.notificationController) {
+                                    root.notificationController.success("Checked out branch '" + branch.name + "'", "Checkout", 3000)
+                                } else if (!res.success && root.notificationController) {
+                                    root.notificationController.error(res.errorMessage || "Failed to checkout branch", "Checkout Error", 5000)
+                                }
+                            }
+
+                            root.updateRequested()
+                        }
+
+                        RowLayout {
+                            id: checkoutRow
+                            anchors.fill: parent
+                            spacing: 4
+
+                            Text {
+                                text: Style.icons.check
+                                font.family: Style.fontTypes.font6Pro
+                                color: !hoverHandler.hovered ? Style.colors.accent : Qt.darker(Style.colors.accent, 1.5)
+                                font.pixelSize: 12
+                                font.bold: true
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+
+                            Text {
+                                text: "Checkout"
+                                font.family: Style.fontTypes.roboto
+                                color: !hoverHandler.hovered ? Style.colors.accent : Qt.darker(Style.colors.accent, 1.5)
+                                font.pixelSize: 11
+                                font.bold: true
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+                        }
+                    }
+                }
+
+                // Delete Button
+                ActionIconButton {
+                    iconText: Style.icons.trash
+                    textColor: Style.colors.deletededFile
+                    tooltip: "Delete Branch"
+                    visible: branch.name !== root.currentBranch && root.isLocal
+                    Layout.alignment: Qt.AlignVCenter
+                    onClicked: {
+                        let res = root.branchController.deleteBranch(branch.name)
+
+                        if (res.success) {
+                            if (root.notificationController) {
+                                root.notificationController.success("Branch '" + branch.name + "' deleted successfully", "Branch", 3000)
+                            }
+                            root.updateRequested()
+                        } else {
+                            if (root.notificationController) {
+                                root.notificationController.error(res.errorMessage || "Failed to delete branch", "Branch Error", 5000)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
