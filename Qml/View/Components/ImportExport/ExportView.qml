@@ -20,6 +20,7 @@ Item {
     property BranchController   branchController:     null
     property BundleController   bundleController:     null
     property string             selectedFolder:       ""
+    property NotificationController notificationController: null
 
     /* Object Properties (sized by parent layout when used in StackLayout)
      * ****************************************************************************************/
@@ -229,7 +230,13 @@ Item {
                 let bundleName = buildBundleName(base, target)
                 let path = `${root.selectedFolder}/${bundleName}`
 
-                root.bundleController.buildDiffBundle(base, target, refName, path)
+                let res = root.bundleController.buildDiffBundle(base, target, refName, path)
+
+                if (res.success && root.notificationController) {
+                    root.notificationController.success("Project exported successfully", "Export", 3000)
+                } else if (!res.success && root.notificationController) {
+                    root.notificationController.error(res.errorMessage || "Failed to export project", "Export Error", 5000)
+                }
             }
         }
     }

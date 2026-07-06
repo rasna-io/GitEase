@@ -24,6 +24,8 @@ UtilitiesCard {
 
     property BundleController bundleController: null
 
+    property NotificationController notificationController: null
+
     /* Object Properties
      * ****************************************************************************************/
 
@@ -154,6 +156,7 @@ UtilitiesCard {
                 Layout.fillHeight: true
                 branchController: root.branchController
                 bundleController: root.bundleController
+                notificationController: root.notificationController
             }
 
             ImportView {
@@ -161,6 +164,7 @@ UtilitiesCard {
                 Layout.fillHeight: true
                 branchController: root.branchController
                 bundleController: root.bundleController
+                notificationController: root.notificationController
             }
         }
     }

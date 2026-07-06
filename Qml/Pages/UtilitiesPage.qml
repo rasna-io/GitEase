@@ -110,6 +110,7 @@ Item {
                 height: 390
                 branchController: root.branchController
                 bundleController: root.bundleController
+                notificationController: root.notificationController
             }
 
             RemoteView {

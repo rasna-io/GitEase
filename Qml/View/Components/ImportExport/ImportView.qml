@@ -20,6 +20,7 @@ Item {
     property BranchController   branchController:     null
     property BundleController   bundleController:     null
     property string             selectedFile:         ""
+    property NotificationController notificationController: null
 
     /* Object Properties (sized by parent layout when used in StackLayout)
      * ****************************************************************************************/
@@ -146,6 +147,7 @@ Item {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: 8
                         text: "Import will extract and restore the project structure, branches, and commit history from the selected archive."
                         wrapMode: Text.WordWrap
                         font.pixelSize: 11
@@ -196,8 +198,11 @@ Item {
 
             onClicked: {
                 let res = root.bundleController.unbundle(root.selectedFile)
-                if (res.success) {
+                if (res.success && root.notificationController) {
+                    root.notificationController.success("Bundle imported successfully", "Import", 3000)
                     root.branchController.createBranch(res.data.SHA, branchTXF.text)
+                } else if (!res.success && root.notificationController) {
+                    root.notificationController.error(res.errorMessage || "Failed to import bundle", "Import Error", 5000)
                 }
             }
         }
