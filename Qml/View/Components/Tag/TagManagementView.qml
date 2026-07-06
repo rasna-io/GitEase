@@ -202,11 +202,13 @@ UtilitiesCard {
         target: root.tagController || uiSession.tagController
 
         function onPushTagFinished(result) {
-            if (result.success)
-                if (root.notificationController) root.notificationController.success("Tag created and pushed", "Success", 3000)
-
-            else
-                if (root.notificationController) root.notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+            if (result.success) {
+                if (root.notificationController)
+                    root.notificationController.success("Tag created and pushed", "Success", 3000)
+            } else {
+                if (root.notificationController)
+                    root.notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+            }
 
             root.update()
         }
@@ -220,7 +222,7 @@ UtilitiesCard {
                 root.update();
             }
             else
-                if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + res.errorMessage, "Error", 5000);
+                if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
         }
     }
 

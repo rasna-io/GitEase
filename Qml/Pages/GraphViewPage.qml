@@ -212,8 +212,6 @@ Item {
         if (!rebaseController)       missing.push("RebaseController")
         if (!cherryPickController)   missing.push("CherryPickController")
         if (!conflictController)     missing.push("ConflictController")
-        if (!resetController)        missing.push("ResetController")
-        if (!terminalController)     missing.push("TerminalController")
 
         if (missing.length > 0) {
             notificationController.error(
