@@ -64,7 +64,7 @@ UtilitiesCard {
                         text: Style.icons.tag || "#"
                         font.family: Style.fontTypes.font6Pro
                         font.pixelSize: 14
-                        color: modelData.isAnnotated ? Style.colors.accent : Style.colors.secondaryForeground
+                        color: modelData.isAnnotated ? Style.colors.accent : Style.colors.secondaryText
                         Layout.alignment: Qt.AlignVCenter
                     }
 
@@ -141,7 +141,7 @@ UtilitiesCard {
             Label {
                 anchors.centerIn: parent
                 text: "No tags available"
-                color: Style.colors.secondaryForeground
+                color: Style.colors.secondaryText
                 visible: internalListView.count === 0
                 font.pixelSize: 12
             }
@@ -202,13 +202,15 @@ UtilitiesCard {
         target: root.tagController || uiSession.tagController
 
         function onPushTagFinished(result) {
-            if (result.success)
-            {
-                if (root.notificationController) root.notificationController.success("Tag created and pushed", "Success", 3000)
-                root.update()
+            if (result.success) {
+                if (root.notificationController)
+                    root.notificationController.success("Tag created and pushed", "Success", 3000)
+            } else {
+                if (root.notificationController)
+                    root.notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
             }
-            else
-                if (root.notificationController) root.notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+
+            root.update()
         }
 
         function onPushDeleteTagFinished(result, tagName) {
@@ -220,7 +222,7 @@ UtilitiesCard {
                 root.update();
             }
             else
-                if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + res.errorMessage, "Error", 5000);
+                if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
         }
     }
 
