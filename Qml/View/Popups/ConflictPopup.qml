@@ -594,51 +594,103 @@ Window {
     }
 
     function acceptBlock(blockIndex, mode) {
-        if (!selectedPath)
+        if (!selectedPath || !selectedConflict)
             return
 
-        var visibleIndex = conflictListView.indexAt(0, conflictListView.contentY)
-        if (visibleIndex >= 0 && visibleIndex < displayModel.count) {
-            var topItem = displayModel.get(visibleIndex)
-            pendingRestoreLineNumber = (topItem.lineNumber !== undefined) ? topItem.lineNumber : -1
-        } else {
-            pendingRestoreLineNumber = -1
-        }
+        let found = findBlockByIndex(selectedConflict.blocks, blockIndex)
+        if (!found)
+            return
+        let block = found.block
 
         let currentContent = ConflictUtils.buildFullContent(displayModel)
         conflictController.writeWorkingFile(selectedPath, currentContent)
 
         let res
         switch (mode) {
-            case "ours":
-                res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
-                break
-            case "theirs":
-                res = conflictController.acceptBlockTheirs(selectedPath, blockIndex)
-                break
-            case "both":
-                res = conflictController.acceptBlockBoth(selectedPath, blockIndex)
-                break
-            default:
-                break
+            case "ours":   res = conflictController.acceptBlockOurs(selectedPath, blockIndex); break
+            case "theirs": res = conflictController.acceptBlockTheirs(selectedPath, blockIndex); break
+            case "both":   res = conflictController.acceptBlockBoth(selectedPath, blockIndex); break
+            default: return
         }
-
         if (!res.success) {
             notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
+            return
         }
 
-        else {
-            notificationController.success("Conflicts Resolved", "Conflict", 2500)
+        // Compute resolved lines
+        let resolvedLines = []
+        if (mode === "ours")   resolvedLines = block.currentText  ? block.currentText.split("\n")  : []
+        if (mode === "theirs") resolvedLines = block.incomingText ? block.incomingText.split("\n") : []
+        if (mode === "both") {
+            resolvedLines = (block.currentText ? block.currentText.split("\n") : [])
+                             .concat(block.incomingText ? block.incomingText.split("\n") : [])
+        }
 
-            // Clear memory state so fresh Git changes load
+        // Locate the rows belonging to this block in the display model
+        let { start, end } = findBlockRowRange(displayModel, blockIndex)
+        if (start < 0) return
+
+        let removedRowCount   = end - start + 1
+        let originalLineCount = block.endLine - block.startLine + 1
+        let lineDelta          = resolvedLines.length - originalLineCount
+
+        // Replace the block's rows with resolved lines
+        displayModel.remove(start, removedRowCount)
+        for (let i = 0; i < resolvedLines.length; ++i) {
+            displayModel.insert(start + i, {
+                type: "line",
+                text: resolvedLines[i],
+                lineNumber: block.startLine + i,
+                blockIndex: -1,
+                role: "resolved"
+            })
+        }
+
+        // Shift line numbers of later rows
+        if (lineDelta !== 0) {
+            for (let i = start + resolvedLines.length; i < displayModel.count; ++i) {
+                let row = displayModel.get(i)
+                if (row.lineNumber !== undefined && row.lineNumber !== null) {
+                    displayModel.setProperty(i, "lineNumber", row.lineNumber + lineDelta)
+                }
+            }
+        }
+
+        // Renumber blockIndex for later blocks
+        for (let i = 0; i < displayModel.count; ++i) {
+            let bi = displayModel.get(i).blockIndex
+            if (bi !== undefined && bi > blockIndex) {
+                displayModel.setProperty(i, "blockIndex", bi - 1)
+            }
+        }
+
+        // Update cached block objects
+        for (let i = 0; i < selectedConflict.blocks.length; ++i) {
+            if (i === found.pos) continue
+            let b = selectedConflict.blocks[i]
+            if (b.index > blockIndex) b.index -= 1
+            if (b.startLine > block.endLine) {
+                b.startLine += lineDelta
+                b.endLine   += lineDelta
+            }
+        }
+        selectedConflict.blocks.splice(found.pos, 1)
+
+        // Keep the raw lines array in sync
+        if (selectedConflict.lines) {
+            let prefix = selectedConflict.lines.slice(0, block.startLine - 1)
+            let suffix = selectedConflict.lines.slice(block.endLine)
+            selectedConflict.lines = prefix.concat(resolvedLines, suffix)
+        }
+
+        if (selectedConflict.blocks.length === 0) {
+            conflicts = conflicts.filter(c => c.path !== selectedPath)
             let copy = Object.assign({}, modifiedFiles)
             delete copy[selectedPath]
             modifiedFiles = copy
-
-            loadConflicts(true)
-
-            Qt.callLater(restoreScrollPosition)
         }
+
+        notificationController.success("Conflicts Resolved", "Conflict", 2000)
     }
 
     function saveAndStage(path) {
