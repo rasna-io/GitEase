@@ -38,6 +38,8 @@ set(SOURCES_BACKEND
 
     Src/Plugins/PluginContext.cpp
     Src/Plugins/PluginManager.cpp
+
+    Src/Terminal/TerminalManager.cpp
 )
 
 set(HEADERS_BACKEND
@@ -91,6 +93,8 @@ set(HEADERS_BACKEND
     Src/Plugins/PluginInfo.h
     Src/Plugins/PluginContext.h
     Src/Plugins/PluginManager.h
+
+    Src/Terminal/TerminalManager.h
 )
 
 set(INCLUDE_DIRS_BACKEND
@@ -106,6 +110,7 @@ set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src
     ${CMAKE_SOURCE_DIR}/Src/Git/
     ${CMAKE_SOURCE_DIR}/Src/Plugins/
+    ${CMAKE_SOURCE_DIR}/Src/Terminal/
 )
 
 #Add libgit2 include path to all backend files
