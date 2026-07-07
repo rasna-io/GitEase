@@ -431,4 +431,59 @@ Item {
             easing.type: Easing.OutCubic
         }
     }
+
+    /* "Don't show tutorials" — always-on-top corner button, valid for both inline and popup
+     * steps. Lives in Overlay.overlay above popupTooltip (z=200) so the dim/blocker layers
+     * never cover or swallow clicks meant for it.
+     * ****************************************************************************************/
+    Popup {
+        id: disableGuidesButton
+        parent: Overlay.overlay
+        z: 300
+        modal: false
+        dim: false
+        closePolicy: Popup.NoAutoClose
+        padding: 0
+        background: Item {}
+
+        visible: root.visible
+        opacity: root.opacity
+        x: 16
+        y: 16
+
+        contentItem: Rectangle {
+            implicitWidth: disableTxt.implicitWidth + 20
+            implicitHeight: 28
+            radius: 6
+            color: disableMa.containsMouse ? Style.colors.accentHover : Style.colors.accent
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 80
+                }
+            }
+
+            Text {
+                id: disableTxt
+                anchors.centerIn: parent
+                text: "Don't show tutorials"
+                font.family: Style.fontTypes.roboto
+                font.pixelSize: 11
+                font.weight: Font.Medium
+                color: Style.colors.onAccentText
+            }
+
+            MouseArea {
+                id: disableMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (root.guideController)
+                        disableGuidesButton.close()
+                        root.guideController.disableGuides()
+                }
+            }
+        }
+    }
 }
