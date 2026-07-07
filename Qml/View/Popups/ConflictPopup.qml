@@ -594,6 +594,9 @@ Window {
         // Keep the raw lines array in sync
         selectedConflict.lines = ConflictUtils.updateLinesArray(selectedConflict.lines, block, resolvedLines)
 
+        // Rebuilt the conflict‑zone indicators
+        Qt.callLater(updateConflictMarkers)
+
         notificationController.success("Conflicts Resolved", "Conflict", 2000)
     }
 
