@@ -430,7 +430,7 @@ Item {
                                         text: "Commit"
                                         color: Style.colors.secondaryForeground
                                         font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 12
+                                        font.pixelSize: Style.appFont.mediumPt
                                     }
 
                                     onClicked: root.commitAndUpdate()
@@ -468,7 +468,7 @@ Item {
                                         anchors.centerIn: parent
                                         text: Style.icons.caretDown
                                         font.family: Style.fontTypes.font6ProSolid
-                                        font.pixelSize: 11
+                                        font.pixelSize: Style.appFont.defaultPt
                                         color: Style.colors.secondaryForeground
                                     }
 
@@ -497,7 +497,7 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: "\u22EE"
-                                    font.pixelSize: 16
+                                    font.pixelSize: Style.appFont.h2Pt
                                     color: commitOptionsDotMouse.containsMouse ? Style.colors.foreground : Style.colors.secondaryText
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
@@ -525,7 +525,7 @@ Item {
                             visible: errorMessageLabel.text !== ""
                             color: Style.colors.error
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 10
+                            font.pixelSize: Style.appFont.smallPt
                             wrapMode: TextEdit.Wrap
                         }
                     }
