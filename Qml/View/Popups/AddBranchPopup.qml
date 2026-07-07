@@ -51,7 +51,7 @@ IPopup {
                 color: Style.colors.foreground
                 font.family: Style.fontTypes.roboto
                 font.bold: true
-                font.pixelSize: 16
+                font.pixelSize: Style.appFont.h2Pt
                 Layout.alignment: Qt.AlignHCenter
             }
 

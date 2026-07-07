@@ -81,7 +81,7 @@ IPopup {
                     font.family: Style.fontTypes.roboto
                     font.bold: true
                     elide: Text.ElideLeft
-                    font.pixelSize: 11
+                    font.pixelSize: Style.appFont.defaultPt
                 }
 
                 // Close Button
@@ -127,7 +127,7 @@ IPopup {
                     checked: true
 
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
 
                     Material.accent: Style.colors.accent
                     Material.foreground: Style.colors.foreground
@@ -210,7 +210,7 @@ IPopup {
                                 Text {
                                     text: root.statusLabel(modelData.deltaStatus)
                                     color: Style.colors.mutedText
-                                    font.pixelSize: 8
+                                    font.pixelSize: Style.appFont.microPt
                                     Layout.preferredWidth: 14
                                     horizontalAlignment: Text.AlignHCenter
                                     font.bold: true
@@ -220,7 +220,7 @@ IPopup {
                                     text: modelData.path || ""
                                     color: Style.colors.foreground
                                     font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 13
+                                    font.pixelSize: Style.appFont.h3Pt
                                     Layout.fillWidth: true
                                     elide: Text.ElideMiddle
                                 }

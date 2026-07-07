@@ -139,7 +139,7 @@ Window {
     TextMetrics {
         id: widthCalculator
         font.family: Style.fontTypes.roboto
-        font.pixelSize: 13
+        font.pixelSize: Style.appFont.h3Pt
     }
 
     WindowController {
@@ -168,7 +168,7 @@ Window {
                     color: Style.colors.secondaryText
                     font.family: Style.fontTypes.roboto
                     font.bold: true
-                    font.pixelSize: 14
+                    font.pixelSize: Style.appFont.largePt
                 }
 
                 MouseArea {
@@ -397,7 +397,7 @@ Window {
                         contentItem: Text {
                             text: tip.text
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             color: "#ffffff"
                         }
                         background: Rectangle {

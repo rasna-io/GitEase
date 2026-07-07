@@ -129,7 +129,7 @@ IPopup {
                         text: "Interactive Rebase Plan"
                         color: Style.colors.foreground
                         font.family: Style.fontTypes.roboto
-                        font.pixelSize: 18
+                        font.pixelSize: Style.appFont.xlPt
                         font.bold: true
                     }
 
@@ -137,7 +137,7 @@ IPopup {
                         text: planSummary()
                         color: Style.colors.mutedText
                         font.family: Style.fontTypes.roboto
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
@@ -147,7 +147,7 @@ IPopup {
                     text: pickedCount() + " pick / " + skippedCount() + " skip"
                     color: Style.colors.secondaryText
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 11
+                    font.pixelSize: Style.appFont.defaultPt
                 }
             }
 
@@ -192,28 +192,28 @@ IPopup {
                                     Layout.preferredWidth: 78
                                     font.bold: true
                                     color: Style.colors.foreground
-                                    font.pixelSize: 11
+                                    font.pixelSize: Style.appFont.defaultPt
                                 }
 
                                 Text {
                                     text: "Commit"
                                     Layout.fillWidth: true
                                     font.bold: true; color: Style.colors.foreground
-                                    font.pixelSize: 11
+                                    font.pixelSize: Style.appFont.defaultPt
                                 }
 
                                 Text {
                                     text: "Author"
                                     Layout.preferredWidth: 130
                                     font.bold: true; color: Style.colors.foreground
-                                    font.pixelSize: 11
+                                    font.pixelSize: Style.appFont.defaultPt
                                 }
 
                                 Text {
                                     text: "Date"
                                     Layout.preferredWidth: 130
                                     font.bold: true; color: Style.colors.foreground
-                                    font.pixelSize: 11
+                                    font.pixelSize: Style.appFont.defaultPt
                                 }
 
                                 Text {
@@ -221,7 +221,7 @@ IPopup {
                                     Layout.preferredWidth: (root.currentRebaseState !== rebaseState.idle) ? 80 : 0
                                     font.bold: true
                                     color: Style.colors.foreground
-                                    font.pixelSize: 11
+                                    font.pixelSize: Style.appFont.defaultPt
                                 }
                             }
                         }
@@ -267,7 +267,7 @@ IPopup {
                                         Layout.preferredWidth: 78
                                         Layout.preferredHeight: 26
                                         model: root.planData.supportedActions || []
-                                        font.pixelSize: 11
+                                        font.pixelSize: Style.appFont.defaultPt
                                         enabled: root.currentRebaseState !== rebaseState.running
 
                                         background: Rectangle {
@@ -280,7 +280,7 @@ IPopup {
                                         contentItem: Text {
                                             text: actionCombo.displayText
                                             color: Style.colors.foreground
-                                            font.pixelSize: 11
+                                            font.pixelSize: Style.appFont.defaultPt
                                             verticalAlignment: Text.AlignVCenter
                                             leftPadding: 8
                                             rightPadding: actionCombo.indicator.width + 8
@@ -333,7 +333,7 @@ IPopup {
                                             contentItem: Text {
                                                 text: modelData
                                                 color: Style.colors.foreground
-                                                font.pixelSize: 11
+                                                font.pixelSize: Style.appFont.defaultPt
                                                 verticalAlignment: Text.AlignVCenter
                                                 elide: Text.ElideRight
                                             }
@@ -386,7 +386,7 @@ IPopup {
                                                     text: shortHash
                                                     color: Style.colors.accent
                                                     font.family: Style.fontTypes.roboto
-                                                    font.pixelSize: 11
+                                                    font.pixelSize: Style.appFont.defaultPt
                                                     Layout.alignment: Qt.AlignVCenter
                                                 }
 
@@ -394,7 +394,7 @@ IPopup {
                                                     text: summary
                                                     color: layout.actionColor
                                                     opacity: layout.isDimmed ? 0.5 : 1.0
-                                                    font.pixelSize: 12
+                                                    font.pixelSize: Style.appFont.mediumPt
                                                     elide: Text.ElideRight
                                                     Layout.fillWidth: true
                                                     Layout.alignment: Qt.AlignVCenter
@@ -406,7 +406,7 @@ IPopup {
                                                 text: author
                                                 color: layout.actionColor
                                                 opacity: layout.isDimmed ? 0.5 : 1.0
-                                                font.pixelSize: 11
+                                                font.pixelSize: Style.appFont.defaultPt
                                                 elide: Text.ElideRight
                                                 Layout.preferredWidth: 130
                                                 Layout.alignment: Qt.AlignVCenter
@@ -417,7 +417,7 @@ IPopup {
                                                 text: authorDate ? Qt.formatDateTime(new Date(authorDate), "yyyy-MM-dd hh:mm") : ""
                                                 color: layout.actionColor
                                                 opacity: layout.isDimmed ? 0.5 : 1.0
-                                                font.pixelSize: 10
+                                                font.pixelSize: Style.appFont.smallPt
                                                 elide: Text.ElideRight
                                                 Layout.preferredWidth: 130
                                                 Layout.alignment: Qt.AlignVCenter
@@ -438,7 +438,7 @@ IPopup {
                                     Text {
                                         text: status
                                         color: commitStatus.colorOf(status)
-                                        font.pixelSize: 10
+                                        font.pixelSize: Style.appFont.smallPt
                                         elide: Text.ElideRight
                                         Layout.preferredWidth: (root.currentRebaseState !== rebaseState.idle) ? 80 : 0
                                         visible: root.currentRebaseState !== rebaseState.idle

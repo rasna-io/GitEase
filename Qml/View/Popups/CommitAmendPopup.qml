@@ -57,14 +57,14 @@ IPopup {
             color: Style.colors.descriptionText
             text: "Amend Commit Message"
             font.family: Style.fontTypes.roboto
-            font.pixelSize: 14
+            font.pixelSize: Style.appFont.largePt
             horizontalAlignment: Text.AlignHCenter
         }
 
         Label {
             color: Style.colors.descriptionText
             text: "Edit the message for your amended commit (Optional):"
-            font.pixelSize: 12
+            font.pixelSize: Style.appFont.mediumPt
         }
 
         ScrollView {
@@ -76,7 +76,7 @@ IPopup {
                 color: Style.colors.foreground
                 font.family: Style.fontTypes.roboto
                 wrapMode: TextArea.Wrap
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 Material.accent: Style.colors.accent
             }
         }
@@ -114,7 +114,7 @@ IPopup {
                         text: "Amend"
                         color: Style.colors.secondaryForeground
                         font.family: Style.fontTypes.roboto
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                     }
 
                     onClicked: {
@@ -155,7 +155,7 @@ IPopup {
                         text: "Cancel"
                         color: Style.colors.secondaryForeground
                         font.family: Style.fontTypes.roboto
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                     }
 
                     onClicked: root.close();

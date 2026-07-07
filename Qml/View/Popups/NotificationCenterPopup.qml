@@ -247,7 +247,7 @@ IPopup {
                                                         }
                                                     }
                                                     font.family: Style.fontTypes.font6ProSolid
-                                                    font.pixelSize: 12
+                                                    font.pixelSize: Style.appFont.mediumPt
                                                     horizontalAlignment: Text.AlignHCenter
                                                     verticalAlignment: Text.AlignVCenter
                                                     color: {
@@ -269,7 +269,7 @@ IPopup {
                                                 Text {
                                                     Layout.fillWidth: true
                                                     text: modelData.title
-                                                    font.pixelSize: 12
+                                                    font.pixelSize: Style.appFont.mediumPt
                                                     font.weight: Font.Medium
                                                     color: Style.colors.foreground
                                                     elide: Text.ElideRight
@@ -279,7 +279,7 @@ IPopup {
                                                 Text {
                                                     Layout.rightMargin: 10
                                                     text: root.getRelativeTime(modelData.timestamp)
-                                                    font.pixelSize: 10
+                                                    font.pixelSize: Style.appFont.smallPt
                                                     color: modelData.read ? Style.colors.mutedText : Style.colors.accent
                                                 }
                                             }
@@ -288,7 +288,7 @@ IPopup {
                                             Text {
                                                 Layout.fillWidth: true
                                                 text: modelData.message
-                                                font.pixelSize: 11
+                                                font.pixelSize: Style.appFont.defaultPt
                                                 lineHeight: 1.3
                                                 color: Style.colors.mutedText
                                                 wrapMode: Text.Wrap

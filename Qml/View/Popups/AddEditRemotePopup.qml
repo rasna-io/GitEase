@@ -59,7 +59,7 @@ IPopup {
                 color: Style.colors.foreground
                 font.family: Style.fontTypes.roboto
                 font.bold: true
-                font.pixelSize: 16
+                font.pixelSize: Style.appFont.h2Pt
                 Layout.alignment: Qt.AlignHCenter
             }
 
@@ -103,7 +103,7 @@ IPopup {
                 Text {
                     text: "Invalid URL format"
                     color: Style.colors.error
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     visible: urlInput.text.length > 0 && !root.isUrlValid
                     Layout.leftMargin: 5
                 }
