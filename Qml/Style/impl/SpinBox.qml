@@ -72,7 +72,7 @@ T.SpinBox {
             anchors.centerIn: parent
             text: Style.icons.minus
             font.family: Style.fontTypes.font6ProSolid
-            font.pixelSize: 14
+            font.pixelSize: Style.appFont.largePt
             color: control.down.pressed ? Style.colors.secondaryForeground : Style.colors.foreground
             opacity: control.down.indicator.enabled ? 1 : 0.3
         }
@@ -93,7 +93,7 @@ T.SpinBox {
             anchors.centerIn: parent
             text: Style.icons.plus
             font.family: Style.fontTypes.font6ProSolid
-            font.pixelSize: 14
+            font.pixelSize: Style.appFont.largePt
             color: control.up.pressed ? Style.colors.secondaryForeground : Style.colors.foreground
             opacity: control.up.indicator.enabled ? 1 : 0.3
         }

@@ -44,7 +44,7 @@ T.Button {
                 text: control.icon.name
                 font {
                     family: Style.fontTypes.font6ProSolid
-                    pixelSize: 13
+                    pixelSize: Style.appFont.h3Pt
                 }
                 color: Style.colors.foreground
                 anchors.verticalCenter: parent.verticalCenter
@@ -63,7 +63,7 @@ T.Button {
                     text: control.text
                     font{
                         family: Style.fontTypes.roboto
-                        pixelSize: 11
+                        pixelSize: Style.appFont.defaultPt
                         weight: Font.Medium
                     }
                     color: Style.colors.foreground
