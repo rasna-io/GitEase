@@ -60,13 +60,21 @@ ApplicationWindow {
     Action {
         text: qsTr("Increments font size")
         shortcut: qsTr("Ctrl+=")
-        onTriggered: Style.appFont.defaultPt = Math.min(Style.appFont.maxAppFontPt, Style.appFont.defaultPt + 1)
+        onTriggered: {
+            let appearance = uiSession.appModel.appSettings.appearanceSettings
+            appearance.fontSizePt = Math.min(Style.appFont.maxAppFontPt, appearance.fontSizePt + 1)
+            uiSession.appModel.save()
+        }
     }
 
     Action {
         text: qsTr("Decrements  font size")
         shortcut: qsTr("Ctrl+-")
-        onTriggered: Style.appFont.defaultPt = Math.max(Style.appFont.minAppFontPt, Style.appFont.defaultPt - 1)
+        onTriggered: {
+            let appearance = uiSession.appModel.appSettings.appearanceSettings
+            appearance.fontSizePt = Math.max(Style.appFont.minAppFontPt, appearance.fontSizePt - 1)
+            uiSession.appModel.save()
+        }
     }
 
     /* Children
