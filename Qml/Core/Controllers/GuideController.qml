@@ -140,6 +140,17 @@ QtObject {
         root.guideDismissed()
     }
 
+    /** Dismiss whichever tutorial is active and turn guides off entirely, so no further
+     *  tutorial (this one or any other) auto-shows again until re-enabled in Settings. */
+    function disableGuides() {
+        dismiss()
+
+        if (root.appModel && root.appModel.appSettings) {
+            root.appModel.appSettings.guidesEnabled = false
+            root.appModel.save()
+        }
+    }
+
     /** Clear all shown guide records so every guide can appear again. */
     function resetShownGuides() {
         _shownIds = []
