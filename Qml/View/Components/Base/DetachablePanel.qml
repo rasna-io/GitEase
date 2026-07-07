@@ -203,6 +203,7 @@ Item {
 
     Window {
         id: detachedWindow
+        transientParent: null
         visible: root.detached
         width: root.lastWidth
         height: root.lastHeight
