@@ -43,7 +43,7 @@ Item {
 
             Text {
                 text: "Target Branch"
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 color: Style.colors.mutedText
             }
 
@@ -54,7 +54,7 @@ Item {
                 focusBorderWidth: 1
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 textRole: "name"
 
                 placeholderText: "Select branch"
@@ -88,7 +88,7 @@ Item {
 
             Text {
                 text: "Base Branch"
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 color: Style.colors.mutedText
             }
 
@@ -99,7 +99,7 @@ Item {
                 focusBorderWidth: 1
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
 
                 placeholderText: "Select Base"
 
@@ -119,7 +119,7 @@ Item {
 
             Text {
                 text: "Output Directory"
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 color: Style.colors.mutedText
             }
 
@@ -153,7 +153,7 @@ Item {
 
                     text: Style.icons.folder
                     font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: 14
+                    font.pixelSize: Style.appFont.largePt
 
                     topInset: 0
                     bottomInset: 0
@@ -205,7 +205,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Style.icons.download
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.secondaryForeground
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -215,7 +215,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Export"
                         color: Style.colors.secondaryForeground
-                        font.pixelSize: 13
+                        font.pixelSize: Style.appFont.h3Pt
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }

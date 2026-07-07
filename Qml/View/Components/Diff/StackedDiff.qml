@@ -96,7 +96,7 @@ Item {
                     width: root.gutterWidth
                     text: root.hasOld ? modelData.oldLine : ""
                     color: Style.colors.mutedText
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     horizontalAlignment: Text.AlignRight
                     verticalAlignment: Text.AlignTop
                 }
@@ -106,7 +106,7 @@ Item {
                     text: root.oldText
                     color: Style.colors.foreground
                     font.family: "Consolas"
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     wrapMode: Text.WrapAnywhere
                     textFormat: Text.PlainText
                 }
@@ -144,7 +144,7 @@ Item {
                     width: root.gutterWidth
                     text: root.hasNew ? modelData.newLine : ""
                     color: Style.colors.mutedText
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     horizontalAlignment: Text.AlignRight
                     verticalAlignment: Text.AlignTop
                 }
@@ -156,7 +156,7 @@ Item {
                           : (root.isAddedOnly ? root.effectiveNewText : "")
                     color: Style.colors.foreground
                     font.family: "Consolas"
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     wrapMode: Text.WrapAnywhere
                     textFormat: Text.PlainText
                 }

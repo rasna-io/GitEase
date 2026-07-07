@@ -167,7 +167,7 @@ DetachablePanel {
     TextMetrics {
         id: widthCalculator
         font.family: "Cascadia Mono"
-        font.pixelSize: 13
+        font.pixelSize: Style.appFont.h3Pt
     }
 
     EmptyStateView {
@@ -391,7 +391,7 @@ DetachablePanel {
             ScrollingText {
                 text: root.selectedFile
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 10
+                font.pixelSize: Style.appFont.smallPt
                 color: Style.colors.mutedText
                 anchors.centerIn: parent
                 Layout.maximumWidth: parent.width * 0.4
@@ -520,7 +520,7 @@ DetachablePanel {
                 Label {
                     text: direction === "up" ? Style.icons.arrowUpToLine : Style.icons.arrowDownToLine
                     font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
                     padding: 4
                     background: Rectangle {
@@ -532,7 +532,7 @@ DetachablePanel {
                 Label {
                     text: remaining
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 9
+                    font.pixelSize: Style.appFont.captionPt
                     color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
                     padding: 3
                     background: Rectangle {

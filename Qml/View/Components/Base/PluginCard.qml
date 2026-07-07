@@ -88,7 +88,7 @@ Rectangle {
                         visible: pluginIconImage.status !== Image.Ready
                         text: Style.icons.plugins
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 28
+                        font.pixelSize: Style.appFont.displaySmPt
                         color: Style.colors.mutedText
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -102,14 +102,14 @@ Rectangle {
                 Label {
                     text: root.plugin.name
                     color: Style.colors.foreground
-                    font.pixelSize: 16
+                    font.pixelSize: Style.appFont.h2Pt
                     font.bold: true
                     font.family: Style.fontTypes.roboto
                 }
                 Label {
                     text: root.plugin.author
                     color: Style.colors.mutedText
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     font.family: Style.fontTypes.roboto
                     wrapMode: Text.WordWrap
                 }
@@ -135,7 +135,7 @@ Rectangle {
         ScrollingText {
             text: root.plugin.description
             color: Style.colors.placeholderText
-            font.pixelSize: 13
+            font.pixelSize: Style.appFont.h3Pt
             font.family: Style.fontTypes.roboto
             Layout.fillWidth: true
         }
@@ -147,7 +147,7 @@ Rectangle {
             Label {
                 text: "📦 " + root.plugin.size
                 color: Style.colors.mutedText
-                font.pixelSize: 14
+                font.pixelSize: Style.appFont.largePt
                 font.family: Style.fontTypes.roboto
                 wrapMode: Text.WordWrap
             }
@@ -161,7 +161,7 @@ Rectangle {
             Label {
                 text: "⬆ " + root.plugin.latestVersion
                 color: Style.colors.mutedText
-                font.pixelSize: 14
+                font.pixelSize: Style.appFont.largePt
                 font.family: Style.fontTypes.roboto
                 wrapMode: Text.WordWrap
             }
@@ -200,7 +200,7 @@ Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             text: root.plugin.isInstalled ? Style.icons.uninstall : Style.icons.install
                             font.family: Style.fontTypes.font6Pro
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.mediumPt
                             color: Style.colors.textButton
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -210,7 +210,7 @@ Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             text: root.plugin.isInstalled ? "Uninstall" : "Install"
                             color: Style.colors.textButton
-                            font.pixelSize: 13
+                            font.pixelSize: Style.appFont.h3Pt
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -248,7 +248,7 @@ Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             text: Style.icons.update
                             font.family: Style.fontTypes.font6Pro
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.mediumPt
                             color: Style.colors.textButton
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -258,7 +258,7 @@ Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Update"
                             color: Style.colors.textButton
-                            font.pixelSize: 13
+                            font.pixelSize: Style.appFont.h3Pt
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -289,14 +289,14 @@ Rectangle {
             Label {
                 text: compatibilityRow.supported ? Style.icons.compatible : Style.icons.incompatible
                 color: compatibilityRow.supported ? Style.colors.compatible : Style.colors.incompatible
-                font.pixelSize: 18
+                font.pixelSize: Style.appFont.xlPt
                 font.family: Style.fontTypes.font6Pro
                 wrapMode: Text.WordWrap
             }
             Label {
                 text: compatibilityRow.supported ? "Compatible with your version of GitEase" : "Incompatible with your version of GitEase"
                 color: Style.colors.placeholderText
-                font.pixelSize: 13
+                font.pixelSize: Style.appFont.h3Pt
                 font.family: Style.fontTypes.roboto
                 wrapMode: Text.WordWrap
             }

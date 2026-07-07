@@ -133,14 +133,14 @@ Rectangle {
                         Text {
                             text: Style.icons.archive
                             font.family: Style.fontTypes.font6ProSolid
-                            font.pixelSize: 9
+                            font.pixelSize: Style.appFont.captionPt
                             color: GraphUtils.getContrastColor(indicatorColor.toString())
                             verticalAlignment: Text.AlignVCenter
                         }
                         Text {
                             text: commitData ? (commitData.stashLabel || "stash") : ""
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 9
+                            font.pixelSize: Style.appFont.captionPt
                             color: GraphUtils.getContrastColor(indicatorColor.toString())
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -152,7 +152,7 @@ Rectangle {
                     text: (commitData && commitData.summary) ? commitData.summary : ""
                     color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     font.family: Style.fontTypes.roboto
                     font.weight: commitData && commitData.isUncommitted ? 700 :
                                   (isHead ? 900 : 400)
@@ -179,7 +179,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: "~"
                         color: resetBtnArea.containsMouse ? Style.colors.foreground : Qt.rgba(1,1,1,0.55)
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.defaultPt
                         font.family: Style.fontTypes.roboto
                         font.weight: Font.Medium
                     }
@@ -213,7 +213,7 @@ Rectangle {
                     text: commitData ? (commitData.author || "") : ""
                     color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignLeft
                     elide: Text.ElideRight
@@ -242,7 +242,7 @@ Rectangle {
                     ) : ""
                     color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignLeft
                     wrapMode: Text.NoWrap

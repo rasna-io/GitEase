@@ -78,7 +78,7 @@ UtilitiesCard {
                             Text {
                                 text: Style.icons.download
                                 font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 12
+                                font.pixelSize: Style.appFont.mediumPt
                                 color: Style.colors.foreground
                                 Layout.alignment: Qt.AlignVCenter
                             }
@@ -123,7 +123,7 @@ UtilitiesCard {
                             Text {
                                 text: Style.icons.upload
                                 font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 12
+                                font.pixelSize: Style.appFont.mediumPt
                                 color: Style.colors.foreground
                                 Layout.alignment: Qt.AlignVCenter
                             }

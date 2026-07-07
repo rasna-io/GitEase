@@ -70,7 +70,7 @@ IPopup {
                     text: Style.icons.warning
                     font.family: Style.fontTypes.font6Pro
                     color: Style.colors.warning
-                    font.pixelSize: 50
+                    font.pixelSize: Style.appFont.display2xlPt
                 }
 
                 // Title + Description
@@ -85,7 +85,7 @@ IPopup {
                         color: Style.colors.secondaryText
                         font.family: Style.fontTypes.roboto
                         font.bold: true
-                        font.pixelSize: 18
+                        font.pixelSize: Style.appFont.xlPt
                     }
 
                     // Description
@@ -95,7 +95,7 @@ IPopup {
                         wrapMode: Text.Wrap
                         color: Style.colors.secondaryText
                         font.family: Style.fontTypes.roboto
-                        font.pixelSize: 14
+                        font.pixelSize: Style.appFont.largePt
                     }
                 }
             }
@@ -131,7 +131,7 @@ IPopup {
                         Layout.alignment: Qt.AlignTop
                         color: Style.colors.accent
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 16
+                        font.pixelSize: Style.appFont.h2Pt
                     }
 
                     ColumnLayout {
@@ -141,7 +141,7 @@ IPopup {
                             text: dialog.saveTitle
                             color: Style.colors.secondaryText
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 14
+                            font.pixelSize: Style.appFont.largePt
                             font.bold: true
                         }
                         Text {
@@ -150,7 +150,7 @@ IPopup {
                             wrapMode: Text.Wrap
                             color: Qt.darker(Style.colors.secondaryText, 1.2)
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.mediumPt
                         }
                     }
                 }
@@ -187,7 +187,7 @@ IPopup {
                         Layout.alignment: Qt.AlignTop
                         color: Style.colors.accent
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 16
+                        font.pixelSize: Style.appFont.h2Pt
                     }
 
                     ColumnLayout {
@@ -198,7 +198,7 @@ IPopup {
                             color: Style.colors.secondaryText
                             font.family: Style.fontTypes.roboto
                             font.bold: true
-                            font.pixelSize: 14
+                            font.pixelSize: Style.appFont.largePt
                         }
                         Text {
                             text: dialog.acceptDescription
@@ -206,7 +206,7 @@ IPopup {
                             wrapMode: Text.Wrap
                             color: Qt.darker(Style.colors.secondaryText, 1.2)
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.mediumPt
                         }
                     }
                 }
@@ -243,7 +243,7 @@ IPopup {
                         Layout.alignment: Qt.AlignTop
                         color: Style.colors.accent
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 16
+                        font.pixelSize: Style.appFont.h2Pt
                     }
 
                     ColumnLayout {
@@ -254,7 +254,7 @@ IPopup {
                             color: Style.colors.secondaryText
                             font.family: Style.fontTypes.roboto
                             font.bold: true
-                            font.pixelSize: 14
+                            font.pixelSize: Style.appFont.largePt
                         }
                         Text {
                             text: dialog.cancelDescription
@@ -262,7 +262,7 @@ IPopup {
                             wrapMode: Text.Wrap
                             color: Qt.darker(Style.colors.secondaryText, 1.2)
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.mediumPt
                         }
                     }
                 }

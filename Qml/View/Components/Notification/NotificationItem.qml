@@ -78,7 +78,7 @@ Rectangle {
                         }
                     }
                     font.family: Style.fontTypes.font6ProSolid
-                    font.pixelSize: 18
+                    font.pixelSize: Style.appFont.xlPt
                     color: {
                         if (!notification)
                             return Style.colors.notificationInfoIcon
@@ -105,7 +105,7 @@ Rectangle {
                     text: notification?.title ?? ""
                     font.family: Style.fontTypes.roboto
                     font.weight: 600
-                    font.pixelSize: 14
+                    font.pixelSize: Style.appFont.largePt
                     color: Style.colors.foreground
                     elide: Text.ElideRight
                     verticalAlignment: Text.AlignVCenter
@@ -155,7 +155,7 @@ Rectangle {
             text: notification?.message ?? ""
             font.family: Style.fontTypes.roboto
             font.weight: 400
-            font.pixelSize: 11
+            font.pixelSize: Style.appFont.smallPt
             color: Style.colors.foreground
             wrapMode: Text.WordWrap
         }
@@ -225,7 +225,7 @@ Rectangle {
                     
                     return year + "/" + month + "/" + day + " " + hours + ":" + minutes
                 }
-                font.pixelSize: 9
+                font.pixelSize: Style.appFont.captionPt
                 color: Style.colors.mutedText
             }
         }

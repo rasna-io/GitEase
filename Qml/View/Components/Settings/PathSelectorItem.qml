@@ -56,7 +56,7 @@ RowLayout {
         bottomInset: 0
         text: "Browse"
         flat: true
-        font.pixelSize: 12
+        font.pixelSize: Style.appFont.mediumPt
         font.weight: 400
         font.family: Style.fontTypes.roboto
         

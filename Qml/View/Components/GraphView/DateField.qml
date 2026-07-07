@@ -40,7 +40,7 @@ Item {
         text: root.iconOnly ? "" : root.dateString
         font.family: Style.fontTypes.roboto
         font.weight: 400
-        font.pixelSize: 10
+        font.pixelSize: Style.appFont.smallPt
         borderRadius: 5
         borderWidth: 0
         focusBorderWidth: 1
@@ -55,7 +55,7 @@ Item {
         height: 14
         visible: root.iconOnly
         text: Style.icons.calendar
-        font.pixelSize: 13
+        font.pixelSize: Style.appFont.h3Pt
         color: Style.colors.descriptionText
     }
 
@@ -68,7 +68,7 @@ Item {
         height: 12
         visible: !root.iconOnly
         text: Style.icons.caretDown
-        font.pixelSize: 15
+        font.pixelSize: Style.appFont.largerPt
         color: Style.colors.descriptionText
     }
 

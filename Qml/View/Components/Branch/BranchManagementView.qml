@@ -106,7 +106,7 @@ UtilitiesCard {
                             Text {
                                 text: Style.icons.laptop
                                 font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 12
+                                font.pixelSize: Style.appFont.mediumPt
                                 color: Style.colors.foreground
                                 Layout.alignment: Qt.AlignVCenter
                             }
@@ -151,7 +151,7 @@ UtilitiesCard {
                             Text {
                                 text: Style.icons.cloud
                                 font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 12
+                                font.pixelSize: Style.appFont.mediumPt
                                 color: Style.colors.foreground
                                 Layout.alignment: Qt.AlignVCenter
                             }
@@ -203,7 +203,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Style.icons.plus
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.textButton
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -213,7 +213,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Add New Branch"
                         color: Style.colors.textButton
-                        font.pixelSize: 13
+                        font.pixelSize: Style.appFont.h3Pt
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }

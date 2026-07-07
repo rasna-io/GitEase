@@ -87,7 +87,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: Style.icons.user
                 font.family: Style.fontTypes.font6ProSolid
-                font.pixelSize: 18
+                font.pixelSize: Style.appFont.xlPt
                 color: Style.colors.iconOnSurface
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
@@ -105,7 +105,7 @@ Rectangle {
 
                 Text {
                     text: root.username
-                    font.pixelSize: 13
+                    font.pixelSize: Style.appFont.h3Pt
                     font.family: Style.fontTypes.roboto
                     font.weight: 600
                     color: Style.colors.foreground
@@ -127,7 +127,7 @@ Rectangle {
                             id: levelText
                             anchors.centerIn: parent
                             text: getLevelName(modelData)
-                            font.pixelSize: 9
+                            font.pixelSize: Style.appFont.captionPt
                             font.family: Style.fontTypes.roboto
                             font.weight: 300
                             color: Style.colors.secondaryForeground
@@ -140,7 +140,7 @@ Rectangle {
 
             ScrollingText {
                 text: root.email
-                font.pixelSize: 11
+                font.pixelSize: Style.appFont.smallPt
                 font.family: Style.fontTypes.roboto
                 color: Style.colors.mutedText
                 Layout.fillWidth: true

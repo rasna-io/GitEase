@@ -39,7 +39,7 @@ RowLayout {
         text: headerRow.filterText
         font.family: Style.fontTypes.roboto
         font.weight: 400
-        font.pixelSize: 9
+        font.pixelSize: Style.appFont.captionPt
         borderRadius: 5
         borderWidth: 0
         focusBorderWidth: 1
@@ -59,7 +59,7 @@ RowLayout {
         font.family: (filterOptionsPopup.visible || hovered)
                      ? Style.fontTypes.font6ProSolid
                      : Style.fontTypes.font6Pro
-        font.pixelSize: 14
+        font.pixelSize: Style.appFont.largePt
 
         contentItem: Text {
             anchors.centerIn: parent

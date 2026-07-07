@@ -56,7 +56,7 @@ Rectangle {
                 placeholderTextColor: Style.colors.placeholderText
                 color: Style.colors.foreground
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 14
+                font.pixelSize: Style.appFont.largePt
                 wrapMode: TextEdit.Wrap
                 leftPadding: 12;
                 topPadding: 12;
@@ -82,7 +82,7 @@ Rectangle {
                 Item { Layout.fillWidth: true }
                 Text {
                     text: commitTextArea.text.length + " characters"
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     color: Style.colors.placeholderText
                 }
             }

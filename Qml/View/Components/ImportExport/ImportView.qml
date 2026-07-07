@@ -44,7 +44,7 @@ Item {
 
             Text {
                 text: "Bundle"
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 color: Style.colors.mutedText
             }
 
@@ -77,7 +77,7 @@ Item {
 
                     text: Style.icons.folder
                     font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: 14
+                    font.pixelSize: Style.appFont.largePt
 
                     topInset: 0
                     bottomInset: 0
@@ -111,7 +111,7 @@ Item {
 
             Text {
                 text: "Branch"
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 color: Style.colors.mutedText
             }
 
@@ -150,7 +150,7 @@ Item {
                         anchors.leftMargin: 8
                         text: "Import will extract and restore the project structure, branches, and commit history from the selected archive."
                         wrapMode: Text.WordWrap
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.smallPt
                         color: Style.colors.mutedText
                         font.family: Style.fontTypes.roboto
                     }
@@ -179,7 +179,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Style.icons.upload
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.secondaryForeground
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -189,7 +189,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Import"
                         color: Style.colors.secondaryForeground
-                        font.pixelSize: 13
+                        font.pixelSize: Style.appFont.h3Pt
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }

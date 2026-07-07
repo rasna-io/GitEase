@@ -30,7 +30,7 @@ Item {
                 text: "Welcome to GitEase"
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
-                font.pixelSize: 32
+                font.pixelSize: Style.appFont.displayMdPt
                 color: Style.colors.foreground
                 horizontalAlignment: Text.AlignHCenter
                 Layout.alignment: Qt.AlignHCenter
@@ -42,7 +42,7 @@ Item {
                 wrapMode: Text.WordWrap
                 font.family: Style.fontTypes.roboto
                 font.weight: 300
-                font.pixelSize: 15
+                font.pixelSize: Style.appFont.largerPt
                 font.italic: true
                 font.letterSpacing: 0
                 color: Style.colors.mutedText
@@ -92,7 +92,7 @@ Item {
                                 verticalAlignment: Qt.AlignVCenter
                                 text: modelData.icon ?? ""
                                 font.family: Style.fontTypes.roboto
-                                font.pixelSize: 20
+                                font.pixelSize: Style.appFont.xxlPt
                                 color: Style.colors.accent
                             }
                         }
@@ -102,7 +102,7 @@ Item {
                             wrapMode: Text.WordWrap
                             font.family: Style.fontTypes.roboto
                             font.weight: 400
-                            font.pixelSize: 14
+                            font.pixelSize: Style.appFont.largePt
                             font.letterSpacing: 0
                             color: Style.colors.foreground
                             width: 106
@@ -115,7 +115,7 @@ Item {
                             text: modelData.desc ?? ""
                             font.family: Style.fontTypes.roboto
                             font.weight: 400
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             font.letterSpacing: 0
                             color: Style.colors.mutedText
                         }

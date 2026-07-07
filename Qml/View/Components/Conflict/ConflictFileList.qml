@@ -51,7 +51,7 @@ Rectangle {
                 color: Style.colors.secondaryText
                 font.family: Style.fontTypes.roboto
                 font.bold: true
-                font.pixelSize: 11
+                font.pixelSize: Style.appFont.defaultPt
                 leftPadding: 12
                 topPadding: 6
                 bottomPadding: 2
@@ -69,7 +69,7 @@ Rectangle {
                 color: Style.colors.secondaryText
                 font.family: Style.fontTypes.roboto
                 font.bold: true
-                font.pixelSize: 11
+                font.pixelSize: Style.appFont.defaultPt
                 leftPadding: 12
                 topPadding: 6
                 bottomPadding: 2
@@ -134,7 +134,7 @@ Rectangle {
                     text: modelData.path || ""
                     font.family: Style.fontTypes.roboto
                     color: Style.colors.lineNumberColor
-                    font.pixelSize: 13
+                    font.pixelSize: Style.appFont.h3Pt
                 }
 
                 ActionIconButton {
@@ -154,7 +154,7 @@ Rectangle {
 
                 Text {
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 11
+                    font.pixelSize: Style.appFont.defaultPt
                     font.bold: true
                     Layout.preferredWidth: 14
                     horizontalAlignment: Text.AlignHCenter

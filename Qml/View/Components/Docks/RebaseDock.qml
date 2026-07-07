@@ -38,7 +38,7 @@ UtilitiesCard {
 
             Text {
                 text: "Upstream"
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 color: Style.colors.mutedText
             }
             TextField {
@@ -64,7 +64,7 @@ UtilitiesCard {
 
             Text {
                 text: "Branch to rebase"
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 color: Style.colors.mutedText
             }
 
@@ -75,7 +75,7 @@ UtilitiesCard {
                 focusBorderWidth: 1
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 textRole: "label"
                 model: branchModel
                 currentIndex: 0
@@ -97,7 +97,7 @@ UtilitiesCard {
             Layout.fillWidth: false
             text: "Use --onto (advanced)"
             font.family: Style.fontTypes.roboto
-            font.pixelSize: 12
+            font.pixelSize: Style.appFont.mediumPt
             Material.accent: Style.colors.accent
             Material.foreground: Style.colors.foreground
             palette {
@@ -116,7 +116,7 @@ UtilitiesCard {
             Text {
                 text: "Onto (new base)"
                 Layout.fillWidth: true
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 color: Style.colors.mutedText
             }
             TextField {
@@ -161,7 +161,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Style.icons.copy
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.secondaryForeground
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -171,7 +171,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Start Rebase"
                         color: Style.colors.secondaryForeground
-                        font.pixelSize: 13
+                        font.pixelSize: Style.appFont.h3Pt
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }

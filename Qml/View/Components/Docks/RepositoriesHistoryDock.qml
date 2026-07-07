@@ -73,7 +73,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Style.icons.trash
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.selectedText
                     }
 
@@ -81,7 +81,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Clear history"
                         color: Style.colors.selectedText
-                        font.pixelSize: 13
+                        font.pixelSize: Style.appFont.h3Pt
                     }
                 }
             }

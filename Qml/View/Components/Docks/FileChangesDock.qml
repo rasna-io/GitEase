@@ -101,7 +101,7 @@ DetachablePanel {
                             anchors.leftMargin: 5
                             text: "Path"
                             color: Style.colors.foreground
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             font.bold: true
                             elide: Text.ElideRight
                         }
@@ -179,7 +179,7 @@ DetachablePanel {
                             anchors.leftMargin: 5
                             text: "Extension"
                             color: Style.colors.foreground
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             font.bold: true
                             elide: Text.ElideRight
                         }
@@ -257,7 +257,7 @@ DetachablePanel {
                             anchors.leftMargin: 5
                             text: "Status"
                             color: Style.colors.foreground
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             font.bold: true
                             elide: Text.ElideRight
                         }
@@ -335,7 +335,7 @@ DetachablePanel {
                             anchors.leftMargin: 5
                             text: "Lines Added"
                             color: Style.colors.foreground
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             font.bold: true
                             elide: Text.ElideRight
                         }
@@ -414,7 +414,7 @@ DetachablePanel {
                             anchors.leftMargin: 5
                             text: "Lines Removed"
                             color: Style.colors.foreground
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             font.bold: true
                             elide: Text.ElideRight
                             wrapMode: "Wrap"
@@ -478,7 +478,7 @@ DetachablePanel {
                                 Label {
                                     text: fileData.path || ""
                                     color: Style.colors.foreground
-                                    font.pixelSize: 10
+                                    font.pixelSize: Style.appFont.smallPt
                                     font.family: Style.fontTypes.roboto
                                     font.weight: 400
                                     font.letterSpacing: 0.2
@@ -507,7 +507,7 @@ DetachablePanel {
                                     color: Style.colors.foreground
                                     verticalAlignment: Text.AlignVCenter
                                     horizontalAlignment: Text.AlignHCenter
-                                    font.pixelSize: 10
+                                    font.pixelSize: Style.appFont.smallPt
                                     font.family: Style.fontTypes.roboto
                                     font.weight: 400
                                     font.letterSpacing: 0.2
@@ -551,7 +551,7 @@ DetachablePanel {
 
                                     color: Style.colors.titleText
                                     verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 12
+                                    font.pixelSize: Style.appFont.mediumPt
                                     Layout.fillWidth: true
                                     horizontalAlignment: Text.AlignHCenter
                                     elide: Text.ElideRight
@@ -580,7 +580,7 @@ DetachablePanel {
                                     text: fileData.additionsCount  || "0"
                                     color: Style.colors.foreground
                                     verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 10
+                                    font.pixelSize: Style.appFont.smallPt
                                     Layout.fillWidth: true
                                     horizontalAlignment: Text.AlignHCenter
                                     wrapMode: Text.NoWrap
@@ -604,7 +604,7 @@ DetachablePanel {
                                     text: fileData.deletionsCount  || "0"
                                     color: Style.colors.foreground
                                     verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 10
+                                    font.pixelSize: Style.appFont.smallPt
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     horizontalAlignment: Text.AlignHCenter

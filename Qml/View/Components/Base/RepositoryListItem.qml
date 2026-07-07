@@ -60,7 +60,7 @@ Rectangle {
         // Project name
         Text {
             text: root.name
-            font.pixelSize: 12
+            font.pixelSize: Style.appFont.mediumPt
             font.family: Style.fontTypes.roboto
             font.weight: 400
             font.letterSpacing: 0
@@ -76,14 +76,14 @@ Rectangle {
             Text {
                 text: Style.icons.folder
                 font.family: Style.fontTypes.font6Pro
-                font.pixelSize: 14
+                font.pixelSize: Style.appFont.largePt
                 color: root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
             }
 
             // Path
             ScrollingText {
                 text: root.path
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 font.family: Style.fontTypes.roboto
                 color: root.isSelected ? Style.colors.secondaryForeground : root.isExists ? Style.colors.mutedText : Style.colors.error
                 font.weight: 400

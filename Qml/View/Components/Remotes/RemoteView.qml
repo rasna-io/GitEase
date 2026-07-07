@@ -232,14 +232,14 @@ UtilitiesCard {
                                 text: currentRemote.name
                                 color: Style.colors.foreground
                                 font.family: Style.fontTypes.roboto
-                                font.pixelSize: 12
+                                font.pixelSize: Style.appFont.mediumPt
                             }
                             ScrollingText {
                                 Layout.fillWidth: true
                                 text: currentRemote.url
                                 color: Style.colors.mutedText
                                 font.family: Style.fontTypes.roboto
-                                font.pixelSize: 10
+                                font.pixelSize: Style.appFont.smallPt
                             }
                         }
 
@@ -376,7 +376,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Style.icons.plus
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.textButton
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -386,7 +386,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Add New Remote"
                         color: Style.colors.textButton
-                        font.pixelSize: 13
+                        font.pixelSize: Style.appFont.h3Pt
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }

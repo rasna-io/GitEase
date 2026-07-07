@@ -435,7 +435,7 @@ Rectangle {
                                 contentItem: Text {
                                     text: tip.text
                                     font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 11
+                                    font.pixelSize: Style.appFont.defaultPt
                                     color: "#ffffff"
                                 }
 
@@ -490,7 +490,7 @@ Rectangle {
                         text: Style.icons.plus
                         font.family: Style.fontTypes.font6Pro
                         font.weight: 400
-                        font.pixelSize: 14
+                        font.pixelSize: Style.appFont.largePt
                         color: addRepoMouse.containsMouse ^ Style.theme == Style.Light ?
                                    Qt.darker(Style.colors.navButton, 2.0) :
                                    Qt.lighter(Style.colors.navButton, 2.0)
@@ -506,7 +506,7 @@ Rectangle {
                     text: "Add new"
                     font.family: Style.fontTypes.roboto
                     font.weight: 400
-                    font.pixelSize: 14
+                    font.pixelSize: Style.appFont.largePt
                     elide: Text.ElideRight
                     color: addRepoMouse.containsMouse ^ Style.theme == Style.Light ?
                                Qt.darker(Style.colors.navButton, 2.0) :
@@ -564,7 +564,7 @@ Rectangle {
                 text: root.detachRepositoryInitials
                 font.family: Style.fontTypes.roboto
                 font.weight: 600
-                font.pixelSize: 20
+                font.pixelSize: Style.appFont.xxlPt
                 color: Style.theme == Style.Light
                        ? Qt.darker(root.detachRepositoryColor, 2.15)
                        : Qt.lighter(root.detachRepositoryColor, 2.0)

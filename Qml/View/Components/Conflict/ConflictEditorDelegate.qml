@@ -54,7 +54,7 @@ Item {
             text: isButtonRow ? "" : model.lineNumber
             color: Style.colors.linePanelForeground
             font.family: Style.fontTypes.roboto
-            font.pixelSize: 12
+            font.pixelSize: Style.appFont.mediumPt
             horizontalAlignment: Text.AlignRight
             rightPadding: 10
             topPadding: 4
@@ -106,7 +106,7 @@ Item {
 
                 color: Style.colors.conflictMarkerText
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
+                font.pixelSize: Style.appFont.h3Pt
                 padding: 0
                 leftPadding: 8
                 topPadding: 2
@@ -143,7 +143,7 @@ Item {
 
                 color: Style.colors.editorForeground
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
+                font.pixelSize: Style.appFont.h3Pt
                 padding: 0
                 leftPadding: 8
                 topPadding: 2
@@ -194,7 +194,7 @@ Item {
                 Button {
                     text: "Accept Current"
                     flat: true
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     font.family: Style.fontTypes.roboto
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
@@ -211,7 +211,7 @@ Item {
                 Button {
                     text: "Accept Incoming"
                     flat: true
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     font.family: Style.fontTypes.roboto
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
@@ -228,7 +228,7 @@ Item {
                 Button {
                     text: "Accept Both"
                     flat: true
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     font.family: Style.fontTypes.roboto
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {

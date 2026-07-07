@@ -51,14 +51,14 @@ Rectangle {
                 text: root.icon
                 color: Style.colors.accent
                 font.family: Style.fontTypes.font6Pro
-                font.pixelSize: 15
+                font.pixelSize: Style.appFont.largerPt
             }
 
             Label {
                 text: root.title
                 color: Style.colors.foreground
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
+                font.pixelSize: Style.appFont.h3Pt
                 font.bold: true
             }
         }

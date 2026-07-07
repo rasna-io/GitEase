@@ -159,7 +159,7 @@ Rectangle {
                         text: Style.icons.gear
                         font.family: settingButtonMouse.containsMouse ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
                         font.weight: 400
-                        font.pixelSize: 14
+                        font.pixelSize: Style.appFont.largePt
                         color: Style.colors.foreground
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -173,7 +173,7 @@ Rectangle {
                     visible: root.expanded
                     font.family: Style.fontTypes.roboto
                     font.weight: 400
-                    font.pixelSize: 14
+                    font.pixelSize: Style.appFont.largePt
                     elide: Text.ElideRight
                     color: Style.colors.foreground
                     horizontalAlignment: Text.AlignLeft
@@ -233,7 +233,7 @@ Rectangle {
                         text: Style.icons.bell
                         font.family: notificationButtonMouse.containsMouse ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
                         font.weight: 400
-                        font.pixelSize: 14
+                        font.pixelSize: Style.appFont.largePt
                         color: Style.colors.foreground
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -257,7 +257,7 @@ Rectangle {
                             text: root.notificationController ? Math.min(root.notificationController.unreadCount, 99) : 0
                             font.family: Style.fontTypes.roboto
                             font.weight: 700
-                            font.pixelSize: 9
+                            font.pixelSize: Style.appFont.captionPt
                             color: Style.colors.notificationBadgeText
                         }
                     }
@@ -270,7 +270,7 @@ Rectangle {
                     visible: root.expanded
                     font.family: Style.fontTypes.roboto
                     font.weight: 400
-                    font.pixelSize: 14
+                    font.pixelSize: Style.appFont.largePt
                     elide: Text.ElideRight
                     color: Style.colors.foreground
                     horizontalAlignment: Text.AlignLeft
@@ -337,7 +337,7 @@ Rectangle {
                     visible: root.expanded
                     font.family: Style.fontTypes.roboto
                     font.weight: 400
-                    font.pixelSize: 14
+                    font.pixelSize: Style.appFont.largePt
                     elide: Text.ElideRight
                     color: Style.colors.foreground
                     horizontalAlignment: Text.AlignLeft

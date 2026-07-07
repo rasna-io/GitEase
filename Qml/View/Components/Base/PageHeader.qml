@@ -41,7 +41,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         text: root.backButtonText
         font.family: Style.fontTypes.font6Pro
-        font.pixelSize: 16
+        font.pixelSize: Style.appFont.h2Pt
         width: 45
         height: 45
         flat: true
@@ -65,7 +65,7 @@ Item {
         anchors.centerIn: parent
         text: root.pageTitle
         visible: text !== ""
-        font.pixelSize: 20
+        font.pixelSize: Style.appFont.xxlPt
         font.bold: true
         font.family: Style.fontTypes.roboto
         font.weight: 400

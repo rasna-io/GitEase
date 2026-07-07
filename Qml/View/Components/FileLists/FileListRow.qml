@@ -103,7 +103,7 @@ Rectangle {
 
             text: root.text
             font.family: Style.fontTypes.roboto
-            font.pixelSize: 12
+            font.pixelSize: Style.appFont.mediumPt
             color: Style.colors.secondaryText
             elide: Text.ElideRight
         }
@@ -139,7 +139,7 @@ Rectangle {
             }
             visible: text !== ""
             font.family: Style.fontTypes.roboto
-            font.pixelSize: 11
+            font.pixelSize: Style.appFont.defaultPt
             font.bold: true
             color: root.indicatorColor
         }

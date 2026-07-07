@@ -27,7 +27,7 @@ Rectangle{
         Text {
             text: Style.icons.warning
             font.family: Style.fontTypes.font6Pro
-            font.pixelSize: 36
+            font.pixelSize: Style.appFont.displayLgPt
             color: Style.colors.mutedText
             horizontalAlignment: Text.AlignHCenter
             width: emptyStateColumn.width
@@ -36,7 +36,7 @@ Rectangle{
         Text {
             id: title
             font.family: Style.fontTypes.roboto
-            font.pixelSize: 16
+            font.pixelSize: Style.appFont.h2Pt
             font.weight: 500
             color: Style.colors.mutedText
             horizontalAlignment: Text.AlignHCenter
@@ -47,7 +47,7 @@ Rectangle{
         Text {
             id: detailsText
             font.family: Style.fontTypes.roboto
-            font.pixelSize: 12
+            font.pixelSize: Style.appFont.mediumPt
             font.weight: 400
             color: Style.colors.placeholderText
             horizontalAlignment: Text.AlignHCenter

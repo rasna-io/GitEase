@@ -103,7 +103,7 @@ Item {
                     height: parent.height
                     text: (leftLineNum > 0) ? leftLineNum : ""
                     color: Style.colors.linePanelForeground
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     font.family: Style.fontTypes.roboto
                     horizontalAlignment: Text.AlignRight
                     rightPadding: 10
@@ -137,7 +137,7 @@ Item {
                         textFormat: delegateRoot.textColorizer ? Text.RichText : Text.PlainText
                         color: Style.colors.editorForeground
                         font.family: Style.fontTypes.roboto
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.defaultPt
                         topPadding: 2
                         leftPadding: 8
                         TextMetrics { id: leftTextMetrics; text: leftContent; font: leftDisplay.font;}
@@ -275,7 +275,7 @@ Item {
                     z: 2
                     text: (rightLineNum > 0) ? rightLineNum : ""
                     color: Style.colors.linePanelForeground
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     font.family: Style.fontTypes.roboto
                     horizontalAlignment: Text.AlignRight
                     rightPadding: 10
@@ -312,7 +312,7 @@ Item {
                         textFormat: Text.RichText
                         color: Style.colors.editorForeground
                         font.family: "Cascadia Mono"
-                        font.pixelSize: 13
+                        font.pixelSize: Style.appFont.h3Pt
                     }
 
                     TextArea {
@@ -323,7 +323,7 @@ Item {
                         text: rightContent
                         color: Style.colors.editorForeground
                         font.family: Style.fontTypes.roboto
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.defaultPt
                         padding: 0
                         leftPadding: 8
                         topPadding: 2
