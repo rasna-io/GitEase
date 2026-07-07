@@ -329,11 +329,11 @@ function replaceBlockInModel(displayModel, blockIndex, block, resolvedLines) {
 /**
  * Updates the remaining blocks array after one block is resolved.
  * Renumbers indices and shifts line references accordingly.
- * @param blocks       - The blocks array (selectedConflict.blocks)
- * @param blockIndex   - The resolved block's original index
- * @param resolvedPos  - Position of the resolved block in the array
- * @param lineDelta    - Number of lines gained/lost
- * @param blockEndLine - The original endLine of the resolved block
+ * @param selectedConflict  - The conflict object (must have a blocks array)
+ * @param blockIndex        - The resolved block's original index
+ * @param resolvedPos       - Position of the resolved block in the array
+ * @param lineDelta         - Number of lines gained/lost
+ * @param blockEndLine      - The original endLine of the resolved block
  */
 function updateRemainingBlocks(selectedConflict, blockIndex, resolvedPos, lineDelta, blockEndLine) {
     for (let i = 0; i < selectedConflict.blocks.length; ++i) {
