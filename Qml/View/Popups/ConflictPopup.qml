@@ -594,6 +594,13 @@ Window {
         // Keep the raw lines array in sync
         selectedConflict.lines = ConflictUtils.updateLinesArray(selectedConflict.lines, block, resolvedLines)
 
+        let idx = conflicts.findIndex(c => c.path === selectedPath)
+        if (idx >= 0) {
+            let updated = conflicts.slice()
+            updated[idx] = selectedConflict
+            conflicts = updated
+        }
+
         // Rebuilt the conflict‑zone indicators
         Qt.callLater(updateConflictMarkers)
 
