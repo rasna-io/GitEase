@@ -375,6 +375,13 @@ Window {
                             conflictListView.horizontalScrollOffset = position * conflictListView.maxContentWidth
                         }
                     }
+
+                    EmptyStateView {
+                        anchors.fill: parent
+                        visible: displayModel.count === 0
+                        title: "No Conflicted files to show"
+                        details: "All conflicts have been resolved."
+                    }
                 }
             }
 
