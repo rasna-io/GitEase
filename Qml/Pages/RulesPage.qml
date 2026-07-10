@@ -59,6 +59,12 @@ Item {
         }
     }
 
+    AddRulePopup {
+        id: addRulePopup
+
+        rulesModel: rulesModel
+    }
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
@@ -124,6 +130,10 @@ Item {
                                     font.bold: true
                                 }
                             }
+                        }
+
+                        onClicked: {
+                            addRulePopup.open()
                         }
                     }
                 }
