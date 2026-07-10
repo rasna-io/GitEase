@@ -81,6 +81,8 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/ScrollingText.qml                 # Single-line auto-scrolling text
     Qml/View/Components/Base/ModernInputArea.qml               # Modern Input Area
     Qml/View/Components/Base/PluginCard.qml
+    Qml/View/Components/Base/ModernSpinBox.qml
+    Qml/View/Components/Base/HorizontalTagInput.qml
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
