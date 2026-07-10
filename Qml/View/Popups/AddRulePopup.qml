@@ -14,7 +14,11 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var rulesModel
+    property var categoriesModel
+
+    /* Signals
+     * ****************************************************************************************/
+    signal categoryClicked(int index)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -85,7 +89,7 @@ IPopup {
                 Layout.fillHeight: true
                 clip: true
 
-                model: rulesModel
+                model: categoriesModel
 
                 ScrollBar.vertical: ScrollBar {
                     policy: ScrollBar.AsNeeded
@@ -107,6 +111,11 @@ IPopup {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: "PointingHandCursor"
+
+                            onClicked: {
+                                root.categoryClicked(index)
+                                close()
+                            }
                         }
 
                         RowLayout {
@@ -119,12 +128,12 @@ IPopup {
                                 width: 30
                                 height: 30
                                 radius: 5
-                                color: ruleColor
+                                color: modelData.color
                             }
 
                             ColumnLayout {
                                 Text {
-                                    text: name
+                                    text: modelData.name
                                     font.family: Style.fontTypes.roboto
                                     font.pixelSize: 12
                                     color: "white"
@@ -132,7 +141,7 @@ IPopup {
                                 }
 
                                 ScrollingText {
-                                    text: description
+                                    text: modelData.description
                                     font.family: Style.fontTypes.roboto
                                     font.pixelSize: 10
                                     color: Style.colors.mutedText

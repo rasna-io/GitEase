@@ -8,68 +8,73 @@ import GitEase
 
 Item {
     id: root
+    anchors.fill: parent
 
     /* Property Declarations
      * ****************************************************************************************/
+    property int selectedCategory: 0
+    property int selectedRule: -1
 
+    property var categoriesInfo: [
+        { name: "COMMIT MESSAGE", color: "#58a6ff",
+          description: "Enforce message format, prefixes & length"
+        },
+        { name: "BRANCH NAMING", color: "#3fb950",
+          description: "Naming patterns, forbidden chars & protection"
+        },
+        { name: "FILE & CODE", color: "#f0883e",
+          description: "Extensions, secrets & file size limits"
+        },
+        { name: "PUSH RULES", color: "#f85149",
+          description: "Force-push, deletion & GPG requirements"
+        },
+        { name: "CUSTOM HOOKS", color: "#d2a8ff",
+          description: "Custom pre-commit/push scripts"
+        }
+    ]
 
-    /* Object Properties
-     * ****************************************************************************************/
-    anchors.fill: parent
-
+    property var categoryModels: [commitRules, branchRules, fileRules, pushRules, hookRules]
 
     /* Children
      * ****************************************************************************************/
-    ListModel {
-        id: rulesModel
 
-        ListElement {
-            name: "COMMIT MESSAGE"
-            enable: "true"
-            description: "Enforce message format, prefixes & length"
-            ruleColor: "#58a6ff"
-        }
-
-        ListElement {
-            name: "BRANCH NAMING"
-            enable: "true"
-            description: "Naming patterns, forbidden chars & protection"
-            ruleColor: "#3fb950"
-        }
-
-        ListElement {
-            name: "FILE & CODE"
-            enable: "true"
-            description: "Extensions, secrets & file size limits"
-            ruleColor: "#f0883e"
-        }
-
-        ListElement {
-            name: "PUSH RULES"
-            enable: "true"
-            description: "Force-push, deletion & GPG requirements"
-            ruleColor: "#f85149"
-        }
-
-        ListElement {
-            name: "CUSTOM HOOKS"
-            enable: "true"
-            description: "Custom pre-commit/push scripts"
-            ruleColor: "#d2a8ff"
-        }
-    }
+    // One ListModel per category, holding the actual rule instances
+    ListModel { id: commitRules }
+    ListModel { id: branchRules }
+    ListModel { id: fileRules }
+    ListModel { id: pushRules }
+    ListModel { id: hookRules }
 
     AddRulePopup {
         id: addRulePopup
+        categoriesModel: root.categoriesInfo
 
-        rulesModel: rulesModel
+        onCategoryClicked: (index) => {
+            switch (index) {
+                case 0:
+                    commitRules.append({ name: "New Commit Message Rule" })
+                    break
+                case 1:
+                    branchRules.append({ name: "New Branch Naming Rule" })
+                    break
+                case 2:
+                    fileRules.append({ name: "New File & Code Rule" })
+                    break
+                case 3:
+                    pushRules.append({ name: "New Push Rules Rule" })
+                    break
+                case 4:
+                    hookRules.append({ name: "New Custom Hooks Rule" })
+                    break
+            }
+        }
     }
 
     RowLayout {
         anchors.fill: parent
         spacing: 0
 
-        // Left column - Showing different rules type
+        // Left column - tree of categories + nested rules
         Rectangle {
             Layout.preferredWidth: 300
             Layout.fillHeight: true
@@ -115,8 +120,6 @@ Item {
                                     font.family: Style.fontTypes.font6Pro
                                     font.pixelSize: 12
                                     color: Style.colors.textButton
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
                                     font.bold: true
                                 }
 
@@ -125,16 +128,12 @@ Item {
                                     text: "Add Rule"
                                     color: Style.colors.textButton
                                     font.pixelSize: 13
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
                                     font.bold: true
                                 }
                             }
                         }
 
-                        onClicked: {
-                            addRulePopup.open()
-                        }
+                        onClicked: addRulePopup.open()
                     }
                 }
 
@@ -144,88 +143,138 @@ Item {
                     color: Style.colors.secondaryBackground
                 }
 
-                ListView {
-                    id: rulesList
+                ScrollView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    model: rulesModel
-                    currentIndex: 0
-                    spacing: 5
                     clip: true
 
-                    delegate: Rectangle {
-                        width: rulesList.width
-                        height: 25
-                        color: "transparent"
-                        radius: 5
+                    ColumnLayout {
+                        width: parent.width
+                        spacing: 8
 
-                        RowLayout {
-                            anchors.fill: parent
-                            spacing: 10
+                        Repeater {
+                            model: root.categoriesInfo
 
-                            Rectangle {
-                                Layout.preferredWidth: 3
-                                Layout.preferredHeight: 15
-                                Layout.alignment: Qt.AlignLeft
-                                color: ruleColor
-                                radius: 5
-                            }
+                            delegate: ColumnLayout {
+                                id: categoryBlock
 
-                            Text {
-                                text: name
-                                font.family: Style.fontTypes.roboto
-                                color: Style.colors.placeholderText
-                                Layout.alignment: Qt.AlignLeft
-                                font.pixelSize: 11
-                            }
+                                // capture the outer (category) index BEFORE the nested Repeater shadows it
+                                property int categoryIndex: index
+                                property color categoryColor: modelData.color
+                                property var categoryRulesModel: root.categoryModels[categoryIndex]
 
-                            Rectangle {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 1
-                                color: Style.colors.secondaryBackground
-                            }
+                                spacing: 0
 
-                            Text {
-                                text: "0"
-                                font.family: Style.fontTypes.roboto
-                                color: Style.colors.placeholderText
-                                Layout.alignment: Qt.AlignLeft
-                                font.pixelSize: 11
-                            }
-                        }
+                                // --- category header row ---
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 25
+                                    color: "transparent"
 
-                        MouseArea {
-                            anchors.fill: parent
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        spacing: 10
 
-                            cursorShape: "PointingHandCursor"
+                                        Rectangle {
+                                            Layout.preferredWidth: 3
+                                            Layout.preferredHeight: 15
+                                            color: modelData.color
+                                            radius: 5
+                                        }
 
-                            onClicked: {
-                                stackLayout.currentIndex = index
+                                        Text {
+                                            text: modelData.name
+                                            font.family: Style.fontTypes.roboto
+                                            color: Style.colors.placeholderText
+                                            font.pixelSize: 11
+                                        }
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: 1
+                                            color: Style.colors.secondaryBackground
+                                        }
+
+                                        Text {
+                                            text: categoryBlock.categoryRulesModel.count
+                                            font.family: Style.fontTypes.roboto
+                                            color: Style.colors.placeholderText
+                                            font.pixelSize: 11
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: "PointingHandCursor"
+                                        onClicked: {
+                                            root.selectedCategory = categoryBlock.categoryIndex
+                                            root.selectedRule = -1   // header click: no specific rule yet
+                                        }
+                                    }
+                                }
+
+                                // --- nested rule names ---
+                                Repeater {
+                                    model: categoryBlock.categoryRulesModel
+
+                                    delegate: Rectangle {
+                                        id: ruleDelegate
+
+                                        // this "index" belongs to the inner Repeater (rule's own index)
+                                        Layout.fillWidth: true
+                                        height: 30
+                                        radius: 5
+                                        color: (root.selectedCategory === categoryBlock.categoryIndex
+                                                && root.selectedRule === index)
+                                               ? Style.colors.accent
+                                               : "transparent"
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            spacing: 5
+
+                                            Rectangle {
+                                                width: 10
+                                                height: 10
+                                                radius: 5
+                                                Layout.alignment: Qt.AlignVCenter
+                                                color: categoryBlock.categoryColor
+                                            }
+
+                                            ScrollingText {
+                                                text: name
+                                                font.family: Style.fontTypes.roboto
+                                                font.pixelSize: 11
+                                                color: "white"
+                                                Layout.alignment: Qt.AlignVCenter
+                                                Layout.fillWidth: true
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: "PointingHandCursor"
+                                            onClicked: {
+                                                root.selectedCategory = categoryBlock.categoryIndex
+                                                root.selectedRule = index
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
-
             }
         }
 
-        // Right column - showing settings for each rule
+        // Right column - placeholder for now
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             color: Style.colors.primaryBackground
-
-            StackLayout {
-                id: stackLayout
-
-                anchors.fill: parent
-                anchors.margins: 10
-            }
         }
     }
-
-
-    /* Functions
-     * ****************************************************************************************/
-
 }
