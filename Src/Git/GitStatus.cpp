@@ -936,7 +936,7 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
     getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
 
     // Convert the staged (LF) content to worktree representation (CRLF if needed)
-    QString smudged = smudgeText(m_currentRepo->repo, filePath, stagedText);
+    QByteArray smudged = smudgeText(m_currentRepo->repo, filePath, stagedText);
 
     const char* workdir = git_repository_workdir(m_currentRepo->repo);
     QString absPath = QDir(QString::fromUtf8(workdir)).filePath(filePath);
@@ -948,7 +948,7 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
     wf.close();
 
     GitResult writeResult;
-    if (smudged.toUtf8() == worktreeBytes) {
+    if (smudged == worktreeBytes) {
         writeResult = addToIndex(filePath, false);  // Stage via real file
     } else {
         // Partial stage: still need to update the index with our reconstructed (LF) text
@@ -1404,13 +1404,13 @@ GitResult GitStatus::revertAll()
     return GitResult(true, QVariant(), "All changes discarded.");
 }
 
-QString GitStatus::smudgeText(git_repository* repo, const QString& path, const QString& lfContent)
+QByteArray GitStatus::smudgeText(git_repository* repo, const QString& path, const QString& lfContent)
 {
     git_filter_list *filters = nullptr;
     if (git_filter_list_load(&filters, repo, nullptr,
                              path.toUtf8().constData(),
                              GIT_FILTER_TO_WORKTREE, GIT_FILTER_DEFAULT) != 0)
-        return lfContent;
+        return lfContent.toUtf8();
 
     git_buf src = GIT_BUF_INIT;
     git_buf dest = GIT_BUF_INIT;
@@ -1422,11 +1422,11 @@ QString GitStatus::smudgeText(git_repository* repo, const QString& path, const Q
     git_buf_dispose(&src);
 
     if (rc == 0) {
-        QString result = QString::fromUtf8(dest.ptr, dest.size);
+        QByteArray result = QByteArray(dest.ptr, dest.size);
         git_buf_dispose(&dest);
         return result;
     }
     git_buf_dispose(&dest);
-    return lfContent;
+    return lfContent.toUtf8();
 }
 

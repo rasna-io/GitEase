@@ -303,5 +303,5 @@ private:
     QVariantMap gitDiffToMap(const GitDiff &d);
     bool isContextLine(const QVariantMap &line) const;
 
-    QString smudgeText(git_repository* repo, const QString& path, const QString& lfContent);
+    QByteArray smudgeText(git_repository* repo, const QString& path, const QString& lfContent);
 };
