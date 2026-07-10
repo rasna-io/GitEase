@@ -1367,3 +1367,30 @@ GitResult GitStatus::revertAll()
 
     return GitResult(true, QVariant(), "All changes discarded.");
 }
+
+QString GitStatus::smudgeText(git_repository* repo, const QString& path, const QString& lfContent)
+{
+    git_filter_list *filters = nullptr;
+    if (git_filter_list_load(&filters, repo, nullptr,
+                             path.toUtf8().constData(),
+                             GIT_FILTER_TO_WORKTREE, GIT_FILTER_DEFAULT) != 0)
+        return lfContent;
+
+    git_buf src = GIT_BUF_INIT;
+    git_buf dest = GIT_BUF_INIT;
+    QByteArray utf8 = lfContent.toUtf8();
+    git_buf_set(&src, utf8.constData(), utf8.size());
+
+    int rc = git_filter_list_apply_to_data(&dest, filters, &src);
+    git_filter_list_free(filters);
+    git_buf_dispose(&src);
+
+    if (rc == 0) {
+        QString result = QString::fromUtf8(dest.ptr, dest.size);
+        git_buf_dispose(&dest);
+        return result;
+    }
+    git_buf_dispose(&dest);
+    return lfContent;
+}
+
