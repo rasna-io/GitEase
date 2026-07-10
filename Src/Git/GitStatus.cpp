@@ -975,8 +975,25 @@ QString GitStatus::buildSelectedLinesContent(const QString &filePath, int startL
     const char *rawContent = static_cast<const char *>(git_blob_rawcontent(indexBlob.get()));
     git_object_size_t rawSize = git_blob_rawsize(indexBlob.get());
     QByteArray originalData = QByteArray::fromRawData(rawContent, static_cast<int>(rawSize));
-    if (originalData.contains("\r\n"))
-        selectedText.replace("\n", "\r\n");
+
+    git_filter_list *filters = nullptr;
+    if (git_filter_list_load(&filters, m_currentRepo->repo, nullptr,
+                             filePath.toUtf8().constData(),
+                             GIT_FILTER_TO_ODB, GIT_FILTER_DEFAULT) == 0) {
+        git_buf src = GIT_BUF_INIT;
+        git_buf filtered = GIT_BUF_INIT;
+
+        QByteArray utf8 = selectedText.toUtf8();
+        git_buf_set(&src, utf8.constData(), utf8.size());
+
+        if (git_filter_list_apply_to_data(&filtered, filters, &src) == 0) {
+            selectedText = QString::fromUtf8(filtered.ptr, filtered.size);
+        }
+
+        git_buf_dispose(&src);
+        git_buf_dispose(&filtered);
+        git_filter_list_free(filters);
+    }
 
     return selectedText;
 }
