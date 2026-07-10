@@ -935,7 +935,26 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
     uint32_t baseMode = 0;
     getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
 
-    GitResult writeResult = writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
+    // Convert the staged (LF) content to worktree representation (CRLF if needed)
+    QString smudged = smudgeText(m_currentRepo->repo, filePath, stagedText);
+
+    const char* workdir = git_repository_workdir(m_currentRepo->repo);
+    QString absPath = QDir(QString::fromUtf8(workdir)).filePath(filePath);
+    QFile wf(absPath);
+    if (!wf.open(QIODevice::ReadOnly)) {
+        return writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
+    }
+    QByteArray worktreeBytes = wf.readAll();
+    wf.close();
+
+    GitResult writeResult;
+    if (smudged.toUtf8() == worktreeBytes) {
+        writeResult = addToIndex(filePath, false);  // Stage via real file
+    } else {
+        // Partial stage: still need to update the index with our reconstructed (LF) text
+        writeResult = writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
+    }
+
     if (writeResult.success()) {
         emitGitCommand(QString("git add -p -- %1").arg(quoteCommandArg(filePath)));
     }
