@@ -20,6 +20,7 @@ Rectangle {
     property int    minLines            : 3
     property int    maxLines            : 10
     property real   lineHeightMultiplier: 1.2
+    property int    fontSize: 14
 
     readonly property real  effectiveLineHeight : commitTextArea.font.pixelSize * lineHeightMultiplier
     readonly property int   counterHeight       : 24
