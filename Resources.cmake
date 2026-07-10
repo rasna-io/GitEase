@@ -220,6 +220,7 @@ set(RESOURCES_PAGES
     Qml/Pages/UtilitiesPage.qml     # UtilitiesPage, import/export
     Qml/Pages/BlankPage.qml         # Blank placeholder page
     Qml/Pages/PluginsPage.qml       # Plugins page
+    Qml/Pages/RulesPage.qml         # RulesPage
 )
 
 # Define QML Services

@@ -91,4 +91,5 @@ QtObject{
     property string incompatible:      "\uf057" // incompatible
 
     property string detach:            "\uf35d" // external-link-alt
+    property string rules:             "\uf0ae" // rules
 }
