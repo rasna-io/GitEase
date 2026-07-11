@@ -281,20 +281,93 @@ Item {
                 visible: root.selectedRule < 0
             }
 
-            Loader {
-                id: settingsLoader
+            ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 20
-                active: root.selectedRule >= 0
 
-                sourceComponent: {
-                    switch (root.selectedCategory) {
-                        case 0: return commitSettingsComp
-                        case 1: return branchSettingsComp
-                        case 2: return fileSettingsComp
-                        case 3: return pushSettingsComp
-                        case 4: return hookSettingsComp
-                        default: return null
+                Loader {
+                    id: settingsLoader
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.margins: 20
+                    active: root.selectedRule >= 0
+
+                    sourceComponent: {
+                        switch (root.selectedCategory) {
+                            case 0: return commitSettingsComp
+                            case 1: return branchSettingsComp
+                            case 2: return fileSettingsComp
+                            case 3: return pushSettingsComp
+                            case 4: return hookSettingsComp
+                            default: return null
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 50
+                    color: Style.colors.secondaryBackground
+                    visible: root.selectedRule >= 0
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 5
+
+
+                        Item {
+                            Layout.fillWidth: true
+                        }
+
+                        Rectangle {
+                            width: 90
+                            height: 35
+                            radius: 5
+                            color: "red"
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Discard"
+                                font.family: Style.fontTypes.roboto
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            width: 100
+                            height: 35
+                            radius: 5
+                            color: "#238636"
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Save Changes"
+                                font.family: Style.fontTypes.roboto
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -339,5 +412,6 @@ Item {
                 }
             }
         }
+
     }
 }
