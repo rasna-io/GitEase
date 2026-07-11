@@ -270,11 +270,47 @@ Item {
             }
         }
 
-        // Right column - placeholder for now
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             color: Style.colors.primaryBackground
+
+            EmptyStateView {
+                title: "No rule to show"
+                details: "Select a rule to edit its setting"
+                visible: root.selectedRule < 0
+            }
+
+            Loader {
+                id: settingsLoader
+                anchors.fill: parent
+                anchors.margins: 20
+                active: root.selectedRule >= 0
+
+                sourceComponent: {
+                    switch (root.selectedCategory) {
+                        case 0: return commitSettingsComp
+                        case 1: return branchSettingsComp
+                        case 2: return fileSettingsComp
+                        case 3: return pushSettingsComp
+                        case 4: return hookSettingsComp
+                        default: return null
+                    }
+                }
+            }
+
+            Connections {
+                target: root
+                function onSelectedRuleChanged() { settingsLoader.refreshItem() }
+                function onSelectedCategoryChanged() { settingsLoader.refreshItem() }
+            }
+
+            Component {
+                id: commitSettingsComp
+
+                CommitMessageSettings {
+                }
+            }
         }
     }
 }
