@@ -6,6 +6,10 @@ import GitEase_Style
 import GitEase_Style_Impl
 import GitEase
 
+/*! ***********************************************************************************************
+ * CommitMessageSettings
+ * ************************************************************************************************/
+
 Flickable {
     id: root
 
@@ -23,6 +27,8 @@ Flickable {
         policy: ScrollBar.AsNeeded
     }
 
+    /* Children
+     * ****************************************************************************************/
     ColumnLayout {
         id: contentColumn
         width: root.width
@@ -65,25 +71,13 @@ Flickable {
                     control: RowLayout {
                         anchors.fill: parent
 
-                        Rectangle {
-                            id: rowRect
-                            Layout.preferredWidth: 50
+                        ModernSwitch {
                             Layout.fillHeight: true
-                            Layout.margins: 0
-                            color: "transparent"
-
-                            Switch {
-                                anchors.fill: parent
-                                Material.accent: Style.colors.accent
-                                scale: 0.8
-                            }
                         }
 
                         HorizontalTagInput {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            color: Style.colors.secondaryBackground
-                            radius: 5
                         }
                     }
                 }
@@ -93,16 +87,8 @@ Flickable {
                 OptionRow {
                     title: "No trailing period"
 
-                    control: Rectangle {
-                        width: 50
+                    control: ModernSwitch {
                         height: parent.height
-                        color: "transparent"
-
-                        Switch {
-                            anchors.fill: parent
-                            Material.accent: Style.colors.accent
-                            scale: 0.8
-                        }
                     }
                 }
 
@@ -112,17 +98,8 @@ Flickable {
                     title: "Imperative verb"
                     subtitle: "First word must be a verb"
 
-                    control: Rectangle {
-                        width: 50
+                    control: ModernSwitch {
                         height: parent.height
-                        Layout.margins: 0
-                        color: "transparent"
-
-                        Switch {
-                            anchors.fill: parent
-                            Material.accent: Style.colors.accent
-                            scale: 0.8
-                        }
                     }
                 }
             }
@@ -142,8 +119,6 @@ Flickable {
 
                     control: HorizontalTagInput {
                         anchors.fill: parent
-                        color: Style.colors.secondaryBackground
-                        radius: 5
                     }
                 }
 
@@ -156,17 +131,8 @@ Flickable {
                     control: RowLayout {
                         anchors.fill: parent
 
-                        Rectangle {
-                            Layout.preferredWidth: 50
+                        ModernSwitch {
                             Layout.fillHeight: true
-                            Layout.margins: 0
-                            color: "transparent"
-
-                            Switch {
-                                anchors.fill: parent
-                                Material.accent: Style.colors.accent
-                                scale: 0.8
-                            }
                         }
 
                         TextField {
@@ -190,17 +156,8 @@ Flickable {
                     control: RowLayout {
                         anchors.fill: parent
 
-                        Rectangle {
-                            Layout.preferredWidth: 50
+                        ModernSwitch {
                             Layout.fillHeight: true
-                            Layout.margins: 0
-                            color: "transparent"
-
-                            Switch {
-                                anchors.fill: parent
-                                Material.accent: Style.colors.accent
-                                scale: 0.8
-                            }
                         }
 
                         Text {
@@ -230,17 +187,8 @@ Flickable {
                 OptionRow {
                     title: "Require Signed-off-by"
 
-                    control: Rectangle {
-                        width: 50
+                    control: ModernSwitch {
                         height: parent.height
-                        Layout.margins: 0
-                        color: "transparent"
-
-                        Switch {
-                            anchors.fill: parent
-                            Material.accent: Style.colors.accent
-                            scale: 0.8
-                        }
                     }
                 }
             }

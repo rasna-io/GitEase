@@ -113,16 +113,8 @@ RuleChip {
         OptionRow {
             title: "Enabled"
 
-            control: Item {
-                width: 50
+            control: ModernSwitch {
                 height: parent.height
-                Layout.margins: 0
-
-                Switch {
-                    anchors.fill: parent
-                    Material.accent: Style.colors.accent
-                    scale: 0.8
-                }
             }
         }
     }
