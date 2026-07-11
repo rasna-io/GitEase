@@ -299,16 +299,19 @@ Item {
                 }
             }
 
-            Connections {
-                target: root
-                function onSelectedRuleChanged() { settingsLoader.refreshItem() }
-                function onSelectedCategoryChanged() { settingsLoader.refreshItem() }
-            }
-
             Component {
                 id: commitSettingsComp
 
                 CommitMessageSettings {
+                    ruleColor: root.categoriesInfo[0].color
+                }
+            }
+
+            Component {
+                id: branchSettingsComp
+
+                BranchNamingSettings {
+                    ruleColor: root.categoriesInfo[1].color
                 }
             }
         }
