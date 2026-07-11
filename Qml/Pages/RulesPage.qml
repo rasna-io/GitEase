@@ -314,6 +314,14 @@ Item {
                     ruleColor: root.categoriesInfo[1].color
                 }
             }
+
+            Component {
+                id: fileSettingsComp
+
+                FileSettings {
+                    ruleColor: root.categoriesInfo[2].color
+                }
+            }
         }
     }
 }

@@ -83,6 +83,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/PluginCard.qml
     Qml/View/Components/Base/ModernSpinBox.qml
     Qml/View/Components/Base/HorizontalTagInput.qml
+    Qml/View/Components/Base/VerticalTagInput.qml
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
@@ -179,6 +180,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/RulesPage/ModernSwitch.qml
     Qml/View/Components/Pages/RulesPage/CommitMessageSettings.qml
     Qml/View/Components/Pages/RulesPage/BranchNamingSettings.qml
+    Qml/View/Components/Pages/RulesPage/FileSettings.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
     Qml/View/Components/GraphView/ResizableColumnHeader.qml
