@@ -322,6 +322,14 @@ Item {
                     ruleColor: root.categoriesInfo[2].color
                 }
             }
+
+            Component {
+                id: pushSettingsComp
+
+                PushRulesSettings {
+                    ruleColor: root.categoriesInfo[3].color
+                }
+            }
         }
     }
 }
