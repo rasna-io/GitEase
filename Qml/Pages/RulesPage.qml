@@ -330,6 +330,14 @@ Item {
                     ruleColor: root.categoriesInfo[3].color
                 }
             }
+
+            Component {
+                id: hookSettingsComp
+
+                CustomHooksSettings {
+                    ruleColor: root.categoriesInfo[4].color
+                }
+            }
         }
     }
 }
