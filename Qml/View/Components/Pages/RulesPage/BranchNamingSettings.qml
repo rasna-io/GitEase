@@ -7,7 +7,7 @@ import GitEase_Style_Impl
 import GitEase
 
 /*! ***********************************************************************************************
- * ContextMenu
+ * BranchNamingSettings
  * ************************************************************************************************/
 
 Flickable {
@@ -27,6 +27,8 @@ Flickable {
         policy: ScrollBar.AsNeeded
     }
 
+    /* Children
+     * ****************************************************************************************/
     ColumnLayout {
         id: contentColumn
         width: root.width
