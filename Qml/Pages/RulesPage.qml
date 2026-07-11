@@ -28,12 +28,15 @@ Item {
         { name: "PUSH RULES", color: "#f85149",
           description: "Force-push, deletion & GPG requirements"
         },
+        { name: "NOTIFICATION", color: "#58a6ff",
+          description: "Slack, email & audit log routing"
+        },
         { name: "CUSTOM HOOKS", color: "#d2a8ff",
           description: "Custom pre-commit/push scripts"
         }
     ]
 
-    property var categoryModels: [commitRules, branchRules, fileRules, pushRules, hookRules]
+    property var categoryModels: [commitRules, branchRules, fileRules, pushRules, notificationRules, hookRules]
 
     /* Children
      * ****************************************************************************************/
@@ -43,6 +46,7 @@ Item {
     ListModel { id: branchRules }
     ListModel { id: fileRules }
     ListModel { id: pushRules }
+    ListModel { id: notificationRules }
     ListModel { id: hookRules }
 
     AddRulePopup {
@@ -64,6 +68,9 @@ Item {
                     pushRules.append({ name: "New Push Rules Rule" })
                     break
                 case 4:
+                    notificationRules.append({ name: "New Notification Rule" })
+                    break
+                case 5:
                     hookRules.append({ name: "New Custom Hooks Rule" })
                     break
             }
@@ -297,7 +304,8 @@ Item {
                             case 1: return branchSettingsComp
                             case 2: return fileSettingsComp
                             case 3: return pushSettingsComp
-                            case 4: return hookSettingsComp
+                            case 4: return notificationSettingsComp
+                            case 5: return hookSettingsComp
                             default: return null
                         }
                     }
@@ -405,13 +413,20 @@ Item {
             }
 
             Component {
-                id: hookSettingsComp
+                id: notificationSettingsComp
 
-                CustomHooksSettings {
+                NotificationRulesSettings {
                     ruleColor: root.categoriesInfo[4].color
                 }
             }
-        }
 
+            Component {
+                id: hookSettingsComp
+
+                CustomHooksSettings {
+                    ruleColor: root.categoriesInfo[5].color
+                }
+            }
+        }
     }
 }
