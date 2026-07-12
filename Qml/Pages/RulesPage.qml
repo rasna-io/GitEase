@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 
 import GitEase_Style
 import GitEase_Style_Impl
@@ -76,6 +77,42 @@ Item {
                break
            }
        }
+    }
+
+    RuleImportPopup {
+        id: ruleImportPopup
+
+        onConfirmed: (fileUrl) => root.importFile(fileUrl)
+    }
+
+    FileDialog {
+        id: exportDialog
+        title: "Export Rules"
+        fileMode: FileDialog.SaveFile
+        nameFilters: ["JSON files (*.json)"]
+        defaultSuffix: "json"
+
+        onAccepted: {
+            var data = root.buildRulesJson()
+            var jsonText = JSON.stringify(data, null, 2)
+            var result = ruleController.exportRules(selectedFile, jsonText)
+        }
+    }
+
+    FileDialog {
+        id: importDialog
+        title: "Import Rules"
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["JSON files (*.json)"]
+
+        onAccepted: {
+            if (root.hasAnyRules()) {
+                ruleImportPopup.pendingFile = selectedFile
+                ruleImportPopup.open()
+            } else {
+                root.importFile(selectedFile)
+            }
+        }
     }
 
     RowLayout {
@@ -195,13 +232,14 @@ Item {
                                 }
                             }
 
-                            onClicked: addRulePopup.open()
+                            onClicked: importDialog.open()
                         }
 
                         Button {
                             Layout.preferredWidth: 90
                             implicitHeight: 40
                             Layout.alignment: Qt.AlignCenter
+                            enabled: root.hasAnyRules()
 
                             background: Rectangle {
                                 radius: 5
@@ -235,6 +273,8 @@ Item {
                                     }
                                 }
                             }
+
+                            onClicked: exportDialog.open()
                         }
                     }
                 }
@@ -619,6 +659,27 @@ Item {
             notificationRules.clear()
             hookRules.clear()
         }
+    }
+
+    function importFile(fileUrl) {
+        var result = ruleController.importRules(fileUrl)
+        var data = JSON.parse(result.data)
+        loadArrayInto(commitRules, data.rules.commitMessage)
+        loadArrayInto(branchRules, data.rules.branchNaming)
+        loadArrayInto(fileRules, data.rules.fileCode)
+        loadArrayInto(pushRules, data.rules.pushRules)
+        loadArrayInto(notificationRules, data.rules.notification)
+        loadArrayInto(hookRules, data.rules.customHooks)
+        root.saveRulesToDisk()
+    }
+
+    function hasAnyRules() {
+        return commitRules.count > 0 ||
+               branchRules.count > 0 ||
+               fileRules.count > 0 ||
+               pushRules.count > 0 ||
+               notificationRules.count > 0 ||
+               hookRules.count > 0
     }
 
     Component.onCompleted: {

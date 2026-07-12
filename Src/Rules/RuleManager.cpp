@@ -51,6 +51,38 @@ GitResult RuleManager::loadRules()
     return GitResult(true, content);
 }
 
+GitResult RuleManager::exportRules(const QUrl &fileUrl, const QString &jsonText)
+{
+    QString path = fileUrl.toLocalFile();
+    if (path.isEmpty())
+        return GitResult(false, QVariant(), "Invalid export path");
+
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        return GitResult(false, QVariant(), "Failed to open file for writing: " + path);
+
+    file.write(jsonText.toUtf8());
+    file.close();
+
+    return GitResult(true);
+}
+
+GitResult RuleManager::importRules(const QUrl &fileUrl)
+{
+    QString path = fileUrl.toLocalFile();
+    if (path.isEmpty())
+        return GitResult(false, QVariant(), "Invalid import path");
+
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return GitResult(false, QVariant(), "Failed to open file for reading: " + path);
+
+    QString content = QString::fromUtf8(file.readAll());
+    file.close();
+
+    return GitResult(true, content);
+}
+
 QString RuleManager::rulesFilePath()
 {
     if (!m_currentRepo)
@@ -75,7 +107,6 @@ void RuleManager::setCurrentRepo(Repository *newCurrentRepo)
     if (m_currentRepo == newCurrentRepo)
         return;
 
-    qDebug() << "changegeggegeggege";
     m_currentRepo = newCurrentRepo;
     emit currentRepoChanged();
 }

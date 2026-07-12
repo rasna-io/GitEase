@@ -19,6 +19,9 @@ public:
     Q_INVOKABLE GitResult saveRules(const QString &jsonText);
     Q_INVOKABLE GitResult loadRules();
 
+    Q_INVOKABLE GitResult exportRules(const QUrl &fileUrl, const QString &jsonText);
+    Q_INVOKABLE GitResult importRules(const QUrl &fileUrl);
+
     Repository *currentRepo() const;
     Q_INVOKABLE void setCurrentRepo(Repository *newCurrentRepo);
 
