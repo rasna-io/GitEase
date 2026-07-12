@@ -18,11 +18,16 @@ Item {
      * ****************************************************************************************/
     property string     currentRepositoryName
     property bool       detached: false
+    property string     layoutId: ""
     property string     title: ""
     property int        headerHeight: 32
     property int        minWindowWidth: 420
     property int        minWindowHeight: 320
     property bool       showInlineHeader: true
+    property bool       minimizable: false
+    property bool       isMinimized: false
+    property string     icon: ""
+    property LayoutController layoutController: null
 
     // Optional elements in the middle of header
     property Component  middleAccessory: null
@@ -36,6 +41,10 @@ Item {
      * ****************************************************************************************/
     property int lastWidth: 600
     property int lastHeight: 400
+
+    /* Object Properties
+     * ****************************************************************************************/
+    visible: !root.isMinimized && !root.detached
 
     /* Functions
      * ****************************************************************************************/
@@ -67,7 +76,7 @@ Item {
     }
 
     onWidthChanged: {
-        if (!detached && width > 0) {
+        if (!detached && !isMinimized && width > 0) {
             lastWidth = width
         }
     }
@@ -76,6 +85,31 @@ Item {
         if (!detached && height > 0) {
             lastHeight = height
         }
+    }
+
+    onLayoutControllerChanged: {
+        if (root.layoutId && root.layoutController)
+            root.layoutController.registerPanelLayout(root)
+    }
+
+    onIsMinimizedChanged: {
+        if (root.minimizable && root.layoutController) {
+            if (root.isMinimized)
+                root.layoutController.register(root)
+            else
+                root.layoutController.unregister(root)
+        }
+
+        if (root.layoutId && root.layoutController)
+            root.layoutController.persistPanelLayout(root)
+    }
+
+    Component.onDestruction: {
+        if (root.minimizable && root.layoutController)
+            root.layoutController.unregister(root)
+
+        if (root.layoutId && root.layoutController)
+            root.layoutController.persistPanelLayout(root)
     }
 
     /* Children
@@ -115,6 +149,17 @@ Item {
                     sourceComponent: root.middleAccessory
                 }
 
+                ActionIconButton {
+                    id: minimizeButton
+                    visible: root.minimizable
+                    Layout.alignment: Qt.AlignRight
+                    iconText: Style.icons.windowMinimize
+                    tooltip: qsTr("Minimize")
+                    textColor: Style.colors.foreground
+
+                    onClicked: root.isMinimized = true
+                }
+
                 ToolButton {
                     id: detachButton
                     Layout.alignment: Qt.AlignRight
@@ -124,7 +169,7 @@ Item {
 
                     contentItem: Text {
                         anchors.centerIn: parent
-                        text: Style.icons.arrowRight
+                        text: Style.icons.detach
                         font {
                             family: Style.fontTypes.font6ProSolid
                             pixelSize: 10
