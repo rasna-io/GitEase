@@ -13,6 +13,15 @@ import GitEase
  */
 
 RuleChip {
+    /* Property Declarations
+     * ****************************************************************************************/
+    property alias ruleName:      nameTextField.text
+    property alias description:   descriptionInputArea.text
+    property alias severityIndex: severitySelector.severityCurrentIndex
+    property alias isActive:      enabledSwitch.checked
+
+    /* Object Properties
+     * ****************************************************************************************/
     headerText: "Basic"
     Layout.fillWidth: true
     ruleColor: root.ruleColor
@@ -24,6 +33,7 @@ RuleChip {
             title: "Rule Name"
 
             control: TextField {
+                id: nameTextField
                 anchors.fill: parent
                 placeholderText: "Type a name for the rule..."
                 selectByMouse: true
@@ -42,6 +52,7 @@ RuleChip {
             rowHeight: 80
 
             control: ModernInputArea {
+                id: descriptionInputArea
                 anchors.fill: parent
                 placeholder: "Write some descriptions about your commmitiing style"
                 color: Style.colors.secondaryBackground
@@ -53,6 +64,7 @@ RuleChip {
         DividerLine {}
 
         OptionRow {
+            id: severity
             title: "Severity"
 
             control: RowLayout {
@@ -114,6 +126,7 @@ RuleChip {
             title: "Enabled"
 
             control: ModernSwitch {
+                id: enabledSwitch
                 height: parent.height
             }
         }
