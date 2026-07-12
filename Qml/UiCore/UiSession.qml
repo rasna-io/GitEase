@@ -165,6 +165,10 @@ QtObject {
 
     property TerminalController terminalController: TerminalController {}
 
+    property LayoutController layoutController: LayoutController {
+        appModel: root.appModel
+    }
+
     property UiSessionPopups      popups
 }
 
