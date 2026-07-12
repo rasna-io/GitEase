@@ -10,25 +10,16 @@ import GitEase
  * CustomHooksSettings
  * ************************************************************************************************/
 
-Flickable {
+RuleSettingsBase {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string ruleColor: ""
-    property var ruleData
-    property var targetModel
-    property int ruleIndex: -1
+
 
     /* Object Properties
      * ****************************************************************************************/
-    contentWidth: width
     contentHeight: contentColumn.implicitHeight
-    clip: true
-
-    ScrollBar.vertical: ScrollBar {
-        policy: ScrollBar.AsNeeded
-    }
 
     onRuleDataChanged: loadFromModel()
 
@@ -348,7 +339,7 @@ Flickable {
                                 border.width: 1
                                 border.color: row.currentIndex === index
                                               ? modelData.color
-                                              : "#555"
+                                              : Style.colors.mutedText
 
                                 Text {
                                     anchors.centerIn: parent

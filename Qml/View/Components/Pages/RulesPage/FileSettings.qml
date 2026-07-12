@@ -10,25 +10,16 @@ import GitEase
  * FileSettings
  * ************************************************************************************************/
 
-Flickable {
+RuleSettingsBase {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string ruleColor: ""
-    property var ruleData
-    property var targetModel
-    property int ruleIndex: -1
+
 
     /* Object Properties
      * ****************************************************************************************/
-    contentWidth: width
     contentHeight: contentColumn.implicitHeight
-    clip: true
-
-    ScrollBar.vertical: ScrollBar {
-        policy: ScrollBar.AsNeeded
-    }
 
     onRuleDataChanged: loadFromModel()
 

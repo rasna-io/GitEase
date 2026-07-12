@@ -95,7 +95,7 @@ RuleChip {
                             border.width: 1
                             border.color: severitySelector.severityCurrentIndex === index
                                           ? modelData.color
-                                          : Style.colors.secondaryText
+                                          : Style.colors.mutedText
 
                             Text {
                                 anchors.centerIn: parent

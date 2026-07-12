@@ -179,6 +179,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/RulesPage/OptionRow.qml
     Qml/View/Components/Pages/RulesPage/BasicInfoRect.qml
     Qml/View/Components/Pages/RulesPage/ModernSwitch.qml
+    Qml/View/Components/Pages/RulesPage/RuleSettingsBase.qml
     Qml/View/Components/Pages/RulesPage/CommitMessageSettings.qml
     Qml/View/Components/Pages/RulesPage/BranchNamingSettings.qml
     Qml/View/Components/Pages/RulesPage/FileSettings.qml

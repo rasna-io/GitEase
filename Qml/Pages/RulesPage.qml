@@ -254,4 +254,8 @@ Item {
         return commitRules.count > 0 || branchRules.count > 0 || fileRules.count > 0 ||
                pushRules.count > 0 || notificationRules.count > 0 || hookRules.count > 0
     }
+
+    Component.onCompleted: {
+        Qt.callLater(loadRulesFromDisk)
+    }
 }
