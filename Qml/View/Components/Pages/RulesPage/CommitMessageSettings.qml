@@ -16,6 +16,9 @@ Flickable {
     /* Property Declarations
      * ****************************************************************************************/
     property color ruleColor
+    property var ruleData
+    property var targetModel
+    property int ruleIndex: -1
 
     /* Object Properties
      * ****************************************************************************************/
@@ -27,6 +30,8 @@ Flickable {
         policy: ScrollBar.AsNeeded
     }
 
+    onRuleDataChanged: loadFromModel()
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
@@ -35,6 +40,7 @@ Flickable {
         spacing: 5
 
         BasicInfoRect {
+            id: basicInfo
             ruleColor: root.ruleColor
         }
 
@@ -50,6 +56,7 @@ Flickable {
                     title: "Min Length"
                     subtitle: "Subject line chars"
                     control: ModernSpinBox {
+                        id: minLengthSpin
                     }
                 }
 
@@ -59,6 +66,7 @@ Flickable {
                     title: "Max Length"
                     subtitle: "Subject line chars"
                     control: ModernSpinBox {
+                        id: maxLengthSpin
                     }
                 }
 
@@ -72,10 +80,12 @@ Flickable {
                         anchors.fill: parent
 
                         ModernSwitch {
+                            id: requirePrefixSwitch
                             Layout.fillHeight: true
                         }
 
                         HorizontalTagInput {
+                            id: allowedPrefixesInput
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                         }
@@ -88,6 +98,7 @@ Flickable {
                     title: "No trailing period"
 
                     control: ModernSwitch {
+                        id: noTrailingPeriodSwitch
                         height: parent.height
                     }
                 }
@@ -99,6 +110,7 @@ Flickable {
                     subtitle: "First word must be a verb"
 
                     control: ModernSwitch {
+                        id: imperativeVerbSwitch
                         height: parent.height
                     }
                 }
@@ -118,6 +130,7 @@ Flickable {
                     subtitle: "Blocks if subject contains"
 
                     control: HorizontalTagInput {
+                        id: forbiddenWordsInput
                         anchors.fill: parent
                     }
                 }
@@ -132,10 +145,12 @@ Flickable {
                         anchors.fill: parent
 
                         ModernSwitch {
+                            id: ticketRefSwitch
                             Layout.fillHeight: true
                         }
 
                         TextField {
+                            id: ticketRefInput
                             Layout.fillWidth: true
                             placeholderText: "JIRA-\d+"
                             selectByMouse: true
@@ -157,6 +172,7 @@ Flickable {
                         anchors.fill: parent
 
                         ModernSwitch {
+                            id: bodySeparatorSwitch
                             Layout.fillHeight: true
                         }
 
@@ -179,6 +195,7 @@ Flickable {
                     title: "Min Length"
                     subtitle: "Subject line chars"
                     control: ModernSpinBox {
+                        id: bodyMinLengthSpin
                     }
                 }
 
@@ -188,6 +205,7 @@ Flickable {
                     title: "Require Signed-off-by"
 
                     control: ModernSwitch {
+                        id: signedOffBySwitch
                         height: parent.height
                     }
                 }
@@ -207,6 +225,7 @@ Flickable {
                     subtitle: "Tested against full message"
 
                     control: TextField {
+                        id: customRegexField
                         anchors.fill: parent
                         placeholderText: "^(feat|fix)\(.+\):.+"
                         selectByMouse: true
@@ -224,6 +243,7 @@ Flickable {
                     title: "Error message"
 
                     control: TextField {
+                        id: customErrorField
                         anchors.fill: parent
                         placeholderText: "Commit message must match ..."
                         selectByMouse: true
@@ -236,6 +256,59 @@ Flickable {
                 }
             }
         }
+    }
 
+    /* Functions
+     * ****************************************************************************************/
+    function loadFromModel() {
+        if (!ruleData) return
+
+        basicInfo.ruleName = ruleData.ruleName ?? ""
+        basicInfo.description = ruleData.description ?? ""
+        basicInfo.severityIndex = ruleData.severity ?? 0
+        basicInfo.isActive = ruleData.enabled ?? 0
+
+        minLengthSpin.value = ruleData.minLength ?? 0
+        maxLengthSpin.value = ruleData.maxLength ?? 72
+        requirePrefixSwitch.checked = ruleData.requirePrefix ?? false
+        allowedPrefixesInput.setWords(ruleData.allowedPrefixes ? ruleData.allowedPrefixes.split(",") : [])
+        noTrailingPeriodSwitch.checked = ruleData.noTrailingPeriod ?? false
+        imperativeVerbSwitch.checked = ruleData.imperativeVerb ?? false
+
+        forbiddenWordsInput.setWords(ruleData.forbiddenWords ? ruleData.forbiddenWords.split(",") : [])
+        ticketRefSwitch.checked = ruleData.requireTicketRef ?? false
+        ticketRefInput.text = ruleData.ticketRefPattern ?? ""
+        bodySeparatorSwitch.checked = ruleData.requireBodySeparator ?? false
+        bodyMinLengthSpin.value = ruleData.bodyMinLength ?? 0
+        signedOffBySwitch.checked = ruleData.requireSignedOffBy ?? false
+
+        customRegexField.text = ruleData.customRegex ?? ""
+        customErrorField.text = ruleData.customErrorMessage ?? ""
+    }
+
+    function saveChanges() {
+        if (!targetModel || ruleIndex < 0) return
+
+        targetModel.setProperty(ruleIndex, "ruleName", basicInfo.ruleName)
+        targetModel.setProperty(ruleIndex, "description", basicInfo.description)
+        targetModel.setProperty(ruleIndex, "severity", basicInfo.severityIndex)
+        targetModel.setProperty(ruleIndex, "enabled", basicInfo.isActive)
+
+        targetModel.setProperty(ruleIndex, "minLength", minLengthSpin.value)
+        targetModel.setProperty(ruleIndex, "maxLength", maxLengthSpin.value)
+        targetModel.setProperty(ruleIndex, "requirePrefix", requirePrefixSwitch.checked)
+        targetModel.setProperty(ruleIndex, "allowedPrefixes", allowedPrefixesInput.getWords().join(","))
+        targetModel.setProperty(ruleIndex, "noTrailingPeriod", noTrailingPeriodSwitch.checked)
+        targetModel.setProperty(ruleIndex, "imperativeVerb", imperativeVerbSwitch.checked)
+
+        targetModel.setProperty(ruleIndex, "forbiddenWords", forbiddenWordsInput.getWords().join(","))
+        targetModel.setProperty(ruleIndex, "requireTicketRef", ticketRefSwitch.checked)
+        targetModel.setProperty(ruleIndex, "ticketRefPattern", ticketRefInput.text)
+        targetModel.setProperty(ruleIndex, "requireBodySeparator", bodySeparatorSwitch.checked)
+        targetModel.setProperty(ruleIndex, "bodyMinLength", bodyMinLengthSpin.value)
+        targetModel.setProperty(ruleIndex, "requireSignedOffBy", signedOffBySwitch.checked)
+
+        targetModel.setProperty(ruleIndex, "customRegex", customRegexField.text)
+        targetModel.setProperty(ruleIndex, "customErrorMessage", customErrorField.text)
     }
 }

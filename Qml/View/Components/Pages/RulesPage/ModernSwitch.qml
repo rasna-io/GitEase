@@ -11,9 +11,19 @@ import GitEase
  */
 
 Item {
+    id: root
+    /* Property Declarations
+     * ****************************************************************************************/
+    property alias checked: modernSwitch.checked
+
+    /* Object Properties
+     * ****************************************************************************************/
     implicitWidth: 50
 
+    /* Children
+     * ****************************************************************************************/
     Switch {
+        id: modernSwitch
         anchors.fill: parent
         Material.accent: Style.colors.accent
         scale: 0.9

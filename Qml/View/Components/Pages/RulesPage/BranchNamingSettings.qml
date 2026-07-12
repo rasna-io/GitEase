@@ -16,6 +16,9 @@ Flickable {
     /* Property Declarations
      * ****************************************************************************************/
     property string ruleColor: ""
+    property var ruleData
+    property var targetModel
+    property int ruleIndex: -1
 
     /* Object Properties
      * ****************************************************************************************/
@@ -27,6 +30,8 @@ Flickable {
         policy: ScrollBar.AsNeeded
     }
 
+    onRuleDataChanged: loadFromModel()
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
@@ -35,6 +40,7 @@ Flickable {
         spacing: 5
 
         BasicInfoRect {
+            id: basicInfo
             ruleColor: root.ruleColor
         }
 
@@ -50,6 +56,7 @@ Flickable {
                     title: "Allowed prefixes"
 
                     control: HorizontalTagInput {
+                        id: allowedPrefixesInput
                         anchors.fill: parent
                     }
                 }
@@ -60,6 +67,7 @@ Flickable {
                     title: "Max name length"
                     subtitle: "Characters"
                     control: ModernSpinBox {
+                        id: maxLengthSpin
                     }
                 }
 
@@ -69,6 +77,7 @@ Flickable {
                     title: "Forbidden: spaces"
 
                     control: ModernSwitch {
+                        id: forbiddenSpacesSwitch
                         height: parent.height
                     }
                 }
@@ -79,6 +88,7 @@ Flickable {
                     title: "Forbidden: uppercase"
 
                     control: ModernSwitch {
+                        id: forbiddenUppercaseSwitch
                         height: parent.height
                     }
                 }
@@ -89,6 +99,7 @@ Flickable {
                     title: "Forbidden: special chars"
 
                     control: ModernSwitch {
+                        id: forbiddensSpecialCharsSwitch
                         height: parent.height
                     }
                 }
@@ -111,10 +122,12 @@ Flickable {
                         anchors.fill: parent
 
                         ModernSwitch {
+                            id: ticketReferenceSwitch
                             Layout.fillHeight: true
                         }
 
                         TextField {
+                            id: ticketReferenceField
                             Layout.fillWidth: true
                             placeholderText: "[A-Z]+-\d+"
                             selectByMouse: true
@@ -134,6 +147,7 @@ Flickable {
                     subtitle: "Glob patterns"
 
                     control: HorizontalTagInput {
+                        id: protectedBranchesInput
                         anchors.fill: parent
                     }
                 }
@@ -145,10 +159,51 @@ Flickable {
                     subtitle: "Clean up merged branches"
 
                     control: ModernSwitch {
+                        id: autoDeleteSwitch
                         height: parent.height
                     }
                 }
             }
         }
+    }
+
+    function loadFromModel() {
+        if (!ruleData) return
+
+        basicInfo.ruleName = ruleData.ruleName ?? ""
+        basicInfo.description = ruleData.description ?? ""
+        basicInfo.severityIndex = ruleData.severity ?? 0
+        basicInfo.isActive = ruleData.isActive ?? true
+
+        allowedPrefixesInput.setWords(ruleData.allowedPrefixes ? ruleData.allowedPrefixes.split(",") : [])
+        maxLengthSpin.value = ruleData.maxLength ?? 50
+        forbiddenSpacesSwitch.checked = ruleData.forbidSpaces ?? false
+        forbiddenUppercaseSwitch.checked = ruleData.forbidUppercase ?? false
+        forbiddensSpecialCharsSwitch.checked = ruleData.forbidSpecialChars ?? false
+
+        ticketReferenceSwitch.checked = ruleData.requireTicketRef ?? false
+        ticketReferenceField.text = ruleData.ticketRefPattern ?? ""
+        protectedBranchesInput.setWords(ruleData.protectedBranches ? ruleData.protectedBranches.split(",") : [])
+        autoDeleteSwitch.checked = ruleData.autoDeleteAfterMerge ?? false
+    }
+
+    function saveChanges() {
+        if (!targetModel || ruleIndex < 0) return
+
+        targetModel.setProperty(ruleIndex, "ruleName", basicInfo.ruleName)
+        targetModel.setProperty(ruleIndex, "description", basicInfo.description)
+        targetModel.setProperty(ruleIndex, "severity", basicInfo.severityIndex)
+        targetModel.setProperty(ruleIndex, "enabled", basicInfo.isActive)
+
+        targetModel.setProperty(ruleIndex, "allowedPrefixes", allowedPrefixesInput.getWords().join(","))
+        targetModel.setProperty(ruleIndex, "maxLength", maxLengthSpin.value)
+        targetModel.setProperty(ruleIndex, "forbidSpaces", forbiddenSpacesSwitch.checked)
+        targetModel.setProperty(ruleIndex, "forbidUppercase", forbiddenUppercaseSwitch.checked)
+        targetModel.setProperty(ruleIndex, "forbidSpecialChars", forbiddensSpecialCharsSwitch.checked)
+
+        targetModel.setProperty(ruleIndex, "requireTicketRef", ticketReferenceSwitch.checked)
+        targetModel.setProperty(ruleIndex, "ticketRefPattern", ticketReferenceField.text)
+        targetModel.setProperty(ruleIndex, "protectedBranches", protectedBranchesInput.getWords().join(","))
+        targetModel.setProperty(ruleIndex, "autoDeleteAfterMerge", autoDeleteSwitch.checked)
     }
 }

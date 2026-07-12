@@ -16,6 +16,9 @@ Flickable {
     /* Property Declarations
      * ****************************************************************************************/
     property string ruleColor: ""
+    property var ruleData
+    property var targetModel
+    property int ruleIndex: -1
 
     /* Object Properties
      * ****************************************************************************************/
@@ -27,6 +30,8 @@ Flickable {
         policy: ScrollBar.AsNeeded
     }
 
+    onRuleDataChanged: loadFromModel()
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
@@ -35,6 +40,7 @@ Flickable {
         spacing: 5
 
         BasicInfoRect {
+            id: basicInfo
             ruleColor: root.ruleColor
         }
 
@@ -51,6 +57,7 @@ Flickable {
                     subtitle: "Blocks these file types"
 
                     control: HorizontalTagInput {
+                        id: forbiddenExtensionsInput
                         anchors.fill: parent
                     }
                 }
@@ -62,6 +69,7 @@ Flickable {
                     subtitle: "Megabytes"
 
                     control: ModernSpinBox {
+                        id: maxFileSizeSpin
                     }
                 }
 
@@ -71,6 +79,7 @@ Flickable {
                     title: "No trailing whitespace"
 
                     control: ModernSwitch {
+                        id: trailingWhitespaceSwitch
                         height: parent.height
                     }
                 }
@@ -81,6 +90,7 @@ Flickable {
                     title: "Require final newline"
 
                     control: ModernSwitch {
+                        id: requireFinalNewlineSwitch
                         height: parent.height
                     }
                 }
@@ -98,10 +108,10 @@ Flickable {
                 OptionRow {
                     title: "Secret patterns"
                     subtitle: "Regex per line scanned"
-                    rowHeight: verticalTagInput.height + 10
+                    rowHeight: secretPatternsInput.height + 10
 
                     control: VerticalTagInput {
-                        id: verticalTagInput
+                        id: secretPatternsInput
                         width: parent.width
                         placeHolderText: "(?i)aws_secret_access_key"
                     }
@@ -110,50 +120,51 @@ Flickable {
                 DividerLine {}
 
                 OptionRow {
-                    title: "Block conflict markers"
+                    title: "Locked files"
+                    subtitle: "Glob — block direct edits"
 
-                    control: Rectangle {
-                        width: 50
-                        height: parent.height
-                        Layout.margins: 0
-                        color: "transparent"
-
-                        Switch {
-                            anchors.fill: parent
-                            Material.accent: Style.colors.accent
-                            scale: 0.8
-                        }
-                    }
-                }
-
-                DividerLine {}
-
-                OptionRow {
-                    title: "Block WIP commits"
-
-                    control: Rectangle {
-                        width: 50
-                        height: parent.height
-                        Layout.margins: 0
-                        color: "transparent"
-
-                        Switch {
-                            anchors.fill: parent
-                            Material.accent: Style.colors.accent
-                            scale: 0.8
-                        }
-                    }
-                }
-
-                DividerLine {}
-
-                OptionRow {
-                    title: "Max commits per push"
-                    subtitle: "0 = unlimited"
-                    control: ModernSpinBox {
+                    control: HorizontalTagInput {
+                        id: lockedFilesInput
+                        anchors.fill: parent
                     }
                 }
             }
         }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function loadFromModel() {
+        if (!ruleData) return
+
+        basicInfo.ruleName = ruleData.ruleName ?? ""
+        basicInfo.description = ruleData.description ?? ""
+        basicInfo.severityIndex = ruleData.severity ?? 0
+        basicInfo.isActive = ruleData.enabled ?? true
+
+        forbiddenExtensionsInput.setWords(ruleData.forbiddenExtensions ? ruleData.forbiddenExtensions.split(",") : [])
+        maxFileSizeSpin.value = ruleData.maxFileSizeMb ?? 10
+        trailingWhitespaceSwitch.checked = ruleData.noTrailingWhitespace ?? false
+        requireFinalNewlineSwitch.checked = ruleData.requireFinalNewline ?? false
+
+        secretPatternsInput.setWords(ruleData.secretPatterns ? ruleData.secretPatterns.split(",") : [])
+        lockedFilesInput.setWords(ruleData.lockedFiles ? ruleData.lockedFiles.split(",") : [])
+    }
+
+    function saveChanges() {
+        if (!targetModel || ruleIndex < 0) return
+
+        targetModel.setProperty(ruleIndex, "ruleName", basicInfo.ruleName)
+        targetModel.setProperty(ruleIndex, "description", basicInfo.description)
+        targetModel.setProperty(ruleIndex, "severity", basicInfo.severityIndex)
+        targetModel.setProperty(ruleIndex, "enabled", basicInfo.isActive)
+
+        targetModel.setProperty(ruleIndex, "forbiddenExtensions", forbiddenExtensionsInput.getWords().join(","))
+        targetModel.setProperty(ruleIndex, "maxFileSizeMb", maxFileSizeSpin.value)
+        targetModel.setProperty(ruleIndex, "noTrailingWhitespace", trailingWhitespaceSwitch.checked)
+        targetModel.setProperty(ruleIndex, "requireFinalNewline", requireFinalNewlineSwitch.checked)
+
+        targetModel.setProperty(ruleIndex, "secretPatterns", secretPatternsInput.getWords().join(","))
+        targetModel.setProperty(ruleIndex, "lockedFiles", lockedFilesInput.getWords().join(","))
     }
 }

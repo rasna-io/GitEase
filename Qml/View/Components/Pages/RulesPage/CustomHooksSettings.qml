@@ -16,6 +16,9 @@ Flickable {
     /* Property Declarations
      * ****************************************************************************************/
     property string ruleColor: ""
+    property var ruleData
+    property var targetModel
+    property int ruleIndex: -1
 
     /* Object Properties
      * ****************************************************************************************/
@@ -27,6 +30,8 @@ Flickable {
         policy: ScrollBar.AsNeeded
     }
 
+    onRuleDataChanged: loadFromModel()
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
@@ -35,6 +40,7 @@ Flickable {
         spacing: 5
 
         BasicInfoRect {
+            id: basicInfo
             ruleColor: root.ruleColor
         }
 
@@ -85,6 +91,7 @@ Flickable {
                     subtitle: "Async, non-blocking"
 
                     control: ModernSwitch {
+                        id: runInBackgroundSwitch
                         height: parent.height
                     }
                 }
@@ -96,6 +103,7 @@ Flickable {
                     subtitle: "Seconds"
 
                     control: ModernSpinBox {
+                        id: timeoutSpin
                     }
                 }
             }
@@ -114,6 +122,7 @@ Flickable {
                     subtitle: "Relative to repo root"
 
                     control: TextField {
+                        id: scriptPathField
                         anchors.fill: parent
                         placeholderText: "./scripts/lint.sh"
                         selectByMouse: true
@@ -131,10 +140,10 @@ Flickable {
                 OptionRow {
                     title: "Inline script"
                     subtitle: "Overrides path if set"
-                    rowHeight: inputArea.height
+                    rowHeight: inlinescriptInput.height
 
                     control: ModernInputArea {
-                        id: inputArea
+                        id: inlinescriptInput
 
                         width: parent.width
                         height: 100
@@ -157,7 +166,6 @@ Flickable {
 
                 OptionRow {
                     title: "Environment vars"
-
                     rowHeight: variablesRect.height
 
                     ListModel {
@@ -193,8 +201,6 @@ Flickable {
                                     height: 30
 
                                     TextField {
-                                        id: textField
-
                                         text: key
 
                                         Layout.preferredWidth: 80
@@ -207,6 +213,10 @@ Flickable {
                                             color: Style.colors.secondaryBackground
                                             radius: 5
                                         }
+
+                                        onTextChanged: {
+                                            listModel.setProperty(index, "key", text)
+                                        }
                                     }
 
                                     Text {
@@ -218,6 +228,8 @@ Flickable {
                                     }
 
                                     TextField {
+                                        id: valueTextField
+
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 30
 
@@ -229,6 +241,10 @@ Flickable {
                                         background: Rectangle {
                                             color: Style.colors.secondaryBackground
                                             radius: 5
+                                        }
+
+                                        onTextChanged: {
+                                            listModel.setProperty(index, "value", text)
                                         }
                                     }
 
@@ -308,8 +324,11 @@ Flickable {
                     title: "On failure"
 
                     control: Row {
+                        id: row
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 0
+
+                        property int currentIndex: 0
 
                         Repeater {
                             model: [
@@ -322,22 +341,22 @@ Flickable {
                                 width: 60
                                 height: 30
 
-                                color: root.severityCurrentIndex === index
+                                color: row.currentIndex === index
                                        ? modelData.color
                                        : "transparent"
 
                                 border.width: 1
-                                border.color: root.severityCurrentIndex === index
+                                border.color: row.currentIndex === index
                                               ? modelData.color
                                               : "#555"
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData.text
-                                    color: root.severityCurrentIndex === index
+                                    color: row.currentIndex === index
                                            ? "white"
                                            : "#DDD"
-                                    font.bold: root.severityCurrentIndex === index
+                                    font.bold: row.currentIndex === index
                                     font.family: Style.fontTypes.roboto
                                     font.pixelSize: 11
                                 }
@@ -345,7 +364,7 @@ Flickable {
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.severityCurrentIndex = index
+                                    onClicked: row.currentIndex = index
                                 }
                             }
                         }
@@ -353,5 +372,57 @@ Flickable {
                 }
             }
         }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function loadFromModel() {
+        if (!ruleData) return
+
+        basicInfo.ruleName = ruleData.ruleName ?? ""
+        basicInfo.description = ruleData.description ?? ""
+        basicInfo.severityIndex = ruleData.severity ?? 0
+        basicInfo.isActive = ruleData.enabled ?? true
+
+        var triggers = ["pre-commit", "commit-msg", "pre-push", "post-merge", "post-checkout"]
+        triggerCombo.currentIndex = triggers.indexOf(ruleData.trigger ?? "pre-commit")
+        runInBackgroundSwitch.checked = ruleData.runInBackground ?? false
+        timeoutSpin.value = ruleData.timeoutSeconds ?? 30
+
+        scriptPathField.text = ruleData.scriptPath ?? ""
+        inlinescriptInput.text = ruleData.inlineScript ?? ""
+
+        listModel.clear()
+        var vars = ruleData.envVars ? ruleData.envVars.split(",") : []
+        for (var i = 0; i < vars.length; i++)
+            listModel.append({ key: vars[i].split("=")[0], value: vars[i].split("=")[1] })
+
+        row.currentIndex = ruleData.onFailure ?? 0
+    }
+
+    function saveChanges() {
+        if (!targetModel || ruleIndex < 0) return
+
+        targetModel.setProperty(ruleIndex, "ruleName", basicInfo.ruleName)
+        targetModel.setProperty(ruleIndex, "description", basicInfo.description)
+        targetModel.setProperty(ruleIndex, "severity", basicInfo.severityIndex)
+        targetModel.setProperty(ruleIndex, "enabled", basicInfo.isActive)
+
+        var triggers = ["pre-commit", "commit-msg", "pre-push", "post-merge", "post-checkout"]
+        targetModel.setProperty(ruleIndex, "trigger", triggers[triggerCombo.currentIndex])
+        targetModel.setProperty(ruleIndex, "runInBackground", runInBackgroundSwitch.checked)
+        targetModel.setProperty(ruleIndex, "timeoutSeconds", timeoutSpin.value)
+
+        targetModel.setProperty(ruleIndex, "scriptPath", scriptPathField.text)
+        targetModel.setProperty(ruleIndex, "inlineScript", inlinescriptInput.text)
+
+        var vars = []
+        for (var i = 0; i < listModel.count; i++) {
+            var rowData = listModel.get(i)
+            vars.push(rowData.key + "=" + rowData.value)
+        }
+        targetModel.setProperty(ruleIndex, "envVars", vars.join(","))
+
+        targetModel.setProperty(ruleIndex, "onFailure", row.currentIndex)
     }
 }

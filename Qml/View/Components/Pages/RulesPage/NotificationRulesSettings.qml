@@ -16,6 +16,9 @@ Flickable {
     /* Property Declarations
      * ****************************************************************************************/
     property string ruleColor: ""
+    property var ruleData
+    property var targetModel
+    property int ruleIndex: -1
 
     /* Object Properties
      * ****************************************************************************************/
@@ -27,6 +30,8 @@ Flickable {
         policy: ScrollBar.AsNeeded
     }
 
+    onRuleDataChanged: loadFromModel()
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
@@ -35,6 +40,7 @@ Flickable {
         spacing: 5
 
         BasicInfoRect {
+            id: basicInfo
             ruleColor: root.ruleColor
         }
 
@@ -51,6 +57,7 @@ Flickable {
                     subtitle: "Slack webhook or email"
 
                     control: TextField {
+                        id: notifyChannelField
                         anchors.fill: parent
                         placeholderText: "https://hooks.slack.com/"
                         selectByMouse: true
@@ -69,6 +76,7 @@ Flickable {
                     title: "Show in notification center"
 
                     control: ModernSwitch {
+                        id: showInNotificationCenterSwitch
                         height: parent.height
                     }
                 }
@@ -87,6 +95,7 @@ Flickable {
                     title: "Log violations to file"
 
                     control: ModernSwitch {
+                        id: logViolationsSwitch
                         height: parent.height
                     }
                 }
@@ -97,6 +106,7 @@ Flickable {
                     title: "Log file path"
 
                     control: TextField {
+                        id: logFilePath
                         anchors.fill: parent
                         placeholderText: "/var/log/gitease/violations.log"
                         selectByMouse: true
@@ -110,5 +120,37 @@ Flickable {
                 }
             }
         }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function loadFromModel() {
+        if (!ruleData) return
+
+        basicInfo.ruleName = ruleData.ruleName ?? ""
+        basicInfo.description = ruleData.description ?? ""
+        basicInfo.severityIndex = ruleData.severity ?? 0
+        basicInfo.isActive = ruleData.enabled ?? true
+
+        notifyChannelField.text = ruleData.notifyChannel ?? ""
+        showInNotificationCenterSwitch.checked = ruleData.showInNotificationCenter ?? false
+
+        logViolationsSwitch.checked = ruleData.logViolationsToFile ?? false
+        logFilePath.text = ruleData.logFilePath ?? ""
+    }
+
+    function saveChanges() {
+        if (!targetModel || ruleIndex < 0) return
+
+        targetModel.setProperty(ruleIndex, "ruleName", basicInfo.ruleName)
+        targetModel.setProperty(ruleIndex, "description", basicInfo.description)
+        targetModel.setProperty(ruleIndex, "severity", basicInfo.severityIndex)
+        targetModel.setProperty(ruleIndex, "enabled", basicInfo.isActive)
+
+        targetModel.setProperty(ruleIndex, "notifyChannel", notifyChannelField.text)
+        targetModel.setProperty(ruleIndex, "showInNotificationCenter", showInNotificationCenterSwitch.checked)
+
+        targetModel.setProperty(ruleIndex, "logViolationsToFile", logViolationsSwitch.checked)
+        targetModel.setProperty(ruleIndex, "logFilePath", logFilePath.text)
     }
 }
