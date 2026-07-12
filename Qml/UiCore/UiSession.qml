@@ -47,6 +47,7 @@ QtObject {
             pluginController.currentRepo = currentRepo
             resetController.currentRepo = currentRepo
             terminalController.currentRepo = currentRepo
+            ruleController.setCurrentRepo(currentRepo)
         }
 
         onRepositorySelected: function(repo) {
@@ -173,6 +174,9 @@ QtObject {
     property LayoutController layoutController: LayoutController {
         appModel: root.appModel
     }
+{{
+    }
+    property RuleController ruleController: RuleController {}
 
     property UiSessionPopups      popups
 }

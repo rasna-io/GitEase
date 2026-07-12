@@ -14,10 +14,10 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property int value: 0
-    property int from: 0
-    property int to: 99
-    property int stepSize: 1
+    property alias value:   valueField.text
+    property int  from:     0
+    property int  to:       99
+    property int  stepSize: 1
 
     /* Signals
      * ****************************************************************************************/
@@ -44,7 +44,6 @@ Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            text: root.value.toString()
             selectByMouse: true
             font.family: Style.fontTypes.roboto
             color: Style.colors.mutedText
@@ -124,12 +123,12 @@ Rectangle {
     }
 
     function increment() {
-        root.value = clamp(root.value + root.stepSize)
+        root.value = clamp(parseInt(root.value) + root.stepSize)
         root.valueModified()
     }
 
     function decrement() {
-        root.value = clamp(root.value - root.stepSize)
+        root.value = clamp(parseInt(root.value) - root.stepSize)
         root.valueModified()
     }
 }
