@@ -33,6 +33,10 @@ RuleSettingsBase {
         BasicInfoRect {
             id: basicInfo
             ruleColor: root.ruleColor
+            onRuleNameChanged: root.markDirty()
+            onDescriptionChanged: root.markDirty()
+            onSeverityIndexChanged: root.markDirty()
+            onIsActiveChanged: root.markDirty()
         }
 
         RuleChip {
@@ -50,6 +54,8 @@ RuleSettingsBase {
                     control: HorizontalTagInput {
                         id: blockForcePushInput
                         anchors.fill: parent
+
+                        onWordsChanged: root.markDirty()
                     }
                 }
 
@@ -62,6 +68,8 @@ RuleSettingsBase {
                     control: HorizontalTagInput {
                         id: blockBranchDeletionInput
                         anchors.fill: parent
+
+                        onWordsChanged: root.markDirty()
                     }
                 }
             }
@@ -81,6 +89,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: requireGPGSignatureSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
 
@@ -92,6 +102,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: blockConflictMarkersSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
 
@@ -103,6 +115,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: blockWIPCommitsSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
 
@@ -113,6 +127,8 @@ RuleSettingsBase {
                     subtitle: "0 = unlimited"
                     control: ModernSpinBox {
                         id: maxCommitsSpin
+
+                        onValueChanged: root.markDirty()
                     }
                 }
             }
@@ -122,7 +138,8 @@ RuleSettingsBase {
     /* Functions
      * ****************************************************************************************/
     function loadFromModel() {
-        if (!ruleData) return
+        suppressDirty = true
+        if (!ruleData) { suppressDirty = false; return }
 
         basicInfo.ruleName = ruleData.ruleName ?? ""
         basicInfo.description = ruleData.description ?? ""
@@ -136,6 +153,9 @@ RuleSettingsBase {
         blockConflictMarkersSwitch.checked = ruleData.blockConflictMarkers ?? false
         blockWIPCommitsSwitch.checked = ruleData.blockWipCommits ?? false
         maxCommitsSpin.value = ruleData.maxCommitsPerPush ?? 0
+
+        isDirty = false
+        suppressDirty = false
     }
 
     function saveChanges() {
@@ -153,5 +173,7 @@ RuleSettingsBase {
         targetModel.setProperty(ruleIndex, "blockConflictMarkers", blockConflictMarkersSwitch.checked)
         targetModel.setProperty(ruleIndex, "blockWipCommits", blockWIPCommitsSwitch.checked)
         targetModel.setProperty(ruleIndex, "maxCommitsPerPush", maxCommitsSpin.value)
+
+        isDirty = false
     }
 }

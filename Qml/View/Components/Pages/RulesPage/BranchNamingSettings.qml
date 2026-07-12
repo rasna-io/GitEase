@@ -33,6 +33,10 @@ RuleSettingsBase {
         BasicInfoRect {
             id: basicInfo
             ruleColor: root.ruleColor
+            onRuleNameChanged: root.markDirty()
+            onDescriptionChanged: root.markDirty()
+            onSeverityIndexChanged: root.markDirty()
+            onIsActiveChanged: root.markDirty()
         }
 
         RuleChip {
@@ -49,6 +53,8 @@ RuleSettingsBase {
                     control: HorizontalTagInput {
                         id: allowedPrefixesInput
                         anchors.fill: parent
+
+                        onWordsChanged: root.markDirty()
                     }
                 }
 
@@ -59,6 +65,8 @@ RuleSettingsBase {
                     subtitle: "Characters"
                     control: ModernSpinBox {
                         id: maxLengthSpin
+
+                        onValueModified: root.markDirty()
                     }
                 }
 
@@ -70,6 +78,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: forbiddenSpacesSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
 
@@ -81,6 +91,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: forbiddenUppercaseSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
 
@@ -92,6 +104,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: forbiddensSpecialCharsSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
             }
@@ -115,6 +129,8 @@ RuleSettingsBase {
                         ModernSwitch {
                             id: ticketReferenceSwitch
                             Layout.fillHeight: true
+
+                            onCheckedChanged: root.markDirty()
                         }
 
                         TextField {
@@ -127,6 +143,8 @@ RuleSettingsBase {
                                 color: Style.colors.secondaryBackground
                                 radius: 5
                             }
+
+                            onTextChanged: root.markDirty()
                         }
                     }
                 }
@@ -140,6 +158,8 @@ RuleSettingsBase {
                     control: HorizontalTagInput {
                         id: protectedBranchesInput
                         anchors.fill: parent
+
+                        onWordsChanged: root.markDirty()
                     }
                 }
 
@@ -152,6 +172,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: autoDeleteSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
             }
@@ -159,7 +181,8 @@ RuleSettingsBase {
     }
 
     function loadFromModel() {
-        if (!ruleData) return
+        suppressDirty = true
+        if (!ruleData) { suppressDirty = false; return }
 
         basicInfo.ruleName = ruleData.ruleName ?? ""
         basicInfo.description = ruleData.description ?? ""
@@ -176,6 +199,9 @@ RuleSettingsBase {
         ticketReferenceField.text = ruleData.ticketRefPattern ?? ""
         protectedBranchesInput.setWords(ruleData.protectedBranches ? ruleData.protectedBranches.split(",") : [])
         autoDeleteSwitch.checked = ruleData.autoDeleteAfterMerge ?? false
+
+        isDirty = false
+        suppressDirty = false
     }
 
     function saveChanges() {
@@ -196,5 +222,7 @@ RuleSettingsBase {
         targetModel.setProperty(ruleIndex, "ticketRefPattern", ticketReferenceField.text)
         targetModel.setProperty(ruleIndex, "protectedBranches", protectedBranchesInput.getWords().join(","))
         targetModel.setProperty(ruleIndex, "autoDeleteAfterMerge", autoDeleteSwitch.checked)
+
+        isDirty = false
     }
 }

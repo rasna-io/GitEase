@@ -21,6 +21,10 @@ Rectangle {
     property string tagBackColor: "#1f1f1f"
     property string placeHolderText: "Add word..."
 
+    /* Signals
+     * ****************************************************************************************/
+    signal wordsChanged()
+
     /* Object Properties
      * ****************************************************************************************/
     implicitHeight: column.implicitHeight + 16
@@ -86,7 +90,10 @@ Rectangle {
                             verticalAlignment: Text.AlignVCenter
                         }
 
-                        onClicked: listModel.remove(index)
+                        onClicked: {
+                            listModel.remove(index)
+                            root.wordsChanged()
+                        }
                     }
                 }
             }
@@ -113,6 +120,7 @@ Rectangle {
                         if (listModel.get(i).word === w) return  // skip duplicates
                     }
                     listModel.append({ word: w })
+                    root.wordsChanged()
                     textField.clear()
                 }
             }

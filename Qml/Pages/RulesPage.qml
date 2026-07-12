@@ -16,6 +16,7 @@ Item {
     property int selectedCategory: 0
     property int selectedRule: -1
     property RuleController ruleController: null
+    property var pendingNavigationAction: null
 
     property var categoriesInfo: [
         { name: "COMMIT MESSAGE", color: "#58a6ff", description: "Enforce message format, prefixes & length" },
@@ -130,14 +131,17 @@ Item {
             onAddRuleRequested: addRulePopup.open()
             onImportRequested: importDialog.open()
             onExportRequested: exportDialog.open()
-            onCategorySelected: (idx) => { root.selectedCategory = idx }
             onRuleSelected: (catIdx, ruleIdx) => {
-                root.selectedCategory = catIdx
-                root.selectedRule = ruleIdx
+                root.guardNavigation(function() {
+                    root.selectedCategory = catIdx
+                    root.selectedRule = ruleIdx
+                })
             }
         }
 
         RuleSettingsPanel {
+            id: settingsPanel
+
             Layout.fillWidth: true
             Layout.fillHeight: true
 
@@ -157,6 +161,19 @@ Item {
     Connections {
         target: ruleController
         function onCurrentRepoChanged() { root.loadRulesFromDisk() }
+    }
+
+    Component {
+        id: unsavedChangesComp
+        UnsavedChangesDialog {
+            title: "Unsaved Changes"
+            message: "This rule has unsaved modifications.\nDo you want to save your changes before switching?"
+            saveTitle: "Save Changes"
+            saveDescription: "Save this rule and continue"
+            acceptTitle: "Discard Changes"
+            acceptDescription: "Discard edits and continue without saving"
+            hasAbort: true
+        }
     }
 
     /* Functions
@@ -253,6 +270,32 @@ Item {
     function hasAnyRules() {
         return commitRules.count > 0 || branchRules.count > 0 || fileRules.count > 0 ||
                pushRules.count > 0 || notificationRules.count > 0 || hookRules.count > 0
+    }
+
+    function guardNavigation(action) {
+        if (settingsPanel.currentIsDirty()) {
+            root.pendingNavigationAction = action
+            var dialog = unsavedChangesComp.createObject(root)
+
+            dialog.saved.connect(function() {
+                var item = settingsPanel.settingsLoaderItem()
+                if (item) item.saveChanges()
+                root.saveRulesToDisk()
+                if (root.pendingNavigationAction) root.pendingNavigationAction()
+                root.pendingNavigationAction = null
+            })
+            dialog.aborted.connect(function() {
+                if (root.pendingNavigationAction) root.pendingNavigationAction()
+                root.pendingNavigationAction = null
+            })
+            dialog.cancelled.connect(function() {
+                root.pendingNavigationAction = null
+            })
+
+            dialog.open()
+        } else {
+            action()
+        }
     }
 
     Component.onCompleted: {

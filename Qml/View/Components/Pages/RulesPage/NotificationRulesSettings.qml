@@ -33,6 +33,10 @@ RuleSettingsBase {
         BasicInfoRect {
             id: basicInfo
             ruleColor: root.ruleColor
+            onRuleNameChanged: root.markDirty()
+            onDescriptionChanged: root.markDirty()
+            onSeverityIndexChanged: root.markDirty()
+            onIsActiveChanged: root.markDirty()
         }
 
         RuleChip {
@@ -58,6 +62,8 @@ RuleSettingsBase {
                             color: Style.colors.secondaryBackground
                             radius: 5
                         }
+
+                        onTextChanged: root.markDirty()
                     }
                 }
 
@@ -69,6 +75,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: showInNotificationCenterSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
             }
@@ -88,6 +96,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: logViolationsSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
 
@@ -107,6 +117,8 @@ RuleSettingsBase {
                             color: Style.colors.secondaryBackground
                             radius: 5
                         }
+
+                        onTextChanged: root.markDirty()
                     }
                 }
             }
@@ -116,7 +128,8 @@ RuleSettingsBase {
     /* Functions
      * ****************************************************************************************/
     function loadFromModel() {
-        if (!ruleData) return
+        suppressDirty = true
+        if (!ruleData) { suppressDirty = false; return }
 
         basicInfo.ruleName = ruleData.ruleName ?? ""
         basicInfo.description = ruleData.description ?? ""
@@ -128,6 +141,9 @@ RuleSettingsBase {
 
         logViolationsSwitch.checked = ruleData.logViolationsToFile ?? false
         logFilePath.text = ruleData.logFilePath ?? ""
+
+        isDirty = false
+        suppressDirty = false
     }
 
     function saveChanges() {
@@ -143,5 +159,7 @@ RuleSettingsBase {
 
         targetModel.setProperty(ruleIndex, "logViolationsToFile", logViolationsSwitch.checked)
         targetModel.setProperty(ruleIndex, "logFilePath", logFilePath.text)
+
+        isDirty = false
     }
 }

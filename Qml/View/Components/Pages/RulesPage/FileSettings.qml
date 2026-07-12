@@ -33,6 +33,10 @@ RuleSettingsBase {
         BasicInfoRect {
             id: basicInfo
             ruleColor: root.ruleColor
+            onRuleNameChanged: root.markDirty()
+            onDescriptionChanged: root.markDirty()
+            onSeverityIndexChanged: root.markDirty()
+            onIsActiveChanged: root.markDirty()
         }
 
         RuleChip {
@@ -50,6 +54,8 @@ RuleSettingsBase {
                     control: HorizontalTagInput {
                         id: forbiddenExtensionsInput
                         anchors.fill: parent
+
+                        onWordsChanged: root.markDirty()
                     }
                 }
 
@@ -61,6 +67,8 @@ RuleSettingsBase {
 
                     control: ModernSpinBox {
                         id: maxFileSizeSpin
+
+                        onValueModified: root.markDirty()
                     }
                 }
 
@@ -72,6 +80,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: trailingWhitespaceSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
 
@@ -83,6 +93,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: requireFinalNewlineSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
             }
@@ -105,6 +117,8 @@ RuleSettingsBase {
                         id: secretPatternsInput
                         width: parent.width
                         placeHolderText: "(?i)aws_secret_access_key"
+
+                        onWordsChanged: root.markDirty()
                     }
                 }
 
@@ -117,6 +131,8 @@ RuleSettingsBase {
                     control: HorizontalTagInput {
                         id: lockedFilesInput
                         anchors.fill: parent
+
+                        onWordsChanged: root.markDirty()
                     }
                 }
             }
@@ -126,7 +142,8 @@ RuleSettingsBase {
     /* Functions
      * ****************************************************************************************/
     function loadFromModel() {
-        if (!ruleData) return
+        suppressDirty = true
+        if (!ruleData) { suppressDirty = false; return }
 
         basicInfo.ruleName = ruleData.ruleName ?? ""
         basicInfo.description = ruleData.description ?? ""
@@ -140,6 +157,9 @@ RuleSettingsBase {
 
         secretPatternsInput.setWords(ruleData.secretPatterns ? ruleData.secretPatterns.split(",") : [])
         lockedFilesInput.setWords(ruleData.lockedFiles ? ruleData.lockedFiles.split(",") : [])
+
+        isDirty = false
+        suppressDirty = false
     }
 
     function saveChanges() {
@@ -157,5 +177,7 @@ RuleSettingsBase {
 
         targetModel.setProperty(ruleIndex, "secretPatterns", secretPatternsInput.getWords().join(","))
         targetModel.setProperty(ruleIndex, "lockedFiles", lockedFilesInput.getWords().join(","))
+
+        isDirty = false
     }
 }

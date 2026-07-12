@@ -20,6 +20,10 @@ Rectangle {
      * ****************************************************************************************/
     property string tagBackColor: "#1f1f1f"
 
+    /* Signals
+     * ****************************************************************************************/
+    signal wordsChanged()
+
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.secondaryBackground
@@ -76,6 +80,7 @@ Rectangle {
                         }
                         onClicked: {
                             listModel.remove(index)
+                            root.wordsChanged()
                         }
                     }
                 }
@@ -101,6 +106,7 @@ Rectangle {
                         if (listModel.get(i).word === w) return  // skip duplicates
                     }
                     listModel.append({ word: w })
+                    root.wordsChanged()
                     textField.clear()
                 }
             }

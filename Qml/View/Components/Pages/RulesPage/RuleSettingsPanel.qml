@@ -74,7 +74,7 @@ Rectangle {
         Connections {
             target: root
             function onSelectedRuleChanged() { settingsLoader.refreshItem() }
-            function onSelectedCategoryChanged() { settingsLoader.refreshItem() }
+            //function onSelectedCategoryChanged() { settingsLoader.refreshItem() }
         }
 
         Rectangle {
@@ -199,5 +199,16 @@ Rectangle {
     Component {
         id: hookSettingsComp
         CustomHooksSettings { ruleColor: root.categoriesInfo[5].color }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function currentIsDirty() {
+        if (!settingsLoader.item) return false
+        return settingsLoader.item.isDirty === true
+    }
+
+    function settingsLoaderItem() {
+        return settingsLoader.item
     }
 }

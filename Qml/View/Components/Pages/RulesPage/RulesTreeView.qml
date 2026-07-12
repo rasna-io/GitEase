@@ -26,7 +26,6 @@ Rectangle {
     signal addRuleRequested()
     signal importRequested()
     signal exportRequested()
-    signal categorySelected(int categoryIndex)
     signal ruleSelected(int categoryIndex, int ruleIndex)
 
     /* Object Properties
@@ -189,6 +188,8 @@ Rectangle {
             }
         }
 
+        DividerLine {}
+
         ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -288,7 +289,6 @@ Rectangle {
                                     anchors.fill: parent
                                     cursorShape: "PointingHandCursor"
                                     onClicked: {
-                                        root.categorySelected(categoryBlock.categoryIndex)
                                         root.ruleSelected(categoryBlock.categoryIndex, index)
                                     }
                                 }

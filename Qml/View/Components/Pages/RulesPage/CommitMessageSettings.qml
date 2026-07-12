@@ -33,6 +33,10 @@ RuleSettingsBase {
         BasicInfoRect {
             id: basicInfo
             ruleColor: root.ruleColor
+            onRuleNameChanged: root.markDirty()
+            onDescriptionChanged: root.markDirty()
+            onSeverityIndexChanged: root.markDirty()
+            onIsActiveChanged: root.markDirty()
         }
 
         RuleChip {
@@ -48,6 +52,8 @@ RuleSettingsBase {
                     subtitle: "Subject line chars"
                     control: ModernSpinBox {
                         id: minLengthSpin
+
+                        onValueModified: root.markDirty()
                     }
                 }
 
@@ -58,6 +64,8 @@ RuleSettingsBase {
                     subtitle: "Subject line chars"
                     control: ModernSpinBox {
                         id: maxLengthSpin
+
+                        onValueModified: root.markDirty()
                     }
                 }
 
@@ -73,12 +81,16 @@ RuleSettingsBase {
                         ModernSwitch {
                             id: requirePrefixSwitch
                             Layout.fillHeight: true
+
+                            onCheckedChanged: root.markDirty()
                         }
 
                         HorizontalTagInput {
                             id: allowedPrefixesInput
                             Layout.fillWidth: true
                             Layout.fillHeight: true
+
+                            onWordsChanged: root.markDirty()
                         }
                     }
                 }
@@ -91,6 +103,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: noTrailingPeriodSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
 
@@ -103,6 +117,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: imperativeVerbSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
             }
@@ -123,6 +139,8 @@ RuleSettingsBase {
                     control: HorizontalTagInput {
                         id: forbiddenWordsInput
                         anchors.fill: parent
+
+                        onWordsChanged: root.markDirty()
                     }
                 }
 
@@ -138,6 +156,8 @@ RuleSettingsBase {
                         ModernSwitch {
                             id: ticketRefSwitch
                             Layout.fillHeight: true
+
+                            onCheckedChanged: root.markDirty()
                         }
 
                         TextField {
@@ -150,6 +170,8 @@ RuleSettingsBase {
                                 color: Style.colors.secondaryBackground
                                 radius: 5
                             }
+
+                            onTextChanged: root.markDirty()
                         }
                     }
                 }
@@ -165,6 +187,8 @@ RuleSettingsBase {
                         ModernSwitch {
                             id: bodySeparatorSwitch
                             Layout.fillHeight: true
+
+                            onCheckedChanged: root.markDirty()
                         }
 
                         Text {
@@ -187,6 +211,8 @@ RuleSettingsBase {
                     subtitle: "Subject line chars"
                     control: ModernSpinBox {
                         id: bodyMinLengthSpin
+
+                        onValueModified: root.markDirty()
                     }
                 }
 
@@ -198,6 +224,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: signedOffBySwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
             }
@@ -225,6 +253,8 @@ RuleSettingsBase {
                             color: Style.colors.secondaryBackground
                             radius: 5
                         }
+
+                        onTextChanged: root.markDirty()
                     }
                 }
 
@@ -243,6 +273,8 @@ RuleSettingsBase {
                             color: Style.colors.secondaryBackground
                             radius: 5
                         }
+
+                        onTextChanged: root.markDirty()
                     }
                 }
             }
@@ -252,7 +284,8 @@ RuleSettingsBase {
     /* Functions
      * ****************************************************************************************/
     function loadFromModel() {
-        if (!ruleData) return
+        suppressDirty = true
+        if (!ruleData) { suppressDirty = false; return }
 
         basicInfo.ruleName = ruleData.ruleName ?? ""
         basicInfo.description = ruleData.description ?? ""
@@ -275,6 +308,9 @@ RuleSettingsBase {
 
         customRegexField.text = ruleData.customRegex ?? ""
         customErrorField.text = ruleData.customErrorMessage ?? ""
+
+        isDirty = false
+        suppressDirty = false
     }
 
     function saveChanges() {
@@ -301,5 +337,7 @@ RuleSettingsBase {
 
         targetModel.setProperty(ruleIndex, "customRegex", customRegexField.text)
         targetModel.setProperty(ruleIndex, "customErrorMessage", customErrorField.text)
+
+        isDirty = false
     }
 }

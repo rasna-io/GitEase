@@ -33,6 +33,10 @@ RuleSettingsBase {
         BasicInfoRect {
             id: basicInfo
             ruleColor: root.ruleColor
+            onRuleNameChanged: root.markDirty()
+            onDescriptionChanged: root.markDirty()
+            onSeverityIndexChanged: root.markDirty()
+            onIsActiveChanged: root.markDirty()
         }
 
         RuleChip {
@@ -72,6 +76,8 @@ RuleSettingsBase {
                             color: triggerCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                             border.color: triggerCombo.activeFocus ? Style.colors.accent : "transparent"
                         }
+
+                        onCurrentIndexChanged: root.markDirty()
                     }
                 }
 
@@ -84,6 +90,8 @@ RuleSettingsBase {
                     control: ModernSwitch {
                         id: runInBackgroundSwitch
                         height: parent.height
+
+                        onCheckedChanged: root.markDirty()
                     }
                 }
 
@@ -95,6 +103,8 @@ RuleSettingsBase {
 
                     control: ModernSpinBox {
                         id: timeoutSpin
+
+                        onValueModified: root.markDirty()
                     }
                 }
             }
@@ -123,6 +133,8 @@ RuleSettingsBase {
                             color: Style.colors.secondaryBackground
                             radius: 5
                         }
+
+                        onTextChanged: root.markDirty()
                     }
                 }
 
@@ -142,6 +154,8 @@ RuleSettingsBase {
                         color: Style.colors.secondaryBackground
                         border.width: 0
                         fontSize: 11
+
+                        onTextChanged: root.markDirty()
                     }
                 }
             }
@@ -207,6 +221,7 @@ RuleSettingsBase {
 
                                         onTextChanged: {
                                             listModel.setProperty(index, "key", text)
+                                            root.markDirty()
                                         }
                                     }
 
@@ -236,6 +251,7 @@ RuleSettingsBase {
 
                                         onTextChanged: {
                                             listModel.setProperty(index, "value", text)
+                                            root.markDirty()
                                         }
                                     }
 
@@ -253,7 +269,10 @@ RuleSettingsBase {
                                             verticalAlignment: Text.AlignVCenter
                                         }
 
-                                        onClicked: listModel.remove(index)
+                                        onClicked: {
+                                            listModel.remove(index)
+                                            root.markDirty()
+                                        }
                                     }
                                 }
                             }
@@ -301,6 +320,7 @@ RuleSettingsBase {
                                         key: "",
                                         value: ""
                                     })
+                                    root.markDirty()
                                 }
                             }
 
@@ -320,6 +340,8 @@ RuleSettingsBase {
                         spacing: 0
 
                         property int currentIndex: 0
+
+                        onCurrentIndexChanged: root.markDirty()
 
                         Repeater {
                             model: [
@@ -368,7 +390,8 @@ RuleSettingsBase {
     /* Functions
      * ****************************************************************************************/
     function loadFromModel() {
-        if (!ruleData) return
+        suppressDirty = true
+        if (!ruleData) { suppressDirty = false; return }
 
         basicInfo.ruleName = ruleData.ruleName ?? ""
         basicInfo.description = ruleData.description ?? ""
@@ -389,6 +412,9 @@ RuleSettingsBase {
             listModel.append({ key: vars[i].split("=")[0], value: vars[i].split("=")[1] })
 
         row.currentIndex = ruleData.onFailure ?? 0
+
+        isDirty = false
+        suppressDirty = false
     }
 
     function saveChanges() {
@@ -415,5 +441,7 @@ RuleSettingsBase {
         targetModel.setProperty(ruleIndex, "envVars", vars.join(","))
 
         targetModel.setProperty(ruleIndex, "onFailure", row.currentIndex)
+
+        isDirty = false
     }
 }
