@@ -334,13 +334,17 @@ Item {
                             Layout.fillWidth: true
                         }
 
-                        Rectangle {
-                            width: 90
-                            height: 35
-                            radius: 5
-                            color: "red"
+                        Button {
+                            Layout.preferredWidth: 90
+                            Layout.preferredHeight: 35
 
-                            Text {
+                            background: Rectangle {
+                                anchors.fill: parent
+                                radius: 5
+                                color: "red"
+                            }
+
+                            contentItem: Text {
                                 anchors.centerIn: parent
                                 text: "Delete"
                                 font.family: Style.fontTypes.roboto
@@ -351,26 +355,27 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                             }
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    var list = root.categoryModels[root.selectedCategory]
-                                    list.remove(root.selectedRule)
-                                    root.selectedRule = -1
-                                    root.saveRulesToDisk()
-                                }
+                            onClicked: {
+                                var list = root.categoryModels[root.selectedCategory]
+                                list.remove(root.selectedRule)
+                                root.selectedRule = -1
+                                root.saveRulesToDisk()
                             }
                         }
 
-                        Rectangle {
-                            width: 90
-                            height: 35
-                            radius: 5
-                            color: "transparent"
-                            border.width: 1
-                            border.color: "#888"
+                        Button {
+                            Layout.preferredWidth: 90
+                            Layout.preferredHeight: 35
 
-                            Text {
+                            background: Rectangle {
+                                anchors.fill: parent
+                                color: "transparent"
+                                border.width: 1
+                                border.color: "#888"
+                                radius: 5
+                            }
+
+                            contentItem: Text {
                                 anchors.centerIn: parent
                                 text: "Discard"
                                 font.family: Style.fontTypes.roboto
@@ -381,21 +386,22 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                             }
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    if (settingsLoader.item) settingsLoader.item.loadFromModel()
-                                }
+                            onClicked: {
+                                if (settingsLoader.item) settingsLoader.item.loadFromModel()
                             }
                         }
 
-                        Rectangle {
-                            width: 100
-                            height: 35
-                            radius: 5
-                            color: "#238636"
+                        Button {
+                            Layout.preferredWidth: 100
+                            Layout.preferredHeight: 35
 
-                            Text {
+                            background: Rectangle {
+                                anchors.fill: parent
+                                radius: 5
+                                color: "#238636"
+                            }
+
+                            contentItem: Text {
                                 anchors.centerIn: parent
                                 text: "Save Changes"
                                 font.family: Style.fontTypes.roboto
@@ -406,12 +412,9 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                             }
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    if (settingsLoader.item) settingsLoader.item.saveChanges()
-                                    root.saveRulesToDisk()
-                                }
+                            onClicked: {
+                                if (settingsLoader.item) settingsLoader.item.saveChanges()
+                                root.saveRulesToDisk()
                             }
                         }
                     }
