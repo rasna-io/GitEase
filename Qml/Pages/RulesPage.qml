@@ -108,7 +108,7 @@ Item {
 
                     Button {
                         Layout.preferredWidth: 90
-                        implicitHeight: 44
+                        implicitHeight: 40
 
                         background: Rectangle {
                             radius: 8
@@ -145,10 +145,98 @@ Item {
                     }
                 }
 
+                DividerLine {}
+
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 1
+                    Layout.preferredHeight: 50
                     color: Style.colors.secondaryBackground
+                    radius: 5
+
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: 5
+
+                        Button {
+                            Layout.preferredWidth: 90
+                            implicitHeight: 40
+                            Layout.alignment: Qt.AlignCenter
+
+                            background: Rectangle {
+                                radius: 5
+                                color: "transparent"
+                                border.width: 1
+                                border.color: "#888"
+                            }
+
+                            contentItem: Item {
+                                anchors.fill: parent
+
+                                Row {
+                                    spacing: 10
+                                    anchors.centerIn: parent
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: Style.icons.upload
+                                        font.family: Style.fontTypes.font6Pro
+                                        font.pixelSize: 10
+                                        color: Style.colors.textButton
+                                        font.bold: true
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "Import"
+                                        color: Style.colors.textButton
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                    }
+                                }
+                            }
+
+                            onClicked: addRulePopup.open()
+                        }
+
+                        Button {
+                            Layout.preferredWidth: 90
+                            implicitHeight: 40
+                            Layout.alignment: Qt.AlignCenter
+
+                            background: Rectangle {
+                                radius: 5
+                                color: "transparent"
+                                border.width: 1
+                                border.color: "#888"
+                            }
+
+                            contentItem: Item {
+                                anchors.fill: parent
+
+                                Row {
+                                    spacing: 10
+                                    anchors.centerIn: parent
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: Style.icons.download
+                                        font.family: Style.fontTypes.font6Pro
+                                        font.pixelSize: 10
+                                        color: Style.colors.textButton
+                                        font.bold: true
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "Export"
+                                        color: Style.colors.textButton
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 ScrollView {
