@@ -59,21 +59,33 @@ Item {
            switch (index) {
                case 0:
                commitRules.append({ ruleName: "New Commit Message Rule" })
+               root.selectedCategory = 0
+               root.selectedRule = commitRules.count - 1
                break
                case 1:
                branchRules.append({ ruleName: "New Branch Naming Rule" })
+               root.selectedCategory = 1
+               root.selectedRule = branchRules.count - 1
                break
                case 2:
                fileRules.append({ ruleName: "New File & Code Rule" })
+               root.selectedCategory = 2
+               root.selectedRule = fileRules.count - 1
                break
                case 3:
                pushRules.append({ ruleName: "New Push Rules Rule" })
+               root.selectedCategory = 3
+               root.selectedRule = pushRules.count - 1
                break
                case 4:
                notificationRules.append({ ruleName: "New Notification Rule" })
+               root.selectedCategory = 4
+               root.selectedRule = notificationRules.count - 1
                break
                case 5:
                hookRules.append({ ruleName: "New Custom Hooks Rule" })
+               root.selectedCategory = 5
+               root.selectedRule = hookRules.count - 1
                break
            }
        }
@@ -374,7 +386,7 @@ Item {
                                                 text: ruleName
                                                 font.family: Style.fontTypes.roboto
                                                 font.pixelSize: 11
-                                                color: "white"
+                                                color: Style.colors.textButton
                                                 Layout.alignment: Qt.AlignVCenter
                                                 Layout.fillWidth: true
                                             }
@@ -478,7 +490,7 @@ Item {
                                 font.family: Style.fontTypes.roboto
                                 font.pixelSize: 11
                                 font.bold: true
-                                color: "white"
+                                color: Style.colors.textButton
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -535,7 +547,7 @@ Item {
                                 font.family: Style.fontTypes.roboto
                                 font.pixelSize: 11
                                 font.bold: true
-                                color: "white"
+                                color: Style.colors.textButton
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
