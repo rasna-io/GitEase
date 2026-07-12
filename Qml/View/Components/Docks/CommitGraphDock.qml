@@ -39,6 +39,7 @@ DetachablePanel {
     property StashController        stashController         : null
     property ResetController        resetController         : null
     property TerminalController     terminalController      : null
+    property LayoutController       layoutController        : null
 
 
     property AddBranchPopup          addBranchPopup         : null
@@ -466,6 +467,7 @@ DetachablePanel {
         rebaseController: root.rebaseController
         conflictController: root.conflictController
         notificationController: root.notificationController
+        layoutController: root.layoutController
     }
 
     /* Functions
