@@ -18,32 +18,16 @@ Item {
     property RuleController ruleController: null
 
     property var categoriesInfo: [
-        { name: "COMMIT MESSAGE", color: "#58a6ff",
-            description: "Enforce message format, prefixes & length"
-        },
-        { name: "BRANCH NAMING", color: "#3fb950",
-            description: "Naming patterns, forbidden chars & protection"
-        },
-        { name: "FILE & CODE", color: "#f0883e",
-            description: "Extensions, secrets & file size limits"
-        },
-        { name: "PUSH RULES", color: "#f85149",
-            description: "Force-push, deletion & GPG requirements"
-        },
-        { name: "NOTIFICATION", color: "#770180",
-            description: "Slack, email & audit log routing"
-        },
-        { name: "CUSTOM HOOKS", color: "#bc8cff",
-            description: "Custom pre-commit/push scripts"
-        }
+        { name: "COMMIT MESSAGE", color: "#58a6ff", description: "Enforce message format, prefixes & length" },
+        { name: "BRANCH NAMING",  color: "#3fb950", description: "Naming patterns, forbidden chars & protection" },
+        { name: "FILE & CODE",    color: "#f0883e", description: "Extensions, secrets & file size limits" },
+        { name: "PUSH RULES",     color: "#f85149", description: "Force-push, deletion & GPG requirements" },
+        { name: "NOTIFICATION",   color: "#770180", description: "Slack, email & audit log routing" },
+        { name: "CUSTOM HOOKS",   color: "#bc8cff", description: "Custom pre-commit/push scripts" }
     ]
 
     property var categoryModels: [commitRules, branchRules, fileRules, pushRules, notificationRules, hookRules]
 
-    /* Children
-     * ****************************************************************************************/
-
-    // One ListModel per category, holding the actual rule instances
     ListModel { id: commitRules }
     ListModel { id: branchRules }
     ListModel { id: fileRules }
@@ -51,49 +35,50 @@ Item {
     ListModel { id: notificationRules }
     ListModel { id: hookRules }
 
+    /* Children
+     * ****************************************************************************************/
     AddRulePopup {
         id: addRulePopup
         categoriesModel: root.categoriesInfo
 
         onCategoryClicked: (index) => {
-           switch (index) {
-               case 0:
-               commitRules.append({ ruleName: "New Commit Message Rule" })
-               root.selectedCategory = 0
-               root.selectedRule = commitRules.count - 1
-               break
-               case 1:
-               branchRules.append({ ruleName: "New Branch Naming Rule" })
-               root.selectedCategory = 1
-               root.selectedRule = branchRules.count - 1
-               break
-               case 2:
-               fileRules.append({ ruleName: "New File & Code Rule" })
-               root.selectedCategory = 2
-               root.selectedRule = fileRules.count - 1
-               break
-               case 3:
-               pushRules.append({ ruleName: "New Push Rules Rule" })
-               root.selectedCategory = 3
-               root.selectedRule = pushRules.count - 1
-               break
-               case 4:
-               notificationRules.append({ ruleName: "New Notification Rule" })
-               root.selectedCategory = 4
-               root.selectedRule = notificationRules.count - 1
-               break
-               case 5:
-               hookRules.append({ ruleName: "New Custom Hooks Rule" })
-               root.selectedCategory = 5
-               root.selectedRule = hookRules.count - 1
-               break
-           }
-       }
+            switch (index) {
+                case 0:
+                    commitRules.append({ ruleName: "New Commit Message Rule" })
+                    root.selectedCategory = 0
+                    root.selectedRule = commitRules.count - 1
+                    break
+                case 1:
+                    branchRules.append({ ruleName: "New Branch Naming Rule" })
+                    root.selectedCategory = 1
+                    root.selectedRule = branchRules.count - 1
+                    break
+                case 2:
+                    fileRules.append({ ruleName: "New File & Code Rule" })
+                    root.selectedCategory = 2
+                    root.selectedRule = fileRules.count - 1
+                    break
+                case 3:
+                    pushRules.append({ ruleName: "New Push Rules Rule" })
+                    root.selectedCategory = 3
+                    root.selectedRule = pushRules.count - 1
+                    break
+                case 4:
+                    notificationRules.append({ ruleName: "New Notification Rule" })
+                    root.selectedCategory = 4
+                    root.selectedRule = notificationRules.count - 1
+                    break
+                case 5:
+                    hookRules.append({ ruleName: "New Custom Hooks Rule" })
+                    root.selectedCategory = 5
+                    root.selectedRule = hookRules.count - 1
+                    break
+            }
+        }
     }
 
     RuleImportPopup {
         id: ruleImportPopup
-
         onConfirmed: (fileUrl) => root.importFile(fileUrl)
     }
 
@@ -105,9 +90,10 @@ Item {
         defaultSuffix: "json"
 
         onAccepted: {
-            var data = root.buildRulesJson()
-            var jsonText = JSON.stringify(data, null, 2)
-            var result = ruleController.exportRules(selectedFile, jsonText)
+            if (!root.ruleController) return
+            var jsonText = JSON.stringify(root.buildRulesJson(), null, 2)
+            var result = root.ruleController.exportRules(selectedFile, jsonText)
+            if (!result.success) console.warn("Export failed:", result.errorMessage)
         }
     }
 
@@ -131,500 +117,58 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        // Left column - tree of categories + nested rules
-        Rectangle {
+        RulesTreeView {
             Layout.preferredWidth: 300
             Layout.fillHeight: true
-            color: "transparent"
-            border.width: 1
-            border.color: Style.colors.secondaryBackground
-            radius: 5
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 15
+            categoriesInfo: root.categoriesInfo
+            categoryModels: root.categoryModels
+            selectedCategory: root.selectedCategory
+            selectedRule: root.selectedRule
+            exportEnabled: root.hasAnyRules()
 
-                RowLayout {
-                    Layout.fillWidth: true
-
-                    Text {
-                        text: "Rules"
-                        Layout.fillWidth: true
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 13
-                        color: Style.colors.placeholderText
-                    }
-
-                    Button {
-                        Layout.preferredWidth: 90
-                        implicitHeight: 40
-
-                        background: Rectangle {
-                            radius: 8
-                            color: Style.colors.accent
-                        }
-
-                        contentItem: Item {
-                            anchors.fill: parent
-
-                            Row {
-                                spacing: 10
-                                anchors.centerIn: parent
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: Style.icons.plus
-                                    font.family: Style.fontTypes.font6Pro
-                                    font.pixelSize: 12
-                                    color: Style.colors.textButton
-                                    font.bold: true
-                                }
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "Add Rule"
-                                    color: Style.colors.textButton
-                                    font.pixelSize: 13
-                                    font.bold: true
-                                }
-                            }
-                        }
-
-                        onClicked: addRulePopup.open()
-                    }
-                }
-
-                DividerLine {}
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 50
-                    color: Style.colors.secondaryBackground
-                    radius: 5
-
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 5
-
-                        Button {
-                            Layout.preferredWidth: 90
-                            implicitHeight: 40
-                            Layout.alignment: Qt.AlignCenter
-
-                            background: Rectangle {
-                                radius: 5
-                                color: "transparent"
-                                border.width: 1
-                                border.color: "#888"
-                            }
-
-                            contentItem: Item {
-                                anchors.fill: parent
-
-                                Row {
-                                    spacing: 10
-                                    anchors.centerIn: parent
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: Style.icons.upload
-                                        font.family: Style.fontTypes.font6Pro
-                                        font.pixelSize: 10
-                                        color: Style.colors.textButton
-                                        font.bold: true
-                                    }
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "Import"
-                                        color: Style.colors.textButton
-                                        font.pixelSize: 11
-                                        font.bold: true
-                                    }
-                                }
-                            }
-
-                            onClicked: importDialog.open()
-                        }
-
-                        Button {
-                            Layout.preferredWidth: 90
-                            implicitHeight: 40
-                            Layout.alignment: Qt.AlignCenter
-                            enabled: root.hasAnyRules()
-
-                            background: Rectangle {
-                                radius: 5
-                                color: "transparent"
-                                border.width: 1
-                                border.color: "#888"
-                            }
-
-                            contentItem: Item {
-                                anchors.fill: parent
-
-                                Row {
-                                    spacing: 10
-                                    anchors.centerIn: parent
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: Style.icons.download
-                                        font.family: Style.fontTypes.font6Pro
-                                        font.pixelSize: 10
-                                        color: Style.colors.textButton
-                                        font.bold: true
-                                    }
-
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "Export"
-                                        color: Style.colors.textButton
-                                        font.pixelSize: 11
-                                        font.bold: true
-                                    }
-                                }
-                            }
-
-                            onClicked: exportDialog.open()
-                        }
-                    }
-                }
-
-                ScrollView {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-
-                    ColumnLayout {
-                        width: parent.width
-                        spacing: 8
-
-                        Repeater {
-                            model: root.categoriesInfo
-
-                            delegate: ColumnLayout {
-                                id: categoryBlock
-
-                                // capture the outer (category) index BEFORE the nested Repeater shadows it
-                                property int categoryIndex: index
-                                property color categoryColor: modelData.color
-                                property var categoryRulesModel: root.categoryModels[categoryIndex]
-
-                                Layout.fillWidth: true
-                                spacing: 0
-
-                                // --- category header row ---
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 25
-                                    color: "transparent"
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        spacing: 10
-
-                                        Rectangle {
-                                            Layout.preferredWidth: 3
-                                            Layout.preferredHeight: 15
-                                            color: modelData.color
-                                            radius: 5
-                                        }
-
-                                        Text {
-                                            text: modelData.name
-                                            font.family: Style.fontTypes.roboto
-                                            color: Style.colors.placeholderText
-                                            font.pixelSize: 11
-                                        }
-
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            Layout.preferredHeight: 1
-                                            color: Style.colors.secondaryBackground
-                                        }
-
-                                        Text {
-                                            text: categoryBlock.categoryRulesModel.count
-                                            font.family: Style.fontTypes.roboto
-                                            color: Style.colors.placeholderText
-                                            font.pixelSize: 11
-                                        }
-                                    }
-                                }
-
-                                // --- nested rule names ---
-                                Repeater {
-                                    model: categoryBlock.categoryRulesModel
-
-                                    delegate: Rectangle {
-                                        id: ruleDelegate
-
-                                        // this "index" belongs to the inner Repeater (rule's own index)
-                                        Layout.fillWidth: true
-                                        height: 30
-                                        radius: 5
-                                        color: (root.selectedCategory === categoryBlock.categoryIndex
-                                                && root.selectedRule === index)
-                                               ? Style.colors.accent
-                                               : "transparent"
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.leftMargin: 10
-                                            spacing: 5
-
-                                            Rectangle {
-                                                width: 10
-                                                height: 10
-                                                radius: 5
-                                                Layout.alignment: Qt.AlignVCenter
-                                                color: categoryBlock.categoryColor
-                                            }
-
-                                            ScrollingText {
-                                                text: ruleName
-                                                font.family: Style.fontTypes.roboto
-                                                font.pixelSize: 11
-                                                color: Style.colors.textButton
-                                                Layout.alignment: Qt.AlignVCenter
-                                                Layout.fillWidth: true
-                                            }
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            cursorShape: "PointingHandCursor"
-                                            onClicked: {
-                                                root.selectedCategory = categoryBlock.categoryIndex
-                                                root.selectedRule = index
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            onAddRuleRequested: addRulePopup.open()
+            onImportRequested: importDialog.open()
+            onExportRequested: exportDialog.open()
+            onCategorySelected: (idx) => { root.selectedCategory = idx }
+            onRuleSelected: (catIdx, ruleIdx) => {
+                root.selectedCategory = catIdx
+                root.selectedRule = ruleIdx
             }
         }
 
-        Rectangle {
+        RuleSettingsPanel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Style.colors.primaryBackground
 
-            EmptyStateView {
-                title: "No rule to show"
-                details: "Select a rule to edit its setting"
-                visible: root.selectedRule < 0
+            categoriesInfo: root.categoriesInfo
+            categoryModels: root.categoryModels
+            selectedCategory: root.selectedCategory
+            selectedRule: root.selectedRule
+
+            onDeleteRequested: {
+                root.selectedRule = -1
+                root.saveRulesToDisk()
             }
-
-            ColumnLayout {
-                anchors.fill: parent
-
-                Loader {
-                    id: settingsLoader
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.margins: 20
-                    active: root.selectedRule >= 0
-
-                    sourceComponent: {
-                        switch (root.selectedCategory) {
-                        case 0: return commitSettingsComp
-                        case 1: return branchSettingsComp
-                        case 2: return fileSettingsComp
-                        case 3: return pushSettingsComp
-                        case 4: return notificationSettingsComp
-                        case 5: return hookSettingsComp
-                        default: return null
-                        }
-                    }
-
-                    function refreshItem() {
-                        if (!item) return
-                        var list = root.categoryModels[root.selectedCategory]
-                        item.targetModel = list
-                        item.ruleIndex = root.selectedRule
-                        item.ruleData = list.get(root.selectedRule)
-                    }
-
-                    onLoaded: refreshItem()
-                }
-
-                Connections {
-                    target: root
-                    function onSelectedRuleChanged() { settingsLoader.refreshItem() }
-                    function onSelectedCategoryChanged() { settingsLoader.refreshItem() }
-                }
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 50
-                    color: Style.colors.secondaryBackground
-                    visible: root.selectedRule >= 0
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 5
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-
-                        Button {
-                            Layout.preferredWidth: 90
-                            Layout.preferredHeight: 35
-
-                            background: Rectangle {
-                                anchors.fill: parent
-                                radius: 5
-                                color: "red"
-                            }
-
-                            contentItem: Text {
-                                anchors.centerIn: parent
-                                text: "Delete"
-                                font.family: Style.fontTypes.roboto
-                                font.pixelSize: 11
-                                font.bold: true
-                                color: Style.colors.textButton
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
-
-                            onClicked: {
-                                var list = root.categoryModels[root.selectedCategory]
-                                list.remove(root.selectedRule)
-                                root.selectedRule = -1
-                                root.saveRulesToDisk()
-                            }
-                        }
-
-                        Button {
-                            Layout.preferredWidth: 90
-                            Layout.preferredHeight: 35
-
-                            background: Rectangle {
-                                anchors.fill: parent
-                                color: "transparent"
-                                border.width: 1
-                                border.color: "#888"
-                                radius: 5
-                            }
-
-                            contentItem: Text {
-                                anchors.centerIn: parent
-                                text: "Discard"
-                                font.family: Style.fontTypes.roboto
-                                font.pixelSize: 11
-                                font.bold: true
-                                color: "#ccc"
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
-
-                            onClicked: {
-                                if (settingsLoader.item) settingsLoader.item.loadFromModel()
-                            }
-                        }
-
-                        Button {
-                            Layout.preferredWidth: 100
-                            Layout.preferredHeight: 35
-
-                            background: Rectangle {
-                                anchors.fill: parent
-                                radius: 5
-                                color: "#238636"
-                            }
-
-                            contentItem: Text {
-                                anchors.centerIn: parent
-                                text: "Save Changes"
-                                font.family: Style.fontTypes.roboto
-                                font.pixelSize: 11
-                                font.bold: true
-                                color: Style.colors.textButton
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
-
-                            onClicked: {
-                                if (settingsLoader.item) settingsLoader.item.saveChanges()
-                                root.saveRulesToDisk()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Component {
-            id: commitSettingsComp
-
-            CommitMessageSettings {
-                ruleColor: root.categoriesInfo[0].color
-            }
-        }
-
-        Component {
-            id: branchSettingsComp
-
-            BranchNamingSettings {
-                ruleColor: root.categoriesInfo[1].color
-            }
-        }
-
-        Component {
-            id: fileSettingsComp
-
-            FileSettings {
-                ruleColor: root.categoriesInfo[2].color
-            }
-        }
-
-        Component {
-            id: pushSettingsComp
-
-            PushRulesSettings {
-                ruleColor: root.categoriesInfo[3].color
-            }
-        }
-
-        Component {
-            id: notificationSettingsComp
-
-            NotificationRulesSettings {
-                ruleColor: root.categoriesInfo[4].color
-            }
-        }
-
-        Component {
-            id: hookSettingsComp
-
-            CustomHooksSettings {
-                ruleColor: root.categoriesInfo[5].color
-            }
+            onSavedChanges: root.saveRulesToDisk()
         }
     }
 
     Connections {
         target: ruleController
-
-        function onCurrentRepoChanged()  {
-            loadRulesFromDisk()
-        }
+        function onCurrentRepoChanged() { root.loadRulesFromDisk() }
     }
 
     /* Functions
      * ****************************************************************************************/
     function modelToArray(listModel) {
         var arr = []
-        for (var i = 0; i < listModel.count; i++)
-            arr.push(listModel.get(i))
+        for (var i = 0; i < listModel.count; i++) {
+            var row = listModel.get(i)
+            var plain = {}
+            for (var key in row) plain[key] = row[key]
+            arr.push(plain)
+        }
         return arr
     }
 
@@ -642,8 +186,10 @@ Item {
     }
 
     function saveRulesToDisk() {
+        if (!root.ruleController) return
         var data = buildRulesJson()
-        ruleController.saveRules(JSON.stringify(data, null, 2))
+        var result = root.ruleController.saveRules(JSON.stringify(data, null, 2))
+        if (!result.success) console.warn("Failed to save rules:", result.errorMessage)
     }
 
     function loadArrayInto(listModel, arr) {
@@ -654,15 +200,25 @@ Item {
     }
 
     function loadRulesFromDisk() {
-        var raw = ruleController.loadRules().data
+        if (!root.ruleController) return
+        var result = root.ruleController.loadRules()
+        if (!result.success) {
+            console.warn("Failed to load rules:", result.errorMessage)
+            return
+        }
+        var raw = result.data
         if (raw && raw.length > 0) {
-            var data = JSON.parse(raw)
-            loadArrayInto(commitRules, data.rules.commitMessage)
-            loadArrayInto(branchRules, data.rules.branchNaming)
-            loadArrayInto(fileRules, data.rules.fileCode)
-            loadArrayInto(pushRules, data.rules.pushRules)
-            loadArrayInto(notificationRules, data.rules.notification)
-            loadArrayInto(hookRules, data.rules.customHooks)
+            try {
+                var data = JSON.parse(raw)
+                loadArrayInto(commitRules, data.rules.commitMessage)
+                loadArrayInto(branchRules, data.rules.branchNaming)
+                loadArrayInto(fileRules, data.rules.fileCode)
+                loadArrayInto(pushRules, data.rules.pushRules)
+                loadArrayInto(notificationRules, data.rules.notification)
+                loadArrayInto(hookRules, data.rules.customHooks)
+            } catch (e) {
+                console.error("Failed to parse rules file:", e)
+            }
         } else {
             commitRules.clear()
             branchRules.clear()
@@ -674,27 +230,28 @@ Item {
     }
 
     function importFile(fileUrl) {
-        var result = ruleController.importRules(fileUrl)
-        var data = JSON.parse(result.data)
-        loadArrayInto(commitRules, data.rules.commitMessage)
-        loadArrayInto(branchRules, data.rules.branchNaming)
-        loadArrayInto(fileRules, data.rules.fileCode)
-        loadArrayInto(pushRules, data.rules.pushRules)
-        loadArrayInto(notificationRules, data.rules.notification)
-        loadArrayInto(hookRules, data.rules.customHooks)
-        root.saveRulesToDisk()
+        if (!root.ruleController) return
+        var result = root.ruleController.importRules(fileUrl)
+        if (!result.success) {
+            console.warn("Import failed:", result.errorMessage)
+            return
+        }
+        try {
+            var data = JSON.parse(result.data)
+            loadArrayInto(commitRules, data.rules.commitMessage)
+            loadArrayInto(branchRules, data.rules.branchNaming)
+            loadArrayInto(fileRules, data.rules.fileCode)
+            loadArrayInto(pushRules, data.rules.pushRules)
+            loadArrayInto(notificationRules, data.rules.notification)
+            loadArrayInto(hookRules, data.rules.customHooks)
+            root.saveRulesToDisk()
+        } catch (e) {
+            console.error("Imported file is not valid rules JSON:", e)
+        }
     }
 
     function hasAnyRules() {
-        return commitRules.count > 0 ||
-               branchRules.count > 0 ||
-               fileRules.count > 0 ||
-               pushRules.count > 0 ||
-               notificationRules.count > 0 ||
-               hookRules.count > 0
-    }
-
-    Component.onCompleted: {
-        Qt.callLater(loadRulesFromDisk)
+        return commitRules.count > 0 || branchRules.count > 0 || fileRules.count > 0 ||
+               pushRules.count > 0 || notificationRules.count > 0 || hookRules.count > 0
     }
 }

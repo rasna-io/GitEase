@@ -185,6 +185,8 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/RulesPage/PushRulesSettings.qml
     Qml/View/Components/Pages/RulesPage/NotificationRulesSettings.qml
     Qml/View/Components/Pages/RulesPage/CustomHooksSettings.qml
+    Qml/View/Components/Pages/RulesPage/RulesTreeView.qml
+    Qml/View/Components/Pages/RulesPage/RuleSettingsPanel.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
     Qml/View/Components/GraphView/ResizableColumnHeader.qml
