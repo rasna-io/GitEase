@@ -18,7 +18,7 @@ Rectangle {
     /* Property Declarations
      * ****************************************************************************************/
     required property string headerText
-    property Component content
+    property Item content
     property color ruleColor
 
     /* Object Properties
@@ -28,6 +28,15 @@ Rectangle {
     border.width: 1
     border.color: Style.colors.secondaryBackground
     Layout.preferredHeight: mainColumn.implicitHeight + 5
+
+    onContentChanged: {
+        if (content) {
+            content.parent = contentContainer
+            content.anchors.left = contentContainer.left
+            content.anchors.right = contentContainer.right
+            content.anchors.top = contentContainer.top
+        }
+    }
 
     /* Children
      * ****************************************************************************************/
@@ -69,11 +78,12 @@ Rectangle {
         }
 
         // Content
-        Loader {
+        Item {
+            id: contentContainer
             Layout.fillWidth: true
             Layout.leftMargin: 20
             Layout.rightMargin: 20
-            sourceComponent: root.content
+            Layout.preferredHeight: content ? content.implicitHeight : 0
         }
 
         Item {
