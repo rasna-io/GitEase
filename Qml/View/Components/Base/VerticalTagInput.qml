@@ -118,4 +118,19 @@ Rectangle {
             }
         }
     }
+
+    /* Functions
+     * ****************************************************************************************/
+    function getWords() {
+        var result = []
+        for (var i = 0; i < listModel.count; i++)
+            result.push(listModel.get(i).word)
+        return result
+    }
+
+    function setWords(words) {
+        listModel.clear()
+        for (var i = 0; i < words.length; i++)
+            if(words[i].length > 0) listModel.append({ word: words[i] })
+    }
 }
