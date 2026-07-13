@@ -166,7 +166,7 @@ Rectangle {
 
                     background: Rectangle {
                         radius: 5
-                        color: "transparent"
+                        color: enabled ? "transparent" : Style.colors.disabledButton
                         border.width: 1
                         border.color: "#888"
                     }
