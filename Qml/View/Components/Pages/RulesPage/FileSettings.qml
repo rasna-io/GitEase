@@ -151,7 +151,7 @@ RuleSettingsBase {
         basicInfo.isActive = ruleData.enabled ?? true
 
         forbiddenExtensionsInput.setWords(ruleData.forbiddenExtensions ? ruleData.forbiddenExtensions.split(",") : [])
-        maxFileSizeSpin.value = ruleData.maxFileSizeMb ?? 10
+        maxFileSizeSpin.value = ruleData.maxFileSizeMb === "" || ruleData.maxFileSizeMb === undefined ? 10 : ruleData.maxFileSizeMb
         trailingWhitespaceSwitch.checked = ruleData.noTrailingWhitespace ?? false
         requireFinalNewlineSwitch.checked = ruleData.requireFinalNewline ?? false
 

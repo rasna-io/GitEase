@@ -152,7 +152,7 @@ RuleSettingsBase {
         requireGPGSignatureSwitch.checked = ruleData.requireGpgSignature ?? false
         blockConflictMarkersSwitch.checked = ruleData.blockConflictMarkers ?? false
         blockWIPCommitsSwitch.checked = ruleData.blockWipCommits ?? false
-        maxCommitsSpin.value = ruleData.maxCommitsPerPush ?? 0
+        maxCommitsSpin.value = ruleData.maxCommitsPerPush === "" || ruleData.maxCommitsPerPush === undefined ? 0 : ruleData.maxCommitsPerPush
 
         isDirty = false
         suppressDirty = false

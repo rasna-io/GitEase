@@ -190,7 +190,7 @@ RuleSettingsBase {
         basicInfo.isActive = ruleData.isActive ?? true
 
         allowedPrefixesInput.setWords(ruleData.allowedPrefixes ? ruleData.allowedPrefixes.split(",") : [])
-        maxLengthSpin.value = ruleData.maxLength ?? 50
+        maxLengthSpin.value = ruleData.maxLength === "" || ruleData.maxLength === undefined ? 0 : ruleData.maxLength
         forbiddenSpacesSwitch.checked = ruleData.forbidSpaces ?? false
         forbiddenUppercaseSwitch.checked = ruleData.forbidUppercase ?? false
         forbiddensSpecialCharsSwitch.checked = ruleData.forbidSpecialChars ?? false

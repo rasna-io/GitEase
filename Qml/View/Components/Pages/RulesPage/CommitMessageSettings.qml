@@ -292,8 +292,8 @@ RuleSettingsBase {
         basicInfo.severityIndex = ruleData.severity ?? 0
         basicInfo.isActive = ruleData.enabled ?? 0
 
-        minLengthSpin.value = ruleData.minLength ?? 0
-        maxLengthSpin.value = ruleData.maxLength ?? 72
+        minLengthSpin.value = ruleData.minLength === "" || ruleData.minLength === undefined ? 0 : ruleData.minLength
+        maxLengthSpin.value = ruleData.maxLength === "" || ruleData.maxLength === undefined ? 72 : ruleData.maxLength
         requirePrefixSwitch.checked = ruleData.requirePrefix ?? false
         allowedPrefixesInput.setWords(ruleData.allowedPrefixes ? ruleData.allowedPrefixes.split(",") : [])
         noTrailingPeriodSwitch.checked = ruleData.noTrailingPeriod ?? false
@@ -303,7 +303,7 @@ RuleSettingsBase {
         ticketRefSwitch.checked = ruleData.requireTicketRef ?? false
         ticketRefInput.text = ruleData.ticketRefPattern ?? ""
         bodySeparatorSwitch.checked = ruleData.requireBodySeparator ?? false
-        bodyMinLengthSpin.value = ruleData.bodyMinLength ?? 0
+        bodyMinLengthSpin.value = ruleData.bodyMinLength === "" || ruleData.bodyMinLength === undefined ? 72 : ruleData.bodyMinLength
         signedOffBySwitch.checked = ruleData.requireSignedOffBy ?? false
 
         customRegexField.text = ruleData.customRegex ?? ""
