@@ -35,6 +35,7 @@ GitTree {
 
     /* Functions
      * ****************************************************************************************/
+
     /**
      * Loads the full file tree at the given commit into fileTreeModel.
      */
@@ -72,6 +73,7 @@ GitTree {
         root.fileContentLoaded(filePath)
         return true
     }
+
     /**
      * Clears the loaded file content state.
      */
@@ -85,7 +87,7 @@ GitTree {
      * Clears the whole controller state (e.g. on repository change).
      */
     function clear() {
-        root.currentCommitSha    = ""
+        root.currentCommitSha   = ""
         root.fileTreeModel      = []
         clearFileContent()
     }
