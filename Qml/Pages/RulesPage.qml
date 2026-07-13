@@ -7,16 +7,21 @@ import GitEase_Style
 import GitEase_Style_Impl
 import GitEase
 
+/*!
+ * RulesPage
+ * Fetching list of rules from the repo and displaying it
+ */
+
 Item {
     id: root
-    anchors.fill: parent
 
     /* Property Declarations
      * ****************************************************************************************/
-    property int selectedCategory: 0
-    property int selectedRule: -1
-    property RuleController ruleController: null
-    property var pendingNavigationAction: null
+    property int                     selectedCategory: 0
+    property int                     selectedRule: -1
+    property RuleController          ruleController: null
+    property var                     pendingNavigationAction: null
+    property NotificationController  notificationController:  null
 
     property var categoriesInfo: [
         { name: "COMMIT MESSAGE", color: "#58a6ff", description: "Enforce message format, prefixes & length" },
@@ -35,6 +40,10 @@ Item {
     ListModel { id: pushRules }
     ListModel { id: notificationRules }
     ListModel { id: hookRules }
+
+    /* Object Properties
+     * ****************************************************************************************/
+    anchors.fill: parent
 
     /* Children
      * ****************************************************************************************/
@@ -91,10 +100,13 @@ Item {
         defaultSuffix: "json"
 
         onAccepted: {
-            if (!root.ruleController) return
             var jsonText = JSON.stringify(root.buildRulesJson(), null, 2)
-            var result = root.ruleController.exportRules(selectedFile, jsonText)
-            if (!result.success) console.warn("Export failed:", result.errorMessage)
+            var res = root.ruleController.exportRules(selectedFile, jsonText)
+            if (res.success) {
+                root.notificationController.success("Rules exported successfully", "Export", 3000)
+            } else {
+                root.notificationController.error(res.errorMessage || "Failed to export rules", "Export Error", 5000)
+            }
         }
     }
 
@@ -118,6 +130,7 @@ Item {
         anchors.fill: parent
         spacing: 0
 
+        // Left side column displaying various rule categories and their rules
         RulesTreeView {
             Layout.preferredWidth: 300
             Layout.fillHeight: true
@@ -139,6 +152,7 @@ Item {
             }
         }
 
+        // Right side column displaying selected rule settings
         RuleSettingsPanel {
             id: settingsPanel
 
@@ -152,9 +166,19 @@ Item {
 
             onDeleteRequested: {
                 root.selectedRule = -1
-                root.saveRulesToDisk()
+                if(root.saveRulesToDisk()) {
+                    root.notificationController.success("Rule deleted successfully", "Delete", 3000)
+                } else {
+                    root.notificationController.error(res.errorMessage || "Failed to delete rule", "Delete Error", 5000)
+                }
             }
-            onSavedChanges: root.saveRulesToDisk()
+            onSavedChanges: {
+                if(root.saveRulesToDisk()) {
+                    root.notificationController.success("Rule saved successfully", "Save", 3000)
+                } else {
+                    root.notificationController.error(res.errorMessage || "Failed to save rule", "Save Error", 5000)
+                }
+            }
         }
     }
 
@@ -172,7 +196,6 @@ Item {
             saveDescription: "Save this rule and continue"
             acceptTitle: "Discard Changes"
             acceptDescription: "Discard edits and continue without saving"
-            hasAbort: true
         }
     }
 
@@ -203,10 +226,9 @@ Item {
     }
 
     function saveRulesToDisk() {
-        if (!root.ruleController) return
         var data = buildRulesJson()
-        var result = root.ruleController.saveRules(JSON.stringify(data, null, 2))
-        if (!result.success) console.warn("Failed to save rules:", result.errorMessage)
+        var res = root.ruleController.saveRules(JSON.stringify(data, null, 2))
+        return res.success
     }
 
     function loadArrayInto(listModel, arr) {
@@ -218,25 +240,22 @@ Item {
 
     function loadRulesFromDisk() {
         if (!root.ruleController) return
-        var result = root.ruleController.loadRules()
-        if (!result.success) {
-            console.warn("Failed to load rules:", result.errorMessage)
+        var res = root.ruleController.loadRules()
+        if (!res.success) {
             return
         }
-        var raw = result.data
+        var raw = res.data
         if (raw && raw.length > 0) {
-            try {
-                var data = JSON.parse(raw)
-                loadArrayInto(commitRules, data.rules.commitMessage)
-                loadArrayInto(branchRules, data.rules.branchNaming)
-                loadArrayInto(fileRules, data.rules.fileCode)
-                loadArrayInto(pushRules, data.rules.pushRules)
-                loadArrayInto(notificationRules, data.rules.notification)
-                loadArrayInto(hookRules, data.rules.customHooks)
-            } catch (e) {
-                console.error("Failed to parse rules file:", e)
-            }
+            var data = JSON.parse(raw)
+            // Fill the listModels from data read from json file
+            loadArrayInto(commitRules, data.rules.commitMessage)
+            loadArrayInto(branchRules, data.rules.branchNaming)
+            loadArrayInto(fileRules, data.rules.fileCode)
+            loadArrayInto(pushRules, data.rules.pushRules)
+            loadArrayInto(notificationRules, data.rules.notification)
+            loadArrayInto(hookRules, data.rules.customHooks)
         } else {
+            // Clear rules if the json file does not exist or it is empty
             commitRules.clear()
             branchRules.clear()
             fileRules.clear()
@@ -247,24 +266,19 @@ Item {
     }
 
     function importFile(fileUrl) {
-        if (!root.ruleController) return
-        var result = root.ruleController.importRules(fileUrl)
-        if (!result.success) {
-            console.warn("Import failed:", result.errorMessage)
+        var res = root.ruleController.importRules(fileUrl)
+        if (!res.success) {
+            root.notificationController.error(res.errorMessage, "Import Error", 5000)
             return
         }
-        try {
-            var data = JSON.parse(result.data)
-            loadArrayInto(commitRules, data.rules.commitMessage)
-            loadArrayInto(branchRules, data.rules.branchNaming)
-            loadArrayInto(fileRules, data.rules.fileCode)
-            loadArrayInto(pushRules, data.rules.pushRules)
-            loadArrayInto(notificationRules, data.rules.notification)
-            loadArrayInto(hookRules, data.rules.customHooks)
-            root.saveRulesToDisk()
-        } catch (e) {
-            console.error("Imported file is not valid rules JSON:", e)
-        }
+        var data = JSON.parse(result.data)
+        loadArrayInto(commitRules, data.rules.commitMessage)
+        loadArrayInto(branchRules, data.rules.branchNaming)
+        loadArrayInto(fileRules, data.rules.fileCode)
+        loadArrayInto(pushRules, data.rules.pushRules)
+        loadArrayInto(notificationRules, data.rules.notification)
+        loadArrayInto(hookRules, data.rules.customHooks)
+        root.saveRulesToDisk()
     }
 
     function hasAnyRules() {
@@ -272,6 +286,7 @@ Item {
                pushRules.count > 0 || notificationRules.count > 0 || hookRules.count > 0
     }
 
+    // Check for unsaved changes and show the dialog
     function guardNavigation(action) {
         if (settingsPanel.currentIsDirty()) {
             root.pendingNavigationAction = action

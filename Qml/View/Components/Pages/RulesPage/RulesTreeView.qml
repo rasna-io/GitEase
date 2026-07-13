@@ -20,6 +20,7 @@ Rectangle {
     property int selectedCategory: 0
     property int selectedRule: -1
     property bool exportEnabled: false
+    property string searchText: ""
 
     /* Signals
      * ****************************************************************************************/
@@ -89,6 +90,19 @@ Rectangle {
 
                 onClicked: root.addRuleRequested()
             }
+        }
+
+        TextField {
+            Layout.fillWidth: true
+            placeholderText: "Search rules..."
+            selectByMouse: true
+
+            background: Rectangle {
+                color: Style.colors.secondaryBackground
+                radius: 5
+            }
+
+            onTextChanged: root.searchText = text
         }
 
         DividerLine {}
@@ -199,6 +213,7 @@ Rectangle {
                 width: parent.width
                 spacing: 8
 
+                // Categories repeater
                 Repeater {
                     model: root.categoriesInfo
 
@@ -250,13 +265,19 @@ Rectangle {
                             }
                         }
 
+                        // Rules repeater
                         Repeater {
                             model: categoryBlock.categoryRulesModel
 
                             delegate: Rectangle {
                                 Layout.fillWidth: true
-                                height: 30
+                                height: matchesSearch ? 30 : 0
+                                visible: matchesSearch
                                 radius: 5
+
+                                property bool matchesSearch: root.searchText.length === 0 ||
+                                                              ruleName.toLowerCase().includes(root.searchText.toLowerCase())
+
                                 color: (root.selectedCategory === categoryBlock.categoryIndex
                                         && root.selectedRule === index)
                                        ? Style.colors.accent
