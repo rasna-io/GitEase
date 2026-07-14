@@ -41,7 +41,7 @@ Item {
             spacing: 0
 
             Item {
-                Layout.preferredWidth: Style.dp(150)
+                Layout.preferredWidth: Style.dp(167)
                 Layout.margins: Style.dp(14)
 
                 Image {
@@ -91,7 +91,7 @@ Item {
             }
 
             WindowsHeader {
-                Layout.preferredWidth: 120
+                Layout.preferredWidth: Style.dp(120)
 
                 windowController: root.windowController
             }

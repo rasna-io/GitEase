@@ -54,7 +54,7 @@ Rectangle {
     
     signal openNotificationsRequested()
 
-    implicitWidth: Style.dp(179)
+    implicitWidth: Style.dp(196)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -87,6 +87,13 @@ Rectangle {
                 }
             }
 
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Style.dp(1)
+                Layout.margins: Style.dp(4)
+                color: Style.colors.primaryBorder
+            }
+
             // Repositories Sidebar (Middle section)
             RepositoriesSidebar {
                 Layout.fillWidth: true
@@ -101,6 +108,13 @@ Rectangle {
                 onNewRepositoryRequested: function () {
                     root.newRepositoryRequested()
                 }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Style.dp(1)
+                Layout.margins: Style.dp(4)
+                color: Style.colors.primaryBorder
             }
 
             // Settings button (Bottom section)
