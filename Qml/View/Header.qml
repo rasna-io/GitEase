@@ -48,7 +48,7 @@ Item {
                     width: 99
                     height: 28
                     fillMode: Image.PreserveAspectFit
-                    source: "qrc:/GitEase/Resources/Images/Logo.svg"
+                    source: Style.icons.appLogo
                 }
             }
 
