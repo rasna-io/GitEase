@@ -61,6 +61,38 @@ RuleSettingsBase {
                 DividerLine {}
 
                 OptionRow {
+                    title: "Ticket reference"
+                    subtitle: "Required in branch name"
+
+                    control: RowLayout {
+                        anchors.fill: parent
+
+                        ModernSwitch {
+                            id: ticketReferenceSwitch
+                            Layout.fillHeight: true
+
+                            onCheckedChanged: root.markDirty()
+                        }
+
+                        TextField {
+                            id: ticketReferenceField
+                            Layout.fillWidth: true
+                            placeholderText: "[A-Z]+-\d+"
+                            selectByMouse: true
+
+                            background: Rectangle {
+                                color: Style.colors.secondaryBackground
+                                radius: 5
+                            }
+
+                            onTextChanged: root.markDirty()
+                        }
+                    }
+                }
+
+                DividerLine {}
+
+                OptionRow {
                     title: "Max name length"
                     subtitle: "Characters"
                     control: ModernSpinBox {
@@ -120,43 +152,11 @@ RuleSettingsBase {
                 spacing: 7
 
                 OptionRow {
-                    title: "Ticket reference"
-                    subtitle: "Required in branch name"
-
-                    control: RowLayout {
-                        anchors.fill: parent
-
-                        ModernSwitch {
-                            id: ticketReferenceSwitch
-                            Layout.fillHeight: true
-
-                            onCheckedChanged: root.markDirty()
-                        }
-
-                        TextField {
-                            id: ticketReferenceField
-                            Layout.fillWidth: true
-                            placeholderText: "[A-Z]+-\d+"
-                            selectByMouse: true
-
-                            background: Rectangle {
-                                color: Style.colors.secondaryBackground
-                                radius: 5
-                            }
-
-                            onTextChanged: root.markDirty()
-                        }
-                    }
-                }
-
-                DividerLine {}
-
-                OptionRow {
-                    title: "Protected branches"
+                    title: "Block branch deletion"
                     subtitle: "Glob patterns"
 
                     control: HorizontalTagInput {
-                        id: protectedBranchesInput
+                        id: blockBranchDeletionInput
                         anchors.fill: parent
 
                         onWordsChanged: root.markDirty()
@@ -197,7 +197,7 @@ RuleSettingsBase {
 
         ticketReferenceSwitch.checked = ruleData.requireTicketRef ?? false
         ticketReferenceField.text = ruleData.ticketRefPattern ?? ""
-        protectedBranchesInput.setWords(ruleData.protectedBranches ? ruleData.protectedBranches.split(",") : [])
+        blockBranchDeletionInput.setWords(ruleData.protectedBranches ? ruleData.protectedBranches.split(",") : [])
         autoDeleteSwitch.checked = ruleData.autoDeleteAfterMerge ?? false
 
         isDirty = false
@@ -220,7 +220,7 @@ RuleSettingsBase {
 
         targetModel.setProperty(ruleIndex, "requireTicketRef", ticketReferenceSwitch.checked)
         targetModel.setProperty(ruleIndex, "ticketRefPattern", ticketReferenceField.text)
-        targetModel.setProperty(ruleIndex, "protectedBranches", protectedBranchesInput.getWords().join(","))
+        targetModel.setProperty(ruleIndex, "protectedBranches", blockBranchDeletionInput.getWords().join(","))
         targetModel.setProperty(ruleIndex, "autoDeleteAfterMerge", autoDeleteSwitch.checked)
 
         isDirty = false

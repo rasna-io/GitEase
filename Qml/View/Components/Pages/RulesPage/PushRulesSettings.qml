@@ -58,20 +58,6 @@ RuleSettingsBase {
                         onWordsChanged: root.markDirty()
                     }
                 }
-
-                DividerLine {}
-
-                OptionRow {
-                    title: "Block branch deletion"
-                    subtitle: "Glob patterns"
-
-                    control: HorizontalTagInput {
-                        id: blockBranchDeletionInput
-                        anchors.fill: parent
-
-                        onWordsChanged: root.markDirty()
-                    }
-                }
             }
         }
 
@@ -147,7 +133,6 @@ RuleSettingsBase {
         basicInfo.isActive = ruleData.enabled ?? true
 
         blockForcePushInput.setWords(ruleData.blockForcePushPatterns ? ruleData.blockForcePushPatterns.split(",") : [])
-        blockBranchDeletionInput.setWords(ruleData.blockDeletionPatterns ? ruleData.blockDeletionPatterns.split(",") : [])
 
         requireGPGSignatureSwitch.checked = ruleData.requireGpgSignature ?? false
         blockConflictMarkersSwitch.checked = ruleData.blockConflictMarkers ?? false
@@ -167,7 +152,6 @@ RuleSettingsBase {
         targetModel.setProperty(ruleIndex, "enabled", basicInfo.isActive)
 
         targetModel.setProperty(ruleIndex, "blockForcePushPatterns", blockForcePushInput.getWords().join(","))
-        targetModel.setProperty(ruleIndex, "blockDeletionPatterns", blockBranchDeletionInput.getWords().join(","))
 
         targetModel.setProperty(ruleIndex, "requireGpgSignature", requireGPGSignatureSwitch.checked)
         targetModel.setProperty(ruleIndex, "blockConflictMarkers", blockConflictMarkersSwitch.checked)
