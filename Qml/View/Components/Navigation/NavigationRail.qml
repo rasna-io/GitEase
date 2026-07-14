@@ -518,5 +518,3 @@ Rectangle {
             p.close()
     }
 }
-
-
