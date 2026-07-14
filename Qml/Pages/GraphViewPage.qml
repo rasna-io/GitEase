@@ -401,6 +401,16 @@ Page {
                                     item.notificationController = Qt.binding(function() { return root.notificationController })
                                 if (item.hasOwnProperty("guideController"))
                                     item.guideController = Qt.binding(function() { return root.guideController })       
+                                if (item.hasOwnProperty("commitController"))
+                                    item.commitController = Qt.binding(function() { return root.commitController })
+                                if (item.hasOwnProperty("statusController"))
+                                    item.statusController = Qt.binding(function() { return root.statusController })
+                                if (item.hasOwnProperty("stashController"))
+                                    item.stashController = Qt.binding(function() { return root.stashController })
+                                if (item.hasOwnProperty("tagController"))
+                                    item.tagController = Qt.binding(function() { return root.tagController })
+                                if (item.hasOwnProperty("eventBus"))
+                                    item.eventBus = Qt.binding(function() { return root.pluginController?.pluginManager })
                             }
 
                             onStatusChanged: {
