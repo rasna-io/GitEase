@@ -20,6 +20,27 @@ Rectangle {
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
 
+    /* Functions
+     * ****************************************************************************************/
+    function switchToPageById(pageId) {
+        let pages = pageSwipeView.contentChildren
+        let targetIndex = -1
+        for (let i = 0; i < pages.length; i++) {
+            if (pages[i].pageId === pageId) {
+                targetIndex = i
+                break
+            }
+        }
+        if (targetIndex < 0)
+            return
+
+        let current = pageSwipeView.currentItem
+        if (current?.onPageChange) {
+            current.onPageChange(accepted => { if (accepted) pageSwipeView.setCurrentIndex(targetIndex) })
+        } else {
+            pageSwipeView.setCurrentIndex(targetIndex)
+        }
+    }
 
     /* Children
      * ****************************************************************************************/
@@ -29,8 +50,8 @@ Rectangle {
 
         //Header
         Header {
-            Layout.minimumHeight: 50
-            Layout.maximumHeight: 50
+            Layout.minimumHeight: Style.dp(44)
+            Layout.maximumHeight: Style.dp(44)
             Layout.fillWidth: true
 
             windowController: root.uiSession.windowController
@@ -48,18 +69,23 @@ Rectangle {
                     left: parent.left
                     top: parent.top
                     bottom: parent.bottom
-                    margins: 1
                 }
 
                 z: 1
 
                 appModel: root.uiSession?.appModel
-                pageController: root.uiSession?.pageController
                 repositoryController: root.uiSession?.repositoryController
                 userProfileController: root.uiSession?.userProfileController
                 notificationController: root.uiSession?.notificationController
                 guideController: root.uiSession?.guideController
                 userInfoSelectionPopup: root.uiSession?.popups?.userInfoSelectionPopup
+
+                pages: pageSwipeView.contentChildren
+                currentPageId: pageSwipeView.currentItem?.pageId ?? ""
+
+                onPageSelected: function (pageId) {
+                    root.switchToPageById(pageId)
+                }
 
                 onNewRepositoryRequested: function () {
                     let popup = root.uiSession?.popups?.repositorySelectorPopup
@@ -111,107 +137,78 @@ Rectangle {
                     color: Style.colors.primaryBackground
                     radius: 6
 
-                    Loader {
-                        id: pageLoader
+                    SwipeView {
+                        id: pageSwipeView
                         anchors.fill: parent
-                        anchors.margins: 0
 
-                        source: root.uiSession?.appModel?.currentPage?.source ?? ""
+                        // Page switching is driven by the NavigationRail only.
+                        interactive: false
 
-                        onLoaded: {
-                            // Bind common context properties if the loaded page exposes them.
-                            if (!item)
-                                return
-
-                            // If the loaded page exposes a `page` property, bind it to the current page model.
-                            if (item && item.hasOwnProperty("page")) {
-                                item.page = Qt.binding(function() { return root.uiSession?.appModel?.currentPage })
-                            }
-
-                            // Repository controller (for pages that need repository context)
-                            if (item.hasOwnProperty("appModel")) {
-                                item.appModel = Qt.binding(function() { return root.uiSession?.appModel })
-                            }
-                            if (item.hasOwnProperty("branchController")) {
-                                item.branchController = Qt.binding(function() { return root.uiSession?.branchController })
-                            }
-                            if (item.hasOwnProperty("commitController")) {
-                                item.commitController = Qt.binding(function() { return root.uiSession?.commitController })
-                            }
-                            if (item.hasOwnProperty("statusController")) {
-                                item.statusController = Qt.binding(function() { return root.uiSession?.statusController })
-                            }
-                            if (item.hasOwnProperty("repositoryController")) {
-                                item.repositoryController = Qt.binding(function() { return root.uiSession?.repositoryController })
-                            }
-                            if (item.hasOwnProperty("remoteController")) {
-                                item.remoteController = Qt.binding(function() { return root.uiSession?.remoteController })
-                            }
-                            if (item.hasOwnProperty("userProfileController")) {
-                                item.userProfileController = Qt.binding(function() { return root.uiSession?.userProfileController })
-                            }
-                            if (item.hasOwnProperty("bundleController")) {
-                                item.bundleController = Qt.binding(function() { return root.uiSession?.bundleController })
-                            }
-                            if (item.hasOwnProperty("stashController")) {
-                                item.stashController = Qt.binding(function() { return root.uiSession?.stashController })
-                            }
-                            if (item.hasOwnProperty("tagController")) {
-                                item.tagController = Qt.binding(function() { return root.uiSession?.tagController })
-                            }
-                            if (item.hasOwnProperty("notificationController")) {
-                                item.notificationController = Qt.binding(function() { return root.uiSession?.notificationController })
-                            }
-                            if (item.hasOwnProperty("userAuthenticationPopup")) {
-                                item.userAuthenticationPopup = Qt.binding(function() { return root.uiSession?.popups?.userAuthenticationPopup })
-                            }
-                            if (item.hasOwnProperty("uiSessionPopups")) {
-                                item.uiSessionPopups = Qt.binding(function() { return root.uiSession?.popups })
-                            }
-                            if (item.hasOwnProperty("activityController")) {
-                                item.activityController = Qt.binding(function() { return root.uiSession?.activityController })
-                            }
-                            if (item.hasOwnProperty("mergeController")) {
-                                item.mergeController = Qt.binding(function() { return root.uiSession?.mergeController })
-                            }
-                            if (item.hasOwnProperty("repoForestPopup")) {
-                                item.repoForestPopup = Qt.binding(function() { return root.uiSession?.popups?.repoForestPopup })
-                            }
-                            if (item.hasOwnProperty("rebaseController")) {
-                                item.rebaseController = Qt.binding(function() { return root.uiSession?.rebaseController })
-                            }
-                            if (item.hasOwnProperty("terminalController")) {
-                                item.terminalController = Qt.binding(function() { return root.uiSession?.terminalController })
-                            }
-                            if (item.hasOwnProperty("cherryPickController")) {
-                                item.cherryPickController = Qt.binding(function() { return root.uiSession?.cherryPickController })
-                            }
-                            if (item.hasOwnProperty("conflictController")) {
-                                item.conflictController = Qt.binding(function() { return root.uiSession?.conflictController })
-                            }
-                            if (item.hasOwnProperty("windowController")) {
-                                item.windowController = Qt.binding(function() {return root.uiSession?.windowController})
-                            }
-                            if (item.hasOwnProperty("commitAmendPopup")) {
-                                item.commitAmendPopup = Qt.binding(function() { return root.uiSession?.popups?.commitAmendPopup })
-                            }
-                            if (item.hasOwnProperty("pluginController")) {
-                                item.pluginController = Qt.binding(function() { return root.uiSession?.pluginController })
-                            }
-                            if (item.hasOwnProperty("layoutController")) {
-                                item.layoutController = Qt.binding(function() { return root.uiSession?.layoutController })
-                            }
-                            if (item.hasOwnProperty("resetController")) {
-                                item.resetController = Qt.binding(function() { return root.uiSession?.resetController })
-                            }
-                            if (item.hasOwnProperty("guideController")) {
-                                item.guideController = Qt.binding(function() { return root.uiSession?.guideController })
-                            }
+                        // Switch pages instantly instead of sliding/dragging between them.
+                        contentItem: ListView {
+                            model: pageSwipeView.contentModel
+                            interactive: false
+                            currentIndex: pageSwipeView.currentIndex
+                            orientation: ListView.Horizontal
+                            snapMode: ListView.SnapOneItem
+                            boundsBehavior: Flickable.StopAtBounds
+                            highlightRangeMode: ListView.StrictlyEnforceRange
+                            preferredHighlightBegin: 0
+                            preferredHighlightEnd: 0
+                            highlightMoveDuration: 0
+                            highlightResizeDuration: 0
                         }
 
-                        onStatusChanged: {
-                            if (status === Loader.Error)
-                                console.error("[MainWindow] Failed to load page:", source)
+                        GraphViewPage {
+                            appModel: root.uiSession?.appModel
+                            branchController: root.uiSession?.branchController
+                            remoteController: root.uiSession?.remoteController
+                            userAuthenticationPopup: root.uiSession?.popups?.userAuthenticationPopup
+                            commitController: root.uiSession?.commitController
+                            statusController: root.uiSession?.statusController
+                            repositoryController: root.uiSession?.repositoryController
+                            notificationController: root.uiSession?.notificationController
+                            uiSessionPopups: root.uiSession?.popups
+                            stashController: root.uiSession?.stashController
+                            conflictController: root.uiSession?.conflictController
+                            mergeController: root.uiSession?.mergeController
+                            rebaseController: root.uiSession?.rebaseController
+                            cherryPickController: root.uiSession?.cherryPickController
+                            tagController: root.uiSession?.tagController
+                            resetController: root.uiSession?.resetController
+                            terminalController: root.uiSession?.terminalController
+                            bundleController: root.uiSession?.bundleController
+                            activityController: root.uiSession?.activityController
+                            pluginController: root.uiSession?.pluginController
+                            guideController: root.guideController
+                        }
+
+                        CommittingPage {
+                            appModel: root.uiSession?.appModel
+                            repositoryController: root.uiSession?.repositoryController
+                            statusController: root.uiSession?.statusController
+                            branchController: root.uiSession?.branchController
+                            commitController: root.uiSession?.commitController
+                            remoteController: root.uiSession?.remoteController
+                            userProfileController: root.uiSession?.userProfileController
+                            stashController: root.uiSession?.stashController
+                            notificationController: root.uiSession?.notificationController
+                            userAuthenticationPopup: root.uiSession?.popups?.userAuthenticationPopup
+                            uiSessionPopups: root.uiSession?.popups
+                            pluginController: root.uiSession?.pluginController
+                            terminalController: root.uiSession?.terminalController
+                            guideController: root.guideController
+                        }
+
+                        PluginsPage {
+                            appModel: root.uiSession?.appModel
+                            pluginController: root.uiSession?.pluginController
+                        }
+
+                        Component.onCompleted: {
+                            let requestedPageId = root.uiSession?.shellController?.arguments?.["page"]
+                            if (requestedPageId)
+                                root.switchToPageById(requestedPageId)
                         }
                     }
                 }

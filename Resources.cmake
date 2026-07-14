@@ -17,7 +17,6 @@ set(RESOURCES_CORE
     # Controllers
     Qml/Core/Controllers/WelcomeController.qml      # Welcome page controller
     Qml/Core/Controllers/DockController.qml         # Dock widget management controller
-    Qml/Core/Controllers/PageController.qml         # Page lifecycle and navigation controller
     Qml/Core/Controllers/LayoutController.qml       # Layout management controller (singleton)
     Qml/Core/Controllers/RepositoryController.qml   # Repository Controller
     Qml/Core/Controllers/BranchController.qml
