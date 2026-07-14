@@ -15,11 +15,15 @@ import GitEase
  * - Pagination: fetches the next page when the user scrolls to the bottom.
  */
 
-Item {
+Page {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
+    pageId: "plugins"
+    title: "Plugins"
+    icon: Style.icons.plugins
+
     property AppModel       appModel:           null
     property var            pluginController:   null
     property var            pluginsData:        root.appModel ? root.appModel.plugins : []
@@ -33,16 +37,12 @@ Item {
     property bool           fetchingMore:       false
 
     // Header exposed to MainWindow
-    property Component headerContent: Component {
+    headerContent: Component {
         PluginsPageHeader {
             id: pluginsPageHeader
             onFilterRequested: (text, mode) => root.applyFilter(text, mode)
         }
     }
-
-    /* Object Properties
-     * ****************************************************************************************/
-    anchors.fill: parent
 
     /* Lifecycle
      * ****************************************************************************************/

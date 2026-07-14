@@ -13,12 +13,15 @@ import "qrc:/GitEase/Qml/Core/Scripts/GraphViewPresenter.js" as Presenter
  * Graph View Page shown Commit Graph Dock, File Changes and Diff View
  * ************************************************************************************************/
 
-Item {
+Page {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var                     page                    : null
+    pageId: "graph"
+    title: "Graph View"
+    icon: Style.icons.workflow
+
     property AppModel                appModel                : null
 
     property BranchController        branchController        : null
