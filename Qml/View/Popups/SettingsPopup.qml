@@ -159,7 +159,6 @@ IPopup {
                         {id: 3, title: "Updates", icon: Style.icons.refresh},
                         {id: 4, title: "Help",        icon: Style.icons.info},
                     ]
-                    expanded: true
                     onClicked: (modelData) => {
                         root.currentPage = modelData.id
                     }

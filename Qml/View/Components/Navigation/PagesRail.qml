@@ -16,8 +16,6 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property bool expanded: false
-
     property alias model: rpt.model
 
     property var   currentId
@@ -76,18 +74,16 @@ Rectangle {
                     Item {
                         id: item
                         width: parent.width
-                        height: 36
+                        height: 30
 
                         property bool isSelected: (modelData)
-                                                  ? (modelData.id === root.currentId)
+                                                  ? (modelData.pageId === root.currentId)
                                                   : false
                         property bool isHovered: false
 
                         Rectangle {
                             anchors.fill: parent
-                            anchors.leftMargin: 2
-                            anchors.rightMargin: 2
-                            radius: 4
+                            radius: Style.dp(6)
 
                             color: {
                                 if (item.isSelected) {
@@ -95,10 +91,6 @@ Rectangle {
                                 }
                                 return parent.isHovered ? Qt.darker(root.color, 1.05) : "transparent"
                             }
-
-
-                            border.width: parent.isSelected ? 1 : 0
-                            border.color: parent.isSelected ? Style.colors.secondaryText : "transparent"
 
                             RowLayout {
                                 anchors.centerIn: parent
@@ -108,9 +100,8 @@ Rectangle {
                                 // Icon
                                 Rectangle {
                                     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                                    width: 20
-                                    height: 20
-                                    radius: 3
+                                    width: Style.dp(14)
+                                    height: Style.dp(14)
                                     color: "transparent"
 
                                     Text {
@@ -136,8 +127,6 @@ Rectangle {
                                     font.family: Style.fontTypes.roboto
                                     color: parent.parent.parent.isSelected ? Style.colors.secondaryText : Style.colors.mutedText
                                     elide: Text.ElideRight
-                                    visible: root.expanded
-                                    opacity: root.expanded ? 1 : 0
 
                                     Behavior on opacity {
                                         NumberAnimation {

@@ -68,7 +68,6 @@ IPopup {
                         {id: 3, title: "Last Week", icon: Style.icons.calendarCheck},
                         {id: 4, title: "All", icon: Style.icons.clockRotateLeft}
                     ]
-                    expanded: true
                     onClicked: (modelData) => {
                         root.currentPeriod = modelData.id
                     }
