@@ -100,20 +100,8 @@ Rectangle {
                 width: parent.width - navigationRail.collapsedWidth - (anchors.leftMargin + anchors.rightMargin)
                 orientation: Qt.Vertical
 
-                handle: Rectangle {
-                    implicitWidth: 6
-                    implicitHeight: 6
-                    color: SplitHandle.pressed ? Style.colors.resizeHandlePressed
-                         : SplitHandle.hovered ? Style.colors.resizeHandle
-                         : "transparent"
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: parent.width
-                        height: 2
-                        radius: 1
-                        color: SplitHandle.pressed ? Style.colors.accent : Style.colors.primaryBorder
-                    }
+                handle: SplitViewHandle {
+                    orientation: Qt.Vertical
                 }
 
                 Rectangle {
@@ -214,6 +202,9 @@ Rectangle {
                             if (item.hasOwnProperty("pluginController")) {
                                 item.pluginController = Qt.binding(function() { return root.uiSession?.pluginController })
                             }
+                            if (item.hasOwnProperty("layoutController")) {
+                                item.layoutController = Qt.binding(function() { return root.uiSession?.layoutController })
+                            }
                         }
 
                         onStatusChanged: {
@@ -225,14 +216,20 @@ Rectangle {
 
                 Terminal {
                     id: terminalRect
+                    minimizable: true
+                    layoutController: root.uiSession?.layoutController
+                    layoutId: "mainWindow.terminal"
                     SplitView.fillWidth: true
-                    SplitView.minimumHeight: terminalRect.headerHeight
-                    SplitView.preferredHeight: !terminalRect.isMinimized ? 250 : terminalRect.headerHeight
-                    onMinimizeRequested: terminalRect.isMinimized = true
-                    onExpandRequested: terminalRect.isMinimized = false
+                    SplitView.minimumHeight: 150
+                    SplitView.preferredHeight: 250
+                    currentRepositoryName: root.uiSession?.appModel?.currentRepository?.name || ""
                     terminalController: root.uiSession?.terminalController
                 }
             }
+        }
+
+        MinimizedPanels {
+            layoutController: root.uiSession?.layoutController
         }
     }
 }

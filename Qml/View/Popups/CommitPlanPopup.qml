@@ -79,6 +79,7 @@ IPopup {
     property RebaseController   rebaseController: null
     property ConflictController conflictController: null
     property NotificationController notificationController: null
+    property LayoutController   layoutController: null
 
 
     property var    planData            : ({})
@@ -156,20 +157,8 @@ IPopup {
                 Layout.fillHeight: true
                 orientation: Qt.Vertical
 
-                handle: Rectangle {
-                    implicitWidth: 6
-                    implicitHeight: 6
-                    color: SplitHandle.pressed ? Style.colors.resizeHandlePressed
-                         : SplitHandle.hovered ? Style.colors.resizeHandle
-                         : "transparent"
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: parent.width
-                        height: 2
-                        radius: 1
-                        color: SplitHandle.pressed ? Style.colors.accent : Style.colors.primaryBorder
-                    }
+                handle: SplitViewHandle {
+                    orientation: Qt.Vertical
                 }
 
                 // Top: commit list (full width)
@@ -463,28 +452,23 @@ IPopup {
 
                 // Bottom: file changes + diff view side‑by‑side
                 SplitView {
+                    visible: !((fileChangesDock.isMinimized || fileChangesDock.detached) && (diffView.isMinimized || diffView.detached))
                     orientation: Qt.Horizontal
 
-                    handle: Rectangle {
-                        implicitWidth: 6
-                        implicitHeight: 6
-                        color: SplitHandle.pressed ? Style.colors.resizeHandlePressed
-                             : SplitHandle.hovered ? Style.colors.resizeHandle
-                             : "transparent"
-
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: 2
-                            height: parent.height
-                            radius: 1
-                            color: SplitHandle.pressed ? Style.colors.accent : Style.colors.primaryBorder
-                        }
+                    handle: SplitViewHandle {
+                        orientation: Qt.Horizontal
                     }
 
                     FileChangesDock {
                         id: fileChangesDock
 
-                        SplitView.preferredWidth: 500
+                        minimizable: true
+                        icon: Style.icons.list
+                        layoutController: root.layoutController
+                        layoutId: "commitPlanPopup.fileChangesDock"
+                        lastWidth: 500
+                        SplitView.preferredWidth: lastWidth
+                        SplitView.minimumWidth: 150
 
                         statusController: root.statusController
 
@@ -493,6 +477,14 @@ IPopup {
 
                     DiffView {
                         id: diffView
+
+                        minimizable: true
+                        icon: Style.icons.file
+                        layoutController: root.layoutController
+                        layoutId: "commitPlanPopup.diffView"
+                        SplitView.fillWidth: true
+                        SplitView.minimumWidth: 150
+
                         readOnly: true
                     }
                 }

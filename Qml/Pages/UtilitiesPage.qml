@@ -40,6 +40,8 @@ Item {
 
     property var                        pluginController            : null
 
+    property LayoutController           layoutController            : null
+
     /* Object Properties
      * ****************************************************************************************/
     anchors.fill: parent
@@ -199,6 +201,7 @@ Item {
                 statusController        : root.statusController
                 notificationController  : root.notificationController
                 conflictController      : root.conflictController
+                layoutController        : root.layoutController
             }
 
             // ── Plugin docks ─────────────────────────────────────────────────

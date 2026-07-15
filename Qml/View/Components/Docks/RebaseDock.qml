@@ -21,6 +21,7 @@ UtilitiesCard {
     property StatusController       statusController:       null
     property NotificationController notificationController: null
     property ConflictController     conflictController:     null
+    property LayoutController       layoutController:       null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -192,6 +193,7 @@ UtilitiesCard {
         rebaseController: root.rebaseController
         conflictController: root.conflictController
         notificationController: root.notificationController
+        layoutController: root.layoutController
     }
 
     /* Functions

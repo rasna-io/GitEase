@@ -37,6 +37,7 @@ Item {
     property TagController           tagController           : null
     property ResetController         resetController         : null
     property TerminalController      terminalController      : null
+    property LayoutController        layoutController        : null
 
 
     property alias                   graphRef                : commitGraph
@@ -163,16 +164,32 @@ Item {
                 conflictController      : root.conflictController
                 resetController         : root.resetController
                 terminalController      : root.terminalController
+                layoutController        : root.layoutController
 
                 onCommitClicked: function(commitId) { Presenter.handleCommitClicked(commitId) }
             }
         }
 
-        DropZone {
+        SplitView {
             Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: !((fileChangesDock.isMinimized || fileChangesDock.detached)
+                       && (diffView.isMinimized || diffView.detached))
+            orientation: Qt.Horizontal
+
+            handle: SplitViewHandle {
+                orientation: Qt.Horizontal
+            }
 
             FileChangesDock {
                 id: fileChangesDock
+
+                minimizable: true
+                icon: Style.icons.list
+                layoutController: root.layoutController
+                layoutId: "graphView.fileChangesDock"
+                SplitView.preferredWidth: lastWidth
+                SplitView.minimumWidth: 150
 
                 currentRepositoryName: root.appModel.currentRepository.name || ""
 
@@ -184,6 +201,13 @@ Item {
 
             DiffView {
                 id: diffView
+
+                minimizable: true
+                icon: Style.icons.file
+                layoutController: root.layoutController
+                layoutId: "graphView.diffView"
+                SplitView.fillWidth: true
+                SplitView.minimumWidth: 150
 
                 currentRepositoryName: root.appModel.currentRepository.name || ""
                 readOnly: true

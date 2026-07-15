@@ -61,7 +61,6 @@ set(RESOURCES_COMPONENTS
     Qml/View/Header.qml
     Qml/View/WindowsHeader.qml
     Qml/View/WindowsButton.qml
-    Qml/View/TerminalHeader.qml
 
     Qml/View/Components/ProgressButton.qml
 
@@ -75,6 +74,8 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/UtilitiesCard.qml
     Qml/View/Components/Base/ContextMenu.qml
     Qml/View/Components/Base/DetachablePanel.qml               # Detachable panel wrapper
+    Qml/View/Components/Base/MinimizedPanels.qml                # Footer bar for minimized DetachablePanel/Terminal instances
+    Qml/View/Components/Base/SplitViewHandle.qml                # Shared SplitView drag handle
     Qml/View/Components/Base/DropZone.qml                      # Dock zone
     Qml/View/Components/Base/ScrollingText.qml                 # Single-line auto-scrolling text
     Qml/View/Components/Base/ModernInputArea.qml               # Modern Input Area
