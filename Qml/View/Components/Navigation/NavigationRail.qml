@@ -490,6 +490,33 @@ Rectangle {
             color: Style.colors.primaryBorder
         }
     }
+
+    /* Guide
+     * ****************************************************************************************/
+    Connections {
+        target: root.guideController
+        ignoreUnknownSignals: true
+        function onGuideDismissed() {
+            root._closeProfilePopup()
+        }
+    }
+
+    function _openProfilePopup() {
+        var p = root.userInfoSelectionPopup
+        if (!p)
+            return
+
+        if (!p.visible) {
+            p.userProfileController = root.userProfileController
+            p.open()
+        }
+    }
+
+    function _closeProfilePopup() {
+        var p = root.userInfoSelectionPopup
+        if (p && p.visible)
+            p.close()
+    }
 }
 
 

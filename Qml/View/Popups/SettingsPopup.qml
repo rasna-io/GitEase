@@ -30,7 +30,7 @@ IPopup {
 
     property GuideController        guideController:        null
 
-    property PageController         pageController:         null
+    property var                    switchToPageById:       function() {}
 
     /* Private state
      * ****************************************************************************************/
@@ -66,8 +66,8 @@ IPopup {
         _pendingTutorialId = ""
         _pendingTutorialPage = ""
 
-        if (pageId.length > 0 && root.pageController)
-            root.pageController.switchToPage(pageId)
+        if (pageId.length > 0 && typeof root.switchToPageById === "function")
+            root.switchToPageById(pageId)
 
         Qt.callLater(function() {
             if (!root.guideController || !root.guideController.forceShow(id)) {
