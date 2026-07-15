@@ -97,7 +97,7 @@ Rectangle {
                                         text: (modelData && modelData.icon && modelData.icon.length)
                                               ? modelData.icon
                                               : Style.icons.download
-                                        font.pixelSize: 16
+                                        font.pixelSize: Style.appFont.h2Pt
                                         font.family: Style.fontTypes.font6Pro
                                         font.weight: 500
                                         color: parent.parent.parent.parent.isSelected ? Style.colors.secondaryText : Style.colors.mutedText
@@ -111,7 +111,7 @@ Rectangle {
                                     Layout.fillWidth: true
                                     Layout.alignment: Qt.AlignVCenter
                                     text: (modelData && modelData.title) ? modelData.title : ""
-                                    font.pixelSize: 13
+                                    font.pixelSize: Style.appFont.h3Pt
                                     font.family: Style.fontTypes.roboto
                                     color: parent.parent.parent.isSelected ? Style.colors.secondaryText : Style.colors.mutedText
                                     elide: Text.ElideRight

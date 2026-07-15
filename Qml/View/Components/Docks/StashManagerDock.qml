@@ -101,14 +101,14 @@ UtilitiesCard {
                             text: modelData.message || qsTr("WIP on %1").arg(modelData.author || "unknown")
                             color: Style.colors.foreground
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                         }
                         Text {
                             Layout.fillWidth: true
                             text: modelData.dateTime ? Qt.formatDateTime(modelData.dateTime, "MMM dd, yyyy hh:mm") : ""
                             color: Style.colors.mutedText
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 9
+                            font.pixelSize: Style.appFont.captionPt
                             elide: Text.ElideRight
                         }
                     }
@@ -209,7 +209,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Style.icons.plus
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.textButton
                     }
 
@@ -217,7 +217,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Stash"
                         color: Style.colors.textButton
-                        font.pixelSize: 13
+                        font.pixelSize: Style.appFont.h3Pt
                     }
                 }
             }

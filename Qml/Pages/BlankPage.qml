@@ -30,7 +30,7 @@ Item {
 
         Text {
             text: "BlankPage"
-            font.pixelSize: 18
+            font.pixelSize: Style.appFont.xlPt
             font.weight: 600
             color: Style.colors.foreground
             horizontalAlignment: Text.AlignHCenter

@@ -75,7 +75,7 @@ T.Control {
                     text: Qt.formatDate(new Date(control.year, control.month, 1), "MMMM yyyy")
                     color: Style.colors.foreground
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     elide: Text.ElideRight
                 }
             }
@@ -107,7 +107,7 @@ T.Control {
                     text: modelData
                     color: Style.colors.descriptionText
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                 }
             }
         }
@@ -145,7 +145,7 @@ T.Control {
                         color: isSelected ? Style.colors.secondaryForeground
                                          : (inMonth ? Style.colors.foreground : Style.colors.mutedText)
                         font.family: Style.fontTypes.roboto
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.defaultPt
                     }
 
                     HoverHandler {
@@ -177,7 +177,7 @@ T.Control {
                 text: control.errorMessage
                 color: Style.colors.error || "#ef5350"
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 11
+                font.pixelSize: Style.appFont.defaultPt
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 wrapMode: Text.WordWrap

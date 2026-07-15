@@ -50,7 +50,7 @@ UtilitiesCard {
                             Text  {
                                 color: Style.colors.foreground
                                 font.family: Style.fontTypes.roboto
-                                font.pixelSize: 11
+                                font.pixelSize: Style.appFont.defaultPt
                                 text: "$ "
                             }
 
@@ -58,7 +58,7 @@ UtilitiesCard {
                                 Layout.fillWidth: true
                                 color: Style.colors.foreground
                                 font.family: Style.fontTypes.roboto
-                                font.pixelSize: 11
+                                font.pixelSize: Style.appFont.defaultPt
                                 text: modelData.command
                             }
                         }
@@ -68,7 +68,7 @@ UtilitiesCard {
                             text: Qt.formatDateTime(modelData.time, "MMM dd, yyyy hh:mm:ss")
                             color: Style.colors.mutedText
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 10
+                            font.pixelSize: Style.appFont.smallPt
                             elide: Text.ElideRight
                         }
                     }
@@ -83,7 +83,7 @@ UtilitiesCard {
                 text: "No recent activity yet"
                 color: Style.colors.mutedText
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 11
+                font.pixelSize: Style.appFont.defaultPt
             }
         }
     }

@@ -39,7 +39,7 @@ ColumnLayout {
     Text {
         visible: root.label !== ""
         text: root.label
-        font.pixelSize: 14
+        font.pixelSize: Style.appFont.largePt
         color: Style.colors.foreground
         font.family: Style.fontTypes.roboto
         font.weight: 400
@@ -105,7 +105,7 @@ ColumnLayout {
         visible: helperText !== ""
         text: root.helperText
         color: Style.colors.mutedText
-        font.pixelSize: 8
+        font.pixelSize: Style.appFont.microPt
         font.family: Style.fontTypes.roboto
         font.weight: 100
         font.styleName: "Thin"

@@ -137,7 +137,7 @@ Item {
                     color: Style.colors.foreground
                     font.family: Style.fontTypes.roboto
                     font.weight: 500
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     elide: Text.ElideRight
                 }
 
@@ -172,7 +172,7 @@ Item {
                         text: Style.icons.detach
                         font {
                             family: Style.fontTypes.font6ProSolid
-                            pixelSize: 10
+                            pixelSize: Style.appFont.smallPt
                         }
                         color: Style.colors.foreground
                         horizontalAlignment: Text.AlignHCenter
@@ -250,7 +250,7 @@ Item {
                         color: Style.colors.foreground
                         font.family: Style.fontTypes.roboto
                         font.weight: 500
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         elide: Text.ElideRight
                     }
 
@@ -272,7 +272,7 @@ Item {
                             text: Style.icons.undo
                             font {
                                 family: Style.fontTypes.font6ProSolid
-                                pixelSize: 14
+                                pixelSize: Style.appFont.largePt
                             }
                             color: Style.colors.foreground
                             horizontalAlignment: Text.AlignHCenter

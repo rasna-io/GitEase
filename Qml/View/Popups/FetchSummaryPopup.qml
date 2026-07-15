@@ -71,7 +71,7 @@ IPopup {
                 Text {
                     text: titleText
                     color: Style.colors.foreground
-                    font.pixelSize: 18
+                    font.pixelSize: Style.appFont.xlPt
                     font.weight: Font.Bold
                 }
 
@@ -85,7 +85,7 @@ IPopup {
                 Text {
                     text: subtitleText
                     color: Style.colors.mutedText
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     Layout.fillWidth: true
                 }
 
@@ -115,7 +115,7 @@ IPopup {
                     contentItem: Text {
                         text: "✕";
                         color: closeBtn.hovered ? Style.colors.foreground : Style.colors.mutedText;
-                        font.pixelSize: 16
+                        font.pixelSize: Style.appFont.h2Pt
                     }
                     background: Rectangle {
                         implicitWidth: 32;
@@ -156,7 +156,7 @@ IPopup {
 
                 Text {
                     text: "View: " + (root.showRawOutput ? "Standard" : "Compact")
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     color: Style.colors.mutedText
                     font.capitalization: Font.AllUppercase
                 }
@@ -187,7 +187,7 @@ IPopup {
                             RowLayout {
                                 Text {
                                     text: modelData.remote; font.weight: Font.DemiBold
-                                    font.pixelSize: 13; color: Style.colors.foreground
+                                    font.pixelSize: Style.appFont.h3Pt; color: Style.colors.foreground
                                 }
                                 Rectangle {
                                     width: 4;
@@ -197,13 +197,13 @@ IPopup {
                                 }
                                 Text {
                                     text: modelData.success ? "Successfully fetched" : "Fetch failed"
-                                    font.pixelSize: 12;
+                                    font.pixelSize: Style.appFont.mediumPt;
                                     color: modelData.success ? root.successAccent : root.errorAccent
                                 }
                                 Item { Layout.fillWidth: true }
                                 Text {
                                     text: shortSha(modelData.data.timestamp);
-                                    font.pixelSize: 11;
+                                    font.pixelSize: Style.appFont.defaultPt;
                                     color: Style.colors.mutedText
                                 }
                             }
@@ -217,7 +217,7 @@ IPopup {
                                         Text { text: "•"; color: root.infoAccent }
                                         Text {
                                             text: modelData.summary.trim()
-                                            font.family: "JetBrains Mono"; font.pixelSize: 11
+                                            font.family: "JetBrains Mono"; font.pixelSize: Style.appFont.defaultPt
                                             color: Style.colors.secondaryText; Layout.fillWidth: true; elide: Text.ElideRight
                                         }
                                     }
@@ -240,7 +240,7 @@ IPopup {
 
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 20; spacing: 12
-                    Text { text: "RAW TERMINAL LOG"; font.pixelSize: 10; font.weight: Font.Black; color: Style.colors.mutedText; font.letterSpacing: 1 }
+                    Text { text: "RAW TERMINAL LOG"; font.pixelSize: Style.appFont.smallPt; font.weight: Font.Black; color: Style.colors.mutedText; font.letterSpacing: 1 }
 
                     Rectangle { Layout.fillWidth: true; height: 1; color: Style.colors.primaryBorder }
 
@@ -248,7 +248,7 @@ IPopup {
                         Layout.fillWidth: true; Layout.fillHeight: true
                         Text {
                             width: parent.width; text: logText(results)
-                            font.family: "JetBrains Mono"; font.pixelSize: 11; color: Style.colors.secondaryText; wrapMode: Text.Wrap; lineHeight: 1.4
+                            font.family: "JetBrains Mono"; font.pixelSize: Style.appFont.defaultPt; color: Style.colors.secondaryText; wrapMode: Text.Wrap; lineHeight: 1.4
                         }
                     }
                 }
@@ -263,8 +263,8 @@ IPopup {
         color: Qt.rgba(accent.r, accent.g, accent.b, 0.08)
         border.color: Qt.rgba(accent.r, accent.g, accent.b, 0.15)
         RowLayout { id: statRow; anchors.centerIn: parent; spacing: 6
-            Text { text: label; color: Style.colors.mutedText; font.pixelSize: 10 }
-            Text { text: value; color: accent; font.pixelSize: 11; font.weight: Font.Bold }
+            Text { text: label; color: Style.colors.mutedText; font.pixelSize: Style.appFont.smallPt }
+            Text { text: value; color: accent; font.pixelSize: Style.appFont.defaultPt; font.weight: Font.Bold }
         }
     }
 

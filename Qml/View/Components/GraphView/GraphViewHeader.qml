@@ -71,7 +71,7 @@ RowLayout {
         id: branchChipMetrics
         text: headerRow.branchFilter
         font.family: Style.fontTypes.roboto
-        font.pixelSize: 11
+        font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
     }
 
@@ -99,7 +99,7 @@ RowLayout {
             text: headerRow.filterText
             font.family: Style.fontTypes.roboto
             font.weight: 400
-            font.pixelSize: 9
+            font.pixelSize: Style.appFont.captionPt
             borderRadius: 5
             borderWidth: 0
             focusBorderWidth: 1
@@ -127,7 +127,7 @@ RowLayout {
         font.family: (filterOptionsPopup.visible || hovered)
                      ? Style.fontTypes.font6ProSolid
                      : Style.fontTypes.font6Pro
-        font.pixelSize: 14
+        font.pixelSize: Style.appFont.largePt
 
         contentItem: Text {
             anchors.centerIn: parent
@@ -174,7 +174,7 @@ RowLayout {
         visible: (headerRow.hasDateRange && !branchSelectorOpen) || opacity > 0
         font.family: Style.fontTypes.roboto
         font.weight: 400
-        font.pixelSize: 11
+        font.pixelSize: Style.appFont.defaultPt
 
         Behavior on opacity {
             NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
@@ -211,7 +211,7 @@ RowLayout {
         visible: (headerRow.hasDateRange && !branchSelectorOpen) || opacity > 0
         font.family: Style.fontTypes.roboto
         font.weight: 400
-        font.pixelSize: 11
+        font.pixelSize: Style.appFont.defaultPt
 
         Behavior on opacity {
             NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
@@ -254,7 +254,7 @@ RowLayout {
         focusBorderWidth: 1
         font.family: Style.fontTypes.roboto
         font.weight: 400
-        font.pixelSize: 10
+        font.pixelSize: Style.appFont.smallPt
 
         Material.background: Style.colors.primaryBackground
         Material.foreground: Style.colors.secondaryText
@@ -290,7 +290,7 @@ RowLayout {
 
         text: Style.icons.caretDown
         font.family: Style.fontTypes.font6ProSolid
-        font.pixelSize: 15
+        font.pixelSize: Style.appFont.largerPt
 
         contentItem: Text {
             anchors.centerIn: parent
@@ -322,7 +322,7 @@ RowLayout {
 
         text: Style.icons.caretUp
         font.family: Style.fontTypes.font6ProSolid
-        font.pixelSize: 15
+        font.pixelSize: Style.appFont.largerPt
 
         contentItem: Text {
             anchors.centerIn: parent
@@ -375,7 +375,7 @@ RowLayout {
             font.family: headerRow.branchFilter.length > 0 || branchSelectorOpen
                          ? Style.fontTypes.font6ProSolid
                          : Style.fontTypes.font6Pro
-            font.pixelSize: 14
+            font.pixelSize: Style.appFont.largePt
 
             contentItem: Item {
                 clip: true
@@ -401,7 +401,7 @@ RowLayout {
                         text: headerRow.branchFilter
                         font.family: Style.fontTypes.roboto
                         font.weight: Font.Medium
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.defaultPt
                         color: branchButton.enabled ? Style.colors.foreground : Style.colors.mutedText
                         elide: Text.ElideRight
                         verticalAlignment: Text.AlignVCenter
@@ -433,7 +433,7 @@ RowLayout {
             focusBorderWidth: 1
             font.family: Style.fontTypes.roboto
             font.weight: 400
-            font.pixelSize: 10
+            font.pixelSize: Style.appFont.smallPt
 
             Material.background: Style.colors.primaryBackground
             Material.foreground: Style.colors.secondaryText
@@ -478,7 +478,7 @@ RowLayout {
 
         text: Style.icons.refresh
         font.family: Style.fontTypes.font6Pro
-        font.pixelSize: 14
+        font.pixelSize: Style.appFont.largePt
 
         contentItem: Text {
             anchors.centerIn: parent

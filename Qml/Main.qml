@@ -55,6 +55,27 @@ ApplicationWindow {
     FontLoader { source: "qrc:/GitEase/Resources/Fonts/Font Awesome 6 Pro-Regular-400.otf" }
     FontLoader { source: "qrc:/GitEase/Resources/Fonts/Font Awesome 6 Pro-Light-300.otf" }
 
+    /* Shortcuts
+     * ****************************************************************************************/
+    Action {
+        text: qsTr("Increments font size")
+        shortcut: qsTr("Ctrl+=")
+        onTriggered: {
+            let appearance = uiSession.appModel.appSettings.appearanceSettings
+            appearance.fontSizePt = Math.min(Style.appFont.maxAppFontPt, appearance.fontSizePt + 1)
+            uiSession.appModel.save()
+        }
+    }
+
+    Action {
+        text: qsTr("Decrements  font size")
+        shortcut: qsTr("Ctrl+-")
+        onTriggered: {
+            let appearance = uiSession.appModel.appSettings.appearanceSettings
+            appearance.fontSizePt = Math.max(Style.appFont.minAppFontPt, appearance.fontSizePt - 1)
+            uiSession.appModel.save()
+        }
+    }
 
     /* Children
      * ****************************************************************************************/

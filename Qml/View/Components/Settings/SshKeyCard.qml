@@ -284,7 +284,7 @@ Item {
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.mediumPt
                         }
 
                         onClicked: deleteKeyDialog.close()
@@ -310,7 +310,7 @@ Item {
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.mediumPt
                             font.bold: true
                         }
 

@@ -61,7 +61,7 @@ ListView {
                 text: branch.name
                 Layout.fillWidth: true
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 font.bold: branch.name === root.currentBranch
                 color: Style.colors.foreground
             }
@@ -123,7 +123,7 @@ ListView {
                                 text: Style.icons.check
                                 font.family: Style.fontTypes.font6Pro
                                 color: !hoverHandler.hovered ? Style.colors.accent : Qt.darker(Style.colors.accent, 1.5)
-                                font.pixelSize: 12
+                                font.pixelSize: Style.appFont.mediumPt
                                 font.bold: true
                                 Layout.alignment: Qt.AlignVCenter
                             }
@@ -132,7 +132,7 @@ ListView {
                                 text: "Checkout"
                                 font.family: Style.fontTypes.roboto
                                 color: !hoverHandler.hovered ? Style.colors.accent : Qt.darker(Style.colors.accent, 1.5)
-                                font.pixelSize: 11
+                                font.pixelSize: Style.appFont.defaultPt
                                 font.bold: true
                                 Layout.alignment: Qt.AlignVCenter
                             }

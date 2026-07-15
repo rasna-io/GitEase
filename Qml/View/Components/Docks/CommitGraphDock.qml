@@ -195,7 +195,7 @@ DetachablePanel {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Date"
                             color: Style.colors.foreground
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             font.bold: true
                         }
                     }

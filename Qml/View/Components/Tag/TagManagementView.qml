@@ -63,7 +63,7 @@ UtilitiesCard {
                     Text {
                         text: Style.icons.tag || "#"
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 14
+                        font.pixelSize: Style.appFont.largePt
                         color: modelData.isAnnotated ? Style.colors.accent : Style.colors.secondaryText
                         Layout.alignment: Qt.AlignVCenter
                     }
@@ -77,7 +77,7 @@ UtilitiesCard {
                         ScrollingText {
                             text: modelData.name
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.mediumPt
                             font.bold: true
                             color: Style.colors.foreground
 
@@ -87,7 +87,7 @@ UtilitiesCard {
                         Text {
                             text: modelData.commitId.substring(0, 7)
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 10
+                            font.pixelSize: Style.appFont.smallPt
                             color: Style.colors.mutedText
 
                             Layout.fillWidth: true
@@ -143,7 +143,7 @@ UtilitiesCard {
                 text: "No tags available"
                 color: Style.colors.secondaryText
                 visible: internalListView.count === 0
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
             }
         }
 
@@ -168,7 +168,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Style.icons.plus
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.textButton
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -177,7 +177,7 @@ UtilitiesCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Add New Tag"
                         color: Style.colors.textButton
-                        font.pixelSize: 13
+                        font.pixelSize: Style.appFont.h3Pt
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }

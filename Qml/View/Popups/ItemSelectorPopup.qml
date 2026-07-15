@@ -85,7 +85,7 @@ Popup {
                             visible: optionRow.isChecked
                             text: "\uf00c" // fa-check
                             font.family: Style.fontTypes.font6ProSolid
-                            font.pixelSize: 9
+                            font.pixelSize: Style.appFont.captionPt
                             color: "white"
                         }
                     }
@@ -100,7 +100,7 @@ Popup {
                         text: optionRow.optionText
                         font.family: Style.fontTypes.roboto
                         font.weight: 400
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.defaultPt
                         color: Style.colors.foreground
                         elide: Text.ElideRight
                     }
@@ -163,7 +163,7 @@ Popup {
                     anchors.centerIn: parent
                     text: "Select all"
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 11
+                    font.pixelSize: Style.appFont.defaultPt
                     color: Style.colors.foreground
                     opacity: selectAllBtn.isEnabled ? 1.0 : 0.55
                 }
@@ -198,7 +198,7 @@ Popup {
                     anchors.centerIn: parent
                     text: "Clear all"
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 11
+                    font.pixelSize: Style.appFont.defaultPt
                     color: Style.colors.foreground
                     opacity: clearAllBtn.isEnabled ? 1.0 : 0.55
                 }

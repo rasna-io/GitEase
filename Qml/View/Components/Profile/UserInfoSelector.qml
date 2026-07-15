@@ -39,7 +39,7 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 visible: !root.showAddEditForm
                 text: Style.icons.info
-                font.pixelSize: 16
+                font.pixelSize: Style.appFont.h2Pt
                 font.family: Style.fontTypes.font6Pro
                 color: Style.colors.foreground
                 verticalAlignment: Text.AlignVCenter
@@ -54,7 +54,7 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 text: !root.showAddEditForm ? "User Profiles" :
                                               root.isEditing ? "Edit User Profile" : "Add New User Profile"
-                font.pixelSize: 15
+                font.pixelSize: Style.appFont.largerPt
                 font.family: Style.fontTypes.roboto
                 font.weight: 600
                 color: Style.colors.foreground
@@ -80,7 +80,7 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         text: "💡 Select a profile to apply it to the repository's .git/config."
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.smallPt
                         font.family: Style.fontTypes.roboto
                         color: "#ffffff"
                         wrapMode: Text.WordWrap
@@ -90,7 +90,7 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         text: "💡 Click the star ⭐ to set it as your default app user."
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.smallPt
                         font.family: Style.fontTypes.roboto
                         color: "#ffffff"
                         wrapMode: Text.WordWrap
@@ -125,7 +125,7 @@ Item {
                         Text {
                             text: Style.icons.plus
                             font.family: Style.fontTypes.font6ProSolid
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.smallPt
                             color: Style.colors.secondaryForeground
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -133,7 +133,7 @@ Item {
                         Text {
                             text: "Add User"
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.mediumPt
                             font.weight: 500
                             color: Style.colors.secondaryForeground
                             horizontalAlignment: Text.AlignHCenter
@@ -201,7 +201,7 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         text: Style.icons.circleExclamation
                         font.family: Style.fontTypes.font6ProSolid
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.error
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -212,7 +212,7 @@ Item {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
                         wrapMode: Text.WordWrap
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.smallPt
                         font.family: Style.fontTypes.roboto
                         color: Style.colors.error
                         verticalAlignment: Text.AlignVCenter
@@ -241,7 +241,7 @@ Item {
                         anchors.centerIn: parent
                         text: "Cancel"
                         font.family: Style.fontTypes.roboto
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.foreground
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -273,7 +273,7 @@ Item {
                         anchors.centerIn: parent
                         text: root.isEditing ? "Save" : "Add"
                         font.family: Style.fontTypes.roboto
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         font.weight: 500
                         color: Style.colors.secondaryForeground
                         horizontalAlignment: Text.AlignHCenter
@@ -405,7 +405,7 @@ Item {
                 Text {
                     text: Style.icons.users
                     font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: 42
+                    font.pixelSize: Style.appFont.displayLgPt
                     color: Style.colors.mutedText
                     Layout.alignment: Qt.AlignHCenter
                     horizontalAlignment: Text.AlignHCenter
@@ -414,7 +414,7 @@ Item {
 
                 Text {
                     text: "No user profiles yet"
-                    font.pixelSize: 13
+                    font.pixelSize: Style.appFont.h3Pt
                     font.family: Style.fontTypes.roboto
                     font.weight: 500
                     color: Style.colors.foreground
@@ -425,7 +425,7 @@ Item {
 
                 Text {
                     text: "Create your first user profile to get started"
-                    font.pixelSize: 11
+                    font.pixelSize: Style.appFont.smallPt
                     font.family: Style.fontTypes.roboto
                     color: Style.colors.mutedText
                     Layout.alignment: Qt.AlignHCenter

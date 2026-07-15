@@ -47,7 +47,7 @@ IPopup {
                 color: Style.colors.foreground
                 font.family: Style.fontTypes.roboto
                 font.bold: true
-                font.pixelSize: 18
+                font.pixelSize: Style.appFont.xlPt
                 Layout.alignment: Qt.AlignLeft
             }
 
@@ -94,7 +94,7 @@ IPopup {
             Text {
                 text: root.targetHash !== "" ? "Target: " + root.targetHash.substring(0, 8) : "Target: HEAD"
                 color: Style.colors.mutedText
-                font.pixelSize: 11
+                font.pixelSize: Style.appFont.defaultPt
                 Layout.fillWidth: true
             }
 
@@ -118,7 +118,7 @@ IPopup {
                     Text {
                         text: "\uf00c"
                         font.family: Style.fontTypes.font6ProSolid
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.mediumPt
                         color: "white"
                         anchors.centerIn: parent
                         visible: pushCheckBox.checked

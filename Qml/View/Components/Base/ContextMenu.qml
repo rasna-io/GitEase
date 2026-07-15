@@ -110,7 +110,7 @@ Popup {
                 Text {
                     text: modelData.icon || ""
                     font.family: Style.fontTypes.font6ProSolid
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     color: itemMouse.containsMouse ? Style.colors.accent : Style.colors.foreground
                     visible: text !== ""
                     Layout.preferredWidth: 16
@@ -120,7 +120,7 @@ Popup {
                 ScrollingText {
                     text: modelData.text || ""
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     color: Style.colors.foreground
                     Layout.fillWidth: true
                 }
@@ -129,7 +129,7 @@ Popup {
                     id: checkBox
                     text: modelData.checkBoxText
                     font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     Layout.preferredHeight: 40
                     Material.accent: Style.colors.accent
                     Material.foreground: Style.colors.foreground
@@ -140,7 +140,7 @@ Popup {
                 Text {
                     text: "❯"
                     visible: hasSub
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     color: Style.colors.foreground
                 }
             }
