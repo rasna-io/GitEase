@@ -21,6 +21,7 @@ UtilitiesCard {
 
     title: "Tag Management"
     icon:  Style.icons.tag
+    badgeCount: root.tagListModel.length
 
     /* Logic */
     function update() {

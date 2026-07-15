@@ -431,6 +431,7 @@ UtilitiesCard {
                 let res = remoteController.getRemotes();
                 if (res.success) {
                     listView.model = res.data
+                    root.badgeCount = res.data.length
                 }
             }
         }

@@ -229,7 +229,6 @@ Page {
             visible: root.utilityPanelOpen
             Layout.fillHeight: true
             Layout.preferredWidth: Style.dp(279)
-            clip: true
 
             color: Style.colors.primaryBackground
             border.width: 1

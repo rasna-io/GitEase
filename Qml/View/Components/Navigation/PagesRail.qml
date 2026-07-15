@@ -54,8 +54,6 @@ Rectangle {
         anchors.rightMargin: 4
         anchors.topMargin: 12
 
-        spacing: 8
-
         // Pages list
         Flickable {
             Layout.fillWidth: true
@@ -66,75 +64,65 @@ Rectangle {
             Column {
                 id: pagesColumn
                 width: parent.width
-                spacing: 8
 
                 Repeater {
                     id: rpt
 
-                    Item {
+                    Rectangle {
                         id: item
                         width: parent.width
-                        height: 30
+                        height: Style.dp(30)
+                        radius: Style.dp(6)
 
                         property bool isSelected: (modelData)
                                                   ? (modelData.pageId === root.currentId)
                                                   : false
-                        property bool isHovered: false
 
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Style.dp(6)
+                        color: {
+                            if (item.isSelected) {
+                                return "#1F3B82F6"
+                            }
+                            return "transparent"
+                        }
 
-                            color: {
-                                if (item.isSelected) {
-                                    return Style.colors.primaryBackground
+                        RowLayout {
+                            anchors {
+                                fill: parent
+                                leftMargin: Style.dp(12)
+                                rightMargin: Style.dp(12)
+                            }
+                            spacing: 8
+
+                            // Icon
+                            Rectangle {
+                                Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                                width: Style.dp(14)
+                                height: Style.dp(14)
+                                color: "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: (modelData && modelData.icon && modelData.icon.length)
+                                          ? modelData.icon
+                                          : Style.icons.download
+                                    font.pixelSize: 13
+                                    font.family: Style.fontTypes.font6Pro
+                                    font.weight: 500
+                                    color: item.isSelected ? "#60A5FA" : "#363650"
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
-                                return parent.isHovered ? Qt.darker(root.color, 1.05) : "transparent"
                             }
 
-                            RowLayout {
-                                anchors.centerIn: parent
-                                width: parent.width - 12
-                                spacing: 8
-
-                                // Icon
-                                Rectangle {
-                                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                                    width: Style.dp(14)
-                                    height: Style.dp(14)
-                                    color: "transparent"
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: (modelData && modelData.icon && modelData.icon.length)
-                                              ? modelData.icon
-                                              : Style.icons.download
-                                        font.pixelSize: Style.appFont.h2Pt
-                                        font.family: Style.fontTypes.font6Pro
-                                        font.weight: 500
-                                        color: parent.parent.parent.parent.isSelected ? Style.colors.secondaryText : Style.colors.mutedText
-                                        horizontalAlignment: Text.AlignHCenter
-                                        verticalAlignment: Text.AlignVCenter
-                                    }
-                                }
-
-                                // Title
-                                Text {
-                                    Layout.fillWidth: true
-                                    Layout.alignment: Qt.AlignVCenter
-                                    text: (modelData && modelData.title) ? modelData.title : ""
-                                    font.pixelSize: Style.appFont.h3Pt
-                                    font.family: Style.fontTypes.roboto
-                                    color: parent.parent.parent.isSelected ? Style.colors.secondaryText : Style.colors.mutedText
-                                    elide: Text.ElideRight
-
-                                    Behavior on opacity {
-                                        NumberAnimation {
-                                            duration: 100
-                                            easing.type: Easing.InOutQuad
-                                        }
-                                    }
-                                }
+                            // Title
+                            Text {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                text: (modelData && modelData.title) ? modelData.title : ""
+                                font.pixelSize: 13
+                                font.family: Style.fontTypes.roboto
+                                color: item.isSelected ? "#60A5FA" : "#363650"
+                                elide: Text.ElideRight
                             }
                         }
 
@@ -144,8 +132,6 @@ Rectangle {
                             hoverEnabled: true
 
                             onClicked: root.clicked(modelData)
-                            onEntered: parent.isHovered = true
-                            onExited: parent.isHovered = false
                         }
                     }
                 }

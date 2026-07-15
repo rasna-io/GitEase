@@ -262,6 +262,7 @@ UtilitiesCard {
                 content.remoteBranches = res.filter(branch => branch["isRemote"])
 
                 content.updateModel(res)
+                root.badgeCount = content.localBranches.length + content.remoteBranches.length
             }
         }
 

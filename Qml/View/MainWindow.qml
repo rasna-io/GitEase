@@ -205,6 +205,9 @@ Rectangle {
                             pluginController: root.uiSession?.pluginController
                         }
 
+                        //! TODO
+                        //! add loader for page plugins
+
                         Component.onCompleted: {
                             let requestedPageId = root.uiSession?.shellController?.arguments?.["page"]
                             if (requestedPageId)
