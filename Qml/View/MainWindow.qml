@@ -181,6 +181,7 @@ Rectangle {
                             activityController: root.uiSession?.activityController
                             pluginController: root.uiSession?.pluginController
                             guideController: root.uiSession?.guideController
+                            layoutController: root.uiSession?.layoutController
                         }
 
                         CommittingPage {
