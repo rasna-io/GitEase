@@ -90,13 +90,6 @@ Rectangle {
             Layout.preferredHeight: 28
             radius: 3
 
-            property bool isResolved: {
-                if (modelData && modelData.blocks !== undefined)
-                    return modelData.blocks.length === 0
-
-                return true
-            }
-
             property bool isStaged  : root.stagedFiles && root.stagedFiles.some(f => f.path === modelData.path)
             property bool isCurrent : root.currentPath === modelData.path
             property bool isHovered : hoverHandler.hovered

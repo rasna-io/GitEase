@@ -547,9 +547,15 @@ Window {
     }
 
     function acceptBlock(blockIndex, mode) {
-        if (!selectedPath)
+        if (!selectedPath || !selectedConflict)
             return
 
+        let found = ConflictUtils.findBlockByIndex(selectedConflict.blocks, blockIndex)
+        if (!found)
+            return
+        let block = found.block
+
+        // Write current editor content and perform C++ resolution
         let currentContent = ConflictUtils.buildFullContent(displayModel)
         conflictController.writeWorkingFile(selectedPath, currentContent)
 
@@ -558,30 +564,47 @@ Window {
             case "ours":
                 res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
                 break
+
             case "theirs":
                 res = conflictController.acceptBlockTheirs(selectedPath, blockIndex)
                 break
+
             case "both":
                 res = conflictController.acceptBlockBoth(selectedPath, blockIndex)
                 break
-            default:
-                break
-        }
 
+            default:
+                return
+        }
         if (!res.success) {
             notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
+            return
         }
 
-        else {
-            notificationController.success("Conflicts Resolved", "Conflict", 2500)
+        // Compute the text to keep
+        let resolvedLines = ConflictUtils.computeResolvedLines(block, mode)
 
-            // Clear memory state so fresh Git changes load
-            let copy = Object.assign({}, modifiedFiles)
-            delete copy[selectedPath]
-            modifiedFiles = copy
+        // Update the ListModel in place
+        ConflictUtils.replaceBlockInModel(displayModel, blockIndex, block, resolvedLines)
 
-            loadConflicts(true)
+        // Update the cached block objects
+        let lineDelta = resolvedLines.length - (block.endLine - block.startLine + 1)
+        ConflictUtils.updateRemainingBlocks(selectedConflict, blockIndex, found.pos, lineDelta, block.endLine)
+
+        // Keep the raw lines array in sync
+        selectedConflict.lines = ConflictUtils.updateLinesArray(selectedConflict.lines, block, resolvedLines)
+
+        let idx = conflicts.findIndex(c => c.path === selectedPath)
+        if (idx >= 0) {
+            let updated = conflicts.slice()
+            updated[idx] = selectedConflict
+            conflicts = updated
         }
+
+        // Rebuilt the conflict‑zone indicators
+        Qt.callLater(updateConflictMarkers)
+
+        notificationController.success("Conflicts Resolved", "Conflict", 2000)
     }
 
     function saveAndStage(path) {
