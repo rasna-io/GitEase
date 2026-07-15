@@ -14,6 +14,8 @@ RowLayout {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property GuideController guideController : null
+
     property bool   isGraphReady    : false
     property string filterText      : ""
     property string filterStartDate : ""
@@ -518,6 +520,68 @@ RowLayout {
 
     onFilterModesChanged: syncFilterModes()
     onNavigationRuleChanged: syncNavigationRule()
+
+    /* Guide
+     * ****************************************************************************************/
+    GuideHoverTrigger {
+        guideController: headerRow.guideController
+        guideId: "graph_header_tutorial"
+        guideName: "Graph Search & Filters"
+        guideIcon: Style.icons.filter
+        guidePage: "graph"
+        stepsFactory: function() {
+            return [
+                {
+                    targetProvider: function() { return textFilterField },
+                    icon: Style.icons.filter,
+                    title: "Search Commits",
+                    description: "Type to filter commits in real time. Results update as you type across the whole graph."
+                },
+                {
+                    targetProvider: function() { return filterButton },
+                    icon: Style.icons.filter,
+                    title: "Filter Options",
+                    description: "Choose which commit fields to match against: messages, subjects, authors, emails, or SHA-1."
+                },
+                {
+                    targetProvider: function() { return startDateField },
+                    icon: Style.icons.calendar,
+                    title: "Start Date",
+                    description: "Filter commits from this date onwards. Click to pick a date from the calendar."
+                },
+                {
+                    targetProvider: function() { return endDateField },
+                    icon: Style.icons.calendarCheck,
+                    title: "End Date",
+                    description: "Filter commits up to this date. Leave blank to include commits through today."
+                },
+                {
+                    targetProvider: function() { return columnCombo.visible ? columnCombo : null },
+                    icon: Style.icons.list,
+                    title: "Navigate By",
+                    description: "Choose the field used to jump between matching commits: Author Email, Author, Parent commit, or Branch."
+                },
+                {
+                    targetProvider: function() { return downButton.visible ? downButton : null },
+                    icon: Style.icons.arrowDown,
+                    title: "Previous Result",
+                    description: "Jump to the previous commit that matches your current search or navigation rule."
+                },
+                {
+                    targetProvider: function() { return upButton.visible ? upButton : null },
+                    icon: Style.icons.arrowUp,
+                    title: "Next Result",
+                    description: "Jump to the next commit that matches your current search or navigation rule."
+                },
+                {
+                    targetProvider: function() { return reloadButton },
+                    icon: Style.icons.refresh,
+                    title: "Reload Graph",
+                    description: "Reload the entire commit graph from the repository. Use this after external changes."
+                }
+            ]
+        }
+    }
 
     /* Functions
      * ****************************************************************************************/

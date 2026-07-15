@@ -178,6 +178,7 @@ DetachablePanel {
     }
 
     Rectangle {
+        id: diffContent
         anchors.fill: parent
         color: Style.colors.editorBackgroound
         visible: chunkMode ? (chunkData && chunkData.length > 0)
@@ -317,6 +318,11 @@ DetachablePanel {
                 id: delegateItem
                 width: diffListView.width
                 implicitHeight: model.rowType === "hidden" ? 45 : diffLineItem.implicitHeight
+
+                // Exposed so the guide can find a currently visible row's action buttons /
+                // hidden-context bar (see findActionableDelegate / findHiddenBarDelegate below).
+                property alias diffLineItem: diffLineItem
+                property alias hiddenLoader: loader
 
                 Loader {
                     id: loader
@@ -549,6 +555,84 @@ DetachablePanel {
         id: unsavedChangesDialogComp
         UnsavedChangesDialog { }
     }
+
+    /* Guide
+     * Two independent guides — one per mode — so seeing the read-only tour doesn't mark the
+     * editable tour (or vice versa) as already shown.
+     * ****************************************************************************************/
+    GuideHoverTrigger {
+        enabled: diffContent.visible
+        guideController: root.guideController
+        guideId: root.readOnly ? "diff_view_readonly_tutorial" : "diff_view_editable_tutorial"
+        guideName: root.readOnly ? "Diff View (Read-only)" : "Diff View (Editable)"
+        guideIcon: Style.icons.penToSquare
+        guidePage: root.readOnly ? "graph" : "committing"
+        stepsFactory: function() {
+            var steps = [
+                {
+                    targetProvider: function() { return diffContent },
+                    icon: Style.icons.penToSquare,
+                    title: "Reading Diffs",
+                    description:    "Green lines were added, red lines were removed, grey lines are unchanged context. You are always viewing the right-hand (new) version of the file."
+                }
+            ]
+            if (root.readOnly) {
+                steps.push({
+                    targetProvider: function() { return diffContent },
+                    icon: Style.icons.arrowRight,
+                    title: "Read-only View",
+                    description: "This diff shows a historical commit snapshot. You can read and copy lines but nothing can be staged, reverted, or edited from here."
+                })
+            } else if (root.chunkMode) {
+                steps.push({
+                    targetProvider: function() {
+                        var item = root.findActionableDelegate()
+                        return item ? item.stageButton : diffContent
+                    },
+                    icon: Style.icons.arrowRight,
+                    title: "Stage a Block",
+                    description: "Hover any green or red block and click the + button that appears on the right to stage only those lines. The rest of the file stays unstaged.",
+                    commands: [{ command: "git add -p" }]
+                })
+                steps.push({
+                    targetProvider: function() {
+                        var item = root.findActionableDelegate()
+                        return item ? item.revertButton : diffContent
+                    },
+                    icon: Style.icons.arrowRight,
+                    title: "Revert a Block",
+                    description: "Click the ↺ button on a changed block to discard those specific lines and restore them to the last committed state. Useful for undoing a mistake without losing other changes.",
+                    commands: [{ command: "git checkout -p" }]
+                })
+                steps.push({
+                    targetProvider: function() {
+                        var item = root.findActionableDelegate()
+                        return item ? item.stashButton : diffContent
+                    },
+                    icon: Style.icons.arrowRight,
+                    title: "Stash a Block",
+                    description: "Click the ↓ button to save just those lines aside without committing. They land in a stash entry you can reapply later — handy for parking half-finished work."
+                })
+                steps.push({
+                    targetProvider: function() {
+                        return root.findHiddenBarDelegate() || diffContent
+                    },
+                    icon: Style.icons.arrowRight,
+                    title: "Expand Hidden Context",
+                    description: "The dotted bar between hunks hides unchanged lines to keep the view focused. Click it to reveal more context around the changed code."
+                })
+            } else {
+                steps.push({
+                    targetProvider: function() { return diffContent },
+                    icon: Style.icons.arrowRight,
+                    title: "Chunk View",
+                    description: "Enable Chunk View in the header to switch to per-block mode. Each changed block gets Stage, Revert, and Stash buttons — commit exactly the lines you want, nothing more."
+                })
+            }
+            return steps
+        }
+    }
+
     /* Functions
      * ****************************************************************************************/
     function appendRow(model, type, lTxt, rTxt, lNum, rNum) {
@@ -584,6 +668,50 @@ DetachablePanel {
             return false;
 
         return prevItem.diffType === GitDiff.Context;
+    }
+
+    /* Guide helpers — locate a currently visible delegate to spotlight a real button instead
+     * of the whole diff panel. diffListView only instantiates visible (+ small buffer) delegates,
+     * so these search the current viewport and fall back to null when nothing qualifies there. */
+    function visibleDelegateRange() {
+        if (!diffListView.count)
+            return null
+
+        var first = diffListView.indexAt(1, diffListView.contentY + 1)
+        var last  = diffListView.indexAt(1, diffListView.contentY + diffListView.height - 1)
+        if (first < 0)
+            first = 0
+
+        if (last < 0 || last < first)
+            last = Math.min(diffListView.count - 1, first + 40)
+
+        return { first: first, last: last }
+    }
+
+    function findActionableDelegate() {
+        var range = root.visibleDelegateRange()
+        if (!range)
+            return null
+
+        for (var i = range.first; i <= range.last; i++) {
+            var d = diffListView.itemAtIndex(i)
+            if (d && d.diffLineItem && d.diffLineItem.hasAction)
+                return d.diffLineItem
+        }
+        return null
+    }
+
+    function findHiddenBarDelegate() {
+        var range = root.visibleDelegateRange()
+        if (!range)
+            return null
+
+        for (var i = range.first; i <= range.last; i++) {
+            var d = diffListView.itemAtIndex(i)
+            if (d && d.hiddenLoader && d.hiddenLoader.active)
+                return d.hiddenLoader
+        }
+        return null
     }
 
     // Called when user interacts with the textEdit

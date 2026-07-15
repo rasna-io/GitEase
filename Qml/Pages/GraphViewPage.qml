@@ -39,6 +39,7 @@ Item {
     property TerminalController      terminalController      : null
     property LayoutController        layoutController        : null
 
+    property GuideController         guideController         : null
 
     property alias                   graphRef                : commitGraph
     property var                     statePage               : null
@@ -56,6 +57,7 @@ Item {
             branchNames: root.branchNames()
             branchFilter: root.graphRef ? root.graphRef.branchFilter : (root.activePageState()?.commitGraph?.branchFilter || "")
             navigationRule: root.graphRef ? root.graphRef.navigationRule : (root.activePageState()?.commitGraph?.navigationRule || navigationRules[0])
+            guideController: root.guideController
 
             onFilterRequested: function(text, startDate, endDate, modes) {
                 if (root.graphRef) {
@@ -146,6 +148,7 @@ Item {
             CommitGraphDock {
                 id: commitGraph
 
+                guideController         : root.guideController
                 repositoryController    : root.repositoryController
                 appModel                : root.appModel
                 branchController        : root.branchController
@@ -191,6 +194,7 @@ Item {
                 SplitView.preferredWidth: lastWidth
                 SplitView.minimumWidth: 150
 
+                guideController: root.guideController
                 currentRepositoryName: root.appModel.currentRepository.name || ""
 
                 repositoryController: root.repositoryController
@@ -209,6 +213,7 @@ Item {
                 SplitView.fillWidth: true
                 SplitView.minimumWidth: 150
 
+                guideController: root.guideController
                 currentRepositoryName: root.appModel.currentRepository.name || ""
                 readOnly: true
             }

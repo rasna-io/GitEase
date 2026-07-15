@@ -79,7 +79,8 @@ IPopup {
     property RebaseController   rebaseController: null
     property ConflictController conflictController: null
     property NotificationController notificationController: null
-    property LayoutController   layoutController: null
+    property LayoutController       layoutController: null
+    property GuideController        guideController: null
 
 
     property var    planData            : ({})
@@ -116,6 +117,84 @@ IPopup {
             anchors.fill: parent
             anchors.margins: 16
             spacing: 12
+
+            /* Guide
+             * ****************************************************************************************/
+            GuideHoverTrigger {
+                guideController: root.guideController
+                guideId: "commit_plan_tutorial"
+                guideName: "Rebase Plan"
+                guideIcon: Style.icons.copy
+                guidePage: "utilities"
+                stepsFactory: function() {
+                    return [
+                        {
+                            targetProvider: function() { return commitListSection },
+                            icon: Style.icons.clockRotateLeft,
+                            title: "Rebase Plan",
+                            description: "Every commit that will be replayed is listed here, in order — Commit, Author, and Date for each. Use the Action dropdown on a row to Pick (keep) or Skip it, and watch the Status column once the rebase starts.",
+                            isInPopup: true
+                        },
+                        {
+                            targetProvider: function() { return actionColumnHeader },
+                            icon: Style.icons.check,
+                            title: "Action",
+                            description: "Pick keeps the commit as-is; Skip drops it entirely from the rebase. Change this for any commit before you start.",
+                            isInPopup: true
+                        },
+                        {
+                            targetProvider: function() { return commitColumnHeader },
+                            icon: Style.icons.gitBranch,
+                            title: "Commit",
+                            description: "The short hash and summary line of each commit being replayed.",
+                            isInPopup: true
+                        },
+                        {
+                            targetProvider: function() { return authorColumnHeader },
+                            icon: Style.icons.user,
+                            title: "Author",
+                            description: "Who originally authored the commit — preserved through the rebase no matter who runs it.",
+                            isInPopup: true
+                        },
+                        {
+                            targetProvider: function() { return dateColumnHeader },
+                            icon: Style.icons.calendar,
+                            title: "Date",
+                            description: "The commit's original authored date, unaffected by when the rebase actually runs.",
+                            isInPopup: true
+                        },
+                        {
+                            targetProvider: function() { return statusColumnHeader },
+                            icon: Style.icons.circleExclamation,
+                            title: "Status",
+                            description: "Only shown once the rebase is running: Pending, In Progress, Rebased, Skipped, or Conflict for each commit.",
+                            isInPopup: true
+                        },
+                        {
+                            targetProvider: function() { return fileChangesDock },
+                            icon: Style.icons.list,
+                            title: "File Changes",
+                            description: "Select a commit above to see which files it touches.",
+                            isInPopup: true
+                        },
+                        {
+                            targetProvider: function() { return diffView },
+                            icon: Style.icons.penToSquare,
+                            title: "Diff Preview",
+                            description: "Review the exact changes for the selected file before committing to the rebase.",
+                            isInPopup: true
+                        },
+                        {
+                            targetProvider: function() { return startButton },
+                            icon: Style.icons.copy,
+                            title: "Start Rebase",
+                            description: "Once you're happy with the plan, click here to begin. If a conflict occurs, GitEase pauses so you can resolve it before continuing.",
+                            commands: [{ command: "git rebase -i <upstream>" }],
+                            isInPopup: true
+                        }
+                    ]
+                }
+            }
 
             RowLayout {
                 Layout.fillWidth: true
@@ -163,6 +242,7 @@ IPopup {
 
                 // Top: commit list (full width)
                 Rectangle {
+                    id: commitListSection
                     SplitView.preferredHeight: 300
                     SplitView.minimumHeight: 150
                     color: Style.colors.secondaryBackground
@@ -188,6 +268,7 @@ IPopup {
                                 spacing: 8
 
                                 Text {
+                                    id: actionColumnHeader
                                     text: "Action"
                                     Layout.preferredWidth: 78
                                     font.bold: true
@@ -196,6 +277,7 @@ IPopup {
                                 }
 
                                 Text {
+                                    id: commitColumnHeader
                                     text: "Commit"
                                     Layout.fillWidth: true
                                     font.bold: true; color: Style.colors.foreground
@@ -203,6 +285,7 @@ IPopup {
                                 }
 
                                 Text {
+                                    id: authorColumnHeader
                                     text: "Author"
                                     Layout.preferredWidth: 130
                                     font.bold: true; color: Style.colors.foreground
@@ -210,6 +293,7 @@ IPopup {
                                 }
 
                                 Text {
+                                    id: dateColumnHeader
                                     text: "Date"
                                     Layout.preferredWidth: 130
                                     font.bold: true; color: Style.colors.foreground
@@ -217,6 +301,7 @@ IPopup {
                                 }
 
                                 Text {
+                                    id: statusColumnHeader
                                     text: (root.currentRebaseState !== rebaseState.idle) ? "Status" : ""
                                     Layout.preferredWidth: (root.currentRebaseState !== rebaseState.idle) ? 80 : 0
                                     font.bold: true
@@ -582,6 +667,7 @@ IPopup {
         conflictController      : root.conflictController
         notificationController  : root.notificationController
         statusController        : root.statusController
+        guideController         : root.guideController
     }
 
     Connections {

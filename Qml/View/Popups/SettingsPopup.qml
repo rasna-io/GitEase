@@ -28,14 +28,76 @@ IPopup {
 
     property UpdateController       updateController:       null
 
+    property GuideController        guideController:        null
+
+    property PageController         pageController:         null
+
+    /* Private state
+     * ****************************************************************************************/
+    // Set by playTutorial() when the chosen tutorial's target lives outside this popup — the
+    // popup must close (its Popup layer would otherwise sit above the guide overlay) before the
+    // guide can actually be seen, and possibly navigate to that tutorial's page first.
+    property string _pendingTutorialId:   ""
+    property string _pendingTutorialPage: ""
+
+    // Guide ids whose targets live inside this popup — forceShow runs immediately for these
+    // (no close-then-reopen), same treatment NavigationRail gives its own guides.
+    readonly property var _ownGuideIds: [
+        "settings_popup_tutorial",
+        "settings_general_tutorial",
+        "settings_ssh_tutorial",
+        "settings_appearance_tutorial",
+        "settings_help_tutorial"
+    ]
 
     /* Object Properties
      * ****************************************************************************************/
     width: parent.width * 0.8
     height: parent.height * 0.8
 
-    onClosed: load()
+    onClosed: {
+        load()
+
+        if (_pendingTutorialId.length === 0)
+            return
+
+        let id = _pendingTutorialId
+        let pageId = _pendingTutorialPage
+        _pendingTutorialId = ""
+        _pendingTutorialPage = ""
+
+        if (pageId.length > 0 && root.pageController)
+            root.pageController.switchToPage(pageId)
+
+        Qt.callLater(function() {
+            if (!root.guideController || !root.guideController.forceShow(id)) {
+                if (root.notificationController)
+                    root.notificationController.warning(
+                                "Open the relevant page, then try this tutorial again from Settings.",
+                                "Help", 3500)
+            }
+        })
+    }
     onOpened: load()
+
+    /**
+     * Play a tutorial selected from the Help tab. Tutorials whose target lives inside this
+     * popup (isInPopup steps) run immediately; everything else needs the popup closed first
+     * (and possibly a page switch) so the guide overlay isn't hidden behind it.
+     */
+    function playTutorial(entry) {
+        if (root._ownGuideIds.indexOf(entry.id) !== -1) {
+            if (!root.guideController || !root.guideController.forceShow(entry.id)) {
+                if (root.notificationController)
+                    root.notificationController.warning("Couldn't start this tutorial.", "Help", 3000)
+            }
+            return
+        }
+
+        _pendingTutorialId = entry.id
+        _pendingTutorialPage = entry.page || ""
+        root.close()
+    }
 
     /* Children
      * ****************************************************************************************/
@@ -45,6 +107,33 @@ IPopup {
         clip: true
         border.color: Style.colors.accent
         border.width: 1
+
+        /* Guide
+         * ****************************************************************************************/
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "settings_popup_tutorial"
+            guideName: "Settings Dialog"
+            guideIcon: Style.icons.slider
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return settingsTabs },
+                        icon: Style.icons.slider,
+                        title: "Settings Tabs",
+                        description: "Switch between General, SSH, Appearance, and Help using this list. The Help tab is also where you can replay any of the app's guided tours.",
+                        isInPopup: true
+                    },
+                    {
+                        targetProvider: function() { return actionButtonsRow },
+                        icon: Style.icons.check,
+                        title: "Save Your Changes",
+                        description: "Apply saves your changes without closing. Save applies and closes the dialog. Cancel discards anything you've changed.",
+                        isInPopup: true
+                    }
+                ]
+            }
+        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -57,6 +146,7 @@ IPopup {
                 Layout.fillWidth: true
 
                 PagesRail {
+                    id: settingsTabs
                     Layout.preferredWidth: parent.width * 0.15
                     Layout.fillHeight: true
                     currentId: root.currentPage
@@ -67,6 +157,7 @@ IPopup {
                         {id: 1, title: "SSH", icon: Style.icons.terminal},
                         {id: 2, title: "Appearence", icon: Style.icons.palette},
                         {id: 3, title: "Updates", icon: Style.icons.refresh},
+                        {id: 4, title: "Help",        icon: Style.icons.info},
                     ]
                     expanded: true
                     onClicked: (modelData) => {
@@ -88,6 +179,40 @@ IPopup {
                         interactive: false
 
                         Item {
+                            GuideHoverTrigger {
+                                guideController: root.guideController
+                                guideId: "settings_general_tutorial"
+                                guideName: "General Settings"
+                                guideIcon: Style.icons.slider
+                                stepsFactory: function() {
+                                    return [
+                                        {
+                                            targetProvider: function() { return displayAvatar },
+                                            icon: Style.icons.slider,
+                                            title: "Display Avatar",
+                                            description: "Show or hide profile avatars next to commits in the graph view.",
+                                            isInPopup: true,
+                                            activationDelay: 300,
+                                            onActivate: function() { root.currentPage = 0 }
+                                        },
+                                        {
+                                            targetProvider: function() { return displayStashNodes },
+                                            icon: Style.icons.archive,
+                                            title: "Display Stash",
+                                            description: "Show or hide stash entries as nodes in the graph view timeline.",
+                                            isInPopup: true
+                                        },
+                                        {
+                                            targetProvider: function() { return defaultPath },
+                                            icon: Style.icons.folder,
+                                            title: "Default Path",
+                                            description: "Set the folder GitEase opens to by default when opening or cloning a repository.",
+                                            isInPopup: true
+                                        }
+                                    ]
+                                }
+                            }
+
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.topMargin: 10
@@ -136,6 +261,26 @@ IPopup {
                         }
 
                         Item {
+                            GuideHoverTrigger {
+                                guideController: root.guideController
+                                guideId: "settings_ssh_tutorial"
+                                guideName: "SSH Keys"
+                                guideIcon: Style.icons.terminal
+                                stepsFactory: function() {
+                                    return [
+                                        {
+                                            targetProvider: function() { return sshScrollView },
+                                            icon: Style.icons.terminal,
+                                            title: "SSH Keys",
+                                            description: "Manage the SSH keys used to authenticate with your git remotes — generate a new key pair, copy the public key, or import an existing one.",
+                                            isInPopup: true,
+                                            activationDelay: 300,
+                                            onActivate: function() { root.currentPage = 1 }
+                                        }
+                                    ]
+                                }
+                            }
+
                             SshKeyController { id: sshKeyFallback }
 
                             SshKeyCard {
@@ -151,6 +296,47 @@ IPopup {
                         }
 
                         Item {
+                            GuideHoverTrigger {
+                                guideController: root.guideController
+                                guideId: "settings_appearance_tutorial"
+                                guideName: "Appearance"
+                                guideIcon: Style.icons.palette
+                                stepsFactory: function() {
+                                    return [
+                                        {
+                                            targetProvider: function() { return theme },
+                                            icon: Style.icons.palette,
+                                            title: "Theme",
+                                            description: "Switch between light and dark visual themes for the whole app.",
+                                            isInPopup: true,
+                                            activationDelay: 300,
+                                            onActivate: function() { root.currentPage = 2 }
+                                        },
+                                        {
+                                            targetProvider: function() { return displayRealtimeNotifications },
+                                            icon: Style.icons.bell,
+                                            title: "Real-time Notifications",
+                                            description: "Choose whether notifications also pop up as floating windows, or only appear in the notification center.",
+                                            isInPopup: true
+                                        },
+                                        {
+                                            targetProvider: function() { return maxVisibleNotifications },
+                                            icon: Style.icons.bell,
+                                            title: "Max Visible Notifications",
+                                            description: "Limit how many floating notifications can be on screen at once.",
+                                            isInPopup: true
+                                        },
+                                        {
+                                            targetProvider: function() { return notificationPosition },
+                                            icon: Style.icons.bell,
+                                            title: "Notification Position",
+                                            description: "Pick which corner of the screen floating notifications appear in.",
+                                            isInPopup: true
+                                        }
+                                    ]
+                                }
+                            }
+
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.topMargin: 10
@@ -415,11 +601,187 @@ IPopup {
                                 }
                             }
                         }
+
+                        Item {
+                            GuideHoverTrigger {
+                                guideController: root.guideController
+                                guideId: "settings_help_tutorial"
+                                guideName: "Help & Guides"
+                                guideIcon: Style.icons.info
+                                stepsFactory: function() {
+                                    return [
+                                        {
+                                            targetProvider: function() { return guidesEnabled },
+                                            icon: Style.icons.info,
+                                            title: "Enable Guides",
+                                            description: "Turn contextual tutorials on or off — when enabled, each one pops up automatically the first time you encounter it.",
+                                            isInPopup: true,
+                                            activationDelay: 700,
+                                            onActivate: function() { root.currentPage = 4 }
+                                        },
+                                        {
+                                            targetProvider: function() { return resetGuidesButton },
+                                            icon: Style.icons.refresh,
+                                            title: "Reset Guides",
+                                            description: "Bring back every tutorial so they show again from the beginning, as if this were a fresh install.",
+                                            isInPopup: true
+                                        },
+                                        {
+                                            targetProvider : function() { return tutorialsList },
+                                            icon: Style.icons.list,
+                                            title: "Guided Tours",
+                                            description: "Every tutorial in the app, in one place — click any card to replay it on demand.",
+                                            isInPopup: true
+                                        }
+                                    ]
+                                }
+                            }
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.topMargin: 10
+                                anchors.leftMargin: 20
+                                anchors.rightMargin: 20
+
+                                spacing: 20
+
+                                CheckboxItem {
+                                    id: guidesEnabled
+                                    Layout.fillWidth: true
+                                    title: "Enable Guides"
+                                    description: "Show contextual tutorials when using the app for the first time"
+                                    checked: root.appSettings?.guidesEnabled ?? true
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    color: Qt.darker(settingsContainer.color, 1.2)
+                                }
+
+                                ButtonItem {
+                                    id: resetGuidesButton
+                                    Layout.fillWidth: true
+                                    title: "Reset Guides"
+                                    description: "Show all tutorials again from the beginning"
+                                    buttonTitle: "Reset"
+                                    onClicked: {
+                                        if (root.guideController)
+                                            root.guideController.resetShownGuides()
+
+                                        if (root.notificationController)
+                                            root.notificationController.success("Guide history cleared", "Help", 2000)
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    color: Qt.darker(settingsContainer.color, 1.2)
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 5
+
+                                    Text {
+                                        text: "Guided Tours"
+                                        font.family: Style.fontTypes.roboto
+                                        font.weight: Font.DemiBold
+                                        font.pixelSize: 13
+                                        color: Style.colors.foreground
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: "Replay any tutorial below. Tutorials tied to a specific page switch you there first."
+                                        font.family: Style.fontTypes.roboto
+                                        font.pixelSize: 11
+                                        color: Style.colors.mutedText
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                GridView {
+                                    id: tutorialsList
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    cellWidth: width / 3
+                                    cellHeight: 104
+                                    model: root.guideController ? root.guideController.catalog : []
+
+                                    delegate: Item {
+                                        width: tutorialsList.cellWidth
+                                        height: tutorialsList.cellHeight
+
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            anchors.margins: 6
+                                            radius: 10
+                                            color: tutorialMouseArea.containsMouse
+                                                   ? Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.10)
+                                                   : Style.colors.primaryBackground
+                                            border.width: 1
+                                            border.color: tutorialMouseArea.containsMouse ? Style.colors.accent : Style.colors.primaryBorder
+                                            Behavior on color        { ColorAnimation { duration: 100 } }
+                                            Behavior on border.color { ColorAnimation { duration: 100 } }
+
+                                            ColumnLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 10
+                                                spacing: 8
+
+                                                Rectangle {
+                                                    Layout.alignment: Qt.AlignHCenter
+                                                    implicitWidth: 32
+                                                    implicitHeight: 32
+                                                    radius: 16
+                                                    color: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.13)
+
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        text: modelData.icon
+                                                        font.family: Style.fontTypes.font6ProSolid
+                                                        font.pixelSize: 14
+                                                        color: Style.colors.accent
+                                                    }
+                                                }
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    Layout.fillHeight: true
+                                                    text: modelData.name
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    verticalAlignment: Text.AlignVCenter
+                                                    wrapMode: Text.WordWrap
+                                                    maximumLineCount: 2
+                                                    elide: Text.ElideRight
+                                                    font.family: Style.fontTypes.roboto
+                                                    font.pixelSize: 11
+                                                    font.weight: Font.Medium
+                                                    color: Style.colors.foreground
+                                                }
+                                            }
+
+                                            MouseArea {
+                                                id: tutorialMouseArea
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.playTutorial(modelData)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
 
             Row {
+                id: actionButtonsRow
                 spacing: 8
                 Layout.alignment: Qt.AlignRight
 
@@ -466,6 +828,7 @@ IPopup {
     }
 
     function apply() {
+        root.appSettings.guidesEnabled = guidesEnabled.checked
         root.appSettings.generalSettings.showAvatar = displayAvatar.checked
         root.appSettings.generalSettings.showStashNodes = displayStashNodes.checked
         root.appSettings.generalSettings.defaultPath = defaultPath.text
@@ -489,6 +852,7 @@ IPopup {
     }
 
     function load() {
+        guidesEnabled.checked = root.appSettings?.guidesEnabled ?? true
         displayAvatar.checked = root.appSettings?.generalSettings?.showAvatar
         displayStashNodes.checked = root.appSettings?.generalSettings?.showStashNodes
         defaultPath.text = root.appSettings.generalSettings.defaultPath

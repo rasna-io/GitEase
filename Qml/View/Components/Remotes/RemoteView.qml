@@ -30,6 +30,8 @@ UtilitiesCard {
 
     property NotificationController notificationController: null
 
+    property GuideController guideController: null
+
     property bool isFetching: false
     property var activeFetchRemotes: []
     property var fetchBatchResults: []
@@ -100,6 +102,31 @@ UtilitiesCard {
     content: ColumnLayout {
         id: content
         spacing: 10
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "remotes_tutorial"
+            guideName: "Remotes"
+            guideIcon: Style.icons.upload
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return listView },
+                        icon: Style.icons.upload,
+                        title: "Manage Remotes",
+                        description: "Every remote configured for this repository is listed here. Use the icons on each row to fetch, pull, edit, or remove it."
+                    },
+                    {
+                        targetProvider: function() { return addRemoteBtn },
+                        icon: Style.icons.plus,
+                        title: "Add a Remote",
+                        description: "Connect this repository to another remote — a fork, a backup, or a second host — by giving it a name and URL.",
+                        commands: [{ command: "git remote add <name> <url>" }]
+                    }
+                ]
+            }
+        }
 
         Connections {
             target: root
@@ -357,6 +384,7 @@ UtilitiesCard {
         }
 
         Button {
+            id: addRemoteBtn
             Layout.fillWidth: true
             implicitHeight: 44
 

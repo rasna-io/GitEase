@@ -102,6 +102,24 @@ DetachablePanel {
         anchors.fill: parent
         color: Style.colors.primaryBackground
 
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "commit_context_menu_tutorial"
+            guideName: "Commit Context Menu"
+            guideIcon: Style.icons.ellipsisVertical
+            guidePage: "graph"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return commitsListView },
+                        icon: Style.icons.ellipsisVertical,
+                        title: "Right-Click for Actions",
+                        description: "Right-click any commit to open a context menu — checkout, cherry-pick, create a branch or tag, rebase, push, and more. The available actions depend on the commit you click."
+                    }
+                ]
+            }
+        }
+
         EmptyStateView {
             title: "no commit to show"
             details: root.emptyStateDetailsText()
@@ -437,6 +455,7 @@ DetachablePanel {
         conflictController      : root.conflictController
         notificationController  : root.notificationController
         statusController        : root.statusController
+        guideController         : root.guideController
         // onOperationCompleted    : reloadAll()        //TODO
     }
 
@@ -449,6 +468,7 @@ DetachablePanel {
         conflictController      : root.conflictController
         notificationController  : root.notificationController
         statusController        : root.statusController
+        guideController         : root.guideController
         // onOperationCompleted    : reloadAll()        //TODO
     }
 
@@ -468,6 +488,7 @@ DetachablePanel {
         conflictController: root.conflictController
         notificationController: root.notificationController
         layoutController: root.layoutController
+        guideController: root.guideController
     }
 
     /* Functions

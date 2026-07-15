@@ -25,6 +25,8 @@ UtilitiesCard {
     property BundleController bundleController: null
 
     property NotificationController notificationController: null
+    
+    property GuideController guideController: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -34,6 +36,24 @@ UtilitiesCard {
 
 
     content: ColumnLayout {
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "import_export_tutorial"
+            guideName: "Export / Import Project"
+            guideIcon: Style.icons.arowLeftRight
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return viewControl },
+                        icon: Style.icons.arowLeftRight,
+                        title: "Export / Import",
+                        description: "Export packs the current branch history into a single .bundle file — a portable snapshot you can share or move without a remote server. Import loads commits from a bundle someone sent you back into this repository."
+                    }
+                ]
+            }
+        }
 
         ButtonGroup {
             id: headerButtonGroup

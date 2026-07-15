@@ -41,6 +41,8 @@ Item {
     property var                        pluginController            : null
 
     property LayoutController           layoutController            : null
+    
+    property GuideController            guideController             : null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -121,6 +123,7 @@ Item {
                 branchController: root.branchController
                 bundleController: root.bundleController
                 notificationController: root.notificationController
+                guideController: root.guideController
             }
 
             RemoteView {
@@ -134,6 +137,7 @@ Item {
                 notificationController: root.notificationController
 
                 onHoveredChanged: flow.updateDockHovered()
+                guideController: root.guideController
             }
 
 
@@ -146,6 +150,7 @@ Item {
                 notificationController: root.notificationController
 
                 onHoveredChanged: flow.updateDockHovered()
+                guideController: root.guideController
             }
 
 
@@ -162,6 +167,7 @@ Item {
                 notificationController: root.notificationController
 
                 onHoveredChanged: flow.updateDockHovered()
+                guideController: root.guideController
             }
 
             TagManagementView {
@@ -173,6 +179,7 @@ Item {
                 notificationController: root.notificationController
 
                 onHoveredChanged: flow.updateDockHovered()
+                guideController: root.guideController
             }
 
             RecentActivityDock {
@@ -181,6 +188,7 @@ Item {
                 activityController: root.activityController
 
                 onHoveredChanged: flow.updateDockHovered()
+                guideController: root.guideController
             }
 
             RepositoriesHistoryDock {
@@ -189,6 +197,7 @@ Item {
                 repositoryController: root.repositoryController
 
                 onHoveredChanged: flow.updateDockHovered()
+                guideController: root.guideController
             }
 
             RebaseDock {
@@ -202,6 +211,7 @@ Item {
                 notificationController  : root.notificationController
                 conflictController      : root.conflictController
                 layoutController        : root.layoutController
+                guideController         : root.guideController
             }
 
             // ── Plugin docks ─────────────────────────────────────────────────

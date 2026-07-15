@@ -14,6 +14,10 @@ QtObject {
      * ****************************************************************************************/
     property AppModel             appModel:             AppModel {}
 
+    property GuideController      guideController:      GuideController {
+        appModel: root.appModel
+    }
+
     property PageController       pageController:       PageController {
         appModel: root.appModel
     }

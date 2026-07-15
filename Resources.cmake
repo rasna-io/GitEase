@@ -42,6 +42,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/NetworkController.qml      # Network Controller
     Qml/Core/Controllers/UpdateController.qml       # Application Update Controller
     Qml/Core/Controllers/TerminalController.qml
+    Qml/Core/Controllers/GuideController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
@@ -159,6 +160,11 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Conflict/ConflictFileList.qml
     Qml/View/Components/Conflict/ConflictConfirmationDialog.qml
     Qml/View/Components/Conflict/ConflictEditorDelegate.qml
+
+    # Guide Components
+    Qml/View/Components/Guide/GuideOverlay.qml
+    Qml/View/Components/Guide/GuideTooltip.qml
+    Qml/View/Components/Guide/GuideHoverTrigger.qml
 
     # Pages Components
     Qml/View/Components/Pages/CommittingPage/CommittingPageHeader.qml

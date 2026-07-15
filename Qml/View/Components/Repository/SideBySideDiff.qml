@@ -42,6 +42,12 @@ Item {
     property bool hasAction: false
     property int selectedFileStatus: -1
 
+    // Guide targets — the stage/revert/stash action buttons, exposed so a GuideController
+    // step can spotlight the actual button instead of the whole row.
+    readonly property alias stageButton:  stageButton
+    readonly property alias revertButton: revertButton
+    readonly property alias stashButton:  stashButton
+
     /* Signals
      * ****************************************************************************************/
     signal requestSplit(int cursorPos, string textAfter)
@@ -171,6 +177,7 @@ Item {
                 visible: hasAction && selectedFileStatus !== GitFileStatus.Deleted
 
                 Label {
+                    id: stageButton
                     text: Style.icons.plus
                     font.family: Style.fontTypes.font6ProSolid
                     color: stageMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
@@ -196,6 +203,7 @@ Item {
 
 
                 Label {
+                    id: revertButton
                     text: Style.icons.arrowRight
                     font.family: Style.fontTypes.font6ProSolid
                     color: revertMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
@@ -219,6 +227,7 @@ Item {
                 }
 
                 Label {
+                    id: stashButton
                     text: Style.icons.archive
                     font.family: Style.fontTypes.font6ProSolid
                     color: stashMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText

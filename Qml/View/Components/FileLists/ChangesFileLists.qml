@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 
 import GitEase
+import GitEase_Style
 /*! ***********************************************************************************************
  * ChangesFileLists
  * Two stacked file lists used in Committing page:
@@ -17,6 +18,7 @@ Item {
     property StatusController        statusController:        null
     property NotificationController  notificationController:  null
     property StashController         stashController:         null
+    property GuideController         guideController:         null
 
     property var unstagedModel: []
     property var stagedModel: []
@@ -35,6 +37,30 @@ Item {
     implicitHeight: 1
 
     Component.onCompleted: Qt.callLater(function() {root.updateStatus()})
+
+    GuideHoverTrigger {
+        guideController: root.guideController
+        guideId: "staging_tutorial"
+        guideName: "Staging Changes"
+        guideIcon: Style.icons.arrowRight
+        guidePage: "committing"
+        stepsFactory: function() {
+            return [
+                {
+                    targetProvider: function() { return stagedSection },
+                    icon: Style.icons.arrowRight,
+                    title: "Staged Changes",
+                    description: "Files here are queued for your next commit — they will be included in the snapshot. Click any file to preview its diff."
+                },
+                {
+                    targetProvider: function() { return unstagedSection },
+                    icon: Style.icons.arrowRight,
+                    title: "Unstaged Changes",
+                    description: "Files here have local edits not yet marked for commit. Stage individual files from the list, select specific lines in the diff view, or use the header button to stage everything at once."
+                }
+            ]
+        }
+    }
 
     /* Children
      * ****************************************************************************************/
