@@ -36,9 +36,9 @@ QtObject {
 
     property          Colors        modernDarkColors:           Colors {
         accent:              Qt.lighter(modernLightColors.accent, 1.4)
-        primaryBackground:   "#282828"
-        secondaryBackground: "#383838"
-        foreground:          "#fdfdfd"
+        primaryBackground:   midnightBlack
+        secondaryBackground: graphiteDark
+        foreground:          mutedLavenderSlate
         secondaryForeground: "#010101"
         surfaceLight:        "#6b6b6b"
         surfaceMuted:        "#1f1f1f"
@@ -56,19 +56,19 @@ QtObject {
         renamedFile:         "#aafff8"
         untrackedFile:       "#00ffff"
 
-        voidStripe:          "#565656"
-        editorBackgroound:   "#282828"
-        editorForeground:    "#f1f1f1"
-        linePanelBackgroound:"#383838"
-        linePanelForeground: "#9f9f9f"
+        voidStripe:          deepObsidianOverlay
+        editorBackgroound:   obsidianDark
+        editorForeground:    mutedLavenderSlate
+        linePanelBackgroound:obsidianDark
+        linePanelForeground: deepCharcoalBlue
 
-        cardBackground:      "#585858"
+        cardBackground:      onyxShadow
 
-        primaryBorder:       "#686868"
-        secondaryBorder:     "#383838"
+        primaryBorder:       darkCharcoal
+        secondaryBorder:     darkCharcoal
 
-        diffRemovedBg:       "#ed4c4c"
-        diffAddedBg:         "#1b7b3a"
+        diffRemovedBg:       paleCoralMist
+        diffAddedBg:         softMintGlow
         diffRemovedBorder:   "#F5C2C7"
         diffAddedBorder:     "#A6E9C6"
 

@@ -108,7 +108,7 @@ Item {
                     width: 45
                     height: parent.height
                     text: (leftLineNum > 0) ? leftLineNum : ""
-                    color: Style.colors.linePanelForeground
+                    color: (isDel || isMod) ? Style.colors.softCoralMist : Style.colors.editorForeground
                     font.pixelSize: Style.appFont.mediumPt
                     font.family: Style.fontTypes.roboto
                     horizontalAlignment: Text.AlignRight
@@ -141,7 +141,7 @@ Item {
                         x: -delegateRoot.horizontalOffset
                         text: delegateRoot.textColorizer ? delegateRoot.textColorizer(leftContent) : leftContent
                         textFormat: delegateRoot.textColorizer ? Text.RichText : Text.PlainText
-                        color: Style.colors.editorForeground
+                        color: (isDel || isMod) ? Style.colors.softCoralMist : Style.colors.editorForeground
                         font.family: Style.fontTypes.roboto
                         font.pixelSize: Style.appFont.defaultPt
                         topPadding: 2
@@ -158,13 +158,13 @@ Item {
         Rectangle {
             Layout.fillHeight: true
             Layout.preferredWidth: 40
-            color: Style.colors.surfaceLight
+            color: Style.colors.obsidianDark
             visible: !isUnchanged // Only show for changes
             z: 3
 
             Rectangle {
                 width: 2
-                color: Style.colors.surfaceMuted
+                color: Style.colors.graphiteMidnight
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
@@ -283,7 +283,7 @@ Item {
                     height: parent.height
                     z: 2
                     text: (rightLineNum > 0) ? rightLineNum : ""
-                    color: Style.colors.linePanelForeground
+                    color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
                     font.pixelSize: Style.appFont.mediumPt
                     font.family: Style.fontTypes.roboto
                     horizontalAlignment: Text.AlignRight
@@ -319,7 +319,7 @@ Item {
                         text: (delegateRoot.textColorizer && delegateRoot.readOnly)
                               ? delegateRoot.textColorizer(rightContent) : ""
                         textFormat: Text.RichText
-                        color: Style.colors.editorForeground
+                        color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
                         font.family: "Cascadia Mono"
                         font.pixelSize: Style.appFont.h3Pt
                     }
@@ -330,7 +330,7 @@ Item {
                         x: -delegateRoot.horizontalOffset
                         width: 2000
                         text: rightContent
-                        color: Style.colors.editorForeground
+                        color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
                         font.family: Style.fontTypes.roboto
                         font.pixelSize: Style.appFont.defaultPt
                         padding: 0
