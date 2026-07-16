@@ -45,6 +45,7 @@ Page {
     property var                     pluginController        : null
     property LayoutController        layoutController        : null
     property GuideController         guideController         : null
+    property GitTreeController       gitTreeController       : null
 
     // Utility panel (moved in from the old UtilitiesPage), open by default.
     property bool                    utilityPanelOpen        : true
@@ -502,6 +503,7 @@ Page {
         if (!rebaseController)       missing.push("RebaseController")
         if (!cherryPickController)   missing.push("CherryPickController")
         if (!conflictController)     missing.push("ConflictController")
+        if (!gitTreeController)      missing.push("GitTreeController")
 
         if (missing.length > 0) {
             notificationController.error(
