@@ -910,6 +910,10 @@ DetachablePanel {
             executeNewTag(item.payload.hash)
             break
 
+        case "browseFiles":
+            browseFilesRequested(item.payload.hash, item.payload.message, item.payload.date)
+            break
+
         case "mergeBranch":
             executeMergeBranch(item.payload.source, item.payload.target)
             break
