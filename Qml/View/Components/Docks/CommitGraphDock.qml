@@ -41,6 +41,7 @@ DetachablePanel {
     property TerminalController     terminalController      : null
     property LayoutController       layoutController        : null
     property var                    pluginController        : null
+    property GitTreeController      gitTreeController       : null
 
 
     property AddBranchPopup          addBranchPopup         : null
@@ -496,6 +497,20 @@ DetachablePanel {
         notificationController: root.notificationController
         layoutController: root.layoutController
         guideController: root.guideController
+    }
+
+    CommitFileBrowserDock {
+        id: commitFileBrowser
+
+        anchors.fill: parent
+        z: 10
+        visible: false
+
+        gitTreeController       : root.gitTreeController
+        repositoryController    : root.repositoryController
+        notificationController  : root.notificationController
+
+        onCloseRequested: visible = false
     }
 
     /* Functions
@@ -1020,6 +1035,11 @@ DetachablePanel {
         root.addTagPopup.targetHash     = commitHash
         root.addTagPopup.parent         = Qt.binding(() => {return root.activeItem})
         root.addTagPopup.open()
+    }
+
+    function browseFilesRequested(commitHash, commitMessage, commitDate) {
+        commitFileBrowser.visible = true
+        commitFileBrowser.openForCommit(commitHash, commitMessage, commitDate)
     }
 
     function executeMergeBranch(source, target) {
