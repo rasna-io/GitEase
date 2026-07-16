@@ -47,7 +47,6 @@ QtObject {
             pluginController.currentRepo = currentRepo
             resetController.currentRepo = currentRepo
             terminalController.currentRepo = currentRepo
-            ruleController.setCurrentRepo(currentRepo)
         }
 
         onRepositorySelected: function(repo) {
@@ -160,6 +159,7 @@ QtObject {
         appModel:               root.appModel
         networkController:      root.networkController
         pageController:         root.pageController
+        commitController:       root.commitController
     }
 
     property NetworkController networkController: NetworkController {}

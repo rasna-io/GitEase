@@ -174,20 +174,6 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/CommittingPage/CommittingPageHeader.qml
     Qml/View/Components/Pages/CommittingPage/UnsavedChangesDialog.qml
     Qml/View/Components/Pages/PluginsPage/PluginsPageHeader.qml
-    Qml/View/Components/Pages/RulesPage/DividerLine.qml
-    Qml/View/Components/Pages/RulesPage/RuleChip.qml
-    Qml/View/Components/Pages/RulesPage/OptionRow.qml
-    Qml/View/Components/Pages/RulesPage/BasicInfoRect.qml
-    Qml/View/Components/Pages/RulesPage/ModernSwitch.qml
-    Qml/View/Components/Pages/RulesPage/RuleSettingsBase.qml
-    Qml/View/Components/Pages/RulesPage/CommitMessageSettings.qml
-    Qml/View/Components/Pages/RulesPage/BranchNamingSettings.qml
-    Qml/View/Components/Pages/RulesPage/FileSettings.qml
-    Qml/View/Components/Pages/RulesPage/PushRulesSettings.qml
-    Qml/View/Components/Pages/RulesPage/NotificationRulesSettings.qml
-    Qml/View/Components/Pages/RulesPage/CustomHooksSettings.qml
-    Qml/View/Components/Pages/RulesPage/RulesTreeView.qml
-    Qml/View/Components/Pages/RulesPage/RuleSettingsPanel.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
     Qml/View/Components/GraphView/ResizableColumnHeader.qml
@@ -226,9 +212,6 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/CalendarPopup.qml
 
     Qml/View/Popups/CommitPlanPopup.qml
-
-    Qml/View/Popups/AddRulePopup.qml
-    Qml/View/Popups/RuleImportPopup.qml
 )
 
 
@@ -240,7 +223,6 @@ set(RESOURCES_PAGES
     Qml/Pages/UtilitiesPage.qml     # UtilitiesPage, import/export
     Qml/Pages/BlankPage.qml         # Blank placeholder page
     Qml/Pages/PluginsPage.qml       # Plugins page
-    Qml/Pages/RulesPage.qml         # RulesPage
 )
 
 # Define QML Services

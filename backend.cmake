@@ -8,7 +8,6 @@ set(SOURCES_BACKEND
 
     Src/Git/IGitController.cpp
     Src/Git/GitRepository.cpp
-    Src/Git/GitResult.cpp
     Src/Git/GitUtils.cpp
     Src/Git/GitBranch.cpp
     Src/Git/GitCommit.cpp
@@ -40,8 +39,6 @@ set(SOURCES_BACKEND
     Src/Plugins/PluginManager.cpp
 
     Src/Terminal/TerminalManager.cpp
-
-    Src/Rules/RuleManager.cpp
 )
 
 set(HEADERS_BACKEND
@@ -95,10 +92,11 @@ set(HEADERS_BACKEND
     Src/Plugins/PluginInfo.h
     Src/Plugins/PluginContext.h
     Src/Plugins/PluginManager.h
+    Src/Plugins/ActionContext.h
+    Src/Plugins/IRulePlugin.h
+    Src/Plugins/IRepositoryAwarePlugin.h
 
     Src/Terminal/TerminalManager.h
-
-    Src/Rules/RuleManager.h
 )
 
 set(INCLUDE_DIRS_BACKEND

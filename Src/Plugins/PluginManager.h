@@ -7,6 +7,7 @@
 #include <QJSValue>
 #include <functional>
 
+#include "GitResult.h"
 #include "PluginInfo.h"
 
 class IPlugin;
@@ -22,6 +23,7 @@ class IToolbarPlugin;
 class PluginContext;
 class QPluginLoader;
 class Repository;
+class ActionContext;
 
 /*!
  * \brief Discovers, loads, and manages the lifecycle of external plugins.

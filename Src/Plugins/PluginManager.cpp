@@ -1,4 +1,5 @@
 #include "PluginManager.h"
+#include "IRepositoryAwarePlugin.h"
 #include "PluginContext.h"
 #include "IPlugin.h"
 #include "IDockPlugin.h"
@@ -294,6 +295,17 @@ PluginInfo PluginManager::parseManifest(const QString& pluginDir)
 void PluginManager::setCurrentRepository(Repository* repo)
 {
     m_context->setCurrentRepository(repo);
+
+    const char* workdir = git_repository_workdir(repo->repo);
+    QString dir = QString::fromUtf8(workdir);
+
+    for (IPlugin* plugin : m_plugins)
+    {
+        if (auto repoAware = dynamic_cast<IRepositoryAwarePlugin*>(plugin))
+        {
+            repoAware->repositoryChanged(dir);
+        }
+    }
 }
 
 void PluginManager::setCurrentBranch(const QString& branch)
@@ -430,6 +442,18 @@ void PluginManager::setPluginSetting(const QString& pluginId, const QString& key
                                      const QVariant& value)
 {
     m_context->setSetting(pluginId, key, value);
+}
+
+void PluginManager::runBeforeAction(ActionContext* context)
+{
+    for (IPlugin *plugin : m_plugins)
+    {
+        auto *rulePlugin = dynamic_cast<IRulePlugin *>(plugin);
+        if (!rulePlugin)
+            continue;
+
+        context->result = rulePlugin->check(context);
+    }
 }
 
 QVariantList PluginManager::pluginInfos() const

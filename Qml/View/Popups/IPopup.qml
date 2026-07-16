@@ -10,18 +10,17 @@ import GitEase_Style_Impl
 Popup {
     id: root
 
-    /* Object Properties
-     * ****************************************************************************************/
+    parent: Overlay.overlay
+
     modal: true
     focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
-
     width: 523
     height: 475
 
-    x: parent ? Math.round((parent.width - width) / 2) : 0
-    y: parent ? Math.round((parent.height - height) / 2) : 0
+    x: Overlay.overlay ? Math.round((Overlay.overlay.width - width) / 2) : 0
+    y: Overlay.overlay ? Math.round((Overlay.overlay.height - height) / 2) : 0
 
     padding: 0
 
@@ -33,10 +32,6 @@ Popup {
         color: "#000000"
         opacity: 0.35
     }
-
-    onParentChanged: {
-        if (root.parent !== "windowHost") {
-            root.parent = Overlay.overlay
-        }
-    }
 }
+
+

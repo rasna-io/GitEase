@@ -6,7 +6,7 @@
 #include "GitResult.h"
 #include "IGitController.h"
 #include "Repository.h"
-
+#include "ActionContext.h"
 
 /**
  * \brief Structure to hold parent commit information
@@ -145,6 +145,9 @@ public:
 
 private:
     QStringList getAllParents(git_commit* gitCommit);
+
+signals:
+    void beforeAction(ActionContext* context);
 
 };
 

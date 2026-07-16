@@ -183,9 +183,6 @@ Rectangle {
                             if (item.hasOwnProperty("terminalController")) {
                                 item.terminalController = Qt.binding(function() { return root.uiSession?.terminalController })
                             }
-                            if (item.hasOwnProperty("ruleController")) {
-                                item.ruleController = Qt.binding(function() { return root.uiSession?.ruleController })
-                            }
                             if (item.hasOwnProperty("cherryPickController")) {
                                 item.cherryPickController = Qt.binding(function() { return root.uiSession?.cherryPickController })
                             }

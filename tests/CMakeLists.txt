@@ -3,6 +3,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Test Qml)
 add_library(gitease_test_support STATIC
     ${CMAKE_SOURCE_DIR}/Src/Git/Utilities/GitProtocolDetector.cpp
     ${CMAKE_SOURCE_DIR}/Src/Utilities/FileManager/FileIO.cpp
+    ${CMAKE_SOURCE_DIR}/Src/Git/GitResult.h
 )
 
 target_include_directories(gitease_test_support PUBLIC
@@ -44,7 +45,7 @@ add_test(NAME test_file_io COMMAND test_file_io)
 
 add_library(gitease_git_backend_test_support STATIC
     ${CMAKE_SOURCE_DIR}/Src/Git/IGitController.cpp
-    ${CMAKE_SOURCE_DIR}/Src/Git/GitResult.cpp
+    ${CMAKE_SOURCE_DIR}/Src/Git/GitResult.h
     ${CMAKE_SOURCE_DIR}/Src/Git/GitUtils.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/GitRepository.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/GitRemote.cpp
