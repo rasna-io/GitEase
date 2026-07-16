@@ -113,7 +113,6 @@ set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Git/
     ${CMAKE_SOURCE_DIR}/Src/Plugins/
     ${CMAKE_SOURCE_DIR}/Src/Terminal/
-    ${CMAKE_SOURCE_DIR}/Src/Rules/
 )
 
 #Add libgit2 include path to all backend files
