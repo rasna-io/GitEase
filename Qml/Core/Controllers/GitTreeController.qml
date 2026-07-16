@@ -17,17 +17,9 @@ GitTree {
      */
     property var    fileTreeModel       : []
 
-    property string currentCommitSha    : ""
     property string currentFilePath     : ""
     property string currentFileContent  : ""
     property bool   currentFileIsBinary : false
-
-    /* Signals
-     * ****************************************************************************************/
-    signal treeLoaded()
-    signal treeLoadFailed(string errorMessage)
-    signal fileContentLoaded(string filePath)
-    signal fileContentLoadFailed(string errorMessage)
 
     /* Signals and Connections
      * ****************************************************************************************/
@@ -44,15 +36,12 @@ GitTree {
 
         var res = getFileTree(commitSha)
         if (!res.success) {
-            root.currentCommitSha   = ""
             root.fileTreeModel      = []
             root.treeLoadFailed(res.errorMessage || "Failed to load file tree")
             return false
         }
 
-        root.currentCommitSha   = commitSha
-        root.fileTreeModel      = res.data
-        root.treeLoaded()
+        root.fileTreeModel = res.data
         return true
     }
 
@@ -63,14 +52,12 @@ GitTree {
         var res = getFileContent(commitSha, filePath)
         if (!res.success) {
             clearFileContent()
-            root.fileContentLoadFailed(res.errorMessage || "Failed to load file content")
             return false
         }
 
         root.currentFilePath        = filePath
         root.currentFileIsBinary    = res.data.isBinary
         root.currentFileContent     = res.data.content
-        root.fileContentLoaded(filePath)
         return true
     }
 
@@ -87,8 +74,7 @@ GitTree {
      * Clears the whole controller state (e.g. on repository change).
      */
     function clear() {
-        root.currentCommitSha   = ""
-        root.fileTreeModel      = []
+        root.fileTreeModel = []
         clearFileContent()
     }
 }
