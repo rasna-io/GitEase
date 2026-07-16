@@ -825,6 +825,8 @@ DetachablePanel {
             isHead              : isHead,
             shortHash           : shortHash,
             fullHash            : commitData.hash,
+            commitMessage       : commitData.message || "",
+            commitDate          : commitData.authorDate || "",
             pushEnabled         : !remoteController.pushInProgress && isHead,
             branchNames         : branches,
             isStash             : commitData.isStash || false,
