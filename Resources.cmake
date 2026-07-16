@@ -132,6 +132,7 @@ set(RESOURCES_COMPONENTS
 
     # DockPanel Docks
     Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
+    Qml/View/Components/Docks/CommitFileBrowserDock.qml # CommitFileBrowserDock : browse file tree at a commit
 
 
     Qml/View/Components/Settings/CheckboxItem.qml
