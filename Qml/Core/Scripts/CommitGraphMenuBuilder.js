@@ -78,6 +78,14 @@ function buildMenu(state, pluginItems) {
         separator: true
     });
 
+    // Browse files
+    model.push({
+        text: "Browse files at this commit",
+        icon: "folder",
+        action: "browseFiles",
+        payload: { hash: state.fullHash, message: state.commitMessage, date: state.commitDate }
+    });
+
     // Merge
     if (state.hasMergeableBranches) {
         state.mergeableBranches.forEach(function(bName) {
