@@ -46,6 +46,10 @@ function buildMenu(state, pluginItems) {
     }
 
     model.push({
+        separator: true
+    });
+
+    model.push({
         text: "Push",
         icon: "arrowUp",
         action: "push",
@@ -70,12 +74,12 @@ function buildMenu(state, pluginItems) {
         payload: { hash: state.fullHash }
     });
 
+    model.push({
+        separator: true
+    });
+
     // Merge
     if (state.hasMergeableBranches) {
-        model.push({
-                separator: true
-        });
-
         state.mergeableBranches.forEach(function(bName) {
             model.push({
                 text: "Merge '" + bName + "' into '" + state.currentBranch + "'",
@@ -92,6 +96,7 @@ function buildMenu(state, pluginItems) {
             text: "Rebase onto " + state.shortHash,
             icon: "clockRotateLeft",
             action: "rebase",
+            shortcut: "Ctrl+R",
             payload: { hash: state.fullHash }
         });
     }
@@ -114,6 +119,10 @@ function buildMenu(state, pluginItems) {
             payload: { hash: state.fullHash }
         });
     }
+
+    model.push({
+        separator: true
+    });
 
     // Reset
     model.push({

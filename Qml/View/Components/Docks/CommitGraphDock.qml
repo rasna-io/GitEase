@@ -88,6 +88,10 @@ DetachablePanel {
 
     readonly property bool hasAnyFilter         : Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter)
 
+    readonly property bool canRebaseSelected    : !!root.selectedCommit && !root.selectedCommit.isUncommitted &&
+                                                   root.selectedCommit.hash !== root.headHash &&
+                                                   !!root.branchController.getCurrentBranchName()
+
     /* Signals
      * ****************************************************************************************/
     signal commitClicked(string commitId)
@@ -99,6 +103,13 @@ DetachablePanel {
 
     /* Children
      * ****************************************************************************************/
+    Shortcut {
+        sequence: "Ctrl+R"
+        context: Qt.WindowShortcut
+        enabled: root.canRebaseSelected
+        onActivated: root.executeRebase(root.selectedCommit.hash)
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Style.colors.primaryBackground
@@ -846,7 +857,8 @@ DetachablePanel {
                 icon    : resolveMenuIcon(item.icon),
                 enabled : item.enabled !== false,
                 hasCheckBox: item.hasCheckBox,
-                checkBoxText: item.checkBoxText
+                checkBoxText: item.checkBoxText,
+                shortcut: item.shortcut
             }
 
             if (item.subItems) {
