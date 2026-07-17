@@ -186,129 +186,44 @@ RowLayout {
         }
     }
 
-    Rectangle {
+    IconButton {
+        id: downButton
+        Layout.preferredWidth: headerRow.controlSize
         Layout.preferredHeight: headerRow.controlSize
         Layout.preferredWidth: upDownRowLayout.implicitWidth
         color : "transparent"
 
-        RowLayout {
-            id: upDownRowLayout
-            spacing: 0
+        visible: !compact && !crowded
+        enabled: headerRow.isGraphReady
 
-            IconButton {
-                id: downButton
-                Layout.preferredWidth: headerRow.controlSize
-                Layout.preferredHeight: headerRow.controlSize
+        display: IconButton.IconOnly
+        icon.name: Style.icons.caretDown
+        icon.width: Style.appFont.largerPt
+        icon.height: Style.appFont.largerPt
+        solidIcon: true
 
-                visible: !compact && !crowded
-                enabled: headerRow.isGraphReady
+        onClicked: headerRow.previousRequested(navigationRule)
+    }
 
-                display: IconButton.IconOnly
-                icon.name: Style.icons.caretDown
-                icon.width: Style.appFont.largerPt
-                icon.height: Style.appFont.largerPt
-                solidIcon: true
+    IconButton {
+        id: upButton
+        Layout.preferredWidth: headerRow.controlSize
+        Layout.preferredHeight: headerRow.controlSize
 
-                onClicked: headerRow.previousRequested(navigationRule)
-            }
+        visible: !compact && !crowded
+        enabled: headerRow.isGraphReady
 
-            IconButton {
-                id: upButton
-                Layout.preferredWidth: headerRow.controlSize
-                Layout.preferredHeight: headerRow.controlSize
+        display: IconButton.IconOnly
+        icon.name: Style.icons.caretUp
+        icon.width: Style.appFont.largerPt
+        icon.height: Style.appFont.largerPt
+        solidIcon: true
 
-                visible: !compact && !crowded
-                enabled: headerRow.isGraphReady
-
-                display: IconButton.IconOnly
-                icon.name: Style.icons.caretUp
-                icon.width: Style.appFont.largerPt
-                icon.height: Style.appFont.largerPt
-                solidIcon: true
-
-                onClicked: headerRow.nextRequested(navigationRule)
-            }
-        }
+        onClicked: headerRow.nextRequested(navigationRule)
     }
 
     Item {
         Layout.fillWidth: true
-    }
-
-    IconButton {
-        id: pullBtn
-        Layout.preferredHeight: headerRow.controlSize
-
-        solidIcon: true
-        icon.name: Style.icons.arrowDown
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: "Pull"
-        tooltip: "Pull from origin"
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
-
-        onClicked: headerRow.pullRequested()
-    }
-
-    IconButton {
-        id: pushBtnHeader
-        Layout.preferredHeight: headerRow.controlSize
-        Layout.minimumWidth: 30
-        Material.accent: Style.colors.accent
-
-        property bool isBusy: headerRow.remoteController?.pushInProgress && !headerRow.remoteController?.forcePush
-
-        background: Rectangle {
-            radius: 5
-            color: pushBtnHeader.down ? Style.colors.surfaceMuted :
-                   pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-        }
-
-        BusyIndicator {
-            id: pushBusyIndicator
-            anchors.centerIn: parent
-            width: 30
-            height: 30
-            running: pushBtnHeader.isBusy
-            visible: pushBtnHeader.isBusy
-        }
-
-        enabled: !headerRow.remoteController?.pushInProgress
-        solidIcon: true
-        icon.name: !isBusy ? Style.icons.arrowUp : ""
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: !isBusy ? "Push" : ""
-        tooltip: !isBusy ? "Push to origin" : "Pushing..."
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
-
-        onClicked: headerRow.pushRequested(false)
-    }
-
-    IconButton {
-        id: fetchBtnHeader
-        Layout.preferredHeight: headerRow.controlSize
-
-        enabled: !headerRow.isFetching
-
-        solidIcon: true
-        icon.name: Style.icons.download
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: "Fetch"
-        tooltip: headerRow.isFetching ? "Fetching…" : "Fetch all remotes"
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
-
-        onClicked: headerRow.fetchRequested()
     }
 
     IconButton {
