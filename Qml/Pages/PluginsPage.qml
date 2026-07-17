@@ -84,60 +84,75 @@ Page {
         id: pluginsModel
     }
 
-    GridView {
-        id: gridView
+    RowLayout {
         anchors.fill: parent
-        anchors.margins: 10
-        clip: true
 
-        model: pluginsModel
+        PluginsLeftPanel {
 
-        ScrollBar.vertical: ScrollBar {
-            policy: ScrollBar.AsNeeded
         }
 
-        property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
+        Rectangle {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            color: Style.colors.obsidianDark
 
-        cellWidth: width / columns
-        cellHeight: root.minCardHeight
+            GridView {
+                id: gridView
+                anchors.fill: parent
+                anchors.margins: 10
+                clip: true
 
-        delegate: Item {
-            width: gridView.cellWidth
-            height: gridView.cellHeight
+                model: pluginsModel
 
-            PluginCard {
-                anchors.centerIn: parent
-                width: gridView.cellWidth - 20
-                height: gridView.cellHeight - 20
-                plugin: model
-
-                onInstallClicked: function(pluginId) {
-                    root.pluginController?.installPlugin(pluginId)
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AsNeeded
                 }
-                onUninstallClicked: function(pluginId) {
-                    root.pluginController?.uninstallPlugin(pluginId)
-                }
-                onUpdateClicked: function(pluginId) {
-                    root.pluginController?.updatePlugin(pluginId)
-                }
-                onEnableToggled: function(pluginId, enabled) {
-                    root.pluginController?.togglePlugin(pluginId, enabled)
-                }
-            }
-        }
 
-        // Load next page when the user scrolls within one row of the bottom
-        onContentYChanged: {
-            if (contentHeight <= height)
-                return
+                property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
 
-            if (contentY + height >= contentHeight - gridView.cellHeight
-                    && !root.fetchingMore
-                    && root.pluginController?.hasMorePages) {
-                root.loadNextPage()
+                cellWidth: width / columns
+                cellHeight: root.minCardHeight
+
+                delegate: Item {
+                    width: gridView.cellWidth
+                    height: gridView.cellHeight
+
+                    PluginCard {
+                        anchors.centerIn: parent
+                        width: gridView.cellWidth - 20
+                        height: gridView.cellHeight - 20
+                        plugin: model
+
+                        onInstallClicked: function(pluginId) {
+                            root.pluginController?.installPlugin(pluginId)
+                        }
+                        onUninstallClicked: function(pluginId) {
+                            root.pluginController?.uninstallPlugin(pluginId)
+                        }
+                        onUpdateClicked: function(pluginId) {
+                            root.pluginController?.updatePlugin(pluginId)
+                        }
+                        onEnableToggled: function(pluginId, enabled) {
+                            root.pluginController?.togglePlugin(pluginId, enabled)
+                        }
+                    }
+                }
+
+                // Load next page when the user scrolls within one row of the bottom
+                onContentYChanged: {
+                    if (contentHeight <= height)
+                        return
+
+                    if (contentY + height >= contentHeight - gridView.cellHeight
+                            && !root.fetchingMore
+                            && root.pluginController?.hasMorePages) {
+                        root.loadNextPage()
+                    }
+                }
             }
         }
     }
+
 
     /* Functions
      * ****************************************************************************************/

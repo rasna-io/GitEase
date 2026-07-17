@@ -172,6 +172,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/CommittingPage/CommittingPageHeader.qml
     Qml/View/Components/Pages/CommittingPage/UnsavedChangesDialog.qml
     Qml/View/Components/Pages/PluginsPage/PluginsPageHeader.qml
+    Qml/View/Components/Pages/PluginsPage/PluginsLeftPanel.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
     Qml/View/Components/GraphView/ResizableColumnHeader.qml
