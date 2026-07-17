@@ -15,8 +15,10 @@ RowLayout {
     /* Property Declarations
      * ****************************************************************************************/
     property GuideController guideController : null
+    property RemoteController remoteController : null
 
     property bool   isGraphReady    : false
+    property bool   isFetching      : false
     property string filterText      : ""
     property string filterStartDate : ""
     property string filterEndDate   : ""
@@ -41,6 +43,9 @@ RowLayout {
     signal previousRequested(string rule)
     signal reloadRequested()
     signal panelToggleRequested()
+    signal pullRequested()
+    signal pushRequested(bool force)
+    signal fetchRequested()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -219,6 +224,64 @@ RowLayout {
         Layout.fillWidth: true
     }
 
+    RButton {
+        id: pullBtn
+        Layout.preferredHeight: headerRow.controlSize
+
+        icon.name: Style.icons.arrowDown
+        text: "Pull"
+        tooltip: "Pull from origin"
+        compact: headerRow.compact
+
+        onClicked: headerRow.pullRequested()
+    }
+
+    RButton {
+        id: pushBtnHeader
+        Layout.preferredHeight: headerRow.controlSize
+        Layout.minimumWidth: 30
+        Material.accent: Style.colors.accent
+
+        property bool isBusy: headerRow.remoteController?.pushInProgress && !headerRow.remoteController?.forcePush
+
+        background: Rectangle {
+            radius: 5
+            color: pushBtnHeader.down ? Style.colors.surfaceMuted :
+                   pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+        }
+
+        BusyIndicator {
+            id: pushBusyIndicator
+            anchors.centerIn: parent
+            width: 30
+            height: 30
+            running: pushBtnHeader.isBusy
+            visible: pushBtnHeader.isBusy
+        }
+
+        enabled: !headerRow.remoteController?.pushInProgress
+        icon.name: !isBusy ? Style.icons.arrowUp : ""
+        text: !isBusy ? "Push" : ""
+        tooltip: !isBusy ? "Push to origin" : "Pushing..."
+        compact: headerRow.compact
+
+        onClicked: headerRow.pushRequested(false)
+    }
+
+    RButton {
+        id: fetchBtnHeader
+        Layout.preferredHeight: headerRow.controlSize
+
+        enabled: !headerRow.isFetching
+
+        icon.name: Style.icons.download
+        text: "Fetch"
+        tooltip: headerRow.isFetching ? "Fetching…" : "Fetch all remotes"
+        compact: headerRow.compact
+
+        onClicked: headerRow.fetchRequested()
+    }
+
     IconButton {
         id: reloadButton
         Layout.preferredWidth: headerRow.controlSize
@@ -309,6 +372,27 @@ RowLayout {
                     icon: Style.icons.arrowUp,
                     title: "Next Result",
                     description: "Jump to the next commit that matches your current search or navigation rule."
+                },
+                {
+                    targetProvider: function() { return pullBtn },
+                    icon: Style.icons.arrowDown,
+                    title: "Pull",
+                    description: "Downloads commits from the remote and merges them into your current branch. Run this before starting work to stay in sync with your team.",
+                    commands: [{ command: "git pull" }]
+                },
+                {
+                    targetProvider: function() { return pushBtnHeader },
+                    icon: Style.icons.arrowUp,
+                    title: "Push",
+                    description: "Uploads your local commits to the remote so teammates can fetch or pull them. Only commits that are already saved locally will be sent.",
+                    commands: [{ command: "git push" }]
+                },
+                {
+                    targetProvider: function() { return fetchBtnHeader },
+                    icon: Style.icons.download,
+                    title: "Fetch",
+                    description: "Downloads all remote changes and updates your remote-tracking branches without touching your working tree or current branch. Always safe to run.",
+                    commands: [{ command: "git fetch --all" }]
                 },
                 {
                     targetProvider: function() { return reloadButton },
