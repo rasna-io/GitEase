@@ -26,9 +26,9 @@ Popup {
     padding: 6
 
     background: Rectangle {
-        color: Style.colors.secondaryBackground
+        color: Style.colors.contextMenuBackground
         radius: 4
-        border.color: Style.colors.primaryBorder
+        border.color: Style.colors.contextMenuBorder
         border.width: 1
     }
 
@@ -49,9 +49,9 @@ Popup {
         dim: false
 
         background: Rectangle {
-            color: Style.colors.secondaryBackground
+            color: Style.colors.contextMenuBackground
             radius: 4
-            border.color: Style.colors.primaryBorder
+            border.color: Style.colors.contextMenuBorder
             border.width: 1
         }
 
@@ -86,7 +86,7 @@ Popup {
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
                 height: 1
-                color: Style.colors.primaryBorder
+                color: Style.colors.contextMenuSeparator
             }
 
             // Normal item background
@@ -95,7 +95,7 @@ Popup {
                 anchors.fill: parent
                 anchors.margins: 2
                 radius: 4
-                color: (itemMouse.containsMouse && isEnabled) ? Style.colors.surfaceLight : "transparent"
+                color: (itemMouse.containsMouse && isEnabled) ? Style.colors.contextMenuHover : "transparent"
             }
 
             RowLayout {

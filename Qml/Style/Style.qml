@@ -155,6 +155,11 @@ QtObject {
         property color rebaseStatusRebased:    "#2ECC40"        // bright green
         property color rebaseStatusConflict:   "#FF4136"        // bright red
         property color rebaseStatusSkipped:    mutedText        // dimmed
+
+        contextMenuBackground: "#22222A"
+        contextMenuBorder:     "#2C2C33"
+        contextMenuSeparator:  "#2C2C33"
+        contextMenuHover:      "#A0A0A0"
     }
 
     property           string       currentTheme:               "Modern Light"

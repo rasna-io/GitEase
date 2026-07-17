@@ -188,4 +188,9 @@ QtObject{
     property color terminalUserAndHost: "#3fb950"  // GitHub green
     property color terminalWorkDir:     "#58a6ff"  // GitHub blue
     property color terminalCommand:     "#e6edf3"  // GitHub text
+
+    property color contextMenuBackground: "#EDEDED"
+    property color contextMenuBorder:     "#CDD2DA"
+    property color contextMenuSeparator:  "#DCE1E9"
+    property color contextMenuHover:      "#E7E7E7"
 }
