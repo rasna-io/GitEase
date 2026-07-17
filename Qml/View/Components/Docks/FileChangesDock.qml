@@ -25,11 +25,11 @@ DetachablePanel {
     property var selectedFile: null
 
     // Property to receive list of fileData objects
-    property int filesColPathWidth: root.width * 0.4
-    property int filesColExtensionWidth: root.width * 0.15
-    property int filesColStatusWidth: root.width * 0.15
-    property int filesColAddedLinesWidth: root.width * 0.15
-    property int filesColRemovedLinesWidth: root.width * 0.15
+    property int filesColStatusWidth: root.activeItem.width * 0.13
+    property int filesColPathWidth: root.activeItem.width * 0.46
+    property int filesColExtensionWidth: root.activeItem.width * 0.10
+    property int filesColAddedLinesWidth: root.activeItem.width * 0.16
+    property int filesColRemovedLinesWidth: root.activeItem.width * 0.15
 
     /* Object Properties
      * ****************************************************************************************/
@@ -124,9 +124,11 @@ DetachablePanel {
                         }
 
                         Label {
-                            anchors.left: parent.left
-                            anchors.centerIn: parent
-                            anchors.leftMargin: 5
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
                             text: "Status"
                             color: Style.colors.foreground
                             font.pixelSize: Style.appFont.defaultPt
@@ -150,10 +152,11 @@ DetachablePanel {
                         }
 
                         Label {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
                             horizontalAlignment: Text.AlignLeft
-                            anchors.leftMargin: 5
                             text: "Path"
                             color: Style.colors.foreground
                             font.pixelSize: Style.appFont.defaultPt
@@ -177,9 +180,11 @@ DetachablePanel {
                         }
 
                         Label {
-                            anchors.left: parent.left
-                            anchors.centerIn: parent
-                            anchors.leftMargin: 5
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
                             text: "Extension"
                             color: Style.colors.foreground
                             font.pixelSize: Style.appFont.defaultPt
@@ -203,9 +208,11 @@ DetachablePanel {
                         }
 
                         Label {
-                            anchors.left: parent.left
-                            anchors.centerIn: parent
-                            anchors.leftMargin: 5
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
                             text: "Lines Added"
                             color: Style.colors.foreground
                             font.pixelSize: Style.appFont.defaultPt
@@ -217,7 +224,6 @@ DetachablePanel {
                     Rectangle {
                         Layout.preferredWidth: root.filesColRemovedLinesWidth
                         Layout.fillHeight: true
-                        Layout.alignment: Qt.AlignRight
                         color: linesRemovedHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
 
                         MouseArea {
@@ -230,15 +236,16 @@ DetachablePanel {
                         }
 
                         Label {
-                            anchors.left: parent.left
-                            anchors.centerIn: parent
-                            anchors.leftMargin: 5
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
                             text: "Lines Removed"
                             color: Style.colors.foreground
                             font.pixelSize: Style.appFont.defaultPt
                             font.bold: true
                             elide: Text.ElideRight
-                            wrapMode: "Wrap"
                         }
                     }
                 }
@@ -286,6 +293,7 @@ DetachablePanel {
                             // Column 1: File Status
                             RowLayout {
                                 Layout.preferredWidth: root.filesColStatusWidth
+                                Layout.fillWidth: false
                                 Layout.fillHeight: true
                                 spacing: 0
 
@@ -311,6 +319,8 @@ DetachablePanel {
                                     verticalAlignment: Text.AlignVCenter
                                     font.pixelSize: Style.appFont.mediumPt
                                     Layout.fillWidth: true
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
                                     horizontalAlignment: Text.AlignHCenter
                                     elide: Text.ElideRight
                                     wrapMode: Text.NoWrap
@@ -324,6 +334,7 @@ DetachablePanel {
                             // Column 2: File Path
                             RowLayout {
                                 Layout.preferredWidth: root.filesColPathWidth
+                                Layout.fillWidth: false
                                 Layout.fillHeight: true
                                 spacing: 0
 
@@ -335,7 +346,9 @@ DetachablePanel {
                                     font.weight: 400
                                     font.letterSpacing: 0.2
                                     Layout.fillWidth: true
-                                    Layout.leftMargin: 6
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
+                                    horizontalAlignment: Text.AlignLeft
                                     elide: Text.ElideLeft
                                 }
                             }
@@ -343,6 +356,7 @@ DetachablePanel {
                             // Column 3: File Extension
                             RowLayout {
                                 Layout.preferredWidth: root.filesColExtensionWidth
+                                Layout.fillWidth: false
                                 Layout.fillHeight: true
                                 Layout.alignment: Qt.AlignVCenter
                                 spacing: 0
@@ -358,7 +372,8 @@ DetachablePanel {
                                     font.letterSpacing: 0.2
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
-                                    Layout.leftMargin: 6
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
                                     elide: Text.ElideRight
                                 }
                             }
@@ -366,6 +381,7 @@ DetachablePanel {
                             // Column 4: Added Lines
                             RowLayout {
                                 Layout.preferredWidth: root.filesColAddedLinesWidth
+                                Layout.fillWidth: false
                                 Layout.fillHeight: true
                                 spacing: 0
 
@@ -376,6 +392,8 @@ DetachablePanel {
                                     font.pixelSize: Style.appFont.smallPt
                                     Layout.fillWidth: true
                                     horizontalAlignment: Text.AlignHCenter
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
                                     wrapMode: Text.NoWrap
                                 }
                             }
@@ -383,6 +401,7 @@ DetachablePanel {
                             // Column 5: Removed Lines
                             RowLayout {
                                 Layout.preferredWidth: root.filesColRemovedLinesWidth
+                                Layout.fillWidth: false
                                 Layout.fillHeight: true
                                 spacing: 0
 
@@ -394,6 +413,8 @@ DetachablePanel {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     horizontalAlignment: Text.AlignHCenter
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
                                     wrapMode: Text.NoWrap
                                 }
                             }
