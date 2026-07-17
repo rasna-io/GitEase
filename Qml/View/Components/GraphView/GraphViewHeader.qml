@@ -224,19 +224,25 @@ RowLayout {
         Layout.fillWidth: true
     }
 
-    RButton {
+    IconButton {
         id: pullBtn
         Layout.preferredHeight: headerRow.controlSize
 
+        solidIcon: true
         icon.name: Style.icons.arrowDown
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.roboto
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
         text: "Pull"
         tooltip: "Pull from origin"
-        compact: headerRow.compact
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
 
         onClicked: headerRow.pullRequested()
     }
 
-    RButton {
+    IconButton {
         id: pushBtnHeader
         Layout.preferredHeight: headerRow.controlSize
         Layout.minimumWidth: 30
@@ -260,24 +266,36 @@ RowLayout {
         }
 
         enabled: !headerRow.remoteController?.pushInProgress
+        solidIcon: true
         icon.name: !isBusy ? Style.icons.arrowUp : ""
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.roboto
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
         text: !isBusy ? "Push" : ""
         tooltip: !isBusy ? "Push to origin" : "Pushing..."
-        compact: headerRow.compact
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
 
         onClicked: headerRow.pushRequested(false)
     }
 
-    RButton {
+    IconButton {
         id: fetchBtnHeader
         Layout.preferredHeight: headerRow.controlSize
 
         enabled: !headerRow.isFetching
 
+        solidIcon: true
         icon.name: Style.icons.download
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.roboto
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
         text: "Fetch"
         tooltip: headerRow.isFetching ? "Fetching…" : "Fetch all remotes"
-        compact: headerRow.compact
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
 
         onClicked: headerRow.fetchRequested()
     }

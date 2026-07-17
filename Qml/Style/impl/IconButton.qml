@@ -1,8 +1,11 @@
 
 import QtQuick
 import QtQuick.Templates as T
+import QtQuick.Controls.Material
+import QtQuick.Controls.Material.impl
 import Qt5Compat.GraphicalEffects
 
+import GitEase
 import GitEase_Style
 
 /*! ***********************************************************************************************
@@ -12,6 +15,9 @@ import GitEase_Style
  * (icon.source), laid out beside, instead of, or without any text according to `display`
  * (IconButton.IconOnly, IconButton.TextOnly, IconButton.TextBesideIcon). Colors follow
  * Style.colors so it matches the rest of the app's theme.
+ *
+ * Set `tooltip` for a hover tooltip, and `maximumWidth` to cap the label's width and have
+ * it marquee-scroll on hover instead of eliding (handy for long branch/file names).
  * ************************************************************************************************/
 T.Button {
     id: control
@@ -20,6 +26,9 @@ T.Button {
      * when icon.name is used). Defaults to solid while hovered/pressed, override per instance
      * for a different rule (e.g. always solid, or driven by some external active state). */
     property bool solidIcon: control.hovered || control.down
+
+    property string tooltip:      ""
+    property real   maximumWidth: -1
 
     /* Object Properties
      * ****************************************************************************************/
@@ -31,6 +40,7 @@ T.Button {
     padding: 6
     spacing: 6
     hoverEnabled: true
+    opacity: enabled ? 1.0 : 0.5
 
     icon.width: 16
     icon.height: 16
@@ -38,10 +48,12 @@ T.Button {
 
     contentItem: Item {
         implicitWidth: (iconItem.visible ? iconItem.width : 0) +
-                       (iconItem.visible && label.visible ? control.spacing : 0) +
-                       (label.visible ? label.implicitWidth : 0)
+                       (iconItem.visible && (label.visible || scrollLabel.visible) ? control.spacing : 0) +
+                       (label.visible ? label.implicitWidth : 0) +
+                       (scrollLabel.visible ? scrollLabel.width : 0)
         implicitHeight: Math.max(iconItem.visible ? iconItem.height : 0,
-                                 label.visible ? label.implicitHeight : 0)
+                                 label.visible ? label.implicitHeight : 0,
+                                 scrollLabel.visible ? scrollLabel.height : 0)
 
         Item {
             id: iconItem
@@ -83,7 +95,7 @@ T.Button {
 
         Text {
             id: label
-            visible: control.display !== T.AbstractButton.IconOnly && control.text !== ""
+            visible: control.display !== T.AbstractButton.IconOnly && control.text !== "" && control.maximumWidth <= 0
             anchors.left: iconItem.visible ? iconItem.right : parent.left
             anchors.leftMargin: iconItem.visible ? control.spacing : 0
             anchors.right: parent.right
@@ -94,6 +106,24 @@ T.Button {
             elide: Text.ElideRight
             horizontalAlignment: iconItem.visible ? Text.AlignLeft : Text.AlignHCenter
         }
+
+        Item {
+            id: scrollLabel
+            visible: control.display !== T.AbstractButton.IconOnly && control.text !== "" && control.maximumWidth > 0
+            anchors.left: iconItem.visible ? iconItem.right : parent.left
+            anchors.leftMargin: iconItem.visible ? control.spacing : 0
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(control.maximumWidth, scrollText.implicitWidth)
+            height: scrollText.implicitHeight
+
+            ScrollingText {
+                id: scrollText
+                anchors.fill: parent
+                text: control.text
+                font: control.font
+                color: control.icon.color
+            }
+        }
     }
 
     background: Rectangle {
@@ -101,6 +131,21 @@ T.Button {
         color: !control.enabled ? Style.colors.primaryBackground :
                control.down ? Style.colors.surfaceMuted :
                control.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+    }
+
+    ToolTip {
+        visible: control.hovered && control.tooltip !== ""
+        text: control.tooltip
+        delay: 600
+        x: (parent.width - width) / 2
+        y: -height - 6
+        padding: 6
+        background: Rectangle {
+            radius: 6
+            color: Qt.rgba(0, 0, 0, 0.85)
+            border.color: Qt.rgba(1, 1, 1, 0.12)
+            border.width: 1
+        }
     }
 
     /* Animations

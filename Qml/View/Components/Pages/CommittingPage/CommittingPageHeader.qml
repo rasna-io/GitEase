@@ -37,12 +37,18 @@ RowLayout {
         visible: false
     }
 
-    RButton {
+    IconButton {
         id: branchChip
         Layout.preferredHeight: 25
         maximumWidth: 150
         visible: !headerRow.compact
+        solidIcon: true
         icon.name: Style.icons.branch
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.roboto
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
         text: branchController ? branchController.getDisplayBranchName() : ""
 
         Connections {
@@ -70,19 +76,25 @@ RowLayout {
         visible: !headerRow.compact
     }
 
-    RButton {
+    IconButton {
         id: pullBtn
         Layout.preferredHeight: 26
 
+        solidIcon: true
         icon.name: Style.icons.arrowDown
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.roboto
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
         text: "Pull"
         tooltip: "Pull from origin"
-        compact: headerRow.compact
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
 
         onClicked: root.pullAndUpdate()
     }
 
-    RButton {
+    IconButton {
         id: pushBtnHeader
         Layout.preferredHeight: 26
         Layout.minimumWidth: 30
@@ -106,10 +118,16 @@ RowLayout {
         }
 
         enabled: !remoteController?.pushInProgress
+        solidIcon: true
         icon.name: !isBusy ? Style.icons.arrowUp : ""
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.roboto
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
         text: !isBusy ? "Push" : ""
         tooltip: !isBusy ? "Push to origin" : "Pushing..."
-        compact: headerRow.compact
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
 
         onClicked: {
             root.pushAndUpdate()
@@ -120,21 +138,27 @@ RowLayout {
         Layout.fillWidth: true
     }
 
-    RButton {
+    IconButton {
         id: fetchBtnHeader
         Layout.preferredHeight: 26
 
         enabled: !root.isFetching
 
+        solidIcon: true
         icon.name: Style.icons.download
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.roboto
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
         text: "Fetch"
         tooltip: root.isFetching ? "Fetching…" : "Fetch all remotes"
-        compact: headerRow.compact
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
 
         onClicked: root.fetch()
     }
 
-    RButton {
+    IconButton {
         id: pushForceBtnHeader
         Layout.preferredHeight: 26
         Layout.minimumWidth: 30
@@ -158,10 +182,16 @@ RowLayout {
         }
 
         enabled: !remoteController?.pushInProgress
+        solidIcon: true
         icon.name: !isBusy ? Style.icons.arrowUp : ""
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.roboto
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
         text: !isBusy ? "Push Force" : ""
         tooltip: !isBusy ? "Force push to origin" : "Force Pushing..."
-        compact: headerRow.compact
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
 
         onClicked: {
             root.pushAndUpdate(true)
