@@ -33,7 +33,8 @@ Item {
         id: textField
         anchors.fill: parent
         minHeight: 26
-        rightPadding: root.iconOnly ? 6 : caret.width + 5
+        leftPadding: root.iconOnly ? 6 : calendarIcon.width + 14
+        rightPadding: 8
         placeholderTextColor: Style.colors.descriptionText
         backgroundColor: mouseArea.containsMouse ? Style.colors.cardBackground : Style.colors.secondaryBackground
         placeholderText: root.iconOnly ? "" : root.placeholder
@@ -50,25 +51,14 @@ Item {
 
     RTextIcon {
         id: calendarIcon
-        anchors.centerIn: parent
+        anchors.left: root.iconOnly ? undefined : parent.left
+        anchors.leftMargin: root.iconOnly ? 0 : 8
+        anchors.horizontalCenter: root.iconOnly ? parent.horizontalCenter : undefined
+        anchors.verticalCenter: parent.verticalCenter
         width: 14
         height: 14
-        visible: root.iconOnly
         text: Style.icons.calendar
         font.pixelSize: Style.appFont.h3Pt
-        color: Style.colors.descriptionText
-    }
-
-    RTextIcon {
-        id: caret
-        anchors.right: parent.right
-        anchors.rightMargin: 6
-        anchors.verticalCenter: parent.verticalCenter
-        width: 12;
-        height: 12
-        visible: !root.iconOnly
-        text: Style.icons.caretDown
-        font.pixelSize: Style.appFont.largerPt
         color: Style.colors.descriptionText
     }
 
