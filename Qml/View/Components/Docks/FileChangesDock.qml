@@ -371,7 +371,7 @@ DetachablePanel {
 
                                 Label {
                                     text: fileData.additionsCount  || "0"
-                                    color: Style.colors.foreground
+                                    color: Style.colors.compatible
                                     verticalAlignment: Text.AlignVCenter
                                     font.pixelSize: Style.appFont.smallPt
                                     Layout.fillWidth: true
@@ -388,7 +388,7 @@ DetachablePanel {
 
                                 Label {
                                     text: fileData.deletionsCount  || "0"
-                                    color: Style.colors.foreground
+                                    color: Style.colors.incompatible
                                     verticalAlignment: Text.AlignVCenter
                                     font.pixelSize: Style.appFont.smallPt
                                     Layout.fillWidth: true
