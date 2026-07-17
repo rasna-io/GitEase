@@ -175,6 +175,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/PluginsPage/PluginsLeftPanel.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
+    Qml/View/Components/GraphView/GraphFilterPopup.qml
     Qml/View/Components/GraphView/ResizableColumnHeader.qml
     Qml/View/Components/GraphView/CommitGraphCanvas.qml
     Qml/View/Components/GraphView/CommitListDelegate.qml
