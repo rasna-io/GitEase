@@ -94,4 +94,6 @@ QtObject{
 
     property string detach:            "\uf35d" // external-link-alt
     property string rules:             "\uf0ae" // rules
+
+    property string togglePanel:       "qrc:/GitEase/Resources/Icons/togglePanel.svg"
 }

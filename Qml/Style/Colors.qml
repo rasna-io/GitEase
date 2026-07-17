@@ -27,6 +27,7 @@ QtObject{
     property color amberBg:             Qt.darker(amber, 7.5)
     property color purpleBg:            Qt.darker(purple, 7.5)
     property color marigoldBg:          Qt.darker(marigold, 7.5)
+    property color subtleAzureGlow:     "#243B82F6"
 
     // Primary colors
     property color primaryBackground:   "#FDFDFD"

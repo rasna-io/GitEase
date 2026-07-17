@@ -12,6 +12,8 @@ qt_add_qml_module(${MAIN_TARGET_NAME}.Resources
         "Images/Logo.svg"
         "Images/defaultUserIcon.svg"
 
+        "Icons/togglePanel.svg"
+
         "Fonts/Font Awesome 6 Pro-Light-300.otf"
         "Fonts/Font Awesome 6 Pro-Regular-400.otf"
         "Fonts/Font Awesome 6 Pro-Solid-900.otf"
