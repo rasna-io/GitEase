@@ -137,6 +137,15 @@ Popup {
                     visible: modelData.hasCheckBox === true && modelData.enabled
                 }
 
+                // Shortcut hint
+                Text {
+                    text: modelData.shortcut || ""
+                    visible: !hasSub && modelData.shortcut !== undefined && modelData.shortcut !== ""
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.mutedText
+                }
+
                 Text {
                     text: "❯"
                     visible: hasSub
