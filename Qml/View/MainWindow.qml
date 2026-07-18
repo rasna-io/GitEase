@@ -207,6 +207,7 @@ Rectangle {
                             rebaseController: root.uiSession?.rebaseController
                             cherryPickController: root.uiSession?.cherryPickController
                             tagController: root.uiSession?.tagController
+                            gitTreeController: root.uiSession?.gitTreeController
                             resetController: root.uiSession?.resetController
                             terminalController: root.uiSession?.terminalController
                             bundleController: root.uiSession?.bundleController

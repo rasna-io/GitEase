@@ -1,4 +1,4 @@
-import QtQuick
+﻿import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -196,6 +196,7 @@ Page {
                     guideController         : root.guideController
                     layoutController        : root.layoutController
                     pluginController        : root.pluginController
+                    gitTreeController       : root.gitTreeController
 
                     onCommitClicked: function(commitId) { Presenter.handleCommitClicked(commitId) }
                 }
