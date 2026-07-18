@@ -34,6 +34,8 @@ Item {
 
     property                var               enabledPluginIds:         []
 
+    property                var               pluginCategories:         []
+
     /* Signals
      * ****************************************************************************************/
 
