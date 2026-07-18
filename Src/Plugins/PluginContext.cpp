@@ -6,6 +6,7 @@
 #include "IContextMenuPlugin.h"
 #include "IWorkflowPlugin.h"
 #include "IToolbarPlugin.h"
+#include "IRulePlugin.h"
 
 #include <QSettings>
 
@@ -69,6 +70,11 @@ void PluginContext::registerToolbar(IToolbarPlugin* plugin)
     emit toolbarRegistered(plugin);
 }
 
+void PluginContext::registerRule(IRulePlugin* plugin)
+{
+    emit ruleRegistered(plugin);
+}
+
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 QVariant PluginContext::setting(const QString& pluginId,
@@ -105,7 +111,9 @@ void PluginContext::unsubscribe(int token)
 
 void PluginContext::publish(const QString& event, const QVariantMap& payload)
 {
-    for (const auto& entry : std::as_const(m_subscriptions)) {
+    // Snapshot before iterating so subscribe/unsubscribe calls inside handlers are safe.
+    const auto snapshot = m_subscriptions;
+    for (const auto& entry : snapshot) {
         if (entry.first == event)
             entry.second(payload);
     }

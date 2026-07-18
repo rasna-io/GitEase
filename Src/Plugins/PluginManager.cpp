@@ -1,6 +1,7 @@
 #include "PluginManager.h"
 #include "IRepositoryAwarePlugin.h"
 #include "PluginContext.h"
+#include "../Git/Models/Repository.h"
 #include "IPlugin.h"
 #include "IDockPlugin.h"
 #include "ICommandPlugin.h"
@@ -11,6 +12,7 @@
 #include "IContextMenuPlugin.h"
 #include "IWorkflowPlugin.h"
 #include "IToolbarPlugin.h"
+#include "IRulePlugin.h"
 
 #include <QJSEngine>
 #include <QJSValueList>
@@ -173,6 +175,11 @@ void PluginManager::wireContext()
                                                   action.order);
                 }
             });
+
+    connect(m_context, &PluginContext::ruleRegistered,
+            this, [this](IRulePlugin* plugin) {
+                m_rulePlugins.append(plugin);
+            });
 }
 
 // ── Setup ────────────────────────────────────────────────────────────────────
@@ -296,15 +303,17 @@ void PluginManager::setCurrentRepository(Repository* repo)
 {
     m_context->setCurrentRepository(repo);
 
-    const char* workdir = git_repository_workdir(repo->repo);
-    QString dir = QString::fromUtf8(workdir);
+    if (!repo)
+        return;
 
-    for (IPlugin* plugin : m_plugins)
-    {
-        if (auto repoAware = dynamic_cast<IRepositoryAwarePlugin*>(plugin))
-        {
+    const char* workdir = git_repository_workdir(repo->repo);
+    if (!workdir)
+        return;
+
+    const QString dir = QString::fromUtf8(workdir);
+    for (IPlugin* plugin : std::as_const(m_plugins)) {
+        if (auto* repoAware = dynamic_cast<IRepositoryAwarePlugin*>(plugin))
             repoAware->repositoryChanged(dir);
-        }
     }
 }
 
@@ -446,14 +455,16 @@ void PluginManager::setPluginSetting(const QString& pluginId, const QString& key
 
 void PluginManager::runBeforeAction(ActionContext* context)
 {
-    for (IPlugin *plugin : m_plugins)
-    {
-        auto *rulePlugin = dynamic_cast<IRulePlugin *>(plugin);
-        if (!rulePlugin)
-            continue;
-
-        context->result = rulePlugin->check(context);
+    if (!context)
+        return;
+    for (IRulePlugin* rule : std::as_const(m_rulePlugins)) {
+        GitResult result = rule->check(context);
+        if (!result.success()) {
+            context->result = result;
+            return;
+        }
     }
+    context->result = GitResult(true);
 }
 
 QVariantList PluginManager::pluginInfos() const

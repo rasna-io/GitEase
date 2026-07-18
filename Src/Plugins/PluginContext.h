@@ -17,6 +17,7 @@ class IPagePlugin;
 class IContextMenuPlugin;
 class IWorkflowPlugin;
 class IToolbarPlugin;
+class IRulePlugin;
 class QQmlEngine;
 
 /*!
@@ -51,6 +52,7 @@ public:
     void registerContextMenu(IContextMenuPlugin* plugin) override;
     void registerWorkflow   (IWorkflowPlugin*    plugin) override;
     void registerToolbar    (IToolbarPlugin*     plugin) override;
+    void registerRule       (IRulePlugin*        plugin) override;
 
     QVariant setting    (const QString& pluginId, const QString& key,
                          const QVariant& defaultValue = {}) const override;
@@ -82,6 +84,7 @@ signals:
     void contextMenuRegistered(IContextMenuPlugin* plugin);
     void workflowRegistered(IWorkflowPlugin*    plugin);
     void toolbarRegistered (IToolbarPlugin*     plugin);
+    void ruleRegistered    (IRulePlugin*        plugin);
 
 private:
     QQmlEngine* m_engine  = nullptr;

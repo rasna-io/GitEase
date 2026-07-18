@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GitResult.h"
+#include <QMetaType>
 
 enum ActionType
 {
@@ -20,4 +21,6 @@ public:
     QString branchName;
     QStringList changedFiles;
 };
+
+Q_DECLARE_METATYPE(ActionContext*)
 

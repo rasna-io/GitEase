@@ -20,6 +20,7 @@ class IPagePlugin;
 class IContextMenuPlugin;
 class IWorkflowPlugin;
 class IToolbarPlugin;
+class IRulePlugin;
 class PluginContext;
 class QPluginLoader;
 class Repository;
@@ -85,6 +86,10 @@ public:
                                                          const QString& itemId,
                                                          const QString& target,
                                                          const QVariantMap& ctx);
+
+    // ── Rule checks (QML-accessible) ─────────────────────────────────────────
+    // Synchronously runs all registered IRulePlugins; returns first failure or success.
+    Q_INVOKABLE void runBeforeAction(ActionContext* context);
 
     // ── Workflow hooks (QML-accessible) ──────────────────────────────────────
     // Call before a git operation; listen to workflowEventResolved to proceed/cancel.
@@ -173,4 +178,5 @@ private:
     QList<IContextMenuPlugin*>    m_contextMenuPlugins;
     QList<IWorkflowPlugin*>       m_workflowPlugins;
     QList<IToolbarPlugin*>        m_toolbarPlugins;
+    QList<IRulePlugin*>           m_rulePlugins;
 };
