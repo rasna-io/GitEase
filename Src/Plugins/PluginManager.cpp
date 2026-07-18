@@ -649,12 +649,14 @@ void PluginManager::publishEvent(const QString& event, const QVariantMap& payloa
 int PluginManager::subscribeEvent(const QString& event, const QJSValue& handler)
 {
     if (!handler.isCallable()) return -1;
+    auto* engine = qmlEngine(this);  // QQmlEngine inherits QJSEngine — valid for toScriptValue
+    if (!engine) return -1;
     auto jsHandler = std::make_shared<QJSValue>(handler);
-    return m_context->subscribe(event, [jsHandler](const QVariantMap& payload) {
+    return m_context->subscribe(event, [jsHandler, engine](const QVariantMap& payload) {
         if (!jsHandler->isCallable()) return;
-        auto* engine = jsHandler->engine();
-        if (!engine) return;
-        jsHandler->call(QJSValueList{engine->toScriptValue(payload)});
+        QJSValueList args;
+        args << engine->toScriptValue(payload);
+        jsHandler->call(args);
     });
 }
 
