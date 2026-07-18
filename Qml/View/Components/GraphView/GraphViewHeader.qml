@@ -186,38 +186,49 @@ RowLayout {
         }
     }
 
-    IconButton {
-        id: downButton
-        Layout.preferredWidth: headerRow.controlSize
+    Rectangle {
         Layout.preferredHeight: headerRow.controlSize
+        Layout.preferredWidth: upDownRowLayout.implicitWidth
+        color : "transparent"
 
-        visible: !compact && !crowded
-        enabled: headerRow.isGraphReady
+        RowLayout {
+            id: upDownRowLayout
+            spacing: 0
 
-        display: IconButton.IconOnly
-        icon.name: Style.icons.caretDown
-        icon.width: Style.appFont.largerPt
-        icon.height: Style.appFont.largerPt
-        solidIcon: true
+            IconButton {
+                id: downButton
+                Layout.preferredWidth: headerRow.controlSize
+                Layout.preferredHeight: headerRow.controlSize
 
-        onClicked: headerRow.previousRequested(navigationRule)
-    }
+                visible: !compact && !crowded
+                enabled: headerRow.isGraphReady
 
-    IconButton {
-        id: upButton
-        Layout.preferredWidth: headerRow.controlSize
-        Layout.preferredHeight: headerRow.controlSize
+                display: IconButton.IconOnly
+                icon.name: Style.icons.caretDown
+                icon.width: Style.appFont.largerPt
+                icon.height: Style.appFont.largerPt
+                solidIcon: true
 
-        visible: !compact && !crowded
-        enabled: headerRow.isGraphReady
+                onClicked: headerRow.previousRequested(navigationRule)
+            }
 
-        display: IconButton.IconOnly
-        icon.name: Style.icons.caretUp
-        icon.width: Style.appFont.largerPt
-        icon.height: Style.appFont.largerPt
-        solidIcon: true
+            IconButton {
+                id: upButton
+                Layout.preferredWidth: headerRow.controlSize
+                Layout.preferredHeight: headerRow.controlSize
 
-        onClicked: headerRow.nextRequested(navigationRule)
+                visible: !compact && !crowded
+                enabled: headerRow.isGraphReady
+
+                display: IconButton.IconOnly
+                icon.name: Style.icons.caretUp
+                icon.width: Style.appFont.largerPt
+                icon.height: Style.appFont.largerPt
+                solidIcon: true
+
+                onClicked: headerRow.nextRequested(navigationRule)
+            }
+        }
     }
 
     Item {
