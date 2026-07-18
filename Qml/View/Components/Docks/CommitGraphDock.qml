@@ -74,11 +74,11 @@ DetachablePanel {
     property int commitItemSpacing  : 4
     property int columnSpacing      : 30
 
-    property int commitsColGraphWidth       : parent.width * 0.08
-    property int commitsColBranchTagWidth   : parent.width * 0.17
-    property int commitsColMessageWidth     : parent.width * 0.6
-    property int commitsColAuthorWidth      : parent.width * 0.08
-    property int commitsColDateWidth        : parent.width * 0.17
+    property int commitsColGraphWidth       : root.activeItem.width * 0.08
+    property int commitsColBranchTagWidth   : root.activeItem.width * 0.17
+    property int commitsColMessageWidth     : root.activeItem.width * 0.6
+    property int commitsColAuthorWidth      : root.activeItem.width * 0.08
+    property int commitsColDateWidth        : root.activeItem.width * 0.17
 
     readonly property int minColGraphWidth      : 60
     readonly property int minColBranchTagWidth  : 80
