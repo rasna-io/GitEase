@@ -365,52 +365,82 @@ Page {
             border.width: 1
             border.color: Style.colors.primaryBorder
 
-            Flickable {
-                id: utilityPanelFlick
+            ColumnLayout {
                 anchors.fill: parent
-                clip: true
+                spacing: 0
 
-                interactive: !utilityPanelFlow.dockHovered
-                flickableDirection: Flickable.VerticalFlick
-                boundsBehavior: Flickable.StopAtBounds
+                TextField {
+                    id: utilityPanelFilterField
+                    Layout.fillWidth: true
+                    Layout.margins: Style.dp(8)
+                    minHeight: 23
+                    placeholderText: qsTr("Filter...")
+                    backgroundColor: Style.colors.secondaryBackground
+                    borderWidth: 1
+                    borderColor: Style.colors.secondaryBorder
+                    focusBorderWidth: 1
+                    font.family: Style.fontTypes.roboto
+                    font.weight: 400
+                    font.pixelSize: Style.appFont.captionPt
 
-                contentWidth: utilityPanelFlow.width
-                contentHeight: utilityPanelFlow.implicitHeight
-
-                ScrollBar.vertical: ScrollBar {
-                    policy: ScrollBar.AsNeeded
+                    onTextChanged: utilityPanelFlow.filterText = text
                 }
 
-                Flow {
-                    id: utilityPanelFlow
-                    width: utilityPanelFlick.width
+                Flickable {
+                    id: utilityPanelFlick
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
 
-                    property bool dockHovered: false
+                    interactive: !utilityPanelFlow.dockHovered
+                    flickableDirection: Flickable.VerticalFlick
+                    boundsBehavior: Flickable.StopAtBounds
 
-                    function scrollBlockingHovered(item) {
-                        return item
-                            && item.visible !== false
-                            && item.hasOwnProperty("pageScrollBlocking")
-                            && item.pageScrollBlocking === true
-                            && item.hasOwnProperty("hovered")
-                            && item.hovered === true
+                    contentWidth: utilityPanelFlow.width
+                    contentHeight: utilityPanelFlow.implicitHeight
+
+                    ScrollBar.vertical: ScrollBar {
+                        policy: ScrollBar.AsNeeded
                     }
 
-                    function updateDockHovered() {
-                        for (let i = 0; i < children.length; ++i) {
-                            const child = children[i]
-                            if (scrollBlockingHovered(child) || scrollBlockingHovered(child.item)) {
-                                utilityPanelFlow.dockHovered = true
-                                return
-                            }
+                    Flow {
+                        id: utilityPanelFlow
+                        width: utilityPanelFlick.width
+
+                        property bool dockHovered: false
+                        property string filterText: ""
+
+                        function matchesFilter(sectionTitle) {
+                            var needle = utilityPanelFlow.filterText.trim().toLowerCase()
+                            if (needle.length === 0)
+                                return true
+                            return sectionTitle.toLowerCase().indexOf(needle) !== -1
                         }
 
-                        utilityPanelFlow.dockHovered = false
-                    }
+                        function scrollBlockingHovered(item) {
+                            return item
+                                && item.visible !== false
+                                && item.hasOwnProperty("pageScrollBlocking")
+                                && item.pageScrollBlocking === true
+                                && item.hasOwnProperty("hovered")
+                                && item.hovered === true
+                        }
 
-                    function setupPluginDock(item) {
-                        if (!item)
-                            return
+                        function updateDockHovered() {
+                            for (let i = 0; i < children.length; ++i) {
+                                const child = children[i]
+                                if (scrollBlockingHovered(child) || scrollBlockingHovered(child.item)) {
+                                    utilityPanelFlow.dockHovered = true
+                                    return
+                                }
+                            }
+
+                            utilityPanelFlow.dockHovered = false
+                        }
+
+                        function setupPluginDock(item) {
+                            if (!item)
+                                return
 
                         if (item.hasOwnProperty("pageScrollBlocking")
                                 && item.pageScrollBlocking === true
@@ -419,98 +449,107 @@ Page {
                             item.hoveredChanged.connect(utilityPanelFlow.updateDockHovered)
                         }
 
-                        updateDockHovered()
-                    }
+                            updateDockHovered()
+                        }
 
-                    ImportExportBundleDock {
-                        branchController: root.branchController
-                        bundleController: root.bundleController
-                        notificationController: root.notificationController
-                        guideController: root.guideController
-                    }
+                        ImportExportBundleDock {
+                            visible: utilityPanelFlow.matchesFilter("Export / Import Project")
+                            branchController: root.branchController
+                            bundleController: root.bundleController
+                            notificationController: root.notificationController
+                            guideController: root.guideController
+                        }
 
-                    RemoteView {
-                        remoteController: root.remoteController
-                        repositoryController: root.repositoryController
-                        userAuthenticationPopup: root.userAuthenticationPopup
-                        uiSessionPopups: root.uiSessionPopups
-                        addEditRemotePopup: uiSessionPopups.addEditRemotePopup
-                        notificationController: root.notificationController
-                        guideController: root.guideController
+                        RemoteView {
+                            visible: utilityPanelFlow.matchesFilter("Remotes")
+                            remoteController: root.remoteController
+                            repositoryController: root.repositoryController
+                            userAuthenticationPopup: root.userAuthenticationPopup
+                            uiSessionPopups: root.uiSessionPopups
+                            addEditRemotePopup: uiSessionPopups.addEditRemotePopup
+                            notificationController: root.notificationController
+                            guideController: root.guideController
 
-                        onHoveredChanged: utilityPanelFlow.updateDockHovered()
-                    }
-
-
-                    BranchManagementView {
-                        id: branchManagementView
-                        branchController: root.branchController
-                        addBranchPopup: uiSessionPopups.addBranchPopup
-                        notificationController: root.notificationController
-                        guideController: root.guideController
-
-                        onHoveredChanged: utilityPanelFlow.updateDockHovered()
-                    }
+                            onHoveredChanged: utilityPanelFlow.updateDockHovered()
+                        }
 
 
-                    StashManagerDock {
-                        id: stashManagerDock
-                        stashController: root.stashController
-                        commitController: root.commitController
-                        statusController: root.statusController
-                        addStashPopup: uiSessionPopups.addStashPopup
-                        manageStashPopup: uiSessionPopups.manageStashPopup
-                        guideController: root.guideController
+                        BranchManagementView {
+                            id: branchManagementView
+                            visible: utilityPanelFlow.matchesFilter("Branch Management")
+                            branchController: root.branchController
+                            addBranchPopup: uiSessionPopups.addBranchPopup
+                            notificationController: root.notificationController
+                            guideController: root.guideController
 
-                        notificationController: root.notificationController
+                            onHoveredChanged: utilityPanelFlow.updateDockHovered()
+                        }
 
-                        onHoveredChanged: utilityPanelFlow.updateDockHovered()
-                    }
 
-                    TagManagementView {
-                        id: tagManagementView
-                        tagController: root.tagController
-                        addTagPopup: uiSessionPopups.addTagPopup
-                        guideController: root.guideController
-                        notificationController: root.notificationController
+                        StashManagerDock {
+                            id: stashManagerDock
+                            visible: utilityPanelFlow.matchesFilter("Stash Manager")
+                            stashController: root.stashController
+                            commitController: root.commitController
+                            statusController: root.statusController
+                            addStashPopup: uiSessionPopups.addStashPopup
+                            manageStashPopup: uiSessionPopups.manageStashPopup
+                            guideController: root.guideController
 
-                        onHoveredChanged: utilityPanelFlow.updateDockHovered()
-                    }
+                            notificationController: root.notificationController
 
-                    RecentActivityDock {
-                        activityController: root.activityController
-                        guideController: root.guideController
+                            onHoveredChanged: utilityPanelFlow.updateDockHovered()
+                        }
 
-                        onHoveredChanged: utilityPanelFlow.updateDockHovered()
-                    }
+                        TagManagementView {
+                            id: tagManagementView
+                            visible: utilityPanelFlow.matchesFilter("Tag Management")
+                            tagController: root.tagController
+                            addTagPopup: uiSessionPopups.addTagPopup
+                            guideController: root.guideController
+                            notificationController: root.notificationController
 
-                    RepositoriesHistoryDock {
-                        repositoryController: root.repositoryController
-                        guideController: root.guideController
+                            onHoveredChanged: utilityPanelFlow.updateDockHovered()
+                        }
 
-                        onHoveredChanged: utilityPanelFlow.updateDockHovered()
-                    }
+                        RecentActivityDock {
+                            visible: utilityPanelFlow.matchesFilter("Recent Activity")
+                            activityController: root.activityController
+                            guideController: root.guideController
 
-                    RebaseDock {
-                        id: rebaseDock
-                        branchController        : root.branchController
-                        rebaseController        : root.rebaseController
-                        commitController        : root.commitController
-                        statusController        : root.statusController
-                        notificationController  : root.notificationController
-                        conflictController      : root.conflictController
-                        guideController         : root.guideController
-                    }
+                            onHoveredChanged: utilityPanelFlow.updateDockHovered()
+                        }
 
-                    // ── Plugin docks ─────────────────────────────────────────────────
-                    Repeater {
-                        model: root.pluginController?.pluginManager?.registeredDocks ?? []
+                        RepositoriesHistoryDock {
+                            visible: utilityPanelFlow.matchesFilter("Repositories History")
+                            repositoryController: root.repositoryController
+                            guideController: root.guideController
 
-                        delegate: Loader {
-                            width:  Style.dp(279)
-                            height: 390
+                            onHoveredChanged: utilityPanelFlow.updateDockHovered()
+                        }
 
-                            source: modelData.url
+                        RebaseDock {
+                            id: rebaseDock
+                            visible: utilityPanelFlow.matchesFilter("Rebase")
+                            branchController        : root.branchController
+                            rebaseController        : root.rebaseController
+                            commitController        : root.commitController
+                            statusController        : root.statusController
+                            notificationController  : root.notificationController
+                            conflictController      : root.conflictController
+                            guideController         : root.guideController
+                        }
+
+                        // ── Plugin docks ─────────────────────────────────────────────────
+                        Repeater {
+                            model: root.pluginController?.pluginManager?.registeredDocks ?? []
+
+                            delegate: Loader {
+                                width:  Style.dp(279)
+                                height: 390
+                                visible: utilityPanelFlow.matchesFilter(modelData.title ?? "")
+
+                                source: modelData.url
 
                             onLoaded: {
                                 if (!item) return
@@ -545,9 +584,10 @@ Page {
                                     item.eventBus = Qt.binding(function() { return root.pluginController?.pluginManager })
                             }
 
-                            onStatusChanged: {
-                                if (status === Loader.Error)
-                                    console.error("[GraphViewPage] Failed to load plugin dock:", source)
+                                onStatusChanged: {
+                                    if (status === Loader.Error)
+                                        console.error("[GraphViewPage] Failed to load plugin dock:", source)
+                                }
                             }
                         }
                     }
