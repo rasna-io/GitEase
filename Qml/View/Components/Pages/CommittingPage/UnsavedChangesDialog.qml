@@ -25,7 +25,7 @@ IPopup {
     property string acceptDescription   : "Discard all changes and continue"
 
     property string cancelTitle         : "Cancel"
-    property string cancelDescription   : "Return to the editor"
+    property string cancelDescription   : "Return"
 
     property bool hasAbort              : true
 

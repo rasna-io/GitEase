@@ -159,6 +159,7 @@ QtObject {
         appModel:               root.appModel
         networkController:      root.networkController
         pageController:         root.pageController
+        commitController:       root.commitController
     }
 
     property NetworkController networkController: NetworkController {}

@@ -12,6 +12,7 @@ class IPagePlugin;
 class IContextMenuPlugin;
 class IWorkflowPlugin;
 class IToolbarPlugin;
+class IRulePlugin;
 
 /*!
  * \brief Pure abstract interface exposed to plugins.
@@ -54,4 +55,8 @@ public:
                              std::function<void(const QVariantMap&)> handler) = 0;
     virtual void unsubscribe(int token) = 0;
     virtual void publish    (const QString& event, const QVariantMap& payload) = 0;
+
+    // ── NEW extension points (always add at the end to preserve ABI) ─────────
+    // registerRule: slot is after publish so existing plugin DLLs are unaffected.
+    virtual void registerRule       (IRulePlugin*         plugin) = 0;
 };

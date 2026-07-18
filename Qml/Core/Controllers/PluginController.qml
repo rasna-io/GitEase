@@ -16,6 +16,7 @@ QtObject {
     required property var notificationController
     required property var networkController
     required property var pageController
+    property CommitController          commitController: null
 
     property var    currentRepo:        null
     property string currentBranch:      ""
@@ -104,6 +105,14 @@ QtObject {
         pluginManager.initialize()
         pluginManager.scanDefaultDirectory()
         pluginManager.scanApplicationPluginsDirectory() // picks up <appDir>/plugins in dev/portable mode
+    }
+
+    property Connections commitConnections: Connections {
+        target: root.commitController
+
+        function onBeforeAction(ccc) {
+            pluginManager.runBeforeAction(ccc)
+        }
     }
 
     /* Network connections
