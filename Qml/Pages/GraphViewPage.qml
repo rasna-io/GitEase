@@ -40,6 +40,7 @@ Item {
     property LayoutController        layoutController        : null
 
     property GuideController         guideController         : null
+    property var                     pluginController        : null
 
     property alias                   graphRef                : commitGraph
     property var                     statePage               : null
@@ -168,6 +169,7 @@ Item {
                 resetController         : root.resetController
                 terminalController      : root.terminalController
                 layoutController        : root.layoutController
+                pluginController        : root.pluginController
 
                 onCommitClicked: function(commitId) { Presenter.handleCommitClicked(commitId) }
             }

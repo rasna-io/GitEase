@@ -5,7 +5,8 @@
 // for a commit.
 // ====================================================================
 
-function buildMenu(state) {
+// pluginItems: optional array of {pluginId, id, label, icon, separator, order} from IContextMenuPlugin
+function buildMenu(state, pluginItems) {
     var model = [];
 
     // Checkout section
@@ -125,6 +126,23 @@ function buildMenu(state) {
            {text: "--Hard (Discard all changes)", icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
         ]
     });
+
+    // Plugin context menu items (appended after a separator when non-empty)
+    if (pluginItems && pluginItems.length > 0) {
+        model.push({ separator: true });
+        pluginItems.forEach(function(pi) {
+            if (pi.separator) {
+                model.push({ separator: true });
+                return;
+            }
+            model.push({
+                text:    pi.label,
+                icon:    pi.icon || "",
+                action:  "pluginAction",
+                payload: { pluginId: pi.pluginId, itemId: pi.id, hash: state.fullHash }
+            });
+        });
+    }
 
     return model;
 }

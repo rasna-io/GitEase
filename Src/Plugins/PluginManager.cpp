@@ -6,6 +6,13 @@
 #include "IAuthPlugin.h"
 #include "IDiffPlugin.h"
 #include "IServicePlugin.h"
+#include "IPagePlugin.h"
+#include "IContextMenuPlugin.h"
+#include "IWorkflowPlugin.h"
+#include "IToolbarPlugin.h"
+
+#include <QJSEngine>
+#include <QJSValueList>
 
 #include <archive.h>
 #include <archive_entry.h>
@@ -41,6 +48,44 @@ PluginManager::PluginManager(QObject* parent)
                     { QStringLiteral("icon"),  icon          },
                 });
                 emit docksChanged();
+            });
+
+    // Accumulate page registrations into m_pages
+    connect(this, &PluginManager::pageRegistered,
+            this, [this](const QString& id, const QUrl& url,
+                         const QString& title, const QString& icon, int order) {
+                m_pages.append(QVariantMap {
+                    { QStringLiteral("id"),    id            },
+                    { QStringLiteral("url"),   url.toString()},
+                    { QStringLiteral("title"), title         },
+                    { QStringLiteral("icon"),  icon          },
+                    { QStringLiteral("order"), order         },
+                });
+                // keep sorted by order
+                std::sort(m_pages.begin(), m_pages.end(), [](const QVariant& a, const QVariant& b) {
+                    return a.toMap().value(QStringLiteral("order")).toInt()
+                         < b.toMap().value(QStringLiteral("order")).toInt();
+                });
+                emit pagesChanged();
+            });
+
+    // Accumulate toolbar action registrations
+    connect(this, &PluginManager::toolbarActionRegistered,
+            this, [this](const QString& pluginId, const QString& id,
+                         const QString& tooltip, const QString& icon, int order) {
+                m_toolbarActions.append(QVariantMap {
+                    { QStringLiteral("pluginId"), pluginId },
+                    { QStringLiteral("id"),       id       },
+                    { QStringLiteral("tooltip"),  tooltip  },
+                    { QStringLiteral("icon"),     icon     },
+                    { QStringLiteral("order"),    order    },
+                });
+                std::sort(m_toolbarActions.begin(), m_toolbarActions.end(),
+                          [](const QVariant& a, const QVariant& b) {
+                    return a.toMap().value(QStringLiteral("order")).toInt()
+                         < b.toMap().value(QStringLiteral("order")).toInt();
+                });
+                emit toolbarActionsChanged();
             });
 }
 
@@ -94,6 +139,38 @@ void PluginManager::wireContext()
                     };
                 }
                 emit commandRegistered(plugin->id(), cmds);
+            });
+
+    connect(m_context, &PluginContext::pageRegistered,
+            this, [this](IPagePlugin* plugin) {
+                emit pageRegistered(plugin->pageId(),
+                                    plugin->pageQmlUrl(),
+                                    plugin->pageTitle(),
+                                    plugin->pageIcon(),
+                                    plugin->pageOrder());
+            });
+
+    connect(m_context, &PluginContext::contextMenuRegistered,
+            this, [this](IContextMenuPlugin* plugin) {
+                m_contextMenuPlugins.append(plugin);
+                emit contextMenusChanged();
+            });
+
+    connect(m_context, &PluginContext::workflowRegistered,
+            this, [this](IWorkflowPlugin* plugin) {
+                m_workflowPlugins.append(plugin);
+            });
+
+    connect(m_context, &PluginContext::toolbarRegistered,
+            this, [this](IToolbarPlugin* plugin) {
+                m_toolbarPlugins.append(plugin);
+                for (const auto& action : plugin->toolbarActions()) {
+                    emit toolbarActionRegistered(plugin->id(),
+                                                  action.id,
+                                                  action.tooltip,
+                                                  action.icon,
+                                                  action.order);
+                }
             });
 }
 
@@ -550,6 +627,165 @@ bool PluginManager::removePlugin(const QString& id)
     return ok;
 }
 
+// ── Queries ──────────────────────────────────────────────────────────────────
+
+QVariantList PluginManager::registeredPages() const
+{
+    return m_pages;
+}
+
+QVariantList PluginManager::registeredToolbarActions() const
+{
+    return m_toolbarActions;
+}
+
+// ── Event bus ────────────────────────────────────────────────────────────────
+
+void PluginManager::publishEvent(const QString& event, const QVariantMap& payload)
+{
+    m_context->publish(event, payload);
+}
+
+int PluginManager::subscribeEvent(const QString& event, const QJSValue& handler)
+{
+    if (!handler.isCallable()) return -1;
+    auto jsHandler = std::make_shared<QJSValue>(handler);
+    return m_context->subscribe(event, [jsHandler](const QVariantMap& payload) {
+        if (!jsHandler->isCallable()) return;
+        auto* engine = jsHandler->engine();
+        if (!engine) return;
+        jsHandler->call(QJSValueList{engine->toScriptValue(payload)});
+    });
+}
+
+void PluginManager::unsubscribeEvent(int token)
+{
+    m_context->unsubscribe(token);
+}
+
+// ── Context menu ─────────────────────────────────────────────────────────────
+
+QVariantList PluginManager::pluginContextMenuItems(const QString& target,
+                                                    const QVariantMap& ctx) const
+{
+    IContextMenuPlugin::MenuTarget t = IContextMenuPlugin::MenuTarget::CommitGraph;
+    if      (target == QStringLiteral("branch")) t = IContextMenuPlugin::MenuTarget::Branch;
+    else if (target == QStringLiteral("file"))   t = IContextMenuPlugin::MenuTarget::File;
+
+    QVariantList result;
+    for (auto* plugin : m_contextMenuPlugins) {
+        if (!plugin->targets().contains(t)) continue;
+        for (const auto& item : plugin->menuItems(t, ctx)) {
+            result.append(QVariantMap {
+                { QStringLiteral("pluginId"),  plugin->id()   },
+                { QStringLiteral("id"),        item.id        },
+                { QStringLiteral("label"),     item.label     },
+                { QStringLiteral("icon"),      item.icon      },
+                { QStringLiteral("separator"), item.separator },
+                { QStringLiteral("order"),     item.order     },
+            });
+        }
+    }
+
+    // Sort by order
+    std::sort(result.begin(), result.end(), [](const QVariant& a, const QVariant& b) {
+        return a.toMap().value(QStringLiteral("order")).toInt()
+             < b.toMap().value(QStringLiteral("order")).toInt();
+    });
+
+    return result;
+}
+
+void PluginManager::executeContextMenuAction(const QString& pluginId,
+                                              const QString& itemId,
+                                              const QString& target,
+                                              const QVariantMap& ctx)
+{
+    IContextMenuPlugin::MenuTarget t = IContextMenuPlugin::MenuTarget::CommitGraph;
+    if      (target == QStringLiteral("branch")) t = IContextMenuPlugin::MenuTarget::Branch;
+    else if (target == QStringLiteral("file"))   t = IContextMenuPlugin::MenuTarget::File;
+
+    for (auto* plugin : m_contextMenuPlugins) {
+        if (plugin->id() == pluginId) {
+            plugin->executeAction(itemId, t, ctx);
+            return;
+        }
+    }
+}
+
+// ── Workflow hooks ────────────────────────────────────────────────────────────
+
+bool PluginManager::hasWorkflowPluginsFor(const QString& event) const
+{
+    for (const auto* plugin : m_workflowPlugins)
+        if (plugin->handledEvents().contains(event))
+            return true;
+    return false;
+}
+
+void PluginManager::notifyWorkflowEvent(const QString& event, const QVariantMap& ctx)
+{
+    if (m_workflowPlugins.isEmpty()) {
+        emit workflowEventResolved(event, ctx, true);
+        return;
+    }
+
+    const bool isPre = event.startsWith(QStringLiteral("pre-"));
+
+    if (!isPre) {
+        // Post-events: notify all plugins, always resolve as allowed
+        for (auto* plugin : m_workflowPlugins) {
+            if (plugin->handledEvents().contains(event))
+                plugin->onEvent(event, ctx, [](bool) {});
+        }
+        emit workflowEventResolved(event, ctx, true);
+        return;
+    }
+
+    // Pre-events: chain through plugins; first resolve(false) blocks the operation
+    runWorkflowChain(event, ctx, 0, [this, event, ctx](bool allowed) {
+        emit workflowEventResolved(event, ctx, allowed);
+    });
+}
+
+void PluginManager::runWorkflowChain(const QString& event,
+                                      const QVariantMap& ctx,
+                                      int index,
+                                      std::function<void(bool)> finalCallback)
+{
+    // Find the next plugin that handles this event, starting from index
+    while (index < m_workflowPlugins.size()) {
+        auto* plugin = m_workflowPlugins[index];
+        if (plugin->handledEvents().contains(event)) {
+            plugin->onEvent(event, ctx, [this, event, ctx, index, finalCallback](bool allowed) {
+                if (!allowed) {
+                    finalCallback(false);
+                } else {
+                    runWorkflowChain(event, ctx, index + 1, finalCallback);
+                }
+            });
+            return;
+        }
+        ++index;
+    }
+    // All matching plugins allowed
+    finalCallback(true);
+}
+
+// ── Toolbar ───────────────────────────────────────────────────────────────────
+
+void PluginManager::executeToolbarAction(const QString& pluginId,
+                                          const QString& actionId,
+                                          const QVariantMap& ctx)
+{
+    for (auto* plugin : m_toolbarPlugins) {
+        if (plugin->id() == pluginId) {
+            plugin->onToolbarAction(actionId, ctx);
+            return;
+        }
+    }
+}
+
 template<typename T>
 static QList<T*> filterPlugins(const QMap<QString, IPlugin*>& plugins)
 {
@@ -560,8 +796,11 @@ static QList<T*> filterPlugins(const QMap<QString, IPlugin*>& plugins)
     return result;
 }
 
-QList<IDockPlugin*>    PluginManager::dockPlugins()    const { return filterPlugins<IDockPlugin>   (m_plugins); }
-QList<ICommandPlugin*> PluginManager::commandPlugins() const { return filterPlugins<ICommandPlugin>(m_plugins); }
-QList<IAuthPlugin*>    PluginManager::authPlugins()    const { return filterPlugins<IAuthPlugin>   (m_plugins); }
-QList<IDiffPlugin*>    PluginManager::diffPlugins()    const { return filterPlugins<IDiffPlugin>   (m_plugins); }
-QList<IServicePlugin*> PluginManager::servicePlugins() const { return filterPlugins<IServicePlugin>(m_plugins); }
+QList<IDockPlugin*>        PluginManager::dockPlugins()        const { return filterPlugins<IDockPlugin>       (m_plugins); }
+QList<ICommandPlugin*>     PluginManager::commandPlugins()     const { return filterPlugins<ICommandPlugin>    (m_plugins); }
+QList<IAuthPlugin*>        PluginManager::authPlugins()        const { return filterPlugins<IAuthPlugin>       (m_plugins); }
+QList<IDiffPlugin*>        PluginManager::diffPlugins()        const { return filterPlugins<IDiffPlugin>       (m_plugins); }
+QList<IServicePlugin*>     PluginManager::servicePlugins()     const { return filterPlugins<IServicePlugin>    (m_plugins); }
+QList<IContextMenuPlugin*> PluginManager::contextMenuPlugins() const { return m_contextMenuPlugins; }
+QList<IWorkflowPlugin*>    PluginManager::workflowPlugins()    const { return m_workflowPlugins;    }
+QList<IToolbarPlugin*>     PluginManager::toolbarPlugins()     const { return m_toolbarPlugins;     }

@@ -770,10 +770,37 @@ Item {
 
     function commit(amend) : bool {
         amend = amend || false
+        const pm = root.pluginController?.pluginManager
+        if (pm && pm.hasWorkflowPluginsFor("pre-commit")) {
+            root._pendingCommitAmend = amend
+            pm.notifyWorkflowEvent("pre-commit", { message: commitTextArea.text, amend: amend })
+            // actual commit is triggered from workflowConnections.onWorkflowEventResolved
+            return false  // async — result determined by workflow resolution
+        }
+        return root._doCommit(amend)
+    }
+
+    property bool _pendingCommitAmend: false
+
+    Connections {
+        id: workflowConnections
+        target: root.pluginController?.pluginManager ?? null
+        function onWorkflowEventResolved(event, ctx, allowed) {
+            if (event !== "pre-commit") return
+            if (allowed) {
+                root._doCommit(root._pendingCommitAmend)
+            } else {
+                root.notificationController.warning("Commit blocked by a plugin.", "Commit", 4000)
+            }
+        }
+    }
+
+    function _doCommit(amend) : bool {
         let res = commitController.commit(commitTextArea.text, amend, false)
         if (res.success) {
             commitTextArea.text = ""
             root.notificationController.success(`Commit ${amend ? "amended" : ""} successfully`, `Commit ${amend ? "Amend" : "" }`, 3000)
+            root.pluginController?.pluginManager?.notifyWorkflowEvent("post-commit", { amend: amend })
         } else {
             root.notificationController.error(res.errorMessage || `Commit ${amend ? "Amend" : ""} failed`, `Commit ${amend ? "Amend" : ""} Error`, 5000)
             errorMessageLabel.text = res.errorMessage ?? `Commit ${amend ? "Amend" : ""} Error`

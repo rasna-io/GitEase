@@ -35,6 +35,7 @@ Rectangle {
 
             windowController: root.uiSession.windowController
             content: (pageLoader.item && pageLoader.item.hasOwnProperty("headerContent")) ? pageLoader.item.headerContent : null
+            pluginManager: root.uiSession?.pluginController?.pluginManager ?? null
         }
 
         Item {
