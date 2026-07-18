@@ -37,6 +37,8 @@ IPopup {
 
     property var selectedEntry      : null
 
+    property var childCounts        : ({})
+
     property string searchText      : ""
 
     property int            treeColumnWidth     : root.width * 0.3
@@ -323,6 +325,15 @@ IPopup {
                                         font.family: Style.fontTypes.roboto
                                         font.pixelSize: 12
                                         elide: Text.ElideRight
+                                    }
+
+                                    // Direct-children count (folders only)
+                                    Label {
+                                        visible: isFolder
+                                        text: root.childCounts[entryData.path] || ""
+                                        color: Style.colors.mutedText
+                                        font.family: Style.fontTypes.monospace
+                                        font.pixelSize: 10
                                     }
                                 }
 
@@ -611,12 +622,29 @@ IPopup {
         root.commitSha      = hash
         root.commitMessage  = message || ""
 
-        if (root.gitTreeController.loadTree(hash))
+        if (root.gitTreeController.loadTree(hash)) {
+            rebuildChildCounts()
             rebuildVisibleEntries()
+        }
 
         else
             root.notificationController.error("Failed to load file tree for commit " + root.commitShortSha,
                                                   "Commit File Browser", 5000)
+
+    }
+
+    // Count direct children of every folder in the loaded tree
+    function rebuildChildCounts() {
+        var all    = root.gitTreeController.fileTreeModel || []
+        var counts = ({})
+
+        for (var i = 0; i < all.length; i++) {
+            var parentPath = all[i].parentPath
+            if (parentPath !== "")
+                counts[parentPath] = (counts[parentPath] || 0) + 1
+        }
+
+        root.childCounts = counts
     }
 
     // Rebuild visible entries (respecting expanded folders)
@@ -705,6 +733,7 @@ IPopup {
         root.commitMessage          = ""
         root.expandedPaths          = ({})
         root.selectedEntry          = null
+        root.childCounts            = ({})
         root.visibleEntries         = []
         root.filteredVisibleEntries = []
 
