@@ -72,7 +72,7 @@ QtObject {
         diffRemovedBorder:   "#F5C2C7"
         diffAddedBorder:     "#A6E9C6"
 
-        resizeHandle:        "#6b6b6b"
+        resizeHandle:        primaryBorder
         resizeHandlePressed: "#9b9b9b"
 
         selectedText:            "#FFFFFF"

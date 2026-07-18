@@ -101,13 +101,6 @@ Rectangle {
             RowLayout {
                 Layout.fillWidth: true
 
-                // separator
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.fillHeight: true
-                    color: Style.colors.hoverTitle
-                }
-
                 // Lane colour bar
                 Rectangle {
                     Layout.preferredWidth: 3
@@ -204,11 +197,7 @@ Rectangle {
 
             RowLayout {
                 Layout.fillWidth: true
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.fillHeight: true
-                    color: Style.colors.hoverTitle
-                }
+
                 Label {
                     text: commitData ? (commitData.author || "") : ""
                     color: Style.colors.foreground
@@ -230,11 +219,6 @@ Rectangle {
 
             RowLayout {
                 Layout.fillWidth: true
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.fillHeight: true
-                    color: Style.colors.hoverTitle
-                }
                 Label {
                     text: commitData ? (
                         GraphUtils.formatDate(commitData.authorDate) + " " +

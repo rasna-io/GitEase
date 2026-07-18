@@ -88,7 +88,7 @@ QtObject{
     property color windowsClose:        "#FF5555"
 
     // Header indicator
-    property color resizeHandle:        "#E8E8E8"
+    property color resizeHandle:        primaryBorder
     property color resizeHandlePressed: "#A0a0a0"
 
     property color selectedText:            "#FFFFFF"
