@@ -173,7 +173,7 @@ IPopup {
                         }
 
                         onClicked: {
-                            root.detached = false
+                            root.close()
                             root.closeRequested()
                         }
                     }
@@ -631,6 +631,7 @@ IPopup {
             root.notificationController.error("Failed to load file tree for commit " + root.commitShortSha,
                                                   "Commit File Browser", 5000)
 
+        root.open()
     }
 
     // Count direct children of every folder in the loaded tree
