@@ -41,6 +41,7 @@ QtObject{
     property string warning:           "\uf071"
     property string star:              "\uf005" // star
     property string circleExclamation: "\uf06a" // exclamation-circle
+    property string circleCheck:       "\uf058" // check-circle
     property string users:             "\uf0c0" // users
     property string info:              "\uf05a" // info
     property string check:             "\uf00c"
