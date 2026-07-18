@@ -1,4 +1,4 @@
-﻿import QtQuick
+import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
@@ -68,70 +68,108 @@ Rectangle {
                 Repeater {
                     id: rpt
 
-                    Rectangle {
-                        id: item
+                    Column {
                         width: parent.width
-                        height: Style.dp(30)
-                        radius: Style.dp(6)
+                        spacing: 0
 
-                        property bool isSelected: (modelData)
-                                                  ? (modelData.pageId === root.currentId)
-                                                  : false
-
-                        color: {
-                            if (item.isSelected) {
-                                return "#1F3B82F6"
-                            }
-                            return "transparent"
+                        // Separator before first plugin page
+                        Rectangle {
+                            width: parent.width - 16
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            height: 1
+                            color: Style.colors.primaryBorder
+                            visible: (modelData?.isPlugin === true) &&
+                                     (index === 0 || !(rpt.model[index - 1]?.isPlugin === true))
                         }
 
-                        RowLayout {
-                            anchors {
-                                fill: parent
-                                leftMargin: Style.dp(12)
-                                rightMargin: Style.dp(12)
-                            }
-                            spacing: 8
+                        // Spacer above separator
+                        Item {
+                            width: parent.width
+                            height: 6
+                            visible: (modelData?.isPlugin === true) &&
+                                     (index === 0 || !(rpt.model[index - 1]?.isPlugin === true))
+                        }
 
-                            // Icon
-                            Rectangle {
-                                Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                                width: Style.dp(14)
-                                height: Style.dp(14)
-                                color: "transparent"
+                        Rectangle {
+                            id: item
+                            width: parent.width
+                            height: Style.dp(30)
+                            radius: Style.dp(6)
 
+                            property bool isSelected: (modelData)
+                                                      ? (modelData.pageId === root.currentId)
+                                                      : false
+
+                            color: item.isSelected ? "#1F3B82F6" : "transparent"
+
+                            RowLayout {
+                                anchors {
+                                    fill: parent
+                                    leftMargin: Style.dp(12)
+                                    rightMargin: Style.dp(8)
+                                }
+                                spacing: 8
+
+                                // Icon
+                                Rectangle {
+                                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                                    width: Style.dp(14)
+                                    height: Style.dp(14)
+                                    color: "transparent"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: (modelData && modelData.icon && modelData.icon.length)
+                                              ? modelData.icon
+                                              : Style.icons.download
+                                        font.pixelSize: 13
+                                        font.family: Style.fontTypes.font6Pro
+                                        font.weight: 500
+                                        color: item.isSelected ? "#60A5FA" : "#363650"
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+                                }
+
+                                // Title
                                 Text {
-                                    anchors.centerIn: parent
-                                    text: (modelData && modelData.icon && modelData.icon.length)
-                                          ? modelData.icon
-                                          : Style.icons.download
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    text: (modelData && modelData.title) ? modelData.title : ""
                                     font.pixelSize: 13
-                                    font.family: Style.fontTypes.font6Pro
-                                    font.weight: 500
+                                    font.family: Style.fontTypes.roboto
                                     color: item.isSelected ? "#60A5FA" : "#363650"
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
+                                    elide: Text.ElideRight
+                                }
+
+                                // Badge
+                                Rectangle {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    visible: (modelData?.badgeCount ?? -1) >= 0
+                                    implicitHeight: 16
+                                    implicitWidth: Math.max(implicitHeight, badgeLabel.implicitWidth + 8)
+                                    radius: implicitHeight / 2
+                                    color: modelData?.badgeColor ?? "#3B82F6"
+
+                                    Label {
+                                        id: badgeLabel
+                                        anchors.centerIn: parent
+                                        text: modelData?.badgeCount ?? ""
+                                        color: "white"
+                                        font.family: Style.fontTypes.roboto
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                    }
                                 }
                             }
 
-                            // Title
-                            Text {
-                                Layout.fillWidth: true
-                                Layout.alignment: Qt.AlignVCenter
-                                text: (modelData && modelData.title) ? modelData.title : ""
-                                font.pixelSize: 13
-                                font.family: Style.fontTypes.roboto
-                                color: item.isSelected ? "#60A5FA" : "#363650"
-                                elide: Text.ElideRight
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                hoverEnabled: true
+
+                                onClicked: root.clicked(modelData)
                             }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-
-                            onClicked: root.clicked(modelData)
                         }
                     }
                 }

@@ -20,8 +20,39 @@ Rectangle {
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
 
+    /* Plugin page host — dynamically instantiated for each registered IPagePlugin
+     * ****************************************************************************************/
+    Component {
+        id: pluginPageComponent
+        Page {
+            property url pluginUrl: ""
+            isPlugin: true
+            Loader {
+                anchors.fill: parent
+                source: parent.pluginUrl
+            }
+        }
+    }
+
+    /* Wiring
+     * ****************************************************************************************/
+    onUiSessionChanged: {
+        if (!uiSession) return
+        uiSession.pageController = { createPage: root.addPluginPage }
+        let early = uiSession.pluginController.registeredPages
+        for (let p of early)
+            addPluginPage(p.id, p.title, p.qmlUrl, p.icon)
+    }
+
     /* Functions
      * ****************************************************************************************/
+    function addPluginPage(id, title, qmlUrl, icon) {
+        let page = pluginPageComponent.createObject(pageSwipeView, {
+            pageId: id, title: title, icon: icon, pluginUrl: qmlUrl
+        })
+        pageSwipeView.addItem(page)
+    }
+
     function switchToPageById(pageId) {
         let pages = pageSwipeView.contentChildren
         let targetIndex = -1
@@ -55,7 +86,7 @@ Rectangle {
             Layout.fillWidth: true
 
             windowController: root.uiSession.windowController
-            content: (pageLoader.item && pageLoader.item.hasOwnProperty("headerContent")) ? pageLoader.item.headerContent : null
+            content: pageSwipeView.currentItem?.headerContent ?? null
             pluginManager: root.uiSession?.pluginController?.pluginManager ?? null
         }
 
@@ -205,9 +236,6 @@ Rectangle {
                             appModel: root.uiSession?.appModel
                             pluginController: root.uiSession?.pluginController
                         }
-
-                        //! TODO
-                        //! add loader for page plugins
 
                         Component.onCompleted: {
                             let requestedPageId = root.uiSession?.shellController?.arguments?.["page"]

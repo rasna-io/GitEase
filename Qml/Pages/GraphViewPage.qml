@@ -45,7 +45,6 @@ Page {
     property var                     pluginController        : null
     property LayoutController        layoutController        : null
     property GuideController         guideController         : null
-    property var                     pluginController        : null
 
     // Utility panel (moved in from the old UtilitiesPage), open by default.
     property bool                    utilityPanelOpen        : true
@@ -283,9 +282,9 @@ Page {
 
                         if (item.hasOwnProperty("pageScrollBlocking")
                                 && item.pageScrollBlocking === true
-                                && item.hasOwnProperty("onHoveredChanged"))
+                                && item.hoveredChanged)
                             {
-                            item.onHoveredChanged = utilityPanelFlow.updateDockHovered
+                            item.hoveredChanged.connect(utilityPanelFlow.updateDockHovered)
                         }
 
                         updateDockHovered()

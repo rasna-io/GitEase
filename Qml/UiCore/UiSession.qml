@@ -171,5 +171,9 @@ QtObject {
     }
 
     property UiSessionPopups      popups
+
+    // Injected by MainWindow after the SwipeView is ready; forwarded into PluginController
+    // so page plugins can add themselves to the navigation rail.
+    property var pageController: null
 }
 

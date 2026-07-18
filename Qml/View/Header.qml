@@ -83,7 +83,8 @@ Item {
                     ToolTip.visible: hovered
                     ToolTip.delay: 500
                     onClicked: root.pluginManager.executeToolbarAction(modelData.pluginId, modelData.id, {})
-             }
+                }
+            }
             Rectangle {
                 Layout.preferredWidth: Style.dp(1)
                 Layout.fillHeight: true

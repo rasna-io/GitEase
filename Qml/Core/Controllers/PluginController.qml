@@ -15,8 +15,12 @@ QtObject {
     required property var appModel
     required property var notificationController
     required property var networkController
-    required property var pageController
+    property var          pageController:  null  // set by MainWindow after SwipeView is ready
     property CommitController          commitController: null
+
+    // All pages that have been registered so far (populated before pageController exists).
+    // MainWindow reads this list after setting pageController to drain any early registrations.
+    property var registeredPages: []
 
     property var    currentRepo:        null
     property string currentBranch:      ""
@@ -63,7 +67,9 @@ QtObject {
 
         onPageRegistered: function(id, qmlUrl, title, icon, order) {
             console.log("[PluginController] Page registered:", id, "→", qmlUrl)
-            root.pageController.createPage(id, title, qmlUrl, icon)
+            root.registeredPages = root.registeredPages.concat([{id: id, title: title, qmlUrl: qmlUrl, icon: icon}])
+            if (root.pageController)
+                root.pageController.createPage(id, title, qmlUrl, icon)
         }
 
         onNotifyRequested: function(message, type) {
@@ -103,8 +109,13 @@ QtObject {
      * ****************************************************************************************/
     Component.onCompleted: {
         pluginManager.initialize()
-        pluginManager.scanDefaultDirectory()
-        pluginManager.scanApplicationPluginsDirectory() // picks up <appDir>/plugins in dev/portable mode
+        // Defer scanning one event-loop tick so that all Component.onCompleted handlers fire
+        // first — including MainWindow's SwipeView which sets pageController. Without this
+        // deferral, pageRegistered signals arrive before pageController is available.
+        Qt.callLater(function() {
+            pluginManager.scanDefaultDirectory()
+            pluginManager.scanApplicationPluginsDirectory()
+        })
     }
 
     property Connections commitConnections: Connections {

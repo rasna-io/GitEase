@@ -23,4 +23,11 @@ Item {
 
     // Page-owned transient state (e.g. GraphViewPage's filter cache).
     property var state: ({})
+
+    // Plugin pages set this to true so the rail can draw a separator before the first one.
+    property bool isPlugin: false
+    // Badge count shown in the rail item. -1 hides the badge.
+    property int  badgeCount: -1
+    // Override badge background color (defaults to accent blue)
+    property color badgeColor: "#3B82F6"
 }
