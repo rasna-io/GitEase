@@ -27,14 +27,21 @@ Page {
     property AppModel       appModel:           null
     property var            pluginController:   null
     property var            pluginsData:        root.appModel ? root.appModel.plugins : []
+    property var            categoriesData:     root.appModel ? root.appModel.pluginsCategories : []
     readonly property int   minCardWidth:       400
-    readonly property int   minCardHeight:      270
+    readonly property int   minCardHeight:      190
 
     property string         currentMode:        ""
     property string         currentSearch:      ""
     property var            initialPlugins:     []   // full list from the last no-search fetch
     property bool           isSearchActive:     false
     property bool           fetchingMore:       false
+
+    property var installedModel: [
+        { name: "Enabled",      iconName: Style.icons.check,   iconColor: Style.colors.compatible },
+        { name: "Disabled",     iconName: Style.icons.pause,   iconColor: "#363650" },
+        { name: "Needs Update", iconName: Style.icons.warning, iconColor: Style.colors.warning }
+    ]
 
     // Header exposed to MainWindow
     headerContent: Component {
@@ -88,7 +95,8 @@ Page {
         anchors.fill: parent
 
         PluginsLeftPanel {
-
+            categoriesData: root.categoriesData
+            installedModel: root.installedModel
         }
 
         Rectangle {
@@ -96,60 +104,119 @@ Page {
             Layout.fillWidth: true
             color: Style.colors.obsidianDark
 
-            GridView {
-                id: gridView
+            ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 10
-                clip: true
+                anchors.margins: 8
 
-                model: pluginsModel
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
 
-                ScrollBar.vertical: ScrollBar {
-                    policy: ScrollBar.AsNeeded
+                    Text {
+                        text: "INSTALLED"
+                        color: "#363650"
+                        font.pixelSize: Style.appFont.largePt
+                        font.family: Style.fontTypes.roboto
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 1
+                        color: Style.colors.primaryBorder
+                    }
+
+                    Text {
+                        text: "4 plugins"
+                        color: "#363650"
+                        font.pixelSize: Style.appFont.largePt
+                        font.family: Style.fontTypes.roboto
+                    }
                 }
 
-                property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
 
-                cellWidth: width / columns
-                cellHeight: root.minCardHeight
+                    Text {
+                        text: "AVAILABLE"
+                        color: "#363650"
+                        font.pixelSize: Style.appFont.largePt
+                        font.family: Style.fontTypes.roboto
+                    }
 
-                delegate: Item {
-                    width: gridView.cellWidth
-                    height: gridView.cellHeight
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 1
+                        color: Style.colors.primaryBorder
+                    }
 
-                    PluginCard {
-                        anchors.centerIn: parent
-                        width: gridView.cellWidth - 20
-                        height: gridView.cellHeight - 20
-                        plugin: model
+                    Text {
+                        text: "6 plugins"
+                        color: "#363650"
+                        font.pixelSize: Style.appFont.largePt
+                        font.family: Style.fontTypes.roboto
+                    }
+                }
 
-                        onInstallClicked: function(pluginId) {
-                            root.pluginController?.installPlugin(pluginId)
+                GridView {
+                    id: gridView
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+
+                    model: pluginsModel
+
+                    ScrollBar.vertical: ScrollBar {
+                        policy: ScrollBar.AsNeeded
+                    }
+
+                    property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
+
+                    cellWidth: width / columns
+                    cellHeight: root.minCardHeight
+
+                    delegate: Item {
+                        width: gridView.cellWidth
+                        height: gridView.cellHeight
+
+                        PluginCard {
+                            anchors.centerIn: parent
+                            width: gridView.cellWidth - 20
+                            height: gridView.cellHeight - 20
+                            plugin: model
+
+                            onInstallClicked: function(pluginId) {
+                                root.pluginController?.installPlugin(pluginId)
+                            }
+                            onUninstallClicked: function(pluginId) {
+                                root.pluginController?.uninstallPlugin(pluginId)
+                            }
+                            onUpdateClicked: function(pluginId) {
+                                root.pluginController?.updatePlugin(pluginId)
+                            }
+                            onEnableToggled: function(pluginId, enabled) {
+                                root.pluginController?.togglePlugin(pluginId, enabled)
+                            }
                         }
-                        onUninstallClicked: function(pluginId) {
-                            root.pluginController?.uninstallPlugin(pluginId)
-                        }
-                        onUpdateClicked: function(pluginId) {
-                            root.pluginController?.updatePlugin(pluginId)
-                        }
-                        onEnableToggled: function(pluginId, enabled) {
-                            root.pluginController?.togglePlugin(pluginId, enabled)
+                    }
+
+                    // Load next page when the user scrolls within one row of the bottom
+                    onContentYChanged: {
+                        if (contentHeight <= height)
+                            return
+
+                        if (contentY + height >= contentHeight - gridView.cellHeight
+                                && !root.fetchingMore
+                                && root.pluginController?.hasMorePages) {
+                            root.loadNextPage()
                         }
                     }
                 }
 
-                // Load next page when the user scrolls within one row of the bottom
-                onContentYChanged: {
-                    if (contentHeight <= height)
-                        return
-
-                    if (contentY + height >= contentHeight - gridView.cellHeight
-                            && !root.fetchingMore
-                            && root.pluginController?.hasMorePages) {
-                        root.loadNextPage()
-                    }
-                }
             }
+
+
+
         }
     }
 
@@ -203,6 +270,7 @@ Page {
         root.isSearchActive = false
         root.currentSearch  = ""
         root.currentMode    = ""
+        root.pluginController.fetchPluginsCategories()
         root.pluginController.fetchAvailablePlugins(1, "")
     }
 
