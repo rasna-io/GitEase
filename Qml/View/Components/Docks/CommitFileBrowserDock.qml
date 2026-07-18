@@ -12,7 +12,7 @@ import GitEase
  * Browse the full repository file tree at a specific commit (read-only),
  * similar to GitHub's "Browse files" on a commit.
  * ************************************************************************************************/
-DetachablePanel {
+IPopup {
     id: root
 
     /* Property Declarations
@@ -48,7 +48,12 @@ DetachablePanel {
 
     /* Object Properties
      * ****************************************************************************************/
-    title: qsTr("Browse files at commit")
+    width: Math.min(880, parent ? parent.width - 24 : 880)
+    height: Math.min(620, parent ? parent.height - 24 : 620)
+    modal: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+    onClosed: clear()
 
     /* Signals and Connections
      * ****************************************************************************************/
@@ -86,8 +91,7 @@ DetachablePanel {
         }
     }
 
-    Rectangle {
-        anchors.fill: parent
+    contentItem: Rectangle {
         color: Style.colors.primaryBackground
 
         ColumnLayout {
