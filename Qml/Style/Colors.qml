@@ -22,11 +22,11 @@ QtObject{
 
 
     property color vibrantMintBg:       Qt.darker(vibrantMint, 7.5)
-    property color softCoralMistBg:     Qt.darker(softCoralMist, 3)
-    property color cornflowerBlueBg:    Qt.darker(cornflowerBlue, 3)
-    property color amberBg:             Qt.darker(amber, 3)
-    property color purpleBg:            Qt.darker(purple, 3)
-    property color marigoldBg:          Qt.darker(marigold, 3)
+    property color softCoralMistBg:     Qt.darker(softCoralMist, 7.5)
+    property color cornflowerBlueBg:    Qt.darker(cornflowerBlue, 7.5)
+    property color amberBg:             Qt.darker(amber, 7.5)
+    property color purpleBg:            Qt.darker(purple, 7.5)
+    property color marigoldBg:          Qt.darker(marigold, 7.5)
 
     // Primary colors
     property color primaryBackground:   "#FDFDFD"
