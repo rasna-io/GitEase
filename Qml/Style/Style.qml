@@ -159,7 +159,7 @@ QtObject {
         contextMenuBackground: "#22222A"
         contextMenuBorder:     "#2C2C33"
         contextMenuSeparator:  "#2C2C33"
-        contextMenuHover:      "#A0A0A0"
+        contextMenuHover:      "#34343D"
     }
 
     property           string       currentTheme:               "Modern Light"

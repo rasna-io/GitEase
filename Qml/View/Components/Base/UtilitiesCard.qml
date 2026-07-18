@@ -38,7 +38,7 @@ Rectangle {
     width: Style.dp(279)
     height: root.collapsed ? root.collapsedHeight : root.expandedHeight
 
-    color: "#131316"
+    color: Style.colors.cardBackground
     border.width: 1
     border.color: Style.colors.primaryBorder
 
