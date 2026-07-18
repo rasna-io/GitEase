@@ -500,17 +500,10 @@ DetachablePanel {
     }
 
     CommitFileBrowserDock {
-        id: commitFileBrowser
-
-        anchors.fill: parent
-        z: 10
-        visible: false
-
+        id: commitFileBrowserPopup
         gitTreeController       : root.gitTreeController
         repositoryController    : root.repositoryController
         notificationController  : root.notificationController
-
-        onCloseRequested: visible = false
     }
 
     /* Functions
@@ -1044,8 +1037,7 @@ DetachablePanel {
     }
 
     function browseFilesRequested(commitHash, commitMessage, commitDate) {
-        commitFileBrowser.visible = true
-        commitFileBrowser.openForCommit(commitHash, commitMessage, commitDate)
+        commitFileBrowserPopup.openForCommit(commitHash, commitMessage, commitDate)
     }
 
     function executeMergeBranch(source, target) {
