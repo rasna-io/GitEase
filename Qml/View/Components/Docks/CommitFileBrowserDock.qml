@@ -109,18 +109,30 @@ IPopup {
 
     contentItem: Rectangle {
         color: Style.colors.primaryBackground
+        radius: 8
+        clip: true
+        border.color: Style.colors.primaryBorder
+        border.width: 1
 
         ColumnLayout {
             anchors.fill: parent
+            anchors.margins: 1
             spacing: 0
 
-            // Header: folder icon, title, SHA, message, close
+            // Header: folder icon, title, SHA, message, detach, close
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
-                color: Style.colors.primaryBackground
-                border.color: Qt.rgba(1,1,1,0.07)
-                border.width: 0
+                color: Style.colors.secondaryBackground
+
+                // bottom border
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: Style.colors.primaryBorder
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -133,12 +145,12 @@ IPopup {
                         text: Style.icons.folder
                         Layout.preferredWidth: 13
                         Layout.preferredHeight: 13
-                        color: "#f59e0b"
+                        color: Style.colors.warning
                     }
 
                     // Title
                     Label {
-                        text: root.title
+                        text: "Browse files at commit"
                         color: Style.colors.titleText
                         font.family: Style.fontTypes.roboto
                         font.pixelSize: 12
@@ -150,7 +162,7 @@ IPopup {
                     // SHA
                     Label {
                         text: root.commitShortSha
-                        color: "#3b82f6"
+                        color: Style.colors.accent
                         font.family: Style.fontTypes.monospace
                         font.pixelSize: 11
                     }
@@ -158,13 +170,14 @@ IPopup {
                     // Message
                     Label {
                         text: root.commitMessage
-                        color: "#3d4452"
+                        color: Style.colors.mutedText
                         font.family: Style.fontTypes.monospace
                         font.pixelSize: 11
                         elide: Text.ElideRight
                         maximumLineCount: 1
                     }
 
+                    // Close button
                     ToolButton {
                         id: closeButton
                         Layout.preferredWidth: 22
@@ -176,14 +189,12 @@ IPopup {
                             text: Style.icons.close
                             font.family: Style.fontTypes.font6ProSolid
                             font.pixelSize: 10
-                            color: parent.hovered ? Style.colors.foreground : "#6b7685"
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                            color: parent.hovered ? Style.colors.foreground : Style.colors.mutedText
                         }
 
                         background: Rectangle {
                             radius: 5
-                            color: parent.hovered ? Qt.rgba(1,1,1,0.07) : "transparent"
+                            color: parent.hovered ? Style.colors.hoverTitle : "transparent"
                         }
 
                         onClicked: {
@@ -221,7 +232,15 @@ IPopup {
                         Rectangle{
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
-                            color: Style.colors.primaryBackground
+                            color: "transparent"
+
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: 1
+                                color: Style.colors.primaryBorder
+                            }
 
                             RowLayout {
                                 anchors.fill: parent
@@ -235,7 +254,7 @@ IPopup {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     radius: 5
-                                    color: Qt.rgba(1, 1, 1, 0.05)
+                                    color: Style.colors.surfaceLight
 
                                     RowLayout {
                                         anchors.fill: parent
@@ -249,9 +268,7 @@ IPopup {
                                             text: Style.icons.search
                                             font.family: Style.fontTypes.font6ProSolid
                                             font.pixelSize: 10
-                                            color: "#4a5260"
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment  : Text.AlignVCenter
+                                            color: Style.colors.mutedText
                                         }
 
                                         // Search text field
@@ -260,7 +277,8 @@ IPopup {
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
                                             placeholderText: "Search files..."
-                                            color: "#8b95a3"
+                                            placeholderTextColor: Style.colors.mutedText
+                                            color: Style.colors.foreground
                                             font.family: Style.fontTypes.monospace
                                             font.pixelSize: 11
                                             background: Item{}
@@ -296,12 +314,8 @@ IPopup {
                                 property bool   isSelected  : root.selectedEntry && root.selectedEntry.path === entryData.path
 
                                 color: {
-                                    if (isSelected)
-                                        return "#1e2a3a"
-
-                                    else if (isHovered)
-                                        return Qt.rgba(1,1,1,0.04)
-
+                                    if (isSelected) return Style.colors.accent
+                                    if (isHovered)  return Style.colors.hoverTitle
                                     return "transparent"
                                 }
 
@@ -335,8 +349,8 @@ IPopup {
                                     Label {
                                         Layout.fillWidth: true
                                         text: entryData.name
-                                        color: Style.colors.foreground
-                                        font.family: Style.fontTypes.roboto
+                                        color: isSelected ? Style.colors.selectedText : Style.colors.foreground
+                                        font.family: Style.fontTypes.monospace
                                         font.pixelSize: 12
                                         elide: Text.ElideRight
                                     }
@@ -399,7 +413,7 @@ IPopup {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: "#0a0b0e"
+                    color: Style.colors.secondaryBackground
                     clip: true
 
                     ColumnLayout {
@@ -410,8 +424,16 @@ IPopup {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
-                            color: Style.colors.secondaryBackground
-                            visible: root.gitTreeController.currentFilePath !== ""
+                            color: Style.colors.primaryBackground
+                            visible: root.gitTreeController && root.gitTreeController.currentFilePath !== ""
+
+                            Rectangle {
+                                anchors.bottom: parent.bottom
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: 1
+                                color: Style.colors.primaryBorder
+                            }
 
                             RowLayout {
                                 id: fileSettingslay
@@ -427,15 +449,15 @@ IPopup {
                                     text: Style.icons.file
                                     font.family: Style.fontTypes.font6ProSolid
                                     font.pixelSize: 10
-                                    color: "#9175ff"
+                                    color: Style.colors.accent
                                 }
 
                                 // File path
                                 Label {
                                     Layout.fillWidth: true
-                                    text: root.gitTreeController.currentFilePath
-                                    color: Style.colors.mutedText
-                                    font.family: Style.fontTypes.roboto
+                                    text: root.gitTreeController ? root.gitTreeController.currentFilePath : ""
+                                    color: Style.colors.foreground
+                                    font.family: Style.fontTypes.monospace
                                     font.pixelSize: 12
                                     elide: Text.ElideLeft
                                 }
@@ -445,14 +467,14 @@ IPopup {
                                     Layout.preferredHeight: 20
                                     Layout.preferredWidth: readOnlyLabel.width + 12
                                     radius: 3
-                                    color: Qt.rgba(248/255,113/255,113/255,0.1)
+                                    color: Qt.rgba(1,0,0,0.1)
                                     border.color: Qt.rgba(248/255,113/255,113/255,0.2)
                                     border.width: 1
                                     Label {
                                         id: readOnlyLabel
                                         anchors.centerIn: parent
                                         text: "READ ONLY"
-                                        color: "#f87171"
+                                        color: Style.colors.error
                                         font.family: Style.fontTypes.roboto
                                         font.pixelSize: 9
                                         font.bold: true
@@ -479,14 +501,14 @@ IPopup {
                                                 text: Style.icons.copy
                                                 font.family: Style.fontTypes.font6ProSolid
                                                 font.pixelSize: 9
-                                                color: copyButton.hovered ? Style.colors.foreground : "#6b7685"
+                                                color: copyButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
 
                                             Label {
                                                 text: "Copy"
                                                 font.pixelSize: 11
-                                                color: copyButton.hovered ? Style.colors.foreground : "#6b7685"
+                                                color: copyButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
                                         }
@@ -494,7 +516,7 @@ IPopup {
 
                                     background: Rectangle {
                                         radius: 4
-                                        color: copyButton.hovered ? Qt.rgba(1,1,1,0.05) : "transparent"
+                                        color: copyButton.hovered ? Style.colors.hoverTitle : "transparent"
                                     }
 
                                     onClicked: root.copyCurrentFileContent()
@@ -520,14 +542,14 @@ IPopup {
                                                 text: Style.icons.download
                                                 font.family: Style.fontTypes.font6ProSolid
                                                 font.pixelSize: 9
-                                                color: saveButton.hovered ? Style.colors.foreground : "#6b7685"
+                                                color: saveButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
 
                                             Label {
                                                 text: "Save"
                                                 font.pixelSize: 11
-                                                color: saveButton.hovered ? Style.colors.foreground : "#6b7685"
+                                                color: saveButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
                                         }
@@ -535,7 +557,7 @@ IPopup {
 
                                     background: Rectangle {
                                         radius: 4
-                                        color: saveButton.hovered ? Qt.rgba(1,1,1,0.05) : "transparent"
+                                        color: saveButton.hovered ? Style.colors.hoverTitle : "transparent"
                                     }
 
                                     onClicked: root.saveCurrentFileAs()
@@ -588,15 +610,21 @@ IPopup {
                                         Layout.preferredWidth: 44
                                         Layout.fillHeight: true
                                         color: "transparent"
-                                        border.color: Qt.rgba(1,1,1,0.04)
-                                        border.width: 0
+
+                                        Rectangle {
+                                            anchors.right: parent.right
+                                            anchors.top: parent.top
+                                            anchors.bottom: parent.bottom
+                                            width: 1
+                                            color: Qt.rgba(1, 1, 1, 0.04)
+                                        }
 
                                         Label {
                                             anchors.right: parent.right
                                             anchors.rightMargin: 12
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: index + 1
-                                            color: "#3d4452"
+                                            color: Style.colors.lineNumberColor
                                             font.family: Style.fontTypes.monospace
                                             font.pixelSize: 11
                                             horizontalAlignment: Text.AlignRight
@@ -604,12 +632,11 @@ IPopup {
                                     }
 
                                     // Code line
-
                                     Label {
                                         Layout.fillWidth: true
                                         Layout.fillHeight: true
                                         text: modelData
-                                        color: "#a0b0c0"
+                                        color: Style.colors.foreground
                                         font.family: Style.fontTypes.monospace
                                         font.pixelSize: 12
                                         wrapMode: Text.NoWrap
