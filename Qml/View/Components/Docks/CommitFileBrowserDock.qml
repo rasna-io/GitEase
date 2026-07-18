@@ -44,6 +44,20 @@ IPopup {
     property int            treeColumnWidth     : root.width * 0.3
     readonly property int   minTreeColumnWidth  : 160
 
+    // File icon colours by depth (cycling)
+    readonly property var fileDepthColors: [
+        Style.colors.foreground,
+        Style.colors.secondaryText,
+        Style.colors.accent,
+        Style.colors.error,
+        Style.colors.addedFile,
+        Style.colors.deletededFile,
+        Style.colors.modifiediedFile,
+        Style.colors.renamedFile,
+        Style.colors.untrackedFile,
+        Style.colors.warning
+    ]
+
     /* Signals
      * ****************************************************************************************/
     signal closeRequested()
@@ -314,7 +328,7 @@ IPopup {
                                         text: isFolder ? Style.icons.folder : Style.icons.file
                                         font.family: Style.fontTypes.font6ProSolid
                                         font.pixelSize: 10
-                                        color: isFolder ? Style.colors.titleText : Style.colors.mutedText
+                                        color: isFolder ? Style.colors.warning : root.fileIconColor(entryData.depth)
                                     }
 
                                     // Name
@@ -740,5 +754,9 @@ IPopup {
 
         root.searchText             = ""
         searchField.text            = ""
+    }
+
+    function fileIconColor(depth) {
+        return fileDepthColors[depth % fileDepthColors.length]
     }
 }
