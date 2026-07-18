@@ -174,9 +174,6 @@ QtObject {
     property LayoutController layoutController: LayoutController {
         appModel: root.appModel
     }
-{{
-    }
-    property RuleController ruleController: RuleController {}
 
     property UiSessionPopups      popups
 }
