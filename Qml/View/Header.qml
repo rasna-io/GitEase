@@ -18,6 +18,7 @@ Item {
      * ****************************************************************************************/
     property WindowController   windowController
     property Component          content
+    property var                pluginManager: null
 
     /* Children
      * ****************************************************************************************/
@@ -55,6 +56,23 @@ Item {
                 Layout.fillWidth: true
                 clip: true
                 sourceComponent: root.content
+            }
+
+            // Plugin toolbar actions
+            Repeater {
+                model: root.pluginManager ? root.pluginManager.registeredToolbarActions : []
+                delegate: ToolButton {
+                    text: modelData.icon
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: 14
+                    Layout.preferredWidth: 36
+                    Layout.preferredHeight: 36
+                    ToolTip.text: modelData.tooltip
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 500
+                    onClicked: root.pluginManager.executeToolbarAction(
+                                   modelData.pluginId, modelData.id, {})
+                }
             }
 
             WindowsHeader {

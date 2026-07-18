@@ -2,6 +2,10 @@
 #include "IDockPlugin.h"
 #include "ICommandPlugin.h"
 #include "IDiffPlugin.h"
+#include "IPagePlugin.h"
+#include "IContextMenuPlugin.h"
+#include "IWorkflowPlugin.h"
+#include "IToolbarPlugin.h"
 
 #include <QSettings>
 
@@ -45,6 +49,26 @@ void PluginContext::registerDiff(IDiffPlugin* plugin)
     emit diffRegistered(plugin);
 }
 
+void PluginContext::registerPage(IPagePlugin* plugin)
+{
+    emit pageRegistered(plugin);
+}
+
+void PluginContext::registerContextMenu(IContextMenuPlugin* plugin)
+{
+    emit contextMenuRegistered(plugin);
+}
+
+void PluginContext::registerWorkflow(IWorkflowPlugin* plugin)
+{
+    emit workflowRegistered(plugin);
+}
+
+void PluginContext::registerToolbar(IToolbarPlugin* plugin)
+{
+    emit toolbarRegistered(plugin);
+}
+
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 QVariant PluginContext::setting(const QString& pluginId,
@@ -64,6 +88,29 @@ void PluginContext::setSetting(const QString& pluginId,
     s.setValue(k, value);
 }
 
+// ── Event bus ────────────────────────────────────────────────────────────────
+
+int PluginContext::subscribe(const QString& event,
+                              std::function<void(const QVariantMap&)> handler)
+{
+    const int token = ++m_nextToken;
+    m_subscriptions[token] = {event, std::move(handler)};
+    return token;
+}
+
+void PluginContext::unsubscribe(int token)
+{
+    m_subscriptions.remove(token);
+}
+
+void PluginContext::publish(const QString& event, const QVariantMap& payload)
+{
+    for (const auto& entry : std::as_const(m_subscriptions)) {
+        if (entry.first == event)
+            entry.second(payload);
+    }
+}
+
 // ── Internal setters ─────────────────────────────────────────────────────────
 
 void PluginContext::setQmlEngine(QQmlEngine* engine)
@@ -76,6 +123,7 @@ void PluginContext::setCurrentRepository(Repository* repo)
     if (m_repo == repo) return;
     m_repo = repo;
     emit repositoryChanged(repo);
+    publish(QStringLiteral("repo.switched"), {});
 }
 
 void PluginContext::setCurrentBranch(const QString& branch)
@@ -83,4 +131,5 @@ void PluginContext::setCurrentBranch(const QString& branch)
     if (m_branch == branch) return;
     m_branch = branch;
     emit branchChanged(branch);
+    publish(QStringLiteral("branch.changed"), {{QStringLiteral("branch"), branch}});
 }

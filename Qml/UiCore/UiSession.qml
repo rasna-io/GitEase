@@ -158,6 +158,7 @@ QtObject {
         notificationController: root.notificationController
         appModel:               root.appModel
         networkController:      root.networkController
+        pageController:         root.pageController
     }
 
     property NetworkController networkController: NetworkController {}

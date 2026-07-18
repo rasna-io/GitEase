@@ -40,6 +40,7 @@ DetachablePanel {
     property ResetController        resetController         : null
     property TerminalController     terminalController      : null
     property LayoutController       layoutController        : null
+    property var                    pluginController        : null
 
 
     property AddBranchPopup          addBranchPopup         : null
@@ -769,7 +770,11 @@ DetachablePanel {
                 setSingleSelection(data, idx)
 
             var state = getMenuState(data)
-            var rawMenu = MenuBuilder.buildMenu(state)
+            var pluginItems = root.pluginController?.pluginManager
+                ? root.pluginController.pluginManager.pluginContextMenuItems(
+                      "commit", { hash: state.fullHash, branch: state.currentBranch })
+                : []
+            var rawMenu = MenuBuilder.buildMenu(state, pluginItems)
 
             contextMenu.menuModel = buildContextMenuModel(rawMenu)
 
@@ -908,6 +913,15 @@ DetachablePanel {
 
         case "resetHard":
             executeResetHead(item.payload.hash, ResetController.ResetMode.Hard)
+            break
+
+        case "pluginAction":
+            if (root.pluginController?.pluginManager)
+                root.pluginController.pluginManager.executeContextMenuAction(
+                    item.payload.pluginId,
+                    item.payload.itemId,
+                    "commit",
+                    { hash: item.payload.hash })
             break
         }
     }

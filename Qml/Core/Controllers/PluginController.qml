@@ -15,6 +15,7 @@ QtObject {
     required property var appModel
     required property var notificationController
     required property var networkController
+    required property var pageController
 
     property var    currentRepo:        null
     property string currentBranch:      ""
@@ -57,6 +58,11 @@ QtObject {
 
         onDockRegistered: function(id, qmlUrl, title, icon) {
             console.log("[PluginController] Dock registered:", id, "→", qmlUrl)
+        }
+
+        onPageRegistered: function(id, qmlUrl, title, icon, order) {
+            console.log("[PluginController] Page registered:", id, "→", qmlUrl)
+            root.pageController.createPage(id, title, qmlUrl, icon)
         }
 
         onNotifyRequested: function(message, type) {
