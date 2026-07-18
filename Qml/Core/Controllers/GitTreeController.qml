@@ -37,7 +37,6 @@ GitTree {
         var res = getFileTree(commitSha)
         if (!res.success) {
             root.fileTreeModel      = []
-            root.treeLoadFailed(res.errorMessage || "Failed to load file tree")
             return false
         }
 
