@@ -8,34 +8,34 @@ import GitEase_Style_Impl
 
 Rectangle {
     id: root
+
+    /* Property Declarations
+     * ****************************************************************************************/
+    property int selectedCategory: 0
+    property int selectedInstalledMode: -1
+    property var categoriesData: []
+    property var installedModel: []
+
+    /* Object Properties
+     * ****************************************************************************************/
     Layout.fillHeight: true
     Layout.preferredWidth: 220
     color: Style.colors.primaryBackground
 
-    property int selectedCategory: 0
-    property int selectedInstalledMode: -1
+    onCategoriesDataChanged: root.populateCategoriesModel()
 
-    property var categoryModel: [
-        { name: "All Plugins", iconName: Style.icons.allPlugins, iconColor: Style.colors.mutedText },
-        { name: "Hosting",     iconName: Style.icons.hosting,    iconColor: Style.colors.hosting },
-        { name: "Workflow",    iconName: Style.icons.workflow,   iconColor: Style.colors.workflow },
-        { name: "Merge",       iconName: Style.icons.merge,      iconColor: Style.colors.merge },
-        { name: "Inspection",  iconName: Style.icons.inspection, iconColor: Style.colors.inspection },
-        { name: "AI",          iconName: Style.icons.ai,         iconColor: Style.colors.ai },
-    ]
-
-    property var installedModel: [
-        { name: "Enabled",      iconName: Style.icons.check,   iconColor: Style.colors.compatible },
-        { name: "Disabled",     iconName: Style.icons.pause,   iconColor: "#363650" },
-        { name: "Needs Update", iconName: Style.icons.warning, iconColor: Style.colors.warning }
-    ]
+    /* Children
+     * ****************************************************************************************/
+    ListModel {
+        id: categoriesModel
+    }
 
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 8
         spacing: 5
 
-        Text {
+        Label {
             text: "BROWSE"
             color: "#363650"
             font.pixelSize: Style.appFont.largePt
@@ -43,7 +43,7 @@ Rectangle {
         }
 
         ListView {
-            model: categoryModel
+            model: categoriesModel
             Layout.fillWidth: true
             Layout.preferredHeight: contentHeight
             interactive: false
@@ -64,18 +64,32 @@ Rectangle {
                     anchors.rightMargin: 8
                     spacing: 10
 
-                    Text {
-                        text: Style.icons.workflow
-                        color: isSelected ? "#60A5FA" : "#363650"
-                        font.pixelSize: Style.appFont.largePt
-                        font.family: Style.fontTypes.font6Pro
-                        wrapMode: Text.WordWrap
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                    Item {
+                        width: 50
+                        height: 50
+
+                        Image {
+                            id: categoryIconImage
+                            anchors.fill: parent
+                            source: iconUrl || ""
+                            fillMode: Image.PreserveAspectFit
+                            visible: status === Image.Ready
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            visible: categoryIconImage.status !== Image.Ready
+                            text: Style.icons.plugins
+                            font.family: Style.fontTypes.font6Pro
+                            font.pixelSize: Style.appFont.displaySmPt
+                            color: Style.colors.mutedText
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
                     }
 
-                    Text {
-                        text: modelData.name
+                    Label {
+                        text: name
                         font.family: Style.fontTypes.roboto
                         font.pixelSize: Style.appFont.largePt
                         color: isSelected ? "#60A5FA" : "#363650"
@@ -93,7 +107,7 @@ Rectangle {
                         radius: 4
                         color: Style.colors.secondaryBackground
 
-                        Text {
+                        Label {
                             anchors.centerIn: parent
                             text: "10"
                             color: "#363650"
@@ -117,7 +131,7 @@ Rectangle {
             color: Style.colors.primaryBorder
         }
 
-        Text {
+        Label {
             text: "INSTALLED"
             color: "#363650"
             font.pixelSize: Style.appFont.largePt
@@ -146,7 +160,7 @@ Rectangle {
                     anchors.rightMargin: 8
                     spacing: 10
 
-                    Text {
+                    Label {
                         text: modelData.iconName
                         color: modelData.iconColor
                         font.pixelSize: Style.appFont.largePt
@@ -156,7 +170,7 @@ Rectangle {
                         verticalAlignment: Text.AlignVCenter
                     }
 
-                    Text {
+                    Label {
                         text: modelData.name
                         font.family: Style.fontTypes.roboto
                         font.pixelSize: Style.appFont.largePt
@@ -175,7 +189,7 @@ Rectangle {
                         radius: 4
                         color: Style.colors.secondaryBackground
 
-                        Text {
+                        Label {
                             anchors.centerIn: parent
                             text: "5"
                             color: "#363650"
@@ -205,7 +219,7 @@ Rectangle {
             color: Style.colors.primaryBorder
         }
 
-        Text {
+        Label {
             text: "Compatibility"
             color: "#363650"
             font.pixelSize: Style.appFont.largePt
@@ -222,13 +236,14 @@ Rectangle {
                 radius: 5
                 color: Style.colors.compatible
             }
-            Text {
+            Label {
                 text: "Compatible"
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: Style.appFont.largePt
                 color: "#363650"
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
+                Layout.alignment: Qt.AlignVCenter
             }
         }
 
@@ -241,8 +256,9 @@ Rectangle {
                 Layout.preferredHeight: 10
                 radius: 5
                 color: Style.colors.warning
+                Layout.alignment: Qt.AlignVCenter
             }
-            Text {
+            Label {
                 text: "Needs Update"
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: Style.appFont.largePt
@@ -261,8 +277,9 @@ Rectangle {
                 Layout.preferredHeight: 10
                 radius: 5
                 color: Style.colors.incompatible
+                Layout.alignment: Qt.AlignVCenter
             }
-            Text {
+            Label {
                 text: "Incompatible"
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: Style.appFont.largePt
@@ -270,6 +287,18 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
+        }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function populateCategoriesModel() {
+        categoriesModel.clear()
+
+        for (var i = 0; i < root.categoriesData.length; i++) {
+            var category = root.categoriesData[i]
+
+            categoriesModel.append(category)
         }
     }
 }
