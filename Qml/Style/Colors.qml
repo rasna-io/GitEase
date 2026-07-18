@@ -15,6 +15,18 @@ QtObject{
     property color mutedLavenderSlate:  "#9898B4"
     property color vibrantMint:         "#4ADE80"
     property color softCoralMist:       "#F87171"
+    property color cornflowerBlue:      "#60a5fa"
+    property color amber:               "#d97706"
+    property color purple:              "#a855f7"
+    property color marigold:            "#d97706"
+
+
+    property color vibrantMintBg:       Qt.darker(vibrantMint, 7.5)
+    property color softCoralMistBg:     Qt.darker(softCoralMist, 3)
+    property color cornflowerBlueBg:    Qt.darker(cornflowerBlue, 3)
+    property color amberBg:             Qt.darker(amber, 3)
+    property color purpleBg:            Qt.darker(purple, 3)
+    property color marigoldBg:          Qt.darker(marigold, 3)
 
     // Primary colors
     property color primaryBackground:   "#FDFDFD"
