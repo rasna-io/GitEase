@@ -10,364 +10,475 @@ import GitEase
 
 /*! ***********************************************************************************************
  * NotificationCenterPopup
- * Displays notification history grouped by time periods
+ * A right-edge sliding drawer that displays notification history grouped by time periods
  * ************************************************************************************************/
-IPopup {
+Drawer {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
     property var notificationController: null
-    property int currentPeriod: 0  // 0=Today, 1=Yesterday, 2=This Week, 3=Last Week, 4=All
-    
+    property string readFilter: "All"   // "All" | "Unread" | "Read"
+    property string typeFilter: ""       // "" (any type) | "info" | "success" | "warning" | "error"
+    property Item   scrim:      null
+
     /* Event Handlers
      * ****************************************************************************************/
+    onAboutToShow: {
+        if (!root.scrim && Overlay.overlay) {
+            root.scrim = scrimComponent.createObject(Overlay.overlay)
+        }
+    }
+
     onOpened: {
+        notificationListView.model = root.getFilteredNotifications()
+    }
+
+    onClosed: {
+        if (root.scrim) {
+            root.scrim.destroy()
+            root.scrim = null
+        }
+
         if (notificationController) {
             notificationController.markAllAsRead()
+        }
+    }
 
-            notificationListView.model = root.getNotificationsForPeriod(root.currentPeriod)
+    onParentChanged: {
+        if (root.parent !== Overlay.overlay) {
+            root.parent = Overlay.overlay
         }
     }
 
     /* Object Properties
      * ****************************************************************************************/
-    width: parent.width * 0.8
-    height: parent.height * 0.8
+    edge: Qt.RightEdge
+    modal: false
+    dim: false
+    focus: true
+    interactive: false
+    closePolicy: Popup.CloseOnEscape
+
+    width: Math.min(420, parent.width * 0.4)
+    height: parent.height
+
+    padding: 0
+    topInset: 0
+    leftInset: 0
+    rightInset: 0
+    bottomInset: 0
+
+    /* Components
+     * ****************************************************************************************/
+    Component {
+        id: scrimComponent
+
+        Rectangle {
+            anchors.fill: parent
+            z: -1
+            color: "#000000"
+            opacity: root.position * 0.45
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.close()
+            }
+        }
+    }
+
+    enter: Transition {
+        NumberAnimation {
+            property: "position"
+            from: 0.0
+            to: 1.0
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    exit: Transition {
+        NumberAnimation {
+            property: "position"
+            from: 1.0
+            to: 0.0
+            duration: 200
+            easing.type: Easing.InCubic
+        }
+    }
 
     /* Children
      * ****************************************************************************************/
-    contentItem: Rectangle {
+    background: Rectangle {
         color: Style.colors.primaryBackground
-        radius: 16
-        clip: true
-        border.color: Style.colors.accent
-        border.width: 1
 
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 12
-            spacing: 15
+        Rectangle {
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: 1
+            color: Style.colors.primaryBorder
+        }
+    }
 
-            RowLayout {
-                Layout.fillHeight: true
+    contentItem: ColumnLayout {
+        anchors.fill: parent
+        anchors.topMargin: Style.dp(16)
+        anchors.bottomMargin: Style.dp(16)
+
+        spacing: 10
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: Style.dp(16)
+            Layout.rightMargin: Style.dp(16)
+            spacing: 12
+
+            Text {
                 Layout.fillWidth: true
-                spacing: 15
+                text: "Notifications"
+                font.pointSize: Style.appFont.h4Pt
+                font.weight: Font.DemiBold
+                color: Style.colors.foreground
+            }
 
-                // Left sidebar - Time periods
-                PagesRail {
-                    Layout.preferredWidth: parent.width * 0.15
-                    Layout.fillHeight: true
-                    currentId: root.currentPeriod
-                    radius: 5
-                    color: Style.colors.secondaryBackground
-                    model: [
-                        {id: 0, title: "Today", icon: Style.icons.calendarDay},
-                        {id: 1, title: "Yesterday", icon: Style.icons.calendarMinus},
-                        {id: 2, title: "This Week", icon: Style.icons.calendarWeek},
-                        {id: 3, title: "Last Week", icon: Style.icons.calendarCheck},
-                        {id: 4, title: "All", icon: Style.icons.clockRotateLeft}
-                    ]
-                    onClicked: (modelData) => {
-                        root.currentPeriod = modelData.id
-                    }
-                }
+            Text {
+                text: "Mark all read"
+                visible: root.notificationController && root.notificationController.unreadCount > 0
+                font.pixelSize: Style.appFont.smallPt
+                color: markAllMouseArea.containsMouse ? Style.colors.accentHover : Style.colors.accent
 
-                // Right side - Notifications
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    color: Style.colors.secondaryBackground
-                    radius: 5
-                    clip: true
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.topMargin: 10
-                        anchors.leftMargin: 20
-                        anchors.rightMargin: 20
-                        spacing: 0
-
-                        // Header with buttons
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 50
-                            spacing: 12
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: "Notifications"
-                                font.pointSize: Style.appFont.h4Pt
-                                color: Style.colors.foreground
-                            }
-
-                            Button {
-                                flat: true
-                                text: "Mark all read"
-                                visible: root.notificationController && root.notificationController.unreadCount > 0
-                                font.pointSize: Style.appFont.secondaryPt
-                                Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                                background: Rectangle {
-                                    color: parent.hovered ? Style.colors.accent : Style.colors.primaryBackground
-                                    border.color: Style.colors.accent
-                                    radius: 5
-                                    implicitWidth: 120
-                                    implicitHeight: 30
-                                }
-
-                                onClicked: {
-                                    if (root.notificationController) {
-                                        root.notificationController.markAllAsRead()
-                                    }
-                                }
-                            }
-
-                            Button {
-                                flat: true
-                                text: "Clear all"
-                                font.pointSize: Style.appFont.secondaryPt
-                                Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                                background: Rectangle {
-                                    color: parent.hovered ? Style.colors.accent : Style.colors.primaryBackground
-                                    border.color: Style.colors.accent
-                                    radius: 5
-                                    implicitWidth: 100
-                                    implicitHeight: 30
-                                }
-
-                                onClicked: {
-                                    if (root.notificationController) {
-                                        root.notificationController.clearHistory()
-                                    }
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 2
-                            Layout.topMargin: 5
-                            Layout.bottomMargin: 5
-                            color: Qt.darker(Style.colors.secondaryBackground, 1.2)
-                        }
-
-                        // Notification list
-                        ScrollView {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            clip: true
-                            
-                            ListView {
-                                id: notificationListView
-                                model: root.getNotificationsForPeriod(root.currentPeriod)
-                                spacing: 4
-                                
-                                Connections {
-                                    target: root
-                                    function onCurrentPeriodChanged() {
-                                        notificationListView.model = root.getNotificationsForPeriod(root.currentPeriod)
-                                    }
-                                }
-                                
-                                Connections {
-                                    target: root.notificationController
-                                    function onHistoryUpdated() {
-                                        notificationListView.model = root.getNotificationsForPeriod(root.currentPeriod)
-                                    }
-                                }
-
-                                delegate: Item {
-                                    id: notifDelegate
-                                    width: notificationListView.width
-                                    height: notifCard.height
-                                    
-                                    Rectangle {
-                                        id: notifCard
-                                        anchors.left: parent.left
-                                        anchors.right: parent.right
-                                        height: contentCol.height + 12
-                                        radius: 5
-                                        color: modelData.read ? Style.colors.primaryBackground : Qt.alpha(Style.colors.accent, 0.03)
-                                        border.width: 1
-                                        border.color: modelData.read ? Style.colors.primaryBorder : Qt.alpha(Style.colors.accent, 0.3)
-
-                                        // Type indicator bar
-                                        Rectangle {
-                                            anchors.left: parent.left
-                                            anchors.top: parent.top
-                                            anchors.bottom: parent.bottom
-                                            anchors.leftMargin: 0
-                                            width: 3
-                                            radius: 5
-                                            color: {
-                                                switch(modelData.type) {
-                                                    case "error":
-                                                        return Style.colors.notificationErrorIcon
-                                                    case "warning":
-                                                        return Style.colors.notificationWarningIcon
-                                                    case "success":
-                                                        return Style.colors.notificationSuccessIcon
-                                                    case "info":
-                                                    default:
-                                                        return Style.colors.notificationInfoIcon
-                                                }
-                                            }
-                                        }
-
-                                        ColumnLayout {
-                                            id: contentCol
-                                            anchors.left: parent.left
-                                            anchors.right: parent.right
-                                            anchors.top: parent.top
-                                            anchors.margins: 6
-                                            anchors.leftMargin: 10
-                                            spacing: 3
-
-                                            // Header row: icon, title, time
-                                            RowLayout {
-                                                Layout.fillWidth: true
-                                                spacing: 6
-
-                                                // Icon
-                                                Text {
-                                                    Layout.preferredWidth: 14
-                                                    Layout.preferredHeight: 14
-                                                    text: {
-                                                        switch(modelData.type) {
-                                                            case "error":
-                                                                return Style.icons.circleExclamation
-                                                            case "warning":
-                                                                return Style.icons.warning
-                                                            case "success":
-                                                                return Style.icons.check
-                                                            case "info":
-                                                            default:
-                                                                return Style.icons.info
-                                                        }
-                                                    }
-                                                    font.family: Style.fontTypes.font6ProSolid
-                                                    font.pixelSize: Style.appFont.mediumPt
-                                                    horizontalAlignment: Text.AlignHCenter
-                                                    verticalAlignment: Text.AlignVCenter
-                                                    color: {
-                                                        switch(modelData.type) {
-                                                            case "error":
-                                                                return Style.colors.notificationErrorIcon
-                                                            case "warning":
-                                                                return Style.colors.notificationWarningIcon
-                                                            case "success":
-                                                                return Style.colors.notificationSuccessIcon
-                                                            case "info":
-                                                            default:
-                                                                return Style.colors.notificationInfoIcon
-                                                        }
-                                                    }
-                                                }
-
-                                                // Title
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: modelData.title
-                                                    font.pixelSize: Style.appFont.mediumPt
-                                                    font.weight: Font.Medium
-                                                    color: Style.colors.foreground
-                                                    elide: Text.ElideRight
-                                                }
-
-                                                // Time
-                                                Text {
-                                                    Layout.rightMargin: 10
-                                                    text: root.getRelativeTime(modelData.timestamp)
-                                                    font.pixelSize: Style.appFont.smallPt
-                                                    color: modelData.read ? Style.colors.mutedText : Style.colors.accent
-                                                }
-                                            }
-
-                                            // Message
-                                            Text {
-                                                Layout.fillWidth: true
-                                                text: modelData.message
-                                                font.pixelSize: Style.appFont.defaultPt
-                                                lineHeight: 1.3
-                                                color: Style.colors.mutedText
-                                                wrapMode: Text.Wrap
-                                                maximumLineCount: 2
-                                                elide: Text.ElideRight
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        
-                        Item {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
+                MouseArea {
+                    id: markAllMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (root.notificationController) {
+                            root.notificationController.markAllAsRead()
+                            notificationListView.model = root.getFilteredNotifications()
                         }
                     }
                 }
             }
+        }
 
-            // Close button at bottom
-            Row {
-                spacing: 8
-                Layout.alignment: Qt.AlignRight
+        // Filter row: read-state filter, type filter, clear
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: rowLayout.implicitHeight + Style.dp(10)
+            color: Qt.darker(Style.colors.primaryBackground, 1.2)
 
-                Button {
-                    flat: true
-                    text: "Close"
-                    font.pointSize: Style.appFont.secondaryPt
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+            border {
+                width: 1
+                color: Style.colors.primaryBorder
+            }
+
+            RowLayout {
+                id: rowLayout
+                anchors.fill: parent
+                anchors.leftMargin: Style.dp(16)
+                anchors.rightMargin: Style.dp(16)
+                spacing: 10
+
+                ComboBox {
+                    id: readFilterCombo
+                    Layout.preferredWidth: Style.dp(80)
+                    minHeight: 25
+                    borderWidth: 0
+                    focusBorderWidth: 1
+                    model: ["All", "Unread", "Read"]
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: Style.appFont.smallPt
+                    Material.background: Style.colors.primaryBackground
+                    Material.foreground: Style.colors.foreground
                     background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
                         radius: 5
+                        color: readFilterCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                        border.color: Style.colors.primaryBorder
+                        border.width: 1
                     }
-                    onClicked: root.close()
+                    onCurrentTextChanged: {
+                        root.readFilter = currentText
+                        notificationListView.model = root.getFilteredNotifications()
+                    }
+                }
+
+                ComboBox {
+                    id: typeFilterCombo
+                    Layout.preferredWidth: Style.dp(80)
+                    minHeight: 25
+                    borderWidth: 0
+                    focusBorderWidth: 1
+                    currentIndex: 0
+                    model: ["Type", "Info", "Success", "Warning", "Error"]
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: Style.appFont.smallPt
+                    Material.background: Style.colors.primaryBackground
+                    Material.foreground: Style.colors.foreground
+                    background: Rectangle {
+                        radius: 5
+                        color: typeFilterCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                        border.color: Style.colors.primaryBorder
+                        border.width: 1
+                    }
+                    onCurrentTextChanged: {
+                        root.typeFilter = currentIndex === 0 ? "" : currentText.toLowerCase()
+                        notificationListView.model = root.getFilteredNotifications()
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Item {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: clearRow.implicitWidth
+                    implicitHeight: clearRow.implicitHeight
+
+                    RowLayout {
+                        id: clearRow
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        Text {
+                            text: Style.icons.trash
+                            font.family: Style.fontTypes.font6ProSolid
+                            font.pixelSize: Style.appFont.smallPt
+                            color: clearMouseArea.containsMouse ? Style.colors.foreground : Style.colors.mutedText
+                        }
+
+                        Text {
+                            text: "Clear"
+                            font.pixelSize: Style.appFont.smallPt
+                            color: clearMouseArea.containsMouse ? Style.colors.foreground : Style.colors.mutedText
+                        }
+                    }
+
+                    MouseArea {
+                        id: clearMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (root.notificationController) {
+                                root.notificationController.clearHistory()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Notification list
+        ScrollView {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.leftMargin: Style.dp(16)
+            Layout.rightMargin: Style.dp(16)
+            clip: true
+
+            ListView {
+                id: notificationListView
+                model: root.getFilteredNotifications()
+                spacing: 2
+
+                Connections {
+                    target: root.notificationController
+                    function onHistoryUpdated() {
+                        notificationListView.model = root.getFilteredNotifications()
+                    }
+                }
+
+                delegate: Item {
+                    id: notifDelegate
+                    width: notificationListView.width
+                    height: (modelData && modelData.isHeader)
+                            ? sectionLabel.implicitHeight + (index === 0 ? 8 : 20)
+                            : rowContent.implicitHeight + 8
+
+                    // Section header (e.g. "TODAY", "YESTERDAY")
+                    Text {
+                        id: sectionLabel
+                        visible: modelData && modelData.isHeader === true
+                        anchors.left: parent.left
+                        anchors.bottom: parent.bottom
+                        text: visible ? modelData.label : ""
+                        font.pixelSize: Style.appFont.captionPt
+                        font.weight: Font.DemiBold
+                        font.letterSpacing: 1
+                        color: Style.colors.mutedText
+                    }
+
+                    // Notification row
+                    RowLayout {
+                        id: rowContent
+                        visible: !(modelData && modelData.isHeader)
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        spacing: 8
+
+                        // Unread indicator dot
+                        Rectangle {
+                            Layout.preferredWidth: 6
+                            Layout.preferredHeight: 6
+                            Layout.alignment: Qt.AlignVCenter
+                            radius: 3
+                            color: (modelData && !modelData.isHeader && !modelData.read) ? Style.colors.accent : "transparent"
+                        }
+
+                        // Icon
+                        Text {
+                            Layout.preferredWidth: 16
+                            Layout.alignment: Qt.AlignTop
+                            Layout.topMargin: 2
+                            text: {
+                                if (!modelData || modelData.isHeader)
+                                    return ""
+                                switch (modelData.type) {
+                                    case "error":
+                                        return Style.icons.circleExclamation
+                                    case "warning":
+                                        return Style.icons.warning
+                                    case "success":
+                                        return Style.icons.check
+                                    case "info":
+                                    default:
+                                        return Style.icons.info
+                                }
+                            }
+                            font.family: Style.fontTypes.font6ProSolid
+                            font.pixelSize: Style.appFont.mediumPt
+                            horizontalAlignment: Text.AlignHCenter
+                            color: {
+                                if (!modelData || modelData.isHeader)
+                                    return Style.colors.notificationInfoIcon
+                                switch (modelData.type) {
+                                    case "error":
+                                        return Style.colors.notificationErrorIcon
+                                    case "warning":
+                                        return Style.colors.notificationWarningIcon
+                                    case "success":
+                                        return Style.colors.notificationSuccessIcon
+                                    case "info":
+                                    default:
+                                        return Style.colors.notificationInfoIcon
+                                }
+                            }
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.rightMargin: Style.dp(8)
+                            spacing: 3
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: (modelData && !modelData.isHeader) ? modelData.title : ""
+                                    font.pixelSize: Style.appFont.mediumPt
+                                    font.weight: Font.Medium
+                                    color: Style.colors.foreground
+                                    elide: Text.ElideRight
+                                }
+
+                                Text {
+                                    text: (modelData && !modelData.isHeader) ? root.getRelativeTime(modelData.timestamp) : ""
+                                    font.pixelSize: Style.appFont.smallPt
+                                    color: Style.colors.mutedText
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: (modelData && !modelData.isHeader) ? modelData.message : ""
+                                font.pixelSize: Style.appFont.defaultPt
+                                lineHeight: 1.3
+                                color: Style.colors.mutedText
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.fill: rowContent
+                        visible: rowContent.visible
+                        z: -1
+                        radius: 6
+                        color: rowMouseArea.containsMouse ? Qt.alpha(Style.colors.accent, 0.05) : "transparent"
+                    }
+
+                    MouseArea {
+                        id: rowMouseArea
+                        anchors.fill: rowContent
+                        visible: rowContent.visible
+                        hoverEnabled: true
+                        acceptedButtons: Qt.NoButton
+                    }
                 }
             }
         }
     }
 
+
     /* Functions
      * ****************************************************************************************/
-    function getNotificationsForPeriod(periodIndex) {
+    function getFilteredNotifications() {
         if (!root.notificationController || !root.notificationController.notificationHistory) {
             return []
         }
 
         let now = new Date()
-        let filtered = []
+        let source = root.notificationController.notificationHistory.slice().reverse()
 
-        for (let i = 0; i < root.notificationController.notificationHistory.length; i++) {
-            let notification = root.notificationController.notificationHistory[i]
-            let notifDate = new Date(notification.timestamp)
+        let filtered = source.filter(function(notification) {
+            if (root.readFilter === "Unread" && notification.read) {
+                return false
+            }
+            if (root.readFilter === "Read" && !notification.read) {
+                return false
+            }
+            if (root.typeFilter !== "" && notification.type !== root.typeFilter) {
+                return false
+            }
+            return true
+        })
 
-            let include = false
-            switch(periodIndex) {
-                case 0: // Today
-                    include = isToday(notifDate, now)
-                    break
-                case 1: // Yesterday
-                    include = isYesterday(notifDate, now)
-                    break
-                case 2: // This Week
-                    include = isThisWeek(notifDate, now)
-                    break
-                case 3: // Last Week
-                    include = isLastWeek(notifDate, now)
-                    break
-                case 4: // All
-                    include = true
-                    break
+        let result = []
+        let lastLabel = ""
+        for (let i = 0; i < filtered.length; i++) {
+            let notification = filtered[i]
+            let label = root.getSectionLabel(new Date(notification.timestamp), now)
+
+            if (label !== lastLabel) {
+                result.push({isHeader: true, label: label})
+                lastLabel = label
             }
 
-            if (include) {
-                filtered.push(notification)
-            }
+            result.push(notification)
         }
 
-        return filtered.reverse()
+        return result
+    }
+
+    function getSectionLabel(date, now) {
+        if (isToday(date, now)) {
+            return "TODAY"
+        } else if (isYesterday(date, now)) {
+            return "YESTERDAY"
+        } else if (isThisWeek(date, now)) {
+            return "THIS WEEK"
+        } else if (isLastWeek(date, now)) {
+            return "LAST WEEK"
+        }
+        return Qt.formatDate(date, "MMMM yyyy").toUpperCase()
     }
 
     function isToday(date, now) {

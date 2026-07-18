@@ -173,6 +173,7 @@ QtObject {
             notificationHistory[i].read = true
         }
         unreadCount = 0
+        saveNotifications()
     }
     
     function clearHistory() {
