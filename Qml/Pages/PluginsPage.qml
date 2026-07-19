@@ -28,8 +28,9 @@ Page {
     property var            pluginController:   null
     property var            pluginsData:        root.appModel ? root.appModel.plugins : []
     property var            categoriesData:     root.appModel ? root.appModel.pluginsCategories : []
+    property var            categoriesCounts:     ({})
     readonly property int   minCardWidth:       400
-    readonly property int   minCardHeight:      190
+    readonly property int   minCardHeight:      250
 
     property string         currentMode:        ""
     property string         currentSearch:      ""
@@ -69,6 +70,11 @@ Page {
 
         root.fetchingMore = false
         applyCurrentMode()
+        buildCategoriesCounts()
+    }
+
+    onCategoriesDataChanged: {
+        leftPanel.categoriesData = root.categoriesData.slice()
     }
 
     /* Children
@@ -95,8 +101,22 @@ Page {
         anchors.fill: parent
 
         PluginsLeftPanel {
+            id: leftPanel
+            pluginsCount: root.pluginsData.length
             categoriesData: root.categoriesData
             installedModel: root.installedModel
+            categoriesCounts: root.categoriesCounts
+
+            onCategorySelected:  (category) => {
+                pluginsModel.clear()
+                for (var i = 0; i < root.pluginsData.length; i++) {
+                    var plugin = root.pluginsData[i]
+
+                    var matchesCategory = plugin.category === category || category === "All"
+
+                    if (matchesCategory) pluginsModel.append(plugin)
+                }
+            }
         }
 
         Rectangle {
@@ -271,7 +291,6 @@ Page {
         root.currentSearch  = ""
         root.currentMode    = ""
         root.pluginController.fetchPluginsCategories()
-        root.pluginController.fetchAvailablePlugins(1, "")
     }
 
     // Refills pluginsModel from appModel.plugins, applying the active mode filter.
@@ -292,5 +311,23 @@ Page {
             if (matchesMode)
                 pluginsModel.append(plugin)
         }
+    }
+
+    function buildCategoriesCounts() {
+        let counts = {}
+
+        // Initialize all categories to 0
+        for (const category of root.categoriesData)
+            counts[category.id] = 0
+
+        // Count plugins
+        for (const plugin of root.pluginsData) {
+            if (!counts.hasOwnProperty(plugin.category))
+                counts[plugin.category] = 0
+
+            counts[plugin.category]++
+        }
+
+        root.categoriesCounts = counts
     }
 }
