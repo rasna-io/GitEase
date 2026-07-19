@@ -18,7 +18,7 @@ QtObject{
     property color cornflowerBlue:      "#60a5fa"
     property color amber:               "#d97706"
     property color purple:              "#a855f7"
-    property color marigold:            "#d97706"
+    property color marigold:            "#fbbf24"
 
 
     property color vibrantMintBg:       Qt.darker(vibrantMint, 7.5)
