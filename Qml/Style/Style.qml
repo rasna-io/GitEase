@@ -49,6 +49,8 @@ QtObject {
 
         disabledButton:      "#9f9f9f"
 
+        titleText:           "#ffffff"
+
         navigationRailBgColor: "#383838"
 
         addedFile:           "#4ADE80"
