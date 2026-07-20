@@ -83,6 +83,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/ModernSpinBox.qml
     Qml/View/Components/Base/HorizontalTagInput.qml
     Qml/View/Components/Base/VerticalTagInput.qml
+    Qml/View/Components/Base/FileStatusTag.qml                 # File change-status tag (compact letter / expanded word)
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
