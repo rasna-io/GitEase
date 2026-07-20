@@ -56,7 +56,7 @@ Popup {
         }
 
         contentItem: Column {
-            spacing: 2
+            spacing: 1
             width: parent.width
 
             Repeater {
@@ -71,7 +71,7 @@ Popup {
         Item {
             id: menuOption
             width: parent.width
-            height: modelData.separator ? 9 : 40
+            height: modelData.separator ? 9 : Style.dp(25)
             visible: modelData.visible !== false
             readonly property bool isSep:     !!modelData.separator
             readonly property bool isEnabled: !isSep && modelData.enabled !== false
@@ -130,7 +130,7 @@ Popup {
                     text: modelData.checkBoxText
                     font.family: Style.fontTypes.roboto
                     font.pixelSize: Style.appFont.mediumPt
-                    Layout.preferredHeight: 40
+                    Layout.preferredHeight: Style.dp(25)
                     Material.accent: Style.colors.accent
                     Material.foreground: Style.colors.foreground
                     checked: false
@@ -180,7 +180,7 @@ Popup {
 
     contentItem: Column {
         id: mainMenuColumn
-        spacing: 2
+        spacing: 1
         width: parent.width
         Repeater {
             model: root.menuModel
