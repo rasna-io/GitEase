@@ -31,7 +31,7 @@ QtObject{
 
     // Primary colors
     property color primaryBackground:   "#FDFDFD"
-    property color secondaryBackground: "#F9F9F9"
+    property color secondaryBackground: "#e5e5e5"
     property color foreground:          "#363636"
     property color secondaryForeground: "#FDFDFD"
     property color accent:              "#074E96"
