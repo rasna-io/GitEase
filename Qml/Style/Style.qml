@@ -156,7 +156,7 @@ QtObject {
         property color rebaseStatusConflict:   "#FF4136"        // bright red
         property color rebaseStatusSkipped:    mutedText        // dimmed
 
-        contextMenuBackground: "#22222A"
+        contextMenuBackground: obsidianDeep
         contextMenuBorder:     "#2C2C33"
         contextMenuSeparator:  "#2C2C33"
         contextMenuHover:      "#34343D"

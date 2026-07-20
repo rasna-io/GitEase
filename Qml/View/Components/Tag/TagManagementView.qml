@@ -23,6 +23,11 @@ UtilitiesCard {
     icon:  Style.icons.tag
     badgeCount: root.tagListModel.length
 
+    TextEdit {
+        id: clipboardHelper
+        visible: false
+    }
+
     /* Logic */
     function update() {
         let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
@@ -34,6 +39,51 @@ UtilitiesCard {
                 console.log("GitEase: Tag list updated.");
             }
         }
+    }
+
+    function deleteTagLocal(tag) {
+        let ctrl = root.tagController || uiSession.tagController;
+        let res = ctrl.remove(tag.name);
+        if (res.success) {
+            if (root.notificationController)
+                root.notificationController.success("Tag deleted locally", "Tag", 2000);
+            root.update();
+        }
+    }
+
+    function deleteTagRemote(tag) {
+        let ctrl = root.tagController || uiSession.tagController;
+        let notif = root.notificationController;
+
+        if (notif) notif.info("Deleting tag from remote...", "Remote", 1500);
+
+        ctrl.pushDeleteTag(tag.name);
+    }
+
+    function copyTagName(tag) {
+        clipboardHelper.text = tag.name
+        clipboardHelper.selectAll()
+        clipboardHelper.copy()
+        if (root.notificationController)
+            root.notificationController.success("Tag name copied to clipboard", "Tag", 2000)
+    }
+
+    function copyTagHash(tag) {
+        clipboardHelper.text = tag.commitId
+        clipboardHelper.selectAll()
+        clipboardHelper.copy()
+        if (root.notificationController)
+            root.notificationController.success("Commit hash copied to clipboard", "Tag", 2000)
+    }
+
+    function buildTagMenu(tag) {
+        return [
+            { text: "Copy Name", icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
+            { text: "Copy Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } },
+            { separator: true },
+            { text: "Delete Tag (Local Only)", icon: Style.icons.trash, action: function() { root.deleteTagLocal(tag) } },
+            { text: "Delete Tag from Remote (Origin)", icon: Style.icons.trash, action: function() { root.deleteTagRemote(tag) } }
+        ]
     }
 
     content: ColumnLayout {
@@ -65,6 +115,12 @@ UtilitiesCard {
             }
         }
 
+        ContextMenu {
+            id: itemContextMenu
+            parent: Overlay.overlay
+            width: 220
+        }
+
         ListView {
             id: internalListView
             Layout.fillWidth: true
@@ -79,6 +135,19 @@ UtilitiesCard {
                 height: Style.dp(35)
                 radius: 4
                 color: Style.colors.secondaryBackground
+
+                MouseArea {
+                    id: rightClickArea
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    onClicked: (mouse) => {
+                        var pos = mapToItem(Overlay.overlay, mouse.x, mouse.y)
+                        itemContextMenu.menuModel = root.buildTagMenu(modelData)
+                        itemContextMenu.x = pos.x
+                        itemContextMenu.y = pos.y
+                        itemContextMenu.open()
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -124,15 +193,7 @@ UtilitiesCard {
                         Layout.preferredHeight: 24
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
-                        onClicked: {
-                            let ctrl = root.tagController || uiSession.tagController;
-                            let res = ctrl.remove(modelData.name);
-                            if (res.success) {
-                                if (root.notificationController)
-                                    root.notificationController.success("Tag deleted locally", "Tag", 2000);
-                                root.update();
-                            }
-                        }
+                        onClicked: root.deleteTagLocal(modelData)
                     }
 
                     ActionIconButton {
@@ -143,14 +204,7 @@ UtilitiesCard {
                         Layout.preferredHeight: 24
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
-                        onClicked: {
-                            let ctrl = root.tagController || uiSession.tagController;
-                            let notif = root.notificationController;
-
-                            if (notif) notif.info("Deleting tag from remote...", "Remote", 1500);
-
-                            ctrl.pushDeleteTag(modelData.name);
-                        }
+                        onClicked: root.deleteTagRemote(modelData)
                     }
                 }
             }

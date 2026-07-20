@@ -173,6 +173,17 @@ UtilitiesCard {
             }
         }
 
+        ContextMenu {
+            id: itemContextMenu
+            parent: Overlay.overlay
+            width: 200
+        }
+
+        TextEdit {
+            id: clipboardHelper
+            visible: false
+        }
+
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: Math.min(listView.contentHeight, 220)
@@ -194,6 +205,19 @@ UtilitiesCard {
                     height: Style.dp(35)
                     color: Style.colors.secondaryBackground
                     radius: 4
+
+                    MouseArea {
+                        id: rightClickArea
+                        anchors.fill: parent
+                        acceptedButtons: Qt.RightButton
+                        onClicked: (mouse) => {
+                            var pos = mapToItem(Overlay.overlay, mouse.x, mouse.y)
+                            itemContextMenu.menuModel = content.buildRemoteMenu(currentRemote)
+                            itemContextMenu.x = pos.x
+                            itemContextMenu.y = pos.y
+                            itemContextMenu.open()
+                        }
+                    }
 
                     RowLayout {
                         anchors.fill: parent
@@ -231,93 +255,26 @@ UtilitiesCard {
                                 tooltip: root.isFetching ? "Fetching..." : "Fetch"
                                 textColor: root.isFetching ? Style.colors.accent : Style.colors.mutedText
                                 enabled: !root.isFetching
-                                onClicked: {
-                                    root.remote = currentRemote
-                                    let res = remoteController.getRemoteUrl(currentRemote.name)
-
-                                    if (!res.success) {
-                                        return
-                                    }
-
-                                    let url = res.data.url
-                                    let protocol = repositoryController.detectGitProtocol(url)
-                                    switch(protocol) {
-                                    case RepositoryController.GitProtocol.SSH:
-                                        root.isFetching = true
-                                        res = root.remoteController.fetch(currentRemote.name)
-                                        if (res.success) {
-                                            if (root.activeFetchRemotes.indexOf(currentRemote.name) === -1)
-                                                root.activeFetchRemotes.push(currentRemote.name)
-                                        } else {
-                                            if (root.notificationController)
-                                                root.notificationController.error("Failed to fetch from " + currentRemote.name + ": " + (res.errorMessage || "Unknown error"), "Fetch Error", 7000)
-                                        }
-                                        root.isFetching = root.activeFetchRemotes.length > 0
-                                        content.update()
-                                        break;
-                                    case RepositoryController.GitProtocol.HTTPS:
-                                    case RepositoryController.GitProtocol.HTTP:
-                                        root.isFetching = true
-                                        root.authPurpose = "fetch"
-                                        userAuthenticationPopupConnection.enabled = true
-                                        userAuthenticationPopup.open()
-                                        break;
-                                    }
-                                }
+                                onClicked: content.fetchRemote(currentRemote)
                             }
                             ActionIconButton {
                                 iconText: Style.icons.arrowDown
                                 tooltip: root.isFetching ? "Pulling..." : "Pull"
                                 textColor: root.isFetching ? Style.colors.accent : Style.colors.mutedText
                                 enabled: !root.isFetching
-                                onClicked: {
-                                    root.remote = currentRemote
-                                    let res = remoteController.getRemoteUrl(currentRemote.name)
-
-                                    if (!res.success) {
-                                        return
-                                    }
-
-                                    let url = res.data.url
-                                    let protocol = repositoryController.detectGitProtocol(url)
-                                    switch(protocol) {
-                                    case RepositoryController.GitProtocol.SSH:
-                                        let startRes = root.remoteController.pull(currentRemote.name)
-                                        if (!startRes.success) {
-                                            if (root.notificationController)
-                                                root.notificationController.error("Failed to pull from " + currentRemote.name + ": " + (startRes.errorMessage || "Failed to start pull"), "Pull Error", 7000)
-                                            root.isFetching = false
-                                            content.update()
-                                            return
-                                        }
-                                        root.isFetching = true
-                                        break
-                                    case RepositoryController.GitProtocol.HTTPS:
-                                    case RepositoryController.GitProtocol.HTTP:
-                                        root.authPurpose = "pull"
-                                        userAuthenticationPopupConnection.enabled = true
-                                        userAuthenticationPopup.open()
-                                        break
-                                    }
-                                }
+                                onClicked: content.pullRemote(currentRemote)
                             }
                             ActionIconButton {
                                 iconText: Style.icons.edit
                                 tooltip: "Edit"
                                 textColor: Style.colors.mutedText
-                                onClicked: {
-                                    addEditRemotePopup.oldRemote = currentRemote
-                                    openAddEditPopup()
-                                }
+                                onClicked: content.editRemote(currentRemote)
                             }
                             ActionIconButton {
                                 iconText: Style.icons.trash
                                 tooltip: "Remove"
                                 textColor: Style.colors.deletededFile
-                                onClicked: {
-                                    root.remoteController.removeRemote(currentRemote.name)
-                                    content.update()
-                                }
+                                onClicked: content.removeRemoteItem(currentRemote)
                             }
                         }
                     }
@@ -358,6 +315,100 @@ UtilitiesCard {
                     root.badgeCount = res.data.length
                 }
             }
+        }
+
+        function fetchRemote(remoteItem) {
+            root.remote = remoteItem
+            let res = remoteController.getRemoteUrl(remoteItem.name)
+
+            if (!res.success) {
+                return
+            }
+
+            let url = res.data.url
+            let protocol = repositoryController.detectGitProtocol(url)
+            switch (protocol) {
+            case RepositoryController.GitProtocol.SSH:
+                root.isFetching = true
+                res = root.remoteController.fetch(remoteItem.name)
+                if (res.success) {
+                    if (root.activeFetchRemotes.indexOf(remoteItem.name) === -1)
+                        root.activeFetchRemotes.push(remoteItem.name)
+                } else {
+                    if (root.notificationController)
+                        root.notificationController.error("Failed to fetch from " + remoteItem.name + ": " + (res.errorMessage || "Unknown error"), "Fetch Error", 7000)
+                }
+                root.isFetching = root.activeFetchRemotes.length > 0
+                content.update()
+                break;
+            case RepositoryController.GitProtocol.HTTPS:
+            case RepositoryController.GitProtocol.HTTP:
+                root.isFetching = true
+                root.authPurpose = "fetch"
+                userAuthenticationPopupConnection.enabled = true
+                userAuthenticationPopup.open()
+                break;
+            }
+        }
+
+        function pullRemote(remoteItem) {
+            root.remote = remoteItem
+            let res = remoteController.getRemoteUrl(remoteItem.name)
+
+            if (!res.success) {
+                return
+            }
+
+            let url = res.data.url
+            let protocol = repositoryController.detectGitProtocol(url)
+            switch (protocol) {
+            case RepositoryController.GitProtocol.SSH:
+                let startRes = root.remoteController.pull(remoteItem.name)
+                if (!startRes.success) {
+                    if (root.notificationController)
+                        root.notificationController.error("Failed to pull from " + remoteItem.name + ": " + (startRes.errorMessage || "Failed to start pull"), "Pull Error", 7000)
+                    root.isFetching = false
+                    content.update()
+                    return
+                }
+                root.isFetching = true
+                break
+            case RepositoryController.GitProtocol.HTTPS:
+            case RepositoryController.GitProtocol.HTTP:
+                root.authPurpose = "pull"
+                userAuthenticationPopupConnection.enabled = true
+                userAuthenticationPopup.open()
+                break
+            }
+        }
+
+        function editRemote(remoteItem) {
+            addEditRemotePopup.oldRemote = remoteItem
+            root.openAddEditPopup()
+        }
+
+        function removeRemoteItem(remoteItem) {
+            root.remoteController.removeRemote(remoteItem.name)
+            content.update()
+        }
+
+        function copyRemoteUrl(remoteItem) {
+            clipboardHelper.text = remoteItem.url
+            clipboardHelper.selectAll()
+            clipboardHelper.copy()
+            if (root.notificationController)
+                root.notificationController.success("Remote URL copied to clipboard", "Remote", 2000)
+        }
+
+        function buildRemoteMenu(remoteItem) {
+            return [
+                { text: "Copy URL", icon: Style.icons.copy, action: function() { content.copyRemoteUrl(remoteItem) } },
+                { separator: true },
+                { text: "Fetch",  icon: Style.icons.download,  enabled: !root.isFetching, action: function() { content.fetchRemote(remoteItem) } },
+                { text: "Pull",   icon: Style.icons.arrowDown, enabled: !root.isFetching, action: function() { content.pullRemote(remoteItem) } },
+                { text: "Edit",   icon: Style.icons.edit,      action: function() { content.editRemote(remoteItem) } },
+                { text: "Remove", icon: Style.icons.trash,     action: function() { content.removeRemoteItem(remoteItem) } }
+            ]
         }
     }
 

@@ -100,6 +100,12 @@ UtilitiesCard {
             }
         }
 
+        ContextMenu {
+            id: itemContextMenu
+            parent: Overlay.overlay
+            width: 200
+        }
+
         ListView {
             id: stashListView
             Layout.fillWidth: true
@@ -114,6 +120,19 @@ UtilitiesCard {
                 radius: 4
                 property bool selected: root.selectedStash && root.selectedStash.index === modelData.index
                 color: selected ? Style.colors.hoverTitle : Style.colors.secondaryBackground
+
+                MouseArea {
+                    id: rightClickArea
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    onClicked: (mouse) => {
+                        var pos = mapToItem(Overlay.overlay, mouse.x, mouse.y)
+                        itemContextMenu.menuModel = root.buildStashMenu(modelData)
+                        itemContextMenu.x = pos.x
+                        itemContextMenu.y = pos.y
+                        itemContextMenu.open()
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -154,57 +173,21 @@ UtilitiesCard {
                             iconText: Style.icons.undo
                             tooltip: "Pop"
                             textColor: Style.colors.mutedText
-                            onClicked: {
-                                let result = stashController.pop(modelData.index, true)
-                                if (result.success) {
-                                    if (root.notificationController) {
-                                        root.notificationController.success("Stash popped successfully", "Stash", 3000)
-                                    }
-                                    root.updateStashes()
-                                } else {
-                                    if (root.notificationController) {
-                                        root.notificationController.error(result.errorMessage || "Failed to pop stash", "Stash Error", 5000)
-                                    }
-                                }
-                            }
+                            onClicked: root.popStash(modelData)
                         }
 
                         ActionIconButton {
                             iconText: Style.icons.check
                             tooltip: "Apply"
                             textColor: Style.colors.mutedText
-                            onClicked: {
-                                let result = stashController.apply(modelData.index, true)
-                                if (result.success) {
-                                    if (root.notificationController) {
-                                        root.notificationController.success("Stash applied successfully", "Stash", 3000)
-                                    }
-                                    root.updateStashes()
-                                } else {
-                                    if (root.notificationController) {
-                                        root.notificationController.error(result.errorMessage || "Failed to apply stash", "Stash Error", 5000)
-                                    }
-                                }
-                            }
+                            onClicked: root.applyStash(modelData)
                         }
 
                         ActionIconButton {
                             iconText: Style.icons.trash
                             tooltip: "Drop"
                             textColor: Style.colors.deletededFile
-                            onClicked: {
-                                let result = stashController.remove(modelData.index)
-                                if (result.success) {
-                                    if (root.notificationController) {
-                                        root.notificationController.success("Stash removed successfully", "Stash", 3000)
-                                    }
-                                    root.updateStashes()
-                                } else {
-                                    if (root.notificationController) {
-                                        root.notificationController.error(result.errorMessage || "Failed to remove stash", "Stash Error", 5000)
-                                    }
-                                }
-                            }
+                            onClicked: root.dropStash(modelData)
                         }
                     }
                 }
@@ -278,6 +261,57 @@ UtilitiesCard {
         root.manageStashPopup.commitController = root.commitController
         root.manageStashPopup.stashEntry = stashEntry
         root.manageStashPopup.open()
+    }
+
+    function popStash(stashEntry) {
+        let result = root.stashController.pop(stashEntry.index, true)
+        if (result.success) {
+            if (root.notificationController) {
+                root.notificationController.success("Stash popped successfully", "Stash", 3000)
+            }
+            root.updateStashes()
+        } else {
+            if (root.notificationController) {
+                root.notificationController.error(result.errorMessage || "Failed to pop stash", "Stash Error", 5000)
+            }
+        }
+    }
+
+    function applyStash(stashEntry) {
+        let result = root.stashController.apply(stashEntry.index, true)
+        if (result.success) {
+            if (root.notificationController) {
+                root.notificationController.success("Stash applied successfully", "Stash", 3000)
+            }
+            root.updateStashes()
+        } else {
+            if (root.notificationController) {
+                root.notificationController.error(result.errorMessage || "Failed to apply stash", "Stash Error", 5000)
+            }
+        }
+    }
+
+    function dropStash(stashEntry) {
+        let result = root.stashController.remove(stashEntry.index)
+        if (result.success) {
+            if (root.notificationController) {
+                root.notificationController.success("Stash removed successfully", "Stash", 3000)
+            }
+            root.updateStashes()
+        } else {
+            if (root.notificationController) {
+                root.notificationController.error(result.errorMessage || "Failed to remove stash", "Stash Error", 5000)
+            }
+        }
+    }
+
+    function buildStashMenu(stashEntry) {
+        return [
+            { text: "Open",  icon: Style.icons.file,  action: function() { root.openPreview(stashEntry) } },
+            { text: "Pop",   icon: Style.icons.undo,  action: function() { root.popStash(stashEntry) } },
+            { text: "Apply", icon: Style.icons.check, action: function() { root.applyStash(stashEntry) } },
+            { text: "Drop",  icon: Style.icons.trash, action: function() { root.dropStash(stashEntry) } }
+        ]
     }
 
     function updateStashes() {
