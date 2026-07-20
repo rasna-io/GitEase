@@ -224,7 +224,7 @@ id: treePanel
                     EmptyStateView {
                         title: "No files to show"
                         details: "The file tree of this commit is empty"
-                        visible: !root.visibleEntries || root.visibleEntries.length === 0
+                        visible: treeModel.count === 0
                     }
 
                     ColumnLayout {
@@ -300,7 +300,7 @@ id: treePanel
                             id: treeListView
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            model: root.filteredVisibleEntries
+                            model: treeModel
                             clip: true
 
                             ScrollBar.vertical: ScrollBar {}
@@ -821,10 +821,16 @@ id: treePanel
         root.selectedEntry = { path: entry.path, type: entry.type }
 
         if (entry.type === "tree") {
-            var expanded = root.expandedPaths
-            expanded[entry.path] = expanded[entry.path] !== true
+            var expanded   = root.expandedPaths
+            var willExpand = expanded[entry.path] !== true
+            expanded[entry.path] = willExpand
             root.expandedPaths = expanded
-            rebuildVisibleEntries()
+
+            if (willExpand)
+                expandFolderRows(entry.path, rowIndex)
+            else
+                collapseFolderRows(entry.path, rowIndex)
+
             return
         }
 
