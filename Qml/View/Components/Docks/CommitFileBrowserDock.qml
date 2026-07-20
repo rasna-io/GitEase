@@ -203,6 +203,12 @@ IPopup {
                             root.close()
                             root.closeRequested()
                         }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.NoButton
+                            cursorShape: Qt.PointingHandCursor
+                        }
                     }
                 }
             }
