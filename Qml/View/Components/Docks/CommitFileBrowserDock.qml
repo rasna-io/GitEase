@@ -599,6 +599,12 @@ IPopup {
                                     }
 
                                     onClicked: root.saveCurrentFileAs()
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        acceptedButtons: Qt.NoButton
+                                        cursorShape: Qt.PointingHandCursor
+                                    }
                                 }
                             }
                         }
