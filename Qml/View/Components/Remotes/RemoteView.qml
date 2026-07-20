@@ -34,17 +34,9 @@ UtilitiesCard {
 
     property bool isFetching: false
     property var activeFetchRemotes: []
-    property var fetchBatchResults: []
     property string authPurpose: "fetch" // "fetch" | "pull"
 
     property Remote remote: null
-
-    /* Signal Declarations
-     * ****************************************************************************************/
-    signal fetchSuccess(string remoteName)
-    signal fetchError(string remoteName, string errorMessage)
-    signal pullSuccess(string remoteName)
-    signal pullError(string remoteName, string errorMessage)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -61,7 +53,8 @@ UtilitiesCard {
             if (root.authPurpose === "pull") {
                 let startRes = root.remoteController.pull(remote.name, "", password)
                 if (!startRes.success) {
-                    root.pullError(remote.name, startRes.errorMessage)
+                    if (root.notificationController)
+                        root.notificationController.error(startRes.errorMessage || "Failed to start pull", "Pull Error", 5000)
                     root.isFetching = false
                     root.authPurpose = "fetch"
                     return
@@ -75,15 +68,9 @@ UtilitiesCard {
                         root.activeFetchRemotes.push(remote.name)
                 }
                 else {
-                    root.fetchBatchResults.push({
-                        remote: remote.name,
-                        success: false,
-                        errorMessage: res.errorMessage || "Unknown error",
-                        data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                    })
-                    root.fetchError(remote.name, res.errorMessage)
+                    if (root.notificationController)
+                        root.notificationController.error("Failed to fetch from " + remote.name + ": " + (res.errorMessage || "Unknown error"), "Fetch Error", 7000)
                     root.isFetching = root.activeFetchRemotes.length > 0
-                    root.openFetchSummaryIfReady()
                 }
             }
             root.authPurpose = "fetch"
@@ -142,6 +129,8 @@ UtilitiesCard {
                 content.update()
             }
 
+            // This page's own async per-remote Pull (triggered below) has no equivalent in the
+            // shared RemoteOperationsSession, so it remains the sole notifier for pull results.
             function onPullFinished(result) {
                 if (!root.isFetching || !root.remote || !result)
                     return
@@ -149,16 +138,21 @@ UtilitiesCard {
                 if (result.remote !== root.remote.name)
                     return
 
-                if (result.success)
-                    root.pullSuccess(root.remote.name)
-                else
-                    root.pullError(root.remote.name, result.errorMessage || "Pull failed")
+                if (notificationController) {
+                    if (result.success)
+                        notificationController.success("Successfully pulled from " + root.remote.name, "Pull", 5000)
+                    else
+                        notificationController.error("Failed to pull from " + root.remote.name + ": " + (result.errorMessage || "Pull failed"), "Pull Error", 7000)
+                }
 
                 root.isFetching = false
                 content.update()
             }
         }
 
+        // Fetch completion notifications/summary-popup are handled once by the shared
+        // RemoteOperationsSession (regardless of which UI triggered the fetch) — this only
+        // tracks this card's own per-row busy state.
         Connections {
             target: root.remoteController
 
@@ -167,23 +161,7 @@ UtilitiesCard {
                     return
 
                 root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== result.remote })
-                root.fetchBatchResults.push(result)
                 root.isFetching = root.activeFetchRemotes.length > 0
-
-                if (result.success)
-                    root.fetchSuccess(result.remote)
-                else
-                    root.fetchError(result.remote, result.errorMessage || "Unknown error")
-
-                root.openFetchSummaryIfReady()
-            }
-        }
-
-        Connections {
-            target: root.uiSessionPopups ? root.uiSessionPopups.fetchSummaryPopup : null
-
-            function onClosed() {
-                root.fetchBatchResults = []
             }
         }
 
@@ -192,34 +170,6 @@ UtilitiesCard {
 
             function onAboutToHide() {
                 content.update()
-            }
-        }
-
-        Connections {
-            target: root
-            
-            function onFetchSuccess(remoteName) {
-                if (notificationController) {
-                    notificationController.success("Successfully fetched from " + remoteName, "Fetch", 5000)
-                }
-            }
-            
-            function onFetchError(remoteName, errorMessage) {
-                if (notificationController) {
-                    notificationController.error("Failed to fetch from " + remoteName + ": " + errorMessage, "Fetch Error", 7000)
-                }
-            }
-
-            function onPullSuccess(remoteName) {
-                if (notificationController) {
-                    notificationController.success("Successfully pulled from " + remoteName, "Pull", 5000)
-                }
-            }
-
-            function onPullError(remoteName, errorMessage) {
-                if (notificationController) {
-                    notificationController.error("Failed to pull from " + remoteName + ": " + errorMessage, "Pull Error", 7000)
-                }
             }
         }
 
@@ -283,7 +233,6 @@ UtilitiesCard {
                                 enabled: !root.isFetching
                                 onClicked: {
                                     root.remote = currentRemote
-                                    root.fetchBatchResults = []
                                     let res = remoteController.getRemoteUrl(currentRemote.name)
 
                                     if (!res.success) {
@@ -300,16 +249,10 @@ UtilitiesCard {
                                             if (root.activeFetchRemotes.indexOf(currentRemote.name) === -1)
                                                 root.activeFetchRemotes.push(currentRemote.name)
                                         } else {
-                                            root.fetchBatchResults.push({
-                                                remote: currentRemote.name,
-                                                success: false,
-                                                errorMessage: res.errorMessage || "Fetch failed",
-                                                data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                                            })
-                                            root.fetchError(currentRemote.name, res.errorMessage)
+                                            if (root.notificationController)
+                                                root.notificationController.error("Failed to fetch from " + currentRemote.name + ": " + (res.errorMessage || "Unknown error"), "Fetch Error", 7000)
                                         }
                                         root.isFetching = root.activeFetchRemotes.length > 0
-                                        root.openFetchSummaryIfReady()
                                         content.update()
                                         break;
                                     case RepositoryController.GitProtocol.HTTPS:
@@ -341,7 +284,8 @@ UtilitiesCard {
                                     case RepositoryController.GitProtocol.SSH:
                                         let startRes = root.remoteController.pull(currentRemote.name)
                                         if (!startRes.success) {
-                                            root.pullError(currentRemote.name, startRes.errorMessage || "Failed to start pull")
+                                            if (root.notificationController)
+                                                root.notificationController.error("Failed to pull from " + currentRemote.name + ": " + (startRes.errorMessage || "Failed to start pull"), "Pull Error", 7000)
                                             root.isFetching = false
                                             content.update()
                                             return
@@ -425,19 +369,5 @@ UtilitiesCard {
         addEditRemotePopup.remoteController = root.remoteController
         addEditRemotePopup.open()
     }
-
-    function openFetchSummaryIfReady() {
-        if (root.activeFetchRemotes.length > 0 || root.fetchBatchResults.length === 0)
-            return
-
-        let popup = root.uiSessionPopups?.fetchSummaryPopup
-        if (!popup)
-            return
-
-        popup.results = []
-        popup.results = root.fetchBatchResults
-        popup.open()
-    }
-
 
 }
