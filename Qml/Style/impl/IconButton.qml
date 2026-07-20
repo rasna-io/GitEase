@@ -47,81 +47,87 @@ T.Button {
     icon.color: control.enabled ? Style.colors.foreground : Style.colors.mutedText
 
     contentItem: Item {
-        implicitWidth: (iconItem.visible ? iconItem.width : 0) +
-                       (iconItem.visible && (label.visible || scrollLabel.visible) ? control.spacing : 0) +
-                       (label.visible ? label.implicitWidth : 0) +
-                       (scrollLabel.visible ? scrollLabel.width : 0)
-        implicitHeight: Math.max(iconItem.visible ? iconItem.height : 0,
-                                 label.visible ? label.implicitHeight : 0,
-                                 scrollLabel.visible ? scrollLabel.height : 0)
+        id: contentRoot
+
+        implicitWidth: contentGroup.implicitWidth
+        implicitHeight: contentGroup.implicitHeight
 
         Item {
-            id: iconItem
-            visible: control.display !== T.AbstractButton.TextOnly &&
-                     (control.icon.name !== "" || control.icon.source.toString() !== "")
-            width: control.icon.width
-            height: control.icon.height
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
+            id: contentGroup
+            anchors.centerIn: parent
+            implicitWidth: (iconItem.visible ? iconItem.width : 0) +
+                           (iconItem.visible && (label.visible || scrollLabel.visible) ? control.spacing : 0) +
+                           (label.visible ? label.implicitWidth : 0) +
+                           (scrollLabel.visible ? scrollLabel.width : 0)
+            implicitHeight: Math.max(iconItem.visible ? iconItem.height : 0,
+                                     label.visible ? label.implicitHeight : 0,
+                                     scrollLabel.visible ? scrollLabel.height : 0)
 
-            Text {
-                anchors.fill: parent
-                visible: control.icon.name !== ""
-                text: control.icon.name
-                font.family: control.solidIcon ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
-                font.pixelSize: Math.min(width, height)
-                color: control.icon.color
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
+            Item {
+                id: iconItem
+                visible: control.display !== T.AbstractButton.TextOnly &&
+                         (control.icon.name !== "" || control.icon.source.toString() !== "")
+                width: control.icon.width
+                height: control.icon.height
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
 
-            Image {
-                id: iconImage
-                anchors.fill: parent
-                visible: control.icon.name === "" && control.icon.source.toString() !== ""
-                source: control.icon.source
-                sourceSize: Qt.size(width, height)
-                fillMode: Image.PreserveAspectFit
-                smooth: true
-
-                ColorOverlay {
-                    anchors.fill: iconImage
-                    source: iconImage
+                Text {
+                    anchors.fill: parent
+                    visible: control.icon.name !== ""
+                    text: control.icon.name
+                    font.family: control.solidIcon ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
+                    font.pixelSize: Math.min(width, height)
                     color: control.icon.color
-                    visible: iconImage.visible
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                Image {
+                    id: iconImage
+                    anchors.fill: parent
+                    visible: control.icon.name === "" && control.icon.source.toString() !== ""
+                    source: control.icon.source
+                    sourceSize: Qt.size(width, height)
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
+
+                    ColorOverlay {
+                        anchors.fill: iconImage
+                        source: iconImage
+                        color: control.icon.color
+                        visible: iconImage.visible
+                    }
                 }
             }
-        }
 
-        Text {
-            id: label
-            visible: control.display !== T.AbstractButton.IconOnly && control.text !== "" && control.maximumWidth <= 0
-            anchors.left: iconItem.visible ? iconItem.right : parent.left
-            anchors.leftMargin: iconItem.visible ? control.spacing : 0
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            text: control.text
-            font: control.font
-            color: control.icon.color
-            elide: Text.ElideRight
-            horizontalAlignment: iconItem.visible ? Text.AlignLeft : Text.AlignHCenter
-        }
-
-        Item {
-            id: scrollLabel
-            visible: control.display !== T.AbstractButton.IconOnly && control.text !== "" && control.maximumWidth > 0
-            anchors.left: iconItem.visible ? iconItem.right : parent.left
-            anchors.leftMargin: iconItem.visible ? control.spacing : 0
-            anchors.verticalCenter: parent.verticalCenter
-            width: Math.min(control.maximumWidth, scrollText.implicitWidth)
-            height: scrollText.implicitHeight
-
-            ScrollingText {
-                id: scrollText
-                anchors.fill: parent
+            Text {
+                id: label
+                visible: control.display !== T.AbstractButton.IconOnly && control.text !== "" && control.maximumWidth <= 0
+                anchors.left: iconItem.visible ? iconItem.right : parent.left
+                anchors.leftMargin: iconItem.visible ? control.spacing : 0
+                anchors.verticalCenter: parent.verticalCenter
                 text: control.text
                 font: control.font
                 color: control.icon.color
+            }
+
+            Item {
+                id: scrollLabel
+                visible: control.display !== T.AbstractButton.IconOnly && control.text !== "" && control.maximumWidth > 0
+                anchors.left: iconItem.visible ? iconItem.right : parent.left
+                anchors.leftMargin: iconItem.visible ? control.spacing : 0
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(control.maximumWidth, scrollText.implicitWidth)
+                height: scrollText.implicitHeight
+
+                ScrollingText {
+                    id: scrollText
+                    anchors.fill: parent
+                    text: control.text
+                    font: control.font
+                    color: control.icon.color
+                }
             }
         }
     }
