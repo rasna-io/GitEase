@@ -404,6 +404,7 @@ IPopup {
                                     onClicked: root.handleEntryClicked(entryData, index)
                                     onEntered: isHovered = true
                                     onExited: isHovered = false
+                                    cursorShape: Qt.PointingHandCursor
                                 }
                             }
                         }
