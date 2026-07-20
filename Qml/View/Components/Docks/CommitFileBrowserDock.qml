@@ -215,7 +215,7 @@ IPopup {
 
                 // Tree Panel (left)
                 Rectangle {
-id: treePanel
+                    id: treePanel
                     Layout.preferredWidth: Math.max(root.minTreeColumnWidth, root.treeColumnWidth)
                     Layout.fillHeight: true
                     color: Style.colors.primaryBackground
@@ -335,14 +335,14 @@ id: treePanel
                                         Layout.preferredWidth: 12
                                         Layout.fillHeight: true
 
-                                    Text {
+                                        Text {
                                             anchors.centerIn: parent
                                             visible: isFolder
                                             text: isExpanded ? Style.icons.caretDown : Style.icons.caretRight
-                                        font.family: Style.fontTypes.font6ProSolid
-                                        font.pixelSize: 9
-                                        color: Style.colors.mutedText
-                                        horizontalAlignment: Text.AlignHCenter
+                                            font.family: Style.fontTypes.font6ProSolid
+                                            font.pixelSize: 9
+                                            color: Style.colors.mutedText
+                                            horizontalAlignment: Text.AlignHCenter
                                         }
 
                                         FileStatusTag {
@@ -758,9 +758,9 @@ id: treePanel
             if (isEntryVisible(entry) && matchesSearch(entry))
                 treeModel.append(entry)
         }
-        }
+    }
 
-        function isEntryVisible(entry) {
+    function isEntryVisible(entry) {
         return entry.parentPath === "" || isPathVisible(entry.parentPath)
     }
 
