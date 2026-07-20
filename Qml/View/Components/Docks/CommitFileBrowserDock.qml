@@ -383,7 +383,8 @@ id: treePanel
 
                                     // Direct-children count (folders only)
                                     Label {
-                                        visible: isFolder
+                                        // visible: isFolder
+                                        visible: false
                                         text: root.childCounts[entryData.path] || ""
                                         color: Style.colors.mutedText
                                         font.family: Style.fontTypes.monospace
