@@ -237,12 +237,12 @@ IPopup {
 
                     ColumnLayout {
                         anchors.fill: parent
-                        spacing: 0
+                        spacing: 5
 
                         // Search bar
                         Rectangle{
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 36
+                            Layout.preferredHeight: 50
                             color: "transparent"
 
                             Rectangle {
@@ -257,8 +257,8 @@ IPopup {
                                 anchors.fill: parent
                                 anchors.leftMargin: 10
                                 anchors.rightMargin: 10
-                                anchors.topMargin: 4
-                                anchors.bottomMargin: 4
+                                anchors.topMargin: 10
+                                anchors.bottomMargin: 10
                                 spacing: 6
 
                                 Rectangle {
