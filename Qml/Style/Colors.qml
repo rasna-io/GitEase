@@ -195,4 +195,6 @@ QtObject{
     property color contextMenuBorder:     "#CDD2DA"
     property color contextMenuSeparator:  "#DCE1E9"
     property color contextMenuHover:      "#E7E7E7"
+
+    property color branchSelectedAccent:  "#2563EB"
 }

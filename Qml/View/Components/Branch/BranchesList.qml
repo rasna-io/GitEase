@@ -56,12 +56,20 @@ ListView {
         width: root.width
         height: 32
         radius: 4
-        color: branch.name === root.currentBranch ? Style.colors.accent
-             : hoverHandler.hovered ? Style.colors.surfaceLight
-             : Style.colors.secondaryBackground
+        color: hoverHandler.hovered ? Style.colors.surfaceLight : Style.colors.secondaryBackground
+
+        readonly property bool isSelected: branch.name === root.currentBranch
 
         HoverHandler {
             id: hoverHandler
+        }
+
+        Rectangle {
+            visible: branchDelegate.isSelected
+            anchors.left: parent.left
+            width: 2
+            height: branchDelegate.height
+            color: Style.colors.branchSelectedAccent
         }
 
         MouseArea {
@@ -80,15 +88,24 @@ ListView {
         RowLayout {
             anchors.fill: parent
             anchors.margins: 6
+            anchors.leftMargin: Style.dp(10)
             spacing: 6
+
+            Text {
+                text: Style.icons.branch
+                font.family: Style.fontTypes.font6Pro
+                font.pixelSize: Style.appFont.smallPt
+                color: branchDelegate.isSelected ? Style.colors.branchSelectedAccent : Style.colors.foreground
+                Layout.alignment: Qt.AlignVCenter
+            }
 
             ScrollingText {
                 text: branch.name
                 Layout.fillWidth: true
                 font.family: Style.fontTypes.roboto
                 font.pixelSize: Style.appFont.smallPt
-                font.bold: branch.name === root.currentBranch
-                color: Style.colors.foreground
+                font.bold: branchDelegate.isSelected
+                color: branchDelegate.isSelected ? Style.colors.branchSelectedAccent : Style.colors.foreground
             }
 
             RowLayout {

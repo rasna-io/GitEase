@@ -160,6 +160,8 @@ QtObject {
         contextMenuBorder:     "#2C2C33"
         contextMenuSeparator:  "#2C2C33"
         contextMenuHover:      "#34343D"
+
+        branchSelectedAccent:  "#93C5FD"
     }
 
     property           string       currentTheme:               "Modern Light"
