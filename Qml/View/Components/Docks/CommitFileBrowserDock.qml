@@ -552,6 +552,12 @@ IPopup {
                                     }
 
                                     onClicked: root.copyCurrentFileContent()
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        acceptedButtons: Qt.NoButton
+                                        cursorShape: Qt.PointingHandCursor
+                                    }
                                 }
 
 
