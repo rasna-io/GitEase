@@ -44,7 +44,7 @@ UtilitiesCard {
     content: ColumnLayout {
         id: content
         anchors.fill: parent
-        spacing: 8
+        spacing: 6
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -103,22 +103,22 @@ UtilitiesCard {
         ListView {
             id: stashListView
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 6
+            Layout.preferredHeight: Math.min(contentHeight, 220)
+            spacing: 4
             clip: true
             model: root.stashes
 
             delegate: Rectangle {
                 width: stashListView.width
-                height: 50
-                radius: 5
+                height: Style.dp(35)
+                radius: 4
                 property bool selected: root.selectedStash && root.selectedStash.index === modelData.index
                 color: selected ? Style.colors.hoverTitle : Style.colors.secondaryBackground
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 6
+                    anchors.margins: 6
+                    spacing: 4
 
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -128,7 +128,7 @@ UtilitiesCard {
                             text: modelData.message || qsTr("WIP on %1").arg(modelData.author || "unknown")
                             color: Style.colors.foreground
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: Style.appFont.defaultPt
+                            font.pixelSize: Style.appFont.smallPt
                         }
                         Text {
                             Layout.fillWidth: true
@@ -213,40 +213,25 @@ UtilitiesCard {
             onContentHeightChanged: root.pageScrollBlocking = stashListView.contentHeight > stashListView.height + 1
         }
 
-        Button {
+        IconButton {
             id: actionBtn
             Layout.fillWidth: true
-            implicitHeight: 44
+            implicitHeight: Style.dp(25)
 
             enabled: root.canStash
 
+            display: IconButton.TextBesideIcon
+            icon.name: Style.icons.plus
+            icon.width: Style.appFont.smallPt
+            icon.height: Style.appFont.smallPt
+            icon.color: Style.colors.textButton
+            text: "Stash"
+            font.pixelSize: Style.appFont.mediumPt
+
             background: Rectangle {
-                radius: 8
-                color: actionBtn.enabled ? (actionBtn.hovered) ? Style.colors.accentHover : Style.colors.accent
-                                            : (Style.colors.disabledButton)
-            }
-
-            contentItem: Item {
-                anchors.fill: parent
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.plus
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.mediumPt
-                        color: Style.colors.textButton
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Stash"
-                        color: Style.colors.textButton
-                        font.pixelSize: Style.appFont.h3Pt
-                    }
-                }
+                radius: Style.dp(4)
+                color: actionBtn.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
+                                            : Style.colors.disabledButton
             }
 
             onClicked: root.openAddEditPopup()

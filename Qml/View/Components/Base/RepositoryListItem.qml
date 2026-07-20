@@ -33,7 +33,7 @@ Rectangle {
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillWidth: true
-    Layout.preferredHeight: 50
+    Layout.preferredHeight: Style.dp(35)
     color: {
         if (msa.containsMouse) {
             if (isSelected)
@@ -54,13 +54,16 @@ Rectangle {
      * ****************************************************************************************/
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 6
+        anchors.leftMargin: 6
+        anchors.topMargin: 2
+        anchors.rightMargin: 6
+        anchors.bottomMargin: 2
         spacing: 2
 
         // Project name
         Text {
             text: root.name
-            font.pixelSize: Style.appFont.mediumPt
+            font.pixelSize: Style.appFont.smallPt
             font.family: Style.fontTypes.roboto
             font.weight: 400
             font.letterSpacing: 0
@@ -76,14 +79,14 @@ Rectangle {
             Text {
                 text: Style.icons.folder
                 font.family: Style.fontTypes.font6Pro
-                font.pixelSize: Style.appFont.largePt
+                font.pixelSize: Style.appFont.smallPt
                 color: root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
             }
 
             // Path
             ScrollingText {
                 text: root.path
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.smallPt
                 font.family: Style.fontTypes.roboto
                 color: root.isSelected ? Style.colors.secondaryForeground : root.isExists ? Style.colors.mutedText : Style.colors.error
                 font.weight: 400

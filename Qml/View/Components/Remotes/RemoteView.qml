@@ -101,7 +101,7 @@ UtilitiesCard {
 
     content: ColumnLayout {
         id: content
-        spacing: 10
+        spacing: 6
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -225,12 +225,15 @@ UtilitiesCard {
 
         Item {
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.preferredHeight: Math.min(listView.contentHeight, 220)
 
             ListView {
                 id: listView
-                anchors.fill: parent
-                spacing: 8
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                height: Math.min(contentHeight, 220)
+                spacing: 6
                 clip: true
 
                 delegate: Rectangle {
@@ -238,20 +241,19 @@ UtilitiesCard {
                     property Remote currentRemote: modelData
 
                     width: listView.width
-                    height: 60
+                    height: Style.dp(35)
                     color: Style.colors.secondaryBackground
-                    radius: 5
+                    radius: 4
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
+                        anchors.margins: 6
+                        spacing: 4
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            Layout.maximumWidth: parent.width * 0.70 - parent.spacing
                             Layout.alignment: Qt.AlignVCenter
-                            spacing: 2
+                            spacing: 1
                             clip: true
 
                             ScrollingText {
@@ -259,21 +261,19 @@ UtilitiesCard {
                                 text: currentRemote.name
                                 color: Style.colors.foreground
                                 font.family: Style.fontTypes.roboto
-                                font.pixelSize: Style.appFont.mediumPt
+                                font.pixelSize: Style.appFont.smallPt
                             }
                             ScrollingText {
                                 Layout.fillWidth: true
                                 text: currentRemote.url
                                 color: Style.colors.mutedText
                                 font.family: Style.fontTypes.roboto
-                                font.pixelSize: Style.appFont.smallPt
+                                font.pixelSize: Style.appFont.captionPt
                             }
                         }
 
                         Row {
-                            spacing: 4
-                            Layout.preferredWidth: parent.width * 0.30
-                            Layout.minimumWidth: 1
+                            spacing: 2
                             Layout.alignment: Qt.AlignVCenter
 
                             ActionIconButton {
@@ -383,42 +383,22 @@ UtilitiesCard {
             }
         }
 
-        Button {
+        IconButton {
             id: addRemoteBtn
             Layout.fillWidth: true
-            implicitHeight: 44
+            implicitHeight: Style.dp(25)
+
+            display: IconButton.TextBesideIcon
+            icon.name: Style.icons.plus
+            icon.width: Style.appFont.smallPt
+            icon.height: Style.appFont.smallPt
+            icon.color: Style.colors.textButton
+            text: "Add New Remote"
+            font.pixelSize: Style.appFont.mediumPt
 
             background: Rectangle {
-                radius: 8
+                radius: Style.dp(4)
                 color: enabled ? Style.colors.accent : Style.colors.disabledButton
-            }
-
-            contentItem: Item {
-                anchors.fill: parent
-
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.plus
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.mediumPt
-                        color: Style.colors.textButton
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Add New Remote"
-                        color: Style.colors.textButton
-                        font.pixelSize: Style.appFont.h3Pt
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
             }
 
             onClicked: {

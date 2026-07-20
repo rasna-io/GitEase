@@ -20,6 +20,7 @@ ListView {
     property string currentBranch: ""
     property var branchController: null
     property var notificationController: null
+    property int maxHeight: 220
 
     /* Signals
      * ****************************************************************************************/
@@ -28,8 +29,8 @@ ListView {
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillWidth: true
-    Layout.fillHeight: true
-    spacing: 8
+    Layout.preferredHeight: Math.min(contentHeight, maxHeight)
+    spacing: 4
     clip: true
 
     ScrollBar.vertical: ScrollBar {
@@ -42,8 +43,8 @@ ListView {
         property bool hovered: false
 
         width: root.width
-        height: 38
-        radius: 6
+        height: 32
+        radius: 4
         color: branch.name === root.currentBranch ? Style.colors.accent
              : hoverHandler.hovered ? Style.colors.surfaceLight
              : Style.colors.secondaryBackground
@@ -54,24 +55,24 @@ ListView {
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 8
-            spacing: 10
+            anchors.margins: 6
+            spacing: 6
 
             ScrollingText {
                 text: branch.name
                 Layout.fillWidth: true
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.smallPt
                 font.bold: branch.name === root.currentBranch
                 color: Style.colors.foreground
             }
 
             RowLayout {
-                spacing: 8
+                spacing: 4
                 Layout.alignment: Qt.AlignVCenter
 
                 RowLayout {
-                    spacing: 4
+                    spacing: 3
                     visible: branch.name !== root.currentBranch
 
                     MouseArea {
@@ -123,7 +124,7 @@ ListView {
                                 text: Style.icons.check
                                 font.family: Style.fontTypes.font6Pro
                                 color: !hoverHandler.hovered ? Style.colors.accent : Qt.darker(Style.colors.accent, 1.5)
-                                font.pixelSize: Style.appFont.mediumPt
+                                font.pixelSize: Style.appFont.smallPt
                                 font.bold: true
                                 Layout.alignment: Qt.AlignVCenter
                             }
@@ -132,7 +133,7 @@ ListView {
                                 text: "Checkout"
                                 font.family: Style.fontTypes.roboto
                                 color: !hoverHandler.hovered ? Style.colors.accent : Qt.darker(Style.colors.accent, 1.5)
-                                font.pixelSize: Style.appFont.defaultPt
+                                font.pixelSize: Style.appFont.smallPt
                                 font.bold: true
                                 Layout.alignment: Qt.AlignVCenter
                             }

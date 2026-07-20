@@ -24,6 +24,7 @@ Item {
 
     /* Object Properties (sized by parent layout when used in StackLayout)
      * ****************************************************************************************/
+    implicitHeight: mainLayout.implicitHeight
 
     /* Children
      * ****************************************************************************************/
@@ -35,8 +36,9 @@ Item {
     }
 
     ColumnLayout {
+        id: mainLayout
         anchors.fill: parent
-        spacing: 10
+        spacing: 6
 
         ColumnLayout {
             Layout.fillWidth: true
@@ -44,24 +46,24 @@ Item {
 
             Text {
                 text: "Bundle"
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.captionPt
                 color: Style.colors.mutedText
             }
 
             RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 40
-                spacing: 8
+                Layout.preferredHeight: Style.dp(25)
+                spacing: Style.dp(8)
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 40
-                    radius: 5
+                    Layout.preferredHeight: Style.dp(25)
+                    radius: Style.dp(5)
                     color: Style.colors.secondaryBackground
                     ScrollingText {
                         id: fileLabel
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: 15
+                        anchors.leftMargin: Style.dp(15)
                         anchors.left: parent.left
                         anchors.right: parent.right
                         color: root.selectedFile === "" ? Style.colors.placeholderText : Style.colors.secondaryText
@@ -69,35 +71,27 @@ Item {
                     }
                 }
 
-                Button {
+                IconButton {
                     id: fileButton
 
-                    implicitWidth: 40
-                    implicitHeight: 40
-
-                    text: Style.icons.folder
-                    font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: Style.appFont.largePt
+                    implicitWidth: Style.dp(25)
+                    implicitHeight: Style.dp(25)
 
                     topInset: 0
                     bottomInset: 0
 
-                    flat: true
-                    Material.elevation: 0
+                    display: IconButton.IconOnly
+                    icon.name: Style.icons.folder
+                    icon.width: Style.appFont.smallPt
+                    icon.height: Style.appFont.smallPt
+                    icon.color: fileButton.hovered ? Style.colors.secondaryForeground : Style.colors.secondaryText
+                    tooltip: "Select bundle"
 
                     background: Rectangle {
                         radius: 6
                         color: fileButton.hovered ? Style.colors.accentHover : "transparent"
                         border.width: 1
                         border.color: Style.colors.primaryBorder
-                    }
-
-                    contentItem: Text {
-                        text: fileButton.text
-                        font: fileButton.font
-                        color: fileButton.hovered ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
                     }
 
                     onClicked: fileDialog.open()
@@ -111,16 +105,16 @@ Item {
 
             Text {
                 text: "Branch"
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.captionPt
                 color: Style.colors.mutedText
             }
 
             TextField {
                 id: branchTXF
                 Layout.fillWidth: true
-                Layout.preferredHeight: 40
+                Layout.preferredHeight: Style.dp(25)
                 background: Rectangle {
-                    radius: 5
+                    radius: Style.dp(5)
                     color: Style.colors.secondaryBackground
                 }
             }
@@ -129,8 +123,8 @@ Item {
         // Hint row
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 65
-            radius: 5
+            Layout.preferredHeight: Style.dp(32)
+            radius: 4
             color: Style.colors.secondaryBackground
             border.width: 1
             border.color: Style.colors.secondaryBorder
@@ -150,7 +144,7 @@ Item {
                         anchors.leftMargin: 8
                         text: "Import will extract and restore the project structure, branches, and commit history from the selected archive."
                         wrapMode: Text.WordWrap
-                        font.pixelSize: Style.appFont.smallPt
+                        font.pixelSize: Style.appFont.captionPt
                         color: Style.colors.mutedText
                         font.family: Style.fontTypes.roboto
                     }
@@ -158,42 +152,23 @@ Item {
             }
         }
 
-        Button {
+        IconButton {
+            id: importButton
             Layout.fillWidth: true
-            implicitHeight: 44
+            implicitHeight: Style.dp(25)
             enabled: root.selectedFile !== "" && branchTXF.text !== ""
 
+            display: IconButton.TextBesideIcon
+            icon.name: Style.icons.upload
+            icon.width: Style.appFont.smallPt
+            icon.height: Style.appFont.smallPt
+            icon.color: Style.colors.secondaryForeground
+            text: "Import"
+            font.pixelSize: Style.appFont.mediumPt
+
             background: Rectangle {
-                radius: 8
-                color: enabled ? Style.colors.accent : Style.colors.disabledButton
-            }
-
-            contentItem: Item {
-                anchors.fill: parent
-
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.upload
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.mediumPt
-                        color: Style.colors.secondaryForeground
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Import"
-                        color: Style.colors.secondaryForeground
-                        font.pixelSize: Style.appFont.h3Pt
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
+                radius: Style.dp(4)
+                color: importButton.enabled ? Style.colors.accent : Style.colors.disabledButton
             }
 
             onClicked: {

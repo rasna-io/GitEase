@@ -38,7 +38,7 @@ UtilitiesCard {
 
     content: ColumnLayout {
         anchors.fill: parent
-        spacing: 12
+        spacing: 6
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -68,58 +68,51 @@ UtilitiesCard {
         ListView {
             id: internalListView
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 8
+            Layout.preferredHeight: Math.min(contentHeight, 220)
+            spacing: 6
             clip: true
             model: root.tagListModel
 
             delegate: Rectangle {
                 id: tagDelegate
                 width: internalListView.width
-                height: 48
-                radius: 6
+                height: Style.dp(35)
+                radius: 4
                 color: Style.colors.secondaryBackground
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 8
-                    spacing: 10
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 6
+                    spacing: 6
 
                     // 1. Tag Icon
                     Text {
                         text: Style.icons.tag || "#"
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.largePt
+                        font.pixelSize: Style.appFont.mediumPt
                         color: modelData.isAnnotated ? Style.colors.accent : Style.colors.secondaryText
                         Layout.alignment: Qt.AlignVCenter
                     }
 
-                    // 2. Text Column (Flexible Space)
-                    ColumnLayout {
-                        spacing: 2
+                    ScrollingText {
+                        text: modelData.name
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: Style.appFont.smallPt
+                        font.bold: true
+                        color: Style.colors.foreground
+
                         Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
+                    }
 
-                        ScrollingText {
-                            text: modelData.name
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: Style.appFont.mediumPt
-                            font.bold: true
-                            color: Style.colors.foreground
+                    Text {
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        text: modelData.commitId.substring(0, 7)
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.mutedText
 
-                            Layout.fillWidth: true
-                        }
-
-                        Text {
-                            text: modelData.commitId.substring(0, 7)
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: Style.appFont.smallPt
-                            color: Style.colors.mutedText
-
-                            Layout.fillWidth: true
-                            elide: Text.ElideRight
-                        }
+                        elide: Text.ElideRight
                     }
 
                     // 3. Delete Action (Fixed Position)
@@ -127,8 +120,8 @@ UtilitiesCard {
                         iconText: Style.icons.trash
                         textColor: Style.colors.modifiediedFile
                         tooltip: "Delete Tag (Local Only)"
-                        Layout.preferredWidth: 28
-                        Layout.preferredHeight: 28
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
                         onClicked: {
@@ -146,8 +139,8 @@ UtilitiesCard {
                         iconText: Style.icons.trash
                         textColor: Style.colors.deletededFile
                         tooltip: "Delete Tag from Remote (Origin)"
-                        Layout.preferredWidth: 28
-                        Layout.preferredHeight: 28
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
                         onClicked: {
@@ -170,46 +163,29 @@ UtilitiesCard {
                 text: "No tags available"
                 color: Style.colors.secondaryText
                 visible: internalListView.count === 0
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.smallPt
             }
         }
 
         // Add Tag Button
-        Button {
+        IconButton {
             id: addTagBtn
             Layout.fillWidth: true
-            implicitHeight: 44
+            implicitHeight: Style.dp(25)
+
+            display: IconButton.TextBesideIcon
+            icon.name: Style.icons.plus
+            icon.width: Style.appFont.smallPt
+            icon.height: Style.appFont.smallPt
+            icon.color: Style.colors.textButton
+            text: "Add New Tag"
+            font.pixelSize: Style.appFont.mediumPt
 
             background: Rectangle {
-                radius: 8
+                radius: Style.dp(4)
                 color: addTagBtn.enabled ? Style.colors.accent : Style.colors.disabledButton
             }
-            contentItem: Item {
-                anchors.fill: parent
 
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.plus
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.mediumPt
-                        color: Style.colors.textButton
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Add New Tag"
-                        color: Style.colors.textButton
-                        font.pixelSize: Style.appFont.h3Pt
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-            }
             onClicked: {
                 if (root.addTagPopup) {
                     root.addTagPopup.tagController = root.tagController || uiSession.tagController;

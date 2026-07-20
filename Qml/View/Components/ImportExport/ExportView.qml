@@ -24,6 +24,7 @@ Item {
 
     /* Object Properties (sized by parent layout when used in StackLayout)
      * ****************************************************************************************/
+    implicitHeight: mainLayout.implicitHeight
 
     /* Children
      * ****************************************************************************************/
@@ -34,8 +35,9 @@ Item {
     }
 
     ColumnLayout {
+        id: mainLayout
         anchors.fill: parent
-        spacing: 10
+        spacing: 0
 
         ColumnLayout {
             Layout.fillWidth: true
@@ -43,18 +45,18 @@ Item {
 
             Text {
                 text: "Target Branch"
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.captionPt
                 color: Style.colors.mutedText
             }
 
             ComboBox {
                 id: branchesCombo
                 Layout.fillWidth: true
-                minHeight: 40
-                focusBorderWidth: 1
+                minHeight: Style.dp(25)
+                focusBorderWidth: Style.dp(1)
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.smallPt
                 textRole: "name"
 
                 placeholderText: "Select branch"
@@ -63,7 +65,7 @@ Item {
                 Material.foreground: Style.colors.secondaryText
 
                 background: Rectangle {
-                    radius: 5
+                    radius: Style.dp(5)
                     color: branchesCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
@@ -88,18 +90,18 @@ Item {
 
             Text {
                 text: "Base Branch"
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.captionPt
                 color: Style.colors.mutedText
             }
 
             ComboBox {
                 id: baseBranchCombo
                 Layout.fillWidth: true
-                minHeight: 40
-                focusBorderWidth: 1
+                minHeight: Style.dp(25)
+                focusBorderWidth: Style.dp(1)
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.smallPt
 
                 placeholderText: "Select Base"
 
@@ -107,7 +109,7 @@ Item {
                 Material.foreground: Style.colors.secondaryText
 
                 background: Rectangle {
-                    radius: 5
+                    radius: Style.dp(5)
                     color: baseBranchCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
             }
@@ -119,47 +121,49 @@ Item {
 
             Text {
                 text: "Output Directory"
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.captionPt
                 color: Style.colors.mutedText
             }
 
             RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 20
-                spacing: 8
+                Layout.preferredHeight: Style.dp(25)
+                spacing: Style.dp(8)
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 40
-                    radius: 5
+                    Layout.preferredHeight: Style.dp(25)
+                    radius: Style.dp(5)
                     color: Style.colors.secondaryBackground
+
                     ScrollingText {
                         id: fileLabel
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: 15
+                        anchors.leftMargin: Style.dp(15)
                         anchors.left: parent.left
                         anchors.right: parent.right
+                        font.pixelSize: Style.appFont.smallPt
                         color: root.selectedFolder === "" ? Style.colors.placeholderText : Style.colors.secondaryText
                         text: root.selectedFolder !== "" ? root.selectedFolder : "Select Directory..."
                     }
                 }
 
 
-                Button {
+                IconButton {
                     id: fileButton
 
-                    implicitWidth: 40
-                    implicitHeight: 40
-
-                    text: Style.icons.folder
-                    font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: Style.appFont.largePt
+                    implicitWidth: Style.dp(25)
+                    implicitHeight: Style.dp(25)
 
                     topInset: 0
                     bottomInset: 0
 
-                    flat: true
-                    Material.elevation: 0
+                    display: IconButton.IconOnly
+                    icon.name: Style.icons.folder
+                    icon.width: Style.appFont.smallPt
+                    icon.height: Style.appFont.smallPt
+                    icon.color: fileButton.hovered ? Style.colors.secondaryForeground : Style.colors.secondaryText
+                    tooltip: "Select Directory"
 
                     background: Rectangle {
                         radius: 6
@@ -168,58 +172,29 @@ Item {
                         border.color: Style.colors.primaryBorder
                     }
 
-                    contentItem: Text {
-                        text: fileButton.text
-                        font: fileButton.font
-                        color: fileButton.hovered ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
                     onClicked: folderDialog.open()
                 }
             }
         }
 
-        Item {
-            Layout.fillHeight: true
-        }
-
-        Button {
+        IconButton {
+            id: exportButton
             Layout.fillWidth: true
-            implicitHeight: 44
+            Layout.topMargin: Style.dp(5)
+            implicitHeight: Style.dp(25)
             enabled: root.selectedFolder !== "" && branchesCombo.currentIndex !== -1 && baseBranchCombo.currentIndex !== -1
+
+            display: IconButton.TextBesideIcon
+            icon.name: Style.icons.download
+            icon.width: Style.appFont.smallPt
+            icon.height: Style.appFont.smallPt
+            icon.color: Style.colors.secondaryForeground
+            text: "Export"
+            font.pixelSize: Style.appFont.mediumPt
+
             background: Rectangle {
-                radius: 8
-                color: enabled ? Style.colors.accent : Style.colors.disabledButton
-            }
-
-            contentItem: Item {
-                anchors.fill: parent
-
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.download
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.mediumPt
-                        color: Style.colors.secondaryForeground
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Export"
-                        color: Style.colors.secondaryForeground
-                        font.pixelSize: Style.appFont.h3Pt
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
+                radius: Style.dp(4)
+                color: exportButton.enabled ? Style.colors.accent : Style.colors.disabledButton
             }
 
             onClicked: {

@@ -30,7 +30,7 @@ UtilitiesCard {
     icon: Style.icons.copy
 
     content: ColumnLayout {
-        spacing: 10
+        spacing: 6
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -77,20 +77,21 @@ UtilitiesCard {
 
             Text {
                 text: "Upstream"
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.captionPt
                 color: Style.colors.mutedText
             }
             TextField {
                 id: upstreamInput
                 Layout.fillWidth: true
+                implicitHeight: Style.dp(25)
                 placeholderText: "branch, tag, or commit SHA"
                 selectByMouse: true
-
+                font.pixelSize: Style.appFont.smallPt
 
                 background: Rectangle {
-                    implicitHeight: 40
+                    implicitHeight: Style.dp(25)
                     color: Style.colors.secondaryBackground
-                    radius: 5
+                    radius: Style.dp(4)
                     border.color: upstreamInput.activeFocus ? Style.colors.accent : "transparent"
                 }
             }
@@ -103,18 +104,18 @@ UtilitiesCard {
 
             Text {
                 text: "Branch to rebase"
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.captionPt
                 color: Style.colors.mutedText
             }
 
             ComboBox {
                 id: branchCombo
                 Layout.fillWidth: true
-                minHeight: 40
+                minHeight: Style.dp(25)
                 focusBorderWidth: 1
                 font.family: Style.fontTypes.roboto
                 font.weight: 400
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.smallPt
                 textRole: "label"
                 model: branchModel
                 currentIndex: 0
@@ -123,7 +124,7 @@ UtilitiesCard {
                 Material.foreground: Style.colors.secondaryText
 
                 background: Rectangle {
-                    radius: 5
+                    radius: Style.dp(4)
                     color: branchCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                     border.color: branchCombo.activeFocus ? Style.colors.accent : "transparent"
                 }
@@ -136,7 +137,8 @@ UtilitiesCard {
             Layout.fillWidth: false
             text: "Use --onto (advanced)"
             font.family: Style.fontTypes.roboto
-            font.pixelSize: Style.appFont.mediumPt
+            font.pixelSize: Style.appFont.smallPt
+            implicitHeight: Style.dp(25)
             Material.accent: Style.colors.accent
             Material.foreground: Style.colors.foreground
             palette {
@@ -155,67 +157,45 @@ UtilitiesCard {
             Text {
                 text: "Onto (new base)"
                 Layout.fillWidth: true
-                font.pixelSize: Style.appFont.mediumPt
+                font.pixelSize: Style.appFont.captionPt
                 color: Style.colors.mutedText
             }
             TextField {
                 id: ontoInput
                 Layout.fillWidth: true
+                implicitHeight: Style.dp(25)
                 placeholderText: "branch, tag, or commit SHA"
                 selectByMouse: true
+                font.pixelSize: Style.appFont.smallPt
 
                 background: Rectangle {
-                    implicitHeight: 40
+                    implicitHeight: Style.dp(25)
                     color: Style.colors.secondaryBackground
-                    radius: 5
+                    radius: Style.dp(4)
                     border.color: ontoInput.activeFocus ? Style.colors.accent : "transparent"
                 }
             }
         }
 
-        // Spacer
-        Item {
-            Layout.fillHeight: true
-        }
-
         // Rebase button
-        Button {
+        IconButton {
             id: startRebaseBtn
             Layout.fillWidth: true
-            implicitHeight: 44
+            implicitHeight: Style.dp(25)
             enabled: upstreamInput.text.trim().length > 0
 
+            display: IconButton.TextBesideIcon
+            icon.name: Style.icons.copy
+            icon.width: Style.appFont.smallPt
+            icon.height: Style.appFont.smallPt
+            icon.color: Style.colors.secondaryForeground
+            text: "Start Rebase"
+            font.pixelSize: Style.appFont.mediumPt
+
             background: Rectangle {
-                radius: 8
-                color: enabled ? (parent.hovered ? Style.colors.accentHover : Style.colors.accent)
-                               : Style.colors.disabledButton
-            }
-
-            contentItem: Item {
-                anchors.fill: parent
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.copy
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.mediumPt
-                        color: Style.colors.secondaryForeground
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Start Rebase"
-                        color: Style.colors.secondaryForeground
-                        font.pixelSize: Style.appFont.h3Pt
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
+                radius: Style.dp(4)
+                color: startRebaseBtn.enabled ? (startRebaseBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
+                                               : Style.colors.disabledButton
             }
 
             onClicked: previewRebase(upstreamInput.text, ontoInput.text, advancedToggle.checked, branchCombo.currentIndex)
