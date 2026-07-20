@@ -291,6 +291,14 @@ Drawer {
                     }
                 }
 
+                // Empty State
+                EmptyStateView {
+                    visible: notificationListView.count === 0
+                    title: (root.notificationController && root.notificationController.notificationHistory && root.notificationController.notificationHistory.length > 0)
+                           ? "No notifications match this filter"
+                           : "No notifications yet"
+                }
+
                 delegate: Item {
                     id: notifDelegate
                     width: notificationListView.width
