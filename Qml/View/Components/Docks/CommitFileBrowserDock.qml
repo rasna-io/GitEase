@@ -265,7 +265,7 @@ IPopup {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     radius: 5
-                                    color: Style.colors.surfaceLight
+                                    color: Style.colors.fileBrowserSearchBg
 
                                     RowLayout {
                                         anchors.fill: parent
@@ -326,7 +326,7 @@ IPopup {
 
                                 color: {
                                     if (isSelected) return Style.colors.accent
-                                    if (isHovered)  return Style.colors.hoverTitle
+                                    if (isHovered)  return Style.colors.fileBrowserRowHoverBg
                                     return "transparent"
                                 }
 
