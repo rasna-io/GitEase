@@ -330,14 +330,28 @@ id: treePanel
                                     anchors.rightMargin: 6
                                     spacing: 5
 
-                                    // Chevron (only for folders)
+                                    // Chevron (folders) or change-status tag (files)
+                                    Item {
+                                        Layout.preferredWidth: 12
+                                        Layout.fillHeight: true
+
                                     Text {
-                                        Layout.preferredWidth: 10
-                                        text: isFolder ? (isExpanded ? Style.icons.caretDown : Style.icons.caretRight) : ""
+                                            anchors.centerIn: parent
+                                            visible: isFolder
+                                            text: isExpanded ? Style.icons.caretDown : Style.icons.caretRight
                                         font.family: Style.fontTypes.font6ProSolid
                                         font.pixelSize: 9
                                         color: Style.colors.mutedText
                                         horizontalAlignment: Text.AlignHCenter
+                                        }
+
+                                        FileStatusTag {
+                                            anchors.centerIn: parent
+                                            compact: true
+                                            deltaStatus: !isFolder && root.changedFiles[entryData.path] !== undefined
+                                                         ? root.changedFiles[entryData.path]
+                                                         : -1
+                                        }
                                     }
 
                                     // Icon (folder/file)
@@ -356,6 +370,15 @@ id: treePanel
                                         font.family: Style.fontTypes.monospace
                                         font.pixelSize: 12
                                         elide: Text.ElideRight
+                                    }
+
+                                    // LED
+                                    Rectangle {
+                                        Layout.preferredWidth: 5
+                                        Layout.preferredHeight: 5
+                                        radius: 2.5
+                                        color: Style.colors.modifiediedFile
+                                        visible: isFolder && root.changedFolders[entryData.path] === true
                                     }
 
                                     // Direct-children count (folders only)
