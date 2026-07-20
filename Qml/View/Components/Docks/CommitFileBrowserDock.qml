@@ -90,6 +90,10 @@ IPopup {
         visible: false
     }
 
+    ListModel {
+        id: treeModel
+    }
+
     FileDialog {
         id: saveFileDialog
         title: "Save file as"
@@ -690,19 +694,20 @@ IPopup {
         root.childCounts = counts
     }
 
-    // Rebuild visible entries (respecting expanded folders)
-    function rebuildVisibleEntries() {
-        var all     = root.gitTreeController.fileTreeModel || []
-        var visible = []
+    // Full rebuild of the tree rows (used on open and when the search changes)
+    function rebuildTreeModel() {
+        treeModel.clear()
 
+        var all = root.gitTreeController.fileTreeModel || []
         for (var i = 0; i < all.length; i++) {
             var entry = all[i]
-            if (entry.parentPath === "" || isPathVisible(entry.parentPath))
-                visible.push(entry)
+            if (isEntryVisible(entry) && matchesSearch(entry))
+                treeModel.append(entry)
+        }
         }
 
-        root.visibleEntries = visible
-        rebuildFilteredEntries()
+        function isEntryVisible(entry) {
+        return entry.parentPath === "" || isPathVisible(entry.parentPath)
     }
 
     function isPathVisible(folderPath) {
@@ -718,22 +723,45 @@ IPopup {
         return true
     }
 
-    // Further filter by search text
-    function rebuildFilteredEntries() {
-        var list = root.visibleEntries || []
-        if (root.searchText === "") {
-            root.filteredVisibleEntries = list
-            return
-        }
+    function matchesSearch(entry) {
+        if (root.searchText === "")
+            return true
 
-        var filtered = []
-        for (var i = 0; i < list.length; i++) {
-            var entry = list[i]
-            if (entry.name.toLowerCase().indexOf(root.searchText) !== -1 ||
-                entry.path.toLowerCase().indexOf(root.searchText) !== -1)
-                filtered.push(entry)
+        return entry.name.toLowerCase().indexOf(root.searchText) !== -1
+            || entry.path.toLowerCase().indexOf(root.searchText) !== -1
+    }
+
+    // Insert the visible rows of an expanded folder right below it.
+    function expandFolderRows(folderPath, rowIndex) {
+        var all      = root.gitTreeController.fileTreeModel || []
+        var prefix   = folderPath + "/"
+        var insertAt = rowIndex + 1
+        var started  = false
+
+        for (var i = 0; i < all.length; i++) {
+            var entry = all[i]
+
+            if (!started) {
+                if (entry.path === folderPath)
+                    started = true
+                continue
+            }
+
+            if (entry.path.indexOf(prefix) !== 0)
+                break
+
+            if (isEntryVisible(entry) && matchesSearch(entry))
+                treeModel.insert(insertAt++, entry)
         }
-        root.filteredVisibleEntries = filtered
+    }
+
+    // Remove the rows of a collapsed folder.
+    function collapseFolderRows(folderPath, rowIndex) {
+        var prefix = folderPath + "/"
+
+        while (rowIndex + 1 < treeModel.count
+               && treeModel.get(rowIndex + 1).path.indexOf(prefix) === 0)
+            treeModel.remove(rowIndex + 1)
     }
 
     function handleEntryClicked(entry) {
