@@ -212,6 +212,8 @@ QtObject {
 
         // Commit Panel
         commitButton:      "#3B82F6"
+        fileBrowserRowHoverBg: Qt.rgba(1,1,1,0.04)
+        fileBrowserSearchBg:  Qt.rgba(1,1,1,0.05)
     }
 
     property           string       currentTheme:               "Modern Light"

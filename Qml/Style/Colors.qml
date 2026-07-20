@@ -246,4 +246,6 @@ QtObject{
 
     // Commit Panel
     property color commitButton:         branchAccent         // #2563EB
+    property color fileBrowserRowHoverBg: Qt.rgba(0,0,0,0.04)
+    property color fileBrowserSearchBg:  Qt.rgba(0,0,0,0.05)
 }
