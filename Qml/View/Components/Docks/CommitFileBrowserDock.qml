@@ -229,12 +229,6 @@ IPopup {
                     color: Style.colors.primaryBackground
                     clip: true
 
-                    EmptyStateView {
-                        title: "No files to show"
-                        details: "The file tree of this commit is empty"
-                        visible: treeModel.count === 0
-                    }
-
                     ColumnLayout {
                         anchors.fill: parent
                         spacing: 5
@@ -310,6 +304,14 @@ IPopup {
                             Layout.fillHeight: true
                             model: treeModel
                             clip: true
+
+                            EmptyStateView {
+                                anchors.fill: parent
+                                z: 1
+                                visible: treeModel.count === 0
+                                title: "No files to show"
+                                details: "The file tree of this commit is empty"
+                            }
 
                             ScrollBar.vertical: ScrollBar {}
 
