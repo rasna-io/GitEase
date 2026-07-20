@@ -30,12 +30,6 @@ IPopup {
     // Paths of folders currently expanded in the tree
     property var expandedPaths      : ({})
 
-    // All entries after applying visibility (ancestors expanded)
-    property var visibleEntries     : []
-
-    // Final filtered list (search + visibility)
-    property var filteredVisibleEntries : []
-
     property var selectedEntry      : null
 
     property var childCounts        : ({})
@@ -289,7 +283,7 @@ IPopup {
                                             background: Item{}
                                             onTextChanged: {
                                                 root.searchText = text.toLowerCase()
-                                                root.rebuildFilteredEntries()
+                                                root.rebuildTreeModel()
                                             }
                                         }
                                     }
@@ -311,7 +305,7 @@ IPopup {
                                 width: ListView.view.width
                                 height: 24
 
-                                property var    entryData   : modelData
+                                property var    entryData   : model
                                 property bool   isFolder    : entryData.type === "tree"
                                 property bool   isExpanded  : root.expandedPaths[entryData.path] === true
 
@@ -373,7 +367,7 @@ IPopup {
                                 MouseArea {
                                     anchors.fill: parent
                                     hoverEnabled: true
-                                    onClicked: root.handleEntryClicked(entryData)
+                                    onClicked: root.handleEntryClicked(entryData, index)
                                     onEntered: isHovered = true
                                     onExited: isHovered = false
                                 }
@@ -670,7 +664,8 @@ IPopup {
 
         if (root.gitTreeController.loadTree(hash)) {
             rebuildChildCounts()
-            rebuildVisibleEntries()
+            
+            rebuildTreeModel()
         }
 
         else
@@ -764,8 +759,8 @@ IPopup {
             treeModel.remove(rowIndex + 1)
     }
 
-    function handleEntryClicked(entry) {
-        root.selectedEntry = entry
+    function handleEntryClicked(entry, rowIndex) {
+        root.selectedEntry = { path: entry.path, type: entry.type }
 
         if (entry.type === "tree") {
             var expanded = root.expandedPaths
@@ -805,8 +800,8 @@ IPopup {
         root.expandedPaths          = ({})
         root.selectedEntry          = null
         root.childCounts            = ({})
-        root.visibleEntries         = []
-        root.filteredVisibleEntries = []
+
+        treeModel.clear()
 
         root.searchText             = ""
         searchField.text            = ""
