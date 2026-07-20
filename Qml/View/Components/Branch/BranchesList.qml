@@ -64,14 +64,6 @@ ListView {
             id: hoverHandler
         }
 
-        Rectangle {
-            visible: branchDelegate.isSelected
-            anchors.left: parent.left
-            width: 2
-            height: branchDelegate.height
-            color: Style.colors.branchSelectedAccent
-        }
-
         MouseArea {
             id: rightClickArea
             anchors.fill: parent
