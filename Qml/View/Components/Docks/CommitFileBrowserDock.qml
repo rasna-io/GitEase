@@ -34,6 +34,9 @@ IPopup {
 
     property var childCounts        : ({})
 
+    property var changedFiles       : ({})
+    property var changedFolders     : ({})
+
     property string searchText      : ""
 
     property int            treeColumnWidth     : root.width * 0.3
@@ -664,7 +667,7 @@ id: treePanel
 
         if (root.gitTreeController.loadTree(hash)) {
             rebuildChildCounts()
-            
+            loadCommitChanges(hash)
             rebuildTreeModel()
         }
 
@@ -673,6 +676,38 @@ id: treePanel
                                                   "Commit File Browser", 5000)
 
         root.open()
+    }
+
+    // Load the files changed in this commit and mark their ancestor folders
+    function loadCommitChanges(hash) {
+        root.changedFiles   = ({})
+        root.changedFolders = ({})
+
+        if (!root.statusController)
+            return
+
+        var res = root.statusController.getCommitFileChanges(hash)
+        if (!res.success || !res.data)
+            return
+
+        var files   = ({})
+        var folders = ({})
+
+        for (var i = 0; i < res.data.length; i++) {
+            var file = res.data[i]
+            files[file.path] = file.deltaStatus
+
+            // Mark every ancestor folder as containing a change
+            var parts   = file.path.split("/")
+            var current = ""
+            for (var j = 0; j < parts.length - 1; j++) {
+                current = current === "" ? parts[j] : current + "/" + parts[j]
+                folders[current] = true
+            }
+        }
+
+        root.changedFiles   = files
+        root.changedFolders = folders
     }
 
     // Count direct children of every folder in the loaded tree
@@ -800,7 +835,8 @@ id: treePanel
         root.expandedPaths          = ({})
         root.selectedEntry          = null
         root.childCounts            = ({})
-
+        root.changedFiles           = ({})
+        root.changedFolders         = ({})
         treeModel.clear()
 
         root.searchText             = ""
