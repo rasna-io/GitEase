@@ -504,6 +504,7 @@ DetachablePanel {
         gitTreeController       : root.gitTreeController
         repositoryController    : root.repositoryController
         notificationController  : root.notificationController
+        statusController        : root.statusController
     }
 
     /* Functions

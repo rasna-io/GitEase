@@ -20,6 +20,7 @@ IPopup {
     property GitTreeController      gitTreeController       : null
     property RepositoryController   repositoryController    : null
     property NotificationController notificationController  : null
+    property StatusController       statusController        : null
 
     property string commitSha       : ""
     property string commitMessage   : ""
