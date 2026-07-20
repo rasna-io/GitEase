@@ -212,6 +212,7 @@ IPopup {
 
                 // Tree Panel (left)
                 Rectangle {
+id: treePanel
                     Layout.preferredWidth: Math.max(root.minTreeColumnWidth, root.treeColumnWidth)
                     Layout.fillHeight: true
                     color: Style.colors.primaryBackground
@@ -389,21 +390,20 @@ IPopup {
                         anchors.rightMargin: -5
                         hoverEnabled: true
                         cursorShape: Qt.SizeHorCursor
-
-                        property real   startX      : 0
-                        property int    startWidth  : 0
-
-                        onPressed: function(mouse) {
-                            startX      = mapToItem(root, mouse.x, 0).x
-                            startWidth  = root.treeColumnWidth
-                        }
+                        preventStealing: true
 
                         onPositionChanged: function(mouse) {
                             if (!pressed)
                                 return
 
-                            var currentX = mapToItem(root, mouse.x, 0).x
-                            root.treeColumnWidth = Math.max(root.minTreeColumnWidth, startWidth + currentX - startX)
+                            // Track the absolute mouse position (scene coordinates) so the
+                            // handle follows the cursor without drift or jitter.
+                            var sceneX      = mapToItem(null, mouse.x, 0).x
+                            var panelLeft   = treePanel.mapToItem(null, 0, 0).x
+                            var maxWidth    = root.width - 280
+
+                            root.treeColumnWidth = Math.max(root.minTreeColumnWidth,
+                                                            Math.min(sceneX - panelLeft, maxWidth))
                         }
                     }
                 }
