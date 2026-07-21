@@ -499,7 +499,7 @@ DetachablePanel {
         guideController: root.guideController
     }
 
-    CommitFileBrowserDock {
+    CommitFileBrowserPopup {
         id: commitFileBrowserPopup
         gitTreeController       : root.gitTreeController
         repositoryController    : root.repositoryController

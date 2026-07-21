@@ -132,8 +132,6 @@ set(RESOURCES_COMPONENTS
 
     # DockPanel Docks
     Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
-    Qml/View/Components/Docks/CommitFileBrowserDock.qml # CommitFileBrowserDock : browse file tree at a commit
-
 
     Qml/View/Components/Settings/CheckboxItem.qml
     Qml/View/Components/Settings/PathSelectorItem.qml
@@ -217,6 +215,8 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/CalendarPopup.qml
 
     Qml/View/Popups/CommitPlanPopup.qml
+    Qml/View/Popups/CommitFileBrowserPopup.qml #browse file tree at a commit
+
 )
 
 
