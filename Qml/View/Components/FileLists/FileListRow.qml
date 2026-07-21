@@ -95,5 +95,21 @@ Rectangle {
             active: root.rightAccessory !== null
             sourceComponent: root.rightAccessory
         }
+
+        FileStatusTag {
+            Layout.alignment: Qt.AlignVCenter
+            compact: true
+            fileStatus: root.status
+        }
+    }
+
+    Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: 1
+        color: Style.colors.primaryBorder
+        opacity: 0.45
+        visible: root.showSeparator
     }
 }
