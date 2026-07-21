@@ -155,7 +155,7 @@ IPopup {
                     Label {
                         text: "Browse files at commit"
                         color: Style.colors.titleText
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: 12
                         font.bold: true
                         verticalAlignment: Text.AlignVCenter
@@ -167,7 +167,7 @@ IPopup {
                     Label {
                         text: root.commitShortSha
                         color: Style.colors.accent
-                        font.family: Style.fontTypes.monospace
+                        font.family: Style.fontTypes.jetBrainsMono
                         font.pixelSize: 11
                     }
 
@@ -175,7 +175,7 @@ IPopup {
                     Label {
                         text: root.commitMessage
                         color: Style.colors.mutedText
-                        font.family: Style.fontTypes.monospace
+                        font.family: Style.fontTypes.jetBrainsMono
                         font.pixelSize: 11
                         elide: Text.ElideRight
                         maximumLineCount: 1
@@ -284,7 +284,7 @@ IPopup {
                                             placeholderText: "Search files..."
                                             placeholderTextColor: Style.colors.mutedText
                                             color: Style.colors.foreground
-                                            font.family: Style.fontTypes.monospace
+                                            font.family: Style.fontTypes.jetBrainsMono
                                             font.pixelSize: 11
                                             background: Item{}
                                             onTextChanged: {
@@ -377,7 +377,7 @@ IPopup {
                                         Layout.fillWidth: true
                                         text: entryData.name
                                         color: isSelected ? Style.colors.selectedText : Style.colors.foreground
-                                        font.family: Style.fontTypes.monospace
+                                        font.family: Style.fontTypes.jetBrainsMono
                                         font.pixelSize: 12
                                         elide: Text.ElideRight
                                     }
@@ -397,7 +397,7 @@ IPopup {
                                         visible: false
                                         text: root.childCounts[entryData.path] || ""
                                         color: Style.colors.mutedText
-                                        font.family: Style.fontTypes.monospace
+                                        font.family: Style.fontTypes.jetBrainsMono
                                         font.pixelSize: 10
                                     }
                                 }
@@ -494,7 +494,7 @@ IPopup {
                                     Layout.fillWidth: true
                                     text: root.gitTreeController ? root.gitTreeController.currentFilePath : ""
                                     color: Style.colors.foreground
-                                    font.family: Style.fontTypes.monospace
+                                    font.family: Style.fontTypes.jetBrainsMono
                                     font.pixelSize: 12
                                     elide: Text.ElideLeft
                                 }
@@ -512,7 +512,7 @@ IPopup {
                                         anchors.centerIn: parent
                                         text: "READ ONLY"
                                         color: Style.colors.error
-                                        font.family: Style.fontTypes.roboto
+                                        font.family: Style.fontTypes.inter
                                         font.pixelSize: 9
                                         font.bold: true
                                     }
@@ -674,7 +674,7 @@ IPopup {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: index + 1
                                             color: Style.colors.lineNumberColor
-                                            font.family: Style.fontTypes.monospace
+                                            font.family: Style.fontTypes.jetBrainsMono
                                             font.pixelSize: 11
                                             horizontalAlignment: Text.AlignRight
                                         }
@@ -686,7 +686,7 @@ IPopup {
                                         Layout.fillHeight: true
                                         text: modelData
                                         color: Style.colors.foreground
-                                        font.family: Style.fontTypes.monospace
+                                        font.family: Style.fontTypes.jetBrainsMono
                                         font.pixelSize: 12
                                         wrapMode: Text.NoWrap
                                         elide: Text.ElideNone

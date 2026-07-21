@@ -115,14 +115,9 @@ Rectangle {
         id: tagLabel
         anchors.centerIn: parent
         text: root.compact ? root.statusLetter : root.statusText
-        color: {
-            if (!root.compact)
-                return Style.colors.titleText
-
-            return root.showBackground ? root.statusColor : Qt.darker(root.statusColor, 1.5)
-        }
-        font.family: Style.fontTypes.roboto
-        font.pixelSize: (root.compact && root.showBackground) ? 9.5 : (root.compact ? Style.appFont.defaultPt : Style.appFont.mediumPt)
+        color: root.compact ? Qt.darker(root.statusColor, 1.5) : Style.colors.titleText
+        font.family: Style.fontTypes.inter
+        font.pixelSize: root.compact ? Style.appFont.defaultPt : Style.appFont.mediumPt
         font.bold: root.compact
     }
 }
