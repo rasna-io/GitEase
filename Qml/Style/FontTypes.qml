@@ -11,4 +11,6 @@ QtObject{
     readonly property string font6Pro:      "Font Awesome 6 Pro"
     readonly property string font6ProSolid: "Font Awesome 6 Pro Solid"
     readonly property string monospace:     Qt.platform.os === "windows" ? "Consolas" : "monospace"
+    readonly property string inter:         "Inter"
+    readonly property string jetBrainsMono: "JetBrains Mono"
 }

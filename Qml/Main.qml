@@ -55,6 +55,16 @@ ApplicationWindow {
     FontLoader { source: "qrc:/GitEase/Resources/Fonts/Font Awesome 6 Pro-Regular-400.otf" }
     FontLoader { source: "qrc:/GitEase/Resources/Fonts/Font Awesome 6 Pro-Light-300.otf" }
 
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-Regular.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-Medium.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-SemiBold.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-Bold.ttf" }
+
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-Regular.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-Medium.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-SemiBold.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-Bold.ttf" }
+
     /* Shortcuts
      * ****************************************************************************************/
     Action {
