@@ -93,7 +93,7 @@ IPopup {
 
     FileDialog {
         id: saveFileDialog
-        title: "Save file as"
+        title: "Export file as"
         fileMode: FileDialog.SaveFile
 
         onAccepted: {
@@ -103,9 +103,9 @@ IPopup {
                                                              targetPath)
 
             if (res.success)
-                root.notificationController.success("File saved to " + targetPath, "Commit File Browser", 3000)
+                root.notificationController.success("File exported to " + targetPath, "Commit File Browser", 3000)
             else
-                root.notificationController.error(res.errorMessage || "Failed to save file", "Commit File Browser", 5000)
+                root.notificationController.error(res.errorMessage || "Failed to export file", "Commit File Browser", 5000)
         }
     }
 
@@ -566,9 +566,9 @@ IPopup {
                                 }
 
 
-                                // Save button
+                                // Export button
                                 ToolButton {
-                                    id: saveButton
+                                    id: exportButton
                                     Layout.preferredWidth: 60
                                     Layout.preferredHeight: 20
                                     Layout.alignment: Qt.AlignVCenter
@@ -585,14 +585,14 @@ IPopup {
                                                 text: Style.icons.download
                                                 font.family: Style.fontTypes.font6ProSolid
                                                 font.pixelSize: 9
-                                                color: saveButton.hovered ? Style.colors.foreground : Style.colors.mutedText
+                                                color: exportButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
 
                                             Label {
-                                                text: "Save"
+                                                text: "Export"
                                                 font.pixelSize: 11
-                                                color: saveButton.hovered ? Style.colors.foreground : Style.colors.mutedText
+                                                color: exportButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
                                         }
@@ -600,10 +600,10 @@ IPopup {
 
                                     background: Rectangle {
                                         radius: 4
-                                        color: saveButton.hovered ? Style.colors.hoverTitle : "transparent"
+                                        color: exportButton.hovered ? Style.colors.hoverTitle : "transparent"
                                     }
 
-                                    onClicked: root.saveCurrentFileAs()
+                                    onClicked: root.exportCurrentFile()
 
                                     MouseArea {
                                         anchors.fill: parent
@@ -630,7 +630,7 @@ IPopup {
                             // Binary file placeholder
                             EmptyStateView {
                                 title: "Binary file"
-                                details: "This file cannot be displayed. Use \"Save as...\" to export it."
+                                details: "This file cannot be displayed. Use the Export button to download a copy."
                                 visible: root.gitTreeController
                                          && root.gitTreeController.currentFilePath !== ""
                                          && root.gitTreeController.currentFileIsBinary
@@ -873,7 +873,7 @@ IPopup {
         root.notificationController.success("File content copied to clipboard", "Commit File Browser", 2500)
     }
 
-    function saveCurrentFileAs() {
+    function exportCurrentFile() {
         if (root.gitTreeController.currentFilePath === "")
             return
 
