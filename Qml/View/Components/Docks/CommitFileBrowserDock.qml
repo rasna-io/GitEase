@@ -309,8 +309,8 @@ IPopup {
                                 anchors.fill: parent
                                 z: 1
                                 visible: treeModel.count === 0
-                                title: "No files to show"
-                                details: "The file tree of this commit is empty"
+                                title: "No files match your search"
+                                details: "Try a different search term or clear the search to see all files."
                             }
 
                             ScrollBar.vertical: ScrollBar {}
