@@ -86,7 +86,7 @@ Rectangle {
                     Layout.fillWidth: true
                     text: root.title
                     color: Style.colors.foreground
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.h4Pt
                     font.bold: true
                     elide: Text.ElideRight
@@ -107,7 +107,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: root.badgeCount
                         color: Style.colors.mutedText
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: 10
                         font.bold: true
                     }
@@ -120,7 +120,7 @@ Rectangle {
                 Label {
                     text: root.collapsed ? Style.icons.caretDown : Style.icons.caretUp
                     color: Style.colors.mutedText
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: 10
                     font.bold: true
                 }

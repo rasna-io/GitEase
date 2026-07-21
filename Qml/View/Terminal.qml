@@ -107,7 +107,7 @@ DetachablePanel {
                                 width: implicitWidth
                                 text: root.prompt
                                 color: Style.colors.terminalUserAndHost
-                                font.family: Style.fontTypes.monospace
+                                font.family: Style.fontTypes.jetBrainsMono
                                 font.pixelSize: root.fontSize
                                 font.bold: true
                             }
@@ -116,7 +116,7 @@ DetachablePanel {
                                 width: implicitWidth
                                 text: root.currentPath
                                 color: Style.colors.terminalWorkDir
-                                font.family: Style.fontTypes.monospace
+                                font.family: Style.fontTypes.jetBrainsMono
                                 font.pixelSize: root.fontSize
                                 font.bold: true
                             }
@@ -125,7 +125,7 @@ DetachablePanel {
                                 width: implicitWidth
                                 text: rowText
                                 color: Style.colors.terminalCommand
-                                font.family: Style.fontTypes.monospace
+                                font.family: Style.fontTypes.jetBrainsMono
                                 font.pixelSize: root.fontSize
                                 wrapMode: TextEdit.WrapAnywhere
                                 readOnly: true
@@ -138,7 +138,7 @@ DetachablePanel {
                             delegate: TextEdit {
                                 text: model.text
                                 color: model.color !== "" ? model.color : Style.colors.terminalCommand
-                                font.family: Style.fontTypes.monospace
+                                font.family: Style.fontTypes.jetBrainsMono
                                 font.pixelSize: root.fontSize
                                 wrapMode: TextEdit.WrapAnywhere
                                 readOnly: true
@@ -156,7 +156,7 @@ DetachablePanel {
                         id: promptLabel
                         text: root.prompt
                         color: Style.colors.terminalUserAndHost
-                        font.family: Style.fontTypes.monospace
+                        font.family: Style.fontTypes.jetBrainsMono
                         font.pixelSize: root.fontSize
                         font.bold: true
                         visible: !root.commandRunning
@@ -165,7 +165,7 @@ DetachablePanel {
                     Text {
                         text: root.currentPath
                         color: Style.colors.terminalWorkDir
-                        font.family: Style.fontTypes.monospace
+                        font.family: Style.fontTypes.jetBrainsMono
                         font.pixelSize: root.fontSize
                         font.bold: true
                         visible: !root.commandRunning
@@ -206,7 +206,7 @@ DetachablePanel {
                         id: cmdTextInput
                         Layout.fillWidth: true
                         color: Style.colors.terminalCommand
-                        font.family: Style.fontTypes.monospace
+                        font.family: Style.fontTypes.jetBrainsMono
                         font.pixelSize: root.fontSize
                         cursorVisible: true
                         selectByMouse: true

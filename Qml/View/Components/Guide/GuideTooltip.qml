@@ -82,7 +82,7 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     text: root.stepData?.title ?? ""
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: 14
                     font.weight: Font.DemiBold
                     color: Style.colors.foreground
@@ -102,7 +102,7 @@ Item {
                         id: _pillTxt
                         anchors.centerIn: parent
                         text: "%1 / %2".arg((root.stepData?.stepIndex ?? 0) + 1).arg(root.stepData?.totalSteps ?? 1)
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: 10
                         font.weight: Font.Medium
                         color: Style.colors.accent
@@ -205,7 +205,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: root.stepData?.description ?? ""
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: 12
                 color: Style.colors.secondaryText
                 wrapMode: Text.WordWrap
@@ -247,7 +247,7 @@ Item {
                             Text {
                                 visible: (_cmdChip.modelData.label?.length ?? 0) > 0
                                 text: _cmdChip.modelData.label + ":"
-                                font.family: Style.fontTypes.roboto
+                                font.family: Style.fontTypes.inter
                                 font.weight: Font.DemiBold
                                 font.pixelSize: 11
                                 color: Style.colors.accent
@@ -256,7 +256,7 @@ Item {
                             Text {
                                 Layout.fillWidth: true
                                 text: _cmdChip.modelData.command ?? ""
-                                font.family: "Consolas"
+                                font.family: Style.fontTypes.jetBrainsMono
                                 font.pixelSize: 11
                                 color: Style.colors.foreground
                                 wrapMode: Text.WrapAnywhere
@@ -339,13 +339,13 @@ Item {
 
                         Text {
                             text: "←"
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: 11
                             color: Style.colors.secondaryText
                         }
                         Text {
                             text: "Back"
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: 11
                             color: Style.colors.secondaryText
                         }
@@ -391,7 +391,7 @@ Item {
                             id: _skipTxt
                             anchors.centerIn: parent
                             text: "Skip"
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: 11
                             color: Style.colors.mutedText
                         }
@@ -432,7 +432,7 @@ Item {
 
                                     return (root.stepData.stepIndex === root.stepData.totalSteps - 1) ? "Done" : "Next"
                                 }
-                                font.family: Style.fontTypes.roboto
+                                font.family: Style.fontTypes.inter
                                 font.pixelSize: 11
                                 font.weight: Font.Medium
                                 color: Style.colors.onAccentText
@@ -443,7 +443,7 @@ Item {
                                          ? root.stepData.stepIndex < root.stepData.totalSteps - 1
                                          : false
                                 text: "→"
-                                font.family: Style.fontTypes.roboto
+                                font.family: Style.fontTypes.inter
                                 font.pixelSize: 11
                                 color: Style.colors.onAccentText
                             }

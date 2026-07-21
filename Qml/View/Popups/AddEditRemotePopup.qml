@@ -57,7 +57,7 @@ IPopup {
             Text {
                 text: root.isEdit ? "Edit Remote" : "Add Remote"
                 color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.bold: true
                 font.pixelSize: Style.appFont.h2Pt
                 Layout.alignment: Qt.AlignHCenter

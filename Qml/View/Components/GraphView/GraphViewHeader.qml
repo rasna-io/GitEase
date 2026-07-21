@@ -74,7 +74,7 @@ RowLayout {
                 return display.length > 0 ? "Write Filter By " + display : "Write Filter By"
             }
             text: headerRow.filterText
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.weight: 400
             font.pixelSize: Style.appFont.captionPt
             borderRadius: 5
@@ -99,7 +99,7 @@ RowLayout {
         Layout.preferredHeight: headerRow.controlSize
 
         text: "Filters"
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.weight: Font.Medium
         font.pixelSize: Style.appFont.smallPt
         leftPadding: 12
@@ -224,6 +224,82 @@ RowLayout {
 
     Item {
         Layout.fillWidth: true
+    }
+
+    IconButton {
+        id: pullBtn
+        Layout.preferredHeight: headerRow.controlSize
+
+        solidIcon: true
+        icon.name: Style.icons.arrowDown
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.inter
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
+        text: "Pull"
+        tooltip: "Pull from origin"
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+
+        onClicked: headerRow.pullRequested()
+    }
+
+    IconButton {
+        id: pushBtnHeader
+        Layout.preferredHeight: headerRow.controlSize
+        Layout.minimumWidth: 30
+        Material.accent: Style.colors.accent
+
+        property bool isBusy: headerRow.remoteController?.pushInProgress && !headerRow.remoteController?.forcePush
+
+        background: Rectangle {
+            radius: 5
+            color: pushBtnHeader.down ? Style.colors.surfaceMuted :
+                   pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+        }
+
+        BusyIndicator {
+            id: pushBusyIndicator
+            anchors.centerIn: parent
+            width: 30
+            height: 30
+            running: pushBtnHeader.isBusy
+            visible: pushBtnHeader.isBusy
+        }
+
+        enabled: !headerRow.remoteController?.pushInProgress
+        solidIcon: true
+        icon.name: !isBusy ? Style.icons.arrowUp : ""
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.inter
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
+        text: !isBusy ? "Push" : ""
+        tooltip: !isBusy ? "Push to origin" : "Pushing..."
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+
+        onClicked: headerRow.pushRequested(false)
+    }
+
+    IconButton {
+        id: fetchBtnHeader
+        Layout.preferredHeight: headerRow.controlSize
+
+        enabled: !headerRow.isFetching
+
+        solidIcon: true
+        icon.name: Style.icons.download
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.inter
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
+        text: "Fetch"
+        tooltip: headerRow.isFetching ? "Fetching…" : "Fetch all remotes"
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+
+        onClicked: headerRow.fetchRequested()
     }
 
     IconButton {

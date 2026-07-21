@@ -342,7 +342,7 @@ DetachablePanel {
                                     text: fileData.path || ""
                                     color: Style.colors.foreground
                                     font.pixelSize: Style.appFont.smallPt
-                                    font.family: Style.fontTypes.roboto
+                                    font.family: Style.fontTypes.inter
                                     font.weight: 400
                                     font.letterSpacing: 0.2
                                     Layout.fillWidth: true
@@ -367,7 +367,7 @@ DetachablePanel {
                                     verticalAlignment: Text.AlignVCenter
                                     horizontalAlignment: Text.AlignHCenter
                                     font.pixelSize: Style.appFont.smallPt
-                                    font.family: Style.fontTypes.roboto
+                                    font.family: Style.fontTypes.inter
                                     font.weight: 400
                                     font.letterSpacing: 0.2
                                     Layout.fillWidth: true

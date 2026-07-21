@@ -94,7 +94,7 @@ ListView {
             ScrollingText {
                 text: branch.name
                 Layout.fillWidth: true
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.smallPt
                 font.bold: branchDelegate.isSelected
                 color: branchDelegate.isSelected ? Style.colors.branchSelectedAccent : Style.colors.foreground
@@ -132,7 +132,7 @@ ListView {
 
                             Text {
                                 text: "Checkout"
-                                font.family: Style.fontTypes.roboto
+                                font.family: Style.fontTypes.inter
                                 color: !hoverHandler.hovered ? Style.colors.accent : Qt.darker(Style.colors.accent, 1.5)
                                 font.pixelSize: Style.appFont.smallPt
                                 font.bold: true

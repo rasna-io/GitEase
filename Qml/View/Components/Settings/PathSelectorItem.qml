@@ -58,7 +58,7 @@ RowLayout {
         flat: true
         font.pixelSize: Style.appFont.mediumPt
         font.weight: 400
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         
         background: Rectangle {
             radius: 5

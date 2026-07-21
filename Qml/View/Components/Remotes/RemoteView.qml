@@ -234,14 +234,14 @@ UtilitiesCard {
                                 Layout.fillWidth: true
                                 text: currentRemote.name
                                 color: Style.colors.foreground
-                                font.family: Style.fontTypes.roboto
+                                font.family: Style.fontTypes.inter
                                 font.pixelSize: Style.appFont.smallPt
                             }
                             ScrollingText {
                                 Layout.fillWidth: true
                                 text: currentRemote.url
                                 color: Style.colors.mutedText
-                                font.family: Style.fontTypes.roboto
+                                font.family: Style.fontTypes.inter
                                 font.pixelSize: Style.appFont.captionPt
                             }
                         }

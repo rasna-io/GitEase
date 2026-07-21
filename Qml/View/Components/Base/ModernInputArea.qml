@@ -56,7 +56,7 @@ Rectangle {
                 width: parent.width
                 placeholderTextColor: Style.colors.placeholderText
                 color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.largePt
                 wrapMode: TextEdit.Wrap
                 leftPadding: 12;

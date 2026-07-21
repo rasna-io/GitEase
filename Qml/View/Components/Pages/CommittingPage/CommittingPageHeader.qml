@@ -46,7 +46,7 @@ RowLayout {
         icon.name: Style.icons.branch
         icon.width: Style.appFont.h3Pt
         icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: branchController ? branchController.getDisplayBranchName() : ""
@@ -84,7 +84,7 @@ RowLayout {
         icon.name: Style.icons.arrowDown
         icon.width: Style.appFont.h3Pt
         icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: "Pull"
@@ -122,7 +122,7 @@ RowLayout {
         icon.name: !isBusy ? Style.icons.arrowUp : ""
         icon.width: Style.appFont.h3Pt
         icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: !isBusy ? "Push" : ""
@@ -148,7 +148,7 @@ RowLayout {
         icon.name: Style.icons.download
         icon.width: Style.appFont.h3Pt
         icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: "Fetch"
@@ -186,7 +186,7 @@ RowLayout {
         icon.name: !isBusy ? Style.icons.arrowUp : ""
         icon.width: Style.appFont.h3Pt
         icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: !isBusy ? "Push Force" : ""

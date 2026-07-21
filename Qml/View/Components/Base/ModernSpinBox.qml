@@ -45,7 +45,7 @@ Rectangle {
             Layout.fillWidth: true
 
             selectByMouse: true
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             color: Style.colors.mutedText
             Material.accent: Style.colors.accent
             leftPadding: 0

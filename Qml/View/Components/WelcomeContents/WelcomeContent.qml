@@ -28,7 +28,7 @@ Item {
 
             Text {
                 text: "Welcome to GitEase"
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 400
                 font.pixelSize: Style.appFont.displayMdPt
                 color: Style.colors.foreground
@@ -40,7 +40,7 @@ Item {
             Text {
                 text: "The most advanced Git GUI designed for developers. Manage repositories, resolve conflicts, and collaborate with your team - all with AI-powered assistance."
                 wrapMode: Text.WordWrap
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 300
                 font.pixelSize: Style.appFont.largerPt
                 font.italic: true
@@ -91,7 +91,7 @@ Item {
                                 horizontalAlignment: Qt.AlignHCenter
                                 verticalAlignment: Qt.AlignVCenter
                                 text: modelData.icon ?? ""
-                                font.family: Style.fontTypes.roboto
+                                font.family: Style.fontTypes.inter
                                 font.pixelSize: Style.appFont.xxlPt
                                 color: Style.colors.accent
                             }
@@ -100,7 +100,7 @@ Item {
                         Text {
                             text: modelData.title ?? ""
                             wrapMode: Text.WordWrap
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.weight: 400
                             font.pixelSize: Style.appFont.largePt
                             font.letterSpacing: 0
@@ -113,7 +113,7 @@ Item {
                             width: 98
                             wrapMode: Text.WordWrap
                             text: modelData.desc ?? ""
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.weight: 400
                             font.pixelSize: Style.appFont.defaultPt
                             font.letterSpacing: 0

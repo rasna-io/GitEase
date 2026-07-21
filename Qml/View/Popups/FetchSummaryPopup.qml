@@ -217,7 +217,7 @@ IPopup {
                                         Text { text: "•"; color: root.infoAccent }
                                         Text {
                                             text: modelData.summary.trim()
-                                            font.family: "JetBrains Mono"; font.pixelSize: Style.appFont.defaultPt
+                                            font.family: Style.fontTypes.jetBrainsMono; font.pixelSize: Style.appFont.defaultPt
                                             color: Style.colors.secondaryText; Layout.fillWidth: true; elide: Text.ElideRight
                                         }
                                     }
@@ -248,7 +248,7 @@ IPopup {
                         Layout.fillWidth: true; Layout.fillHeight: true
                         Text {
                             width: parent.width; text: logText(results)
-                            font.family: "JetBrains Mono"; font.pixelSize: Style.appFont.defaultPt; color: Style.colors.secondaryText; wrapMode: Text.Wrap; lineHeight: 1.4
+                            font.family: Style.fontTypes.jetBrainsMono; font.pixelSize: Style.appFont.defaultPt; color: Style.colors.secondaryText; wrapMode: Text.Wrap; lineHeight: 1.4
                         }
                     }
                 }

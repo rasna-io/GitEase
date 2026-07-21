@@ -139,7 +139,7 @@ Window {
 
     TextMetrics {
         id: widthCalculator
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.h3Pt
     }
 
@@ -198,7 +198,7 @@ Window {
                 Text {
                     text: root.headerText
                     color: Style.colors.secondaryText
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.bold: true
                     font.pixelSize: Style.appFont.largePt
                 }
@@ -435,7 +435,7 @@ Window {
                         padding: 6
                         contentItem: Text {
                             text: tip.text
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.defaultPt
                             color: "#ffffff"
                         }

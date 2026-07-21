@@ -132,7 +132,7 @@ Rectangle {
                         }
                         Text {
                             text: commitData ? (commitData.stashLabel || "stash") : ""
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.captionPt
                             color: GraphUtils.getContrastColor(indicatorColor.toString())
                             verticalAlignment: Text.AlignVCenter
@@ -146,7 +146,7 @@ Rectangle {
                     color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
                     font.pixelSize: Style.appFont.smallPt
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.weight: commitData && commitData.isUncommitted ? 700 :
                                   (isHead ? 900 : 400)
                     font.letterSpacing: 0.2
@@ -173,7 +173,7 @@ Rectangle {
                         text: "~"
                         color: resetBtnArea.containsMouse ? Style.colors.foreground : Qt.rgba(1,1,1,0.55)
                         font.pixelSize: Style.appFont.defaultPt
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.weight: Font.Medium
                     }
 

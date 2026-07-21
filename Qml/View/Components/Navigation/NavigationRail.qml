@@ -162,7 +162,7 @@ Rectangle {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
                         text: "Settings"
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.weight: 400
                         font.pixelSize: 14
                         elide: Text.ElideRight
@@ -264,7 +264,7 @@ Rectangle {
                                 id: badgeText
                                 anchors.centerIn: parent
                                 text: root.notificationController ? Math.min(root.notificationController.unreadCount, 99) : 0
-                                font.family: Style.fontTypes.roboto
+                                font.family: Style.fontTypes.inter
                                 font.weight: 700
                                 font.pixelSize: 9
                                 color: Style.colors.notificationBadgeText
@@ -276,7 +276,7 @@ Rectangle {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
                         text: "Notification"
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.weight: 400
                         font.pixelSize: 14
                         elide: Text.ElideRight
@@ -360,7 +360,7 @@ Rectangle {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
                         text: root.appModel?.currentUserProfile?.username ?? "username"
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.weight: 400
                         font.pixelSize: 14
                         elide: Text.ElideRight

@@ -113,7 +113,7 @@ UtilitiesCard {
                 Layout.fillWidth: true
                 minHeight: Style.dp(25)
                 focusBorderWidth: 1
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 400
                 font.pixelSize: Style.appFont.smallPt
                 textRole: "label"
@@ -136,7 +136,7 @@ UtilitiesCard {
             id: advancedToggle
             Layout.fillWidth: false
             text: "Use --onto (advanced)"
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.smallPt
             implicitHeight: Style.dp(25)
             Material.accent: Style.colors.accent

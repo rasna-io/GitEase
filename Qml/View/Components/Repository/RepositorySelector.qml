@@ -69,7 +69,7 @@ Item {
             font.pixelSize: Style.appFont.h2Pt
             color: Style.colors.mutedText
             horizontalAlignment: Text.AlignHCenter
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.weight: 300
             font.italic: true
             font.letterSpacing: 0
@@ -118,7 +118,7 @@ Item {
                         text: "Browse and open a Git repository that already exists on your computer"
                         wrapMode: Text.WordWrap
                         font.pixelSize: Style.appFont.h3Pt
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.weight: 300
                         font.letterSpacing: 0
                         font.italic: true
@@ -184,7 +184,7 @@ Item {
                         text: "Initialize a new Git repository on your local machine"
                         wrapMode: Text.WordWrap
                         font.pixelSize: Style.appFont.h3Pt
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.weight: 300
                         font.letterSpacing: 0
                         font.italic: true

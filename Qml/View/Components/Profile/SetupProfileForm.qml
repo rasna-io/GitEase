@@ -37,7 +37,7 @@ Item {
             wrapMode: Text.WordWrap
             color: Style.colors.mutedText
             horizontalAlignment: Text.AlignHCenter
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.weight: 300
             font.pixelSize: Style.appFont.h2Pt
             font.italic: true
@@ -94,7 +94,7 @@ Item {
                             wrapMode: Text.WordWrap
                             font.pixelSize: Style.appFont.smallPt
                             color: Style.colors.hintText
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.weight: 300
                             font.styleName: "Light"
                             font.letterSpacing: 0
@@ -127,7 +127,7 @@ Item {
                             text: root.errorMessage
                             wrapMode: Text.WordWrap
                             font.pixelSize: Style.appFont.smallPt
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.weight: 300
                             font.styleName: "Light"
                             font.letterSpacing: 0

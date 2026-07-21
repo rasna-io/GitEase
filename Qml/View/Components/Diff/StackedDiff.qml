@@ -105,7 +105,7 @@ Item {
                     width: parent.width - root.gutterWidth - topRow.spacing
                     text: root.oldText
                     color: Style.colors.foreground
-                    font.family: "Consolas"
+                    font.family: Style.fontTypes.jetBrainsMono
                     font.pixelSize: Style.appFont.mediumPt
                     wrapMode: Text.WrapAnywhere
                     textFormat: Text.PlainText
@@ -155,7 +155,7 @@ Item {
                           ? root.newText
                           : (root.isAddedOnly ? root.effectiveNewText : "")
                     color: Style.colors.foreground
-                    font.family: "Consolas"
+                    font.family: Style.fontTypes.jetBrainsMono
                     font.pixelSize: Style.appFont.mediumPt
                     wrapMode: Text.WrapAnywhere
                     textFormat: Text.PlainText

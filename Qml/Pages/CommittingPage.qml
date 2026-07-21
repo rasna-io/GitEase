@@ -311,7 +311,7 @@ Page {
                                         anchors.centerIn: parent
                                         text: "Commit"
                                         color: Style.colors.secondaryForeground
-                                        font.family: Style.fontTypes.roboto
+                                        font.family: Style.fontTypes.inter
                                         font.pixelSize: Style.appFont.mediumPt
                                     }
 
@@ -407,7 +407,7 @@ Page {
 
                             visible: errorMessageLabel.text !== ""
                             color: Style.colors.error
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.smallPt
                             wrapMode: TextEdit.Wrap
                         }

@@ -146,7 +146,7 @@ Item {
                         wrapMode: Text.WordWrap
                         font.pixelSize: Style.appFont.captionPt
                         color: Style.colors.mutedText
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                     }
                 }
             }

@@ -58,7 +58,7 @@ Item {
                 text: !root.showAddEditForm ? "User Profiles" :
                                               root.isEditing ? "Edit User Profile" : "Add New User Profile"
                 font.pixelSize: Style.appFont.largerPt
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 600
                 color: Style.colors.foreground
                 verticalAlignment: Text.AlignVCenter
@@ -84,7 +84,7 @@ Item {
                         Layout.fillWidth: true
                         text: "💡 Select a profile to apply it to the repository's .git/config."
                         font.pixelSize: Style.appFont.smallPt
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         color: "#ffffff"
                         wrapMode: Text.WordWrap
                         verticalAlignment: Text.AlignVCenter
@@ -94,7 +94,7 @@ Item {
                         Layout.fillWidth: true
                         text: "💡 Click the star ⭐ to set it as your default app user."
                         font.pixelSize: Style.appFont.smallPt
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         color: "#ffffff"
                         wrapMode: Text.WordWrap
                         verticalAlignment: Text.AlignVCenter
@@ -136,7 +136,7 @@ Item {
                         }
                         Text {
                             text: "Add User"
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.mediumPt
                             font.weight: 500
                             color: Style.colors.secondaryForeground
@@ -217,7 +217,7 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         wrapMode: Text.WordWrap
                         font.pixelSize: Style.appFont.smallPt
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         color: Style.colors.error
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -244,7 +244,7 @@ Item {
                     contentItem: Text {
                         anchors.centerIn: parent
                         text: "Cancel"
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.foreground
                         horizontalAlignment: Text.AlignHCenter
@@ -276,7 +276,7 @@ Item {
                     contentItem: Text {
                         anchors.centerIn: parent
                         text: root.isEditing ? "Save" : "Add"
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.mediumPt
                         font.weight: 500
                         color: Style.colors.secondaryForeground
@@ -420,7 +420,7 @@ Item {
                 Text {
                     text: "No user profiles yet"
                     font.pixelSize: Style.appFont.h3Pt
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.weight: 500
                     color: Style.colors.foreground
                     Layout.alignment: Qt.AlignHCenter
@@ -431,7 +431,7 @@ Item {
                 Text {
                     text: "Create your first user profile to get started"
                     font.pixelSize: Style.appFont.smallPt
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     color: Style.colors.mutedText
                     Layout.alignment: Qt.AlignHCenter
                     horizontalAlignment: Text.AlignHCenter

@@ -174,7 +174,7 @@ Item {
                         Text {
                             text: modelData.fingerprint
                             font.pointSize: Style.appFont.secondaryPt
-                            font.family: "Courier New"
+                            font.family: Style.fontTypes.jetBrainsMono
                             color: Style.colors.foreground
                             elide: Text.ElideMiddle
                             Layout.fillWidth: true
@@ -195,7 +195,7 @@ Item {
                         Text {
                             text: modelData.privateKeyPath
                             font.pointSize: Style.appFont.secondaryPt
-                            font.family: "Courier New"
+                            font.family: Style.fontTypes.jetBrainsMono
                             color: Style.colors.secondaryText
                             elide: Text.ElideMiddle
                             Layout.fillWidth: true
@@ -283,7 +283,7 @@ Item {
                             color: Style.colors.foreground
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.mediumPt
                         }
 
@@ -309,7 +309,7 @@ Item {
                             color: deleteConfirmBtn.hovered ? "#ffffff" : Style.colors.deletededFile
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.mediumPt
                             font.bold: true
                         }

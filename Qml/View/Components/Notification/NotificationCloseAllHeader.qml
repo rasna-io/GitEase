@@ -50,7 +50,7 @@ Window {
                 Layout.alignment: Qt.AlignVCenter
                 Layout.fillWidth: true
                 text: notificationCount + " notification" + (notificationCount > 1 ? "s" : "")
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 600
                 font.pixelSize: Style.appFont.h3Pt
                 color: Style.colors.foreground
@@ -69,7 +69,7 @@ Window {
                 Text {
                     anchors.centerIn: parent
                     text: "Close All"
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.smallPt
                     font.weight: 600
                     color: closeAllMouseArea.containsMouse ? Style.colors.foreground : Style.colors.accent

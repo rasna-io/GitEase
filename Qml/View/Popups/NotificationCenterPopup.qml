@@ -188,7 +188,7 @@ Drawer {
                     borderWidth: 0
                     focusBorderWidth: 1
                     model: ["All", "Unread", "Read"]
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.smallPt
                     Material.background: Style.colors.primaryBackground
                     Material.foreground: Style.colors.foreground
@@ -212,7 +212,7 @@ Drawer {
                     focusBorderWidth: 1
                     currentIndex: 0
                     model: ["Type", "Info", "Success", "Warning", "Error"]
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.smallPt
                     Material.background: Style.colors.primaryBackground
                     Material.foreground: Style.colors.foreground

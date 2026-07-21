@@ -60,7 +60,7 @@ IPopup {
                     text: "Keep staged changes in index"
                     checked: true
 
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
 
                     Material.accent: Style.colors.accent
@@ -116,7 +116,7 @@ IPopup {
                     id: stashMessageField
                     Layout.fillWidth: true
                     placeholderText: "Stash Message (Optional)"
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
 
                     background: Rectangle {
@@ -196,7 +196,7 @@ IPopup {
                                 ScrollingText {
                                     text: modelData.path || ""
                                     color: Style.colors.foreground
-                                    font.family: Style.fontTypes.roboto
+                                    font.family: Style.fontTypes.inter
                                     font.pixelSize: Style.appFont.h3Pt
                                     Layout.fillWidth: true
                                 }

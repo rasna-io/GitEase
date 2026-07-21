@@ -166,7 +166,7 @@ DetachablePanel {
 
     TextMetrics {
         id: widthCalculator
-        font.family: "Cascadia Mono"
+        font.family: Style.fontTypes.jetBrainsMono
         font.pixelSize: Style.appFont.h3Pt
     }
 
@@ -396,7 +396,7 @@ DetachablePanel {
 
             ScrollingText {
                 text: root.selectedFile
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.smallPt
                 color: Style.colors.mutedText
                 anchors.centerIn: parent
@@ -537,7 +537,7 @@ DetachablePanel {
                 }
                 Label {
                     text: remaining
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.captionPt
                     color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
                     padding: 3

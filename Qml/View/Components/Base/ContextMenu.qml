@@ -119,7 +119,7 @@ Popup {
                 // Label
                 ScrollingText {
                     text: modelData.text || ""
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
                     color: Style.colors.foreground
                     Layout.fillWidth: true
@@ -128,7 +128,7 @@ Popup {
                 CheckBox {
                     id: checkBox
                     text: modelData.checkBoxText
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
                     Layout.preferredHeight: Style.dp(25)
                     Material.accent: Style.colors.accent
@@ -141,7 +141,7 @@ Popup {
                 Text {
                     text: modelData.shortcut || ""
                     visible: !hasSub && modelData.shortcut !== undefined && modelData.shortcut !== ""
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.smallPt
                     color: Style.colors.mutedText
                 }

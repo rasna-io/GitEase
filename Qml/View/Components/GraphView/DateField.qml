@@ -39,7 +39,7 @@ Item {
         backgroundColor: mouseArea.containsMouse ? Style.colors.cardBackground : Style.colors.secondaryBackground
         placeholderText: root.iconOnly ? "" : root.placeholder
         text: root.iconOnly ? "" : root.dateString
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.weight: 400
         font.pixelSize: Style.appFont.smallPt
         borderRadius: 5

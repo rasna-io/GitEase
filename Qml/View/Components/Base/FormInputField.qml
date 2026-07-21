@@ -41,7 +41,7 @@ ColumnLayout {
         text: root.label
         font.pixelSize: Style.appFont.largePt
         color: Style.colors.foreground
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.weight: 400
     }
 
@@ -75,7 +75,7 @@ ColumnLayout {
             flat: true
             font.pixelSize: field.baseFontSize
             font.weight: 400
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
 
             background: Rectangle {
                 implicitWidth: field.baseFontSize * 7.5
@@ -106,7 +106,7 @@ ColumnLayout {
         text: root.helperText
         color: Style.colors.mutedText
         font.pixelSize: Style.appFont.microPt
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.weight: 100
         font.styleName: "Thin"
     }

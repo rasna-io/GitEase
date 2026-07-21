@@ -118,7 +118,7 @@ Item {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
                         text: notification?.title ?? ""
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.weight: 600
                         font.pixelSize: Style.appFont.mediumPt
                         color: Style.colors.foreground
@@ -130,7 +130,7 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         visible: text.length > 0
                         text: root.formatRelativeTime(notification?.timestamp)
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.captionPt
                         color: Style.colors.mutedText
                     }
@@ -175,7 +175,7 @@ Item {
                     Layout.fillWidth: true
                     visible: text.length > 0
                     text: notification?.message ?? ""
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.weight: 400
                     font.pixelSize: Style.appFont.smallPt
                     color: Style.colors.mutedText
@@ -190,7 +190,7 @@ Item {
 
                     Text {
                         text: (notification?.actionLabel ?? "") + "  " + Style.icons.arrowRight
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.smallPt
                         font.weight: 500
                         color: actionMouseArea.containsMouse ? Style.colors.accentHover : Style.colors.accent

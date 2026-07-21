@@ -137,7 +137,7 @@ Rectangle {
                                     Layout.alignment: Qt.AlignVCenter
                                     text: (modelData && modelData.title) ? modelData.title : ""
                                     font.pixelSize: 13
-                                    font.family: Style.fontTypes.roboto
+                                    font.family: Style.fontTypes.inter
                                     color: item.isSelected ? "#60A5FA" : "#363650"
                                     elide: Text.ElideRight
                                 }
@@ -156,7 +156,7 @@ Rectangle {
                                         anchors.centerIn: parent
                                         text: modelData?.badgeCount ?? ""
                                         color: "white"
-                                        font.family: Style.fontTypes.roboto
+                                        font.family: Style.fontTypes.inter
                                         font.pixelSize: 9
                                         font.bold: true
                                     }

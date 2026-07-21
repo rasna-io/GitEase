@@ -54,7 +54,7 @@ Item {
                 Layout.fillWidth: true
                 minHeight: Style.dp(25)
                 focusBorderWidth: Style.dp(1)
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 400
                 font.pixelSize: Style.appFont.smallPt
                 textRole: "name"
@@ -99,7 +99,7 @@ Item {
                 Layout.fillWidth: true
                 minHeight: Style.dp(25)
                 focusBorderWidth: Style.dp(1)
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 400
                 font.pixelSize: Style.appFont.smallPt
 

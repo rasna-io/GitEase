@@ -67,7 +67,7 @@ Item {
         visible: text !== ""
         font.pixelSize: Style.appFont.xxlPt
         font.bold: true
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.weight: 400
         color: Style.colors.foreground
         horizontalAlignment: Text.AlignHCenter

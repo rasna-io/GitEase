@@ -685,7 +685,7 @@ IPopup {
 
                                     Text {
                                         text: "Guided Tours"
-                                        font.family: Style.fontTypes.roboto
+                                        font.family: Style.fontTypes.inter
                                         font.weight: Font.DemiBold
                                         font.pixelSize: 13
                                         color: Style.colors.foreground
@@ -694,7 +694,7 @@ IPopup {
                                     Text {
                                         Layout.fillWidth: true
                                         text: "Replay any tutorial below. Tutorials tied to a specific page switch you there first."
-                                        font.family: Style.fontTypes.roboto
+                                        font.family: Style.fontTypes.inter
                                         font.pixelSize: 11
                                         color: Style.colors.mutedText
                                         wrapMode: Text.WordWrap
@@ -756,7 +756,7 @@ IPopup {
                                                     wrapMode: Text.WordWrap
                                                     maximumLineCount: 2
                                                     elide: Text.ElideRight
-                                                    font.family: Style.fontTypes.roboto
+                                                    font.family: Style.fontTypes.inter
                                                     font.pixelSize: 11
                                                     font.weight: Font.Medium
                                                     color: Style.colors.foreground
