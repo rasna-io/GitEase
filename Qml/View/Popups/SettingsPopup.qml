@@ -47,6 +47,7 @@ IPopup {
         "settings_general_tutorial",
         "settings_ssh_tutorial",
         "settings_appearance_tutorial",
+        "settings_notifications_tutorial",
         "settings_help_tutorial"
     ]
 
@@ -103,9 +104,9 @@ IPopup {
      * ****************************************************************************************/
     contentItem: Rectangle {
         color: Style.colors.primaryBackground
-        radius: 16
+        radius: 6
         clip: true
-        border.color: Style.colors.accent
+        border.color: Style.colors.primaryBorder
         border.width: 1
 
         /* Guide
@@ -137,27 +138,80 @@ IPopup {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 15
+            anchors.margins: Style.dp(3)
+            spacing: 0
 
+            RowLayout {
+                id: headerRow
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.maximumHeight: Style.dp(40)
+
+                Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Settings"
+                    font.pointSize: Style.appFont.h4Pt
+                    font.weight: Font.DemiBold
+                    color: Style.colors.foreground
+                }
+
+                WindowsButton {
+                    id: closeButton
+                    onClicked: root.close()
+                    Material.accent: Style.colors.windowsClose
+                    content: Item {
+                        anchors.centerIn: parent
+                        width: 10
+                        height: 10
+
+                        Rectangle {
+                            width: 12
+                            height: 2
+                            radius: 1
+                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                            anchors.centerIn: parent
+                            rotation: 45
+                        }
+
+                        Rectangle {
+                            width: 12
+                            height: 2
+                            radius: 1
+                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                            anchors.centerIn: parent
+                            rotation: -45
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: Style.colors.primaryBorder
+            }
 
             RowLayout {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
+                spacing: 0
 
                 PagesRail {
                     id: settingsTabs
-                    Layout.preferredWidth: parent.width * 0.15
+                    Layout.preferredWidth: parent.width * 0.2
                     Layout.fillHeight: true
                     currentId: root.currentPage
-                    radius: 5
                     color: Style.colors.secondaryBackground
+                    useAccentIndicator: true
                     model: [
                         {pageId: 0, title: "General", icon: Style.icons.slider},
-                        {pageId: 1, title: "SSH", icon: Style.icons.terminal},
-                        {pageId: 2, title: "Appearence", icon: Style.icons.palette},
-                        {pageId: 3, title: "Updates", icon: Style.icons.refresh},
-                        {pageId: 4, title: "Help",        icon: Style.icons.info},
+                        {pageId: 1, title: "Appearence", icon: Style.icons.palette},
+                        {pageId: 2, title: "SSH", icon: Style.icons.terminal, groupStart: true},
+                        {pageId: 3, title: "Notifications", icon: Style.icons.bell, groupStart: true},
+                        {pageId: 4, title: "Updates", icon: Style.icons.refresh, groupStart: true},
+                        {pageId: 5, title: "Help",        icon: Style.icons.info},
                     ]
                     onClicked: (modelData) => {
                         root.currentPage = modelData.pageId
@@ -165,11 +219,16 @@ IPopup {
                 }
 
                 Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.fillHeight: true
+                    color: Style.colors.primaryBorder
+                }
+
+                Rectangle {
                     id: settingsContainer
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: Style.colors.secondaryBackground
-                    radius: 5
+                    color: Style.colors.primaryBackground
                     clip: true
 
                     SwipeView {
@@ -218,7 +277,7 @@ IPopup {
                                 anchors.leftMargin: 20
                                 anchors.rightMargin: 20
 
-                                spacing: 20
+                                spacing: 10
 
                                 CheckboxItem {
                                     id: displayAvatar
@@ -228,12 +287,26 @@ IPopup {
                                     checked: root.appSettings?.generalSettings?.showAvatar ?? false
                                 }
 
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Style.colors.primaryBorder
+                                }
+
                                 CheckboxItem {
                                     id: displayStashNodes
                                     Layout.fillWidth: true
                                     title: "Display Stash"
                                     description: "Show stash nodes on graph view"
                                     checked: root.appSettings?.generalSettings?.showStashNodes ?? false
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Style.colors.primaryBorder
                                 }
 
                                 PathSelectorItem {
@@ -248,7 +321,7 @@ IPopup {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 2
                                     Layout.alignment: Qt.AlignHCenter
-                                    color: Qt.darker(settingsContainer.color, 1.2)
+                                    color: Style.colors.primaryBorder
                                 }
 
                                 Item {
@@ -256,6 +329,57 @@ IPopup {
                                     Layout.fillHeight: true
                                 }
 
+                            }
+                        }
+
+                        Item {
+                            GuideHoverTrigger {
+                                guideController: root.guideController
+                                guideId: "settings_appearance_tutorial"
+                                guideName: "Appearance"
+                                guideIcon: Style.icons.palette
+                                stepsFactory: function() {
+                                    return [
+                                        {
+                                            targetProvider: function() { return theme },
+                                            icon: Style.icons.palette,
+                                            title: "Theme",
+                                            description: "Switch between light and dark visual themes for the whole app.",
+                                            isInPopup: true,
+                                            activationDelay: 300,
+                                            onActivate: function() { root.currentPage = 2 }
+                                        }
+                                    ]
+                                }
+                            }
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.topMargin: 10
+                                anchors.leftMargin: 20
+                                anchors.rightMargin: 20
+
+                                spacing: 10
+
+                                ComboboxItem {
+                                    id: theme
+                                    Layout.fillWidth: true
+                                    title: "Theme"
+                                    description: "Select theme"
+                                    cmb.model: ["Modern Light", "Modern Dark"]
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Style.colors.primaryBorder
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                }
                             }
                         }
 
@@ -297,26 +421,19 @@ IPopup {
                         Item {
                             GuideHoverTrigger {
                                 guideController: root.guideController
-                                guideId: "settings_appearance_tutorial"
-                                guideName: "Appearance"
-                                guideIcon: Style.icons.palette
+                                guideId: "settings_notifications_tutorial"
+                                guideName: "Notifications"
+                                guideIcon: Style.icons.bell
                                 stepsFactory: function() {
                                     return [
-                                        {
-                                            targetProvider: function() { return theme },
-                                            icon: Style.icons.palette,
-                                            title: "Theme",
-                                            description: "Switch between light and dark visual themes for the whole app.",
-                                            isInPopup: true,
-                                            activationDelay: 300,
-                                            onActivate: function() { root.currentPage = 2 }
-                                        },
                                         {
                                             targetProvider: function() { return displayRealtimeNotifications },
                                             icon: Style.icons.bell,
                                             title: "Real-time Notifications",
                                             description: "Choose whether notifications also pop up as floating windows, or only appear in the notification center.",
-                                            isInPopup: true
+                                            isInPopup: true,
+                                            activationDelay: 300,
+                                            onActivate: function() { root.currentPage = 5 }
                                         },
                                         {
                                             targetProvider: function() { return maxVisibleNotifications },
@@ -342,22 +459,7 @@ IPopup {
                                 anchors.leftMargin: 20
                                 anchors.rightMargin: 20
 
-                                spacing: 20
-
-                                ComboboxItem {
-                                    id: theme
-                                    Layout.fillWidth: true
-                                    title: "Theme"
-                                    description: "Select theme"
-                                    cmb.model: ["Modern Light", "Modern Dark"]
-                                }
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 2
-                                    Layout.alignment: Qt.AlignHCenter
-                                    color: Qt.darker(settingsContainer.color, 1.2)
-                                }
+                                spacing: 10
 
                                 CheckboxItem {
                                     id: displayRealtimeNotifications
@@ -365,6 +467,13 @@ IPopup {
                                     title: "Display Real-time Notifications"
                                     description: "Show notifications as floating windows. If disabled, notifications are only shown in the notification center"
                                     checked: root.appSettings?.notificationSettings?.displayRealtimeNotifications ?? true
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Style.colors.primaryBorder
                                 }
 
                                 SpinboxItem {
@@ -375,6 +484,13 @@ IPopup {
                                     from: 1
                                     to: 10
                                     value: 5
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Style.colors.primaryBorder
                                 }
 
                                 ComboboxItem {
@@ -389,16 +505,14 @@ IPopup {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 2
                                     Layout.alignment: Qt.AlignHCenter
-                                    color: Qt.darker(settingsContainer.color, 1.2)
+                                    color: Style.colors.primaryBorder
                                 }
 
                                 Item {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                 }
-
                             }
-
                         }
 
                         Item {
@@ -408,190 +522,19 @@ IPopup {
                                 anchors.leftMargin: 20
                                 anchors.rightMargin: 20
 
-                                spacing: 20
+                                spacing: 10
 
-                                RowLayout {
-                                    Layout.fillWidth: true
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-
-                                        Text {
-                                            Layout.fillWidth: true
-                                            text: "GitEase Version"
-                                            font.pointSize: Style.appFont.h4Pt
-                                            color: Style.colors.foreground
-                                        }
-
-                                        Text {
-                                            Layout.fillWidth: true
-                                            text: "Installed version: " + (Qt.application.version || "0.0.0")
-                                            font.pointSize: Style.appFont.secondaryPt
-                                            color: Style.colors.mutedText
-                                        }
-                                    }
+                                Text {
+                                    text: "Updates"
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: 14
+                                    font.weight: Font.DemiBold
+                                    color: Style.colors.foreground
                                 }
 
-                                Rectangle {
+                                UpdateCard {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 2
-                                    Layout.alignment: Qt.AlignHCenter
-                                    color: Qt.darker(settingsContainer.color, 1.2)
-                                }
-
-                                ButtonItem {
-                                    id: checkUpdatesButton
-                                    Layout.fillWidth: true
-                                    title: "Application Updates"
-                                    description: ""
-                                    buttonTitle: root.updateController?.busy ? "Checking ..." : "Check"
-                                    busy: root.updateController?.busy ?? false
-                                    enabled: root.updateController !== null
-                                             && !(root.updateController?.busy ?? false)
-                                    onClicked: root.checkForApplicationUpdate()
-                                }
-
-                                ButtonItem {
-                                    id: installUpdateButton
-                                    Layout.fillWidth: true
-                                    visible: root.updateController?.updateAvailable === true
-                                    title: "Install Update"
-                                    description: (root.updateController?.latestVersion ?? "") !== ""
-                                                 ? "Download and install version " + root.updateController.latestVersion
-                                                 : "Download and install the available update"
-                                    buttonTitle: root.updateController?.busy ? "Updating ..." : "Update"
-                                    busy: root.updateController?.busy ?? false
-                                    enabled: root.updateController !== null
-                                             && root.updateController.updateAvailable
-                                             && !(root.updateController?.busy ?? false)
-                                    onClicked: root.installApplicationUpdate()
-                                }
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: Math.max(96, updateReleaseContent.implicitHeight + 20)
-                                    visible: (root.updateController?.latestVersion ?? "") !== ""
-                                             || (root.updateController?.releaseNotes ?? "") !== ""
-                                             || (root.updateController?.downloadSize ?? "") !== ""
-                                    radius: 6
-                                    color: Style.colors.cardBackground
-                                    border.width: 1
-                                    border.color: Style.colors.secondaryBorder
-
-                                    RowLayout {
-                                        id: updateReleaseContent
-                                        anchors.fill: parent
-                                        anchors.margins: 10
-                                        spacing: 12
-
-                                        readonly property bool isCritical: root.updateController?.isCritical ?? false
-
-                                        Text {
-                                            text: updateReleaseContent.isCritical ? Style.icons.warning : Style.icons.info
-                                            font.family: Style.fontTypes.font6Pro
-                                            font.pixelSize: updateReleaseContent.isCritical ? 13 : 16
-                                            color: updateReleaseContent.isCritical ? Style.colors.notificationWarningText : Style.colors.mutedText
-                                            Layout.alignment: Qt.AlignVCenter
-                                        }
-
-                                        ColumnLayout {
-                                            Layout.fillWidth: true
-                                            spacing: 8
-
-                                            Text {
-                                                Layout.fillWidth: true
-                                                text: updateReleaseContent.isCritical ? "Critical Update" : "Latest Release"
-                                                font.pointSize: Style.appFont.h4Pt
-                                                color: Style.colors.foreground
-                                            }
-
-                                            Text {
-                                                Layout.fillWidth: true
-                                                text: {
-                                                    var parts = []
-                                                    if ((root.updateController?.latestVersion ?? "") !== "") {
-                                                        parts.push("Version " + root.updateController.latestVersion)
-                                                    }
-                                                    if ((root.updateController?.downloadSize ?? "") !== "") {
-                                                        parts.push(root.updateController.downloadSize)
-                                                    }
-                                                    if (root.updateController?.updateAvailable === true) {
-                                                        parts.push("Update available")
-                                                    }
-                                                    return parts.join(" | ")
-                                                }
-                                                font.pointSize: Style.appFont.secondaryPt
-                                                color: Style.colors.mutedText
-                                                wrapMode: Text.WordWrap
-                                            }
-
-                                            Text {
-                                                Layout.fillWidth: true
-                                                visible: (root.updateController?.releaseNotes ?? "") !== ""
-                                                text: root.updateController?.releaseNotes ?? ""
-                                                font.pointSize: Style.appFont.secondaryPt
-                                                color: Style.colors.mutedText
-                                                wrapMode: Text.WordWrap
-                                                lineHeight: 1.1
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: updateStatusText.implicitHeight + 18
-                                    radius: 5
-                                    color: {
-                                        switch (root.updateController?.statusType) {
-                                            case "success":
-                                                return Style.colors.notificationSuccess
-                                            case "warning":
-                                                return Style.colors.notificationWarning
-                                            case "error":
-                                                return Style.colors.notificationError
-                                            default :
-                                                return Style.colors.notificationInfo
-                                        }
-                                    }
-
-                                    border.color: {
-                                        switch (root.updateController?.statusType) {
-                                            case "success":
-                                                return Style.colors.notificationSuccessBorder
-                                            case "warning":
-                                                return Style.colors.notificationWarningBorder
-                                            case "error":
-                                                return Style.colors.notificationErrorBorder
-                                            default :
-                                                return Style.colors.notificationInfoBorder
-                                        }
-                                    }
-
-                                    border.width: 1
-
-                                    Text {
-                                        id: updateStatusText
-                                        anchors.fill: parent
-                                        anchors.margins: 9
-                                        text: root.updateController?.statusText ?? "Not checked yet"
-                                        color: {
-                                            switch (root.updateController?.statusType) {
-                                                case "success":
-                                                    return Style.colors.notificationSuccessText
-                                                case "warning":
-                                                    return Style.colors.notificationWarningText
-                                                case "error":
-                                                    return Style.colors.notificationErrorText
-                                                default :
-                                                    return Style.colors.notificationInfoText
-                                            }
-                                        }
-
-                                        font.pointSize: Style.appFont.secondaryPt
-                                        verticalAlignment: Text.AlignVCenter
-                                        wrapMode: Text.WordWrap
-                                    }
+                                    updateController: root.updateController
                                 }
 
                                 Item {
@@ -642,7 +585,7 @@ IPopup {
                                 anchors.leftMargin: 20
                                 anchors.rightMargin: 20
 
-                                spacing: 20
+                                spacing: 10
 
                                 CheckboxItem {
                                     id: guidesEnabled
@@ -655,7 +598,7 @@ IPopup {
                                 Rectangle {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 2
-                                    color: Qt.darker(settingsContainer.color, 1.2)
+                                    color: Style.colors.primaryBorder
                                 }
 
                                 ButtonItem {
@@ -676,7 +619,7 @@ IPopup {
                                 Rectangle {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 2
-                                    color: Qt.darker(settingsContainer.color, 1.2)
+                                    color: Style.colors.primaryBorder
                                 }
 
                                 ColumnLayout {
@@ -779,48 +722,83 @@ IPopup {
                 }
             }
 
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: Style.colors.primaryBorder
+            }
+
             Row {
                 id: actionButtonsRow
                 spacing: 8
-                Layout.alignment: Qt.AlignRight
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.preferredHeight: Style.dp(45)
+                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
                 Button {
                     flat: true
                     text: "Cancel"
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    anchors.verticalCenter: parent.verticalCenter
+                    implicitHeight: Style.dp(40)
+                    implicitWidth: Style.dp(60)
                     background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
+                        color: "transparent"
+                        border.color: Style.colors.primaryBorder
                         radius: 5
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        font: parent.font
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
                     onClicked: root.close()
                 }
 
                 Button {
                     flat: true
-                    text: "Save"
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
+                    text: "Apply"
+                    anchors.verticalCenter: parent.verticalCenter
+                    implicitHeight: Style.dp(40)
+                    implicitWidth: Style.dp(60)
                     background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
+                        color: "transparent"
+                        border.color: Style.colors.primaryBorder
                         radius: 5
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        font: parent.font
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    onClicked: root.apply()
+                }
+
+                Button {
+                    flat: true
+                    text: "Save"
+                    anchors.verticalCenter: parent.verticalCenter
+                    implicitHeight: Style.dp(40)
+                    implicitWidth: Style.dp(60)
+                    background: Rectangle {
+                        color: parent.hovered ? Style.colors.accentHover : Style.colors.accent
+                        radius: 5
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        font: parent.font
+                        color: Style.colors.onAccentText
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
                     onClicked: {
                         root.apply()
                         root.close()
                     }
-                }
-
-                Button {
-                    flat: true
-                    text: "Apply"
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                    background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
-                    }
-                    onClicked: root.apply()
                 }
             }
         }
@@ -869,22 +847,6 @@ IPopup {
         }
         let positionDisplay = positionMap[root.appSettings?.notificationSettings?.notificationPosition] || "Right Bottom"
         notificationPosition.cmb.currentIndex = notificationPosition.cmb.model.indexOf(positionDisplay)
-    }
-
-    function checkForApplicationUpdate() {
-        if (!root.updateController) {
-            return
-        }
-
-        root.updateController.checkForUpdates()
-    }
-
-    function installApplicationUpdate() {
-        if (!root.updateController) {
-            return
-        }
-
-        root.updateController.installAvailableUpdate()
     }
 
 }

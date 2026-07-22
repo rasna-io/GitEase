@@ -133,9 +133,9 @@ Rectangle {
             //     visible: root.plugin.isInstalled
             //     checked: root.plugin.isEnabled
 
-                onToggled: {
-                    root.enableToggled(root.plugin.pluginId, checked)
-                }
+            //     onToggled: {
+            //         root.enableToggled(root.plugin.pluginId, checked)
+            //     }
             }
         }
 

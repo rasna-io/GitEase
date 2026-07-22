@@ -188,10 +188,8 @@ RowLayout {
 
     IconButton {
         id: downButton
-        Layout.preferredWidth: headerRow.controlSize
         Layout.preferredHeight: headerRow.controlSize
         Layout.preferredWidth: upDownRowLayout.implicitWidth
-        color : "transparent"
 
         visible: !compact && !crowded
         enabled: headerRow.isGraphReady
