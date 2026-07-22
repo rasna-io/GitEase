@@ -35,10 +35,11 @@ QtObject {
     property          Colors        modernLightColors:          Colors {}
 
     property          Colors        modernDarkColors:           Colors {
-        accent:              Qt.lighter(modernLightColors.accent, 1.4)
+        accent:              "#3B82F6"
+        accentHover:         "#2F6FE0"
         primaryBackground:   midnightBlack
         secondaryBackground: graphiteDark
-        foreground:          mutedLavenderSlate
+        foreground:          softCloudWhite
         secondaryForeground: "#010101"
         surfaceLight:        "#6b6b6b"
         surfaceMuted:        "#1f1f1f"
@@ -66,6 +67,13 @@ QtObject {
 
         primaryBorder:       darkCharcoal
         secondaryBorder:     darkCharcoal
+
+        controlBackground:      "#1B1B22"
+        controlBackgroundHover: "#232330"
+        controlBorder:          "#2E2E37"
+        controlBorderHover:     "#3E5C88"
+        switchTrackOff:         "#3A3A44"
+        switchHandle:           "#EDEDF2"
 
         diffRemovedBg:       paleCoralMist
         diffAddedBg:         softMintGlow
