@@ -22,6 +22,8 @@ Rectangle {
 
     property GuideController   guideController: null
 
+    property bool   useAccentIndicator: false
+
     /* Signals
      * ****************************************************************************************/
 
@@ -50,8 +52,8 @@ Rectangle {
      * ****************************************************************************************/
     ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: 4
-        anchors.rightMargin: 4
+        anchors.leftMargin: root.useAccentIndicator ? 0 : Style.dp(4)
+        anchors.rightMargin: root.useAccentIndicator ? 0 : Style.dp(4)
         anchors.topMargin: 12
 
         // Pages list
@@ -69,46 +71,73 @@ Rectangle {
                     id: rpt
 
                     Column {
+                        id: rowWrapper
                         width: parent.width
                         spacing: 0
 
-                        // Separator before first plugin page
+                        // A group boundary is either the legacy plugin-section break, or an
+                        // explicit groupStart flag (accent-indicator variant only).
+                        readonly property bool isGroupBoundary:
+                            ((modelData?.isPlugin === true) &&
+                             (index === 0 || !(rpt.model[index - 1]?.isPlugin === true)))
+                            || (root.useAccentIndicator && modelData?.groupStart === true && index > 0)
+
+                        // Spacer above separator
+                        Item {
+                            width: parent.width
+                            height: 6
+                            visible: rowWrapper.isGroupBoundary
+                        }
+
+                        // Separator before a new group
                         Rectangle {
-                            width: parent.width - 16
+                            width: root.useAccentIndicator ? parent.width : parent.width - 16
                             anchors.horizontalCenter: parent.horizontalCenter
                             height: 1
                             color: Style.colors.primaryBorder
-                            visible: (modelData?.isPlugin === true) &&
-                                     (index === 0 || !(rpt.model[index - 1]?.isPlugin === true))
+                            visible: rowWrapper.isGroupBoundary
                         }
 
                         // Spacer above separator
                         Item {
                             width: parent.width
                             height: 6
-                            visible: (modelData?.isPlugin === true) &&
-                                     (index === 0 || !(rpt.model[index - 1]?.isPlugin === true))
+                            visible: rowWrapper.isGroupBoundary
                         }
 
                         Rectangle {
                             id: item
                             width: parent.width
                             height: Style.dp(30)
-                            radius: Style.dp(6)
+                            radius: root.useAccentIndicator ? 0 : Style.dp(6)
 
                             property bool isSelected: (modelData)
                                                       ? (modelData.pageId === root.currentId)
                                                       : false
 
+                            readonly property color activeColor:   root.useAccentIndicator ? Style.colors.accent : "#60A5FA"
+                            readonly property color inactiveColor: root.useAccentIndicator ? Style.colors.mutedText : "#363650"
+
                             color: item.isSelected ? "#1F3B82F6" : "transparent"
+
+                            // Active indicator bar (accent-indicator variant only)
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                width: 3
+                                radius: 1.5
+                                color: Style.colors.accent
+                                visible: root.useAccentIndicator && item.isSelected
+                            }
 
                             RowLayout {
                                 anchors {
                                     fill: parent
-                                    leftMargin: Style.dp(12)
+                                    leftMargin: root.useAccentIndicator ? Style.dp(16) : Style.dp(12)
                                     rightMargin: Style.dp(8)
                                 }
-                                spacing: 8
+                                spacing: root.useAccentIndicator ? 10 : 8
 
                                 // Icon
                                 Rectangle {
@@ -124,8 +153,8 @@ Rectangle {
                                               : Style.icons.download
                                         font.pixelSize: 13
                                         font.family: Style.fontTypes.font6Pro
-                                        font.weight: 500
-                                        color: item.isSelected ? "#60A5FA" : "#363650"
+                                        font.weight: (root.useAccentIndicator && item.isSelected) ? 600 : 500
+                                        color: item.isSelected ? item.activeColor : item.inactiveColor
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
@@ -138,7 +167,8 @@ Rectangle {
                                     text: (modelData && modelData.title) ? modelData.title : ""
                                     font.pixelSize: 13
                                     font.family: Style.fontTypes.inter
-                                    color: item.isSelected ? "#60A5FA" : "#363650"
+                                    font.weight: (root.useAccentIndicator && item.isSelected) ? Font.DemiBold : Font.Normal
+                                    color: item.isSelected ? item.activeColor : item.inactiveColor
                                     elide: Text.ElideRight
                                 }
 
