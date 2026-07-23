@@ -42,7 +42,8 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    implicitHeight: headerHeight + ((expanded && (listView.count === 0)) ? emptyExpandedHeight : 0)
+    color: "transparent"
+    implicitHeight: headerHeight + ((expanded && (listView.count === 0) && !root.fillWhenEmpty) ? emptyExpandedHeight : 0)
 
     /* Signals
      * ****************************************************************************************/
