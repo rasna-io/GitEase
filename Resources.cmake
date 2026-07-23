@@ -74,6 +74,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/BusyWaiter.qml                    # Items Busy Wait State View
     Qml/View/Components/Base/UtilitiesCard.qml
     Qml/View/Components/Base/ContextMenu.qml
+    Qml/View/Components/Base/AccentCard.qml                    # Card with accent peeking out on the left
     Qml/View/Components/Base/DetachablePanel.qml               # Detachable panel wrapper
     Qml/View/Components/Base/MinimizedPanels.qml                # Footer bar for minimized DetachablePanel/Terminal instances
     Qml/View/Components/Base/SplitViewHandle.qml                # Shared SplitView drag handle
