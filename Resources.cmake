@@ -89,6 +89,7 @@ set(RESOURCES_COMPONENTS
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
+    Qml/View/Components/Profile/ProfileAvatar.qml              # Circular initial+color avatar
     Qml/View/Components/Profile/UserInfoSelector.qml           # Profile Selector
     Qml/View/Components/Profile/UserInfoSelectorItem.qml       # Profile Selector Item
 
