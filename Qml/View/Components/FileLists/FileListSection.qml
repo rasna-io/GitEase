@@ -37,7 +37,7 @@ Rectangle {
     property Component headerActions: null
 
     readonly property bool needsVScroll: listView.contentHeight > (listView.height + 1)
-    readonly property bool wantsFillHeight: expanded && !(listView.count === 0)
+    readonly property bool wantsFillHeight: expanded && (listView.count > 0 || root.fillWhenEmpty)
     readonly property int count: listView.count
 
     /* Object Properties
