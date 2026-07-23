@@ -93,18 +93,42 @@ RowLayout {
         id: pullBtn
         Layout.preferredHeight: 26
 
-        solidIcon: true
-        icon.name: Style.icons.arrowDown
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: "Pull"
-        tooltip: "Pull from origin"
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        topPadding      : 5
+        bottomPadding   : 5
+        leftPadding     : 10
+        rightPadding    : 10
+        spacing         : 4
+
+        text    : "Pull"
+        tooltip : "Pull from origin"
+        display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+
+        solidIcon   : true
+        icon.name   : Style.icons.arrowDown
+        icon.width  : Style.appFont.smallPt
+        icon.height : Style.appFont.smallPt
+        icon.color  : Style.colors.chipText
+
+        font.family     : Style.fontTypes.inter
+        font.pixelSize  : Style.appFont.mediumPt
+        font.weight     : Font.Medium
+
+
+        background: Rectangle {
+            radius: 5
+            color: pullBtn.down ? Style.colors.surfaceMuted :
+                   pullBtn.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            border.width: 1
+            border.color: Style.colors.chipBorder
+        }
 
         onClicked: root.pullAndUpdate()
+
+        MouseArea {
+            acceptedButtons: Qt.NoButton
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+        }
     }
 
     IconButton {
