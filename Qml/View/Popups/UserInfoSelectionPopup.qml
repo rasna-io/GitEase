@@ -45,4 +45,7 @@ IPopup {
 
         onCloseRequested: root.close()
     }
+
+    onClosed: selectorItem.closeForm()
+    onOpened: selectorItem.closeForm()
 }
