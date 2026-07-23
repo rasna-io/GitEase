@@ -61,6 +61,10 @@ ColumnLayout {
             echoMode: root.echoMode
             icon: root.icon
             error: root.hasError
+            backgroundColor: Style.colors.controlBackground
+            borderColor: Style.colors.controlBorder
+            focusBorderColor: Style.colors.accent
+            iconColor: Style.colors.mutedText
         }
 
         // Button
