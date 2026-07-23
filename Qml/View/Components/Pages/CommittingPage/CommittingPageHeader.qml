@@ -240,14 +240,38 @@ RowLayout {
         id: pushForceBtnHeader
         Layout.preferredHeight: 26
         Layout.minimumWidth: 30
+
+        topPadding      : 5
+        bottomPadding   : 5
+        leftPadding     : 10
+        rightPadding    : 10
+        spacing         : 4
+
         Material.accent: Style.colors.accent
 
         property bool isBusy: remoteController?.pushInProgress && remoteController?.forcePush
+
+        text    : !isBusy ? "Push Force" : ""
+        tooltip : !isBusy ? "Force push to origin" : "Force Pushing..."
+        display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        enabled : !remoteController?.pushInProgress
+
+        solidIcon   : true
+        icon.name   : !isBusy ? Style.icons.arrowUp : ""
+        icon.width  : Style.appFont.smallPt
+        icon.height : Style.appFont.smallPt
+        icon.color  : Style.colors.forcePushText
+
+        font.family     : Style.fontTypes.inter
+        font.pixelSize  : Style.appFont.mediumPt
+        font.weight     : Font.Medium
 
         background: Rectangle {
             radius: 5
             color: pushForceBtnHeader.down ? Style.colors.surfaceMuted :
                    pushForceBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            border.width: 1
+            border.color: Style.colors.forcePushBorder
         }
 
         BusyIndicator {
@@ -259,20 +283,14 @@ RowLayout {
             visible: pushForceBtnHeader.isBusy
         }
 
-        enabled: !remoteController?.pushInProgress
-        solidIcon: true
-        icon.name: !isBusy ? Style.icons.arrowUp : ""
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: !isBusy ? "Push Force" : ""
-        tooltip: !isBusy ? "Force push to origin" : "Force Pushing..."
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
-
         onClicked: {
             root.pushAndUpdate(true)
+        }
+
+        MouseArea {
+            acceptedButtons: Qt.NoButton
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
         }
     }
 
