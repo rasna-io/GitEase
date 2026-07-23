@@ -66,7 +66,7 @@ Item {
      * ****************************************************************************************/
     ColumnLayout {
         anchors.fill: parent
-        spacing: 10
+        spacing: 0
 
         StagedFileListSection {
             id: stagedSection
