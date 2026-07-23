@@ -135,14 +135,38 @@ RowLayout {
         id: pushBtnHeader
         Layout.preferredHeight: 26
         Layout.minimumWidth: 30
+
+        topPadding      : 5
+        bottomPadding   : 5
+        leftPadding     : 10
+        rightPadding    : 10
+        spacing         : 4
+
         Material.accent: Style.colors.accent
 
         property bool isBusy: remoteController?.pushInProgress && !remoteController?.forcePush
+
+        text    : !isBusy ? "Push" : ""
+        tooltip : !isBusy ? "Push to origin" : "Pushing..."
+        display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        enabled : !remoteController?.pushInProgress
+
+        solidIcon   : true
+        icon.name   : !isBusy ? Style.icons.arrowUp : ""
+        icon.width  : Style.appFont.smallPt
+        icon.height : Style.appFont.smallPt
+        icon.color  : Style.colors.chipText
+
+        font.family     : Style.fontTypes.inter
+        font.pixelSize  : Style.appFont.mediumPt
+        font.weight     : Font.Medium
 
         background: Rectangle {
             radius: 5
             color: pushBtnHeader.down ? Style.colors.surfaceMuted :
                    pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            border.width: 1
+            border.color: Style.colors.chipBorder
         }
 
         BusyIndicator {
@@ -154,20 +178,14 @@ RowLayout {
             visible: pushBtnHeader.isBusy
         }
 
-        enabled: !remoteController?.pushInProgress
-        solidIcon: true
-        icon.name: !isBusy ? Style.icons.arrowUp : ""
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: !isBusy ? "Push" : ""
-        tooltip: !isBusy ? "Push to origin" : "Pushing..."
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
-
         onClicked: {
             root.pushAndUpdate()
+        }
+
+        MouseArea {
+            acceptedButtons: Qt.NoButton
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
         }
     }
 
