@@ -105,6 +105,8 @@ QtObject {
         levelWorktreeBadge:      "#D44D4D"
         levelAppBadge:           "#4D4DD4"
 
+        userInfoSelectedBackground: Qt.rgba(59 / 255, 130 / 255, 246 / 255, 0.1)
+
         notificationInfo:            "#12324A"
         notificationInfoBorder:      "#2B6AA3"
         notificationInfoIcon:        "#7AB9FF"

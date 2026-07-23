@@ -115,7 +115,7 @@ QtObject{
     property color iconOnSurface:           "#9D9D9D"
     property color iconOnDefault:           "#8B6914"
 
-    property color userInfoSelectectedItem: "#44074E96"
+    property color userInfoSelectedBackground: Qt.rgba(59 / 255, 130 / 255, 246 / 255, 0.1)
 
     property color repoSelectectedItem:     "#44074E96"
     
