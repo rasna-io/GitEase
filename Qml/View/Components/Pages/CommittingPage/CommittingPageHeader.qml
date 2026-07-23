@@ -86,7 +86,7 @@ RowLayout {
             acceptedButtons: Qt.NoButton
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-    }
+        }
     }
 
     IconButton {
