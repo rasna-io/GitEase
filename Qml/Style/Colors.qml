@@ -205,4 +205,11 @@ QtObject{
     property color contextMenuHover:      "#E7E7E7"
 
     property color branchSelectedAccent:  "#2563EB"
+
+    // Committing page header
+    property color branchAccent:    branchSelectedAccent   // #2563EB
+    property color chipBorder:      primaryBorder          // #D7DCE5
+    property color chipText:        secondaryText          // #5F6A7A
+    property color forcePushText:   "#DC2626"              // distinct warning red
+    property color forcePushBorder: "#4DEF4444"            // semi‑transparent red
 }

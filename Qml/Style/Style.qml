@@ -170,6 +170,13 @@ QtObject {
         contextMenuHover:      "#34343D"
 
         branchSelectedAccent:  "#93C5FD"
+
+        // Committing page header
+        branchAccent:          "#60A5FA"
+        chipBorder:            "#222228"
+        chipText:              "#9898B0"
+        forcePushText:         softCoralMist    // #F87171
+        forcePushBorder:       "#4DEF4444"
     }
 
     property           string       currentTheme:               "Modern Light"
