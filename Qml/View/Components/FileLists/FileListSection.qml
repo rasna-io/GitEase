@@ -8,8 +8,8 @@ import GitEase_Style_Impl
 /*! ***********************************************************************************************
  * FileListSection
  * Collapsible section containing a file list:
- * - Header: title, count badge
- * - Body: ListView, empty-state text, scrollbar
+ * - Header: uppercase title, count badge, optional actions
+ * - Body: ListView, empty-state (icon + text), scrollbar
  * ************************************************************************************************/
 
 Rectangle {
