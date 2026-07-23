@@ -39,22 +39,38 @@ RowLayout {
 
     IconButton {
         id: branchChip
-        Layout.preferredHeight: 25
+        Layout.preferredHeight: 26
         maximumWidth: 150
+
+        topPadding      : 4
+        bottomPadding   : 4
+        leftPadding     : 10
+        rightPadding    : 10
+
+        text: branchController.getDisplayBranchName()
         visible: !headerRow.compact
         solidIcon: true
-        icon.name: Style.icons.branch
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: branchController ? branchController.getDisplayBranchName() : ""
+
+        icon.name   : Style.icons.branch
+        icon.width  : Style.appFont.smallPt
+        icon.height : Style.appFont.smallPt
+        icon.color  : Style.colors.branchAccent
+
+        font.family : Style.fontTypes.jetBrainsMono
+        font.weight : Font.Medium
+        font.pixelSize: Style.appFont.smallPt
+
+        background: Rectangle {
+            radius: 5
+            color: Style.colors.secondaryBackground
+            border.width: 1
+            border.color: Style.colors.chipBorder
+        }
 
         Connections {
             target: repositoryController
             function onCurrentRepoChanged() {
-                branchChip.text = branchController ? branchController.getDisplayBranchName() : ""
+                branchChip.branchName = branchController.getDisplayBranchName()
             }
         }
 
@@ -63,9 +79,13 @@ RowLayout {
             clipboardHelper.selectAll()
             clipboardHelper.copy()
 
-            if (notificationController)
-                notificationController.success(`brach name : ${branchChip.text} copied to clipboard`)
+            notificationController.success(`branch name : ${branchChip.text} copied to clipboard`)
         }
+
+        MouseArea {
+            acceptedButtons: Qt.NoButton
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
     }
     }
 
