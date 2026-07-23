@@ -67,13 +67,6 @@ RowLayout {
                 notificationController.success(`brach name : ${branchChip.text} copied to clipboard`)
         }
     }
-
-    // Separator
-    Rectangle {
-        Layout.preferredWidth: 1
-        Layout.preferredHeight: 20
-        color: Style.colors.primaryBorder
-        visible: !headerRow.compact
     }
 
     IconButton {
