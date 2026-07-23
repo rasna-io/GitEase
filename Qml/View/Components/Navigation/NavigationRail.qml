@@ -342,18 +342,14 @@ Rectangle {
                     anchors.bottomMargin: 4
                     spacing: 8
 
-                    Image {
-                        id: icon
-                        source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
-                        Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                        width: 42
-                        height: 42
-
-                        ColorOverlay {
-                            anchors.fill: icon
-                            source: icon
-                            color: Style.colors.mutedText
-                        }
+                    ProfileAvatar {
+                        id: profileAvatar
+                        Layout.alignment: Qt.AlignVCenter
+                        size: 24
+                        username: root.appModel?.currentUserProfile?.username ?? "username"
+                        avatarColor: root.appModel?.currentUserProfile?.avatarColor ?? ""
+                        levels: root.appModel?.currentUserProfile?.levels ?? []
+                        excludeLevels: [Config.Local]
                     }
 
                     Text {
@@ -369,8 +365,14 @@ Rectangle {
                         verticalAlignment: Text.AlignVCenter
                     }
 
-                    Item {
-                        Layout.fillWidth: true
+                    // Config-level indicator dot
+                    Rectangle {
+                        Layout.alignment: Qt.AlignVCenter
+                        visible: profileAvatar.hasLevel && (root.appModel?.currentUserProfile ?? null) !== null
+                        Layout.preferredWidth: 7
+                        Layout.preferredHeight: 7
+                        radius: 5
+                        color: profileAvatar.levelBadgeColor
                     }
                 }
 
