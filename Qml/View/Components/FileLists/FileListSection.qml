@@ -182,7 +182,7 @@ Rectangle {
 
                     delegate: Item {
                         width: ListView.view.width
-                        height: (rowLoader.item && rowLoader.item.implicitHeight) ? rowLoader.item.implicitHeight : 24
+                        height: (rowLoader.item && rowLoader.item.implicitHeight) ? rowLoader.item.implicitHeight : 28
 
                         Loader {
                             id: rowLoader
