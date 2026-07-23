@@ -204,15 +204,50 @@ Rectangle {
                     }
 
                     // Empty state
-                    Text {
+                    ColumnLayout {
                         anchors.centerIn: parent
+                        width: parent.width - 40
                         visible: listView.count === 0
+                        spacing: 8
 
+                        Rectangle {
+                            Layout.alignment: Qt.AlignHCenter
+                            width: 36
+                            height: 36
+                            radius: 18
+                            color: Style.colors.emptyCircleBg
+                            border.width: 1
+                            border.color: Style.colors.emptyCircleBorder
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: Style.icons.plus
+                                font.family: Style.fontTypes.font6ProSolid
+                                font.pixelSize: Style.appFont.mediumPt
+                                color: Style.colors.emptyStateSubText
+                            }
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
                         text: root.emptyText
+                            horizontalAlignment: Text.AlignHCenter
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.smallPt
+                            color: Style.colors.emptyStateText
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            visible: root.emptySubText !== ""
+                            text: root.emptySubText
+                            horizontalAlignment: Text.AlignHCenter
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.defaultPt
-                        color: Style.colors.mutedText
-                        opacity: 0.9
+                            font.pixelSize: Style.appFont.secondaryPt
+                            color: Style.colors.emptyStateSubText
+                            elide: Text.ElideRight
+                        }
                     }
 
                     ScrollBar.vertical: vBar
