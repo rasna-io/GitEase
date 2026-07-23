@@ -23,9 +23,9 @@ RowLayout {
     /* Object Properties
      * ****************************************************************************************/
     anchors.fill: parent
-    anchors.leftMargin: parent.width < Style.appHeight ? 8 : 20
+    anchors.leftMargin: parent.width < Style.appHeight ? 8 : 14
     anchors.rightMargin: parent.width < Style.appHeight ? 4 : 5
-    spacing: parent.width < Style.appHeight ? 6 : 10
+    spacing: 7
 
     /* Signals
      * ****************************************************************************************/
