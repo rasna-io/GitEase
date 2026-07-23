@@ -139,7 +139,7 @@ Rectangle {
             Layout.preferredHeight: !root.expanded ? 0 : ((listView.count === 0) ? root.emptyExpandedHeight : -1)
             visible: root.expanded
             opacity: root.expanded ? 1 : 0
-            color: Style.colors.secondaryBackground
+            color: "transparent"
             clip: true
 
             Behavior on opacity {
