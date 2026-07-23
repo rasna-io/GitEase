@@ -162,7 +162,6 @@ Rectangle {
                         text: modelData && modelData.path ? modelData.path : ""
                         status: modelData && modelData.status ? modelData.status : GitFileStatus.Unknown
                         selected: root.selectedFilePath !== "" && root.selectedFilePath === (modelData && modelData.path ? modelData.path : "")
-                        showSeparator: index < (listView.count - 1)
 
                         onClicked: {
                             root.selectFile(modelData.path)
@@ -196,9 +195,6 @@ Rectangle {
 
                                 item.rowModelData = modelData
                                 item.rowIndex = index
-
-                                if (item.hasOwnProperty("showSeparator"))
-                                    item.showSeparator = index < (listView.count - 1)
                             }
                         }
                     }
