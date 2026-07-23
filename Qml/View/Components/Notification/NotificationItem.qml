@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 
 /*! ***********************************************************************************************
@@ -65,31 +66,34 @@ Item {
      * ****************************************************************************************/
     readonly property int progressBarHeight: 2
 
-    width: card.width + 5
-    height: card.height + (root.autoHide ? progressBarHeight : 0)
+    width: cardArea.width
+    height: cardArea.height + (root.autoHide ? progressBarHeight : 0)
 
     /* Children
      * ****************************************************************************************/
-    // Accent background - peeks out from behind the card on the left and backs the progress bar
-    Rectangle {
-        id: accentRect
-        anchors.fill: parent
-        radius: 8
-        color: root.accentColor
-    }
-
-    Rectangle {
-        id: card
-        anchors.right: parent.right
+    // Accent background peeks out from behind the card on the left.
+    AccentCard {
+        id: cardArea
+        anchors.left: parent.left
         anchors.top: parent.top
-        width: 320
-        height: 12 + contentColumn.implicitHeight + 12
-        radius: 6
-        color: Style.colors.secondaryBackground
-        clip: true
+        width: 325
+        height: 12 + contentRow.implicitHeight + 12
+        peek: 5
+        accentRadius: 8
+        cardRadius: 6
+        cardClip: true
+        accentColor: root.accentColor
+        cardColor: Style.colors.secondaryBackground
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: 150
+                easing.type: Easing.OutQuad
+            }
+        }
 
         RowLayout {
-            id: contentColumn
+            id: contentRow
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
@@ -210,33 +214,14 @@ Item {
                 }
             }
         }
-
-        /* Animations
-         * ****************************************************************************************/
-        Behavior on scale {
-            NumberAnimation {
-                duration: 150
-                easing.type: Easing.OutQuad
-            }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            propagateComposedEvents: true
-            onEntered: parent.scale = 1.02
-            onExited: parent.scale = 1.0
-            onPressed: function(mouse) {
-                mouse.accepted = false
-            }
-        }
     }
 
-    // Auto-hide progress bar - flush against the card's bottom edge, backed by the accent rectangle
+    // Auto-hide progress bar - flush against the card's bottom edge, aligned with the card
     Rectangle {
         anchors.left: parent.left
+        anchors.leftMargin: cardArea.peek
         anchors.right: parent.right
-        anchors.top: card.bottom
+        anchors.top: cardArea.bottom
         height: root.progressBarHeight
         visible: root.autoHide
         color: Style.colors.secondaryBackground
