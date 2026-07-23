@@ -19,6 +19,7 @@ Rectangle {
      * ****************************************************************************************/
     property string title: ""
     property string emptyText: ""
+    property string emptySubText: ""
     property var model: []
     property string selectedFilePath: ""
     property bool expanded: true
