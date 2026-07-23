@@ -179,20 +179,43 @@ RowLayout {
         id: fetchBtnHeader
         Layout.preferredHeight: 26
 
-        enabled: !root.isFetching
+        topPadding      : 5
+        bottomPadding   : 5
+        leftPadding     : 10
+        rightPadding    : 10
+        spacing         : 4
 
-        solidIcon: true
-        icon.name: Style.icons.download
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: "Fetch"
-        tooltip: root.isFetching ? "Fetching…" : "Fetch all remotes"
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        text    : "Fetch"
+        tooltip : root.isFetching ? "Fetching…" : "Fetch all remotes"
+        display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        enabled : !root.isFetching
+
+        solidIcon   : true
+        icon.name   : Style.icons.download
+        icon.width  : Style.appFont.smallPt
+        icon.height : Style.appFont.smallPt
+        icon.color  : Style.colors.chipText
+
+        font.family     : Style.fontTypes.inter
+        font.pixelSize  : Style.appFont.mediumPt
+        font.weight     : Font.Medium
+
+
+        background: Rectangle {
+            radius: 5
+            color: fetchBtnHeader.down ? Style.colors.surfaceMuted :
+                   fetchBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            border.width: 1
+            border.color: Style.colors.chipBorder
+        }
 
         onClicked: root.fetch()
+
+        MouseArea {
+            acceptedButtons: Qt.NoButton
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+        }
     }
 
     IconButton {
