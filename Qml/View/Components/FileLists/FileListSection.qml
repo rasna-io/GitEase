@@ -23,8 +23,8 @@ Rectangle {
     property var model: []
     property string selectedFilePath: ""
     property bool expanded: true
-    property int headerHeight: 32
-    property int emptyExpandedHeight: 32
+    property int headerHeight: 30
+    property int emptyExpandedHeight: 110
 
     // Optional custom row delegate. If not set, a default delegate is used.
     property Component rowDelegate: null
