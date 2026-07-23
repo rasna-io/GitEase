@@ -26,6 +26,9 @@ Rectangle {
     property int headerHeight: 30
     property int emptyExpandedHeight: 110
 
+    property color badgeTextColor: Style.colors.countBadgeText
+    property color badgeBgColor:   Style.colors.countBadgeBg
+
     // Optional custom row delegate. If not set, a default delegate is used.
     property Component rowDelegate: null
     // Optional header actions content (rendered on the right side of the header)
