@@ -140,8 +140,8 @@ Item {
             id: unstagedSection
             Layout.fillWidth: true
             Layout.fillHeight: wantsFillHeight
-            Layout.minimumHeight: 32
-            Layout.preferredHeight: expanded ? -1 : 32
+            Layout.minimumHeight: 30
+            Layout.preferredHeight: expanded ? -1 : 30
 
             model: root.unstagedModel
 
