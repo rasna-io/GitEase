@@ -66,9 +66,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: root.headerHeight
-            color: headerMouseArea.containsMouse ^ Style.theme == Style.Light ?
-                       Qt.lighter(Style.colors.secondaryBackground, 1.3) :
-                       Qt.darker(Style.colors.secondaryBackground, 1.3)
+            color: Style.colors.sectionHeaderBg
 
             MouseArea {
                 id: headerMouseArea
@@ -82,26 +80,38 @@ Rectangle {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 10
+                anchors.leftMargin: 12
                 anchors.rightMargin: 10
-                spacing: 8
+                spacing: 7
 
                 Text {
-                    text: root.expanded ? Style.icons.caretDown : Style.icons.caretRight
+                    text: root.title.toUpperCase()
                     font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.h2Pt
-                    color: Style.colors.mutedText
-                    verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: Style.appFont.secondaryPt
+                    font.bold: true
+                    font.letterSpacing: 0.6
+                    color: Style.colors.sectionLabel
                 }
 
+                // Count badge
+                Rectangle {
+                    implicitHeight: 15
+                    implicitWidth: Math.max(15, countText.implicitWidth + 10)
+                    radius: 3
+                    color: root.badgeBgColor
+
                 Text {
+                        id: countText
+                        anchors.centerIn: parent
+                        text: listView.count
+                        font.family: Style.fontTypes.jetBrainsMono
+                        font.pixelSize: Style.appFont.secondaryPt
+                        color: root.badgeTextColor
+                    }
+                }
+
+                Item {
                     Layout.fillWidth: true
-                    text: root.title
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.defaultPt
-                    font.bold: true
-                    color: Style.colors.foreground
-                    elide: Text.ElideRight
                 }
 
                 Loader {
@@ -109,23 +119,6 @@ Rectangle {
                     Layout.alignment: Qt.AlignVCenter
                     active: root.headerActions !== null
                     sourceComponent: root.headerActions
-                }
-
-                // Count badge
-                Rectangle {
-                    implicitHeight: 18
-                    implicitWidth: Math.max(18, countText.implicitWidth + 10)
-                    radius: 9
-                    color: Style.colors.surfaceMuted
-
-                    Text {
-                        id: countText
-                        anchors.centerIn: parent
-                        text: listView.count
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.defaultPt
-                        color: Style.colors.secondaryText
-                    }
                 }
             }
 
@@ -135,7 +128,6 @@ Rectangle {
                 anchors.bottom: parent.bottom
                 height: 1
                 color: Style.colors.primaryBorder
-                opacity: 0.7
             }
         }
 
