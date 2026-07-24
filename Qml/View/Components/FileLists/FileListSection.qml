@@ -78,6 +78,14 @@ Rectangle {
                 }
             }
 
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                height: 1
+                color: Style.colors.primaryBorder
+            }
+
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 12
