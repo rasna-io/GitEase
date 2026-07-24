@@ -60,7 +60,7 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
+        spacing: 5
 
         // Header
         Rectangle {
