@@ -222,4 +222,12 @@ QtObject{
     property color emptyCircleBorder:   "#E0E0E0"
     property color emptyStateText:      "#9AA1B0"
     property color emptyStateSubText:   "#B8BEC9"
+
+    // Section actions and badge
+    property color actionIconIdle:        "#9AA1B0"
+    property color stashAmber:            "#D97706"
+    property color stageGreen:            "#16A34A"
+    property color discardRed:            "#DC2626"
+    property color unstagedCountText:     "#B45309"
+    property color unstagedCountBg:       "#12FBBF24"
 }

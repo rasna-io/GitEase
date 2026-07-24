@@ -187,6 +187,14 @@ QtObject {
         emptyCircleBorder:   "#1C1C28"
         emptyStateText:      "#1E1E30"
         emptyStateSubText:   "#181828"
+
+        // Section actions and badge
+        actionIconIdle:        "#3A3A52"
+        stashAmber:            "#FBBF24"
+        stageGreen:            "#4ADE80"
+        discardRed:            softCoralMist       // #F87171 – reuse existing
+        unstagedCountText:     "#FBBF24"
+        unstagedCountBg:       "#12FBBF24"
     }
 
     property           string       currentTheme:               "Modern Light"
