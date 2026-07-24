@@ -229,7 +229,7 @@ Rectangle {
                         text: root.emptyText
                             horizontalAlignment: Text.AlignHCenter
                             font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.smallPt
+                            font.pixelSize: Style.appFont.mediumPt
                             color: Style.colors.emptyStateText
                             elide: Text.ElideRight
                         }
@@ -239,8 +239,8 @@ Rectangle {
                             visible: root.emptySubText !== ""
                             text: root.emptySubText
                             horizontalAlignment: Text.AlignHCenter
-                        font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.secondaryPt
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.defaultPt
                             color: Style.colors.emptyStateSubText
                             elide: Text.ElideRight
                         }
