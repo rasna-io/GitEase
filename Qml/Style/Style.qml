@@ -177,6 +177,16 @@ QtObject {
         chipText:              "#9898B0"
         forcePushText:         softCoralMist    // #F87171
         forcePushBorder:       "#4DEF4444"
+
+        // File list sections
+        countBadgeText:      "#1E1E30"
+        countBadgeBg:        "#141424"
+        sectionHeaderBg:     midnightBlack         // #101013
+        sectionLabel:        "#323248"
+        emptyCircleBg:       "#141420"
+        emptyCircleBorder:   "#1C1C28"
+        emptyStateText:      "#1E1E30"
+        emptyStateSubText:   "#181828"
     }
 
     property           string       currentTheme:               "Modern Light"
