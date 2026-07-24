@@ -193,8 +193,8 @@ QtObject {
         stashAmber:            "#FBBF24"
         stageGreen:            "#4ADE80"
         discardRed:            softCoralMist       // #F87171 – reuse existing
-        unstagedCountText:     "#FBBF24"
-        unstagedCountBg:       "#12FBBF24"
+        countText:             "#FBBF24"
+        countBg:               "#12FBBF24"
     }
 
     property           string       currentTheme:               "Modern Light"

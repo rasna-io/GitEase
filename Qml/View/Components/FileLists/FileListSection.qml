@@ -26,9 +26,6 @@ Rectangle {
     property int headerHeight: 30
     property int emptyExpandedHeight: 110
 
-    property color badgeTextColor: Style.colors.countBadgeText
-    property color badgeBgColor:   Style.colors.countBadgeBg
-
     property bool fillWhenEmpty: false
 
     // Optional custom row delegate. If not set, a default delegate is used.
@@ -106,7 +103,7 @@ Rectangle {
                     implicitHeight: 15
                     implicitWidth: Math.max(15, countText.implicitWidth + 10)
                     radius: 3
-                    color: root.badgeBgColor
+                    color: Style.colors.countBg
 
                     Text {
                         id: countText
@@ -114,7 +111,7 @@ Rectangle {
                         text: listView.count
                         font.family: Style.fontTypes.jetBrainsMono
                         font.pixelSize: Style.appFont.secondaryPt
-                        color: root.badgeTextColor
+                        color: Style.colors.countText
                     }
                 }
 

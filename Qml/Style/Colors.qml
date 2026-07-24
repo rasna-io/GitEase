@@ -228,6 +228,6 @@ QtObject{
     property color stashAmber:            "#D97706"
     property color stageGreen:            "#16A34A"
     property color discardRed:            "#DC2626"
-    property color unstagedCountText:     "#B45309"
-    property color unstagedCountBg:       "#12FBBF24"
+    property color countText:             "#B45309"
+    property color countBg:               "#12FBBF24"
 }
