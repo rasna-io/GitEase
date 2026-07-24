@@ -100,7 +100,7 @@ Rectangle {
                     radius: 3
                     color: root.badgeBgColor
 
-                Text {
+                    Text {
                         id: countText
                         anchors.centerIn: parent
                         text: listView.count
@@ -226,7 +226,7 @@ Rectangle {
 
                         Text {
                             Layout.fillWidth: true
-                        text: root.emptyText
+                            text: root.emptyText
                             horizontalAlignment: Text.AlignHCenter
                             font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.mediumPt
