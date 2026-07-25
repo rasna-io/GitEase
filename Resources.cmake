@@ -95,9 +95,24 @@ set(RESOURCES_COMPONENTS
 
     # Repository Components - Git repository management
     Qml/View/Components/Repository/RecentRepositoriesList.qml   # Recent repositories list
+    Qml/View/Components/Repository/RecentRepositoryRow.qml      # Single recent-repository row
     Qml/View/Components/Repository/RepositorySelector.qml       # Repository selection component
     Qml/View/Components/Repository/RepositoriesSidebar.qml      # Repositories Sidebar component
+    Qml/View/Components/Repository/WorktreeCard.qml             # Single worktree entry card
     Qml/View/Components/Repository/SideBySideDiff.qml
+
+    Qml/View/Components/Repository/RepoSectionLabel.qml         # Uppercase field label
+    Qml/View/Components/Repository/RepoTextField.qml            # Compact themed input
+    Qml/View/Components/Repository/RepoBrowseButton.qml         # Outlined Browse/Open button
+    Qml/View/Components/Repository/RepoRadio.qml                # Compact centered radio
+    Qml/View/Components/Repository/RepoValidationLine.qml       # Green validation row
+
+    # Repository selector dialog - tab sections
+    Qml/View/Components/Repository/RecentsTab.qml               # Recents tab
+    Qml/View/Components/Repository/OpenLocalTab.qml             # Open local tab
+    Qml/View/Components/Repository/CloneTab.qml                 # Clone tab
+    Qml/View/Components/Repository/WorktreesTab.qml             # Worktrees tab (UI only)
+    Qml/View/Components/Repository/InitNewTab.qml               # Init new tab
 
     Qml/View/Components/Diff/DiffView.qml
     Qml/View/Components/Diff/StackedDiff.qml
