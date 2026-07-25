@@ -45,17 +45,17 @@ FileListRow {
             }
 
             ActionIconButton {
-                iconText: Style.icons.minus
-                tooltip: "Unstage"
-                textColor: Style.colors.deletededFile
-                onClicked: root.unstageRequested(root.filePath)
-            }
-
-            ActionIconButton {
                 iconText: Style.icons.file
                 tooltip: "Open"
                 textColor: Style.colors.secondaryText
                 onClicked: root.openRequested(root.filePath)
+            }
+
+            ActionIconButton {
+                iconText: Style.icons.minus
+                tooltip: "Unstage"
+                textColor: Style.colors.deletededFile
+                onClicked: root.unstageRequested(root.filePath)
             }
         }
     }
