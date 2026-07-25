@@ -15,8 +15,9 @@ FileListSection {
 
     /* Property Declarations
      * ****************************************************************************************/
-    title: "Unstaged Changes"
+    title: "Unstaged"
     emptyText: "No unstaged changes"
+    emptySubText: "Your working tree is clean"
 
     /* Signals
      * ****************************************************************************************/
