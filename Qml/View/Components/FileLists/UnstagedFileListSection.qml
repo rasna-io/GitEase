@@ -59,7 +59,7 @@ FileListSection {
             }
 
             ActionIconButton {
-                iconText: Style.icons.close
+                iconText: Style.icons.undo
                 tooltip: "Discard all"
                 textColor: Style.colors.discardRed
                 hoverTextColor: Style.colors.discardRed
