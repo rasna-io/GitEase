@@ -33,7 +33,7 @@ FileListSection {
      * ****************************************************************************************/
     headerActions: Component {
         RowLayout {
-            spacing: 4
+            spacing: 2
 
             ActionIconButton {
                 iconText: Style.icons.archive
