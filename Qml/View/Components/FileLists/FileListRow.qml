@@ -36,8 +36,8 @@ Rectangle {
     readonly property bool isHovered: hoverHandler.hovered
     implicitHeight: 24
     radius: 4
-    color: root.selected ? Qt.darker(Style.colors.surfaceLight, 1.06)
-                    : (isHovered ? Style.colors.surfaceLight : "transparent")
+    color: root.selected ? Style.colors.subtleAzureGlow
+                    : (isHovered ? Style.colors.rowHoverBg : "transparent")
 
     readonly property color statusColor: (function () {
         switch (root.status) {
