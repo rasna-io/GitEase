@@ -47,14 +47,18 @@ FileListRow {
             ActionIconButton {
                 iconText: Style.icons.file
                 tooltip: "Open"
-                textColor: Style.colors.secondaryText
+                textColor: Style.colors.actionIconIdle
+                hoverTextColor: Style.colors.openBlue
+                hoverBackgroundColor: Qt.rgba(Style.colors.openBlue.r, Style.colors.openBlue.g, Style.colors.openBlue.b, 0.1)
                 onClicked: root.openRequested(root.filePath)
             }
 
             ActionIconButton {
                 iconText: Style.icons.minus
                 tooltip: "Unstage"
-                textColor: Style.colors.deletededFile
+                textColor: Style.colors.actionIconIdle
+                hoverTextColor: Style.colors.discardRed
+                hoverBackgroundColor: Qt.rgba(Style.colors.discardRed.r, Style.colors.discardRed.g, Style.colors.discardRed.b, 0.1)
                 onClicked: root.unstageRequested(root.filePath)
             }
         }
