@@ -73,7 +73,7 @@ FileListRow {
             }
 
             ActionIconButton {
-                iconText: Style.icons.trash
+                iconText: Style.icons.undo
                 tooltip: "Revert changes"
                 textColor: Style.colors.actionIconIdle
                 hoverTextColor: Style.colors.discardRed
