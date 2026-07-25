@@ -239,4 +239,8 @@ QtObject{
     // Row-level
     property color filePathText:         "#686880"
     property color rowHoverBg:           "#EFEFEF"
+
+    // Diff view header line counts
+    property color diffAddedCount:       "#16A34A"
+    property color diffRemovedCount:     "#DC2626"
 }

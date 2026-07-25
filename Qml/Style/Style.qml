@@ -204,6 +204,10 @@ QtObject {
         // Row-level
         filePathText:        chipText            // #9898B0 – reuse
         rowHoverBg:          "#17171C"
+
+        // Diff view header line counts
+        diffAddedCount:    "#4ADE80"
+        diffRemovedCount:  "#F87171"
     }
 
     property           string       currentTheme:               "Modern Light"
