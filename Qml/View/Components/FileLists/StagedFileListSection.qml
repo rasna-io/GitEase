@@ -17,7 +17,7 @@ FileListSection {
     title           : "Staged"
     emptyText       : "No staged changes"
     emptySubText    : "Stage files below to commit"
-    
+    fillWhenEmpty   : true
 
     /* Signals
      * ****************************************************************************************/
