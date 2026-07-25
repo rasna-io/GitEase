@@ -54,6 +54,13 @@ FileListRow {
             }
 
             ActionIconButton {
+                iconText: Style.icons.archive
+                tooltip: "Stash"
+                textColor: Style.colors.mutedText
+                onClicked: root.stashRequested(root.filePath)
+            }
+
+            ActionIconButton {
                 iconText: Style.icons.plus
                 tooltip: "Stage"
                 textColor: Style.theme == Style.Light ?
@@ -63,14 +70,7 @@ FileListRow {
             }
 
             ActionIconButton {
-                iconText: Style.icons.archive
-                tooltip: "Stash"
-                textColor: Style.colors.mutedText
-                onClicked: root.stashRequested(root.filePath)
-            }
-
-            ActionIconButton {
-                iconText: Style.icons.undo
+                iconText: Style.icons.trash
                 tooltip: "Revert changes"
                 textColor: Style.colors.error
                 onClicked: root.discardRequested(root.filePath)
