@@ -38,48 +38,6 @@ Rectangle {
     color: root.selected ? Style.colors.subtleAzureGlow
                     : (isHovered ? Style.colors.rowHoverBg : "transparent")
 
-    readonly property color statusColor: (function () {
-        switch (root.status) {
-            case GitFileStatus.StagedNew:
-                return Style.colors.stageGreen
-            case GitFileStatus.Deleted:
-            case GitFileStatus.StagedDeleted:
-                return Style.colors.discardRed
-            case GitFileStatus.Modified:
-            case GitFileStatus.TypeChange:
-            case GitFileStatus.StagedModified:
-                return Style.colors.stashAmber
-            case GitFileStatus.Renamed:
-            case GitFileStatus.StagedRenamed:
-                return Style.colors.renamedFile
-            case GitFileStatus.Untracked:
-                return Style.colors.openBlue
-            default:
-                return "transparent"
-        }
-    })()
-
-    readonly property string statusLetter: (function () {
-        switch (root.status) {
-            case GitFileStatus.StagedNew:
-                return "A"
-            case GitFileStatus.Deleted:
-            case GitFileStatus.StagedDeleted:
-                return "D"
-            case GitFileStatus.Modified:
-            case GitFileStatus.TypeChange:
-            case GitFileStatus.StagedModified:
-                return "M"
-            case GitFileStatus.Renamed:
-            case GitFileStatus.StagedRenamed:
-                return "R"
-            case GitFileStatus.Untracked:
-                return "U"
-            default:
-                return ""
-        }
-    })()
-
     /* Signals
      * ****************************************************************************************/
     signal clicked()
@@ -104,22 +62,9 @@ Rectangle {
         spacing: 6
 
         // Status letter badge
-        Rectangle {
-            Layout.alignment: Qt.AlignVCenter
-            width: 16
-            height: 16
-            radius: 3
-            color: Qt.rgba(root.statusColor.r, root.statusColor.g, root.statusColor.b, 0.10)
-            visible: root.statusLetter !== ""
-
-            Text {
-                anchors.centerIn: parent
-                text: root.statusLetter
-                font.family: Style.fontTypes.jetBrainsMono
-                font.pixelSize: Style.appFont.secondaryPt
-                font.bold: true
-                color: root.statusColor
-            }
+        FileStatusTag {
+            compact: true
+            fileStatus: root.status
         }
 
         Text {
@@ -138,35 +83,6 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             active: root.rightAccessory !== null
             sourceComponent: root.rightAccessory
-        }
-
-        Text {
-            Layout.alignment: Qt.AlignVCenter
-            text: {
-                switch (root.status) {
-                case GitFileStatus.StagedNew:
-                    return "A";
-                case GitFileStatus.Deleted:
-                case GitFileStatus.StagedDeleted:
-                    return "D";
-                case GitFileStatus.Modified:
-                case GitFileStatus.TypeChange:
-                case GitFileStatus.StagedModified:
-                    return "M";
-                case GitFileStatus.Renamed:
-                case GitFileStatus.StagedRenamed:
-                    return "R";
-                case GitFileStatus.Untracked:
-                    return "U";
-                default:
-                    return ""
-                }
-            }
-            visible: text !== ""
-            font.family: Style.fontTypes.inter
-            font.pixelSize: Style.appFont.defaultPt
-            font.bold: true
-            color: root.indicatorColor
         }
     }
 }
