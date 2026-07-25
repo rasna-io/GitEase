@@ -39,25 +39,45 @@ Rectangle {
     color: root.selected ? Qt.darker(Style.colors.surfaceLight, 1.06)
                     : (isHovered ? Style.colors.surfaceLight : "transparent")
 
-    // Left change indicator color
-    readonly property color indicatorColor: (function () {
+    readonly property color statusColor: (function () {
         switch (root.status) {
             case GitFileStatus.StagedNew:
-                return Qt.darker(Style.colors.addedFile, 1.5)
+                return Style.colors.stageGreen
             case GitFileStatus.Deleted:
             case GitFileStatus.StagedDeleted:
-                return Qt.darker(Style.colors.deletededFile, 1.5)
+                return Style.colors.discardRed
             case GitFileStatus.Modified:
             case GitFileStatus.TypeChange:
             case GitFileStatus.StagedModified:
-                return Qt.darker(Style.colors.modifiediedFile, 1.5)
+                return Style.colors.stashAmber
             case GitFileStatus.Renamed:
             case GitFileStatus.StagedRenamed:
-                return Qt.darker(Style.colors.renamedFile, 1.5)
+                return Style.colors.renamedFile
             case GitFileStatus.Untracked:
-                return Qt.darker(Style.colors.untrackedFile, 1.5)
+                return Style.colors.openBlue
             default:
                 return "transparent"
+        }
+    })()
+
+    readonly property string statusLetter: (function () {
+        switch (root.status) {
+            case GitFileStatus.StagedNew:
+                return "A"
+            case GitFileStatus.Deleted:
+            case GitFileStatus.StagedDeleted:
+                return "D"
+            case GitFileStatus.Modified:
+            case GitFileStatus.TypeChange:
+            case GitFileStatus.StagedModified:
+                return "M"
+            case GitFileStatus.Renamed:
+            case GitFileStatus.StagedRenamed:
+                return "R"
+            case GitFileStatus.Untracked:
+                return "U"
+            default:
+                return ""
         }
     })()
 
