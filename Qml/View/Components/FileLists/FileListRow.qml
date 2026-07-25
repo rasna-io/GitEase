@@ -20,7 +20,6 @@ Rectangle {
      * ****************************************************************************************/
     required property string text
     property bool selected: false
-    property bool showSeparator: true
 
     // Optional file status (e.g. "M", "A", "D", "R"). Empty = no indicator.
     property real status
@@ -143,15 +142,5 @@ Rectangle {
             font.bold: true
             color: root.indicatorColor
         }
-    }
-
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        height: 1
-        color: Style.colors.primaryBorder
-        opacity: 0.45
-        visible: root.showSeparator
     }
 }
