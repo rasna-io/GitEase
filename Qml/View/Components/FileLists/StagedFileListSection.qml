@@ -7,7 +7,7 @@ import GitEase_Style
 /*! ***********************************************************************************************
  * StagedFileListSection
  * Specialization of FileListSection for staged files.
- * Shows: Unstage (-), Open
+ * Header actions: Unstage all (-), Stash all
  * ************************************************************************************************/
 
 FileListSection {
