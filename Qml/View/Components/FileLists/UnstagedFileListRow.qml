@@ -47,17 +47,10 @@ FileListRow {
             }
 
             ActionIconButton {
-                iconText: Style.icons.archive
-                tooltip: "Stash"
-                textColor: Style.colors.mutedText
-                onClicked: root.stashRequested(root.filePath)
-            }
-
-            ActionIconButton {
-                iconText: Style.icons.trash
-                tooltip: "Discard"
-                textColor: Style.colors.error
-                onClicked: root.discardRequested(root.filePath)
+                iconText: Style.icons.file
+                tooltip: "Open"
+                textColor: Style.colors.secondaryText
+                onClicked: root.openRequested(root.filePath)
             }
 
             ActionIconButton {
@@ -70,10 +63,17 @@ FileListRow {
             }
 
             ActionIconButton {
-                iconText: Style.icons.file
-                tooltip: "Open"
-                textColor: Style.colors.secondaryText
-                onClicked: root.openRequested(root.filePath)
+                iconText: Style.icons.archive
+                tooltip: "Stash"
+                textColor: Style.colors.mutedText
+                onClicked: root.stashRequested(root.filePath)
+            }
+
+            ActionIconButton {
+                iconText: Style.icons.trash
+                tooltip: "Discard"
+                textColor: Style.colors.error
+                onClicked: root.discardRequested(root.filePath)
             }
         }
     }
