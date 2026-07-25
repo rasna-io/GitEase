@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 
 /*! ***********************************************************************************************
