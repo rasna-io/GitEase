@@ -230,4 +230,9 @@ QtObject{
     property color discardRed:            "#DC2626"
     property color countText:             "#B45309"
     property color countBg:               "#12FBBF24"
+
+    // Action pill (row-level)
+    property color actionPillBg:          surfaceLight         // #F3F3F3
+    property color actionPillBorder:      primaryBorder        // #D7DCE5
+    property color openBlue:              branchAccent         // #2563EB
 }

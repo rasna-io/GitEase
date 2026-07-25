@@ -195,6 +195,11 @@ QtObject {
         discardRed:            softCoralMist       // #F87171 – reuse existing
         countText:             "#FBBF24"
         countBg:               "#12FBBF24"
+
+        // Action pill (row-level)
+        actionPillBg:         onyxShadow          // #17171C
+        actionPillBorder:     "#1E1E2A"
+        openBlue:             branchAccent        // #60A5FA
     }
 
     property           string       currentTheme:               "Modern Light"
