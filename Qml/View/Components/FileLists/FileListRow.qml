@@ -9,7 +9,7 @@ import GitEase_Style
  * FileListRow
  * Generic row for a file list section.
  * - Handles selection click + hover highlight
- * - Shows mode indicator and optional extra right-side content
+ * - Shows a colored status letter badge and optional extra right-side content
  * ************************************************************************************************/
 
 Rectangle {
