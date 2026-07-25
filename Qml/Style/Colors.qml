@@ -235,4 +235,8 @@ QtObject{
     property color actionPillBg:          surfaceLight         // #F3F3F3
     property color actionPillBorder:      primaryBorder        // #D7DCE5
     property color openBlue:              branchAccent         // #2563EB
+
+    // Row-level
+    property color filePathText:         "#686880"
+    property color rowHoverBg:           "#EFEFEF"
 }

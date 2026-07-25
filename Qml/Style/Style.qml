@@ -200,6 +200,10 @@ QtObject {
         actionPillBg:         onyxShadow          // #17171C
         actionPillBorder:     "#1E1E2A"
         openBlue:             branchAccent        // #60A5FA
+
+        // Row-level
+        filePathText:        chipText            // #9898B0 – reuse
+        rowHoverBg:          "#17171C"
     }
 
     property           string       currentTheme:               "Modern Light"
