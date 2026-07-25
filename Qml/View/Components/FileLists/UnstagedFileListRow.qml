@@ -58,6 +58,7 @@ FileListRow {
             ActionIconButton {
                 iconText: Style.icons.archive
                 tooltip: "Stash"
+                hoverTextColor: Style.colors.stashAmber
                 textColor: Style.colors.actionIconIdle
                 hoverBackgroundColor: Qt.rgba(Style.colors.stashAmber.r, Style.colors.stashAmber.g, Style.colors.stashAmber.b, 0.1)
                 onClicked: root.stashRequested(root.filePath)
