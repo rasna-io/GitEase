@@ -421,6 +421,25 @@ DetachablePanel {
             ActionIconButton{
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+
+                Text {
+                    visible: root.selectedFile !== "" && (root.addedLineCount > 0 || root.deletedLineCount > 0)
+                    text: "+" + root.addedLineCount
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.diffAddedCount
+                }
+
+                Text {
+                    visible: root.selectedFile !== "" && (root.addedLineCount > 0 || root.deletedLineCount > 0)
+                    text: "−" + root.deletedLineCount
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.diffRemovedCount
+                }
+
+                ActionIconButton{
                 iconText: Style.icons.gear
                 textColor: Style.colors.secondaryText
 
