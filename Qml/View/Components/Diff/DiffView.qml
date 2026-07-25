@@ -81,6 +81,21 @@ DetachablePanel {
         root.expandLines = gs.chunkExpandLines
     }
 
+    readonly property int addedLineCount: {
+        let n = 0
+        for (let i = 0; i < diffData.length; i++)
+            if (diffData[i].type === GitDiff.Added || diffData[i].type === GitDiff.Modified)
+                n++
+        return n
+    }
+    readonly property int deletedLineCount: {
+        let n = 0
+        for (let i = 0; i < diffData.length; i++)
+            if (diffData[i].type === GitDiff.Deleted || diffData[i].type === GitDiff.Modified)
+                n++
+        return n
+    }
+
     onDiffDataChanged: {
         if (chunkMode)
             return
