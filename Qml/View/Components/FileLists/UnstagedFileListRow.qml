@@ -49,30 +49,35 @@ FileListRow {
             ActionIconButton {
                 iconText: Style.icons.file
                 tooltip: "Open"
-                textColor: Style.colors.secondaryText
+                textColor: Style.colors.actionIconIdle
+                hoverTextColor: Style.colors.openBlue
+                hoverBackgroundColor: Qt.rgba(Style.colors.openBlue.r, Style.colors.openBlue.g, Style.colors.openBlue.b, 0.1)
                 onClicked: root.openRequested(root.filePath)
             }
 
             ActionIconButton {
                 iconText: Style.icons.archive
                 tooltip: "Stash"
-                textColor: Style.colors.mutedText
+                textColor: Style.colors.actionIconIdle
+                hoverBackgroundColor: Qt.rgba(Style.colors.stashAmber.r, Style.colors.stashAmber.g, Style.colors.stashAmber.b, 0.1)
                 onClicked: root.stashRequested(root.filePath)
             }
 
             ActionIconButton {
                 iconText: Style.icons.plus
                 tooltip: "Stage"
-                textColor: Style.theme == Style.Light ?
-                            Qt.darker(Style.colors.addedFile, 1.5) :
-                            Qt.lighter(Style.colors.addedFile, 1.5)
+                textColor: Style.colors.actionIconIdle
+                hoverTextColor: Style.colors.stageGreen
+                hoverBackgroundColor: Qt.rgba(Style.colors.stageGreen.r, Style.colors.stageGreen.g, Style.colors.stageGreen.b, 0.1)
                 onClicked: root.stageRequested(root.filePath)
             }
 
             ActionIconButton {
                 iconText: Style.icons.trash
                 tooltip: "Revert changes"
-                textColor: Style.colors.error
+                textColor: Style.colors.actionIconIdle
+                hoverTextColor: Style.colors.discardRed
+                hoverBackgroundColor: Qt.rgba(Style.colors.discardRed.r, Style.colors.discardRed.g, Style.colors.discardRed.b, 0.1)
                 onClicked: root.discardRequested(root.filePath)
             }
         }
