@@ -102,7 +102,26 @@ Rectangle {
         anchors.fill: parent
         anchors.leftMargin: 8
         anchors.rightMargin: 6
-        spacing: 8
+        spacing: 6
+
+        // Status letter badge
+        Rectangle {
+            Layout.alignment: Qt.AlignVCenter
+            width: 16
+            height: 16
+            radius: 3
+            color: Qt.rgba(root.statusColor.r, root.statusColor.g, root.statusColor.b, 0.10)
+            visible: root.statusLetter !== ""
+
+            Text {
+                anchors.centerIn: parent
+                text: root.statusLetter
+                font.family: Style.fontTypes.jetBrainsMono
+                font.pixelSize: Style.appFont.secondaryPt
+                font.bold: true
+                color: root.statusColor
+            }
+        }
 
         Text {
             Layout.fillWidth: true
