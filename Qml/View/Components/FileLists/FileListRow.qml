@@ -128,9 +128,9 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
 
             text: root.text
-            font.family: Style.fontTypes.inter
-            font.pixelSize: Style.appFont.mediumPt
-            color: Style.colors.secondaryText
+            font.family: Style.fontTypes.jetBrainsMono
+            font.pixelSize: Style.appFont.smallPt
+            color: Style.colors.filePathText
             elide: Text.ElideRight
         }
 
