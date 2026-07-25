@@ -34,8 +34,7 @@ Rectangle {
     /* Object Properties
      * ****************************************************************************************/
     readonly property bool isHovered: hoverHandler.hovered
-    implicitHeight: 24
-    radius: 4
+    implicitHeight: 28
     color: root.selected ? Style.colors.subtleAzureGlow
                     : (isHovered ? Style.colors.rowHoverBg : "transparent")
 
@@ -100,7 +99,7 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 8
+        anchors.leftMargin: 12
         anchors.rightMargin: 6
         spacing: 6
 
