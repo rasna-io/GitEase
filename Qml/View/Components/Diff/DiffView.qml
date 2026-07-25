@@ -411,14 +411,16 @@ DetachablePanel {
 
             ScrollingText {
                 text: root.selectedFile
-                font.family: Style.fontTypes.inter
-                font.pixelSize: Style.appFont.smallPt
+                font.family: Style.fontTypes.jetBrainsMono
+                font.pixelSize: Style.appFont.secondaryPt
                 color: Style.colors.mutedText
-                anchors.centerIn: parent
-                Layout.maximumWidth: parent.width * 0.4
+                anchors.left: parent.left
+                anchors.leftMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, parent.width * 0.55)
             }
 
-            ActionIconButton{
+            RowLayout {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 6
@@ -440,10 +442,14 @@ DetachablePanel {
                 }
 
                 ActionIconButton{
-                iconText: Style.icons.gear
-                textColor: Style.colors.secondaryText
+                    iconText: Style.icons.gear
+                    textColor: Style.colors.secondaryText
+                    hoverTextColor: Style.colors.openBlue
+                    hoverBackgroundColor: Qt.rgba(Style.colors.openBlue.r, Style.colors.openBlue.g, Style.colors.openBlue.b, 0.1)
+                    tooltip: "Diff settings"
 
-                onClicked: settingsPopup.open()
+                    onClicked: settingsPopup.open()
+                }
             }
 
             Popup {
