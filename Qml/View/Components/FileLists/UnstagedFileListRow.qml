@@ -70,8 +70,8 @@ FileListRow {
             }
 
             ActionIconButton {
-                iconText: Style.icons.trash
-                tooltip: "Discard"
+                iconText: Style.icons.undo
+                tooltip: "Revert changes"
                 textColor: Style.colors.error
                 onClicked: root.discardRequested(root.filePath)
             }
