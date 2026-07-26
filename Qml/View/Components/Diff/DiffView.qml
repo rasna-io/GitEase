@@ -576,6 +576,99 @@ DetachablePanel {
                            ? Style.colors.secondaryText
                            : Style.colors.mutedText
                 }
+
+                // Right: two expand buttons
+                Row {
+                    anchors {
+                        right: parent.right
+                        rightMargin: 8
+                        verticalCenter: parent.verticalCenter
+                    }
+
+                    spacing: 4
+
+                    // Expand step button
+                    Rectangle {
+                        id: stepBtn
+
+                        width: stepBtnText.implicitWidth + 12
+                        height: 20
+
+                        radius: 4
+
+                        color: stepBtnMouse.containsMouse
+                               ? Style.colors.accent
+                               : "transparent"
+                        border.color: stepBtnMouse.containsMouse
+                                      ? Style.colors.accent
+                                      : "transparent"
+                        border.width: 1
+
+                        Text {
+                            id: stepBtnText
+
+                            anchors.centerIn: parent
+
+                            text: "↕ " + root.expandLines
+
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.secondaryPt
+                            color: stepBtnMouse.containsMouse
+                                   ? Style.colors.onAccentText
+                                   : Style.colors.mutedText
+                        }
+
+                        MouseArea {
+                            id: stepBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.expandHiddenBlock(
+                                delegateIndex, direction, root.expandLines)
+                        }
+                    }
+
+                    // Expand all button
+                    Rectangle {
+                        id: allBtn
+
+                        width: allBtnText.implicitWidth + 12
+                        height: 20
+
+                        radius: 4
+
+                        color: allBtnMouse.containsMouse
+                               ? Style.colors.accent
+                               : "transparent"
+                        border.color: allBtnMouse.containsMouse
+                                      ? Style.colors.accent
+                                      : "transparent"
+                        border.width: 1
+
+                        Text {
+                            id: allBtnText
+
+                            anchors.centerIn: parent
+
+                            text: "↕ All"
+
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.secondaryPt
+                            color: allBtnMouse.containsMouse
+                                   ? Style.colors.onAccentText
+                                   : Style.colors.mutedText
+                        }
+
+                        MouseArea {
+                            id: allBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.expandHiddenBlock(
+                                delegateIndex, direction, 100000)
+                        }
+                    }
+                }
             }
         }
     }
