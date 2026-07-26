@@ -292,81 +292,29 @@ Page {
                                 radius: 5
                                 color: committingButton.commitEnabled ? Style.colors.commitButton : Style.colors.disabledButton
 
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Commit"
+                                    color: Style.colors.secondaryForeground
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.mediumPt
+                                    font.weight: Font.DemiBold
+                                }
+
                                 MouseArea {
                                     id: commitBtnMouse
-                                    anchors.left: parent.left
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    width: parent.width - 29
+                                    anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: committingButton.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                     enabled: committingButton.commitEnabled
 
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: 4
-                                        color: commitBtnMouse.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
-                                    }
-
-                                    Text {
-                                        id: commitBtnLabel
-                                        anchors.centerIn: parent
-                                        text: "Commit"
-                                        color: Style.colors.secondaryForeground
-                                        font.family: Style.fontTypes.inter
-                                        font.pixelSize: Style.appFont.mediumPt
+                                        radius: 5
+                                        color: parent.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
                                     }
 
                                     onClicked: root.commitAndUpdate()
-                                }
-
-                                Rectangle {
-                                    id: caretDivider
-                                    anchors.right: commitCaretZone.left
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    anchors.topMargin: 7
-                                    anchors.bottomMargin: 7
-                                    width: 1
-                                    color: Style.colors.secondaryForeground
-                                    opacity: 0.35
-                                }
-
-                                MouseArea {
-                                    id: commitCaretZone
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    width: 28
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        radius: 3
-                                        color: committingButton.commitEnabled ?
-                                                   commitCaretZone.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent" : Style.colors.accent
-                                    }
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: Style.icons.caretDown
-                                        font.family: Style.fontTypes.font6ProSolid
-                                        font.pixelSize: Style.appFont.defaultPt
-                                        color: Style.colors.secondaryForeground
-                                    }
-
-                                    onClicked: {
-                                        var pos = commitCaretZone.mapToItem(commitPanel, 0, commitBtn.height)
-                                        commitDropMenu.x = Math.min(pos.x, commitPanel.width - commitDropMenu.implicitWidth - 48)
-                                        commitDropMenu.y = pos.y + 4
-                                        commitDropMenu.open()
-                                    }
-                                }
-
-                                ContextMenu {
-                                    id: commitDropMenu
-                                    parent: commitPanel
                                 }
                             }
 
