@@ -25,7 +25,7 @@ Rectangle {
     readonly property real  effectiveLineHeight : commitTextArea.font.pixelSize * lineHeightMultiplier
 
     readonly property int   counterHeight       : 24
-    readonly property int   verticalPadding     : 16
+    readonly property int   verticalPadding     : 24
 
     /* Object Properties
      * ****************************************************************************************/
