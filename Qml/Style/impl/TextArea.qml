@@ -48,10 +48,15 @@ T.TextArea {
         color: control.placeholderTextColor
         elide: Text.ElideRight
         renderType: control.renderType
-        // When the TextArea is in a Flickable, the background is reparented to it
-        // so that decorations don't move with the content. We need to do the same.
-        // Also allow the background to be set to null; in that case we're just not visible.
-        parent: control.background?.parent ?? null
+
+        parent: control.background?.parent ?? control
+
+        visible: control.floatingPlaceholderEnabled
+                 ? control.placeholderText.length > 0
+                 : (control.text.length === 0 && !control.activeFocus && control.placeholderText.length > 0)
+        y: control.floatingPlaceholderEnabled ? placeholder.y : control.topPadding
+        x: control.floatingPlaceholderEnabled ? placeholder.x : control.leftPadding
+        scale: control.floatingPlaceholderEnabled ? placeholder.scale : 1.0
 
         filled: control.Material.containerStyle === Material.Filled
         verticalPadding: control.Material.textFieldVerticalPadding
