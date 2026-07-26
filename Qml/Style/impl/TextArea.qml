@@ -9,6 +9,8 @@ import GitEase_Style
 T.TextArea {
     id: control
 
+    property bool floatingPlaceholderEnabled: true
+
     implicitWidth: Math.max(contentWidth + leftPadding + rightPadding,
                             implicitBackgroundWidth + leftInset + rightInset,
                             placeholder.implicitWidth + leftPadding + rightPadding)
@@ -22,12 +24,7 @@ T.TextArea {
     leftPadding: Material.textFieldHorizontalPadding
     rightPadding: Material.textFieldHorizontalPadding
     // Need to account for the placeholder text when it's sitting on top.
-    topPadding: Material.containerStyle === Material.Filled && placeholderText.length > 0 && (activeFocus || length > 0)
-        ? Material.textFieldVerticalPadding + placeholder.largestHeight
-        // When the condition above is not met, the text should always sit in the middle
-        // of a default-height TextArea, which is just near the top for a higher-than-default one.
-        // Account for any topInset as well, otherwise the text will be too close to the background.
-        : ((implicitBackgroundHeight - placeholder.largestHeight) / 2) + topInset
+    topPadding: Material.textFieldVerticalPadding
     bottomPadding: Material.textFieldVerticalPadding
 
     color: enabled ? Material.foreground : Material.hintTextColor
