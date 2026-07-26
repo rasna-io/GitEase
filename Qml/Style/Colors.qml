@@ -243,4 +243,7 @@ QtObject{
     // Diff view header line counts
     property color diffAddedCount:       "#16A34A"
     property color diffRemovedCount:     "#DC2626"
+
+    // Commit Panel
+    property color commitButton:         branchAccent         // #2563EB
 }

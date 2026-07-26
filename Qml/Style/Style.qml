@@ -208,6 +208,9 @@ QtObject {
         // Diff view header line counts
         diffAddedCount:    "#4ADE80"
         diffRemovedCount:  "#F87171"
+
+        // Commit Panel
+        commitButton:      "#3B82F6"
     }
 
     property           string       currentTheme:               "Modern Light"
