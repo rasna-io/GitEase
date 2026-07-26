@@ -509,7 +509,7 @@ DetachablePanel {
 
                         onCheckedChanged: {
                             if (root.fileIsEdited) {
-                                var d = unsavedChangesDialogComp.createObject(root)
+                                var d = unsavedChangesDialogComp.createObject(root.activeItem)
                                 d.title = "Unsaved Changes"
                                 d.message = "You have unsaved changes in: " + root.selectedFile
                                 d.saved.connect(() => {
