@@ -363,9 +363,9 @@ Page {
                                 id: moreOptionsBtn
                                 Layout.preferredWidth: 30
                                 Layout.preferredHeight: 30
-                                radius: 4
-                                color: commitOptionsDotMouse.containsMouse ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                                border.color: Style.colors.primaryBorder
+                                radius: 5
+                                color: Style.colors.actionPillBg
+                                border.color: Style.colors.chipBorder
                                 border.width: 1
 
                                 Text {
