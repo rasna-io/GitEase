@@ -53,6 +53,7 @@ Rectangle {
 
             TextArea {
                 id: commitTextArea
+                floatingPlaceholderEnabled: false
                 width: parent.width
                 placeholderTextColor: Style.colors.placeholderText
                 color: Style.colors.foreground
