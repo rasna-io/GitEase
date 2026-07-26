@@ -82,7 +82,7 @@ T.TextArea {
         placeholderTextHAlign: control.effectiveHorizontalAlignment
         controlHasActiveFocus: control.activeFocus
         controlHasText: control.length > 0
-        placeholderHasText: placeholder.text.length > 0
+        placeholderHasText: control.floatingPlaceholderEnabled && placeholder.text.length > 0
         horizontalPadding: control.Material.textFieldHorizontalPadding
     }
 }
