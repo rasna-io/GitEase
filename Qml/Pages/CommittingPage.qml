@@ -319,6 +319,47 @@ Page {
                             }
 
                             Rectangle {
+                                id: caretBtn
+                                Layout.preferredWidth: 30
+                                Layout.preferredHeight: 30
+                                radius: 5
+                                color: committingButton.commitEnabled ? Style.colors.commitButton : Style.colors.disabledButton
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: Style.icons.caretDown
+                                    font.family: Style.fontTypes.font6ProSolid
+                                    font.pixelSize: Style.appFont.defaultPt
+                                    color: Style.colors.secondaryForeground
+                                }
+
+                                MouseArea {
+                                    id: caretBtnMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        radius: 5
+                                        color: parent.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
+                                    }
+
+                                    onClicked: {
+                                        var pos = caretBtn.mapToItem(commitPanel, 0, caretBtn.height)
+                                        commitDropMenu.x = Math.min(pos.x, commitPanel.width - commitDropMenu.implicitWidth - 48)
+                                        commitDropMenu.y = pos.y + 4
+                                        commitDropMenu.open()
+                                    }
+                                }
+
+                                ContextMenu {
+                                    id: commitDropMenu
+                                    parent: commitPanel
+                                }
+                            }
+
+                            Rectangle {
                                 id: moreOptionsBtn
                                 Layout.preferredWidth: 30
                                 Layout.preferredHeight: 30
