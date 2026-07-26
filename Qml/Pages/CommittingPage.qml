@@ -323,7 +323,7 @@ Page {
                                 Layout.preferredWidth: 30
                                 Layout.preferredHeight: 30
                                 radius: 5
-                                color: committingButton.commitEnabled ? Style.colors.commitButton : Style.colors.disabledButton
+                                color: Style.colors.commitButton
 
                                 Text {
                                     anchors.centerIn: parent
