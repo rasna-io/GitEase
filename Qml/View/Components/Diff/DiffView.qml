@@ -665,7 +665,7 @@ DetachablePanel {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.expandHiddenBlock(
-                                delegateIndex, direction, 100000)
+                                delegateIndex, direction, remaining)
                         }
                     }
                 }
