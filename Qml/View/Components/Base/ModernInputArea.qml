@@ -19,17 +19,17 @@ Rectangle {
 
     property int    minLines            : 3
     property int    maxLines            : 10
-    property real   lineHeightMultiplier: 1.2
-    property int    fontSize: 14
+    property real   lineHeightMultiplier: 1.3
+    property int    fontSize: 13
 
     readonly property real  effectiveLineHeight : commitTextArea.font.pixelSize * lineHeightMultiplier
     readonly property int   counterHeight       : 24
-    readonly property int   verticalPadding     : 24
+    readonly property int   verticalPadding     : 16
 
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
-    radius: 4
+    radius: 6
     border.width: 1
     border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
 
@@ -58,12 +58,13 @@ Rectangle {
                 placeholderTextColor: Style.colors.placeholderText
                 color: Style.colors.foreground
                 font.family: Style.fontTypes.inter
-                font.pixelSize: Style.appFont.largePt
+                font.pixelSize: Style.appFont.fontSize
+                font.weight: Font.Normal
                 wrapMode: TextEdit.Wrap
-                leftPadding: 12;
-                topPadding: 12;
-                rightPadding: 12
-                bottomPadding: 12
+                leftPadding: 10;
+                topPadding: 10;
+                rightPadding: 10
+                bottomPadding: 10
                 selectByMouse: true
                 background: null
                 selectionColor: Style.colors.accent
@@ -80,7 +81,7 @@ Rectangle {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 12; anchors.rightMargin: 12
+                anchors.leftMargin: 10; anchors.rightMargin: 10
                 Item { Layout.fillWidth: true }
                 Text {
                     text: commitTextArea.text.length + " characters"
