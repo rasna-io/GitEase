@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 
 import GitEase
 import GitEase_Style
@@ -31,6 +32,10 @@ Window {
     property StatusController       statusController        : null
     property NotificationController notificationController  : null
     property GuideController        guideController         : null
+
+    property Item hostItem: null
+
+    readonly property var hostWindow: root.hostItem ? root.hostItem.Window.window : null
 
     property var    conflicts       : []
     property var    selectedConflict: null
@@ -94,13 +99,24 @@ Window {
             height = 650
     }
 
+    onHostWindowChanged: {
+        if (root.hostWindow && !root.visible)
+            root.transientParent = root.hostWindow
+    }
+
     onVisibleChanged: {
         if(!visible)
             return
 
         Qt.callLater(function() {
-            x = (Screen.width - width) / 2
-            y = (Screen.height - height) / 2
+            let host = root.hostWindow
+            if (host) {
+                root.x = host.x + Math.round((host.width  - root.width)  / 2)
+                root.y = host.y + Math.round((host.height - root.height) / 2)
+            } else {
+                root.x = Math.round((Screen.width  - root.width)  / 2)
+                root.y = Math.round((Screen.height - root.height) / 2)
+            }
         })
 
         if (!notificationController) {
