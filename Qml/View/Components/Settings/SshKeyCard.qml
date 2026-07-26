@@ -231,10 +231,6 @@ Item {
         width: 380
         height: 240
 
-        parent: Overlay.overlay
-        x: Overlay.overlay ? Math.round((Overlay.overlay.width - width) / 2) : 0
-        y: Overlay.overlay ? Math.round((Overlay.overlay.height - height) / 2) : 0
-
         padding: 0
 
         property string targetKeyName: ""
