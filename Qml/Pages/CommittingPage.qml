@@ -289,8 +289,8 @@ Page {
                                 id: commitBtn
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
-                                radius: 4
-                                color: committingButton.commitEnabled ? Style.colors.accent : Style.colors.disabledButton
+                                radius: 5
+                                color: committingButton.commitEnabled ? Style.colors.commitButton : Style.colors.disabledButton
 
                                 MouseArea {
                                     id: commitBtnMouse
