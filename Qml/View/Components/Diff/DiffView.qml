@@ -545,47 +545,36 @@ DetachablePanel {
 
             anchors.fill: parent
 
-            MouseArea {
-                id: hiddenMarker
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.expandHiddenBlock(delegateIndex, direction)
-            }
-
             Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                height: 1
-                color: hiddenMarker.containsMouse ? Style.colors.accent : Style.colors.primaryBorder
-            }
+                id: pill
 
-            Row {
-                anchors.centerIn: parent
-                spacing: 6
-                Label {
-                    text: direction === "up" ? Style.icons.arrowUpToLine : Style.icons.arrowDownToLine
-                    font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: Style.appFont.mediumPt
-                    color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 4
-                    background: Rectangle {
-                        color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                          : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 4
-                    }
+                anchors.fill: parent
+                anchors.margins: 6
+
+                radius: 4
+
+                color: Style.colors.actionPillBg
+                border.width: 1
+                border.color: pillHoverHandler.hovered
+                              ? Style.colors.accent
+                              : Style.colors.actionPillBorder
+
+                HoverHandler {
+                    id: pillHoverHandler
+                    blocking: false
                 }
-                Label {
-                    text: remaining
+
+                // Centre: "N lines hidden"
+                Text {
+                    anchors.centerIn: parent
+
+                    text: remaining + " lines hidden"
+
                     font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.captionPt
-                    color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 3
-                    background: Rectangle {
-                        color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                          : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 3
-                    }
+                    font.pixelSize: Style.appFont.smallPt
+                    color: pillHoverHandler.hovered
+                           ? Style.colors.secondaryText
+                           : Style.colors.mutedText
                 }
             }
         }
