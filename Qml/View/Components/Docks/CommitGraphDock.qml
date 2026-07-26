@@ -458,6 +458,7 @@ DetachablePanel {
 
     ConflictPopup {
         id: mergeConflictPopup
+        hostItem                : root.activeItem
         currentOperation        : ConflictPopup.OperationType.Merge
         mergeController         : root.mergeController
         conflictController      : root.conflictController
@@ -471,6 +472,7 @@ DetachablePanel {
 
     ConflictPopup {
         id: cherryPickConflictPopup
+        hostItem                : root.activeItem
         currentOperation        : ConflictPopup.OperationType.CherryPick
         cherryPickController    : root.cherryPickController
         conflictController      : root.conflictController
@@ -976,8 +978,7 @@ DetachablePanel {
         case RepositoryController.GitProtocol.HTTP:
             root.pendingPushBranch = branchName
             pushAuthConnection.enabled = true
-            userAuthenticationPopup.parent = Qt.binding(() => {return root.activeItem})
-            userAuthenticationPopup.open()
+            root.openPopup(userAuthenticationPopup)
             break
         default:
             root.notificationController.error("Unsupported protocol", `${isForcePush ? "Force" : ""} Push Error`, 5000)
@@ -1023,8 +1024,7 @@ DetachablePanel {
 
         root.addBranchPopup.branchController    = root.branchController
         root.addBranchPopup.targetHash          = commitHash
-        root.addBranchPopup.parent              = Qt.binding(() => {return root.activeItem})
-        root.addBranchPopup.open()
+        root.openPopup(root.addBranchPopup)
     }
 
     function executeNewTag(commitHash) {
@@ -1033,8 +1033,7 @@ DetachablePanel {
 
         root.addTagPopup.tagController  = root.tagController || null
         root.addTagPopup.targetHash     = commitHash
-        root.addTagPopup.parent         = Qt.binding(() => {return root.activeItem})
-        root.addTagPopup.open()
+        root.openPopup(root.addTagPopup)
     }
 
     function browseFilesRequested(commitHash, commitMessage, commitDate) {
@@ -1061,7 +1060,7 @@ DetachablePanel {
             mergeMethodPopup.accepted.disconnect(arguments.callee)
         })
 
-        mergeMethodPopup.parent = Qt.binding(() => {return root.activeItem})
+        // mergeMethodPopup is declared in this panel's content, so it follows the panel by itself.
         mergeMethodPopup.open()
     }
 
@@ -1151,7 +1150,6 @@ DetachablePanel {
         } else {
             checkoutBranchSelector.commitHash = data.hash
             checkoutBranchSelector.branches = deduped
-            checkoutBranchSelector.parent = Qt.binding(() => {return root.activeItem})
             checkoutBranchSelector.open()
         }
     }
