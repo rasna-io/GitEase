@@ -186,7 +186,7 @@ Page {
                                     commands: [{ command: "git commit -m \"…\"" }]
                                 },
                                 {
-                                    targetProvider: function() { return commitCaretZone },
+                                    targetProvider: function() { return caretBtn },
                                     icon: Style.icons.caretDown,
                                     title: "Commit Extras  ·  ▾ dropdown",
                                     description: "Commit & Push runs git commit then git push in one step. Commit Amend runs git commit --amend — rewrites the most recent local commit (message or content) instead of creating a new one."
