@@ -31,6 +31,7 @@ add_subdirectory(Qml/Style/)
 set_source_files_properties(
     Qml/Core/Models/Enums.qml
     Qml/Core/Services/GitService.qml
+    Qml/View/Components/Rebase/RebaseActions.qml
 
     PROPERTIES
         QT_QML_SINGLETON_TYPE True
