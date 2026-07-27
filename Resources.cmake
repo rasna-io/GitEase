@@ -184,6 +184,14 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Conflict/ConflictFileList.qml
     Qml/View/Components/Conflict/ConflictConfirmationDialog.qml
     Qml/View/Components/Conflict/ConflictEditorDelegate.qml
+    Qml/View/Components/Conflict/ConflictEditorPane.qml
+    Qml/View/Components/Conflict/ConflictHeader.qml
+    Qml/View/Components/Conflict/ConflictToolbar.qml
+    Qml/View/Components/Conflict/ConflictFooter.qml
+    Qml/View/Components/Conflict/ConflictPillButton.qml
+    Qml/View/Components/Conflict/ConflictProgressBar.qml
+    Qml/View/Components/Conflict/ConflictRegionLabel.qml
+    Qml/View/Components/Conflict/SectionLabel.qml
 
     # Guide Components
     Qml/View/Components/Guide/GuideOverlay.qml
