@@ -185,18 +185,32 @@ QtObject{
     property color repoItemStatusPATText:       "#43525D"
 
     // Conflict marker backgrounds
-    property color conflictMarkerStartBg:   "#A1DFCB"
-    property color conflictMarkerEndBg:     "#99CFFF"
-    property color conflictOursBg:          "#D9F2EA"
-    property color conflictTheirsBg:        "#D9EDFF"
-    property color conflictSeparatorBg:     "transparent"
-    property color conflictMarkerText:      "#333333"
+    property color conflictOursBg:          "#E8F1FE"
+    property color conflictOursLabel:       "#1D4ED8"
+    property color conflictTheirsBg:        "#F6EBFC"
+    property color conflictTheirsLabel:     "#7E22CE"
+
+    property color conflictCardOpenBorder:  "#D9A036"
+    property color conflictCardOpenStrip:   "#FDF3DC"
+    property color conflictCardOpenLabel:   "#92610E"
+    property color conflictCardDoneBorder:  "#3E9E5A"
+    property color conflictCardDoneStrip:   "#E4F6E9"
+    property color conflictCardDoneLabel:   "#1B7B3A"
+
     property color lineNumberColor:         "#808080"
     property color conflictMarker:          "#E05555"
 
     property color conflictStatusConflictColor  :  "#E05555"
     property color conflictStatusModifiedColor  :  "#FFA500"
     property color conflictStatusAddedColor     :     "#3BDB6A"
+
+    property color conflictFileSelectedBg:  "#1F3B82F6"
+    property color conflictSectionLabel:    "#6B7280"
+    property color conflictProgressTrack:   "#E3E6EB"
+    property color conflictProgressFiles:   "#2563EB"
+    property color conflictProgressChunks:  "#22C55E"
+    property color conflictDestructive:     "#DC2626"
+    property color conflictAssistAccent:    "#B45309"
 
     // Interactive rebase status colors
     property color rebaseStatusPending:    mutedText
