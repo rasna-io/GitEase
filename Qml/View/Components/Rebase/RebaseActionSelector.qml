@@ -143,7 +143,7 @@ Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: entry.isCurrent
                             text: Style.icons.check
-                            color: RebaseActions.colorOf(entry.modelData)
+                            color: RebaseActions.menuColorOf(entry.modelData)
                             font.family: Style.fontTypes.font6ProSolid
                             font.pixelSize: Style.appFont.microPt
                         }
@@ -155,7 +155,7 @@ Rectangle {
                             anchors.leftMargin: Style.dp(24)
                             anchors.verticalCenter: parent.verticalCenter
                             text: entry.modelData
-                            color: RebaseActions.colorOf(entry.modelData)
+                            color: RebaseActions.menuColorOf(entry.modelData)
                             font.family: Style.fontTypes.jetBrainsMono
                             font.pixelSize: Style.appFont.captionPt
                         }

@@ -212,7 +212,8 @@ QtObject{
     property color conflictDestructive:     "#DC2626"
     property color conflictAssistAccent:    "#B45309"
 
-    property color rebaseActionPick:       "#15803D"
+    property color rebaseActionPick:       "#6B7280"
+    property color rebaseActionPickOnMenu: "#4B5563"
     property color rebaseActionReword:     "#2563EB"
     property color rebaseActionSquash:     "#7E22CE"
     property color rebaseActionFixup:      "#BE185D"

@@ -40,6 +40,10 @@ QtObject {
         }
     }
 
+    function menuColorOf(action) {
+        return action === root.pick ? Style.colors.rebaseActionPickOnMenu : root.colorOf(action)
+    }
+
     function descriptionOf(action) {
         switch (action) {
             case root.reword:

@@ -176,7 +176,8 @@ QtObject {
         conflictAssistAccent:   "#E0A030"
 
         // Interactive rebase plan actions
-        rebaseActionPick:      "#6EDB8F"
+        rebaseActionPick:      "#A5A5B0"
+        rebaseActionPickOnMenu:"#D4D4DC"
         rebaseActionReword:    "#60A5FA"
         rebaseActionSquash:    "#C084FC"
         rebaseActionFixup:     "#E38AD1"
