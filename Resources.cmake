@@ -193,6 +193,16 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Conflict/ConflictRegionLabel.qml
     Qml/View/Components/Conflict/SectionLabel.qml
 
+    # Interactive rebase plan Components
+    Qml/View/Components/Rebase/RebaseActions.qml
+    Qml/View/Components/Rebase/RebaseActionBadge.qml
+    Qml/View/Components/Rebase/RebaseActionSelector.qml
+    Qml/View/Components/Rebase/RebasePlanRow.qml
+    Qml/View/Components/Rebase/RebasePlanTable.qml
+    Qml/View/Components/Rebase/RebasePlanHeader.qml
+    Qml/View/Components/Rebase/CommitPreviewPane.qml
+    Qml/View/Components/Rebase/RebasePlanFooter.qml
+
     # Guide Components
     Qml/View/Components/Guide/GuideOverlay.qml
     Qml/View/Components/Guide/GuideTooltip.qml
