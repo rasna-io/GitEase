@@ -23,6 +23,13 @@ Window {
         Abort
     }
 
+    enum OperationType {
+        None,
+        Merge,
+        Rebase,
+        CherryPick
+    }
+
     /* Property Declarations
      * ****************************************************************************************/
     property MergeController        mergeController         : null
@@ -30,6 +37,7 @@ Window {
     property ConflictController     conflictController      : null
     property CherryPickController   cherryPickController    : null
     property StatusController       statusController        : null
+    property CommitController       commitController        : null
     property NotificationController notificationController  : null
     property GuideController        guideController         : null
 
@@ -43,35 +51,95 @@ Window {
     property var    modifiedFiles   : ({})
     property var    stagedFiles     : []
 
+    //! path -> the file's contents as Git first reported them to this window, markers and all.
+    property var    originalContent : ({})
+    //! path -> how many conflicts that file had when this window first saw it.
+    property var    originalConflictCounts : ({})
     property string headerText          : `${currentOperationName} Conflicts`
-    property string continueButtonText  : `Continue ${currentOperationName}`
+    property string applyingSubject     : ""
+    property string commitHash          : ""
+    property string ontoRef             : ""
+    property string operationCommitHash : ""
+    property int    modelRevision       : 0
+    readonly property string shortCommitHash: root.commitHash.substring(0, 7)
+
+    readonly property string positionText: {
+        let total = root.conflicts.length + root.stagedFiles.length
+        if (total === 0 || root.selectedPath === "")
+            return ""
+
+        let index = root.conflicts.findIndex(c => c.path === root.selectedPath)
+        if (index < 0)
+            return ""
+
+        return `Conflict ${index + 1} of ${total}`
+    }
+
+    readonly property int openChunkCount: {
+        root.modelRevision
+        return root.selectedConflict?.blocks?.length ?? 0
+    }
+
+    readonly property int resolvedChunkCount: {
+        root.modelRevision
+        let count = 0
+        for (let i = 0; i < conflictRows.count; ++i) {
+            let row = conflictRows.get(i)
+            if (row.type === "blockButton" && row.resolvedGroup > 0)
+                count++
+        }
+        return count
+    }
+
+    readonly property int openConflictTotal: {
+        root.modelRevision
+        let total = 0
+        for (let conflict of root.conflicts)
+            total += conflict?.blocks?.length ?? 0
+        return total
+    }
+
+    readonly property int conflictTotal: {
+        let total = 0
+        for (let path in root.originalConflictCounts)
+            total += root.originalConflictCounts[path]
+        return total
+    }
+
+    readonly property int resolvedConflictTotal:
+        Math.max(0, root.conflictTotal - root.openConflictTotal)
+
+    readonly property int totalChunkCount: root.openChunkCount + root.resolvedChunkCount
 
     readonly property bool canContinue: {
         return conflicts.length === 0
     }
 
-    enum OperationType {
-        None,
-        Merge,
-        Rebase,
-        CherryPick
-    }
     property int currentOperation: ConflictPopup.OperationType.None
 
     readonly property var currentController:{
         switch(currentOperation){
-            case ConflictPopup.OperationType.Merge      : return mergeController
-            case ConflictPopup.OperationType.Rebase     : return rebaseController
-            case ConflictPopup.OperationType.CherryPick : return cherryPickController
-            default                                     : return null
+            case ConflictPopup.OperationType.Merge:
+                return mergeController
+            case ConflictPopup.OperationType.Rebase:
+                return rebaseController
+            case ConflictPopup.OperationType.CherryPick:
+                return cherryPickController
+            default:
+                return null
         }
     }
+
     readonly property string currentOperationName:{
         switch(currentOperation){
-            case ConflictPopup.OperationType.Merge      : return "Merge"
-            case ConflictPopup.OperationType.Rebase     : return "Rebase"
-            case ConflictPopup.OperationType.CherryPick : return "Cherry-pick"
-            default                                     : return ""
+            case ConflictPopup.OperationType.Merge:
+                return "Merge"
+            case ConflictPopup.OperationType.Rebase:
+                return "Rebase"
+            case ConflictPopup.OperationType.CherryPick:
+                return "Cherry-pick"
+            default:
+                return ""
         }
     }
 
@@ -87,17 +155,8 @@ Window {
     modality: Qt.ApplicationModal
     color: "transparent"
 
-    width: 800
-    height: 650
-
-    onWidthChanged: {
-        if (visible && width != 800)
-            width = 800
-    }
-    onHeightChanged: {
-        if (visible && height != 650)
-            height = 650
-    }
+    width: 1100
+    height: 720
 
     onHostWindowChanged: {
         if (root.hostWindow && !root.visible)
@@ -139,36 +198,39 @@ Window {
             return
         }
 
-        modifiedFiles = ({})
+        root.clearFileCaches()
         selectedPath = ""
+        refreshOperationContext()
         loadConflicts()
     }
 
     Component.onCompleted: {
-        windowController.window = root
-        windowController.setMinimumSize(width, height)
+        conflictWindowController.window = root
+        conflictWindowController.setMinimumSize(940, 620)
 
-        markersUpdateTimer.start()
+        editorPane.scheduleMarkerUpdate()
     }
 
-    ListModel { id: displayModel }
+    ListModel {
+        id: conflictRows
+    }
 
     TextMetrics {
         id: widthCalculator
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.h3Pt
+        font.family: Style.fontTypes.jetBrainsMono
+        font.pixelSize: Style.appFont.captionPt
     }
 
     WindowController {
-        id: windowController
+        id: conflictWindowController
     }
 
     Rectangle {
         anchors.fill: parent
         color: Style.colors.primaryBackground
-        radius: 5
+        radius: 6
         clip: true
-        border.color: Style.colors.accent
+        border.color: Style.colors.primaryBorder
         border.width: 1
 
         /* Guide
@@ -184,301 +246,131 @@ Window {
                         targetProvider: function() { return fileListComp },
                         icon: Style.icons.file,
                         title: "Conflicted Files",
-                        description: "Every file with unresolved conflicts is listed here. Click one to open it in the editor on the right; the checkmark stages a file once you're happy with it."
+                        description: "Files still carrying conflict markers are listed at the top, files you have already settled below them. Click one to open it on the right."
                     },
                     {
-                        targetProvider: function() { return conflictListView },
+                        targetProvider: function() { return editorPane },
                         icon: Style.icons.penToSquare,
                         title: "Resolve a Conflict",
-                        description: "Each conflicting block shows both versions. Accept ours, theirs, or both, or edit the text directly like a normal editor."
+                        description: "Each conflict becomes a card showing both versions side by side. Keep ours, keep theirs, keep both, or edit the lines directly — the card turns green once it is settled."
                     },
                     {
-                        targetProvider: function() { return continueBtn },
+                        targetProvider: function() { return toolbar },
+                        icon: Style.icons.caretDown,
+                        title: "Move Between Chunks",
+                        description: "Jump straight to the next unresolved card instead of scrolling for it. The counter tells you how many are left in this file."
+                    },
+                    {
+                        targetProvider: function() { return footer },
                         icon: Style.icons.check,
-                        title: "Continue",
-                        description: "Once every file is resolved and staged, click here to continue the operation. Skip moves past this commit, and the close button lets you abort entirely."
+                        title: "Finish Up",
+                        description: "The bars track how far you are through the files and their chunks. Continue once everything is resolved, skip this commit, or abort the whole operation."
                     }
                 ]
             }
         }
 
         ColumnLayout {
-            spacing: 8
             anchors.fill: parent
-            anchors.margins: 20
+            anchors.margins: Style.dp(3)
+            spacing: 0
 
-            // Header
-            RowLayout {
+            ConflictHeader {
+                id: header
                 Layout.fillWidth: true
-
-                Text {
-                    text: root.headerText
-                    color: Style.colors.secondaryText
-                    font.family: Style.fontTypes.inter
-                    font.bold: true
-                    font.pixelSize: Style.appFont.largePt
-                }
-
-                MouseArea {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 27
-                    Layout.leftMargin: 20
-                    Layout.rightMargin: 20
-                    cursorShape: Qt.SizeAllCursor
-
-                    property point clickPos
-
-                    onPressed: function(mouse) {
-                        clickPos = Qt.point(mouse.x, mouse.y)
-                    }
-
-                    onPositionChanged: function(mouse) {
-                        root.x += mouse.x - clickPos.x
-                        root.y += mouse.y - clickPos.y
-                    }
-                }
-
-                WindowsButton {
-                    id: minimizeButton
-                    onClicked: windowController.minimize()
-                    Material.accent: Style.colors.windowsMinimize
-                    content: Rectangle {
-                        anchors.centerIn: parent
-                        width: 10
-                        height: 2
-                        radius: 1
-                        color: minimizeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                    }
-                }
-
-                // Close Button
-                WindowsButton {
-                    id: closeButton
-                    Material.accent: Style.colors.windowsClose
-                    content: Item {
-                        anchors.centerIn: parent
-                        width: 10; height: 10
-                        Rectangle {
-                            width: 12; height: 2; radius: 1
-                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                            anchors.centerIn: parent; rotation: 45
-                        }
-                        Rectangle {
-                            width: 12; height: 2; radius: 1
-                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                            anchors.centerIn: parent; rotation: -45
-                        }
-                    }
-                    onClicked: {
-                        var d = conflictConfirmationDialogComp.createObject(root)
-                        d.title = `Abort ${currentOperationName}?`
-                        d.message = "You have unresolved conflicts.\n" +
-                                    `Closing this window will abort the ${currentOperationName} and discard all progress.\n\n` +
-                                    "Are you sure you want to abort?"
-                        d.saved.connect(() => { root.saveAllModifications() })
-                        d.aborted.connect(() => { root.abortOperation() })
-                        d.open()
-                    }
-                }
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.topMargin: 10
+                title: root.headerText
+                applyingSubject: root.applyingSubject
+                commitHash: root.shortCommitHash
+                ontoRef: root.ontoRef
+                positionText: root.positionText
+                windowController: conflictWindowController
+                onCloseRequested: root.requestAbort()
             }
 
-            // Content
+            ConflictToolbar {
+                id: toolbar
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.topMargin: 10
+                Layout.bottomMargin: 10
+                resolvedChunks: root.resolvedChunkCount
+                totalChunks: root.totalChunkCount
+                canNavigate: editorPane.canNavigate
+                onPreviousChunkRequested: editorPane.goToPreviousChunk()
+                onNextChunkRequested: editorPane.goToNextChunk()
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: Style.colors.primaryBorder
+            }
+
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                Layout.fillHeight: true
+                spacing: 0
 
-                // Left panel: file list
                 ConflictFileList {
                     id: fileListComp
                     conflictFiles: root.conflicts
                     currentPath: root.selectedPath
                     stagedFiles: root.stagedFiles
-                    onFileSelected  : (path) => root.selectFile(path)
+                    onFileSelected: (path) => root.selectFile(path)
                     onStageRequested: (path) => root.saveAndStage(path)
                 }
 
-                // Right panel: conflict editor
                 Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.fillHeight: true
+                    color: Style.colors.primaryBorder
+                }
+
+                ConflictEditorPane {
+                    id: editorPane
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: Style.colors.editorBackgroound
-                    border.width: 1
-                    border.color: Style.colors.primaryBorder
-                    radius: 4
+                    displayModel: conflictRows
+                    selectedPath: root.selectedPath
+                    selectedConflict: root.selectedConflict
+                    revision: root.modelRevision
 
-                    ListView {
-                        id: conflictListView
-                        property real horizontalScrollOffset: 0
-                        property real maxContentWidth: 0
-
-                        anchors.fill: parent
-                        clip: true
-                        model: displayModel
-
-                        cacheBuffer: 5000
-                        reuseItems: true
-                        anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
-                        ScrollBar.vertical: ScrollBar {
-                            id: vScrollBar
-                            active: true
-                        }
-
-                        Item {
-                            id: conflictMarkerOverlay
-                            parent: conflictListView
-                            x: vScrollBar.x
-                            y: vScrollBar.y
-                            width: vScrollBar.width
-                            height: vScrollBar.height
-                            z: 100
-                            clip: true
-
-                            Repeater {
-                                model: conflictMarkersModel
-                                delegate: Rectangle {
-                                    x: 0
-                                    y: model.y * conflictMarkerOverlay.height
-                                    width: conflictMarkerOverlay.width
-                                    height: Math.max(2, model.height * conflictMarkerOverlay.height)
-                                    color: Style.colors.conflictMarker
-                                    opacity: 0.85
-                                }
-                            }
-
-                            Timer {
-                                id: markersUpdateTimer
-                                interval: 50
-                                repeat: false
-                                onTriggered: root.updateConflictMarkers()
-                            }
-
-                            onHeightChanged: {
-                                if (height > 0)
-                                    markersUpdateTimer.restart()
-                            }
-                        }
-
-                        delegate: ConflictEditorDelegate {
-                            width: conflictListView.width
-                            horizontalOffset: conflictListView.horizontalScrollOffset
-                            isCurrentItem: ListView.isCurrentItem
-
-                            onSplitRequested: (cursorPos) => {
-                                ConflictUtils.splitLine(displayModel, index, cursorPos, conflictListView)
-                                root.updateConflictMarkers()
-                            }
-                            onMergeUpRequested: () => {
-                                ConflictUtils.mergeLineUp(displayModel, index, conflictListView)
-                                root.updateConflictMarkers()
-                            }
-                            onAcceptBlockRequested  : (blockIndex, mode)    => root.acceptBlock(blockIndex, mode)
-                            onMoveFocusUp           : conflictListView.currentIndex = Math.max(0, index - 1)
-                            onMoveFocusDown         : conflictListView.currentIndex = Math.min(displayModel.count - 1, index + 1)
-                        }
-                    }
-
-                    ScrollBar {
-                        id: hScrollBar
-                        orientation: Qt.Horizontal
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-                        size: conflictListView.maxContentWidth === 0 ? 1 : (conflictListView.width * 0.5) / conflictListView.maxContentWidth
-                        active: true
-                        visible: size < 1.0
-
-                        onPositionChanged: {
-                            conflictListView.horizontalScrollOffset = position * conflictListView.maxContentWidth
-                        }
-                    }
-
-                    EmptyStateView {
-                        anchors.fill: parent
-                        visible: displayModel.count === 0
-                        title: "No Conflicted files to show"
-                        details: "All conflicts have been resolved."
-                    }
+                    onAcceptBlockRequested: (blockIndex, mode) => root.acceptBlock(blockIndex, mode)
+                    onResetRequested: root.resetSelectedFile()
+                    onContentChanged: editorPane.scheduleMarkerUpdate()
                 }
             }
 
-            // Footer buttons
-            RowLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                spacing: 12
+                Layout.preferredHeight: 1
+                color: Style.colors.primaryBorder
+            }
 
-                Item { Layout.fillWidth: true }
-
-                Button {
-                    flat: true
-                    text: "Skip"
-                    visible: currentOperation !== ConflictPopup.OperationType.Merge
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                    background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: skipOperation()
-                    }
-                }
-
-                Button {
-                    id: continueBtn
-                    flat: true
-                    text: root.continueButtonText
-
-                    Material.foreground: root.canContinue && mouse.containsMouse ? Style.colors.secondaryForeground : Style.colors.foreground
-
-                    background: Rectangle {
-                        color: root.canContinue && mouse.containsMouse ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
-                        opacity: root.canContinue ? 1.0 : 0.5
-                    }
-
-                    ToolTip {
-                        id: tip
-                        parent: continueBtn
-                        visible: mouse.containsMouse
-                        delay: 100
-                        timeout: 2000
-                        text: root.canContinue ? "Click to continue" : "Resolve all files to continue"
-                        x: (continueBtn.width - width) / 2
-                        y: -height - 6
-                        padding: 6
-                        contentItem: Text {
-                            text: tip.text
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.defaultPt
-                            color: "#ffffff"
-                        }
-                        background: Rectangle {
-                            radius: 6
-                            color: Qt.rgba(0, 0, 0, 0.85)
-                            border.color: Qt.rgba(1, 1, 1, 0.12)
-                            border.width: 1
-                        }
-                    }
-
-                    MouseArea {
-                        id: mouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: root.canContinue ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                        onClicked: {
-                            if (root.canContinue)
-                                continueOperation()
-                        }
-                    }
-                }
+            ConflictFooter {
+                id: footer
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.topMargin: 10
+                Layout.bottomMargin: 10
+                operationName: root.currentOperationName
+                canContinue: root.canContinue
+                canSkip: root.currentOperation !== ConflictPopup.OperationType.Merge
+                resolvedFiles: root.stagedFiles.length
+                totalFiles: root.conflicts.length + root.stagedFiles.length
+                resolvedConflicts: root.resolvedConflictTotal
+                totalConflicts: root.conflictTotal
+                onAbortRequested: root.abortOperation()
+                onSkipRequested: root.skipOperation()
+                onContinueRequested: root.continueOperation()
             }
         }
 
-        // ConflictPopup is its own top-level Window, so the shared GuideOverlay embedded in
-        // MainWindow can't reach into it — this instance renders the spotlight/tooltip locally.
         GuideOverlay {
             anchors.fill: parent
             z: 1000
@@ -490,8 +382,6 @@ Window {
         id: conflictConfirmationDialogComp
         ConflictConfirmationDialog { }
     }
-
-    ListModel { id: conflictMarkersModel }
 
     /* Functions
      * ****************************************************************************************/
@@ -511,6 +401,8 @@ Window {
         let newStaged       = []
         let stagedPaths     = ({})
 
+        root.captureOriginals(rawConflicts)
+
         let statusRes = statusController.status()
         if (statusRes.success) {
             for (let file of statusRes.data) {
@@ -527,7 +419,8 @@ Window {
         if (conflicts.length === 0) {
             selectedConflict = null
             selectedPath = ""
-            displayModel.clear()
+            conflictRows.clear()
+            root.modelRevision++
             return
         }
 
@@ -535,6 +428,73 @@ Window {
                      ? selectedPath
                      : conflicts[0].path
         selectFile(target, true)
+    }
+
+    function refreshOperationContext() {
+        root.commitHash      = ""
+        root.applyingSubject = ""
+
+        if (root.operationCommitHash !== "") {
+            root.describeCommit(root.operationCommitHash)
+            return
+        }
+
+        let statusRes = null
+
+        switch (root.currentOperation) {
+        case ConflictPopup.OperationType.Rebase:
+            statusRes = root.rebaseController?.rebaseStatus()
+            break
+
+        case ConflictPopup.OperationType.CherryPick:
+            statusRes = root.cherryPickController?.cherryPickStatus()
+            break
+
+        default:
+            return
+        }
+
+        if (!statusRes || !statusRes.success || !statusRes.data)
+            return
+
+        root.describeCommit(statusRes.data.currentCommit || "")
+    }
+
+    function describeCommit(hash) {
+        if (!hash)
+            return
+
+        root.commitHash = hash
+
+        let commitRes = root.commitController?.getCommit(hash)
+        if (commitRes && commitRes.success && commitRes.data)
+            root.applyingSubject = commitRes.data.summary || ""
+    }
+
+    function captureOriginals(rawConflicts) {
+        let baselines = Object.assign({}, root.originalContent)
+        let counts = Object.assign({}, root.originalConflictCounts)
+        let added = false
+
+        for (let conflict of rawConflicts) {
+            if (!conflict || !conflict.path || baselines[conflict.path] !== undefined)
+                continue
+
+            baselines[conflict.path] = (conflict.lines || []).join("\n")
+            counts[conflict.path] = conflict.blocks?.length ?? 0
+            added = true
+        }
+
+        if (added) {
+            root.originalContent = baselines
+            root.originalConflictCounts = counts
+        }
+    }
+
+    function clearFileCaches() {
+        root.modifiedFiles = ({})
+        root.originalContent = ({})
+        root.originalConflictCounts = ({})
     }
 
     function labelFor(file) {
@@ -545,17 +505,20 @@ Window {
         if (selectedPath === path && !forceRebuild)
             return
 
-        // 1. Save current displayModel state before switching
-        if (selectedPath && selectedPath !== path && displayModel.count > 0) {
+        if (selectedPath && selectedPath !== path && conflictRows.count > 0) {
             let currentState = []
-            for (let i = 0; i < displayModel.count; ++i) {
-                let row = displayModel.get(i)
+            for (let i = 0; i < conflictRows.count; ++i) {
+                let row = conflictRows.get(i)
+
                 currentState.push({
                     type: row.type,
                     text: row.text || "",
                     lineNumber: row.lineNumber || 0,
                     blockIndex: row.blockIndex !== undefined ? row.blockIndex : -1,
-                    role: row.role || ""
+                    role: row.role || "",
+                    cardNumber: row.cardNumber !== undefined ? row.cardNumber : 0,
+                    resolvedGroup: row.resolvedGroup !== undefined ? row.resolvedGroup : -1,
+                    resolvedMode: row.resolvedMode || ""
                 })
             }
             let copy = Object.assign({}, modifiedFiles)
@@ -563,20 +526,18 @@ Window {
             modifiedFiles = copy
         }
 
-        // 2. If it's a staged file, show its current file content
         if (stagedFiles.some(f => f.path === path)) {
             selectedConflict = null
             selectedPath = path
 
-            // fetch current working directory content
             let statusRes = statusController.getUnstagedDiffView(path)
-            displayModel.clear()
+            conflictRows.clear()
             if (statusRes && statusRes.success) {
                 let liveContent = statusRes.data && statusRes.data.newText
                 if (liveContent) {
                     let linesArray = liveContent.split('\n')
                     for (let i = 0; i < linesArray.length; ++i) {
-                        displayModel.append({
+                        conflictRows.append({
                             type: "contextLine",
                             text: linesArray[i],
                             lineNumber: i + 1
@@ -584,10 +545,12 @@ Window {
                     }
                 }
             }
+
+            root.modelRevision++
+            editorPane.scheduleMarkerUpdate()
             return
         }
 
-        // 3. Otherwise, switch to the conflict file and build its display model
         for (let i = 0; i < conflicts.length; ++i) {
             if (conflicts[i].path === path) {
                 selectedConflict = conflicts[i]
@@ -596,17 +559,16 @@ Window {
                     selectedConflict,
                     modifiedFiles,
                     selectedPath,
-                    displayModel,
-                    conflictListView,
+                    conflictRows,
+                    editorPane.contentMetrics,
                     widthCalculator
                 );
                 break
             }
         }
 
-        Qt.callLater(function() {
-            if (conflictMarkerOverlay) root.updateConflictMarkers();
-        });
+        root.modelRevision++
+        editorPane.scheduleMarkerUpdate()
     }
 
     function acceptBlock(blockIndex, mode) {
@@ -619,7 +581,7 @@ Window {
         let block = found.block
 
         // Write current editor content and perform C++ resolution
-        let currentContent = ConflictUtils.buildFullContent(displayModel)
+        let currentContent = ConflictUtils.buildFullContent(conflictRows)
         conflictController.writeWorkingFile(selectedPath, currentContent)
 
         let res
@@ -648,7 +610,7 @@ Window {
         let resolvedLines = ConflictUtils.computeResolvedLines(block, mode)
 
         // Update the ListModel in place
-        ConflictUtils.replaceBlockInModel(displayModel, blockIndex, block, resolvedLines)
+        ConflictUtils.replaceBlockInModel(conflictRows, blockIndex, block, resolvedLines, mode)
 
         // Update the cached block objects
         let lineDelta = resolvedLines.length - (block.endLine - block.startLine + 1)
@@ -664,8 +626,8 @@ Window {
             conflicts = updated
         }
 
-        // Rebuilt the conflict‑zone indicators
-        Qt.callLater(updateConflictMarkers)
+        root.modelRevision++
+        editorPane.scheduleMarkerUpdate()
 
         notificationController.success("Conflicts Resolved", "Conflict", 2000)
     }
@@ -715,7 +677,7 @@ Window {
         if (!path)
             return
 
-        let content = ConflictUtils.buildFullContent(displayModel)
+        let content = ConflictUtils.buildFullContent(conflictRows)
 
         let res = conflictController.writeWorkingFile(path, content)
         if (!res.success){
@@ -752,7 +714,9 @@ Window {
             if (res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
                 notificationController.warning("Continuing... but new conflicts found.", currentOperationName, 4000)
 
-                modifiedFiles = ({})
+                // A different commit is being replayed now, so the header has to catch up too.
+                root.clearFileCaches()
+                refreshOperationContext()
                 loadConflicts(true)
             }
 
@@ -780,7 +744,8 @@ Window {
             if (res.data && (res.data.status === "conflict" || res.data.hasConflicts)){
                 notificationController.warning("Skipped, but new conflicts found in the next commit.", currentOperationName, 2500)
 
-                modifiedFiles = ({})
+                root.clearFileCaches()
+                refreshOperationContext()
                 loadConflicts(true)
             }
 
@@ -798,21 +763,17 @@ Window {
 
         let res = currentController.abortOp()
 
-        if (res.success) {
+        if (res.success)
             notificationController.success(`${currentOperationName} aborted`, currentOperationName, 2500)
+        else
+            notificationController.error(res.errorMessage, currentOperationName, 5000)
 
-            // WIPE CACHE AND VIEW
-            modifiedFiles = ({})
-            displayModel.clear()
-            selectedPath = ""
-            stagedFiles = []
+        root.clearFileCaches()
+        conflictRows.clear()
+        selectedPath = ""
+        stagedFiles = []
 
-            close()
-        }
-
-        else {
-            notificationController.error(res.errorMessage, currentOperationName, 4000)
-        }
+        close()
     }
 
     function quitOperation() {
@@ -821,9 +782,8 @@ Window {
         if (res.success) {
             notificationController.success(`${currentOperationName} quitted`, currentOperationName, 2500)
 
-            // WIPE CACHE AND VIEW
-            modifiedFiles = ({})
-            displayModel.clear()
+            root.clearFileCaches()
+            conflictRows.clear()
             selectedPath = ""
             stagedFiles = []
 
@@ -837,13 +797,11 @@ Window {
 
     function saveAllModifications() {
 
-        // 1. Save the currently active file on screen
         if (selectedPath) {
-            let currentContent = ConflictUtils.buildFullContent(displayModel);
+            let currentContent = ConflictUtils.buildFullContent(conflictRows);
             conflictController.writeWorkingFile(selectedPath, currentContent)
         }
 
-        // 2. Save any other files cached in memory
         for (let path in modifiedFiles) {
             if (path === selectedPath)
                 continue
@@ -866,30 +824,47 @@ Window {
         root.close()
     }
 
-    function updateConflictMarkers() {
-        conflictMarkersModel.clear()
+    function requestAbort() {
+        let dialog = conflictConfirmationDialogComp.createObject(root)
 
-        var totalRows = displayModel.count
-        if (totalRows === 0 || conflictMarkerOverlay.height <= 0)
+        dialog.title = `Abort ${currentOperationName}?`
+        dialog.message = "You have unresolved conflicts.\n" +
+                         `Closing this window will abort the ${currentOperationName} and discard all progress.\n\n` +
+                         "Are you sure you want to abort?"
+
+        dialog.saved.connect(() => root.saveAllModifications())
+        dialog.aborted.connect(() => root.abortOperation())
+        dialog.open()
+    }
+
+    function resetSelectedFile() {
+        if (!selectedPath || !conflictController)
             return
 
-        var blocks  = []
-        var stack   = []
-        for (var i = 0; i < displayModel.count; i++) {
-            var row = displayModel.get(i)
+        let path     = root.selectedPath
+        let original = root.originalContent[path]
 
-            if (row.role === "marker-start") {
-                stack.push(i)
-            } else if (row.role === "marker-end" && stack.length > 0) {
-                var startIdx = stack.pop()
-                blocks.push({ startIdx: startIdx, endIdx: i })
-            }
+        if (original === undefined) {
+            if (notificationController)
+                notificationController.warning("Nothing recorded to restore this file from.",
+                                               "Conflict", 3000)
+            return
         }
 
-        for (var b of blocks) {
-            var yNorm = b.startIdx / totalRows
-            var hNorm = (b.endIdx - b.startIdx + 1) / totalRows
-            conflictMarkersModel.append({ y: yNorm, height: hNorm })
+        let res = conflictController.writeWorkingFile(path, original)
+        if (!res.success) {
+            if (notificationController)
+                notificationController.error(res.errorMessage || "Reset failed", "Conflict", 4000)
+            return
         }
+
+        let copy = Object.assign({}, modifiedFiles)
+        delete copy[path]
+        modifiedFiles = copy
+
+        loadConflicts(true)
+
+        if (notificationController)
+            notificationController.info("File restored to its unresolved state", "Conflict", 2500)
     }
 }
