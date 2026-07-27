@@ -145,15 +145,20 @@ QtObject {
         repoItemStatusCanceledText:  "#FCA5A5"
         repoItemStatusPATBg:         "#43525D"
         repoItemStatusPATText:       "#90CAF9"
-        // Conflict marker backgrounds
-        conflictMarkerStartBg:  "#2C5D4B"  // Solid Dark Green (Header)
-        conflictOursBg:         "#1E3E31"  // Faded Dark Green (Content)
+        // Conflict block regions
+        conflictOursBg:         "#12243A"  // faded blue
+        conflictOursLabel:      "#7AB9FF"
+        conflictTheirsBg:       "#2A1836"  // faded violet
+        conflictTheirsLabel:    "#C79BE8"
 
-        conflictMarkerEndBg:    "#285E8E"  // Solid Dark Blue (Header)
-        conflictTheirsBg:       "#1E3A5F"  // Faded Dark Blue (Content)
+        // Conflict block card chrome, keyed by state
+        conflictCardOpenBorder: "#D9A036"
+        conflictCardOpenStrip:  "#3A2C12"
+        conflictCardOpenLabel:  "#F0C062"
+        conflictCardDoneBorder: "#3E9E5A"
+        conflictCardDoneStrip:  "#16321F"
+        conflictCardDoneLabel:  "#79D394"
 
-        conflictSeparatorBg:    "transparent"
-        conflictMarkerText:     "#E0E0E0"  // Brighter text for headers
         hintText:               "#a0a0a0"
         lineNumberColor:        "#a0a0a0"
 
@@ -161,6 +166,14 @@ QtObject {
         conflictStatusConflictColor : "#FF6B6B"
         conflictStatusModifiedColor : "#FFD966"
         conflictStatusAddedColor     : "#4DB85D"
+
+        // Conflict window shell
+        conflictSectionLabel:   "#8A8A93"
+        conflictProgressTrack:  "#23232A"
+        conflictProgressFiles:  "#3B82F6"
+        conflictProgressChunks: "#22C55E"
+        conflictDestructive:    "#FF6B6B"
+        conflictAssistAccent:   "#E0A030"
 
         // Interactive rebase status colors
         property color rebaseStatusPending:    secondaryText
