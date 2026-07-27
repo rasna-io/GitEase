@@ -13,7 +13,7 @@ Item {
     /* Property Declarations
      * ****************************************************************************************/
     property string commitSummary:  ""
-    property bool   expanded:       true
+    property bool   expanded:       false
     property int    expandedHeight: Style.dp(240)
     property int    contentInset:   Style.dp(16)
     default property alias content: contentHolder.data
