@@ -212,6 +212,13 @@ QtObject{
     property color conflictDestructive:     "#DC2626"
     property color conflictAssistAccent:    "#B45309"
 
+    property color rebaseActionPick:       "#15803D"
+    property color rebaseActionReword:     "#2563EB"
+    property color rebaseActionSquash:     "#7E22CE"
+    property color rebaseActionFixup:      "#BE185D"
+    property color rebaseActionEdit:       "#B45309"
+    property color rebaseActionDrop:       "#DC2626"
+
     // Interactive rebase status colors
     property color rebaseStatusPending:    mutedText
     property color rebaseStatusInProgress: "#E67E00"       // warm orange
