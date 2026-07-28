@@ -208,7 +208,7 @@ Page {
                         id: commitColumn
                         anchors.fill: parent
                         anchors.margins: 12
-                        spacing: 10
+                        spacing: 8
 
                         ContextMenu {
                             id: commitOptionsMenu
