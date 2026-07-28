@@ -332,7 +332,7 @@ DetachablePanel {
             delegate: Item{
                 id: delegateItem
                 width: diffListView.width
-                implicitHeight: model.rowType === "hidden" ? 45 : diffLineItem.implicitHeight
+                implicitHeight: model.rowType === "hidden" ? 28 : diffLineItem.implicitHeight
 
                 // Exposed so the guide can find a currently visible row's action buttons /
                 // hidden-context bar (see findActionableDelegate / findHiddenBarDelegate below).
