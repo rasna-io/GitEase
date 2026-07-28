@@ -159,10 +159,7 @@ Page {
                     Layout.fillWidth: true
                     Layout.preferredHeight: commitColumn.implicitHeight + 24
                     Layout.maximumHeight: 300
-                    color: Style.colors.actionPillBg
-                    radius: 5
-                    border.width: 1
-                    border.color: Style.colors.chipBorder
+                    color: "transparent"
 
                     GuideHoverTrigger {
                         guideController: root.guideController
