@@ -64,6 +64,8 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: root.headerHeight
             color: Style.colors.sectionHeaderBg
+            border.width: 1
+            border.color: Style.colors.primaryBorder
 
             MouseArea {
                 id: headerMouseArea
@@ -73,14 +75,6 @@ Rectangle {
                     root.expanded = !root.expanded
                     root.toggled(root.expanded)
                 }
-            }
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                height: 1
-                color: Style.colors.primaryBorder
             }
 
             RowLayout {
@@ -125,14 +119,6 @@ Rectangle {
                     active: root.headerActions !== null
                     sourceComponent: root.headerActions
                 }
-            }
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                height: 1
-                color: Style.colors.primaryBorder
             }
         }
 
