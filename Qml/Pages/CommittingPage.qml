@@ -140,7 +140,6 @@ Page {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 8
         anchors.margins: 0
         spacing: 0
 
