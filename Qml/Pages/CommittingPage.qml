@@ -440,6 +440,22 @@ Page {
             }
         }
 
+        // Resizable divider
+        Rectangle {
+            Layout.fillHeight: true
+            Layout.preferredWidth: 3
+            color: dividerMouse.containsMouse ? Style.colors.accent : Style.colors.primaryBorder
+            z: 1
+
+            MouseArea {
+                id: dividerMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.SplitHCursor
+                // ToDO: drag-to-resize logic
+            }
+        }
+
         DiffView {
             id: diffView
             Layout.fillHeight: true
