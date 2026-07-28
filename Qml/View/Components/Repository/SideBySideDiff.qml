@@ -158,8 +158,7 @@ Item {
         Rectangle {
             Layout.fillHeight: true
             Layout.preferredWidth: 44
-            color: Style.colors.obsidianDark
-            visible: !isUnchanged // Only show for changes
+            color: Style.colors.linePanelBackgroound
             z: 3
 
             Rectangle {
