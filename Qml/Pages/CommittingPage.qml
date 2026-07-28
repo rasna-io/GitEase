@@ -320,14 +320,16 @@ Page {
                                 Layout.preferredWidth: 30
                                 Layout.preferredHeight: 30
                                 radius: 5
-                                color: Style.colors.commitButton
+                                color: Style.colors.actionPillBg
+                                border.color: Style.colors.chipBorder
+                                border.width: 1
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: Style.icons.caretDown
                                     font.family: Style.fontTypes.font6ProSolid
                                     font.pixelSize: Style.appFont.defaultPt
-                                    color: Style.colors.secondaryForeground
+                                    color: caretBtnMouse.containsMouse ? Style.colors.foreground : Style.colors.chipText
                                 }
 
                                 MouseArea {
