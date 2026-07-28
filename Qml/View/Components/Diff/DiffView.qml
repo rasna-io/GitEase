@@ -1165,6 +1165,27 @@ chunkModel.setProperty(i, "rangeLabel", finalRangeLabel)
             updateMaxContentWidth(line.leftText)
     }
 
+    function hiddenRangeLabel(chunk) {
+        if (!chunk || !chunk.hiddenLines || chunk.hiddenLines.length === 0)
+            return ""
+
+        let visibleTop = chunk.visibleTop || 0
+        let visibleBottom = chunk.visibleBottom || 0
+        let lines = chunk.hiddenLines
+        let firstIdx = visibleTop
+        let lastIdx = lines.length - 1 - visibleBottom
+
+        if (firstIdx > lastIdx || firstIdx < 0 || lastIdx >= lines.length)
+            return ""
+
+        let first = lines[firstIdx]
+        let last = lines[lastIdx]
+        let startNum = (first.newLine > 0) ? first.newLine : first.oldLine
+        let endNum = (last.newLine > 0) ? last.newLine : last.oldLine
+
+        return startNum + "-" + endNum
+    }
+
     function makeContextLine(lineObj) {
         return {
             rowType: "context",
