@@ -65,14 +65,14 @@ Rectangle {
                 color: Style.colors.foreground
 
                 font.family: Style.fontTypes.inter
-                font.pixelSize: Style.appFont.fontSize
+                    font.pixelSize: Style.appFont.mediumPt
                 font.weight: Font.Normal
 
                 wrapMode: TextEdit.Wrap
-                leftPadding: 10;
-                topPadding: 10;
-                rightPadding: 10
-                bottomPadding: 10
+                    leftPadding: root.horizontalTextPadding
+                    topPadding: root.verticalTextPadding
+                    rightPadding: root.horizontalTextPadding
+                    bottomPadding: root.verticalTextPadding
 
                 selectByMouse: true
                 background: null
