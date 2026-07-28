@@ -369,9 +369,9 @@ Page {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "\u22EE"
+                                    text: "\u22EF"
                                     font.pixelSize: Style.appFont.h2Pt
-                                    color: commitOptionsDotMouse.containsMouse ? Style.colors.foreground : Style.colors.secondaryText
+                                    color: commitOptionsDotMouse.containsMouse ? Style.colors.foreground : Style.colors.chipText
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
                                 }
