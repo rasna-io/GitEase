@@ -101,6 +101,10 @@ Rectangle {
                     width: menu.availableWidth
                     spacing: 0
 
+                    //! todo: reword/squash/fixup/edit are not wired to the rebase backend yet, so
+                    //!       they stay hidden until the corresponding operations are implemented.
+                    visible: RebaseActions.isSupported(entry.modelData)
+
                     Item {
                         width: parent.width
                         height: Style.dp(7)
