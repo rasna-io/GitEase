@@ -28,9 +28,14 @@ FileListRow {
     /* Children
      * ****************************************************************************************/
     rightAccessory: Component {
-        RowLayout {
-            id: actionBar
-            spacing: 2
+        Rectangle {
+            id: actionPill
+            implicitWidth: actionBar.implicitWidth + 4
+            implicitHeight: actionBar.implicitHeight + 2
+            radius: 4
+            color: Style.colors.actionPillBg
+            border.width: 1
+            border.color: Style.colors.actionPillBorder
 
             HoverHandler {
                 acceptedDevices: PointerDevice.Mouse
@@ -46,40 +51,46 @@ FileListRow {
                 }
             }
 
-            ActionIconButton {
-                iconText: Style.icons.file
-                tooltip: "Open"
-                textColor: Style.colors.actionIconIdle
-                hoverTextColor: Style.colors.openBlue
-                hoverBackgroundColor: Qt.rgba(Style.colors.openBlue.r, Style.colors.openBlue.g, Style.colors.openBlue.b, 0.1)
-                onClicked: root.openRequested(root.filePath)
-            }
+            RowLayout {
+                id: actionBar
+                anchors.centerIn: parent
+                spacing: 2
 
-            ActionIconButton {
-                iconText: Style.icons.archive
-                tooltip: "Stash"
-                hoverTextColor: Style.colors.stashAmber
-                textColor: Style.colors.actionIconIdle
-                hoverBackgroundColor: Qt.rgba(Style.colors.stashAmber.r, Style.colors.stashAmber.g, Style.colors.stashAmber.b, 0.1)
-                onClicked: root.stashRequested(root.filePath)
-            }
+                ActionIconButton {
+                    iconText: Style.icons.file
+                    tooltip: "Open"
+                    textColor: Style.colors.actionIconIdle
+                    hoverTextColor: Style.colors.openBlue
+                    hoverBackgroundColor: Qt.rgba(Style.colors.openBlue.r, Style.colors.openBlue.g, Style.colors.openBlue.b, 0.1)
+                    onClicked: root.openRequested(root.filePath)
+                }
 
-            ActionIconButton {
-                iconText: Style.icons.plus
-                tooltip: "Stage"
-                textColor: Style.colors.actionIconIdle
-                hoverTextColor: Style.colors.stageGreen
-                hoverBackgroundColor: Qt.rgba(Style.colors.stageGreen.r, Style.colors.stageGreen.g, Style.colors.stageGreen.b, 0.1)
-                onClicked: root.stageRequested(root.filePath)
-            }
+                ActionIconButton {
+                    iconText: Style.icons.archive
+                    tooltip: "Stash"
+                    hoverTextColor: Style.colors.stashAmber
+                    textColor: Style.colors.actionIconIdle
+                    hoverBackgroundColor: Qt.rgba(Style.colors.stashAmber.r, Style.colors.stashAmber.g, Style.colors.stashAmber.b, 0.1)
+                    onClicked: root.stashRequested(root.filePath)
+                }
 
-            ActionIconButton {
-                iconText: Style.icons.undo
-                tooltip: "Revert changes"
-                textColor: Style.colors.actionIconIdle
-                hoverTextColor: Style.colors.discardRed
-                hoverBackgroundColor: Qt.rgba(Style.colors.discardRed.r, Style.colors.discardRed.g, Style.colors.discardRed.b, 0.1)
-                onClicked: root.discardRequested(root.filePath)
+                ActionIconButton {
+                    iconText: Style.icons.plus
+                    tooltip: "Stage"
+                    textColor: Style.colors.actionIconIdle
+                    hoverTextColor: Style.colors.stageGreen
+                    hoverBackgroundColor: Qt.rgba(Style.colors.stageGreen.r, Style.colors.stageGreen.g, Style.colors.stageGreen.b, 0.1)
+                    onClicked: root.stageRequested(root.filePath)
+                }
+
+                ActionIconButton {
+                    iconText: Style.icons.undo
+                    tooltip: "Revert changes"
+                    textColor: Style.colors.actionIconIdle
+                    hoverTextColor: Style.colors.discardRed
+                    hoverBackgroundColor: Qt.rgba(Style.colors.discardRed.r, Style.colors.discardRed.g, Style.colors.discardRed.b, 0.1)
+                    onClicked: root.discardRequested(root.filePath)
+                }
             }
         }
     }
