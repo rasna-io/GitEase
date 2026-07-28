@@ -27,6 +27,9 @@ Rectangle {
     readonly property int   counterHeight       : 24
     readonly property int   verticalPadding     : 24
 
+    readonly property int   horizontalTextPadding: 10
+    readonly property int   verticalTextPadding  : 8
+
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
