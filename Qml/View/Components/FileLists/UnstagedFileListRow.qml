@@ -54,7 +54,7 @@ FileListRow {
             RowLayout {
                 id: actionBar
                 anchors.centerIn: parent
-                spacing: 2
+                spacing: 1
 
                 ActionIconButton {
                     iconText: Style.icons.file
