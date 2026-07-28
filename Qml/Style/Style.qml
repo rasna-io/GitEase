@@ -202,7 +202,6 @@ QtObject {
         openBlue:             branchAccent        // #60A5FA
 
         // Row-level
-        filePathText:        chipText            // #9898B0 – reuse
         rowHoverBg:          "#17171C"
 
         // Diff view header line counts
