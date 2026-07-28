@@ -550,19 +550,42 @@ DetachablePanel {
                 id: pill
 
                 anchors.fill: parent
-                anchors.margins: 6
-
-                radius: 4
 
                 color: Style.colors.actionPillBg
-                border.width: 1
-                border.color: pillHoverHandler.hovered
-                              ? Style.colors.accent
-                              : Style.colors.actionPillBorder
+                border.width: 0
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: Style.colors.actionPillBorder
+                }
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: Style.colors.actionPillBorder
+                }
 
                 HoverHandler {
                     id: pillHoverHandler
                     blocking: false
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: rangeLabel !== ""
+
+                    text: rangeLabel
+
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.secondaryPt
+                    color: Style.colors.mutedText
                 }
 
                 // Centre: "N lines hidden"
@@ -597,12 +620,10 @@ DetachablePanel {
 
                         radius: 4
 
-                        color: stepBtnMouse.containsMouse
-                               ? Style.colors.accent
-                               : "transparent"
+                        color: "transparent"
                         border.color: stepBtnMouse.containsMouse
                                       ? Style.colors.accent
-                                      : "transparent"
+                                      : Style.colors.actionPillBorder
                         border.width: 1
 
                         Text {
@@ -615,7 +636,7 @@ DetachablePanel {
                             font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.secondaryPt
                             color: stepBtnMouse.containsMouse
-                                   ? Style.colors.onAccentText
+                                   ? Style.colors.accent
                                    : Style.colors.mutedText
                         }
 
@@ -638,12 +659,10 @@ DetachablePanel {
 
                         radius: 4
 
-                        color: allBtnMouse.containsMouse
-                               ? Style.colors.accent
-                               : "transparent"
+                        color: "transparent"
                         border.color: allBtnMouse.containsMouse
                                       ? Style.colors.accent
-                                      : "transparent"
+                                      : Style.colors.actionPillBorder
                         border.width: 1
 
                         Text {
@@ -656,7 +675,7 @@ DetachablePanel {
                             font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.secondaryPt
                             color: allBtnMouse.containsMouse
-                                   ? Style.colors.onAccentText
+                                   ? Style.colors.accent
                                    : Style.colors.mutedText
                         }
 
