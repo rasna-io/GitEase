@@ -11,6 +11,7 @@ import GitEase
  * Modern Input Area, shown text character count and ...
  * ************************************************************************************************/
 Rectangle {
+    id: root
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -20,7 +21,6 @@ Rectangle {
     property int    minLines            : 3
     property int    maxLines            : 10
     property real   lineHeightMultiplier: 1.3
-    property int    fontSize: 13
 
     readonly property real  effectiveLineHeight : commitTextArea.font.pixelSize * lineHeightMultiplier
 
