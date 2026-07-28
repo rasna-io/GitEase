@@ -61,7 +61,7 @@ QtObject{
     property color titleText:           "#000000"
     property color descriptionText:     "#777272"
     property color hintText:            "#484848"
-    property color placeholderText:     "#C9C9C9"
+    property color placeholderText:     "#8C8C8C"
 
     property color voidStripe:          "#f4f4f4"
     property color editorBackgroound:   "#fcfcfc"

@@ -17,4 +17,5 @@ TextField {
     borderColor: Style.colors.controlBorder
     focusBorderColor: Style.colors.accent
     iconColor: Style.colors.mutedText
+    placeholderTextColor: Style.colors.placeholderText
 }
