@@ -84,6 +84,7 @@ Rectangle {
                 spacing: 7
 
                 Text {
+                    Layout.alignment: Qt.AlignVCenter
                     text: root.title.toUpperCase()
                     font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.secondaryPt
@@ -94,6 +95,7 @@ Rectangle {
 
                 // Count badge
                 Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
                     implicitHeight: 15
                     implicitWidth: Math.max(15, countText.implicitWidth + 10)
                     radius: 3
