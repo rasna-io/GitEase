@@ -222,18 +222,20 @@ IPopup {
                     spacing: 22
 
                     Repeater {
+                        // TODO: Worktrees and Init new are hidden until their backend is implemented.
                         model: [
-                            { title: "Recents",    icon: Style.icons.clock,      index: Enums.RepositorySelectorTab.Recents },
-                            { title: "Open local", icon: Style.icons.laptop,     index: Enums.RepositorySelectorTab.Open },
-                            { title: "Clone",      icon: Style.icons.download,   index: Enums.RepositorySelectorTab.Clone },
-                            { title: "Worktrees",  icon: Style.icons.gitBranch,  index: Enums.RepositorySelectorTab.Worktrees },
-                            { title: "Init new",   icon: Style.icons.file,       index: Enums.RepositorySelectorTab.Init }
+                            { title: "Recents",    icon: Style.icons.clock,      index: Enums.RepositorySelectorTab.Recents,   shown: true },
+                            { title: "Open local", icon: Style.icons.laptop,     index: Enums.RepositorySelectorTab.Open,      shown: true },
+                            { title: "Clone",      icon: Style.icons.download,   index: Enums.RepositorySelectorTab.Clone,     shown: true },
+                            { title: "Worktrees",  icon: Style.icons.gitBranch,  index: Enums.RepositorySelectorTab.Worktrees, shown: false },
+                            { title: "Init new",   icon: Style.icons.file,       index: Enums.RepositorySelectorTab.Init,      shown: false }
                         ]
 
                         Item {
                             id: tabDelegate
                             width: tabContent.width
                             height: 42
+                            visible: modelData.shown
 
                             readonly property bool active: root.currentTabIndex === modelData.index
 
@@ -320,11 +322,15 @@ IPopup {
                     appModel: root.appModel
                 }
 
+                // TODO: unreachable while the Worktrees tab is hidden; kept so the stack
+                //       indices stay aligned with Enums.RepositorySelectorTab.
                 WorktreesTab {
                     id: worktreesTab
                     appModel: root.appModel
                 }
 
+                // TODO: unreachable while the Init new tab is hidden; kept so the stack
+                //       indices stay aligned with Enums.RepositorySelectorTab.
                 InitNewTab {
                     id: initTab
                     appModel: root.appModel

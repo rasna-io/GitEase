@@ -81,8 +81,10 @@ Item {
                 muted: "· reachable"
             }
 
+            // TODO: hidden until auth handling is implemented in the backend.
             RepoSectionLabel {
                 text: "Auth"
+                visible: false
                 Layout.topMargin: 8
             }
 
@@ -99,6 +101,7 @@ Item {
 
                 RepoRadio {
                     Layout.fillWidth: true
+                    visible: false
                     text: modelData.label
                     checked: root.auth === modelData.value
                     ButtonGroup.group: authGroup
@@ -135,8 +138,10 @@ Item {
                     }
                 }
 
+                // TODO: hidden until the folder name is wired to the clone destination.
                 ColumnLayout {
                     Layout.preferredWidth: 140
+                    visible: false
                     spacing: 6
 
                     RepoSectionLabel {
@@ -150,13 +155,16 @@ Item {
                 }
             }
 
+            // TODO: hidden until shallow clone depth is supported by the backend.
             RepoSectionLabel {
                 text: "Clone depth"
+                visible: false
                 Layout.topMargin: 8
             }
 
             ComboBox {
                 Layout.fillWidth: true
+                visible: false
                 font.pixelSize: 12
                 model: ["Full history", "Shallow (depth 1)", "Depth 50"]
                 Material.background: Style.colors.controlBackground
