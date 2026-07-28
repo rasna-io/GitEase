@@ -15,8 +15,8 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property alias text:        commitTextArea.text
-    property alias placeholder: commitTextArea.placeholderText
+    property alias  text:        commitTextArea.text
+    property string placeholder: ""
 
     property int    minLines            : 3
     property int    maxLines            : 10
@@ -49,36 +49,57 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
-        ScrollView {
-            id: scrollView
+        Item {
+            id: textAreaWrapper
             Layout.fillWidth: true
             Layout.fillHeight: true
-            clip: true
 
-            TextArea {
-                id: commitTextArea
-                floatingPlaceholderEnabled: false
+            ScrollView {
+                id: scrollView
+                anchors.fill: parent
+                clip: true
 
-                width: parent.width
+                TextArea {
+                    id: commitTextArea
+                    floatingPlaceholderEnabled: false
+                    placeholderText: ""
 
-                placeholderTextColor: Style.colors.placeholderText
-                color: Style.colors.foreground
+                    width: parent.width
 
-                font.family: Style.fontTypes.inter
+                    color: Style.colors.foreground
+
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
-                font.weight: Font.Normal
+                    font.weight: Font.Normal
 
-                wrapMode: TextEdit.Wrap
+                    wrapMode: TextEdit.Wrap
                     leftPadding: root.horizontalTextPadding
                     topPadding: root.verticalTextPadding
                     rightPadding: root.horizontalTextPadding
                     bottomPadding: root.verticalTextPadding
 
-                selectByMouse: true
-                background: null
-                selectionColor: Style.colors.accent
-                selectedTextColor: Style.colors.secondaryForeground
-                Material.accent: Style.colors.accent
+                    selectByMouse: true
+                    background: null
+                    selectionColor: Style.colors.accent
+                    selectedTextColor: Style.colors.secondaryForeground
+                    Material.accent: Style.colors.accent
+                }
+            }
+            
+            Text {
+                text: root.placeholder
+                visible: commitTextArea.text.length === 0
+                color: Style.colors.placeholderText
+                font: commitTextArea.font
+                wrapMode: Text.Wrap
+                elide: Text.ElideRight
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.leftMargin: root.horizontalTextPadding
+                anchors.rightMargin: root.horizontalTextPadding
+                anchors.topMargin: root.verticalTextPadding
             }
         }
 
