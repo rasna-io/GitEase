@@ -32,10 +32,10 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    color: Style.colors.primaryBackground
-    radius: 6
+    color: Style.colors.actionPillBg
+    radius: 5
     border.width: 1
-    border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
+    border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.chipBorder
 
     implicitHeight: {
         var lines = commitTextArea.lineCount
