@@ -157,7 +157,7 @@ Item {
           */
         Rectangle {
             Layout.fillHeight: true
-            Layout.preferredWidth: 40
+            Layout.preferredWidth: 44
             color: Style.colors.obsidianDark
             visible: !isUnchanged // Only show for changes
             z: 3
