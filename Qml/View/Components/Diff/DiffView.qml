@@ -542,6 +542,7 @@ DetachablePanel {
         Item {
             property string direction: ""
             property int remaining: 0
+            property string rangeLabel: ""
             property int delegateIndex: -1
 
             anchors.fill: parent
@@ -1050,7 +1051,7 @@ DetachablePanel {
                         direction: "up",
                         hiddenCount: chunk.hiddenCount,
                         remaining: chunk.hiddenCount,
-rangeLabel: hiddenRangeLabel(chunk),
+                        rangeLabel: hiddenRangeLabel(chunk),
                         chunkIndex: c
                     })
                 }
@@ -1164,11 +1165,12 @@ rangeLabel: hiddenRangeLabel(chunk),
         }
 
         let finalRemaining = totalHidden - chunk.visibleTop - chunk.visibleBottom
+        let finalRangeLabel = hiddenRangeLabel(chunk)
         for (let i = 0; i < chunkModel.count; i++) {
             let r = chunkModel.get(i)
             if (r.rowType === "hidden" && r.chunkIndex === chunkIdx) {
                 chunkModel.setProperty(i, "remaining", finalRemaining)
-chunkModel.setProperty(i, "rangeLabel", finalRangeLabel)
+                chunkModel.setProperty(i, "rangeLabel", finalRangeLabel)
             }
         }
 
