@@ -140,9 +140,9 @@ Page {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 8
-        anchors.topMargin: 8
         spacing: 8
+        anchors.margins: 0
+        spacing: 0
 
         // Left panel: two stacked placeholders
         Rectangle {
