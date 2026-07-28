@@ -1020,6 +1020,7 @@ DetachablePanel {
                         direction: "down",
                         hiddenCount: chunk.hiddenCount,
                         remaining: chunk.hiddenCount,
+                        rangeLabel: hiddenRangeLabel(chunk),
                         chunkIndex: c
                     })
                 }
@@ -1030,6 +1031,7 @@ DetachablePanel {
                         direction: "up",
                         hiddenCount: chunk.hiddenCount,
                         remaining: chunk.hiddenCount,
+rangeLabel: hiddenRangeLabel(chunk),
                         chunkIndex: c
                     })
                 }
@@ -1112,6 +1114,7 @@ DetachablePanel {
                 direction: "down",
                 hiddenCount: totalHidden,
                 remaining: newRemaining,
+                rangeLabel: hiddenRangeLabel(chunk),
                 chunkIndex: chunkIdx
             })
 
@@ -1136,6 +1139,7 @@ DetachablePanel {
                 direction: "up",
                 hiddenCount: totalHidden,
                 remaining: newRemaining,
+                rangeLabel: hiddenRangeLabel(chunk),
                 chunkIndex: chunkIdx
             })
         }
@@ -1145,6 +1149,7 @@ DetachablePanel {
             let r = chunkModel.get(i)
             if (r.rowType === "hidden" && r.chunkIndex === chunkIdx) {
                 chunkModel.setProperty(i, "remaining", finalRemaining)
+chunkModel.setProperty(i, "rangeLabel", finalRangeLabel)
             }
         }
 
