@@ -351,6 +351,7 @@ DetachablePanel {
 
                         item.direction      = Qt.binding(function() { return model.direction })
                         item.remaining      = Qt.binding(function() { return model.remaining })
+                        item.rangeLabel     = Qt.binding(function() { return model.rangeLabel !== undefined ? model.rangeLabel : "" })
                         item.delegateIndex  = Qt.binding(function() { return index })
                     }
                 }
