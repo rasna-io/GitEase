@@ -169,20 +169,21 @@ Item {
                 anchors.bottom: parent.bottom
             }
 
-            ColumnLayout {
 
-                anchors.centerIn: parent
-                visible: hasAction && selectedFileStatus !== GitFileStatus.Deleted
+
+                    Rectangle {
+                        width: 22
+                        height: 18
+                        radius: 3
+                        color: stageMsa.containsMouse ? Qt.rgba(Style.colors.stageGreen.r, Style.colors.stageGreen.g, Style.colors.stageGreen.b, 0.1) : "transparent"
 
                 Label {
                     id: stageButton
+                            anchors.centerIn: parent
                     text: Style.icons.plus
                     font.family: Style.fontTypes.font6ProSolid
-                    color: stageMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 5
-                    background: Rectangle {
-                        color: stageMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 5
+                            font.pixelSize: Style.appFont.captionPt
+                            color: stageMsa.containsMouse ? Style.colors.stageGreen : Style.colors.actionIconIdle
                     }
 
                     MouseArea {
