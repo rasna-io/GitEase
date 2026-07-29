@@ -169,7 +169,21 @@ Item {
                 anchors.bottom: parent.bottom
             }
 
+            Rectangle {
+                id: actionPill
+                anchors.centerIn: parent
+                visible: hasAction && selectedFileStatus !== GitFileStatus.Deleted
+                width: 26
+                height: actionRow.implicitHeight + 6
+                radius: 4
+                color: Style.colors.actionPillBg
+                border.width: 1
+                border.color: Style.colors.actionPillBorder
 
+                Column {
+                    id: actionRow
+                    anchors.centerIn: parent
+                    spacing: 2
 
                     Rectangle {
                         width: 22
@@ -177,27 +191,27 @@ Item {
                         radius: 3
                         color: stageMsa.containsMouse ? Qt.rgba(Style.colors.stageGreen.r, Style.colors.stageGreen.g, Style.colors.stageGreen.b, 0.1) : "transparent"
 
-                Label {
-                    id: stageButton
+                        Label {
+                            id: stageButton
                             anchors.centerIn: parent
-                    text: Style.icons.plus
-                    font.family: Style.fontTypes.font6ProSolid
+                            text: Style.icons.plus
+                            font.family: Style.fontTypes.font6ProSolid
                             font.pixelSize: Style.appFont.captionPt
                             color: stageMsa.containsMouse ? Style.colors.stageGreen : Style.colors.actionIconIdle
-                    }
+                        }
 
-                    MouseArea {
-                        id: stageMsa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: "PointingHandCursor"
-                        onClicked: {
-                            let range = getRange()
+                        MouseArea {
+                            id: stageMsa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                let range = getRange()
 
-                            requestStage(range.start, range.end, range.type);
+                                requestStage(range.start, range.end, range.type);
+                            }
                         }
                     }
-                }
 
                     Rectangle {
                         width: 22
@@ -205,27 +219,27 @@ Item {
                         radius: 3
                         color: revertMsa.containsMouse ? Qt.rgba(Style.colors.discardRed.r, Style.colors.discardRed.g, Style.colors.discardRed.b, 0.1) : "transparent"
 
-                Label {
-                    id: revertButton
+                        Label {
+                            id: revertButton
                             anchors.centerIn: parent
-                    text: Style.icons.arrowRight
-                    font.family: Style.fontTypes.font6ProSolid
+                            text: Style.icons.arrowRight
+                            font.family: Style.fontTypes.font6ProSolid
                             font.pixelSize: Style.appFont.captionPt
                             color: revertMsa.containsMouse ? Style.colors.discardRed : Style.colors.actionIconIdle
-                    }
+                        }
 
-                    MouseArea {
-                        id: revertMsa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: "PointingHandCursor"
-                        onClicked: {
-                            let range = getRange()
+                        MouseArea {
+                            id: revertMsa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                let range = getRange()
 
-                            requestRevert(range.start, range.end, range.type);
+                                requestRevert(range.start, range.end, range.type);
+                            }
                         }
                     }
-                }
 
                     Rectangle {
                         width: 22
@@ -233,28 +247,28 @@ Item {
                         radius: 3
                         color: stashMsa.containsMouse ? Qt.rgba(Style.colors.stashAmber.r, Style.colors.stashAmber.g, Style.colors.stashAmber.b, 0.1) : "transparent"
 
-                Label {
-                    id: stashButton
+                        Label {
+                            id: stashButton
                             anchors.centerIn: parent
-                    text: Style.icons.archive
-                    font.family: Style.fontTypes.font6ProSolid
+                            text: Style.icons.archive
+                            font.family: Style.fontTypes.font6ProSolid
                             font.pixelSize: Style.appFont.captionPt
                             color: stashMsa.containsMouse ? Style.colors.stashAmber : Style.colors.actionIconIdle
-                    }
+                        }
 
-                    MouseArea {
-                        id: stashMsa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: "PointingHandCursor"
-                        onClicked: {
-                            let range = getRange()
+                        MouseArea {
+                            id: stashMsa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                let range = getRange()
 
-                            requestStash(range.start, range.end, range.type);
+                                requestStash(range.start, range.end, range.type);
+                            }
                         }
                     }
                 }
-
             }
         }
 
