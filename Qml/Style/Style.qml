@@ -51,9 +51,9 @@ QtObject {
 
         navigationRailBgColor: "#383838"
 
-        addedFile:           "#3bdb6a"
-        deletededFile:       "#FF3b3b"
-        modifiediedFile:     "#FFc33b"
+        addedFile:           "#4ADE80"
+        deletededFile:       "#F87171"
+        modifiediedFile:     "#FBBF24"
         renamedFile:         "#aafff8"
         untrackedFile:       "#00ffff"
 
