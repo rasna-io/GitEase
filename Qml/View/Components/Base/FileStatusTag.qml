@@ -24,6 +24,8 @@ Rectangle {
     property int  deltaStatus  : -1
     property int  fileStatus   : -1
 
+    property bool showBackground: false
+
     readonly property string statusKind: {
         if (root.deltaStatus >= 0) {
             switch (root.deltaStatus) {
