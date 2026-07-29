@@ -226,15 +226,19 @@ Item {
                     }
                 }
 
+                    Rectangle {
+                        width: 22
+                        height: 18
+                        radius: 3
+                        color: stashMsa.containsMouse ? Qt.rgba(Style.colors.stashAmber.r, Style.colors.stashAmber.g, Style.colors.stashAmber.b, 0.1) : "transparent"
+
                 Label {
                     id: stashButton
+                            anchors.centerIn: parent
                     text: Style.icons.archive
                     font.family: Style.fontTypes.font6ProSolid
-                    color: stashMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 5
-                    background: Rectangle {
-                        color: stashMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 5
+                            font.pixelSize: Style.appFont.captionPt
+                            color: stashMsa.containsMouse ? Style.colors.stashAmber : Style.colors.actionIconIdle
                     }
 
                     MouseArea {
