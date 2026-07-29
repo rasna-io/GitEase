@@ -162,12 +162,11 @@ Item {
             z: 3
 
             Rectangle {
-                width: 2
-                color: Style.colors.graphiteMidnight
+                width: 1
+                color: Style.colors.primaryBorder
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                visible: !isUnchanged
             }
 
             ColumnLayout {
