@@ -198,17 +198,19 @@ Item {
                     }
                 }
 
-
+                    Rectangle {
+                        width: 22
+                        height: 18
+                        radius: 3
+                        color: revertMsa.containsMouse ? Qt.rgba(Style.colors.discardRed.r, Style.colors.discardRed.g, Style.colors.discardRed.b, 0.1) : "transparent"
 
                 Label {
                     id: revertButton
+                            anchors.centerIn: parent
                     text: Style.icons.arrowRight
                     font.family: Style.fontTypes.font6ProSolid
-                    color: revertMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 5
-                    background: Rectangle {
-                        color: revertMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 5
+                            font.pixelSize: Style.appFont.captionPt
+                            color: revertMsa.containsMouse ? Style.colors.discardRed : Style.colors.actionIconIdle
                     }
 
                     MouseArea {
