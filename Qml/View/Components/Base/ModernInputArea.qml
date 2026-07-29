@@ -88,7 +88,7 @@ Rectangle {
             
             Text {
                 text: root.placeholder
-                visible: commitTextArea.text.length === 0
+                visible: commitTextArea.text.length === 0 && !commitTextArea.activeFocus
                 color: Style.colors.mutedText
                 font: commitTextArea.font
                 wrapMode: Text.Wrap
