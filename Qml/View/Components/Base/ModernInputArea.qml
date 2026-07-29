@@ -89,10 +89,11 @@ Rectangle {
             Text {
                 text: root.placeholder
                 visible: commitTextArea.text.length === 0
-                color: Style.colors.placeholderText
+                color: Style.colors.mutedText
                 font: commitTextArea.font
                 wrapMode: Text.Wrap
                 elide: Text.ElideRight
+                opacity: .5
 
                 anchors.left: parent.left
                 anchors.right: parent.right
