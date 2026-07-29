@@ -88,11 +88,26 @@ Rectangle {
     /* Object Properties
      * ****************************************************************************************/
     visible: statusKind !== ""
-    radius: 3
-    color: root.compact ? "transparent" : root.statusColor
+    radius: root.compact ? 3 : 4
+    color: {
+        if (!root.compact)
+            return root.statusColor
 
-    implicitWidth: tagLabel.implicitWidth + (root.compact ? 0 : 14)
-    implicitHeight: tagLabel.implicitHeight + (root.compact ? 0 : 4)
+        return root.showBackground ? Qt.rgba(statusColor.r, statusColor.g, statusColor.b, 0.1) : "transparent"
+    }
+
+    implicitWidth: {
+        if (root.compact && root.showBackground)
+            return tagLabel.implicitWidth + 10
+
+        return tagLabel.implicitWidth + (root.compact ? 0 : 14)
+    }
+    implicitHeight: {
+        if (root.compact && root.showBackground)
+            return tagLabel.implicitHeight + 3
+
+        return tagLabel.implicitHeight + (root.compact ? 0 : 4)
+    }
 
     /* Children
      * ****************************************************************************************/
