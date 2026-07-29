@@ -244,7 +244,7 @@ Page {
 
                             Layout.fillWidth: true
 
-                            placeholder: "What did you change?..."
+                            placeholder: "Commit message (required)"
                         }
 
                         RowLayout {
