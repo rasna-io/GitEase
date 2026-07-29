@@ -65,6 +65,7 @@ Rectangle {
         // Status letter badge
         FileStatusTag {
             compact: true
+            showBackground: true
             fileStatus: root.status
         }
 
