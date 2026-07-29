@@ -226,11 +226,39 @@ DetachablePanel {
                 height: parent.height
                 width: parent.width - (vScrollBar.visible ? vScrollBar.width : 0)
                 propagateComposedEvents: true
+                hoverEnabled: true
                 z: 1
                 focus: true
                 Keys.enabled: true
                 enabled: root.selectEnabled || root.readOnly || root.chunkMode
                 visible: root.selectEnabled || root.readOnly || root.chunkMode
+
+                cursorShape: {
+                    if (!diffListView.count)
+                        return Qt.ArrowCursor
+
+                    var idx = diffListView.indexAt(mouseX, mouseY + diffListView.contentY)
+                    if (idx < 0)
+                        return Qt.ArrowCursor
+
+                    var row = diffListView.model.get(idx)
+                    if (!row)
+                        return Qt.ArrowCursor
+
+                    if (row.rowType === "hidden") {
+                        return (mouseX > selectMsa.width - 140) ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    }
+
+                    var halfW = selectMsa.width / 2
+                    var inGutter = mouseX >= halfW && mouseX < halfW + 44
+                    if (inGutter &&
+                        checkHasAction(diffListView.model, idx, row.diffType) &&
+                        root.selectedFileStatus !== GitFileStatus.Deleted) {
+                        return Qt.PointingHandCursor
+                    }
+
+                    return Qt.ArrowCursor
+                }
 
                 onPressed: (mouse) => {
                    diffListView.interactive = false // Disable flicking during selection
