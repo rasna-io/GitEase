@@ -51,7 +51,8 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
-        hoverEnabled: false
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
     }
 
