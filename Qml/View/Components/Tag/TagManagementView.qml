@@ -81,13 +81,15 @@ UtilitiesCard {
             { text: "Copy Name", icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
             { text: "Copy Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } },
             { separator: true },
-            { text: "Delete Tag (Local Only)", icon: Style.icons.trash, action: function() { root.deleteTagLocal(tag) } },
-            { text: "Delete Tag from Remote (Origin)", icon: Style.icons.trash, action: function() { root.deleteTagRemote(tag) } }
+            { text: "Delete Tag (Local Only)", icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { root.deleteTagLocal(tag) } },
+            { text: "Delete Tag from Remote (Origin)", icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { root.deleteTagRemote(tag) } }
         ]
     }
 
     content: ColumnLayout {
         anchors.fill: parent
+        anchors.leftMargin: Style.dp(10)
+        anchors.rightMargin: Style.dp(10)
         spacing: 6
 
         GuideHoverTrigger {
@@ -125,16 +127,13 @@ UtilitiesCard {
             id: internalListView
             Layout.fillWidth: true
             Layout.preferredHeight: Math.min(contentHeight, 220)
-            spacing: 6
             clip: true
             model: root.tagListModel
 
-            delegate: Rectangle {
+            delegate: Item {
                 id: tagDelegate
                 width: internalListView.width
-                height: Style.dp(35)
-                radius: 4
-                color: Style.colors.secondaryBackground
+                height: tagRow.implicitHeight + Style.dp(2)
 
                 MouseArea {
                     id: rightClickArea
@@ -150,6 +149,7 @@ UtilitiesCard {
                 }
 
                 RowLayout {
+                    id: tagRow
                     anchors.fill: parent
                     anchors.leftMargin: 8
                     anchors.rightMargin: 6
@@ -160,7 +160,8 @@ UtilitiesCard {
                         text: Style.icons.tag || "#"
                         font.family: Style.fontTypes.font6Pro
                         font.pixelSize: Style.appFont.mediumPt
-                        color: modelData.isAnnotated ? Style.colors.accent : Style.colors.secondaryText
+                        color: modelData.isAnnotated ? Style.colors.utilitiesRowIconAccent
+                                                     : Style.colors.utilitiesRowIcon
                         Layout.alignment: Qt.AlignVCenter
                     }
 
@@ -169,7 +170,7 @@ UtilitiesCard {
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.smallPt
                         font.bold: true
-                        color: Style.colors.foreground
+                        color: Style.colors.utilitiesRowText
 
                         Layout.fillWidth: true
                     }
@@ -179,7 +180,7 @@ UtilitiesCard {
                         text: modelData.commitId.substring(0, 7)
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.captionPt
-                        color: Style.colors.mutedText
+                        color: Style.colors.utilitiesRowMetaText
 
                         elide: Text.ElideRight
                     }
@@ -187,7 +188,7 @@ UtilitiesCard {
                     // 3. Delete Action (Fixed Position)
                     ActionIconButton {
                         iconText: Style.icons.trash
-                        textColor: Style.colors.modifiediedFile
+                        textColor: Style.colors.utilitiesActionIconWarning
                         tooltip: "Delete Tag (Local Only)"
                         Layout.preferredWidth: 24
                         Layout.preferredHeight: 24
@@ -198,7 +199,7 @@ UtilitiesCard {
 
                     ActionIconButton {
                         iconText: Style.icons.trash
-                        textColor: Style.colors.deletededFile
+                        textColor: Style.colors.utilitiesActionIconDanger
                         tooltip: "Delete Tag from Remote (Origin)"
                         Layout.preferredWidth: 24
                         Layout.preferredHeight: 24
@@ -215,30 +216,19 @@ UtilitiesCard {
             Label {
                 anchors.centerIn: parent
                 text: "No tags available"
-                color: Style.colors.secondaryText
+                color: Style.colors.utilitiesEmptyStateText
                 visible: internalListView.count === 0
                 font.pixelSize: Style.appFont.smallPt
             }
         }
 
         // Add Tag Button
-        IconButton {
+        DashedButton {
             id: addTagBtn
             Layout.fillWidth: true
-            implicitHeight: Style.dp(25)
+            Layout.topMargin: Style.dp(2)
 
-            display: IconButton.TextBesideIcon
-            icon.name: Style.icons.plus
-            icon.width: Style.appFont.smallPt
-            icon.height: Style.appFont.smallPt
-            icon.color: Style.colors.textButton
-            text: "Add New Tag"
-            font.pixelSize: Style.appFont.mediumPt
-
-            background: Rectangle {
-                radius: Style.dp(4)
-                color: addTagBtn.enabled ? Style.colors.accent : Style.colors.disabledButton
-            }
+            text: "Add Tag"
 
             onClicked: {
                 if (root.addTagPopup) {
