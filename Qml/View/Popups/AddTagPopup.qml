@@ -75,6 +75,9 @@ IPopup {
                         color: Style.colors.secondaryBackground
                         radius: 5
                         border.color: nameInput.activeFocus ? Style.colors.accent : "transparent"
+                    }
+                }
+
                 RowLayout {
                     spacing: 6
                     Layout.fillWidth: true
