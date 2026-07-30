@@ -53,7 +53,7 @@ UtilitiesCard {
                         targetProvider: function() { return listView },
                         icon: Style.icons.branch,
                         title: "All Branches",
-                        description: "Every local and remote-tracking branch appears here. Click Checkout to switch to one, or the trash icon to delete it."
+                        description: "Every local and remote-tracking branch appears here. The current branch is marked HEAD. Right-click a branch to check it out, copy its name or delete it."
                     },
                     {
                         targetProvider: function() { return addBranchBtn },
@@ -99,19 +99,21 @@ UtilitiesCard {
         Rectangle {
             id: viewControl
             Layout.fillWidth: true
-            Layout.preferredHeight: Style.dp(25)
+            Layout.leftMargin: Style.dp(10)
+            Layout.rightMargin: Style.dp(10)
+            Layout.preferredHeight: Style.dp(27)
             radius: Style.dp(5)
-            color: Style.colors.cardBackground
+            color: Style.colors.utilitiesSegmentTrackBackground
 
             border {
                 width: Style.dp(1)
-                color: Style.colors.primaryBorder
+                color: Style.colors.utilitiesSegmentTrackBorder
             }
 
             RowLayout {
                 anchors.fill: parent
                 spacing: 4
-                anchors.margins: 2
+                anchors.margins: 3
 
                 IconButton {
                     id: localBtn
@@ -128,15 +130,18 @@ UtilitiesCard {
 
                     display: IconButton.TextBesideIcon
                     icon.name: Style.icons.laptop
-                    icon.width: Style.appFont.smallPt
-                    icon.height: Style.appFont.smallPt
-                    icon.color: Style.colors.foreground
+                    icon.width: Style.appFont.mediumPt
+                    icon.height: Style.appFont.mediumPt
+                    icon.color: localBtn.checked ? Style.colors.utilitiesSegmentSelectedText
+                                                 : Style.colors.utilitiesSegmentText
                     text: "Local"
-                    font.pixelSize: Style.appFont.smallPt
+                    font.pixelSize: Style.appFont.mediumPt
 
                     background: Rectangle {
                         radius: viewControl.radius
-                        color: localBtn.checked ? Style.colors.primaryBackground : "transparent"
+                        color: localBtn.checked ? Style.colors.utilitiesSegmentSelectedBackground
+                               : (localBtn.hovered ? Style.colors.utilitiesSegmentHoverBackground
+                                                   : "transparent")
                     }
 
                     onClicked: content.currentIndex = 0
@@ -157,15 +162,18 @@ UtilitiesCard {
 
                     display: IconButton.TextBesideIcon
                     icon.name: Style.icons.cloud
-                    icon.width: Style.appFont.smallPt
-                    icon.height: Style.appFont.smallPt
-                    icon.color: Style.colors.foreground
+                    icon.width: Style.appFont.mediumPt
+                    icon.height: Style.appFont.mediumPt
+                    icon.color: remoteBtn.checked ? Style.colors.utilitiesSegmentSelectedText
+                                                  : Style.colors.utilitiesSegmentText
                     text: "Remote"
-                    font.pixelSize: Style.appFont.smallPt
+                    font.pixelSize: Style.appFont.mediumPt
 
                     background: Rectangle {
                         radius: viewControl.radius
-                        color: remoteBtn.checked ? Style.colors.primaryBackground : "transparent"
+                        color: remoteBtn.checked ? Style.colors.utilitiesSegmentSelectedBackground
+                               : (remoteBtn.hovered ? Style.colors.utilitiesSegmentHoverBackground
+                                                    : "transparent")
                     }
 
                     onClicked: content.currentIndex = 1
@@ -182,24 +190,15 @@ UtilitiesCard {
             onUpdateRequested: content.update()
         }
 
-        IconButton {
+        DashedButton {
             id: addBranchBtn
             Layout.fillWidth: true
-            implicitHeight: Style.dp(25)
+            Layout.leftMargin: Style.dp(10)
+            Layout.rightMargin: Style.dp(10)
+            Layout.topMargin: Style.dp(2)
             visible: content.currentIndex === 0
 
-            display: IconButton.TextBesideIcon
-            icon.name: Style.icons.plus
-            icon.width: Style.appFont.smallPt
-            icon.height: Style.appFont.smallPt
-            icon.color: Style.colors.textButton
-            text: "Add New Branch"
-            font.pixelSize: Style.appFont.mediumPt
-
-            background: Rectangle {
-                radius: Style.dp(4)
-                color: enabled ? Style.colors.accent : Style.colors.disabledButton
-            }
+            text: "Add Branch"
 
             onClicked: {
                 openAddBranchPopup()
@@ -211,12 +210,21 @@ UtilitiesCard {
                 root.currentBranch = branchController.getCurrentBranchName()
                 let res = branchController.getBranches();
 
-                content.localBranches = res.filter(branch => branch["isLocal"])
+                content.localBranches = content.headFirst(res.filter(branch => branch["isLocal"]))
                 content.remoteBranches = res.filter(branch => branch["isRemote"])
 
                 content.updateModel(res)
                 root.badgeCount = content.localBranches.length + content.remoteBranches.length
             }
+        }
+
+        //! Moves the checked-out branch to the top; the rest keep the order git reported.
+        function headFirst(branches) {
+            let head = branches.findIndex(branch => branch["name"] === root.currentBranch)
+            if (head > 0)
+                branches.unshift(branches.splice(head, 1)[0])
+
+            return branches
         }
 
         function updateModel(res) {
