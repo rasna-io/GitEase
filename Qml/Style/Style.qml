@@ -37,7 +37,7 @@ QtObject {
     property          Colors        modernDarkColors:           Colors {
         accent:              "#3B82F6"
         accentHover:         "#2F6FE0"
-        primaryBackground:   midnightBlack
+        primaryBackground:   darkGraphite
         secondaryBackground: graphiteDark
         foreground:          softCloudWhite
         secondaryForeground: "#010101"
@@ -66,7 +66,7 @@ QtObject {
         linePanelBackgroound:obsidianDark
         linePanelForeground: deepCharcoalBlue
 
-        cardBackground:      onyxShadow
+        cardBackground:      charcoalGray
 
         primaryBorder:       darkCharcoal
         secondaryBorder:     darkCharcoal
@@ -173,6 +173,7 @@ QtObject {
         contextMenuBorder:     "#2C2C33"
         contextMenuSeparator:  "#2C2C33"
         contextMenuHover:      "#34343D"
+        contextMenuDanger:     "#FF6B6B"
 
         branchSelectedAccent:  "#93C5FD"
 
@@ -217,6 +218,98 @@ QtObject {
         commitButton:      "#3B82F6"
         fileBrowserRowHoverBg: Qt.rgba(1,1,1,0.04)
         fileBrowserSearchBg:  Qt.rgba(1,1,1,0.05)
+        headerBackground:            midnightBlack
+        headerButtonBackground:      graphiteDark
+        headerButtonBackgroundHover: "#26262E"
+        headerButtonBorder:          charcoalGray
+
+        segmentedSelected:           "#2A2A32"
+
+        // panel chrome
+        utilitiesPanelBackground:            abyssBlack
+        utilitiesPanelBorder:                charcoalGray
+        utilitiesPanelScrollBar:             deepCharcoalBlue
+        utilitiesPanelScrollBarHover:        slateMuted
+
+        // filter field
+        utilitiesFilterBackground:           graphiteSurface
+        utilitiesFilterBorder:               charcoalGray
+        utilitiesFilterText:                 softCloudWhite
+        utilitiesFilterPlaceholder:          slateMuted
+
+        // card shell
+        utilitiesCardBackground:             abyssBlack
+        utilitiesCardSeparator:              charcoalGray
+
+        // card header
+        utilitiesCardHeaderBackground:       midnightBlack
+        utilitiesCardHeaderHoverBackground:  graphiteHover
+        utilitiesCardTitle:                  slateLavender
+        utilitiesCardChevron:                slateMuted
+
+        // card header badge
+        utilitiesCardBadgeBackground:        graphiteHover
+        utilitiesCardBadgeBorder:            deepCharcoalBlue
+        utilitiesCardBadgeText:              slateLavender
+
+        // segmented control
+        utilitiesSegmentTrackBackground:     graphiteSurface
+        utilitiesSegmentTrackBorder:         charcoalGray
+        utilitiesSegmentHoverBackground:     graphiteHover
+        utilitiesSegmentSelectedBackground:  "#2A2A32"
+        utilitiesSegmentText:                slateLavender
+        utilitiesSegmentSelectedText:        softCloudWhite
+
+        // inset surface
+        utilitiesSurfaceBackground:          graphiteSurface
+        utilitiesSurfaceBorder:              charcoalGray
+        utilitiesHintText:                   slateLavender
+
+        // list rows
+        utilitiesRowBackground:              graphiteSurface
+        utilitiesRowHoverBackground:         graphiteHover
+        utilitiesRowSelectedBackground:      graphiteSelected
+        utilitiesRowBorder:                  charcoalGray
+        utilitiesRowSelectedIndicator:       "#93C5FD"
+        utilitiesRowText:                    softCloudWhite
+        utilitiesRowSelectedText:            "#93C5FD"
+        utilitiesRowIcon:                    slateLavender
+        utilitiesRowIconAccent:              "#93C5FD"
+        utilitiesRowMetaText:                slateLavender
+        utilitiesRowSubText:                 slateMuted
+        utilitiesRowMissingText:             softCoralMist
+        utilitiesEmptyStateText:             slateMuted
+
+        // inputs
+        utilitiesFieldLabel:                 slateLavender
+        utilitiesInputBackground:            graphiteSurface
+        utilitiesInputHoverBackground:       graphiteHover
+        utilitiesInputBorder:                charcoalGray
+        utilitiesInputText:                  softCloudWhite
+        utilitiesInputPlaceholder:           slateMuted
+        utilitiesInputPopupBackground:       obsidianDeep
+
+        // check box
+        utilitiesCheckBoxText:               softCloudWhite
+
+        // file / folder picker button
+        utilitiesPickerButtonBorder:         charcoalGray
+        utilitiesPickerButtonIcon:           slateLavender
+
+        // dashed ghost button
+        dashedButtonText:                    slateLavender
+        dashedButtonBorder:                  deepCharcoalBlue
+        dashedButtonTextHover:               softCloudWhite
+        dashedButtonBorderHover:             slateLavender
+        dashedButtonBackgroundHover:         frostWash
+        dashedButtonTextDanger:              softCoralMist
+        dashedButtonBorderDanger:            softCoralMist
+
+        // per-row action icons
+        utilitiesActionIcon:                 slateMuted
+        utilitiesActionIconActive:           "#7AB9FF"
+        utilitiesActionIconWarning:          "#FFD966"
+        utilitiesActionIconDanger:           softCoralMist
     }
 
     property           string       currentTheme:               "Modern Light"
