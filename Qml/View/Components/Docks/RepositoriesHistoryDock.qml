@@ -29,6 +29,8 @@ UtilitiesCard {
     content: ColumnLayout {
         id: content
         anchors.fill: parent
+        anchors.leftMargin: Style.dp(10)
+        anchors.rightMargin: Style.dp(10)
         spacing: 6
 
         GuideHoverTrigger {
@@ -67,6 +69,15 @@ UtilitiesCard {
                 id: item
                 implicitWidth: parent.width
                 implicitHeight: Style.dp(35)
+                border.width: 1
+                border.color: Style.colors.utilitiesRowBorder
+
+                backgroundColor:      Style.colors.utilitiesRowBackground
+                hoverBackgroundColor: Style.colors.utilitiesRowHoverBackground
+                nameColor:            Style.colors.utilitiesRowText
+                pathColor:            Style.colors.utilitiesRowSubText
+                missingPathColor:     Style.colors.utilitiesRowMissingText
+
                 name: modelData.split('/').pop() || modelData.split('\\').pop()
                 path: modelData
                 isExists: root.repositoryController.appModel.fileIO.isFileExist(modelData)
@@ -78,25 +89,20 @@ UtilitiesCard {
             onContentHeightChanged: root.pageScrollBlocking = scrollView.contentHeight > scrollView.height + 1
         }
 
-        IconButton {
+        DashedButton {
             id: actionBtn
             Layout.fillWidth: true
-            implicitHeight: Style.dp(25)
+            Layout.topMargin: Style.dp(2)
 
             enabled: root.repositoryController.appModel.repositoriesHistory.length > 0
 
-            display: IconButton.TextBesideIcon
-            icon.name: Style.icons.trash
-            icon.width: Style.appFont.smallPt
-            icon.height: Style.appFont.smallPt
-            icon.color: Style.colors.selectedText
+            iconText: Style.icons.trash
             text: "Clear history"
-            font.pixelSize: Style.appFont.mediumPt
 
-            background: Rectangle {
-                radius: Style.dp(4)
-                color: actionBtn.enabled ? Style.colors.error : Style.colors.disabledButton
-            }
+            textColor: actionBtn.hovered && actionBtn.enabled ? Style.colors.dashedButtonTextDanger
+                                                              : Style.colors.dashedButtonText
+            borderColor: actionBtn.hovered && actionBtn.enabled ? Style.colors.dashedButtonBorderDanger
+                                                                : Style.colors.dashedButtonBorder
 
             onClicked: {
                 root.repositoryController.appModel.repositoriesHistory = []
