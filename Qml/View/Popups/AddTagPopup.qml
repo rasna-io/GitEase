@@ -56,19 +56,26 @@ IPopup {
                 Layout.alignment: Qt.AlignLeft
             }
 
+            // Tag Name
             ColumnLayout {
-                spacing: 12
+                spacing: 6
                 Layout.fillWidth: true
 
-                // Tag Name Input
+                Text {
+                    text: "Tag Name"
+                    color: Style.colors.mutedText
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.captionPt
+                }
+
                 TextField {
                     id: nameInput
-                    placeholderText: "Tag Name (e.g. v1.0)"
+                    placeholderText: "v1.0.0"
                     Layout.fillWidth: true
                     selectByMouse: true
                     focus: true
 
-                    onAccepted: if(root.canAccept) actionBtn.clicked()
+                    onAccepted: if (root.canAccept) actionBtn.clicked()
 
                     background: Rectangle {
                         implicitHeight: 40
