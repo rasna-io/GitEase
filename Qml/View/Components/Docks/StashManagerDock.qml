@@ -44,6 +44,8 @@ UtilitiesCard {
     content: ColumnLayout {
         id: content
         anchors.fill: parent
+        anchors.leftMargin: Style.dp(10)
+        anchors.rightMargin: Style.dp(10)
         spacing: 6
 
         GuideHoverTrigger {
@@ -119,7 +121,10 @@ UtilitiesCard {
                 height: Style.dp(35)
                 radius: 4
                 property bool selected: root.selectedStash && root.selectedStash.index === modelData.index
-                color: selected ? Style.colors.hoverTitle : Style.colors.secondaryBackground
+                color: selected ? Style.colors.utilitiesRowSelectedBackground
+                                : Style.colors.utilitiesRowBackground
+                border.width: 1
+                border.color: Style.colors.utilitiesRowBorder
 
                 MouseArea {
                     id: rightClickArea
@@ -145,14 +150,14 @@ UtilitiesCard {
                         ScrollingText {
                             Layout.fillWidth: true
                             text: modelData.message || qsTr("WIP on %1").arg(modelData.author || "unknown")
-                            color: Style.colors.foreground
+                            color: Style.colors.utilitiesRowText
                             font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.smallPt
                         }
                         Text {
                             Layout.fillWidth: true
                             text: modelData.dateTime ? Qt.formatDateTime(modelData.dateTime, "MMM dd, yyyy hh:mm") : ""
-                            color: Style.colors.mutedText
+                            color: Style.colors.utilitiesRowMetaText
                             font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.captionPt
                             elide: Text.ElideRight
@@ -165,28 +170,28 @@ UtilitiesCard {
                         ActionIconButton {
                             iconText: Style.icons.file
                             tooltip: "Open"
-                            textColor: Style.colors.mutedText
+                            textColor: Style.colors.utilitiesActionIcon
                             onClicked: root.openPreview(modelData)
                         }
 
                         ActionIconButton {
                             iconText: Style.icons.undo
                             tooltip: "Pop"
-                            textColor: Style.colors.mutedText
+                            textColor: Style.colors.utilitiesActionIcon
                             onClicked: root.popStash(modelData)
                         }
 
                         ActionIconButton {
                             iconText: Style.icons.check
                             tooltip: "Apply"
-                            textColor: Style.colors.mutedText
+                            textColor: Style.colors.utilitiesActionIcon
                             onClicked: root.applyStash(modelData)
                         }
 
                         ActionIconButton {
                             iconText: Style.icons.trash
                             tooltip: "Drop"
-                            textColor: Style.colors.deletededFile
+                            textColor: Style.colors.utilitiesActionIconDanger
                             onClicked: root.dropStash(modelData)
                         }
                     }
@@ -196,26 +201,14 @@ UtilitiesCard {
             onContentHeightChanged: root.pageScrollBlocking = stashListView.contentHeight > stashListView.height + 1
         }
 
-        IconButton {
+        DashedButton {
             id: actionBtn
             Layout.fillWidth: true
-            implicitHeight: Style.dp(25)
+            Layout.topMargin: Style.dp(2)
 
             enabled: root.canStash
 
-            display: IconButton.TextBesideIcon
-            icon.name: Style.icons.plus
-            icon.width: Style.appFont.smallPt
-            icon.height: Style.appFont.smallPt
-            icon.color: Style.colors.textButton
-            text: "Stash"
-            font.pixelSize: Style.appFont.mediumPt
-
-            background: Rectangle {
-                radius: Style.dp(4)
-                color: actionBtn.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
-                                            : Style.colors.disabledButton
-            }
+            text: "Add Stash"
 
             onClicked: root.openAddEditPopup()
         }
