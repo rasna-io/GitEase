@@ -107,18 +107,7 @@ Rectangle {
             contentHeight: dockFlow.implicitHeight
 
             ScrollBar.vertical: ScrollBar {
-                id: dockScrollBar
                 policy: ScrollBar.AsNeeded
-
-                contentItem: Rectangle {
-                    width:  dockScrollBar.interactive ? Style.dp(4) : Style.dp(2)
-                    height: dockScrollBar.interactive ? Style.dp(4) : Style.dp(2)
-                    radius: Style.dp(2)
-                    opacity: 0
-                    color: dockScrollBar.pressed || dockScrollBar.hovered
-                           ? Style.colors.utilitiesPanelScrollBarHover
-                           : Style.colors.utilitiesPanelScrollBar
-                }
             }
 
             Flow {
