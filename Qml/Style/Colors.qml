@@ -373,4 +373,29 @@ QtObject{
     property color utilitiesActionIconActive:           accent
     property color utilitiesActionIconWarning:          "#B26A00"
     property color utilitiesActionIconDanger:           error
+
+    // stash card
+    property color stashCardBackground:                  utilitiesRowBackground
+    property color stashCardBorder:                      utilitiesRowBorder
+    property color stashCardBorderHover:                 controlBorderHover
+    property color stashCardBorderSelected:              accent
+    property color stashCardRef:                         utilitiesRowSubText
+    property color stashCardMessage:                     utilitiesRowText
+    property color stashCardTime:                        utilitiesRowSubText
+    property color stashCardMeta:                        utilitiesRowMetaText
+    property color stashCardMetaSeparator:               utilitiesRowSubText
+
+    // stash card actions
+    property color stashActionText:                      accent
+    property color stashActionBorder:                    accent
+    property color stashActionHoverBackground:           accentWash
+    property color stashActionFilledText:                onAccentText
+    property color stashActionFilledBackground:          accent
+    property color stashActionFilledHoverBackground:     accentHover
+    property color stashActionDangerText:                error
+    property color stashActionDangerBorder:              error
+    property color stashActionDangerHoverBackground:     paleCoralMist
+
+    property color stashDiffLink:                        utilitiesRowMetaText
+    property color stashDiffLinkHover:                   accent
 }
