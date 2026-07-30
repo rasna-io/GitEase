@@ -35,6 +35,9 @@ UtilitiesCard {
     icon: Style.icons.arowLeftRight
 
     content: ColumnLayout {
+        anchors.fill: parent
+        anchors.leftMargin: Style.dp(10)
+        anchors.rightMargin: Style.dp(10)
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -63,19 +66,19 @@ UtilitiesCard {
         Rectangle {
             id: viewControl
             Layout.fillWidth: true
-            Layout.preferredHeight: Style.dp(25)
+            Layout.preferredHeight: Style.dp(27)
             radius: Style.dp(5)
-            color: Style.colors.cardBackground
+            color: Style.colors.utilitiesSegmentTrackBackground
 
             border {
                 width: Style.dp(1)
-                color: Style.colors.primaryBorder
+                color: Style.colors.utilitiesSegmentTrackBorder
             }
 
             RowLayout {
                 anchors.fill: parent
                 spacing: 4
-                anchors.margins: 2
+                anchors.margins: 3
 
                 IconButton {
                     id: exportBtn
@@ -92,15 +95,18 @@ UtilitiesCard {
 
                     display: IconButton.TextBesideIcon
                     icon.name: Style.icons.download
-                    icon.width: Style.appFont.smallPt
-                    icon.height: Style.appFont.smallPt
-                    icon.color: Style.colors.foreground
+                    icon.width: Style.appFont.mediumPt
+                    icon.height: Style.appFont.mediumPt
+                    icon.color: exportBtn.checked ? Style.colors.utilitiesSegmentSelectedText
+                                                  : Style.colors.utilitiesSegmentText
                     text: "Export"
-                    font.pixelSize: Style.appFont.smallPt
+                    font.pixelSize: Style.appFont.mediumPt
 
                     background: Rectangle {
                         radius: viewControl.radius
-                        color: exportBtn.checked ? Style.colors.primaryBackground : "transparent"
+                        color: exportBtn.checked ? Style.colors.utilitiesSegmentSelectedBackground
+                               : (exportBtn.hovered ? Style.colors.utilitiesSegmentHoverBackground
+                                                    : "transparent")
                     }
 
                     onClicked: root.currentIndex = 0
@@ -121,15 +127,18 @@ UtilitiesCard {
 
                     display: IconButton.TextBesideIcon
                     icon.name: Style.icons.upload
-                    icon.width: Style.appFont.smallPt
-                    icon.height: Style.appFont.smallPt
-                    icon.color: Style.colors.foreground
+                    icon.width: Style.appFont.mediumPt
+                    icon.height: Style.appFont.mediumPt
+                    icon.color: importBtn.checked ? Style.colors.utilitiesSegmentSelectedText
+                                                  : Style.colors.utilitiesSegmentText
                     text: "Import"
-                    font.pixelSize: Style.appFont.smallPt
+                    font.pixelSize: Style.appFont.mediumPt
 
                     background: Rectangle {
                         radius: viewControl.radius
-                        color: importBtn.checked ? Style.colors.primaryBackground : "transparent"
+                        color: importBtn.checked ? Style.colors.utilitiesSegmentSelectedBackground
+                               : (importBtn.hovered ? Style.colors.utilitiesSegmentHoverBackground
+                                                    : "transparent")
                     }
 
                     onClicked: root.currentIndex = 1

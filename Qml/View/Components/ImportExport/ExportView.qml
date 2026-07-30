@@ -45,8 +45,8 @@ Item {
 
             Text {
                 text: "Target Branch"
-                font.pixelSize: Style.appFont.captionPt
-                color: Style.colors.mutedText
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.utilitiesFieldLabel
             }
 
             ComboBox {
@@ -61,12 +61,16 @@ Item {
 
                 placeholderText: "Select branch"
 
-                Material.background: Style.colors.primaryBackground
-                Material.foreground: Style.colors.secondaryText
+                Material.background: Style.colors.utilitiesInputPopupBackground
+                Material.foreground: Style.colors.utilitiesInputText
 
                 background: Rectangle {
                     radius: Style.dp(5)
-                    color: branchesCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                    color: branchesCombo.hovered ? Style.colors.utilitiesInputHoverBackground
+                                                 : Style.colors.utilitiesInputBackground
+                    border.width: 1
+                    border.color: branchesCombo.activeFocus ? Style.colors.utilitiesInputBorderFocus
+                                                              : Style.colors.utilitiesInputBorder
                 }
 
                 onCurrentIndexChanged: {
@@ -90,8 +94,8 @@ Item {
 
             Text {
                 text: "Base Branch"
-                font.pixelSize: Style.appFont.captionPt
-                color: Style.colors.mutedText
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.utilitiesFieldLabel
             }
 
             ComboBox {
@@ -105,12 +109,16 @@ Item {
 
                 placeholderText: "Select Base"
 
-                Material.background: Style.colors.primaryBackground
-                Material.foreground: Style.colors.secondaryText
+                Material.background: Style.colors.utilitiesInputPopupBackground
+                Material.foreground: Style.colors.utilitiesInputText
 
                 background: Rectangle {
                     radius: Style.dp(5)
-                    color: baseBranchCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                    color: baseBranchCombo.hovered ? Style.colors.utilitiesInputHoverBackground
+                                                   : Style.colors.utilitiesInputBackground
+                    border.width: 1
+                    border.color: baseBranchCombo.activeFocus ? Style.colors.utilitiesInputBorderFocus
+                                                                : Style.colors.utilitiesInputBorder
                 }
             }
         }
@@ -121,8 +129,8 @@ Item {
 
             Text {
                 text: "Output Directory"
-                font.pixelSize: Style.appFont.captionPt
-                color: Style.colors.mutedText
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.utilitiesFieldLabel
             }
 
             RowLayout {
@@ -134,7 +142,9 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: Style.dp(25)
                     radius: Style.dp(5)
-                    color: Style.colors.secondaryBackground
+                    color: Style.colors.utilitiesInputBackground
+                    border.width: 1
+                    border.color: Style.colors.utilitiesInputBorder
 
                     ScrollingText {
                         id: fileLabel
@@ -143,7 +153,8 @@ Item {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         font.pixelSize: Style.appFont.smallPt
-                        color: root.selectedFolder === "" ? Style.colors.placeholderText : Style.colors.secondaryText
+                        color: root.selectedFolder === "" ? Style.colors.utilitiesInputPlaceholder
+                                                         : Style.colors.utilitiesInputText
                         text: root.selectedFolder !== "" ? root.selectedFolder : "Select Directory..."
                     }
                 }
@@ -162,14 +173,16 @@ Item {
                     icon.name: Style.icons.folder
                     icon.width: Style.appFont.smallPt
                     icon.height: Style.appFont.smallPt
-                    icon.color: fileButton.hovered ? Style.colors.secondaryForeground : Style.colors.secondaryText
+                    icon.color: fileButton.hovered ? Style.colors.utilitiesPickerButtonIconHover
+                                                   : Style.colors.utilitiesPickerButtonIcon
                     tooltip: "Select Directory"
 
                     background: Rectangle {
                         radius: 6
-                        color: fileButton.hovered ? Style.colors.accentHover : "transparent"
+                        color: fileButton.hovered ? Style.colors.utilitiesPickerButtonHoverBackground
+                                                  : Style.colors.utilitiesPickerButtonBackground
                         border.width: 1
-                        border.color: Style.colors.primaryBorder
+                        border.color: Style.colors.utilitiesPickerButtonBorder
                     }
 
                     onClicked: folderDialog.open()
@@ -177,25 +190,14 @@ Item {
             }
         }
 
-        IconButton {
+        DashedButton {
             id: exportButton
             Layout.fillWidth: true
             Layout.topMargin: Style.dp(5)
-            implicitHeight: Style.dp(25)
             enabled: root.selectedFolder !== "" && branchesCombo.currentIndex !== -1 && baseBranchCombo.currentIndex !== -1
 
-            display: IconButton.TextBesideIcon
-            icon.name: Style.icons.download
-            icon.width: Style.appFont.smallPt
-            icon.height: Style.appFont.smallPt
-            icon.color: Style.colors.secondaryForeground
+            iconText: Style.icons.download
             text: "Export"
-            font.pixelSize: Style.appFont.mediumPt
-
-            background: Rectangle {
-                radius: Style.dp(4)
-                color: exportButton.enabled ? Style.colors.accent : Style.colors.disabledButton
-            }
 
             onClicked: {
                 let base   = baseBranchCombo.model[baseBranchCombo.currentIndex]
