@@ -1,4 +1,4 @@
-import QtQuick
+﻿import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Controls.Material
@@ -18,9 +18,11 @@ IPopup {
     property NotificationController notificationController: null
     property string targetHash: ""
     property bool pushAfterCreate: true
+    property bool isAnnotated: true
 
     readonly property bool isNameValid: nameInput.text.trim().length > 0
-    readonly property bool canAccept: isNameValid
+    readonly property bool isMessageValid: !root.isAnnotated || messageInput.text.trim().length > 0
+    readonly property bool canAccept: isNameValid && isMessageValid
 
     /* Signals */
     signal tagCreatedSuccessfully()
@@ -73,13 +75,84 @@ IPopup {
                     }
                 }
 
-                // Tag Message Input
+            // Tag Type
+            ColumnLayout {
+                spacing: 6
+                Layout.fillWidth: true
+
+                Text {
+                    text: "Type"
+                    color: Style.colors.mutedText
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.captionPt
+                }
+
+                ColumnLayout {
+                    spacing: 6
+                    Layout.fillWidth: true
+
+                    Repeater {
+                        model: [
+                            { label: "Annotated tag",   hint: "(recommended — includes message)",   value: true },
+                            { label: "Lightweight tag", hint: "",                                   value: false }
+                        ]
+
+                        RowLayout {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Rectangle {
+                                width: 16 
+                                height: 16 
+                                radius: 8
+                                color: "transparent"
+                                border.width: 1
+                                border.color: root.isAnnotated === modelData.value ? Style.colors.accent : Style.colors.mutedText
+                                Layout.alignment: Qt.AlignVCenter
+
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 8
+                                    height: 8
+                                    radius: 4
+                                    color: Style.colors.accent
+                                    visible: root.isAnnotated === modelData.value
+                                }
+                            }
+
+                            Text {
+                                text: modelData.label
+                                color: Style.colors.foreground
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: Style.appFont.smallPt
+                            }
+
+                            Text {
+                                text: modelData.hint
+                                color: Style.colors.mutedText
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: Style.appFont.captionPt
+                                visible: modelData.hint.length > 0
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.isAnnotated = modelData.value
+                            }
+                        }
+                    }
+                }
+            }
                 TextField {
                     id: messageInput
                     placeholderText: "Message (Annotated Tag - Optional)"
                     Layout.fillWidth: true
                     selectByMouse: true
-                    onAccepted: if(root.canAccept) actionBtn.clicked()
+                    enabled: root.isAnnotated
+                    opacity: root.isAnnotated ? 1.0 : 0.5
+                    onAccepted: if (root.canAccept) actionBtn.clicked()
 
                     background: Rectangle {
                         implicitHeight: 40
@@ -177,8 +250,9 @@ IPopup {
 
                         let tagName = nameInput.text.trim();
                         let commitToTag = root.targetHash === "" ? "HEAD" : root.targetHash;
+                        let tagMessage = root.isAnnotated ? messageInput.text.trim() : "";
 
-                        let res = ctrl.create(tagName, commitToTag, messageInput.text.trim());
+                        let res = ctrl.create(tagName, commitToTag, tagMessage);
 
                         if (res && res.success) {
                             if (root.pushAfterCreate) {
@@ -205,6 +279,7 @@ IPopup {
         messageInput.text = "";
         targetHash = "";
         pushAfterCreate = true;
+        isAnnotated = true;
     }
 
     // Auto-focus logic when popup opens
