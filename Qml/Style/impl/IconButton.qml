@@ -30,6 +30,11 @@ T.Button {
     property string tooltip:      ""
     property real   maximumWidth: -1
 
+    property color  backgroundColor:      Style.colors.secondaryBackground
+    property color  hoverBackgroundColor: Style.colors.cardBackground
+    property color  borderColor:          "transparent"
+    property real   borderWidth:          0
+
     /* Object Properties
      * ****************************************************************************************/
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
@@ -136,7 +141,9 @@ T.Button {
         radius: 5
         color: !control.enabled ? Style.colors.primaryBackground :
                control.down ? Style.colors.surfaceMuted :
-               control.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+               control.hovered ? control.hoverBackgroundColor : control.backgroundColor
+        border.width: control.borderWidth
+        border.color: control.borderColor
     }
 
     ToolTip {
