@@ -39,7 +39,11 @@ RowLayout {
 
     IconButton {
         id: branchChip
-        Layout.preferredHeight: 26
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
+        Layout.preferredHeight: 25
         maximumWidth: 150
 
         topPadding      : 4
@@ -91,6 +95,10 @@ RowLayout {
 
     IconButton {
         id: pullBtn
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
         Layout.preferredHeight: 26
 
         topPadding      : 5
@@ -164,9 +172,9 @@ RowLayout {
         background: Rectangle {
             radius: 5
             color: pushBtnHeader.down ? Style.colors.surfaceMuted :
-                   pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                   pushBtnHeader.hovered ? Style.colors.headerButtonBackgroundHover : Style.colors.headerButtonBackground
             border.width: 1
-            border.color: Style.colors.chipBorder
+            border.color: Style.colors.headerButtonBorder
         }
 
         BusyIndicator {
@@ -195,6 +203,10 @@ RowLayout {
 
     IconButton {
         id: fetchBtnHeader
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
         Layout.preferredHeight: 26
 
         topPadding      : 5
@@ -269,9 +281,9 @@ RowLayout {
         background: Rectangle {
             radius: 5
             color: pushForceBtnHeader.down ? Style.colors.surfaceMuted :
-                   pushForceBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                   pushForceBtnHeader.hovered ? Style.colors.headerButtonBackgroundHover : Style.colors.headerButtonBackground
             border.width: 1
-            border.color: Style.colors.forcePushBorder
+            border.color: Style.colors.headerButtonBorder
         }
 
         BusyIndicator {
