@@ -30,6 +30,9 @@ UtilitiesCard {
     icon: Style.icons.copy
 
     content: ColumnLayout {
+        anchors.fill: parent
+        anchors.leftMargin: Style.dp(10)
+        anchors.rightMargin: Style.dp(10)
         spacing: 6
 
         GuideHoverTrigger {
@@ -78,7 +81,7 @@ UtilitiesCard {
             Text {
                 text: "Upstream"
                 font.pixelSize: Style.appFont.captionPt
-                color: Style.colors.mutedText
+                color: Style.colors.utilitiesFieldLabel
             }
             TextField {
                 id: upstreamInput
@@ -87,12 +90,16 @@ UtilitiesCard {
                 placeholderText: "branch, tag, or commit SHA"
                 selectByMouse: true
                 font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.utilitiesInputText
+                placeholderTextColor: Style.colors.utilitiesInputPlaceholder
 
                 background: Rectangle {
                     implicitHeight: Style.dp(25)
-                    color: Style.colors.secondaryBackground
+                    color: Style.colors.utilitiesInputBackground
                     radius: Style.dp(4)
-                    border.color: upstreamInput.activeFocus ? Style.colors.accent : "transparent"
+                    border.width: 1
+                    border.color: upstreamInput.activeFocus ? Style.colors.utilitiesInputBorderFocus
+                                                              : Style.colors.utilitiesInputBorder
                 }
             }
         }
@@ -105,7 +112,7 @@ UtilitiesCard {
             Text {
                 text: "Branch to rebase"
                 font.pixelSize: Style.appFont.captionPt
-                color: Style.colors.mutedText
+                color: Style.colors.utilitiesFieldLabel
             }
 
             ComboBox {
@@ -120,13 +127,16 @@ UtilitiesCard {
                 model: branchModel
                 currentIndex: 0
 
-                Material.background: Style.colors.primaryBackground
-                Material.foreground: Style.colors.secondaryText
+                Material.background: Style.colors.utilitiesInputPopupBackground
+                Material.foreground: Style.colors.utilitiesInputText
 
                 background: Rectangle {
                     radius: Style.dp(4)
-                    color: branchCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                    border.color: branchCombo.activeFocus ? Style.colors.accent : "transparent"
+                    color: branchCombo.hovered ? Style.colors.utilitiesInputHoverBackground
+                                               : Style.colors.utilitiesInputBackground
+                    border.width: 1
+                    border.color: branchCombo.activeFocus ? Style.colors.utilitiesInputBorderFocus
+                                                            : Style.colors.utilitiesInputBorder
                 }
             }
         }
@@ -139,10 +149,10 @@ UtilitiesCard {
             font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.smallPt
             implicitHeight: Style.dp(25)
-            Material.accent: Style.colors.accent
-            Material.foreground: Style.colors.foreground
+            Material.accent: Style.colors.utilitiesCheckBoxAccent
+            Material.foreground: Style.colors.utilitiesCheckBoxText
             palette {
-                text: Style.colors.foreground
+                text: Style.colors.utilitiesCheckBoxText
             }
 
             checked: false
@@ -158,7 +168,7 @@ UtilitiesCard {
                 text: "Onto (new base)"
                 Layout.fillWidth: true
                 font.pixelSize: Style.appFont.captionPt
-                color: Style.colors.mutedText
+                color: Style.colors.utilitiesFieldLabel
             }
             TextField {
                 id: ontoInput
@@ -167,36 +177,29 @@ UtilitiesCard {
                 placeholderText: "branch, tag, or commit SHA"
                 selectByMouse: true
                 font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.utilitiesInputText
+                placeholderTextColor: Style.colors.utilitiesInputPlaceholder
 
                 background: Rectangle {
                     implicitHeight: Style.dp(25)
-                    color: Style.colors.secondaryBackground
+                    color: Style.colors.utilitiesInputBackground
                     radius: Style.dp(4)
-                    border.color: ontoInput.activeFocus ? Style.colors.accent : "transparent"
+                    border.width: 1
+                    border.color: ontoInput.activeFocus ? Style.colors.utilitiesInputBorderFocus
+                                                          : Style.colors.utilitiesInputBorder
                 }
             }
         }
 
         // Rebase button
-        IconButton {
+        DashedButton {
             id: startRebaseBtn
             Layout.fillWidth: true
-            implicitHeight: Style.dp(25)
+            Layout.topMargin: Style.dp(2)
             enabled: upstreamInput.text.trim().length > 0
 
-            display: IconButton.TextBesideIcon
-            icon.name: Style.icons.copy
-            icon.width: Style.appFont.smallPt
-            icon.height: Style.appFont.smallPt
-            icon.color: Style.colors.secondaryForeground
+            iconText: Style.icons.copy
             text: "Start Rebase"
-            font.pixelSize: Style.appFont.mediumPt
-
-            background: Rectangle {
-                radius: Style.dp(4)
-                color: startRebaseBtn.enabled ? (startRebaseBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
-                                               : Style.colors.disabledButton
-            }
 
             onClicked: previewRebase(upstreamInput.text, ontoInput.text, advancedToggle.checked, branchCombo.currentIndex)
         }
