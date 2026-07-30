@@ -2,10 +2,10 @@ import QtQuick
 
 QtObject{
     property color midnightBlack:       "#101013"
+    property color warmChalk:           "#EFEFEC"
     property color darkCharcoal:        "#1D1D22"
     property color graphiteDark:        "#17171C"
     property color obsidianDark:        "#0D0D0F"
-    property color onyxShadow:          "#17171C"
     property color mintyFresh:          "#86EFAC"
     property color softMintGlow:        "#144ADE80"
     property color paleCoralMist:       "#14F87171"
@@ -30,6 +30,22 @@ QtObject{
     property color subtleAzureGlow:     "#243B82F6"
     property color obsidianDeep:        "#111118"
     property color softCloudWhite:      "#F4F4F8"
+    property color slateLavender:       "#9898B4"
+    property color deepMidnight:        "#323248"
+    property color darkObsidian:        "#222230"
+    property color abyssBlack:          "#131316"
+    property color offWhite:            "#E8E8E3"
+    property color softParchment:       "#ECECE9"
+    property color darkGraphite:        "#0D0D0F"
+    property color charcoalGray:        "#222228"
+    property color lightPlatinum:       "#DDDDDF"
+    property color azureTint:           "#1F3B82F6"
+    property color accentWash:          "#14074E96"
+    property color graphiteSurface:     "#1A1A20"
+    property color graphiteHover:       "#202028"
+    property color graphiteSelected:    "#26262F"
+    property color slateMuted:          "#6A6A78"
+    property color frostWash:           "#14F4F4F8"
 
     // Primary colors
     property color primaryBackground:   "#FDFDFD"
@@ -70,9 +86,9 @@ QtObject{
     property color linePanelForeground: "#666666"
     
     // Surface & Background colors
-    property color cardBackground:      "#E8E8E8"
+    property color cardBackground:      "#DCDCDC"
     property color surfaceLight:        "#F3F3F3"
-    property color surfaceMuted:        "#D9D9D9"
+    property color surfaceMuted:        "#CECECE"
     property color hintBackground:      "#DEE5EB"
     
     // Border colors
@@ -203,6 +219,7 @@ QtObject{
     property color contextMenuBorder:     "#CDD2DA"
     property color contextMenuSeparator:  "#DCE1E9"
     property color contextMenuHover:      "#E7E7E7"
+    property color contextMenuDanger:     "#DC3545"
 
     property color branchSelectedAccent:  "#2563EB"
 
@@ -248,4 +265,90 @@ QtObject{
     property color commitButton:         branchAccent         // #2563EB
     property color fileBrowserRowHoverBg: Qt.rgba(0,0,0,0.04)
     property color fileBrowserSearchBg:  Qt.rgba(0,0,0,0.05)
+    property color headerBackground:            warmChalk
+    property color headerButtonBackground:      offWhite
+    property color headerButtonBackgroundHover: "#E0E0DC"
+    property color headerButtonBorder:          lightPlatinum
+
+    property color segmentedSelected:           "#FDFDFD"
+
+    property color utilitiesPanelBackground:            controlBackground
+    property color utilitiesPanelBorder:                primaryBorder
+    property color utilitiesPanelScrollBar:             controlBorder
+    property color utilitiesPanelScrollBarHover:        mutedText
+
+    property color utilitiesFilterBackground:           primaryBackground
+    property color utilitiesFilterBorder:               controlBorder
+    property color utilitiesFilterBorderFocus:          accent
+    property color utilitiesFilterText:                 foreground
+    property color utilitiesFilterPlaceholder:          placeholderText
+
+    property color utilitiesCardBackground:             primaryBackground
+    property color utilitiesCardSeparator:              primaryBorder
+
+    property color utilitiesCardHeaderBackground:       controlBackground
+    property color utilitiesCardHeaderHoverBackground:  controlBackgroundHover
+    property color utilitiesCardHeaderIcon:             accent
+    property color utilitiesCardTitle:                  foreground
+    property color utilitiesCardChevron:                mutedText
+
+    property color utilitiesCardBadgeBackground:        primaryBackground
+    property color utilitiesCardBadgeBorder:            controlBorder
+    property color utilitiesCardBadgeText:              secondaryText
+
+    property color utilitiesSegmentTrackBackground:     secondaryBorder
+    property color utilitiesSegmentTrackBorder:         controlBorder
+    property color utilitiesSegmentHoverBackground:     controlBackground
+    property color utilitiesSegmentSelectedBackground:  segmentedSelected
+    property color utilitiesSegmentText:                secondaryText
+    property color utilitiesSegmentSelectedText:        foreground
+
+    property color utilitiesSurfaceBackground:          controlBackground
+    property color utilitiesSurfaceBorder:              secondaryBorder
+    property color utilitiesHintText:                   secondaryText
+
+    property color utilitiesRowBackground:              primaryBackground
+    property color utilitiesRowHoverBackground:         controlBackground
+    property color utilitiesRowSelectedBackground:      azureTint
+    property color utilitiesRowBorder:                  controlBorder
+    property color utilitiesRowSelectedIndicator:       accent
+    property color utilitiesRowText:                    foreground
+    property color utilitiesRowSelectedText:            accent
+    property color utilitiesRowIcon:                    secondaryText
+    property color utilitiesRowIconAccent:              accent
+    property color utilitiesRowMetaText:                secondaryText
+    property color utilitiesRowSubText:                 mutedText
+    property color utilitiesRowMissingText:             error
+    property color utilitiesEmptyStateText:             mutedText
+
+    property color utilitiesFieldLabel:                 secondaryText
+    property color utilitiesInputBackground:            controlBackground
+    property color utilitiesInputHoverBackground:       controlBackgroundHover
+    property color utilitiesInputBorder:                controlBorder
+    property color utilitiesInputBorderFocus:           accent
+    property color utilitiesInputText:                  foreground
+    property color utilitiesInputPlaceholder:           placeholderText
+    property color utilitiesInputPopupBackground:       primaryBackground
+
+    property color utilitiesCheckBoxAccent:             accent
+    property color utilitiesCheckBoxText:               foreground
+
+    property color utilitiesPickerButtonBackground:      "transparent"
+    property color utilitiesPickerButtonHoverBackground: accentHover
+    property color utilitiesPickerButtonBorder:          controlBorder
+    property color utilitiesPickerButtonIcon:            secondaryText
+    property color utilitiesPickerButtonIconHover:       onAccentText
+
+    property color dashedButtonText:                    secondaryText
+    property color dashedButtonBorder:                  controlBorder
+    property color dashedButtonTextHover:               accent
+    property color dashedButtonBorderHover:             accent
+    property color dashedButtonBackgroundHover:         accentWash
+    property color dashedButtonTextDanger:              error
+    property color dashedButtonBorderDanger:            error
+
+    property color utilitiesActionIcon:                 secondaryText
+    property color utilitiesActionIconActive:           accent
+    property color utilitiesActionIconWarning:          "#B26A00"
+    property color utilitiesActionIconDanger:           error
 }
