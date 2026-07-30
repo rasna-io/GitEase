@@ -24,6 +24,8 @@ IPopup {
     readonly property bool isMessageValid: !root.isAnnotated || messageInput.text.trim().length > 0
     readonly property bool canAccept: isNameValid && isMessageValid
 
+    readonly property var versionSuggestions: ["v1.0.1", "v1.1.0", "v2.0.0"]
+
     /* Signals */
     signal tagCreatedSuccessfully()
 
@@ -72,6 +74,40 @@ IPopup {
                         color: Style.colors.secondaryBackground
                         radius: 5
                         border.color: nameInput.activeFocus ? Style.colors.accent : "transparent"
+                RowLayout {
+                    spacing: 6
+                    Layout.fillWidth: true
+
+                    Repeater {
+                        model: root.versionSuggestions
+
+                        Rectangle {
+                            id: chip
+                            required property string modelData
+
+                            radius: 4
+                            color: Style.colors.secondaryBackground
+                            border.color: Style.colors.mutedText
+                            border.width: 1
+                            implicitWidth: chipLabel.implicitWidth + 16
+                            implicitHeight: 20
+
+                            Text {
+                                id: chipLabel
+                                anchors.centerIn: parent
+                                text: chip.modelData
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: Style.appFont.captionPt
+                                color: Style.colors.mutedText
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: nameInput.text = chip.modelData
+                            }
+                        }
+                    }
                     }
                 }
 
