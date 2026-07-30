@@ -151,7 +151,7 @@ Rectangle {
                     right: parent.right
                     top: parent.top
                     bottom: parent.bottom
-                    margins: 4
+                    margins: 0
                 }
                 width: parent.width - navigationRail.collapsedWidth - (anchors.leftMargin + anchors.rightMargin)
                 orientation: Qt.Vertical
