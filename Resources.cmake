@@ -169,6 +169,11 @@ set(RESOURCES_COMPONENTS
 
     Qml/View/Components/Remotes/RemoteView.qml
 
+    # Stash Components
+    Qml/View/Components/Stash/StashCard.qml                     # Single stash entry card
+    Qml/View/Components/Stash/StashPopupHeader.qml              # Title block of the stash windows
+    Qml/View/Components/Stash/StashFileList.qml                 # Stash window file sidebar
+
     Qml/View/Components/Branch/BranchManagementView.qml
     Qml/View/Components/Branch/BranchesList.qml
     Qml/View/Components/Tag/TagManagementView.qml
