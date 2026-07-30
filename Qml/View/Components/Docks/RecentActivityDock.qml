@@ -18,6 +18,8 @@ UtilitiesCard {
 
     content: ColumnLayout {
         anchors.fill: parent
+        anchors.leftMargin: Style.dp(10)
+        anchors.rightMargin: Style.dp(10)
         spacing: 8
 
         GuideHoverTrigger {
@@ -42,7 +44,7 @@ UtilitiesCard {
             Layout.fillWidth: true
             Layout.preferredHeight: Math.min(listView.contentHeight, 220) + 12
             radius: 4
-            color: Style.colors.secondaryBackground
+            color: Style.colors.utilitiesSurfaceBackground
 
             ListView {
                 id: listView
@@ -59,7 +61,9 @@ UtilitiesCard {
                     width: listView.width
                     height: Style.dp(35)
                     radius: Style.dp(4)
-                    color: Style.colors.primaryBackground
+                    color: Style.colors.utilitiesRowBackground
+                    border.width: 1
+                    border.color: Style.colors.utilitiesRowBorder
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -71,7 +75,7 @@ UtilitiesCard {
                             spacing: 1
 
                             Text  {
-                                color: Style.colors.foreground
+                                color: Style.colors.utilitiesRowIcon
                                 font.family: Style.fontTypes.inter
                                 font.pixelSize: Style.appFont.smallPt
                                 text: "$ "
@@ -79,7 +83,7 @@ UtilitiesCard {
 
                             ScrollingText  {
                                 Layout.fillWidth: true
-                                color: Style.colors.foreground
+                                color: Style.colors.utilitiesRowText
                                 font.family: Style.fontTypes.inter
                                 font.pixelSize: Style.appFont.smallPt
                                 text: modelData.command
@@ -89,7 +93,7 @@ UtilitiesCard {
                         Text {
                             Layout.fillWidth: true
                             text: Qt.formatDateTime(modelData.time, "MMM dd, yyyy hh:mm:ss")
-                            color: Style.colors.mutedText
+                            color: Style.colors.utilitiesRowMetaText
                             font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.captionPt
                             elide: Text.ElideRight
@@ -104,7 +108,7 @@ UtilitiesCard {
                 anchors.centerIn: parent
                 visible: activityController.activities.length === 0
                 text: "No recent activity yet"
-                color: Style.colors.mutedText
+                color: Style.colors.utilitiesEmptyStateText
                 font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.smallPt
             }
