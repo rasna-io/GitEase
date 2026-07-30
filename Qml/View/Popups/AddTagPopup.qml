@@ -17,6 +17,7 @@ IPopup {
     property TagController tagController: null
     property NotificationController notificationController: null
     property string targetHash: ""
+    property string targetLabel: ""
     property bool pushAfterCreate: true
     property bool isAnnotated: true
 
@@ -199,12 +200,56 @@ IPopup {
                 }
             }
 
-            // Target Info (Visual hint of what we are tagging)
-            Text {
-                text: root.targetHash !== "" ? "Target: " + root.targetHash.substring(0, 8) : "Target: HEAD"
-                color: Style.colors.mutedText
-                font.pixelSize: Style.appFont.defaultPt
+            // Target Commit
+            ColumnLayout {
+                spacing: 6
                 Layout.fillWidth: true
+
+                Text {
+                    text: "Tag Commit"
+                    color: Style.colors.mutedText
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.captionPt
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 36
+                    radius: 5
+                    color: Style.colors.secondaryBackground
+                    border.color: "transparent"
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        spacing: 8
+
+                        Text {
+                            text: Style.icons.tag
+                            font.family: Style.fontTypes.font6Pro
+                            font.pixelSize: Style.appFont.smallPt
+                            color: Style.colors.mutedText
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                            text: root.targetHash !== ""
+                                  ? (
+                                        root.targetLabel !== ""
+                                        ? root.targetHash.substring(0, 8) + " — " + root.targetLabel
+                                        : root.targetHash.substring(0, 8)
+                                    )
+                                  : (
+                                        "HEAD" + (root.targetLabel !== "" ? " — " + root.targetLabel : "")
+                                    )
+                            color: Style.colors.mutedText
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.defaultPt
+                        }
+                    }
+                }
             }
 
             CheckBox {
@@ -314,6 +359,7 @@ IPopup {
         nameInput.text = "";
         messageInput.text = "";
         targetHash = "";
+        targetLabel = "";
         pushAfterCreate = true;
         isAnnotated = true;
     }
