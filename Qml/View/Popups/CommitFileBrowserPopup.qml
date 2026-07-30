@@ -42,6 +42,8 @@ IPopup {
     property int            treeColumnWidth     : root.width * 0.3
     readonly property int   minTreeColumnWidth  : 160
 
+    property int maxLinePixels: 0
+
     // File icon colours by depth (cycling)
     readonly property var fileDepthColors: [
         Style.colors.foreground,
@@ -89,6 +91,12 @@ IPopup {
 
     ListModel {
         id: treeModel
+    }
+
+    TextMetrics {
+        id: textMetrics
+        font.family: Style.fontTypes.monospace
+        font.pixelSize: 12
     }
 
     FileDialog {
@@ -644,56 +652,87 @@ IPopup {
                                          && root.gitTreeController.currentFilePath !== ""
                                          && !root.gitTreeController.currentFileIsBinary
 
+                                anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
+
                                 clip: true
+                                contentWidth: width
                                 ScrollBar.vertical: ScrollBar {}
+
+                                property real horizontalScrollOffset: 0
 
                                 model: root.gitTreeController ? root.gitTreeController.currentFileContent.split('\n') : []
 
-                                delegate: RowLayout {
+                                delegate: Rectangle  {
                                     width: codeView.width
                                     height: 20
-                                    spacing: 0
+                                    color: "transparent"
 
-                                    // Line number gutter
-                                    Rectangle {
-                                        Layout.preferredWidth: 44
-                                        Layout.fillHeight: true
-                                        color: "transparent"
+                                    Item {
+                                        width: codeView.contentWidth
+                                        height: 20
+                                        x: -codeView.horizontalScrollOffset
 
-                                        Rectangle {
-                                            anchors.right: parent.right
-                                            anchors.top: parent.top
-                                            anchors.bottom: parent.bottom
-                                            width: 1
-                                            color: Qt.rgba(1, 1, 1, 0.04)
-                                        }
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            spacing: 0
 
-                                        Label {
-                                            anchors.right: parent.right
-                                            anchors.rightMargin: 12
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: index + 1
-                                            color: Style.colors.lineNumberColor
-                                            font.family: Style.fontTypes.jetBrainsMono
-                                            font.pixelSize: 11
-                                            horizontalAlignment: Text.AlignRight
+                                            // Line number gutter
+                                            Rectangle {
+                                                Layout.preferredWidth: 44
+                                                Layout.fillHeight: true
+                                                color: "transparent"
+
+                                                Rectangle {
+                                                    anchors.right: parent.right
+                                                    anchors.top: parent.top
+                                                    anchors.bottom: parent.bottom
+                                                    width: 1
+                                                    color: Qt.rgba(1, 1, 1, 0.04)
+                                                }
+
+                                                Label {
+                                                    anchors.right: parent.right
+                                                    anchors.rightMargin: 12
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    text: index + 1
+                                                    color: Style.colors.lineNumberColor
+                                                    font.family: Style.fontTypes.monospace
+                                                    font.pixelSize: 11
+                                                    horizontalAlignment: Text.AlignRight
+                                                }
+                                            }
+
+                                            // Code line
+                                            Label {
+                                                Layout.fillWidth: true
+                                                Layout.fillHeight: true
+                                                text: modelData
+                                                color: Style.colors.foreground
+                                                font.family: Style.fontTypes.monospace
+                                                font.pixelSize: 12
+                                                wrapMode: Text.NoWrap
+                                                elide: Text.ElideNone
+                                                padding: 12
+                                                verticalAlignment: Text.AlignVCenter
+
+                                            }
                                         }
                                     }
+                                }
+                            }
 
-                                    // Code line
-                                    Label {
-                                        Layout.fillWidth: true
-                                        Layout.fillHeight: true
-                                        text: modelData
-                                        color: Style.colors.foreground
-                                        font.family: Style.fontTypes.jetBrainsMono
-                                        font.pixelSize: 12
-                                        wrapMode: Text.NoWrap
-                                        elide: Text.ElideNone
-                                        padding: 12
-                                        verticalAlignment: Text.AlignVCenter
+                            ScrollBar {
+                                id: hScrollBar
+                                orientation: Qt.Horizontal
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                active: true
+                                size: codeView.contentWidth === 0 ? 1 : (codeView.width * 0.5) / codeView.contentWidth
+                                visible: size < 1.0
 
-                                    }
+                                onPositionChanged: {
+                                    codeView.horizontalScrollOffset = position * codeView.contentWidth
                                 }
                             }
                         }
@@ -860,6 +899,8 @@ IPopup {
 
         if (!root.gitTreeController.loadFileContent(root.commitSha, entry.path))
             root.notificationController.error("Failed to load " + entry.path, "Commit File Browser", 5000)
+        else
+            root.updateMaxLineWidth()
     }
 
     function copyCurrentFileContent() {
@@ -898,5 +939,19 @@ IPopup {
 
     function fileIconColor(depth) {
         return fileDepthColors[depth % fileDepthColors.length]
+    }
+
+    function updateMaxLineWidth() {
+        if (!root.gitTreeController || root.gitTreeController.currentFileContent === "")
+            return
+
+        var lines = root.gitTreeController.currentFileContent.split('\n')
+        var maxWidth = 0
+        for (var i = 0; i < lines.length; i++) {
+            textMetrics.text = lines[i]
+            maxWidth = Math.max(maxWidth, textMetrics.advanceWidth)
+        }
+        maxLinePixels = maxWidth + 24
+        codeView.contentWidth = Math.max(codeView.width, maxLinePixels)
     }
 }
