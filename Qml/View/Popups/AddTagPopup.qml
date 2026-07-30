@@ -31,8 +31,8 @@ IPopup {
     signal tagCreatedSuccessfully()
 
     /* Object Properties */
-    width: 360
-    height: 340
+    width: 380
+    height: 500
     padding: 12
 
     contentItem: Rectangle {
@@ -43,7 +43,7 @@ IPopup {
         border.width: 1
 
         ColumnLayout {
-            spacing: 16
+            spacing: 14
             anchors.fill: parent
             anchors.margins: 24
 
@@ -290,6 +290,8 @@ IPopup {
 
                 onCheckedChanged: root.pushAfterCreate = checked
             }
+
+            Item { Layout.fillHeight: true }
 
             RowLayout {
                 spacing: 12
