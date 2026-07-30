@@ -60,7 +60,7 @@ UtilitiesCard {
                         targetProvider: function() { return stashListView },
                         icon: Style.icons.archive,
                         title: "Your Stashes",
-                        description: "Shelved changes appear here. Open previews the stash's files, Pop applies it and removes it from the list, Apply keeps it in the list, and the trash icon drops it permanently."
+                        description: "Shelved changes appear here, one card per stash with the branch, base commit and file count. Apply keeps the stash in the list, Pop applies it and removes it, Drop deletes it permanently, and View diff previews its files."
                     },
                     {
                         targetProvider: function() { return actionBtn },
@@ -68,6 +68,13 @@ UtilitiesCard {
                         title: "Create a Stash",
                         description: "Shelve your current uncommitted changes so you can switch branches or pull cleanly, then bring them back later.",
                         commands: [{ command: "git stash" }]
+                    },
+                    {
+                        targetProvider: function() { return dropAllBtn },
+                        icon: Style.icons.trash,
+                        title: "Drop All Stashes",
+                        description: "Deletes every stash in this repository at once. The shelved changes are gone for good, so use it only to clean up stashes you no longer need.",
+                        commands: [{ command: "git stash clear" }]
                     }
                 ]
             }
@@ -111,90 +118,34 @@ UtilitiesCard {
         ListView {
             id: stashListView
             Layout.fillWidth: true
-            Layout.preferredHeight: Math.min(contentHeight, 220)
-            spacing: 4
+            Layout.preferredHeight: Math.min(contentHeight, Style.dp(300))
+            spacing: Style.dp(6)
             clip: true
             model: root.stashes
 
-            delegate: Rectangle {
+            delegate: StashCard {
                 width: stashListView.width
-                height: Style.dp(35)
-                radius: 4
-                property bool selected: root.selectedStash && root.selectedStash.index === modelData.index
-                color: selected ? Style.colors.utilitiesRowSelectedBackground
-                                : Style.colors.utilitiesRowBackground
-                border.width: 1
-                border.color: Style.colors.utilitiesRowBorder
+                height: implicitHeight
 
-                MouseArea {
-                    id: rightClickArea
-                    anchors.fill: parent
-                    acceptedButtons: Qt.RightButton
-                    onClicked: (mouse) => {
-                        var pos = mapToItem(Overlay.overlay, mouse.x, mouse.y)
-                        itemContextMenu.menuModel = root.buildStashMenu(modelData)
-                        itemContextMenu.x = pos.x
-                        itemContextMenu.y = pos.y
-                        itemContextMenu.open()
-                    }
-                }
+                stashRef:   "stash@{%1}".arg(modelData.index)
+                message:    modelData.message || ""
+                branchName: root.stashBranch(modelData)
+                baseId:     root.stashBaseId(modelData)
+                fileCount:  modelData.fileCount !== undefined ? modelData.fileCount : -1
+                dateTime:   modelData.dateTime || null
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 6
-                    spacing: 4
+                selected: !!root.selectedStash && root.selectedStash.index === modelData.index
 
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 1
-                        ScrollingText {
-                            Layout.fillWidth: true
-                            text: modelData.message || qsTr("WIP on %1").arg(modelData.author || "unknown")
-                            color: Style.colors.utilitiesRowText
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.smallPt
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: modelData.dateTime ? Qt.formatDateTime(modelData.dateTime, "MMM dd, yyyy hh:mm") : ""
-                            color: Style.colors.utilitiesRowMetaText
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.captionPt
-                            elide: Text.ElideRight
-                        }
-                    }
+                onApplyClicked:    root.applyStash(modelData)
+                onPopClicked:      root.popStash(modelData)
+                onDropClicked:     root.dropStash(modelData)
+                onViewDiffClicked: root.openPreview(modelData)
 
-                    Row {
-                        spacing: 2
-
-                        ActionIconButton {
-                            iconText: Style.icons.file
-                            tooltip: "Open"
-                            textColor: Style.colors.utilitiesActionIcon
-                            onClicked: root.openPreview(modelData)
-                        }
-
-                        ActionIconButton {
-                            iconText: Style.icons.undo
-                            tooltip: "Pop"
-                            textColor: Style.colors.utilitiesActionIcon
-                            onClicked: root.popStash(modelData)
-                        }
-
-                        ActionIconButton {
-                            iconText: Style.icons.check
-                            tooltip: "Apply"
-                            textColor: Style.colors.utilitiesActionIcon
-                            onClicked: root.applyStash(modelData)
-                        }
-
-                        ActionIconButton {
-                            iconText: Style.icons.trash
-                            tooltip: "Drop"
-                            textColor: Style.colors.utilitiesActionIconDanger
-                            onClicked: root.dropStash(modelData)
-                        }
-                    }
+                onMenuRequested: (overlayPosition) => {
+                    itemContextMenu.menuModel = root.buildStashMenu(modelData)
+                    itemContextMenu.x = overlayPosition.x
+                    itemContextMenu.y = overlayPosition.y
+                    itemContextMenu.open()
                 }
             }
 
@@ -211,6 +162,23 @@ UtilitiesCard {
             text: "Add Stash"
 
             onClicked: root.openAddEditPopup()
+        }
+
+        DashedButton {
+            id: dropAllBtn
+            Layout.fillWidth: true
+
+            enabled: root.stashes.length > 0
+
+            iconText: Style.icons.trash
+            text: "Drop all stashes"
+
+            textColor: dropAllBtn.hovered && dropAllBtn.enabled ? Style.colors.dashedButtonTextDanger
+                                                                : Style.colors.dashedButtonText
+            borderColor: dropAllBtn.hovered && dropAllBtn.enabled ? Style.colors.dashedButtonBorderDanger
+                                                                  : Style.colors.dashedButtonBorder
+
+            onClicked: root.dropAllStashes()
         }
     }
 
@@ -298,13 +266,58 @@ UtilitiesCard {
         }
     }
 
+    //! Drops every stash, highest index first so the remaining indices stay valid
+    function dropAllStashes() {
+        if (!root.stashController || root.stashes.length === 0)
+            return
+
+        let total = root.stashes.length
+
+        for (let i = total - 1; i >= 0; --i) {
+            let result = root.stashController.remove(i)
+            if (!result.success) {
+                if (root.notificationController) {
+                    root.notificationController.error(result.errorMessage || "Failed to drop all stashes",
+                                                     "Stash Error", 5000)
+                }
+                root.updateStashes()
+                return
+            }
+        }
+
+        if (root.notificationController) {
+            root.notificationController.success(total === 1 ? "1 stash dropped"
+                                                           : total + " stashes dropped",
+                                               "Stash", 3000)
+        }
+
+        root.updateStashes()
+    }
+
     function buildStashMenu(stashEntry) {
         return [
-            { text: "Open",  icon: Style.icons.file,  action: function() { root.openPreview(stashEntry) } },
-            { text: "Pop",   icon: Style.icons.undo,  action: function() { root.popStash(stashEntry) } },
-            { text: "Apply", icon: Style.icons.check, action: function() { root.applyStash(stashEntry) } },
-            { text: "Drop",  icon: Style.icons.trash, action: function() { root.dropStash(stashEntry) } }
+            { text: "View diff", icon: Style.icons.file,  action: function() { root.openPreview(stashEntry) } },
+            { text: "Pop",       icon: Style.icons.undo,  action: function() { root.popStash(stashEntry) } },
+            { text: "Apply",     icon: Style.icons.check, action: function() { root.applyStash(stashEntry) } },
+            { text: "Drop",      icon: Style.icons.trash, action: function() { root.dropStash(stashEntry) } }
         ]
+    }
+
+    //! The branch the stash was taken on, parsed out of git's "WIP on <branch>: ..." message
+    function stashBranch(stashEntry) {
+        if (!stashEntry || !stashEntry.message)
+            return ""
+
+        let match = /^(?:WIP on|On) ([^:]+):/.exec(stashEntry.message)
+        return match ? match[1].trim() : ""
+    }
+
+    function stashBaseId(stashEntry) {
+        if (!stashEntry)
+            return ""
+
+        let id = stashEntry.parentId || stashEntry.id || ""
+        return id.substring(0, 7)
     }
 
     function updateStashes() {
