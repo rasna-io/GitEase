@@ -49,9 +49,29 @@ RowLayout {
 
     /* Object Properties
      * ****************************************************************************************/
-    spacing             : (parent && parent.width < Style.appHeight) ? 6 : 10
+    spacing             : (parent && parent.width < Style.appHeight) ? 3 : 5
     anchors.leftMargin  : (parent && parent.width < Style.appHeight) ? 8 : 20
     anchors.rightMargin : (parent && parent.width < Style.appHeight) ? 4 : 5
+
+    Text {
+        text: "Commit Graph"
+        color: Style.colors.descriptionText
+        font.family: Style.fontTypes.inter
+        font.weight: Font.DemiBold
+        font.pixelSize: Style.appFont.smallPt
+
+        visible: !headerRow.compact
+    }
+
+    Rectangle {
+        Layout.preferredHeight: parent.height - Style.dp(8)
+        Layout.preferredWidth: Style.dp(1)
+        Layout.alignment: Qt.AlignVCenter
+
+        color: Style.colors.primaryBorder
+
+        visible: !headerRow.compact
+    }
 
     Item {
         id: textFilterArea
@@ -66,7 +86,11 @@ RowLayout {
             width: textFilterArea.width
             height: textFilterArea.height
             placeholderTextColor: Style.colors.descriptionText
-            backgroundColor: hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            hoverEnabled: true
+            backgroundColor: textFilterField.hovered ? Style.colors.headerButtonBackgroundHover
+                                                     : Style.colors.headerButtonBackground
+            borderColor: Style.colors.headerButtonBorder
+
             minHeight: headerRow.controlSize
             placeholderText: {
                 var modes = headerRow.filterModes || []
@@ -78,7 +102,7 @@ RowLayout {
             font.weight: 400
             font.pixelSize: Style.appFont.captionPt
             borderRadius: 5
-            borderWidth: 0
+            borderWidth: 1
             focusBorderWidth: 1
             onTextChanged: {
                 headerRow.filterText = text
@@ -96,6 +120,10 @@ RowLayout {
 
     IconButton {
         id: filterButton
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
         Layout.preferredHeight: headerRow.controlSize
 
         text: "Filters"
@@ -226,6 +254,10 @@ RowLayout {
 
     IconButton {
         id: pullBtn
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
         Layout.preferredHeight: headerRow.controlSize
 
         solidIcon: true
@@ -253,7 +285,9 @@ RowLayout {
         background: Rectangle {
             radius: 5
             color: pushBtnHeader.down ? Style.colors.surfaceMuted :
-                   pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                   pushBtnHeader.hovered ? Style.colors.headerButtonBackgroundHover : Style.colors.headerButtonBackground
+            border.width: 1
+            border.color: Style.colors.headerButtonBorder
         }
 
         BusyIndicator {
@@ -282,6 +316,10 @@ RowLayout {
 
     IconButton {
         id: fetchBtnHeader
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
         Layout.preferredHeight: headerRow.controlSize
 
         enabled: !headerRow.isFetching
@@ -302,6 +340,10 @@ RowLayout {
 
     IconButton {
         id: reloadButton
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
         Layout.preferredWidth: headerRow.controlSize
         Layout.preferredHeight: headerRow.controlSize
         Layout.leftMargin: compact ? 3 : (tight ? 5 : 7)
@@ -332,8 +374,11 @@ RowLayout {
         background: Rectangle {
             radius: 5
             color: panelToggleButton.down ? Style.colors.surfaceMuted :
-                   panelToggleButton.hovered ? Style.colors.cardBackground :
-                   headerRow.panelOpen ? Style.colors.subtleAzureGlow : "transparent"
+                   panelToggleButton.hovered ? Style.colors.headerButtonBackgroundHover :
+                   headerRow.panelOpen ? Style.colors.subtleAzureGlow
+                                       : Style.colors.headerButtonBackground
+            border.width: 1
+            border.color: Style.colors.headerButtonBorder
         }
 
         onClicked: headerRow.panelToggleRequested()
