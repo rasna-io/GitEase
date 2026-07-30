@@ -22,6 +22,11 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    Rectangle {
+        anchors.fill: parent
+        color: Style.colors.headerBackground
+    }
+
     MouseArea {
         id: dragArea
         anchors.fill: parent
