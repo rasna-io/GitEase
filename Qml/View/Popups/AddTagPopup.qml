@@ -192,9 +192,22 @@ IPopup {
                     }
                 }
             }
+
+            // Tag Message
+            ColumnLayout {
+                spacing: 6
+                Layout.fillWidth: true
+
+                Text {
+                    text: "Message"
+                    color: Style.colors.mutedText
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.captionPt
+                }
+
                 TextField {
                     id: messageInput
-                    placeholderText: "Message (Annotated Tag - Optional)"
+                    placeholderText: "Release v1.0.0"
                     Layout.fillWidth: true
                     selectByMouse: true
                     enabled: root.isAnnotated
