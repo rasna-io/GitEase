@@ -36,6 +36,9 @@ Rectangle {
     readonly property bool canNavigate: root.openBlockCount > 0
     readonly property bool canReset: root.selectedConflict !== null
 
+    //! Where the unresolved conflict zones sit, as fractions of the row count.
+    property var conflictMarkers: []
+
     //! blockIndex -> { ours, theirs }, read off each block's own marker lines.
     readonly property var blockLabels: {
         root.revision
@@ -177,7 +180,7 @@ Rectangle {
             ListView {
                 id: conflictListView
 
-                property real horizontalScrollOffset: 0
+                property real horizontalScrollOffset: hScrollBar.offset
                 property real maxContentWidth: 0
 
                 anchors.fill: parent
@@ -188,36 +191,10 @@ Rectangle {
                 cacheBuffer: 5000
                 reuseItems: true
 
-                ScrollBar.vertical: ScrollBar {
+                ScrollBar.vertical: DiffScrollBar {
                     id: vScrollBar
-                    active: true
-                }
-
-                // Minimap of the remaining conflict zones, drawn over the vertical scrollbar.
-                Item {
-                    id: conflictMarkerOverlay
-                    parent: conflictListView
-                    x: vScrollBar.x
-                    y: vScrollBar.y
-                    width: vScrollBar.width
-                    height: vScrollBar.height
-                    z: 100
-                    clip: true
-
-                    Repeater {
-                        model: conflictMarkersModel
-
-                        delegate: Rectangle {
-                            required property real startRatio
-                            required property real sizeRatio
-
-                            x: 0
-                            y: startRatio * conflictMarkerOverlay.height
-                            width: conflictMarkerOverlay.width
-                            height: Math.max(2, sizeRatio * conflictMarkerOverlay.height)
-                            color: Style.colors.conflictMarker
-                        }
-                    }
+                    markers: root.conflictMarkers
+                    markerColor: Style.colors.conflictMarker
 
                     onHeightChanged: {
                         if (height > 0)
@@ -251,20 +228,15 @@ Rectangle {
                 }
             }
 
-            ScrollBar {
+            DiffScrollBar {
                 id: hScrollBar
                 orientation: Qt.Horizontal
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                active: true
-                size: conflictListView.maxContentWidth === 0
-                      ? 1 : (conflictListView.width * 0.5) / conflictListView.maxContentWidth
-                visible: size < 1.0
 
-                onPositionChanged: {
-                    conflictListView.horizontalScrollOffset = position * conflictListView.maxContentWidth
-                }
+                contentSize:  conflictListView.maxContentWidth
+                viewportSize: conflictListView.width
             }
 
             EmptyStateView {
@@ -276,10 +248,6 @@ Rectangle {
         }
     }
 
-    ListModel {
-        id: conflictMarkersModel
-    }
-
     Timer {
         id: markersUpdateTimer
         interval: 50
@@ -289,13 +257,15 @@ Rectangle {
     /* Marker minimap
      * ****************************************************************************************/
     function updateConflictMarkers() {
-        conflictMarkersModel.clear()
-
         let totalRows = root.displayModel ? root.displayModel.count : 0
-        if (totalRows === 0 || conflictMarkerOverlay.height <= 0)
+        if (totalRows === 0 || vScrollBar.height <= 0) {
+            root.conflictMarkers = []
             return
+        }
 
+        let markers = []
         let stack = []
+
         for (let i = 0; i < totalRows; ++i) {
             let row = root.displayModel.get(i)
 
@@ -303,10 +273,12 @@ Rectangle {
                 stack.push(i)
             } else if (row.role === "marker-end" && stack.length > 0) {
                 let startIdx = stack.pop()
-                conflictMarkersModel.append({ startRatio: startIdx / totalRows,
-                                              sizeRatio: (i - startIdx + 1) / totalRows })
+                markers.push({ startRatio: startIdx / totalRows,
+                               sizeRatio: (i - startIdx + 1) / totalRows })
             }
         }
+
+        root.conflictMarkers = markers
     }
 
     function scheduleMarkerUpdate() {
