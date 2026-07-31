@@ -171,53 +171,57 @@ IPopup {
 
                     Item { Layout.fillWidth: true }
 
-                    // SHA
-                    Label {
-                        text: root.commitShortSha
-                        color: Style.colors.accent
-                        font.family: Style.fontTypes.jetBrainsMono
-                        font.pixelSize: 11
-                    }
+                    RowLayout {
+                        spacing: 10
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
 
-                    // Message
-                    Label {
-                        text: root.commitMessage
-                        color: Style.colors.mutedText
-                        font.family: Style.fontTypes.jetBrainsMono
-                        font.pixelSize: 11
-                        elide: Text.ElideRight
-                        maximumLineCount: 1
-                    }
-
-                    // Close button
-                    ToolButton {
-                        id: closeButton
-                        Layout.preferredWidth: 22
-                        Layout.preferredHeight: 22
-                        hoverEnabled: true
-
-                        contentItem: Text {
-                            anchors.centerIn: parent
-                            text: Style.icons.close
-                            font.family: Style.fontTypes.font6ProSolid
-                            font.pixelSize: 10
-                            color: parent.hovered ? Style.colors.foreground : Style.colors.mutedText
+                        // SHA
+                        Label {
+                            text: root.commitShortSha
+                            color: Style.colors.accent
+                            font.family: Style.fontTypes.monospace
+                            font.pixelSize: 11
                         }
 
-                        background: Rectangle {
-                            radius: 5
-                            color: parent.hovered ? Style.colors.hoverTitle : "transparent"
+                        ScrollingText {
+                            text: root.commitMessage
+                            Layout.maximumWidth: 300
+                            color: Style.colors.titleText
+                            font.family: Style.fontTypes.monospace
+                            font.pixelSize: 11
                         }
 
-                        onClicked: {
-                            root.close()
-                            root.closeRequested()
-                        }
+                        // Close button
+                        ToolButton {
+                            id: closeButton
+                            Layout.preferredWidth: 22
+                            Layout.preferredHeight: 22
+                            hoverEnabled: true
 
-                        MouseArea {
-                            anchors.fill: parent
-                            acceptedButtons: Qt.NoButton
-                            cursorShape: Qt.PointingHandCursor
+                            contentItem: Text {
+                                anchors.centerIn: parent
+                                text: Style.icons.close
+                                font.family: Style.fontTypes.font6ProSolid
+                                font.pixelSize: 10
+                                color: parent.hovered ? Style.colors.foreground : Style.colors.mutedText
+                            }
+
+                            background: Rectangle {
+                                radius: 5
+                                color: parent.hovered ? Style.colors.hoverTitle : "transparent"
+                            }
+
+                            onClicked: {
+                                root.close()
+                                root.closeRequested()
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                acceptedButtons: Qt.NoButton
+                                cursorShape: Qt.PointingHandCursor
+                            }
                         }
                     }
                 }
