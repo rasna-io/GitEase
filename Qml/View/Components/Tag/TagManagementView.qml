@@ -60,6 +60,12 @@ UtilitiesCard {
         ctrl.pushDeleteTag(tag.name);
     }
 
+    function pushTagToRemote(tag) {
+        notificationController.info("Pushing tag to remote...", "Tag", 1500);
+
+        tagController.pushTag(tag.name);
+    }
+
     function copyTagName(tag) {
         clipboardHelper.text = tag.name
         clipboardHelper.selectAll()
@@ -81,8 +87,10 @@ UtilitiesCard {
             { text: "Copy Name", icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
             { text: "Copy Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } },
             { separator: true },
-            { text: "Delete Tag (Local Only)", icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { root.deleteTagLocal(tag) } },
-            { text: "Delete Tag from Remote (Origin)", icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { root.deleteTagRemote(tag) } }
+            { text: "Push Tag to Remote", icon: Style.icons.upload, action: function() { root.pushTagToRemote(tag) } },
+            { separator: true },
+            { text: "Delete Tag (Local Only)", icon: Style.icons.trash, action: function() { root.deleteTagLocal(tag) } },
+            { text: "Delete Tag from Remote (Origin)", icon: Style.icons.trash, action: function() { root.deleteTagRemote(tag) } }
         ]
     }
 
@@ -251,10 +259,10 @@ UtilitiesCard {
         function onPushTagFinished(result) {
             if (result.success) {
                 if (root.notificationController)
-                    root.notificationController.success("Tag created and pushed", "Success", 3000)
+                    root.notificationController.success("Tag pushed to remote", "Success", 3000)
             } else {
                 if (root.notificationController)
-                    root.notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+                    root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
             }
 
             root.update()
