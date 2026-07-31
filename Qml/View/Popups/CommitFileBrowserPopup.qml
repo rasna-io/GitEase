@@ -156,7 +156,6 @@ IPopup {
                         Layout.preferredWidth: 13
                         Layout.preferredHeight: 13
                         color: Style.colors.warning
-                        verticalAlignment: Text.AlignVCenter
                     }
 
                     // Title
@@ -166,7 +165,6 @@ IPopup {
                         font.family: Style.fontTypes.inter
                         font.pixelSize: 12
                         font.bold: true
-                        verticalAlignment: Text.AlignVCenter
                     }
 
                     Item { Layout.fillWidth: true }
