@@ -112,7 +112,7 @@ UtilitiesCard {
                         targetProvider: function() { return internalListView },
                         icon: Style.icons.tag,
                         title: "Your Tags",
-                        description: "Every tag in the repository is listed here. The first trash icon deletes it locally; the second deletes it from the remote too."
+                        description: "Every tag in the repository is listed here. The first icon pushes the tag to the remote; the second deletes it locally. Right-click a tag for more options, including deleting it from the remote."
                     },
                     {
                         targetProvider: function() { return addTagBtn },
@@ -193,27 +193,28 @@ UtilitiesCard {
                         elide: Text.ElideRight
                     }
 
-                    // 3. Delete Action (Fixed Position)
+                    // 3. Push Action
+                    ActionIconButton {
+                        iconText: Style.icons.upload
+                        textColor: Style.colors.accent
+                        tooltip: "Push Tag to Remote"
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+
+                        onClicked: root.pushTagToRemote(modelData)
+                    }
+
+                    // 4. Delete Action
                     ActionIconButton {
                         iconText: Style.icons.trash
-                        textColor: Style.colors.utilitiesActionIconWarning
+                        textColor: Style.colors.deletededFile
                         tooltip: "Delete Tag (Local Only)"
                         Layout.preferredWidth: 24
                         Layout.preferredHeight: 24
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
                         onClicked: root.deleteTagLocal(modelData)
-                    }
-
-                    ActionIconButton {
-                        iconText: Style.icons.trash
-                        textColor: Style.colors.utilitiesActionIconDanger
-                        tooltip: "Delete Tag from Remote (Origin)"
-                        Layout.preferredWidth: 24
-                        Layout.preferredHeight: 24
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-
-                        onClicked: root.deleteTagRemote(modelData)
                     }
                 }
             }
