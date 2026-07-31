@@ -817,10 +817,21 @@ IPopup {
         treeModel.clear()
 
         var all = root.gitTreeController.fileTreeModel || []
-        for (var i = 0; i < all.length; i++) {
-            var entry = all[i]
-            if (isEntryVisible(entry) && matchesSearch(entry))
-                treeModel.append(entry)
+
+        if (root.searchText === ""){
+            for (var i = 0; i < all.length; i++) {
+                var entry = all[i]
+                if (isEntryVisible(entry))
+                    treeModel.append(entry)
+            }
+        }
+
+        else {
+            for (var j = 0; j < all.length; j++) {
+                var e = all[j]
+                if (matchesSearch(e))
+                    treeModel.append(e)
+            }
         }
     }
 
