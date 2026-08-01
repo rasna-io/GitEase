@@ -93,7 +93,7 @@ UtilitiesCard {
 
 
             { text: "Push Tag to Remote", icon: Style.icons.upload, action: function() { root.pushTagToRemote(tag) } },
-// { text: "Delete", icon: Style.icons.trash, color: Style.colors.deletededFile, action: function() { root.deleteTagRemote(tag) } },
+            // { text: "Delete", icon: Style.icons.trash, color: Style.colors.deletededFile, action: function() { root.deleteTagRemote(tag) } },
                     // TODO: Task "Dynamic Remote/Local Actions"
                     //       Show this menu item only when the tag is known to be on the remote.
                     //       Requires fetching the list of remote tags (GitTag::remoteTagNames) and
