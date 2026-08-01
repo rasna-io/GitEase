@@ -89,8 +89,9 @@ UtilitiesCard {
             { separator: true },
             { text: "Push Tag to Remote", icon: Style.icons.upload, action: function() { root.pushTagToRemote(tag) } },
             { separator: true },
-            { text: "Delete Tag (Local Only)", icon: Style.icons.trash, action: function() { root.deleteTagLocal(tag) } },
-            { text: "Delete Tag from Remote (Origin)", icon: Style.icons.trash, action: function() { root.deleteTagRemote(tag) } }
+
+            { text: "Copy Name", icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
+            { text: "Copy Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } }
         ]
     }
 
