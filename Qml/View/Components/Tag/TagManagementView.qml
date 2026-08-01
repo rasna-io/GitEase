@@ -263,6 +263,12 @@ UtilitiesCard {
                     root.addTagPopup.open();
                 }
             }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                acceptedButtons: Qt.NoButton
+            }
         }
     }
 
