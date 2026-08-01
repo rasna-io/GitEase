@@ -84,9 +84,14 @@ UtilitiesCard {
 
     function buildTagMenu(tag) {
         return [
-            { text: "Copy Name", icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
-            { text: "Copy Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } },
-            { separator: true },
+
+            // { text: "Push Tag to Remote", icon: Style.icons.gitBranch, action: function() { root.checkout(tag) } },
+                    // TODO: Task "Checkout Tag"
+                    //       Implement GitTag::checkout(tagName) in TagController.
+                    //       This menu item will switch the working directory to the tag's commit.
+            // { separator: true },
+
+
             { text: "Push Tag to Remote", icon: Style.icons.upload, action: function() { root.pushTagToRemote(tag) } },
             { separator: true },
 
