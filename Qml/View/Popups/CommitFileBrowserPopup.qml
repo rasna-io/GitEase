@@ -8,7 +8,7 @@ import GitEase_Style_Impl
 import GitEase
 
 /*! ***********************************************************************************************
- * CommitFileBrowserDock
+ * CommitFileBrowserPopup
  * Browse the full repository file tree at a specific commit (read-only),
  * similar to GitHub's "Browse files" on a commit.
  * ************************************************************************************************/
