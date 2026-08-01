@@ -96,7 +96,7 @@ IPopup {
     TextMetrics {
         id: textMetrics
         font.family: Style.fontTypes.monospace
-        font.pixelSize: 12
+        font.pixelSize: Style.appFont.mediumPt
     }
 
     FileDialog {
@@ -162,8 +162,8 @@ IPopup {
                     Label {
                         text: "Browse files at commit"
                         color: Style.colors.titleText
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 12
+                        font.family: Style.fontTypes.inter                                                
+                        font.pixelSize: Style.appFont.mediumPt
                         font.bold: true
                     }
 
@@ -179,15 +179,16 @@ IPopup {
                             text: root.commitShortSha
                             color: Style.colors.accent
                             font.family: Style.fontTypes.monospace
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                         }
 
+                        // Message
                         ScrollingText {
                             text: root.commitMessage.replace(/\n/g, " ")
                             Layout.maximumWidth: 300
                             color: Style.colors.titleText
                             font.family: Style.fontTypes.monospace
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                         }
 
                         // Close button
@@ -201,7 +202,7 @@ IPopup {
                                 anchors.centerIn: parent
                                 text: Style.icons.close
                                 font.family: Style.fontTypes.font6ProSolid
-                                font.pixelSize: 10
+                                font.pixelSize: Style.appFont.smallPt
                                 color: parent.hovered ? Style.colors.foreground : Style.colors.mutedText
                             }
 
@@ -282,7 +283,7 @@ IPopup {
                                             Layout.preferredHeight: 10
                                             text: Style.icons.search
                                             font.family: Style.fontTypes.font6ProSolid
-                                            font.pixelSize: 10
+                                            font.pixelSize: Style.appFont.smallPt
                                             color: Style.colors.mutedText
                                         }
 
@@ -295,7 +296,9 @@ IPopup {
                                             placeholderTextColor: Style.colors.mutedText
                                             color: Style.colors.foreground
                                             font.family: Style.fontTypes.jetBrainsMono
-                                            font.pixelSize: 11
+                                            
+                                          
+                                            font.pixelSize: Style.appFont.defaultPt
                                             background: Item{}
                                             onTextChanged: {
                                                 root.searchText = text.toLowerCase()
@@ -360,7 +363,7 @@ IPopup {
                                             visible: isFolder
                                             text: isExpanded ? Style.icons.caretDown : Style.icons.caretRight
                                             font.family: Style.fontTypes.font6ProSolid
-                                            font.pixelSize: 9
+                                            font.pixelSize: Style.appFont.captionPt
                                             color: Style.colors.mutedText
                                             horizontalAlignment: Text.AlignHCenter
                                         }
@@ -378,7 +381,7 @@ IPopup {
                                     Text {
                                         text: isFolder ? Style.icons.folder : Style.icons.file
                                         font.family: Style.fontTypes.font6ProSolid
-                                        font.pixelSize: 10
+                                        font.pixelSize: Style.appFont.smallPt
                                         color: isFolder ? Style.colors.warning : root.fileIconColor(entryData.depth)
                                     }
 
@@ -388,7 +391,9 @@ IPopup {
                                         text: entryData.name
                                         color: isSelected ? Style.colors.selectedText : Style.colors.foreground
                                         font.family: Style.fontTypes.jetBrainsMono
-                                        font.pixelSize: 12
+                                                                         
+                                        
+                                        font.pixelSize: Style.appFont.mediumPt
                                         elide: Text.ElideRight
                                     }
 
@@ -408,7 +413,7 @@ IPopup {
                                         text: root.childCounts[entryData.path] || ""
                                         color: Style.colors.mutedText
                                         font.family: Style.fontTypes.jetBrainsMono
-                                        font.pixelSize: 10
+                                        font.pixelSize: Style.appFont.smallPt
                                     }
                                 }
 
@@ -495,7 +500,7 @@ IPopup {
                                     Layout.preferredHeight: 12
                                     text: Style.icons.file
                                     font.family: Style.fontTypes.font6ProSolid
-                                    font.pixelSize: 10
+                                    font.pixelSize: Style.appFont.smallPt
                                     color: Style.colors.accent
                                 }
 
@@ -505,7 +510,7 @@ IPopup {
                                     text: root.gitTreeController ? root.gitTreeController.currentFilePath : ""
                                     color: Style.colors.foreground
                                     font.family: Style.fontTypes.jetBrainsMono
-                                    font.pixelSize: 12
+                                    font.pixelSize: Style.appFont.mediumPt
                                     elide: Text.ElideLeft
                                 }
 
@@ -523,7 +528,7 @@ IPopup {
                                         text: "READ ONLY"
                                         color: Style.colors.error
                                         font.family: Style.fontTypes.inter
-                                        font.pixelSize: 9
+                                        font.pixelSize: Style.appFont.captionPt
                                         font.bold: true
                                     }
                                 }
@@ -547,14 +552,14 @@ IPopup {
                                             Text {
                                                 text: Style.icons.copy
                                                 font.family: Style.fontTypes.font6ProSolid
-                                                font.pixelSize: 9
+                                                font.pixelSize: Style.appFont.captionPt
                                                 color: copyButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
 
                                             Label {
                                                 text: "Copy"
-                                                font.pixelSize: 11
+                                                font.pixelSize: Style.appFont.defaultPt
                                                 color: copyButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
@@ -594,14 +599,14 @@ IPopup {
                                             Text {
                                                 text: Style.icons.download
                                                 font.family: Style.fontTypes.font6ProSolid
-                                                font.pixelSize: 9
+                                                font.pixelSize: Style.appFont.captionPt
                                                 color: exportButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
 
                                             Label {
                                                 text: "Export"
-                                                font.pixelSize: 11
+                                                font.pixelSize: Style.appFont.defaultPt
                                                 color: exportButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
                                             }
@@ -699,7 +704,7 @@ IPopup {
                                                     text: index + 1
                                                     color: Style.colors.lineNumberColor
                                                     font.family: Style.fontTypes.monospace
-                                                    font.pixelSize: 11
+                                                    font.pixelSize: Style.appFont.defaultPt
                                                     horizontalAlignment: Text.AlignRight
                                                 }
                                             }
@@ -711,7 +716,7 @@ IPopup {
                                                 text: modelData
                                                 color: Style.colors.foreground
                                                 font.family: Style.fontTypes.monospace
-                                                font.pixelSize: 12
+                                                font.pixelSize: Style.appFont.mediumPt
                                                 wrapMode: Text.NoWrap
                                                 elide: Text.ElideNone
                                                 padding: 12
