@@ -166,6 +166,12 @@ IPopup {
                                     color: Style.colors.accent
                                     visible: root.isAnnotated === modelData.value
                                 }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.isAnnotated = modelData.value
+                                }
                             }
 
                             Text {
@@ -181,12 +187,6 @@ IPopup {
                                 font.family: Style.fontTypes.inter
                                 font.pixelSize: Style.appFont.captionPt
                                 visible: modelData.hint.length > 0
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.isAnnotated = modelData.value
                             }
                         }
                     }
