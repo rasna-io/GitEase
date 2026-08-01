@@ -333,6 +333,15 @@ IPopup {
                         radius: 6
                         opacity: parent.hovered ? 1.0 : 0.7
                     }
+
+                    contentItem: Text {
+                        text: parent.text
+                        font: parent.font
+                        color: Style.colors.accent
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
                 }
 
                 Button {
