@@ -183,7 +183,7 @@ IPopup {
                         }
 
                         ScrollingText {
-                            text: root.commitMessage
+                            text: root.commitMessage.replace(/\n/g, " ")
                             Layout.maximumWidth: 300
                             color: Style.colors.titleText
                             font.family: Style.fontTypes.monospace
