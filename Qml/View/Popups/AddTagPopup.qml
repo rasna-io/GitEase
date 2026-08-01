@@ -342,6 +342,12 @@ IPopup {
                         verticalAlignment: Text.AlignVCenter
                         elide: Text.ElideRight
                     }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        acceptedButtons: Qt.NoButton
+                    }
                 }
 
                 Button {
@@ -381,6 +387,12 @@ IPopup {
                         } else {
                             if (notif) notif.error(res.errorMessage || "Failed to create tag", "Tag Error", 5000);
                         }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        acceptedButtons: Qt.NoButton
                     }
                 }
             }
