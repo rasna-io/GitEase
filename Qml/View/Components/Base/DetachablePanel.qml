@@ -55,12 +55,28 @@ Item {
         detachedWindow.width = Math.max(minWindowWidth, lastWidth)
         detachedWindow.height = Math.max(minWindowHeight, lastHeight)
 
-        let screens = Qt.application.screens
-        if (screens.length > 0) {
-            let screen = screens[0]
-            detachedWindow.x = Math.max(0, (screen.width - detachedWindow.width) / 2)
-            detachedWindow.y = Math.max(0, (screen.height - detachedWindow.height) / 2)
-        }
+        // Center on the screen the panel is currently displayed on, not always the primary one.
+        let screenWidth  = root.Screen.width  || Qt.application.screens[0]?.width  || 0
+        let screenHeight = root.Screen.height || Qt.application.screens[0]?.height || 0
+
+        detachedWindow.x = root.Screen.virtualX + Math.max(0, (screenWidth  - detachedWindow.width)  / 2)
+        detachedWindow.y = root.Screen.virtualY + Math.max(0, (screenHeight - detachedWindow.height) / 2)
+    }
+
+    function bindPopup(popup) {
+        if (!popup || !popup.hasOwnProperty("hostItem"))
+            return
+
+        popup.hostItem = Qt.binding(function() { return root.activeItem })
+    }
+
+    /*! bindPopup() plus open(), for the common "show this shared popup here" case. */
+    function openPopup(popup) {
+        if (!popup)
+            return
+
+        root.bindPopup(popup)
+        popup.open()
     }
 
     function moveContentTo(target) {

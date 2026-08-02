@@ -661,6 +661,8 @@ IPopup {
     ConflictPopup {
         id : rebaseConflictPopup
 
+        hostItem: root.hostOverlay
+
         currentOperation: ConflictPopup.OperationType.Rebase
 
         rebaseController        : root.rebaseController
