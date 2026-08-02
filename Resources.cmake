@@ -175,6 +175,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/PluginsPage/PluginsLeftPanel.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
+    Qml/View/Components/GraphView/GraphFilterPopup.qml
     Qml/View/Components/GraphView/ResizableColumnHeader.qml
     Qml/View/Components/GraphView/CommitGraphCanvas.qml
     Qml/View/Components/GraphView/CommitListDelegate.qml
@@ -183,8 +184,9 @@ set(RESOURCES_COMPONENTS
 
 # Define UI Core Resources
 set(RESOURCES_UICORE
-    Qml/UiCore/UiSession.qml          # Main UI session manager
-    Qml/UiCore/UiSessionPopups.qml    # Popup management for UI session
+    Qml/UiCore/UiSession.qml                    # Main UI session manager
+    Qml/UiCore/UiSessionPopups.qml              # Popup management for UI session
+    Qml/UiCore/RemoteOperationsSession.qml      # Control Fetch/Push/Pull actions
 )
 
 # Define Popups Resources

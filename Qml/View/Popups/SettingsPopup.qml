@@ -153,14 +153,14 @@ IPopup {
                     radius: 5
                     color: Style.colors.secondaryBackground
                     model: [
-                        {id: 0, title: "General", icon: Style.icons.slider},
-                        {id: 1, title: "SSH", icon: Style.icons.terminal},
-                        {id: 2, title: "Appearence", icon: Style.icons.palette},
-                        {id: 3, title: "Updates", icon: Style.icons.refresh},
-                        {id: 4, title: "Help",        icon: Style.icons.info},
+                        {pageId: 0, title: "General", icon: Style.icons.slider},
+                        {pageId: 1, title: "SSH", icon: Style.icons.terminal},
+                        {pageId: 2, title: "Appearence", icon: Style.icons.palette},
+                        {pageId: 3, title: "Updates", icon: Style.icons.refresh},
+                        {pageId: 4, title: "Help",        icon: Style.icons.info},
                     ]
                     onClicked: (modelData) => {
-                        root.currentPage = modelData.id
+                        root.currentPage = modelData.pageId
                     }
                 }
 

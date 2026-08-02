@@ -29,8 +29,8 @@ Window {
      * ****************************************************************************************/
     property int contentHeight: 100
 
-    width: 320
-    height: contentHeight    
+    width: 322
+    height: contentHeight
     
     flags: Qt.ToolTip | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint
     color: "transparent"

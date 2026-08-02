@@ -29,7 +29,7 @@ UtilitiesCard {
     content: ColumnLayout {
         id: content
         anchors.fill: parent
-        spacing: 8
+        spacing: 6
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -58,14 +58,15 @@ UtilitiesCard {
         ListView {
             id: scrollView
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.preferredHeight: Math.min(contentHeight, 220)
             clip: true
+            spacing: Style.dp(2)
 
             model: root.repositoryController.appModel.repositoriesHistory
             delegate: RepositoryListItem {
                 id: item
                 implicitWidth: parent.width
-                implicitHeight: 50
+                implicitHeight: Style.dp(35)
                 name: modelData.split('/').pop() || modelData.split('\\').pop()
                 path: modelData
                 isExists: root.repositoryController.appModel.fileIO.isFileExist(modelData)
@@ -77,39 +78,24 @@ UtilitiesCard {
             onContentHeightChanged: root.pageScrollBlocking = scrollView.contentHeight > scrollView.height + 1
         }
 
-        Button {
+        IconButton {
             id: actionBtn
             Layout.fillWidth: true
-            implicitHeight: 44
+            implicitHeight: Style.dp(25)
 
             enabled: root.repositoryController.appModel.repositoriesHistory.length > 0
 
+            display: IconButton.TextBesideIcon
+            icon.name: Style.icons.trash
+            icon.width: Style.appFont.smallPt
+            icon.height: Style.appFont.smallPt
+            icon.color: Style.colors.selectedText
+            text: "Clear history"
+            font.pixelSize: Style.appFont.mediumPt
+
             background: Rectangle {
-                radius: 8
-                color: actionBtn.enabled ? Style.colors.error : (Style.colors.disabledButton)
-            }
-
-            contentItem: Item {
-                anchors.fill: parent
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.trash
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.mediumPt
-                        color: Style.colors.selectedText
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Clear history"
-                        color: Style.colors.selectedText
-                        font.pixelSize: Style.appFont.h3Pt
-                    }
-                }
+                radius: Style.dp(4)
+                color: actionBtn.enabled ? Style.colors.error : Style.colors.disabledButton
             }
 
             onClicked: {

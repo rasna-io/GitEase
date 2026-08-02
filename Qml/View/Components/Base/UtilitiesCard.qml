@@ -26,24 +26,21 @@ Rectangle {
     // Number of items shown as a header badge. -1 hides the badge.
     property int                badgeCount:         -1
     property bool               collapsed:          true
-    // Height used while expanded; collapsing always shrinks to the header only.
-    property int                expandedHeight:     370
-
-    readonly property int       cardPadding:        16
-    readonly property int       collapsedHeight:    31
-    readonly property int       collapsedPadding:   5
 
     /* Object Properties
      * ****************************************************************************************/
     width: Style.dp(279)
-    height: root.collapsed ? root.collapsedHeight : root.expandedHeight
+    height: root.collapsed ? headerRow.implicitHeight + 12 : mainColumn.implicitHeight
 
-    color: "#131316"
+    color: Style.colors.primaryBackground
     border.width: 1
     border.color: Style.colors.primaryBorder
 
     Behavior on height {
-        NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+        NumberAnimation {
+            duration: 150
+            easing.type: Easing.OutCubic
+        }
     }
 
     /* Signals
@@ -54,80 +51,99 @@ Rectangle {
 
     ColumnLayout {
         id: mainColumn
-        anchors.fill: parent
-        anchors.topMargin: root.collapsed ? root.collapsedPadding : root.cardPadding
-        anchors.bottomMargin: root.collapsed ? root.collapsedPadding : root.cardPadding
-        anchors.leftMargin: root.cardPadding
-        anchors.rightMargin: root.cardPadding
-        spacing: root.cardPadding
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: 1
+        height: implicitHeight
+        spacing: 0
 
         // Header
-        RowLayout {
+        Rectangle {
+            id: headerRectangle
             Layout.fillWidth: true
-            spacing: 10
+            Layout.alignment: Qt.AlignVCenter
+            Layout.preferredHeight: headerRow.implicitHeight + 10
+            color: hoverHandler.hovered ? Style.colors.secondaryBackground : "transparent"
 
-            Label {
-                text: root.icon
-                color: Style.colors.accent
-                font.family: Style.fontTypes.font6Pro
-                font.pixelSize: Style.appFont.largerPt
-            }
-
-            Label {
-                Layout.fillWidth: true
-                text: root.title
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: Style.appFont.h4Pt
-                font.bold: true
-                elide: Text.ElideRight
-            }
-
-            Rectangle {
-                id: badge
-                visible: root.badgeCount >= 0
-                implicitHeight: 18
-                implicitWidth: Math.max(implicitHeight, badgeLabel.implicitWidth + 10)
-                radius: implicitHeight / 2
-                color: Style.colors.secondaryBackground
-                border.width: 1
-                border.color: Style.colors.primaryBorder
+            RowLayout {
+                id: headerRow
+                anchors.fill: parent
+                anchors.leftMargin: 15
+                anchors.rightMargin: 15
+                anchors.topMargin: 5
+                anchors.bottomMargin: 5
+                spacing: 10
 
                 Label {
-                    id: badgeLabel
-                    anchors.centerIn: parent
-                    text: root.badgeCount
+                    text: root.icon
+                    color: Style.colors.accent
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: Style.appFont.largerPt
+                }
+
+                Label {
+                    Layout.fillWidth: true
+                    text: root.title
+                    color: Style.colors.foreground
+                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: Style.appFont.h4Pt
+                    font.bold: true
+                    elide: Text.ElideRight
+                }
+
+                Rectangle {
+                    id: badge
+                    visible: root.badgeCount >= 0
+                    implicitHeight: 18
+                    implicitWidth: Math.max(implicitHeight, badgeLabel.implicitWidth + 10)
+                    radius: implicitHeight / 2
+                    color: Style.colors.secondaryBackground
+                    border.width: 1
+                    border.color: Style.colors.primaryBorder
+
+                    Label {
+                        id: badgeLabel
+                        anchors.centerIn: parent
+                        text: root.badgeCount
+                        color: Style.colors.mutedText
+                        font.family: Style.fontTypes.roboto
+                        font.pixelSize: 10
+                        font.bold: true
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Label {
+                    text: root.collapsed ? Style.icons.caretDown : Style.icons.caretUp
                     color: Style.colors.mutedText
                     font.family: Style.fontTypes.roboto
                     font.pixelSize: 10
                     font.bold: true
                 }
-            }
 
-            Item {
-                Layout.fillWidth: true
-            }
+                TapHandler {
+                    onTapped : root.collapsed = !root.collapsed
+                }
 
-            Label {
-                text: root.collapsed ? Style.icons.caretDown : Style.icons.caretUp
-                color: Style.colors.mutedText
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 10
-                font.bold: true
-            }
-
-            TapHandler {
-                onTapped : root.collapsed = !root.collapsed
+                HoverHandler {
+                    id: hoverHandler
+                }
             }
         }
 
-
         Loader {
+            id: contentLoader
             active: true
             visible: !root.collapsed
             sourceComponent: root.content
-            Layout.fillHeight: true
             Layout.fillWidth: true
+            Layout.margins: 10
+            Layout.topMargin: 5
+            Layout.preferredHeight: item ? item.implicitHeight : 0
 
             HoverHandler {
                 id: contentHoverHandler

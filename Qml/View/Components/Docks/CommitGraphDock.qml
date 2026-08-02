@@ -47,6 +47,7 @@ DetachablePanel {
     property AddTagPopup             addTagPopup            : null
 
     property bool   isForcePush: false
+    property string pendingPushBranch: ""
     property var    allCommits      : []
     property var    commits         : []
     property var    allCommitsHash  : ({})
@@ -74,11 +75,11 @@ DetachablePanel {
     property int commitItemSpacing  : 4
     property int columnSpacing      : 30
 
-    property int commitsColGraphWidth       : parent.width * 0.08
-    property int commitsColBranchTagWidth   : parent.width * 0.17
-    property int commitsColMessageWidth     : parent.width * 0.6
-    property int commitsColAuthorWidth      : parent.width * 0.08
-    property int commitsColDateWidth        : parent.width * 0.17
+    property int commitsColGraphWidth       : root.activeItem.width * 0.08
+    property int commitsColBranchTagWidth   : root.activeItem.width * 0.17
+    property int commitsColMessageWidth     : root.activeItem.width * 0.6
+    property int commitsColAuthorWidth      : root.activeItem.width * 0.08
+    property int commitsColDateWidth        : root.activeItem.width * 0.17
 
     readonly property int minColGraphWidth      : 60
     readonly property int minColBranchTagWidth  : 80
@@ -87,6 +88,10 @@ DetachablePanel {
     readonly property int minColDateWidth       : 80
 
     readonly property bool hasAnyFilter         : Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter)
+
+    readonly property bool canRebaseSelected    : !!root.selectedCommit && !root.selectedCommit.isUncommitted &&
+                                                   root.selectedCommit.hash !== root.headHash &&
+                                                   !!root.branchController.getCurrentBranchName()
 
     /* Signals
      * ****************************************************************************************/
@@ -99,6 +104,13 @@ DetachablePanel {
 
     /* Children
      * ****************************************************************************************/
+    Shortcut {
+        sequence: "Ctrl+R"
+        context: Qt.WindowShortcut
+        enabled: root.canRebaseSelected
+        onActivated: root.executeRebase(root.selectedCommit.hash)
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Style.colors.primaryBackground
@@ -338,27 +350,14 @@ DetachablePanel {
         parent : root.activeItem
     }
 
-    Connections {
-        target: remoteController
-
-        function onPushFinished(result) {
-            if (!result || result.remote !== "origin")
-                return
-
-            if (result.success) {
-                let isForce =  result.data.force === true
-                root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
-            } else {
-                root.notificationController.error(result.errorMessage, "Push Error", 5000)
-            }
-        }
-    }
 
     Connections {
+        id: pushAuthConnection
         target: userAuthenticationPopup
+        enabled: false
 
         function onPasswordConfirm(password){
-            let branchName = branchController.getCurrentBranchName()
+            let branchName = root.pendingPushBranch || branchController.getCurrentBranchName()
             if(branchName.length === 0){
                 root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
             }else{
@@ -369,6 +368,13 @@ DetachablePanel {
                         isForcePush)
                 root.notificationController.info("Push operation started", "Push", 3000)
             }
+            root.pendingPushBranch = ""
+            pushAuthConnection.enabled = false
+        }
+
+        function onRejected() {
+            root.pendingPushBranch = ""
+            pushAuthConnection.enabled = false
         }
     }
 
@@ -846,7 +852,8 @@ DetachablePanel {
                 icon    : resolveMenuIcon(item.icon),
                 enabled : item.enabled !== false,
                 hasCheckBox: item.hasCheckBox,
-                checkBoxText: item.checkBoxText
+                checkBoxText: item.checkBoxText,
+                shortcut: item.shortcut
             }
 
             if (item.subItems) {
@@ -952,6 +959,8 @@ DetachablePanel {
         // Fall-through: both HTTP/HTTPS require auth popup
         case RepositoryController.GitProtocol.HTTPS:
         case RepositoryController.GitProtocol.HTTP:
+            root.pendingPushBranch = branchName
+            pushAuthConnection.enabled = true
             userAuthenticationPopup.parent = Qt.binding(() => {return root.activeItem})
             userAuthenticationPopup.open()
             break

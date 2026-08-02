@@ -194,6 +194,7 @@ Rectangle {
                             appModel: root.uiSession?.appModel
                             branchController: root.uiSession?.branchController
                             remoteController: root.uiSession?.remoteController
+                            remoteOperationsSession: root.uiSession?.remoteOperationsSession
                             userAuthenticationPopup: root.uiSession?.popups?.userAuthenticationPopup
                             commitController: root.uiSession?.commitController
                             statusController: root.uiSession?.statusController
@@ -222,6 +223,7 @@ Rectangle {
                             branchController: root.uiSession?.branchController
                             commitController: root.uiSession?.commitController
                             remoteController: root.uiSession?.remoteController
+                            remoteOperationsSession: root.uiSession?.remoteOperationsSession
                             userProfileController: root.uiSession?.userProfileController
                             stashController: root.uiSession?.stashController
                             notificationController: root.uiSession?.notificationController

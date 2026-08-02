@@ -72,7 +72,7 @@ QtObject {
         diffRemovedBorder:   "#F5C2C7"
         diffAddedBorder:     "#A6E9C6"
 
-        resizeHandle:        "#6b6b6b"
+        resizeHandle:        primaryBorder
         resizeHandlePressed: "#9b9b9b"
 
         selectedText:            "#FFFFFF"
@@ -155,6 +155,13 @@ QtObject {
         property color rebaseStatusRebased:    "#2ECC40"        // bright green
         property color rebaseStatusConflict:   "#FF4136"        // bright red
         property color rebaseStatusSkipped:    mutedText        // dimmed
+
+        contextMenuBackground: obsidianDeep
+        contextMenuBorder:     "#2C2C33"
+        contextMenuSeparator:  "#2C2C33"
+        contextMenuHover:      "#34343D"
+
+        branchSelectedAccent:  "#93C5FD"
     }
 
     property           string       currentTheme:               "Modern Light"

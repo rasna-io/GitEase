@@ -34,7 +34,6 @@ UtilitiesCard {
     title: "Export / Import Project"
     icon: Style.icons.arowLeftRight
 
-
     content: ColumnLayout {
 
         GuideHoverTrigger {
@@ -64,103 +63,76 @@ UtilitiesCard {
         Rectangle {
             id: viewControl
             Layout.fillWidth: true
-            Layout.preferredHeight: 40
-            radius: 10
+            Layout.preferredHeight: Style.dp(25)
+            radius: Style.dp(5)
             color: Style.colors.cardBackground
+
+            border {
+                width: Style.dp(1)
+                color: Style.colors.primaryBorder
+            }
 
             RowLayout {
                 anchors.fill: parent
                 spacing: 4
-                anchors.margins: 5
+                anchors.margins: 2
 
-                Button {
+                IconButton {
                     id: exportBtn
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
                     topInset: 0
-                    bottomInset:0
+                    bottomInset: 0
                     verticalPadding: 6
 
                     checkable: true
                     checked: root.currentIndex === 0
                     ButtonGroup.group: headerButtonGroup
 
-                    onClicked: root.currentIndex = 0
-
-                    contentItem: Item {
-                        anchors.fill: parent
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 8
-
-                            Text {
-                                text: Style.icons.download
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: Style.appFont.mediumPt
-                                color: Style.colors.foreground
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-
-                            Text {
-                                text: "Export"
-                                font.pixelSize: Style.appFont.h3Pt
-                                color: Style.colors.foreground
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-                        }
-                    }
+                    display: IconButton.TextBesideIcon
+                    icon.name: Style.icons.download
+                    icon.width: Style.appFont.smallPt
+                    icon.height: Style.appFont.smallPt
+                    icon.color: Style.colors.foreground
+                    text: "Export"
+                    font.pixelSize: Style.appFont.smallPt
 
                     background: Rectangle {
                         radius: viewControl.radius
                         color: exportBtn.checked ? Style.colors.primaryBackground : "transparent"
                     }
+
+                    onClicked: root.currentIndex = 0
                 }
 
-                Button {
+                IconButton {
                     id: importBtn
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
                     topInset: 0
-                    bottomInset:0
+                    bottomInset: 0
                     verticalPadding: 6
 
                     checkable: true
                     checked: root.currentIndex === 1
                     ButtonGroup.group: headerButtonGroup
 
-                    onClicked: root.currentIndex = 1
-
-                    contentItem: Item {
-                        anchors.fill: parent
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 8
-
-                            Text {
-                                text: Style.icons.upload
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: Style.appFont.mediumPt
-                                color: Style.colors.foreground
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-
-                            Text {
-                                text: "Import"
-                                font.pixelSize: Style.appFont.h3Pt
-                                color: Style.colors.foreground
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-                        }
-                    }
+                    display: IconButton.TextBesideIcon
+                    icon.name: Style.icons.upload
+                    icon.width: Style.appFont.smallPt
+                    icon.height: Style.appFont.smallPt
+                    icon.color: Style.colors.foreground
+                    text: "Import"
+                    font.pixelSize: Style.appFont.smallPt
 
                     background: Rectangle {
                         radius: viewControl.radius
                         color: importBtn.checked ? Style.colors.primaryBackground : "transparent"
                     }
+
+                    onClicked: root.currentIndex = 1
                 }
             }
         }
@@ -168,12 +140,10 @@ UtilitiesCard {
         // Content Area
         StackLayout {
             Layout.fillWidth: true
-            Layout.fillHeight: true
             currentIndex: root.currentIndex
 
             ExportView {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
                 branchController: root.branchController
                 bundleController: root.bundleController
                 notificationController: root.notificationController
@@ -181,7 +151,6 @@ UtilitiesCard {
 
             ImportView {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
                 branchController: root.branchController
                 bundleController: root.bundleController
                 notificationController: root.notificationController

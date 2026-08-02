@@ -27,10 +27,13 @@ QtObject{
     property color amberBg:             Qt.darker(amber, 7.5)
     property color purpleBg:            Qt.darker(purple, 7.5)
     property color marigoldBg:          Qt.darker(marigold, 7.5)
+    property color subtleAzureGlow:     "#243B82F6"
+    property color obsidianDeep:        "#111118"
+    property color softCloudWhite:      "#F4F4F8"
 
     // Primary colors
     property color primaryBackground:   "#FDFDFD"
-    property color secondaryBackground: "#F9F9F9"
+    property color secondaryBackground: "#e5e5e5"
     property color foreground:          "#363636"
     property color secondaryForeground: "#FDFDFD"
     property color accent:              "#074E96"
@@ -87,7 +90,7 @@ QtObject{
     property color windowsClose:        "#FF5555"
 
     // Header indicator
-    property color resizeHandle:        "#E8E8E8"
+    property color resizeHandle:        primaryBorder
     property color resizeHandlePressed: "#A0a0a0"
 
     property color selectedText:            "#FFFFFF"
@@ -183,8 +186,15 @@ QtObject{
     property color compatible:   "#22C55E"   // Green
     property color incompatible: "#EF4444"   // Red
     // Terminal colors
-    property color terminalBackground:  "#1f1f1f"
+    property color terminalBackground:  "#000000"
     property color terminalUserAndHost: "#3fb950"  // GitHub green
     property color terminalWorkDir:     "#58a6ff"  // GitHub blue
     property color terminalCommand:     "#e6edf3"  // GitHub text
+
+    property color contextMenuBackground: softCloudWhite
+    property color contextMenuBorder:     "#CDD2DA"
+    property color contextMenuSeparator:  "#DCE1E9"
+    property color contextMenuHover:      "#E7E7E7"
+
+    property color branchSelectedAccent:  "#2563EB"
 }

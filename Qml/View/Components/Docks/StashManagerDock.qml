@@ -44,7 +44,7 @@ UtilitiesCard {
     content: ColumnLayout {
         id: content
         anchors.fill: parent
-        spacing: 8
+        spacing: 6
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -100,25 +100,44 @@ UtilitiesCard {
             }
         }
 
+        ContextMenu {
+            id: itemContextMenu
+            parent: Overlay.overlay
+            width: 200
+        }
+
         ListView {
             id: stashListView
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 6
+            Layout.preferredHeight: Math.min(contentHeight, 220)
+            spacing: 4
             clip: true
             model: root.stashes
 
             delegate: Rectangle {
                 width: stashListView.width
-                height: 50
-                radius: 5
+                height: Style.dp(35)
+                radius: 4
                 property bool selected: root.selectedStash && root.selectedStash.index === modelData.index
                 color: selected ? Style.colors.hoverTitle : Style.colors.secondaryBackground
 
+                MouseArea {
+                    id: rightClickArea
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    onClicked: (mouse) => {
+                        var pos = mapToItem(Overlay.overlay, mouse.x, mouse.y)
+                        itemContextMenu.menuModel = root.buildStashMenu(modelData)
+                        itemContextMenu.x = pos.x
+                        itemContextMenu.y = pos.y
+                        itemContextMenu.open()
+                    }
+                }
+
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 6
+                    anchors.margins: 6
+                    spacing: 4
 
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -128,7 +147,7 @@ UtilitiesCard {
                             text: modelData.message || qsTr("WIP on %1").arg(modelData.author || "unknown")
                             color: Style.colors.foreground
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: Style.appFont.defaultPt
+                            font.pixelSize: Style.appFont.smallPt
                         }
                         Text {
                             Layout.fillWidth: true
@@ -154,57 +173,21 @@ UtilitiesCard {
                             iconText: Style.icons.undo
                             tooltip: "Pop"
                             textColor: Style.colors.mutedText
-                            onClicked: {
-                                let result = stashController.pop(modelData.index, true)
-                                if (result.success) {
-                                    if (root.notificationController) {
-                                        root.notificationController.success("Stash popped successfully", "Stash", 3000)
-                                    }
-                                    root.updateStashes()
-                                } else {
-                                    if (root.notificationController) {
-                                        root.notificationController.error(result.errorMessage || "Failed to pop stash", "Stash Error", 5000)
-                                    }
-                                }
-                            }
+                            onClicked: root.popStash(modelData)
                         }
 
                         ActionIconButton {
                             iconText: Style.icons.check
                             tooltip: "Apply"
                             textColor: Style.colors.mutedText
-                            onClicked: {
-                                let result = stashController.apply(modelData.index, true)
-                                if (result.success) {
-                                    if (root.notificationController) {
-                                        root.notificationController.success("Stash applied successfully", "Stash", 3000)
-                                    }
-                                    root.updateStashes()
-                                } else {
-                                    if (root.notificationController) {
-                                        root.notificationController.error(result.errorMessage || "Failed to apply stash", "Stash Error", 5000)
-                                    }
-                                }
-                            }
+                            onClicked: root.applyStash(modelData)
                         }
 
                         ActionIconButton {
                             iconText: Style.icons.trash
                             tooltip: "Drop"
                             textColor: Style.colors.deletededFile
-                            onClicked: {
-                                let result = stashController.remove(modelData.index)
-                                if (result.success) {
-                                    if (root.notificationController) {
-                                        root.notificationController.success("Stash removed successfully", "Stash", 3000)
-                                    }
-                                    root.updateStashes()
-                                } else {
-                                    if (root.notificationController) {
-                                        root.notificationController.error(result.errorMessage || "Failed to remove stash", "Stash Error", 5000)
-                                    }
-                                }
-                            }
+                            onClicked: root.dropStash(modelData)
                         }
                     }
                 }
@@ -213,40 +196,25 @@ UtilitiesCard {
             onContentHeightChanged: root.pageScrollBlocking = stashListView.contentHeight > stashListView.height + 1
         }
 
-        Button {
+        IconButton {
             id: actionBtn
             Layout.fillWidth: true
-            implicitHeight: 44
+            implicitHeight: Style.dp(25)
 
             enabled: root.canStash
 
+            display: IconButton.TextBesideIcon
+            icon.name: Style.icons.plus
+            icon.width: Style.appFont.smallPt
+            icon.height: Style.appFont.smallPt
+            icon.color: Style.colors.textButton
+            text: "Stash"
+            font.pixelSize: Style.appFont.mediumPt
+
             background: Rectangle {
-                radius: 8
-                color: actionBtn.enabled ? (actionBtn.hovered) ? Style.colors.accentHover : Style.colors.accent
-                                            : (Style.colors.disabledButton)
-            }
-
-            contentItem: Item {
-                anchors.fill: parent
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.plus
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.mediumPt
-                        color: Style.colors.textButton
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Stash"
-                        color: Style.colors.textButton
-                        font.pixelSize: Style.appFont.h3Pt
-                    }
-                }
+                radius: Style.dp(4)
+                color: actionBtn.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
+                                            : Style.colors.disabledButton
             }
 
             onClicked: root.openAddEditPopup()
@@ -293,6 +261,57 @@ UtilitiesCard {
         root.manageStashPopup.commitController = root.commitController
         root.manageStashPopup.stashEntry = stashEntry
         root.manageStashPopup.open()
+    }
+
+    function popStash(stashEntry) {
+        let result = root.stashController.pop(stashEntry.index, true)
+        if (result.success) {
+            if (root.notificationController) {
+                root.notificationController.success("Stash popped successfully", "Stash", 3000)
+            }
+            root.updateStashes()
+        } else {
+            if (root.notificationController) {
+                root.notificationController.error(result.errorMessage || "Failed to pop stash", "Stash Error", 5000)
+            }
+        }
+    }
+
+    function applyStash(stashEntry) {
+        let result = root.stashController.apply(stashEntry.index, true)
+        if (result.success) {
+            if (root.notificationController) {
+                root.notificationController.success("Stash applied successfully", "Stash", 3000)
+            }
+            root.updateStashes()
+        } else {
+            if (root.notificationController) {
+                root.notificationController.error(result.errorMessage || "Failed to apply stash", "Stash Error", 5000)
+            }
+        }
+    }
+
+    function dropStash(stashEntry) {
+        let result = root.stashController.remove(stashEntry.index)
+        if (result.success) {
+            if (root.notificationController) {
+                root.notificationController.success("Stash removed successfully", "Stash", 3000)
+            }
+            root.updateStashes()
+        } else {
+            if (root.notificationController) {
+                root.notificationController.error(result.errorMessage || "Failed to remove stash", "Stash Error", 5000)
+            }
+        }
+    }
+
+    function buildStashMenu(stashEntry) {
+        return [
+            { text: "Open",  icon: Style.icons.file,  action: function() { root.openPreview(stashEntry) } },
+            { text: "Pop",   icon: Style.icons.undo,  action: function() { root.popStash(stashEntry) } },
+            { text: "Apply", icon: Style.icons.check, action: function() { root.applyStash(stashEntry) } },
+            { text: "Drop",  icon: Style.icons.trash, action: function() { root.dropStash(stashEntry) } }
+        ]
     }
 
     function updateStashes() {

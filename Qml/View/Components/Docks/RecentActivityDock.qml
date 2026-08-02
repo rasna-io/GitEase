@@ -18,7 +18,7 @@ UtilitiesCard {
 
     content: ColumnLayout {
         anchors.fill: parent
-        spacing: 16
+        spacing: 8
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -40,28 +40,31 @@ UtilitiesCard {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            radius: 6
+            Layout.preferredHeight: Math.min(listView.contentHeight, 220) + 12
+            radius: 4
             color: Style.colors.secondaryBackground
 
             ListView {
                 id: listView
-                anchors.fill: parent
-                anchors.margins: 8
-                spacing: 8
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: 6
+                height: Math.min(contentHeight, 220)
+                spacing: Style.dp(2)
                 clip: true
                 model: activityController.activities
 
                 delegate: Rectangle {
                     width: listView.width
-                    height: 60
-                    radius: 5
+                    height: Style.dp(35)
+                    radius: Style.dp(4)
                     color: Style.colors.primaryBackground
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 4
+                        anchors.margins: Style.dp(6)
+                        spacing: 2
 
                         RowLayout {
                             Layout.fillWidth: true
@@ -70,7 +73,7 @@ UtilitiesCard {
                             Text  {
                                 color: Style.colors.foreground
                                 font.family: Style.fontTypes.roboto
-                                font.pixelSize: Style.appFont.defaultPt
+                                font.pixelSize: Style.appFont.smallPt
                                 text: "$ "
                             }
 
@@ -78,7 +81,7 @@ UtilitiesCard {
                                 Layout.fillWidth: true
                                 color: Style.colors.foreground
                                 font.family: Style.fontTypes.roboto
-                                font.pixelSize: Style.appFont.defaultPt
+                                font.pixelSize: Style.appFont.smallPt
                                 text: modelData.command
                             }
                         }
@@ -88,7 +91,7 @@ UtilitiesCard {
                             text: Qt.formatDateTime(modelData.time, "MMM dd, yyyy hh:mm:ss")
                             color: Style.colors.mutedText
                             font.family: Style.fontTypes.roboto
-                            font.pixelSize: Style.appFont.smallPt
+                            font.pixelSize: Style.appFont.captionPt
                             elide: Text.ElideRight
                         }
                     }
@@ -103,7 +106,7 @@ UtilitiesCard {
                 text: "No recent activity yet"
                 color: Style.colors.mutedText
                 font.family: Style.fontTypes.roboto
-                font.pixelSize: Style.appFont.defaultPt
+                font.pixelSize: Style.appFont.smallPt
             }
         }
     }
