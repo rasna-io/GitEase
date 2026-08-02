@@ -73,6 +73,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/EmptyStateView.qml                # Items Empty State View
     Qml/View/Components/Base/BusyWaiter.qml                    # Items Busy Wait State View
     Qml/View/Components/Base/UtilitiesCard.qml
+    Qml/View/Components/Base/DashedButton.qml                  # Dashed ghost action button for utilities cards
     Qml/View/Components/Base/ContextMenu.qml
     Qml/View/Components/Base/AccentCard.qml                    # Card with accent peeking out on the left
     Qml/View/Components/Base/DetachablePanel.qml               # Detachable panel wrapper
@@ -136,6 +137,8 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/RebaseDock.qml
 
     Qml/View/Components/Docks/RepositoriesHistoryDock.qml       # All Repositories Dock
+
+    Qml/View/Components/Utilities/UtilityPanel.qml              # Filter field + scrolling dock flow
 
     # File list components (commit UI)
     Qml/View/Components/FileLists/UnstagedFileListSection.qml  # Unstaged File Status Section

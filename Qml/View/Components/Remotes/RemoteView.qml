@@ -88,6 +88,9 @@ UtilitiesCard {
 
     content: ColumnLayout {
         id: content
+        anchors.fill: parent
+        anchors.leftMargin: Style.dp(10)
+        anchors.rightMargin: Style.dp(10)
         spacing: 6
 
         GuideHoverTrigger {
@@ -197,14 +200,12 @@ UtilitiesCard {
                 spacing: 6
                 clip: true
 
-                delegate: Rectangle {
+                delegate: Item {
 
                     property Remote currentRemote: modelData
 
                     width: listView.width
                     height: Style.dp(35)
-                    color: Style.colors.secondaryBackground
-                    radius: 4
 
                     MouseArea {
                         id: rightClickArea
@@ -233,16 +234,16 @@ UtilitiesCard {
                             ScrollingText {
                                 Layout.fillWidth: true
                                 text: currentRemote.name
-                                color: Style.colors.foreground
+                                color: Style.colors.utilitiesRowText
                                 font.family: Style.fontTypes.inter
-                                font.pixelSize: Style.appFont.smallPt
+                                font.pixelSize: Style.appFont.mediumPt
                             }
                             ScrollingText {
                                 Layout.fillWidth: true
                                 text: currentRemote.url
-                                color: Style.colors.mutedText
+                                color: Style.colors.utilitiesRowSubText
                                 font.family: Style.fontTypes.inter
-                                font.pixelSize: Style.appFont.captionPt
+                                font.pixelSize: Style.appFont.smallPt
                             }
                         }
 
@@ -253,27 +254,29 @@ UtilitiesCard {
                             ActionIconButton {
                                 iconText: Style.icons.download
                                 tooltip: root.isFetching ? "Fetching..." : "Fetch"
-                                textColor: root.isFetching ? Style.colors.accent : Style.colors.mutedText
+                                textColor: root.isFetching ? Style.colors.utilitiesActionIconActive
+                                                           : Style.colors.utilitiesActionIcon
                                 enabled: !root.isFetching
                                 onClicked: content.fetchRemote(currentRemote)
                             }
                             ActionIconButton {
                                 iconText: Style.icons.arrowDown
                                 tooltip: root.isFetching ? "Pulling..." : "Pull"
-                                textColor: root.isFetching ? Style.colors.accent : Style.colors.mutedText
+                                textColor: root.isFetching ? Style.colors.utilitiesActionIconActive
+                                                           : Style.colors.utilitiesActionIcon
                                 enabled: !root.isFetching
                                 onClicked: content.pullRemote(currentRemote)
                             }
                             ActionIconButton {
                                 iconText: Style.icons.edit
                                 tooltip: "Edit"
-                                textColor: Style.colors.mutedText
+                                textColor: Style.colors.utilitiesActionIcon
                                 onClicked: content.editRemote(currentRemote)
                             }
                             ActionIconButton {
                                 iconText: Style.icons.trash
                                 tooltip: "Remove"
-                                textColor: Style.colors.deletededFile
+                                textColor: Style.colors.utilitiesActionIconDanger
                                 onClicked: content.removeRemoteItem(currentRemote)
                             }
                         }
@@ -284,23 +287,12 @@ UtilitiesCard {
             }
         }
 
-        IconButton {
+        DashedButton {
             id: addRemoteBtn
             Layout.fillWidth: true
-            implicitHeight: Style.dp(25)
+            Layout.topMargin: Style.dp(2)
 
-            display: IconButton.TextBesideIcon
-            icon.name: Style.icons.plus
-            icon.width: Style.appFont.smallPt
-            icon.height: Style.appFont.smallPt
-            icon.color: Style.colors.textButton
-            text: "Add New Remote"
-            font.pixelSize: Style.appFont.mediumPt
-
-            background: Rectangle {
-                radius: Style.dp(4)
-                color: enabled ? Style.colors.accent : Style.colors.disabledButton
-            }
+            text: "Add Remote"
 
             onClicked: {
                 openAddEditPopup()
@@ -402,12 +394,13 @@ UtilitiesCard {
 
         function buildRemoteMenu(remoteItem) {
             return [
-                { text: "Copy URL", icon: Style.icons.copy, action: function() { content.copyRemoteUrl(remoteItem) } },
-                { separator: true },
                 { text: "Fetch",  icon: Style.icons.download,  enabled: !root.isFetching, action: function() { content.fetchRemote(remoteItem) } },
                 { text: "Pull",   icon: Style.icons.arrowDown, enabled: !root.isFetching, action: function() { content.pullRemote(remoteItem) } },
+                { separator: true },
                 { text: "Edit",   icon: Style.icons.edit,      action: function() { content.editRemote(remoteItem) } },
-                { text: "Remove", icon: Style.icons.trash,     action: function() { content.removeRemoteItem(remoteItem) } }
+                { text: "Remove", icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { content.removeRemoteItem(remoteItem) } },
+                { separator: true },
+                { text: "Copy URL", icon: Style.icons.copy, action: function() { content.copyRemoteUrl(remoteItem) } },
             ]
         }
     }

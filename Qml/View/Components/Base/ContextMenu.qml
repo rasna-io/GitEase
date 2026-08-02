@@ -13,7 +13,10 @@ Popup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var menuModel: [] // Format: [{ text: "Checkout", icon: "\uf00c", action: function(){}, enabled: true }]
+    //! Format: [{ text: "Checkout", icon: "\uf00c", action: function(){}, enabled: true,
+    //!            color: "#DC3545",      // optional: tints both label and icon
+    //!            iconColor: "#DC3545" }] // optional: tints the icon only
+    property var menuModel: []
 
     /* Object Properties
      * ****************************************************************************************/
@@ -77,6 +80,15 @@ Popup {
             readonly property bool isEnabled: !isSep && modelData.enabled !== false
             readonly property bool hasSub:    !isSep && !!modelData.subItems && modelData.subItems.length > 0
 
+            //! Per-item tinting: "color" applies to label and icon, "iconColor" overrides the icon.
+            readonly property bool  hasColor:  !isSep && modelData.color !== undefined && modelData.color !== ""
+            readonly property color textColor: hasColor ? modelData.color : Style.colors.foreground
+            readonly property color iconColor: (!isSep && modelData.iconColor !== undefined && modelData.iconColor !== "")
+                                               ? modelData.iconColor
+                                               : (hasColor ? modelData.color
+                                                           : (itemMouse.containsMouse ? Style.colors.accent
+                                                                                      : Style.colors.foreground))
+
             // Separator line
             Rectangle {
                 visible: isSep
@@ -111,7 +123,7 @@ Popup {
                     text: modelData.icon || ""
                     font.family: Style.fontTypes.font6ProSolid
                     font.pixelSize: Style.appFont.mediumPt
-                    color: itemMouse.containsMouse ? Style.colors.accent : Style.colors.foreground
+                    color: menuOption.iconColor
                     visible: text !== ""
                     Layout.preferredWidth: 16
                 }
@@ -121,7 +133,7 @@ Popup {
                     text: modelData.text || ""
                     font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
-                    color: Style.colors.foreground
+                    color: menuOption.textColor
                     Layout.fillWidth: true
                 }
 

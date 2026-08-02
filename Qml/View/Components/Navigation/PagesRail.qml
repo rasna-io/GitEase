@@ -151,7 +151,7 @@ Rectangle {
                                         text: (modelData && modelData.icon && modelData.icon.length)
                                               ? modelData.icon
                                               : Style.icons.download
-                                        font.pixelSize: 13
+                                        font.pixelSize: Style.appFont.h3Pt
                                         font.family: Style.fontTypes.font6Pro
                                         font.weight: (root.useAccentIndicator && item.isSelected) ? 600 : 500
                                         color: item.isSelected ? item.activeColor : item.inactiveColor
@@ -165,7 +165,7 @@ Rectangle {
                                     Layout.fillWidth: true
                                     Layout.alignment: Qt.AlignVCenter
                                     text: (modelData && modelData.title) ? modelData.title : ""
-                                    font.pixelSize: 13
+                                    font.pixelSize: Style.appFont.h3Pt
                                     font.family: Style.fontTypes.inter
                                     font.weight: (root.useAccentIndicator && item.isSelected) ? Font.DemiBold : Font.Normal
                                     color: item.isSelected ? item.activeColor : item.inactiveColor
@@ -187,7 +187,7 @@ Rectangle {
                                         text: modelData?.badgeCount ?? ""
                                         color: "white"
                                         font.family: Style.fontTypes.inter
-                                        font.pixelSize: 9
+                                        font.pixelSize: Style.appFont.smallPt
                                         font.bold: true
                                     }
                                 }

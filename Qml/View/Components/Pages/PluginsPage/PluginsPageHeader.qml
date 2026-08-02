@@ -110,7 +110,9 @@ RowLayout {
             radius: 5
             color: !filterButton.enabled ? Style.colors.primaryBackground :
                    filterButton.down ? Style.colors.surfaceMuted :
-                   filterButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                   filterButton.hovered ? Style.colors.headerButtonBackgroundHover : Style.colors.headerButtonBackground
+            border.width: 1
+            border.color: Style.colors.headerButtonBorder
         }
 
         onClicked: filterOptionsPopup.open()

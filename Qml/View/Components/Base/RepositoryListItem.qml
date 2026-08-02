@@ -26,6 +26,15 @@ Rectangle {
 
     property bool   isExists:       false
 
+    property color backgroundColor:              Style.colors.secondaryBackground
+    property color hoverBackgroundColor:         Qt.darker(Style.colors.surfaceLight, 1.05)
+    property color selectedBackgroundColor:      Style.colors.accent
+    property color selectedHoverBackgroundColor: Style.colors.accentHover
+    property color nameColor:                    Style.colors.foreground
+    property color pathColor:                    Style.colors.mutedText
+    property color selectedTextColor:            Style.colors.secondaryForeground
+    property color missingPathColor:             Style.colors.error
+
     /* Signals
      * ****************************************************************************************/
     signal clicked(index : int)
@@ -37,14 +46,14 @@ Rectangle {
     color: {
         if (msa.containsMouse) {
             if (isSelected)
-                return Style.colors.accentHover
+                return root.selectedHoverBackgroundColor
             else
-                return Qt.darker(Style.colors.surfaceLight, 1.05)
+                return root.hoverBackgroundColor
         } else {
             if (isSelected)
-                return Style.colors.accent
+                return root.selectedBackgroundColor
             else
-                return Style.colors.secondaryBackground
+                return root.backgroundColor
         }
     }
 
@@ -67,7 +76,7 @@ Rectangle {
             font.family: Style.fontTypes.inter
             font.weight: 400
             font.letterSpacing: 0
-            color: root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
+            color: root.isSelected ? root.selectedTextColor : root.nameColor
         }
 
         // Path row
@@ -80,7 +89,7 @@ Rectangle {
                 text: Style.icons.folder
                 font.family: Style.fontTypes.font6Pro
                 font.pixelSize: Style.appFont.smallPt
-                color: root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
+                color: root.isSelected ? root.selectedTextColor : root.nameColor
             }
 
             // Path
@@ -88,7 +97,8 @@ Rectangle {
                 text: root.path
                 font.pixelSize: Style.appFont.smallPt
                 font.family: Style.fontTypes.inter
-                color: root.isSelected ? Style.colors.secondaryForeground : root.isExists ? Style.colors.mutedText : Style.colors.error
+                color: root.isSelected ? root.selectedTextColor
+                                       : root.isExists ? root.pathColor : root.missingPathColor
                 font.weight: 400
                 font.strikeout: !root.isExists
                 font.letterSpacing: 0

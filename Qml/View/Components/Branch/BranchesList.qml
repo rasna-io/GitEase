@@ -30,7 +30,7 @@ ListView {
      * ****************************************************************************************/
     Layout.fillWidth: true
     Layout.preferredHeight: Math.min(contentHeight, maxHeight)
-    spacing: 4
+    spacing: 0
     clip: true
 
     ScrollBar.vertical: ScrollBar {
@@ -50,27 +50,43 @@ ListView {
 
     delegate: Rectangle {
         id: branchDelegate
-        property var branch: modelData
-        property bool hovered: false
+
+        readonly property var  branch:     modelData
+        readonly property bool isSelected: branchDelegate.branch.name === root.currentBranch
 
         width: root.width
-        height: 32
-        radius: 4
-        color: hoverHandler.hovered ? Style.colors.surfaceLight : Style.colors.secondaryBackground
+        height: Style.dp(30)
 
-        readonly property bool isSelected: branch.name === root.currentBranch
+        color: branchDelegate.isSelected ? Style.colors.utilitiesRowSelectedBackground
+                                         : (hoverHandler.hovered ? Style.colors.utilitiesRowHoverBackground
+                                                                 : "transparent")
+
+        border.width: 0
 
         HoverHandler {
             id: hoverHandler
         }
 
+        //! Selected-row indicator
+        Rectangle {
+            id: selectedIndicator
+            visible: branchDelegate.isSelected
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: Style.dp(3)
+            radius: Style.dp(1.5)
+            color: Style.colors.utilitiesRowSelectedIndicator
+        }
+
+        //! Every branch action lives in the context menu
         MouseArea {
             id: rightClickArea
             anchors.fill: parent
             acceptedButtons: Qt.RightButton
             onClicked: (mouse) => {
                 var pos = mapToItem(Overlay.overlay, mouse.x, mouse.y)
-                itemContextMenu.menuModel = root.buildBranchMenu(branch)
+                itemContextMenu.menuModel = root.buildBranchMenu(branchDelegate.branch)
                 itemContextMenu.x = pos.x
                 itemContextMenu.y = pos.y
                 itemContextMenu.open()
@@ -79,78 +95,39 @@ ListView {
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 6
-            anchors.leftMargin: Style.dp(10)
-            spacing: 6
+            //! Constant inset so rows stay aligned whether or not the indicator is shown
+            anchors.leftMargin: Style.dp(16)
+            anchors.rightMargin: Style.dp(10)
+            spacing: Style.dp(8)
 
             Text {
-                text: Style.icons.branch
+                text: root.isLocal ? Style.icons.branch : Style.icons.globe
                 font.family: Style.fontTypes.font6Pro
                 font.pixelSize: Style.appFont.smallPt
-                color: branchDelegate.isSelected ? Style.colors.branchSelectedAccent : Style.colors.foreground
+                color: branchDelegate.isSelected ? Style.colors.utilitiesRowSelectedText
+                                                 : Style.colors.utilitiesRowIcon
                 Layout.alignment: Qt.AlignVCenter
             }
 
             ScrollingText {
-                text: branch.name
+                text: branchDelegate.branch.name
                 Layout.fillWidth: true
                 font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.smallPt
                 font.bold: branchDelegate.isSelected
-                color: branchDelegate.isSelected ? Style.colors.branchSelectedAccent : Style.colors.foreground
+                color: branchDelegate.isSelected ? Style.colors.utilitiesRowSelectedText
+                                                 : Style.colors.utilitiesRowText
             }
 
-            RowLayout {
-                spacing: 4
+            Text {
+                text: "HEAD"
+                visible: branchDelegate.isSelected
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.microPt
+                font.bold: true
+                font.letterSpacing: Style.dp(0.5)
+                color: Style.colors.utilitiesRowSelectedText
                 Layout.alignment: Qt.AlignVCenter
-
-                RowLayout {
-                    spacing: 3
-                    visible: branch.name !== root.currentBranch
-
-                    MouseArea {
-                        id: checkoutArea
-                        Layout.preferredWidth: checkoutRow.implicitWidth
-                        Layout.preferredHeight: checkoutRow.implicitHeight
-                        cursorShape: Qt.PointingHandCursor
-
-                        onClicked: root.doCheckout(branch)
-
-                        RowLayout {
-                            id: checkoutRow
-                            anchors.fill: parent
-                            spacing: 4
-
-                            Text {
-                                text: Style.icons.check
-                                font.family: Style.fontTypes.font6Pro
-                                color: !hoverHandler.hovered ? Style.colors.accent : Qt.darker(Style.colors.accent, 1.5)
-                                font.pixelSize: Style.appFont.smallPt
-                                font.bold: true
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-
-                            Text {
-                                text: "Checkout"
-                                font.family: Style.fontTypes.inter
-                                color: !hoverHandler.hovered ? Style.colors.accent : Qt.darker(Style.colors.accent, 1.5)
-                                font.pixelSize: Style.appFont.smallPt
-                                font.bold: true
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-                        }
-                    }
-                }
-
-                // Delete Button
-                ActionIconButton {
-                    iconText: Style.icons.trash
-                    textColor: Style.colors.deletededFile
-                    tooltip: "Delete Branch"
-                    visible: branch.name !== root.currentBranch && root.isLocal
-                    Layout.alignment: Qt.AlignVCenter
-                    onClicked: root.doDeleteBranch(branch)
-                }
             }
         }
     }
@@ -235,6 +212,7 @@ ListView {
             actions.push({
                 text: "Delete Branch",
                 icon: Style.icons.trash,
+                color: Style.colors.contextMenuDanger,
                 action: function() { root.doDeleteBranch(branch) }
             })
         }

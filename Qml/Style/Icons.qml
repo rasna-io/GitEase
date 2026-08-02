@@ -51,6 +51,7 @@ QtObject{
     property string tree:              "\uF1BB" // tree
     property string cloud:             "\uf0c2" // cloud
     property string laptop:            "\uf109" // laptop
+    property string globe:             "\uf0ac" // globe
 
     property string palette:           "\uf53f"
     property string terminal:          "\uf120"
