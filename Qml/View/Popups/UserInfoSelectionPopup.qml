@@ -26,14 +26,14 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: 400
-    height: parent.height / 2
-    padding: 20
+    width: 450
+    height: Math.min((parent ? parent.height - 60 : 720), selectorItem.implicitHeight)
+    padding: 0
 
     /* Children
      * ****************************************************************************************/
     background: Rectangle {
-        radius: 4
+        radius: 12
         color: Style.colors.primaryBackground
         border.width: 1
         border.color: Style.colors.primaryBorder
@@ -42,5 +42,10 @@ IPopup {
     contentItem: UserInfoSelector {
         id: selectorItem
         userProfileController: root.userProfileController
+
+        onCloseRequested: root.close()
     }
+
+    onClosed: selectorItem.closeForm()
+    onOpened: selectorItem.closeForm()
 }

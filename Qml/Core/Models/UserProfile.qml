@@ -18,4 +18,7 @@ QtObject {
 
     property string email:     ""
     property var    levels:    []
+
+    //! Optional avatar accent color (hex string). Empty -> a color is derived from the username.
+    property string avatarColor: ""
 }

@@ -74,6 +74,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/BusyWaiter.qml                    # Items Busy Wait State View
     Qml/View/Components/Base/UtilitiesCard.qml
     Qml/View/Components/Base/ContextMenu.qml
+    Qml/View/Components/Base/AccentCard.qml                    # Card with accent peeking out on the left
     Qml/View/Components/Base/DetachablePanel.qml               # Detachable panel wrapper
     Qml/View/Components/Base/MinimizedPanels.qml                # Footer bar for minimized DetachablePanel/Terminal instances
     Qml/View/Components/Base/SplitViewHandle.qml                # Shared SplitView drag handle
@@ -88,6 +89,7 @@ set(RESOURCES_COMPONENTS
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
+    Qml/View/Components/Profile/ProfileAvatar.qml              # Circular initial+color avatar
     Qml/View/Components/Profile/UserInfoSelector.qml           # Profile Selector
     Qml/View/Components/Profile/UserInfoSelectorItem.qml       # Profile Selector Item
 
