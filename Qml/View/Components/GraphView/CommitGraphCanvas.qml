@@ -194,27 +194,43 @@ Item {
                             ctx.setLineDash([]);
                             ctx.restore();
                         }
-                    } else {
-                        // Check if any parent is outside loaded set
-                        var canDraw = false;
-                        for (var i2 = 0; i2 < commit2.parentHashes.length; i2++) {
-                            if (commitsHash.indexOf(commit2.parentHashes[i2]) === -1) {
-                                canDraw = true;
-                                break;
-                            }
+                    }
+
+                    // Independent of the same-lane check above: any parent this commit
+                    // has that isn't loaded on the current page(s) at all still needs its
+                    // own dangling tail. This matters for merge commits too - e.g. one
+                    // parent already resolved to a real same-lane line (or a cross-lane
+                    // curve in Phase 2) doesn't mean every parent was found; a second
+                    // parent sitting on a page we haven't scrolled to yet must still get
+                    // a visible "continues off-page" marker instead of silently vanishing.
+                    var canDraw = false;
+                    for (var i2 = 0; i2 < commit2.parentHashes.length; i2++) {
+                        if (commitsHash.indexOf(commit2.parentHashes[i2]) === -1) {
+                            canDraw = true;
+                            break;
                         }
-                        if (canDraw) {
-                            var branchColor2 = root.commitColor(commit2);
-                            ctx.save();
-                            ctx.strokeStyle = branchColor2;
-                            ctx.globalAlpha = 0.9;
-                            ctx.lineWidth = 2.5;
-                            ctx.beginPath();
-                            ctx.moveTo(centerX, centerY);
-                            ctx.lineTo(centerX, graphCanvas.height);
-                            ctx.stroke();
-                            ctx.restore();
-                        }
+                    }
+                    if (canDraw) {
+                        // The real parent isn't loaded yet (further down, on a page we
+                        // haven't scrolled to), so draw the tail down to the bottom of the
+                        // currently loaded content - it leads toward where that parent will
+                        // appear once more commits load. GraphLayout.js retires this lane
+                        // for good in this case (never reassigns it to an unrelated
+                        // commit), so extending the full height is safe: nothing else will
+                        // ever render in this column to be falsely read as connected.
+                        var stubEndY = graphCanvas.height;
+                        var branchColor2b = root.commitColor(commit2);
+                        ctx.save();
+                        ctx.strokeStyle = branchColor2b;
+                        ctx.globalAlpha = 0.9;
+                        ctx.lineWidth = 2.5;
+                        ctx.setLineDash([4, 4]);
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY);
+                        ctx.lineTo(centerX, stubEndY);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        ctx.restore();
                     }
                 }
 
