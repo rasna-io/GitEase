@@ -46,6 +46,7 @@ QtObject {
         navButton:           "#6b6b6b"
         hoverTitle:          "#6b6b6b"
         secondaryText:       "#efefef"
+        placeholderText:     "#6A6A6E"
 
         disabledButton:      "#9f9f9f"
 

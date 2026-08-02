@@ -19,6 +19,8 @@ QtObject {
     enum RepositorySelectorTab {
         Recents,
         Open,
-        Clone
+        Clone,
+        Worktrees,
+        Init
     }
 }

@@ -16,7 +16,7 @@ T.ComboBox {
      * ****************************************************************************************/
     property  bool error
 
-    property int minHeight: 40
+    property int minHeight: 30
     property int maxPopupHeight: 200
     property int borderWidth: 1
     property int focusBorderWidth: 2

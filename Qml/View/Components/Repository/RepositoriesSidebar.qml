@@ -22,6 +22,7 @@ Rectangle {
     property Repository              currentRepository:    null
     property var                     recentRepositories:   []
 
+    property var                     branchByPath:         ({})
     property int                     detachLaunchDistance: 96
     property bool                    detachActive:         false
     property bool                    detachPreviewVisible: false
@@ -51,6 +52,57 @@ Rectangle {
      * ****************************************************************************************/
     signal newRepositoryRequested()
 
+    /* Reusable status badge (icon + count pill)
+     * ****************************************************************************************/
+    component StateBadge: Rectangle {
+        id: badge
+
+        property string icon: ""
+        property int    count: 0
+        property color  badgeColor: Style.colors.accent
+
+        Layout.alignment: Qt.AlignVCenter
+        implicitWidth: badgeRow.implicitWidth + 8
+        implicitHeight: 15
+        radius: 4
+        color: Qt.rgba(badge.badgeColor.r, badge.badgeColor.g, badge.badgeColor.b, 0.16)
+
+        Row {
+            id: badgeRow
+            anchors.centerIn: parent
+            spacing: 1
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: badge.icon
+                font.family: Style.fontTypes.font6Pro
+                font.pixelSize: 8
+                color: badge.badgeColor
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: badge.count
+                font.family: Style.fontTypes.inter
+                font.weight: 700
+                font.pixelSize: 9
+                color: badge.badgeColor
+            }
+        }
+    }
+
+    /* Branch scanning
+     * ****************************************************************************************/
+    // Scratch controller used to read each repository's current branch without disturbing the
+    // active session.
+    BranchController {
+        id: branchScanner
+    }
+
+    onRepositoriesChanged: Qt.callLater(root.refreshBranches)
+    onCurrentRepositoryChanged: Qt.callLater(root.refreshBranches)
+    Component.onCompleted: root.refreshBranches()
+
     /* Guide
      * ****************************************************************************************/
     GuideHoverTrigger {
@@ -64,7 +116,7 @@ Rectangle {
                     targetProvider: function() { return flickable },
                     icon: Style.icons.folder,
                     title: "Open Repositories",
-                    description: "Each square is an open repository. Click one to switch to it, or drag it outward and release to launch it in its own window."
+                    description: "Each card is an open repository. Click one to switch to it, or drag it outward and release to launch it in its own window."
                 },
                 {
                     targetProvider: function() { return addButton },
@@ -76,18 +128,52 @@ Rectangle {
         }
     }
 
-    /* JavaScript Functions
+    /* Functions
      * ****************************************************************************************/
-    function repositoryInitials(repository) {
+    function repositoryInitial(repository) {
         const n = (repository && repository.name) ? repository.name : "";
+        return n.length >= 1 ? n.charAt(0).toUpperCase() : "?";
+    }
 
-        if (n.length >= 2)
-            return (n.charAt(0) + n.charAt(1)).toUpperCase();
+    function repositoryColor(repository) {
+        const ctrl = root.repositoryController;
+        if (!ctrl)
+            return (repository && repository.color) ? repository.color : "#B9FAB9";
+        return ctrl.isValidRepoColor(repository ? repository.color : "")
+                ? repository.color
+                : ctrl.repoColor(repository ? repository.path : "");
+    }
 
-        if (n.length === 1)
-            return n.charAt(0).toUpperCase();
+    //! Read every open repository's current branch through the scratch controller and cache it.
+    function refreshBranches() {
+        var map = {};
+        var list = root.repositories || [];
 
-        return "?";
+        for (var i = 0; i < list.length; ++i) {
+            var repo = list[i];
+            if (repo && repo.cppObjectPtr) {
+                branchScanner.currentRepo = repo.cppObjectPtr;
+                var name = branchScanner.getCurrentBranchName();
+                map[repo.path] = (name && name.length > 0) ? name : "";
+            }
+        }
+
+        branchScanner.currentRepo = null;
+        root.branchByPath = map;
+    }
+
+    function branchNameFor(repository) {
+        if (!repository)
+            return "—";
+        var name = root.branchByPath[repository.path];
+        return (name && name.length > 0) ? name : "—";
+    }
+
+    function repoStateFor(repository) {
+        // todo
+        // Replace with real per-repo status once a status
+        //! backend that covers all open repositories is available.
+        return ({ ahead: 0, behind: 0, dirty: false });
     }
 
     function beginDetachPreview(repository, sourceItem, pointX, pointY) {
@@ -116,8 +202,8 @@ Rectangle {
         root.detachHotspotY = previewRadius;
         root.detachRepositoryName = repository.name ?? "";
         root.detachRepositoryPath = repository.path ?? "";
-        root.detachRepositoryInitials = root.repositoryInitials(repository);
-        root.detachRepositoryColor = repository.color ?? "#B9FAB9";
+        root.detachRepositoryInitials = root.repositoryInitial(repository);
+        root.detachRepositoryColor = root.repositoryColor(repository);
         root.detachProgress = 0;
         root.detachLastDistance = 0;
         root.detachPreviewOpacity = 0;
@@ -204,6 +290,7 @@ Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: addButton.top
+            anchors.bottomMargin: 8
 
             height: Math.min(repositoryColumn.height, parent.height - addButton.height - 12)
             contentHeight: repositoryColumn.height
@@ -213,7 +300,7 @@ Rectangle {
                 id: repositoryColumn
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width
-                spacing: 2
+                spacing: 4
 
                 Repeater {
                     model: root.repositories
@@ -222,253 +309,293 @@ Rectangle {
                         id: repositoryDelegate
 
                         width: parent.width
-                        height: repositoryRow.implicitHeight + 8
+                        height: card.height
                         z: repoMouseArea.pressed ? 2 : 0
+
+                        readonly property bool   isCurrent: modelData
+                                                          && modelData.id === (root.currentRepository?.id ?? -1)
+                        readonly property color  repoColor: root.repositoryColor(modelData)
+                        readonly property string branchName: root.branchNameFor(modelData)
+                        readonly property var    repoState: root.repoStateFor(modelData)
 
                         property bool detachSource: root.detachRepositoryPath.length > 0
                                                     && modelData
                                                     && root.detachRepositoryPath === modelData.path
 
-                        HoverHandler {
-                            id: hoverHandler
-                        }
+                        AccentCard {
+                            id: card
+                            width: parent.width
+                            height: 44
+                            peek: 4
+                            accentRadius: 8
+                            cardRadius: 7
+                            cardClip: false
+                            accentColor: repositoryDelegate.isCurrent ? repositoryDelegate.repoColor : "transparent"
+                            cardColor: {
+                                var fg = Style.colors.foreground
+                                if (repositoryDelegate.isCurrent) {
+                                    var base = Style.colors.secondaryBackground
+                                    if (repoMouseArea.pressed)
+                                        return Style.theme === Style.Light ? Qt.darker(base, 1.10) : Qt.lighter(base, 1.45)
+                                    if (cardHover.hovered)
+                                        return Style.theme === Style.Light ? Qt.darker(base, 1.05) : Qt.lighter(base, 1.28)
+                                    return base
+                                }
+                                if (repoMouseArea.pressed)
+                                    return Qt.rgba(fg.r, fg.g, fg.b, 0.09)
+                                if (cardHover.hovered)
+                                    return Qt.rgba(fg.r, fg.g, fg.b, 0.05)
+                                return "transparent"
+                            }
+                            tintColor: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.08)
+                            tintVisible: repositoryDelegate.isCurrent
 
-                        Row {
-                            id: repositoryRow
-                            anchors.fill: parent
-                            anchors.margins: 4
-                            spacing: 4
-                            y: repoMouseArea.pressed ? -1 : 0
+                            scale: repoMouseArea.pressed ? 0.985 : 1.0
                             opacity: repositoryDelegate.detachSource && root.detachPreviewVisible
                                      ? 1.0 - (root.detachProgress * 0.38)
                                      : 1.0
 
-                            Behavior on y {
-                                NumberAnimation {
-                                    duration: 120
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
+                            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                            Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
-                            Behavior on opacity {
-                                NumberAnimation {
-                                    duration: 120
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
+                            HoverHandler { id: cardHover }
 
-                            Rectangle {
-                                anchors.verticalCenter: parent.verticalCenter
-                                color: (modelData.id === (currentRepository?.id ?? -1)) ? "#074E96" : "transparent"
-                                width: 3
-                                height: 28
-                                radius: 2
-                            }
+                            MouseArea {
+                                id: repoMouseArea
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                hoverEnabled: true
 
-                            Rectangle {
-                                id: repositoryAvatar
-                                anchors.verticalCenter: parent.verticalCenter
-                                height: 33
-                                radius: 6
-                                clip: true
+                                property real pressX: 0
+                                property real pressY: 0
+                                property bool launchTriggered: false
+                                property bool dragStarted: false
+                                property bool suppressClick: false
 
-                                width: repositoryRow.width - (repositoryRow.spacing + 2 + repositoryRow.anchors.margins) - closeButton.width
-                                scale: repoMouseArea.pressed
-                                       ? 0.96
-                                       : (repoMouseArea.containsMouse ? 1.035 : 1.0)
-
-                                property color repoColor: modelData?.color ?? "#B9FAB9"
-                                color: repoMouseArea.containsMouse ?  Qt.darker(repoColor, 1.25) : repoColor
-                                border.width: repoMouseArea.pressed || repoMouseArea.containsMouse ? 1 : 0
-                                border.color: repoMouseArea.pressed
-                                              ? Style.colors.accent
-                                              : Qt.rgba(1, 1, 1, 0.26)
-
-                                Behavior on width {
-                                    NumberAnimation {
-                                        duration: 120
-                                        easing.type: Easing.OutCubic
-                                    }
+                                onPressed: {
+                                    pressX = mouseX
+                                    pressY = mouseY
+                                    launchTriggered = false
+                                    dragStarted = false
+                                    suppressClick = false
+                                    root.beginDetachPreview(modelData, repositoryAvatar, mouseX, mouseY)
                                 }
 
-                                Behavior on scale {
-                                    NumberAnimation {
-                                        duration: 120
-                                        easing.type: Easing.OutCubic
-                                    }
-                                }
+                                onPositionChanged: {
+                                    if (pressed) {
+                                        repoMouseArea.cursorShape = Qt.SizeAllCursor
 
-                                Behavior on color { ColorAnimation { duration: 120 } }
-                                Behavior on border.color { ColorAnimation { duration: 120 } }
-
-                                ScrollingText {
-                                    property string initials: root.repositoryInitials(modelData)
-
-                                    anchors {
-                                        fill: parent
-                                        margins: 4
-                                    }
-
-                                    running: true
-                                    text: modelData.name
-                                    font.family: Style.fontTypes.inter
-                                    font.weight: 400
-                                    font.pixelSize: 16
-                                    Behavior on font.pixelSize {
-                                        NumberAnimation {
-                                            duration: 120
-                                            easing.type: Easing.OutCubic
-                                        }
-                                    }
-
-                                    color: Style.theme == Style.Light ?
-                                               Qt.darker(repositoryAvatar.repoColor, 2.0) :
-                                               Qt.lighter(repositoryAvatar.repoColor, 2.0)
-
-                                    x: 5
-                                    y: (repositoryAvatar.height - height) / 2
-
-                                    Behavior on x {
-                                        NumberAnimation {
-                                            duration: 120
-                                            easing.type: Easing.OutCubic
-                                        }
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: repoMouseArea
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-
-                                    property real pressX: 0
-                                    property real pressY: 0
-                                    property bool launchTriggered: false
-                                    property bool dragStarted: false
-                                    property bool suppressClick: false
-
-                                    onPressed: {
-                                        pressX = mouseX
-                                        pressY = mouseY
-                                        launchTriggered = false
-                                        dragStarted = false
-                                        suppressClick = false
-                                        root.beginDetachPreview(modelData, repositoryAvatar, mouseX, mouseY)
-                                    }
-
-                                    onPositionChanged: {
-                                        if (pressed) {
-                                            repoMouseArea.cursorShape = Qt.SizeAllCursor
-
-                                            let dx = mouseX - pressX
-                                            let dy = mouseY - pressY
-                                            let distance = Math.sqrt(dx*dx + dy*dy)
-                                            let pointerPosition = repoMouseArea.mapToGlobal(mouseX, mouseY)
-
-                                            dragStarted = distance > 6
-                                            root.updateDetachPreview(pointerPosition.x, pointerPosition.y, distance)
-                                        }
-                                    }
-
-                                    onReleased: {
                                         let dx = mouseX - pressX
                                         let dy = mouseY - pressY
                                         let distance = Math.sqrt(dx*dx + dy*dy)
                                         let pointerPosition = repoMouseArea.mapToGlobal(mouseX, mouseY)
 
                                         dragStarted = distance > 6
-                                        suppressClick = dragStarted
-                                        repoMouseArea.cursorShape = Qt.PointingHandCursor
                                         root.updateDetachPreview(pointerPosition.x, pointerPosition.y, distance)
-
-                                        if (distance >= root.detachLaunchDistance && root.repositories.length > 1) {
-                                            launchTriggered = true
-                                            suppressClick = true
-                                            root.commitDetachPreview()
-                                        } else {
-                                            root.cancelDetachPreview()
-                                        }
                                     }
+                                }
 
-                                    onCanceled: {
-                                        suppressClick = launchTriggered || dragStarted
-                                        repoMouseArea.cursorShape = Qt.PointingHandCursor
+                                onReleased: {
+                                    let dx = mouseX - pressX
+                                    let dy = mouseY - pressY
+                                    let distance = Math.sqrt(dx*dx + dy*dy)
+                                    let pointerPosition = repoMouseArea.mapToGlobal(mouseX, mouseY)
 
-                                        if (!launchTriggered)
-                                            root.cancelDetachPreview()
+                                    dragStarted = distance > 6
+                                    suppressClick = dragStarted
+                                    repoMouseArea.cursorShape = Qt.PointingHandCursor
+                                    root.updateDetachPreview(pointerPosition.x, pointerPosition.y, distance)
+
+                                    if (distance >= root.detachLaunchDistance && root.repositories.length > 1) {
+                                        launchTriggered = true
+                                        suppressClick = true
+                                        root.commitDetachPreview()
+                                    } else {
+                                        root.cancelDetachPreview()
                                     }
+                                }
 
-                                    onClicked: {
-                                        if (suppressClick) {
-                                            suppressClick = false
-                                        } else if (root.repositoryController) {
-                                            root.repositoryController.selectRepository(modelData.id)
-                                        }
+                                onCanceled: {
+                                    suppressClick = launchTriggered || dragStarted
+                                    repoMouseArea.cursorShape = Qt.PointingHandCursor
+
+                                    if (!launchTriggered)
+                                        root.cancelDetachPreview()
+                                }
+
+                                onClicked: {
+                                    if (suppressClick) {
+                                        suppressClick = false
+                                    } else if (root.repositoryController) {
+                                        root.repositoryController.selectRepository(modelData.id)
                                     }
                                 }
                             }
 
-                            WindowsButton {
-                                id: closeButton
-                                Material.accent: Style.colors.windowsClose
-                                anchors.verticalCenter: parent.verticalCenter
-                                height: 30
-                                width: visible ? 20 : 0
-                                radius: 6
-                                visible: hoverHandler.hovered && root.repositories.length > 1
-                                onClicked: root.repositoryController.closeRepo(modelData.path)
-                                content: Item {
-                                    anchors.centerIn: parent
-                                    width: 10
-                                    height: 10
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 6
+                                spacing: 8
 
-                                    Rectangle {
-                                        width: 12
-                                        height: 2
-                                        radius: 1
-                                        color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                                        anchors.centerIn: parent
-                                        rotation: 45
-                                    }
+                                // Initial avatar
+                                Rectangle {
+                                    id: repositoryAvatar
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.preferredWidth: 28
+                                    Layout.preferredHeight: 28
+                                    radius: width / 2
+                                    color: repositoryDelegate.repoColor
 
-                                    Rectangle {
-                                        width: 12
-                                        height: 2
-                                        radius: 1
-                                        color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                                    Text {
                                         anchors.centerIn: parent
-                                        rotation: -45
+                                        text: root.repositoryInitial(modelData)
+                                        font.family: Style.fontTypes.inter
+                                        font.weight: 700
+                                        font.pixelSize: 12
+                                        color: Style.theme === Style.Light
+                                               ? Qt.darker(repositoryDelegate.repoColor, 2.2)
+                                               : Qt.lighter(repositoryDelegate.repoColor, 2.2)
                                     }
                                 }
-                            }
 
-                            ToolTip {
-                                id: tip
-                                parent: repositoryRow
-                                visible: repoMouseArea.containsMouse && !repoMouseArea.pressed && !root.detachActive
-                                delay: 200
-                                timeout: 5000
-                                text: modelData.path
+                                // Name + current branch
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    spacing: 1
 
-                                x: (repositoryRow.width - width) / 2
-                                y: -height + 10
+                                    ScrollingText {
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: implicitHeight
+                                        text: modelData?.name ?? ""
+                                        color: Style.colors.foreground
+                                        running: cardHover.hovered
+                                        font.family: Style.fontTypes.inter
+                                        font.weight: Font.DemiBold
+                                        font.pixelSize: 11
+                                    }
 
-                                padding: 6
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 3
 
-                                contentItem: Text {
-                                    text: tip.text
-                                    font.family: Style.fontTypes.inter
-                                    font.pixelSize: Style.appFont.defaultPt
-                                    color: "#ffffff"
+                                        Text {
+                                            text: Style.icons.gitBranch
+                                            font.family: Style.fontTypes.font6Pro
+                                            font.pixelSize: 8
+                                            color: Style.colors.mutedText
+                                        }
+
+                                        ScrollingText {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: implicitHeight
+                                            text: repositoryDelegate.branchName
+                                            color: Style.colors.mutedText
+                                            running: cardHover.hovered
+                                            font.family: Style.fontTypes.inter
+                                            font.weight: Font.Normal
+                                            font.pixelSize: 9
+                                        }
+                                    }
                                 }
 
-                                background: Rectangle {
+                                // Status badges (must commit / check / push)
+                                RowLayout {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    spacing: 4
+                                    visible: !closeButton.visible
+
+                                    // must commit -> dirty dot
+                                    Rectangle {
+                                        visible: repositoryDelegate.repoState.dirty
+                                        Layout.alignment: Qt.AlignVCenter
+                                        width: 7
+                                        height: 7
+                                        radius: 3.5
+                                        color: Style.colors.warning
+                                    }
+
+                                    // must check / pull -> behind badge
+                                    StateBadge {
+                                        visible: repositoryDelegate.repoState.behind > 0
+                                        icon: Style.icons.arrowDown
+                                        count: repositoryDelegate.repoState.behind
+                                        badgeColor: Style.colors.accent
+                                    }
+
+                                    // must push -> ahead badge
+                                    StateBadge {
+                                        visible: repositoryDelegate.repoState.ahead > 0
+                                        icon: Style.icons.arrowUp
+                                        count: repositoryDelegate.repoState.ahead
+                                        badgeColor: Style.colors.notificationSuccessIcon
+                                    }
+                                }
+
+                                // Close — same styling as before, pinned to the right edge.
+                                WindowsButton {
+                                    id: closeButton
+                                    Material.accent: Style.colors.windowsClose
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.preferredHeight: 28
+                                    Layout.preferredWidth: visible ? 20 : 0
                                     radius: 6
-                                    color: Qt.rgba(0, 0, 0, 0.85)
-                                    border.color: Qt.rgba(1, 1, 1, 0.12)
-                                    border.width: 1
+                                    visible: cardHover.hovered && root.repositories.length > 1
+                                    onClicked: root.repositoryController.closeRepo(modelData.path)
+                                    content: Item {
+                                        anchors.centerIn: parent
+                                        width: 10
+                                        height: 10
+
+                                        Rectangle {
+                                            width: 12
+                                            height: 2
+                                            radius: 1
+                                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                                            anchors.centerIn: parent
+                                            rotation: 45
+                                        }
+
+                                        Rectangle {
+                                            width: 12
+                                            height: 2
+                                            radius: 1
+                                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                                            anchors.centerIn: parent
+                                            rotation: -45
+                                        }
+                                    }
                                 }
+                            }
+                        }
+
+                        ToolTip {
+                            id: tip
+                            parent: card
+                            visible: repoMouseArea.containsMouse && !repoMouseArea.pressed
+                                     && !root.detachActive
+                            delay: 400
+                            timeout: 5000
+                            text: modelData?.path ?? ""
+
+                            x: (card.width - width) / 2
+                            y: -height + 6
+
+                            padding: 6
+
+                            contentItem: Text {
+                                text: tip.text
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: Style.appFont.defaultPt
+                                color: "#ffffff"
+                            }
+
+                            background: Rectangle {
+                                radius: 6
+                                color: Qt.rgba(0, 0, 0, 0.85)
+                                border.color: Qt.rgba(1, 1, 1, 0.12)
+                                border.width: 1
                             }
                         }
                     }
@@ -476,70 +603,68 @@ Rectangle {
             }
         }
 
-        // Add button - anchored at bottom
+        // Add button - dashed "Add repo" pill anchored at the bottom
         Rectangle {
             id: addButton
             anchors.bottom: parent.bottom
-            height: 33
             anchors.left: parent.left
             anchors.right: parent.right
+            anchors.topMargin: 6
             anchors.leftMargin: 6
             anchors.rightMargin: 6
-            anchors.topMargin: 3
-            anchors.bottomMargin: 3
-            radius: 6
-            color: addRepoMouse.containsMouse ^ Style.theme == Style.Light ?
-                       Qt.lighter(Style.colors.navButton, 2.0) :
-                       Qt.darker(Style.colors.navButton, 2.0)
+            anchors.bottomMargin: 4
+            height: 30
+            radius: 7
+            color: addRepoMouse.containsMouse
+                   ? Qt.rgba(Style.colors.foreground.r, Style.colors.foreground.g, Style.colors.foreground.b, 0.05)
+                   : "transparent"
 
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color {
+                ColorAnimation {
+                    duration: 120
+                }
+            }
+
+            readonly property color lineColor: addRepoMouse.containsMouse ? Style.colors.foreground : Style.colors.mutedText
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 6
-                anchors.rightMargin: 6
-                anchors.topMargin: 4
-                anchors.bottomMargin: 4
-                spacing: 8
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                spacing: 7
 
-                Item {
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                    Layout.preferredWidth: 20
-                    Layout.minimumWidth: 20
-                    Layout.maximumWidth: 20
-                    Layout.preferredHeight: 20
+                // "+" tile
+                Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: 17
+                    Layout.preferredHeight: 17
+                    radius: 4
+                    color: "transparent"
+                    border.width: 1
+                    border.color: addButton.lineColor
+
+                    Behavior on border.color { ColorAnimation { duration: 120 } }
 
                     Text {
                         anchors.centerIn: parent
                         text: Style.icons.plus
                         font.family: Style.fontTypes.font6Pro
                         font.weight: 400
-                        font.pixelSize: Style.appFont.largePt
-                        color: addRepoMouse.containsMouse ^ Style.theme == Style.Light ?
-                                   Qt.darker(Style.colors.navButton, 2.0) :
-                                   Qt.lighter(Style.colors.navButton, 2.0)
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                        font.pixelSize: 8
+                        color: addButton.lineColor
                     }
                 }
 
                 Text {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    text: "Add new"
+                    text: "Add repo"
                     font.family: Style.fontTypes.inter
-                    font.weight: 400
-                    font.pixelSize: Style.appFont.largePt
+                    font.weight: Font.Medium
+                    font.pixelSize: 11
                     elide: Text.ElideRight
-                    color: addRepoMouse.containsMouse ^ Style.theme == Style.Light ?
-                               Qt.darker(Style.colors.navButton, 2.0) :
-                               Qt.lighter(Style.colors.navButton, 2.0)
-                    horizontalAlignment: Text.AlignLeft
+                    color: addButton.lineColor
                     verticalAlignment: Text.AlignVCenter
-                }
-
-                Item {
-                    Layout.fillWidth: true
                 }
             }
 
@@ -572,7 +697,7 @@ Rectangle {
             height: root.detachPreviewSize
             x: 9
             y: 9
-            radius: 6
+            radius: root.detachPreviewSize / 2
             clip: true
             color: root.detachRepositoryColor
             scale: root.detachLaunching ? 1.12 : 1.0 + root.detachProgress * 0.12
@@ -585,8 +710,8 @@ Rectangle {
                 anchors.centerIn: parent
                 text: root.detachRepositoryInitials
                 font.family: Style.fontTypes.inter
-                font.weight: 600
-                font.pixelSize: Style.appFont.xxlPt
+                font.weight: 700
+                font.pixelSize: Style.appFont.xlPt
                 color: Style.theme == Style.Light
                        ? Qt.darker(root.detachRepositoryColor, 2.15)
                        : Qt.lighter(root.detachRepositoryColor, 2.0)
