@@ -19,6 +19,7 @@ QtObject{
     property string caretUp:           "\uf0d8" // caret-up
     property string refresh:           "\uf021" // arrows-rotate
     property string filter:            "\uf0b0" // filter
+    property string search:            "\uf002" // magnifying-glass
 
     property string user:              "\uf007" // user
     property string envelope:          "\uf0e0" // envelope

@@ -40,6 +40,7 @@ QtObject {
             cherryPickController.currentRepo = currentRepo
             conflictController.currentRepo = currentRepo
             tagController.currentRepo = currentRepo
+            gitTreeController.currentRepo = currentRepo
             pluginController.currentRepo = currentRepo
             resetController.currentRepo = currentRepo
             terminalController.currentRepo = currentRepo
@@ -98,6 +99,12 @@ QtObject {
     }
 
     property TagController tagController: TagController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
+
+    property GitTreeController gitTreeController: GitTreeController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
         }

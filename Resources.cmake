@@ -36,6 +36,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/CherryPickController.qml
     Qml/Core/Controllers/ConflictController.qml
     Qml/Core/Controllers/TagController.qml
+    Qml/Core/Controllers/GitTreeController.qml      # Commit file tree browser controller
     Qml/Core/Controllers/PluginController.qml
     Qml/Core/Controllers/ResetController.qml
     Qml/Core/Controllers/NetworkController.qml      # Network Controller
@@ -132,7 +133,6 @@ set(RESOURCES_COMPONENTS
     # DockPanel Docks
     Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
 
-
     Qml/View/Components/Settings/CheckboxItem.qml
     Qml/View/Components/Settings/PathSelectorItem.qml
     Qml/View/Components/Settings/TextFieldItem.qml
@@ -215,6 +215,8 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/CalendarPopup.qml
 
     Qml/View/Popups/CommitPlanPopup.qml
+    Qml/View/Popups/CommitFileBrowserPopup.qml #browse file tree at a commit
+
 )
 
 

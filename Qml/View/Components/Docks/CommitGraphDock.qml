@@ -41,6 +41,7 @@ DetachablePanel {
     property TerminalController     terminalController      : null
     property LayoutController       layoutController        : null
     property var                    pluginController        : null
+    property GitTreeController      gitTreeController       : null
 
 
     property AddBranchPopup          addBranchPopup         : null
@@ -498,6 +499,14 @@ DetachablePanel {
         guideController: root.guideController
     }
 
+    CommitFileBrowserPopup {
+        id: commitFileBrowserPopup
+        gitTreeController       : root.gitTreeController
+        repositoryController    : root.repositoryController
+        notificationController  : root.notificationController
+        statusController        : root.statusController
+    }
+
     /* Functions
      * ****************************************************************************************/
     function emptyStateDetailsText() {
@@ -810,6 +819,8 @@ DetachablePanel {
             isHead              : isHead,
             shortHash           : shortHash,
             fullHash            : commitData.hash,
+            commitMessage       : commitData.message || "",
+            commitDate          : commitData.authorDate || "",
             pushEnabled         : !remoteController.pushInProgress && isHead,
             branchNames         : branches,
             isStash             : commitData.isStash || false,
@@ -893,6 +904,10 @@ DetachablePanel {
 
         case "newTag":
             executeNewTag(item.payload.hash)
+            break
+
+        case "browseFiles":
+            browseFilesRequested(item.payload.hash, item.payload.message, item.payload.date)
             break
 
         case "mergeBranch":
@@ -1020,6 +1035,10 @@ DetachablePanel {
         root.addTagPopup.targetHash     = commitHash
         root.addTagPopup.parent         = Qt.binding(() => {return root.activeItem})
         root.addTagPopup.open()
+    }
+
+    function browseFilesRequested(commitHash, commitMessage, commitDate) {
+        commitFileBrowserPopup.openForCommit(commitHash, commitMessage, commitDate)
     }
 
     function executeMergeBranch(source, target) {

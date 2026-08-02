@@ -1,4 +1,4 @@
-import QtQuick
+﻿import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -45,6 +45,7 @@ Page {
     property var                     pluginController        : null
     property LayoutController        layoutController        : null
     property GuideController         guideController         : null
+    property GitTreeController       gitTreeController       : null
 
     // Utility panel (moved in from the old UtilitiesPage), open by default.
     property bool                    utilityPanelOpen        : true
@@ -195,6 +196,7 @@ Page {
                     guideController         : root.guideController
                     layoutController        : root.layoutController
                     pluginController        : root.pluginController
+                    gitTreeController       : root.gitTreeController
 
                     onCommitClicked: function(commitId) { Presenter.handleCommitClicked(commitId) }
                 }
@@ -502,6 +504,7 @@ Page {
         if (!rebaseController)       missing.push("RebaseController")
         if (!cherryPickController)   missing.push("CherryPickController")
         if (!conflictController)     missing.push("ConflictController")
+        if (!gitTreeController)      missing.push("GitTreeController")
 
         if (missing.length > 0) {
             notificationController.error(
