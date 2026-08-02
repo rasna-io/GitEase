@@ -175,12 +175,20 @@ QtObject {
         conflictDestructive:    "#FF6B6B"
         conflictAssistAccent:   "#E0A030"
 
-        // Interactive rebase status colors
-        property color rebaseStatusPending:    secondaryText
-        property color rebaseStatusInProgress: "#FFA500"        // bright orange
-        property color rebaseStatusRebased:    "#2ECC40"        // bright green
-        property color rebaseStatusConflict:   "#FF4136"        // bright red
-        property color rebaseStatusSkipped:    mutedText        // dimmed
+        // Interactive rebase plan actions
+        rebaseActionPick:      "#A5A5B0"
+        rebaseActionPickOnMenu:"#D4D4DC"
+        rebaseActionReword:    "#60A5FA"
+        rebaseActionSquash:    "#C084FC"
+        rebaseActionFixup:     "#E38AD1"
+        rebaseActionEdit:      "#E0A030"
+        rebaseActionDrop:      "#F87171"
+
+        rebaseStatusPending:    secondaryText
+        rebaseStatusInProgress: "#FFA500"        // bright orange
+        rebaseStatusRebased:    "#2ECC40"        // bright green
+        rebaseStatusConflict:   "#FF4136"        // bright red
+        rebaseStatusSkipped:    mutedText        // dimmed
 
         contextMenuBackground: obsidianDeep
         contextMenuBorder:     "#2C2C33"

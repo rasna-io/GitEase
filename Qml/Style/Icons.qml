@@ -72,6 +72,7 @@ QtObject{
     property string clockRotateLeft:   "\uf1da" // clock-rotate-left (history)
     property string list:              "\uf03a" // list
     property string ellipsisVertical:  "\uf142" // ellipsis-vertical
+    property string grip:              "\uf58e" // grip-vertical (drag handle)
 
     property string arrowUpToLine:     "\uf341"
     property string arrowDownToLine:   "\uf33d"
