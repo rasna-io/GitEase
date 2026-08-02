@@ -110,15 +110,19 @@ function buildDisplayModel(selectedConflict, modifiedFiles, selectedPath, displa
     var i = 0;
     var runningLine = 1;
 
+    var cardNumber = 0;
+
     while (i < lines.length) {
         var lineNumber = i + 1;
 
         if (blockMap[lineNumber]) {
             var block = blockMap[lineNumber];
+            cardNumber++;
 
             displayModel.append({
                 type: "blockButton",
-                blockIndex: block.index
+                blockIndex: block.index,
+                cardNumber: cardNumber
             });
 
             for (var j = 0; j < block.lines.length; j++) {
@@ -283,8 +287,9 @@ function computeResolvedLines(block, mode) {
  * @param blockIndex    - The block's index (1‑based)
  * @param block         - The block object (needs startLine, endLine)
  * @param resolvedLines - The resolved text lines to insert
+ * @param mode          - "ours", "theirs" or "both": which side settled the block
  */
-function replaceBlockInModel(displayModel, blockIndex, block, resolvedLines) {
+function replaceBlockInModel(displayModel, blockIndex, block, resolvedLines, mode) {
     let { start, end } = findBlockRowRange(displayModel, blockIndex)
     if (start < 0)
         return
@@ -293,23 +298,38 @@ function replaceBlockInModel(displayModel, blockIndex, block, resolvedLines) {
     let originalLineCount   = block.endLine - block.startLine + 1
     let lineDelta           = resolvedLines.length - originalLineCount
 
+    let cardNumber = displayModel.get(start).cardNumber
+
     // Remove old conflict rows
     displayModel.remove(start, removedRowCount)
 
+    // Card header for the resolved block. Type "blockButton" so it is skipped when the file content
+    // is rebuilt, exactly like the header of an unresolved block.
+    displayModel.insert(start, {
+        type: "blockButton",
+        blockIndex: -1,
+        cardNumber: cardNumber,
+        resolvedGroup: blockIndex,
+        resolvedMode: mode || ""
+    })
+
     // Insert resolved rows
     for (let i = 0; i < resolvedLines.length; ++i) {
-        displayModel.insert(start + i, {
+        displayModel.insert(start + 1 + i, {
             type: "line",
             text: resolvedLines[i],
             lineNumber: block.startLine + i,
             blockIndex: -1,
-            role: "resolved"
+            role: "resolved",
+            cardNumber: cardNumber,
+            resolvedGroup: blockIndex,
+            resolvedMode: mode || ""
         })
     }
 
     // Shift line numbers of rows after the block
     if (lineDelta !== 0) {
-        for (let i = start + resolvedLines.length; i < displayModel.count; ++i) {
+        for (let i = start + resolvedLines.length + 1; i < displayModel.count; ++i) {
             let row = displayModel.get(i)
             if (row.lineNumber !== undefined && row.lineNumber !== null) {
                 displayModel.setProperty(i, "lineNumber", row.lineNumber + lineDelta)

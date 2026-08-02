@@ -49,6 +49,7 @@ DetachablePanel {
 
     property bool   isForcePush: false
     property string pendingPushBranch: ""
+    property string pendingMergeSource: ""
     property var    allCommits      : []
     property var    commits         : []
     property var    allCommitsHash  : ({})
@@ -464,11 +465,29 @@ DetachablePanel {
         conflictController      : root.conflictController
         notificationController  : root.notificationController
         statusController        : root.statusController
+        commitController        : root.commitController
         guideController         : root.guideController
         // onOperationCompleted    : reloadAll()        //TODO
     }
 
     MergeMethodPopup { id: mergeMethodPopup }
+
+    Connections {
+        target: mergeMethodPopup
+
+        function onAccepted(noFF) {
+            if (root.pendingMergeSource === "")
+                return
+
+            let source = root.pendingMergeSource
+            root.pendingMergeSource = ""
+            root.performMerge(source, noFF)
+        }
+
+        function onClosed() {
+            root.pendingMergeSource = ""
+        }
+    }
 
     ConflictPopup {
         id: cherryPickConflictPopup
@@ -478,6 +497,7 @@ DetachablePanel {
         conflictController      : root.conflictController
         notificationController  : root.notificationController
         statusController        : root.statusController
+        commitController        : root.commitController
         guideController         : root.guideController
         // onOperationCompleted    : reloadAll()        //TODO
     }
@@ -1043,25 +1063,22 @@ DetachablePanel {
     function executeMergeBranch(source, target) {
         mergeMethodPopup.sourceBranch = source
         mergeMethodPopup.targetBranch = target
-
-        mergeMethodPopup.accepted.connect(function(noFF) {
-            var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
-
-            if (root.mergeController.hasMergeConflicts()) {
-                mergeConflictPopup.show()
-
-                root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
-
-                root.reloadAll()
-            } else {
-                handleGitControllerResult(res, "Merge completed", mergeConflictPopup, "Merge")
-            }
-
-            mergeMethodPopup.accepted.disconnect(arguments.callee)
-        })
+        root.pendingMergeSource = source
 
         // mergeMethodPopup is declared in this panel's content, so it follows the panel by itself.
         mergeMethodPopup.open()
+    }
+
+    function performMerge(source, noFF) {
+        var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
+
+        if (root.mergeController.isMergeInProgress() && root.mergeController.hasMergeConflicts()) {
+            root.showConflictWindow(mergeConflictPopup)
+            root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
+            root.reloadAll()
+        } else {
+            handleGitControllerResult(res, "Merge completed", mergeConflictPopup, "Merge")
+        }
     }
 
     function executeRebase(commitHash) {
@@ -1095,12 +1112,17 @@ DetachablePanel {
         }
     }
 
+    function showConflictWindow(conflictPopup) {
+        conflictPopup.ontoRef = root.branchController?.getCurrentBranchName() ?? ""
+        conflictPopup.show()
+    }
+
     function handleGitControllerResult(res, successMsg, conflictPopup, commandName) {
         if (res && res.success) {
             notificationController.success(successMsg, commandName, 3000)
         }
         else if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-            conflictPopup.show();
+            root.showConflictWindow(conflictPopup);
             notificationController.warning(commandName + " conflicts detected.", commandName, 4000);
         }
         else {

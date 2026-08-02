@@ -26,16 +26,16 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    Layout.preferredWidth: 240
+    Layout.preferredWidth: 250
     Layout.fillHeight: true
-    radius: 4
-    color: Style.colors.primaryBackground
-    border.width: 1
-    border.color: Style.colors.primaryBorder
+    color: Style.colors.secondaryBackground
 
+    /* Children
+     * ****************************************************************************************/
     ScrollView {
         id: scroll
         anchors.fill: parent
+        anchors.topMargin: 6
         clip: true
 
         contentWidth: availableWidth
@@ -44,139 +44,144 @@ Rectangle {
             spacing: 0
             width: scroll.availableWidth
 
-            // Conflict Changes header
-            Text {
-                visible: conflictFiles.length > 0
-                text: "Conflict Changes"
-                color: Style.colors.secondaryText
-                font.family: Style.fontTypes.inter
-                font.bold: true
-                font.pixelSize: Style.appFont.defaultPt
-                leftPadding: 12
-                topPadding: 6
-                bottomPadding: 2
+            SectionLabel {
+                Layout.fillWidth: true
+                visible: root.conflictFiles.length > 0
+                text: `CONFLICTS (${root.conflictFiles.length})`
             }
 
             Repeater {
-                model: conflictFiles
+                model: root.conflictFiles
                 delegate: fileDelegate
             }
 
-            // Staged Changes header
-            Text {
-                visible: stagedFiles.length > 0
-                text: "Staged Changes"
-                color: Style.colors.secondaryText
-                font.family: Style.fontTypes.inter
-                font.bold: true
-                font.pixelSize: Style.appFont.defaultPt
-                leftPadding: 12
-                topPadding: 6
-                bottomPadding: 2
+            SectionLabel {
+                Layout.fillWidth: true
+                Layout.topMargin: root.conflictFiles.length > 0 ? 8 : 0
+                visible: root.stagedFiles.length > 0
+                text: `RESOLVED (${root.stagedFiles.length})`
             }
 
             Repeater {
-                model: stagedFiles
+                model: root.stagedFiles
                 delegate: fileDelegate
             }
         }
     }
 
+    /* Components
+     * ****************************************************************************************/
     Component {
         id: fileDelegate
-        Rectangle {
+
+        Item {
             id: delegateItem
+
+            required property var modelData
+
+            readonly property bool isStaged  : root.stagedFiles.some(f => f.path === modelData.path)
+            readonly property bool isCurrent : root.currentPath === modelData.path
+            readonly property bool hasMarkers: modelData.blocks !== undefined
+                                               && modelData.blocks.length > 0
+
             Layout.fillWidth: true
-            Layout.preferredHeight: 28
-            radius: 3
+            Layout.preferredHeight: Style.dp(30)
 
-            property bool isStaged  : root.stagedFiles && root.stagedFiles.some(f => f.path === modelData.path)
-            property bool isCurrent : root.currentPath === modelData.path
-            property bool isHovered : hoverHandler.hovered
-
-            color: {
-                if (isCurrent)
-                    return Style.colors.accent
-
-                if (isHovered)
-                    return Style.colors.hoverTitle
-
-                return "transparent"
-            }
-
-            MouseArea {
+            Rectangle {
                 anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                acceptedButtons: Qt.NoButton
+                color: {
+                    if (delegateItem.isCurrent)
+                        return Style.colors.conflictFileSelectedBg
+
+                    return hoverHandler.hovered ? Style.colors.cardBackground : "transparent"
+                }
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 150
+                    }
+                }
             }
 
-            Behavior on color {
-                ColorAnimation { duration: 150 }
+            Rectangle {
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: 3
+                radius: 1.5
+                visible: delegateItem.isCurrent
+                color: Style.colors.accent
             }
 
             HoverHandler {
                 id: hoverHandler
+                cursorShape: Qt.PointingHandCursor
             }
 
             TapHandler {
                 gesturePolicy: TapHandler.ReleaseWithinBounds
-                onTapped: root.fileSelected(modelData.path)
+                onTapped: root.fileSelected(delegateItem.modelData.path)
             }
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 8
+                anchors.leftMargin: 16
                 anchors.rightMargin: 8
-                spacing: 8
+                spacing: 10
 
-                ScrollingText {
-                    Layout.fillWidth: true
-                    text: modelData.path || ""
-                    font.family: Style.fontTypes.inter
-                    color: Style.colors.lineNumberColor
-                    font.pixelSize: Style.appFont.h3Pt
-                }
+                Text {
+                    Layout.preferredWidth: 14
+                    horizontalAlignment: Text.AlignHCenter
+                    font.family: Style.fontTypes.font6ProSolid
+                    font.pixelSize: Style.appFont.captionPt
 
-                ActionIconButton {
-                    visible: true
-                    opacity: !isStaged && isHovered
-                    iconText: Style.icons.plus
-                    textColor: Style.colors.mutedText
-                    tooltip: "Stage Changes"
+                    text: delegateItem.hasMarkers ? Style.icons.circleExclamation
+                                                  : Style.icons.circleCheck
 
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    color: {
+                        if (delegateItem.hasMarkers)
+                            return Style.colors.conflictStatusConflictColor
 
-                    onClicked: {
-                        root.fileSelected(modelData.path)
-                        root.stageRequested(modelData.path)
+                        if (delegateItem.modelData.status === "A")
+                            return Style.colors.conflictStatusAddedColor
+
+                        return Style.colors.conflictStatusAddedColor
                     }
                 }
 
                 Text {
+                    Layout.fillWidth: true
+                    text: delegateItem.modelData.path || ""
+                    color: delegateItem.isCurrent ? Style.colors.accent : Style.colors.mutedText
                     font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.defaultPt
-                    font.bold: true
-                    Layout.preferredWidth: 14
-                    horizontalAlignment: Text.AlignHCenter
+                    font.weight: delegateItem.isCurrent ? Font.DemiBold : Font.Normal
+                    font.pixelSize: Style.appFont.smallPt
+                    elide: Text.ElideLeft
 
-                    text: {
-                        // Determine status based on data source
-                        if (modelData.blocks !== undefined) {
-                            // It's a conflict file
-                            return modelData.blocks.length > 0 ? "!" : "M"
-                        } else {
-                            // It's a staged file (from stagedFiles)
-                            return modelData.status || "M"
+                    ToolTip {
+                        visible: hoverHandler.hovered && parent.truncated
+                        text: delegateItem.modelData.path || ""
+                        delay: 500
+                    }
+                }
+
+                ActionIconButton {
+                    Layout.preferredWidth: 18
+                    Layout.preferredHeight: 18
+                    opacity: !delegateItem.isStaged && hoverHandler.hovered ? 1 : 0
+                    iconText: Style.icons.plus
+                    textColor: Style.colors.mutedText
+                    tooltip: "Stage Changes"
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 150
                         }
                     }
-                    color: {
-                        if (modelData.blocks !== undefined && modelData.blocks.length > 0)
-                            return Style.colors.conflictStatusConflictColor
 
-                        if (modelData.status === "A")
-                            return Style.colors.conflictStatusAddedColor
-
-                        return Style.colors.conflictStatusModifiedColor
+                    onClicked: {
+                        root.fileSelected(delegateItem.modelData.path)
+                        root.stageRequested(delegateItem.modelData.path)
                     }
                 }
             }
