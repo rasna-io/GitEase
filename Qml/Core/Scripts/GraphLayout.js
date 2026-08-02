@@ -164,21 +164,24 @@ function updateLanesForCommit(lane, commit, parents, lanes, hashToCommit, proces
     }
     
     if (parents.length === 0) {
-        // Initial commit - no parents, free the lane
+        // Initial commit - genuinely a root within our data, free the lane
         lanes[lane] = null
-        
+
     } else if (parents.length === 1) {
         // Normal commit - single parent continues in same lane
         var parentHash = parents[0]
-        
+
         if (!hashToCommit.hasOwnProperty(parentHash)) {
-            // Parent not in our list, free the lane
-            lanes[lane] = null
+            // Parent isn't loaded (off-window/paginated), not a real
+            // termination. Retire this lane for good instead of freeing it -
+            // otherwise the next unrelated commit would reuse it and look
+            // like a continuation of this branch (see GE-... graph bug).
+            lanes[lane] = "CLOSED"
         } else {
             // Continue parent in same lane
             lanes[lane] = parentHash
         }
-        
+
     } else {
         // Merge commit - multiple parents
         // First parent continues in current lane
@@ -186,7 +189,7 @@ function updateLanesForCommit(lane, commit, parents, lanes, hashToCommit, proces
         if (hashToCommit.hasOwnProperty(firstParent)) {
             lanes[lane] = firstParent
         } else {
-            lanes[lane] = null
+            lanes[lane] = "CLOSED"
         }
         
         // Process additional parents (merged branches)
