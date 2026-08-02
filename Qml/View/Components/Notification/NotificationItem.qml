@@ -104,7 +104,8 @@ Item {
             Text {
                 Layout.alignment: Qt.AlignTop
                 text: root.typeIcon
-                font.family: Style.fontTypes.font6ProSolid
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
                 font.pixelSize: Style.appFont.largePt
                 color: root.accentColor
             }

@@ -99,7 +99,8 @@ ColumnLayout {
             Text {
                 anchors.centerIn: parent
                 text: Style.icons.minus
-                font.family: Style.fontTypes.font6ProSolid
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
                 font.pixelSize: 11
                 color: spinBox.down.pressed ? Style.colors.onAccentText
                                             : Style.colors.foreground
@@ -126,7 +127,8 @@ ColumnLayout {
             Text {
                 anchors.centerIn: parent
                 text: Style.icons.plus
-                font.family: Style.fontTypes.font6ProSolid
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
                 font.pixelSize: 11
                 color: spinBox.up.pressed ? Style.colors.onAccentText
                                           : Style.colors.foreground

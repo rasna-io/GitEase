@@ -92,9 +92,8 @@ RowLayout {
         hoverEnabled: true
 
         text: Style.icons.filter
-        font.family: (filterOptionsPopup.visible || hovered)
-                     ? Style.fontTypes.font6ProSolid
-                     : Style.fontTypes.font6Pro
+        font.family: Style.fontTypes.font6Pro
+        font.styleName: (filterOptionsPopup.visible || hovered) ? "Solid" : "Regular"
         font.pixelSize: Style.appFont.largePt
 
         contentItem: Text {

@@ -60,7 +60,8 @@ Rectangle {
     Text {
         anchors.centerIn: parent
         text: root.iconText
-        font.family: Style.fontTypes.font6ProSolid
+        font.family: Style.fontTypes.font6Pro
+        font.styleName: "Solid"
         font.pixelSize: Style.appFont.defaultPt
         color: mouse.containsMouse ? root.hoverTextColor : root.textColor
     }

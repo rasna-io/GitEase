@@ -84,7 +84,8 @@ Rectangle {
             text: Style.icons.grip
             color: dragHandler.active || gripHover.hovered ? Style.colors.foreground
                                                            : Style.colors.mutedText
-            font.family: Style.fontTypes.font6ProSolid
+            font.family: Style.fontTypes.font6Pro
+            font.styleName: "Solid"
             font.pixelSize: Style.appFont.smallPt
         }
 
@@ -274,7 +275,8 @@ Rectangle {
                     text: arrow.modelData.up ? Style.icons.caretUp : Style.icons.caretDown
                     color: arrowMouse.containsMouse ? Style.colors.foreground
                                                     : Style.colors.mutedText
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     font.pixelSize: Style.appFont.captionPt
                 }
             }

@@ -81,7 +81,8 @@ T.Button {
                     anchors.fill: parent
                     visible: control.icon.name !== ""
                     text: control.icon.name
-                    font.family: control.solidIcon ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: control.solidIcon ? "Solid" : "Regular"
                     font.pixelSize: Math.min(width, height)
                     color: control.icon.color
                     horizontalAlignment: Text.AlignHCenter

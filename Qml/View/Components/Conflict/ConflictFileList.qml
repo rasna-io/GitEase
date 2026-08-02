@@ -132,7 +132,8 @@ Rectangle {
                 Text {
                     Layout.preferredWidth: 14
                     horizontalAlignment: Text.AlignHCenter
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     font.pixelSize: Style.appFont.captionPt
 
                     text: delegateItem.hasMarkers ? Style.icons.circleExclamation

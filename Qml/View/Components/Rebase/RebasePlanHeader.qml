@@ -83,7 +83,8 @@ ColumnLayout {
                 anchors.centerIn: parent
                 text: Style.icons.close
                 color: closeHover.hovered ? Style.colors.foreground : Style.colors.mutedText
-                font.family: Style.fontTypes.font6ProSolid
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
                 font.pixelSize: Style.appFont.mediumPt
             }
         }

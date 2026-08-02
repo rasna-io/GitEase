@@ -8,7 +8,6 @@ QtObject{
      * ****************************************************************************************/
 
     readonly property string font6Pro:      "Font Awesome 6 Pro"
-    readonly property string font6ProSolid: "Font Awesome 6 Pro Solid"
     readonly property string inter:         "Inter"
     readonly property string jetBrainsMono: "JetBrains Mono"
 }

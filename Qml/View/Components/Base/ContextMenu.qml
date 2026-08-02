@@ -121,7 +121,8 @@ Popup {
                 // Icon
                 Text {
                     text: modelData.icon || ""
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     font.pixelSize: Style.appFont.mediumPt
                     color: menuOption.iconColor
                     visible: text !== ""
