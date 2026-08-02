@@ -81,6 +81,21 @@ DetachablePanel {
         root.expandLines = gs.chunkExpandLines
     }
 
+    readonly property int addedLineCount: {
+        let n = 0
+        for (let i = 0; i < diffData.length; i++)
+            if (diffData[i].type === GitDiff.Added || diffData[i].type === GitDiff.Modified)
+                n++
+        return n
+    }
+    readonly property int deletedLineCount: {
+        let n = 0
+        for (let i = 0; i < diffData.length; i++)
+            if (diffData[i].type === GitDiff.Deleted || diffData[i].type === GitDiff.Modified)
+                n++
+        return n
+    }
+
     onDiffDataChanged: {
         if (chunkMode)
             return
@@ -211,11 +226,39 @@ DetachablePanel {
                 height: parent.height
                 width: parent.width - (vScrollBar.visible ? vScrollBar.width : 0)
                 propagateComposedEvents: true
+                hoverEnabled: true
                 z: 1
                 focus: true
                 Keys.enabled: true
                 enabled: root.selectEnabled || root.readOnly || root.chunkMode
                 visible: root.selectEnabled || root.readOnly || root.chunkMode
+
+                cursorShape: {
+                    if (!diffListView.count)
+                        return Qt.ArrowCursor
+
+                    var idx = diffListView.indexAt(mouseX, mouseY + diffListView.contentY)
+                    if (idx < 0)
+                        return Qt.ArrowCursor
+
+                    var row = diffListView.model.get(idx)
+                    if (!row)
+                        return Qt.ArrowCursor
+
+                    if (row.rowType === "hidden") {
+                        return (mouseX > selectMsa.width - 140) ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    }
+
+                    var halfW = selectMsa.width / 2
+                    var inGutter = mouseX >= halfW && mouseX < halfW + 44
+                    if (inGutter &&
+                        checkHasAction(diffListView.model, idx, row.diffType) &&
+                        root.selectedFileStatus !== GitFileStatus.Deleted) {
+                        return Qt.PointingHandCursor
+                    }
+
+                    return Qt.ArrowCursor
+                }
 
                 onPressed: (mouse) => {
                    diffListView.interactive = false // Disable flicking during selection
@@ -317,7 +360,7 @@ DetachablePanel {
             delegate: Item{
                 id: delegateItem
                 width: diffListView.width
-                implicitHeight: model.rowType === "hidden" ? 45 : diffLineItem.implicitHeight
+                implicitHeight: model.rowType === "hidden" ? 28 : diffLineItem.implicitHeight
 
                 // Exposed so the guide can find a currently visible row's action buttons /
                 // hidden-context bar (see findActionableDelegate / findHiddenBarDelegate below).
@@ -336,6 +379,7 @@ DetachablePanel {
 
                         item.direction      = Qt.binding(function() { return model.direction })
                         item.remaining      = Qt.binding(function() { return model.remaining })
+                        item.rangeLabel     = Qt.binding(function() { return model.rangeLabel !== undefined ? model.rangeLabel : "" })
                         item.delegateIndex  = Qt.binding(function() { return index })
                     }
                 }
@@ -396,20 +440,45 @@ DetachablePanel {
 
             ScrollingText {
                 text: root.selectedFile
-                font.family: Style.fontTypes.inter
-                font.pixelSize: Style.appFont.smallPt
+                font.family: Style.fontTypes.jetBrainsMono
+                font.pixelSize: Style.appFont.secondaryPt
                 color: Style.colors.mutedText
-                anchors.centerIn: parent
-                Layout.maximumWidth: parent.width * 0.4
+                anchors.left: parent.left
+                anchors.leftMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, parent.width * 0.55)
             }
 
-            ActionIconButton{
+            RowLayout {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                iconText: Style.icons.gear
-                textColor: Style.colors.secondaryText
+                spacing: 6
 
-                onClicked: settingsPopup.open()
+                Text {
+                    visible: root.selectedFile !== "" && (root.addedLineCount > 0 || root.deletedLineCount > 0)
+                    text: "+" + root.addedLineCount
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.diffAddedCount
+                }
+
+                Text {
+                    visible: root.selectedFile !== "" && (root.addedLineCount > 0 || root.deletedLineCount > 0)
+                    text: "−" + root.deletedLineCount
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.diffRemovedCount
+                }
+
+                ActionIconButton{
+                    iconText: Style.icons.gear
+                    textColor: Style.colors.secondaryText
+                    hoverTextColor: Style.colors.openBlue
+                    hoverBackgroundColor: Qt.rgba(Style.colors.openBlue.r, Style.colors.openBlue.g, Style.colors.openBlue.b, 0.1)
+                    tooltip: "Diff settings"
+
+                    onClicked: settingsPopup.open()
+                }
             }
 
             Popup {
@@ -501,50 +570,152 @@ DetachablePanel {
         Item {
             property string direction: ""
             property int remaining: 0
+            property string rangeLabel: ""
             property int delegateIndex: -1
 
             anchors.fill: parent
 
-            MouseArea {
-                id: hiddenMarker
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.expandHiddenBlock(delegateIndex, direction)
-            }
-
             Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                height: 1
-                color: hiddenMarker.containsMouse ? Style.colors.accent : Style.colors.primaryBorder
-            }
+                id: pill
 
-            Row {
-                anchors.centerIn: parent
-                spacing: 6
-                Label {
-                    text: direction === "up" ? Style.icons.arrowUpToLine : Style.icons.arrowDownToLine
-                    font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: Style.appFont.mediumPt
-                    color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 4
-                    background: Rectangle {
-                        color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                          : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 4
-                    }
+                anchors.fill: parent
+
+                color: Style.colors.actionPillBg
+                border.width: 0
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: Style.colors.actionPillBorder
                 }
-                Label {
-                    text: remaining
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: Style.colors.actionPillBorder
+                }
+
+                HoverHandler {
+                    id: pillHoverHandler
+                    blocking: false
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: rangeLabel !== ""
+
+                    text: rangeLabel
+
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.secondaryPt
+                    color: Style.colors.mutedText
+                }
+
+                // Centre: "N lines hidden"
+                Text {
+                    anchors.centerIn: parent
+
+                    text: remaining + " lines hidden"
+
                     font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.captionPt
-                    color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 3
-                    background: Rectangle {
-                        color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                          : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 3
+                    font.pixelSize: Style.appFont.smallPt
+                    color: pillHoverHandler.hovered
+                           ? Style.colors.secondaryText
+                           : Style.colors.mutedText
+                }
+
+                // Right: two expand buttons
+                Row {
+                    anchors {
+                        right: parent.right
+                        rightMargin: 8
+                        verticalCenter: parent.verticalCenter
+                    }
+
+                    spacing: 4
+
+                    // Expand step button
+                    Rectangle {
+                        id: stepBtn
+
+                        width: stepBtnText.implicitWidth + 12
+                        height: 20
+
+                        radius: 4
+
+                        color: "transparent"
+                        border.color: stepBtnMouse.containsMouse
+                                      ? Style.colors.accent
+                                      : Style.colors.actionPillBorder
+                        border.width: 1
+
+                        Text {
+                            id: stepBtnText
+
+                            anchors.centerIn: parent
+
+                            text: "↕ " + root.expandLines
+
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.secondaryPt
+                            color: stepBtnMouse.containsMouse
+                                   ? Style.colors.accent
+                                   : Style.colors.mutedText
+                        }
+
+                        MouseArea {
+                            id: stepBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.expandHiddenBlock(
+                                delegateIndex, direction, root.expandLines)
+                        }
+                    }
+
+                    // Expand all button
+                    Rectangle {
+                        id: allBtn
+
+                        width: allBtnText.implicitWidth + 12
+                        height: 20
+
+                        radius: 4
+
+                        color: "transparent"
+                        border.color: allBtnMouse.containsMouse
+                                      ? Style.colors.accent
+                                      : Style.colors.actionPillBorder
+                        border.width: 1
+
+                        Text {
+                            id: allBtnText
+
+                            anchors.centerIn: parent
+
+                            text: "↕ All"
+
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.secondaryPt
+                            color: allBtnMouse.containsMouse
+                                   ? Style.colors.accent
+                                   : Style.colors.mutedText
+                        }
+
+                        MouseArea {
+                            id: allBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.expandHiddenBlock(
+                                delegateIndex, direction, remaining)
+                        }
                     }
                 }
             }
@@ -897,6 +1068,7 @@ DetachablePanel {
                         direction: "down",
                         hiddenCount: chunk.hiddenCount,
                         remaining: chunk.hiddenCount,
+                        rangeLabel: hiddenRangeLabel(chunk),
                         chunkIndex: c
                     })
                 }
@@ -907,6 +1079,7 @@ DetachablePanel {
                         direction: "up",
                         hiddenCount: chunk.hiddenCount,
                         remaining: chunk.hiddenCount,
+                        rangeLabel: hiddenRangeLabel(chunk),
                         chunkIndex: c
                     })
                 }
@@ -989,6 +1162,7 @@ DetachablePanel {
                 direction: "down",
                 hiddenCount: totalHidden,
                 remaining: newRemaining,
+                rangeLabel: hiddenRangeLabel(chunk),
                 chunkIndex: chunkIdx
             })
 
@@ -1013,15 +1187,18 @@ DetachablePanel {
                 direction: "up",
                 hiddenCount: totalHidden,
                 remaining: newRemaining,
+                rangeLabel: hiddenRangeLabel(chunk),
                 chunkIndex: chunkIdx
             })
         }
 
         let finalRemaining = totalHidden - chunk.visibleTop - chunk.visibleBottom
+        let finalRangeLabel = hiddenRangeLabel(chunk)
         for (let i = 0; i < chunkModel.count; i++) {
             let r = chunkModel.get(i)
             if (r.rowType === "hidden" && r.chunkIndex === chunkIdx) {
                 chunkModel.setProperty(i, "remaining", finalRemaining)
+                chunkModel.setProperty(i, "rangeLabel", finalRangeLabel)
             }
         }
 
@@ -1035,6 +1212,27 @@ DetachablePanel {
 
         for (let line of newLines)
             updateMaxContentWidth(line.leftText)
+    }
+
+    function hiddenRangeLabel(chunk) {
+        if (!chunk || !chunk.hiddenLines || chunk.hiddenLines.length === 0)
+            return ""
+
+        let visibleTop = chunk.visibleTop || 0
+        let visibleBottom = chunk.visibleBottom || 0
+        let lines = chunk.hiddenLines
+        let firstIdx = visibleTop
+        let lastIdx = lines.length - 1 - visibleBottom
+
+        if (firstIdx > lastIdx || firstIdx < 0 || lastIdx >= lines.length)
+            return ""
+
+        let first = lines[firstIdx]
+        let last = lines[lastIdx]
+        let startNum = (first.newLine > 0) ? first.newLine : first.oldLine
+        let endNum = (last.newLine > 0) ? last.newLine : last.oldLine
+
+        return startNum + "-" + endNum
     }
 
     function makeContextLine(lineObj) {

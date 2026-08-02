@@ -11,27 +11,31 @@ import GitEase
  * Modern Input Area, shown text character count and ...
  * ************************************************************************************************/
 Rectangle {
+    id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-    property alias text:        commitTextArea.text
-    property alias placeholder: commitTextArea.placeholderText
+    property alias  text:        commitTextArea.text
+    property string placeholder: ""
 
     property int    minLines            : 3
     property int    maxLines            : 10
-    property real   lineHeightMultiplier: 1.2
-    property int    fontSize: 14
+    property real   lineHeightMultiplier: 1.3
 
     readonly property real  effectiveLineHeight : commitTextArea.font.pixelSize * lineHeightMultiplier
+
     readonly property int   counterHeight       : 24
     readonly property int   verticalPadding     : 24
 
+    readonly property int   horizontalTextPadding: 10
+    readonly property int   verticalTextPadding  : 8
+
     /* Object Properties
      * ****************************************************************************************/
-    color: Style.colors.primaryBackground
-    radius: 4
+    color: Style.colors.actionPillBg
+    radius: 5
     border.width: 1
-    border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
+    border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.chipBorder
 
     implicitHeight: {
         var lines = commitTextArea.lineCount
@@ -45,29 +49,58 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
-        ScrollView {
-            id: scrollView
+        Item {
+            id: textAreaWrapper
             Layout.fillWidth: true
             Layout.fillHeight: true
-            clip: true
 
-            TextArea {
-                id: commitTextArea
-                width: parent.width
-                placeholderTextColor: Style.colors.placeholderText
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.inter
-                font.pixelSize: Style.appFont.largePt
-                wrapMode: TextEdit.Wrap
-                leftPadding: 12;
-                topPadding: 12;
-                rightPadding: 12
-                bottomPadding: 12
-                selectByMouse: true
-                background: null
-                selectionColor: Style.colors.accent
-                selectedTextColor: Style.colors.secondaryForeground
-                Material.accent: Style.colors.accent
+            ScrollView {
+                id: scrollView
+                anchors.fill: parent
+                clip: true
+
+                TextArea {
+                    id: commitTextArea
+                    floatingPlaceholderEnabled: false
+                    placeholderText: ""
+
+                    width: parent.width
+
+                    color: Style.colors.foreground
+
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.mediumPt
+                    font.weight: Font.Normal
+
+                    wrapMode: TextEdit.Wrap
+                    leftPadding: root.horizontalTextPadding
+                    topPadding: root.verticalTextPadding
+                    rightPadding: root.horizontalTextPadding
+                    bottomPadding: root.verticalTextPadding
+
+                    selectByMouse: true
+                    background: null
+                    selectionColor: Style.colors.accent
+                    selectedTextColor: Style.colors.secondaryForeground
+                    Material.accent: Style.colors.accent
+                }
+            }
+            
+            Text {
+                text: root.placeholder
+                visible: commitTextArea.text.length === 0 && !commitTextArea.activeFocus
+                color: Style.colors.mutedText
+                font: commitTextArea.font
+                wrapMode: Text.Wrap
+                elide: Text.ElideRight
+                opacity: .5
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.leftMargin: root.horizontalTextPadding
+                anchors.rightMargin: root.horizontalTextPadding
+                anchors.topMargin: root.verticalTextPadding
             }
         }
 
@@ -79,8 +112,11 @@ Rectangle {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 12; anchors.rightMargin: 12
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+
                 Item { Layout.fillWidth: true }
+
                 Text {
                     text: commitTextArea.text.length + " characters"
                     font.pixelSize: Style.appFont.smallPt

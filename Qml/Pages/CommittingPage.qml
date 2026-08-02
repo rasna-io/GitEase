@@ -140,9 +140,8 @@ Page {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 8
-        anchors.topMargin: 8
-        spacing: 8
+        anchors.margins: 0
+        spacing: 0
 
         // Left panel: two stacked placeholders
         Rectangle {
@@ -159,8 +158,7 @@ Page {
                     Layout.fillWidth: true
                     Layout.preferredHeight: commitColumn.implicitHeight + 24
                     Layout.maximumHeight: 300
-                    color: Style.colors.secondaryBackground
-                    radius: 2
+                    color: "transparent"
 
                     GuideHoverTrigger {
                         guideController: root.guideController
@@ -184,7 +182,7 @@ Page {
                                     commands: [{ command: "git commit -m \"…\"" }]
                                 },
                                 {
-                                    targetProvider: function() { return commitCaretZone },
+                                    targetProvider: function() { return caretBtn },
                                     icon: Style.icons.caretDown,
                                     title: "Commit Extras  ·  ▾ dropdown",
                                     description: "Commit & Push runs git commit then git push in one step. Commit Amend runs git commit --amend — rewrites the most recent local commit (message or content) instead of creating a new one."
@@ -209,7 +207,7 @@ Page {
                         id: commitColumn
                         anchors.fill: parent
                         anchors.margins: 12
-                        spacing: 10
+                        spacing: 8
 
                         ContextMenu {
                             id: commitOptionsMenu
@@ -246,7 +244,7 @@ Page {
 
                             Layout.fillWidth: true
 
-                            placeholder: "What did you change?..."
+                            placeholder: "Commit message (required)"
                         }
 
                         RowLayout {
@@ -287,75 +285,66 @@ Page {
                                 id: commitBtn
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
-                                radius: 4
-                                color: committingButton.commitEnabled ? Style.colors.accent : Style.colors.disabledButton
+                                radius: 5
+                                color: committingButton.commitEnabled ? Style.colors.commitButton : Style.colors.disabledButton
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Commit"
+                                    color: Style.colors.secondaryForeground
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.mediumPt
+                                    font.weight: Font.DemiBold
+                                }
 
                                 MouseArea {
                                     id: commitBtnMouse
-                                    anchors.left: parent.left
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    width: parent.width - 29
+                                    anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: committingButton.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                     enabled: committingButton.commitEnabled
 
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: 4
-                                        color: commitBtnMouse.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
-                                    }
-
-                                    Text {
-                                        id: commitBtnLabel
-                                        anchors.centerIn: parent
-                                        text: "Commit"
-                                        color: Style.colors.secondaryForeground
-                                        font.family: Style.fontTypes.inter
-                                        font.pixelSize: Style.appFont.mediumPt
+                                        radius: 5
+                                        color: parent.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
                                     }
 
                                     onClicked: root.commitAndUpdate()
                                 }
+                            }
 
-                                Rectangle {
-                                    id: caretDivider
-                                    anchors.right: commitCaretZone.left
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    anchors.topMargin: 7
-                                    anchors.bottomMargin: 7
-                                    width: 1
-                                    color: Style.colors.secondaryForeground
-                                    opacity: 0.35
+                            Rectangle {
+                                id: caretBtn
+                                Layout.preferredWidth: 30
+                                Layout.preferredHeight: 30
+                                radius: 5
+                                color: Style.colors.actionPillBg
+                                border.color: Style.colors.chipBorder
+                                border.width: 1
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: Style.icons.caretDown
+                                    font.family: Style.fontTypes.font6ProSolid
+                                    font.pixelSize: Style.appFont.defaultPt
+                                    color: caretBtnMouse.containsMouse ? Style.colors.foreground : Style.colors.chipText
                                 }
 
                                 MouseArea {
-                                    id: commitCaretZone
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    width: 28
+                                    id: caretBtnMouse
+                                    anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
 
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: 3
-                                        color: committingButton.commitEnabled ?
-                                                   commitCaretZone.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent" : Style.colors.accent
-                                    }
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: Style.icons.caretDown
-                                        font.family: Style.fontTypes.font6ProSolid
-                                        font.pixelSize: Style.appFont.defaultPt
-                                        color: Style.colors.secondaryForeground
+                                        radius: 5
+                                        color: parent.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
                                     }
 
                                     onClicked: {
-                                        var pos = commitCaretZone.mapToItem(commitPanel, 0, commitBtn.height)
+                                        var pos = caretBtn.mapToItem(commitPanel, 0, caretBtn.height)
                                         commitDropMenu.x = Math.min(pos.x, commitPanel.width - commitDropMenu.implicitWidth - 48)
                                         commitDropMenu.y = pos.y + 4
                                         commitDropMenu.open()
@@ -372,16 +361,16 @@ Page {
                                 id: moreOptionsBtn
                                 Layout.preferredWidth: 30
                                 Layout.preferredHeight: 30
-                                radius: 4
-                                color: commitOptionsDotMouse.containsMouse ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                                border.color: Style.colors.primaryBorder
+                                radius: 5
+                                color: Style.colors.actionPillBg
+                                border.color: Style.colors.chipBorder
                                 border.width: 1
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "\u22EE"
+                                    text: "\u22EF"
                                     font.pixelSize: Style.appFont.h2Pt
-                                    color: commitOptionsDotMouse.containsMouse ? Style.colors.foreground : Style.colors.secondaryText
+                                    color: commitOptionsDotMouse.containsMouse ? Style.colors.foreground : Style.colors.chipText
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
                                 }
@@ -447,6 +436,22 @@ Page {
                         root.currentFileEdited = false
                     }
                 }
+            }
+        }
+
+        // Resizable divider
+        Rectangle {
+            Layout.fillHeight: true
+            Layout.preferredWidth: 3
+            color: dividerMouse.containsMouse ? Style.colors.accent : Style.colors.primaryBorder
+            z: 1
+
+            MouseArea {
+                id: dividerMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.SplitHCursor
+                // ToDO: drag-to-resize logic
             }
         }
 

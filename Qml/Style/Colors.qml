@@ -205,4 +205,45 @@ QtObject{
     property color contextMenuHover:      "#E7E7E7"
 
     property color branchSelectedAccent:  "#2563EB"
+
+    // Committing page header
+    property color branchAccent:    branchSelectedAccent   // #2563EB
+    property color chipBorder:      primaryBorder          // #D7DCE5
+    property color chipText:        secondaryText          // #5F6A7A
+    property color forcePushText:   "#DC2626"              // distinct warning red
+    property color forcePushBorder: "#4DEF4444"            // semi‑transparent red
+
+    // File list sections
+    property color countBadgeText:      secondaryText          // #5F6A7A
+    property color countBadgeBg:        cardBackground         // #E8E8E8
+    property color sectionHeaderBg:     surfaceLight           // #F3F3F3
+    property color sectionLabel:        "#7A8398"
+    property color emptyCircleBg:       surfaceLight           // #F3F3F3
+    property color emptyCircleBorder:   "#E0E0E0"
+    property color emptyStateText:      "#9AA1B0"
+    property color emptyStateSubText:   "#B8BEC9"
+
+    // Section actions and badge
+    property color actionIconIdle:        "#9AA1B0"
+    property color stashAmber:            "#D97706"
+    property color stageGreen:            "#16A34A"
+    property color discardRed:            "#DC2626"
+    property color countText:             "#B45309"
+    property color countBg:               "#12FBBF24"
+
+    // Action pill (row-level)
+    property color actionPillBg:          surfaceLight         // #F3F3F3
+    property color actionPillBorder:      primaryBorder        // #D7DCE5
+    property color openBlue:              branchAccent         // #2563EB
+
+    // Row-level
+    property color filePathText:         "#686880"
+    property color rowHoverBg:           "#EFEFEF"
+
+    // Diff view header line counts
+    property color diffAddedCount:       "#16A34A"
+    property color diffRemovedCount:     "#DC2626"
+
+    // Commit Panel
+    property color commitButton:         branchAccent         // #2563EB
 }

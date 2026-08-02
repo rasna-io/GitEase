@@ -23,9 +23,9 @@ RowLayout {
     /* Object Properties
      * ****************************************************************************************/
     anchors.fill: parent
-    anchors.leftMargin: parent.width < Style.appHeight ? 8 : 20
+    anchors.leftMargin: parent.width < Style.appHeight ? 8 : 14
     anchors.rightMargin: parent.width < Style.appHeight ? 4 : 5
-    spacing: parent.width < Style.appHeight ? 6 : 10
+    spacing: 7
 
     /* Signals
      * ****************************************************************************************/
@@ -39,22 +39,38 @@ RowLayout {
 
     IconButton {
         id: branchChip
-        Layout.preferredHeight: 25
+        Layout.preferredHeight: 26
         maximumWidth: 150
+
+        topPadding      : 4
+        bottomPadding   : 4
+        leftPadding     : 10
+        rightPadding    : 10
+
+        text: branchController.getDisplayBranchName()
         visible: !headerRow.compact
         solidIcon: true
-        icon.name: Style.icons.branch
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: branchController ? branchController.getDisplayBranchName() : ""
+
+        icon.name   : Style.icons.branch
+        icon.width  : Style.appFont.smallPt
+        icon.height : Style.appFont.smallPt
+        icon.color  : Style.colors.branchAccent
+
+        font.family : Style.fontTypes.jetBrainsMono
+        font.weight : Font.Medium
+        font.pixelSize: Style.appFont.smallPt
+
+        background: Rectangle {
+            radius: 5
+            color: Style.colors.secondaryBackground
+            border.width: 1
+            border.color: Style.colors.chipBorder
+        }
 
         Connections {
             target: repositoryController
             function onCurrentRepoChanged() {
-                branchChip.text = branchController ? branchController.getDisplayBranchName() : ""
+                branchChip.branchName = branchController.getDisplayBranchName()
             }
         }
 
@@ -63,49 +79,94 @@ RowLayout {
             clipboardHelper.selectAll()
             clipboardHelper.copy()
 
-            if (notificationController)
-                notificationController.success(`brach name : ${branchChip.text} copied to clipboard`)
+            notificationController.success(`branch name : ${branchChip.text} copied to clipboard`)
         }
-    }
 
-    // Separator
-    Rectangle {
-        Layout.preferredWidth: 1
-        Layout.preferredHeight: 20
-        color: Style.colors.primaryBorder
-        visible: !headerRow.compact
+        MouseArea {
+            acceptedButtons: Qt.NoButton
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+        }
     }
 
     IconButton {
         id: pullBtn
         Layout.preferredHeight: 26
 
-        solidIcon: true
-        icon.name: Style.icons.arrowDown
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: "Pull"
-        tooltip: "Pull from origin"
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        topPadding      : 5
+        bottomPadding   : 5
+        leftPadding     : 10
+        rightPadding    : 10
+        spacing         : 4
+
+        text    : "Pull"
+        tooltip : "Pull from origin"
+        display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+
+        solidIcon   : true
+        icon.name   : Style.icons.arrowDown
+        icon.width  : Style.appFont.smallPt
+        icon.height : Style.appFont.smallPt
+        icon.color  : Style.colors.chipText
+
+        font.family     : Style.fontTypes.inter
+        font.pixelSize  : Style.appFont.mediumPt
+        font.weight     : Font.Medium
+
+
+        background: Rectangle {
+            radius: 5
+            color: pullBtn.down ? Style.colors.surfaceMuted :
+                   pullBtn.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            border.width: 1
+            border.color: Style.colors.chipBorder
+        }
 
         onClicked: root.pullAndUpdate()
+
+        MouseArea {
+            acceptedButtons: Qt.NoButton
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+        }
     }
 
     IconButton {
         id: pushBtnHeader
         Layout.preferredHeight: 26
         Layout.minimumWidth: 30
+
+        topPadding      : 5
+        bottomPadding   : 5
+        leftPadding     : 10
+        rightPadding    : 10
+        spacing         : 4
+
         Material.accent: Style.colors.accent
 
         property bool isBusy: remoteController?.pushInProgress && !remoteController?.forcePush
+
+        text    : !isBusy ? "Push" : ""
+        tooltip : !isBusy ? "Push to origin" : "Pushing..."
+        display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        enabled : !remoteController?.pushInProgress
+
+        solidIcon   : true
+        icon.name   : !isBusy ? Style.icons.arrowUp : ""
+        icon.width  : Style.appFont.smallPt
+        icon.height : Style.appFont.smallPt
+        icon.color  : Style.colors.chipText
+
+        font.family     : Style.fontTypes.inter
+        font.pixelSize  : Style.appFont.mediumPt
+        font.weight     : Font.Medium
 
         background: Rectangle {
             radius: 5
             color: pushBtnHeader.down ? Style.colors.surfaceMuted :
                    pushBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            border.width: 1
+            border.color: Style.colors.chipBorder
         }
 
         BusyIndicator {
@@ -117,20 +178,14 @@ RowLayout {
             visible: pushBtnHeader.isBusy
         }
 
-        enabled: !remoteController?.pushInProgress
-        solidIcon: true
-        icon.name: !isBusy ? Style.icons.arrowUp : ""
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: !isBusy ? "Push" : ""
-        tooltip: !isBusy ? "Push to origin" : "Pushing..."
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
-
         onClicked: {
             root.pushAndUpdate()
+        }
+
+        MouseArea {
+            acceptedButtons: Qt.NoButton
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
         }
     }
 
@@ -142,34 +197,81 @@ RowLayout {
         id: fetchBtnHeader
         Layout.preferredHeight: 26
 
-        enabled: !root.isFetching
+        topPadding      : 5
+        bottomPadding   : 5
+        leftPadding     : 10
+        rightPadding    : 10
+        spacing         : 4
 
-        solidIcon: true
-        icon.name: Style.icons.download
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: "Fetch"
-        tooltip: root.isFetching ? "Fetching…" : "Fetch all remotes"
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        text    : "Fetch"
+        tooltip : root.isFetching ? "Fetching…" : "Fetch all remotes"
+        display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        enabled : !root.isFetching
+
+        solidIcon   : true
+        icon.name   : Style.icons.download
+        icon.width  : Style.appFont.smallPt
+        icon.height : Style.appFont.smallPt
+        icon.color  : Style.colors.chipText
+
+        font.family     : Style.fontTypes.inter
+        font.pixelSize  : Style.appFont.mediumPt
+        font.weight     : Font.Medium
+
+
+        background: Rectangle {
+            radius: 5
+            color: fetchBtnHeader.down ? Style.colors.surfaceMuted :
+                   fetchBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            border.width: 1
+            border.color: Style.colors.chipBorder
+        }
 
         onClicked: root.fetch()
+
+        MouseArea {
+            acceptedButtons: Qt.NoButton
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+        }
     }
 
     IconButton {
         id: pushForceBtnHeader
         Layout.preferredHeight: 26
         Layout.minimumWidth: 30
+
+        topPadding      : 5
+        bottomPadding   : 5
+        leftPadding     : 10
+        rightPadding    : 10
+        spacing         : 4
+
         Material.accent: Style.colors.accent
 
         property bool isBusy: remoteController?.pushInProgress && remoteController?.forcePush
+
+        text    : !isBusy ? "Push Force" : ""
+        tooltip : !isBusy ? "Force push to origin" : "Force Pushing..."
+        display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        enabled : !remoteController?.pushInProgress
+
+        solidIcon   : true
+        icon.name   : !isBusy ? Style.icons.arrowUp : ""
+        icon.width  : Style.appFont.smallPt
+        icon.height : Style.appFont.smallPt
+        icon.color  : Style.colors.forcePushText
+
+        font.family     : Style.fontTypes.inter
+        font.pixelSize  : Style.appFont.mediumPt
+        font.weight     : Font.Medium
 
         background: Rectangle {
             radius: 5
             color: pushForceBtnHeader.down ? Style.colors.surfaceMuted :
                    pushForceBtnHeader.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            border.width: 1
+            border.color: Style.colors.forcePushBorder
         }
 
         BusyIndicator {
@@ -181,20 +283,14 @@ RowLayout {
             visible: pushForceBtnHeader.isBusy
         }
 
-        enabled: !remoteController?.pushInProgress
-        solidIcon: true
-        icon.name: !isBusy ? Style.icons.arrowUp : ""
-        icon.width: Style.appFont.h3Pt
-        icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.inter
-        font.pixelSize: Style.appFont.defaultPt
-        font.weight: Font.Medium
-        text: !isBusy ? "Push Force" : ""
-        tooltip: !isBusy ? "Force push to origin" : "Force Pushing..."
-        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
-
         onClicked: {
             root.pushAndUpdate(true)
+        }
+
+        MouseArea {
+            acceptedButtons: Qt.NoButton
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
         }
     }
 

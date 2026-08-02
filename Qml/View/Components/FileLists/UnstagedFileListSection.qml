@@ -7,7 +7,7 @@ import GitEase_Style
 /*! ***********************************************************************************************
  * UnstagedFileListSection
  * Specialization of FileListSection for unstaged files.
- * Shows: Stage (+), Discard, Open
+ * Header actions: Stash all, Stage all (+), Discard all (x)
  * ************************************************************************************************/
 
 FileListSection {
@@ -15,8 +15,9 @@ FileListSection {
 
     /* Property Declarations
      * ****************************************************************************************/
-    title: "Unstaged Changes"
+    title: "Unstaged"
     emptyText: "No unstaged changes"
+    emptySubText: "Your working tree is clean"
 
     /* Signals
      * ****************************************************************************************/
@@ -32,12 +33,13 @@ FileListSection {
      * ****************************************************************************************/
     headerActions: Component {
         RowLayout {
-            spacing: 4
+            spacing: 2
 
             ActionIconButton {
                 iconText: Style.icons.archive
                 tooltip: "Stash all"
-                textColor: Style.colors.mutedText
+                textColor: Style.colors.actionIconIdle
+                hoverTextColor: Style.colors.stashAmber
                 enabled: root.count > 0
                 opacity: enabled ? 1 : 0.35
 
@@ -45,25 +47,27 @@ FileListSection {
             }
 
             ActionIconButton {
-                iconText: Style.icons.trash
-                tooltip: "Discard all"
-                textColor: Style.colors.error
-                enabled: root.count > 0
-                opacity: enabled ? 1 : 0.35
-
-                onClicked: root.discardAllRequested()
-            }
-
-            ActionIconButton {
                 iconText: Style.icons.plus
                 tooltip: "Stage all"
-                textColor: Style.theme == Style.Light ?
-                            Qt.darker(Style.colors.addedFile, 1.5) :
-                            Qt.lighter(Style.colors.addedFile, 1.5)
+                textColor: Style.colors.stageGreen
+                hoverTextColor: Style.colors.stageGreen
+                hoverBackgroundColor: Qt.rgba(Style.colors.stageGreen.r, Style.colors.stageGreen.g, Style.colors.stageGreen.b, 0.1)
                 enabled: root.count > 0
                 opacity: enabled ? 1 : 0.35
 
                 onClicked: root.stageAllRequested()
+            }
+
+            ActionIconButton {
+                iconText: Style.icons.undo
+                tooltip: "Discard all"
+                textColor: Style.colors.discardRed
+                hoverTextColor: Style.colors.discardRed
+                hoverBackgroundColor: Qt.rgba(Style.colors.discardRed.r, Style.colors.discardRed.g, Style.colors.discardRed.b, 0.1)
+                enabled: root.count > 0
+                opacity: enabled ? 1 : 0.35
+
+                onClicked: root.discardAllRequested()
             }
         }
     }

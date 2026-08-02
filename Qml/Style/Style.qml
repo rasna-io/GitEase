@@ -51,9 +51,9 @@ QtObject {
 
         navigationRailBgColor: "#383838"
 
-        addedFile:           "#3bdb6a"
-        deletededFile:       "#FF3b3b"
-        modifiediedFile:     "#FFc33b"
+        addedFile:           "#4ADE80"
+        deletededFile:       "#F87171"
+        modifiediedFile:     "#FBBF24"
         renamedFile:         "#aafff8"
         untrackedFile:       "#00ffff"
 
@@ -170,6 +170,46 @@ QtObject {
         contextMenuHover:      "#34343D"
 
         branchSelectedAccent:  "#93C5FD"
+
+        // Committing page header
+        branchAccent:          "#60A5FA"
+        chipBorder:            "#222228"
+        chipText:              "#9898B0"
+        forcePushText:         softCoralMist    // #F87171
+        forcePushBorder:       "#4DEF4444"
+
+        // File list sections
+        countBadgeText:      "#1E1E30"
+        countBadgeBg:        "#141424"
+        sectionHeaderBg:     midnightBlack         // #101013
+        sectionLabel:        "#323248"
+        emptyCircleBg:       "#141420"
+        emptyCircleBorder:   "#1C1C28"
+        emptyStateText:      "#1E1E30"
+        emptyStateSubText:   "#181828"
+
+        // Section actions and badge
+        actionIconIdle:        "#3A3A52"
+        stashAmber:            "#FBBF24"
+        stageGreen:            "#4ADE80"
+        discardRed:            softCoralMist       // #F87171 – reuse existing
+        countText:             "#FBBF24"
+        countBg:               "#12FBBF24"
+
+        // Action pill (row-level)
+        actionPillBg:         onyxShadow          // #17171C
+        actionPillBorder:     "#1E1E2A"
+        openBlue:             branchAccent        // #60A5FA
+
+        // Row-level
+        rowHoverBg:          "#17171C"
+
+        // Diff view header line counts
+        diffAddedCount:    "#4ADE80"
+        diffRemovedCount:  "#F87171"
+
+        // Commit Panel
+        commitButton:      "#3B82F6"
     }
 
     property           string       currentTheme:               "Modern Light"
