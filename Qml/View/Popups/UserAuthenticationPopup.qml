@@ -63,7 +63,7 @@ IPopup {
             width: parent.width
             color: Style.colors.descriptionText
             text: "Enter your Account Password (PAT)"
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.weight: 400
             font.pointSize: Style.appFont.h4Pt
             horizontalAlignment: Text.AlignHCenter

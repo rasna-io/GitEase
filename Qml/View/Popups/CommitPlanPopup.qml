@@ -207,7 +207,7 @@ IPopup {
                     Text {
                         text: "Interactive Rebase Plan"
                         color: Style.colors.foreground
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.xlPt
                         font.bold: true
                     }
@@ -215,7 +215,7 @@ IPopup {
                     Text {
                         text: planSummary()
                         color: Style.colors.mutedText
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.mediumPt
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -225,7 +225,7 @@ IPopup {
                 Text {
                     text: pickedCount() + " pick / " + skippedCount() + " skip"
                     color: Style.colors.secondaryText
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.defaultPt
                 }
             }
@@ -470,7 +470,7 @@ IPopup {
                                                 Text {
                                                     text: shortHash
                                                     color: Style.colors.accent
-                                                    font.family: Style.fontTypes.roboto
+                                                    font.family: Style.fontTypes.inter
                                                     font.pixelSize: Style.appFont.defaultPt
                                                     Layout.alignment: Qt.AlignVCenter
                                                 }

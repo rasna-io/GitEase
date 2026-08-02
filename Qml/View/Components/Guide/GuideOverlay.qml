@@ -467,7 +467,7 @@ Item {
                 id: disableTxt
                 anchors.centerIn: parent
                 text: "Don't show tutorials"
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: 11
                 font.weight: Font.Medium
                 color: Style.colors.onAccentText

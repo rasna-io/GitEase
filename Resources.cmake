@@ -139,6 +139,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Settings/SpinboxItem.qml
     Qml/View/Components/Settings/ButtonItem.qml
     Qml/View/Components/Settings/SshKeyCard.qml
+    Qml/View/Components/Settings/UpdateCard.qml
 
     # Import Export Bundle Components
     Qml/View/Components/ImportExport/ImportExportBundle.qml

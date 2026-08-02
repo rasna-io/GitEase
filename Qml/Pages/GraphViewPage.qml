@@ -264,7 +264,7 @@ Page {
                     borderWidth: 1
                     borderColor: Style.colors.secondaryBorder
                     focusBorderWidth: 1
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.weight: 400
                     font.pixelSize: Style.appFont.captionPt
 

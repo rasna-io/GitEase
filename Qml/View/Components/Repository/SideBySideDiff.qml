@@ -110,7 +110,7 @@ Item {
                     text: (leftLineNum > 0) ? leftLineNum : ""
                     color: (isDel || isMod) ? Style.colors.softCoralMist : Style.colors.editorForeground
                     font.pixelSize: Style.appFont.mediumPt
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     horizontalAlignment: Text.AlignRight
                     rightPadding: 10
                     topPadding: 4
@@ -142,7 +142,7 @@ Item {
                         text: delegateRoot.textColorizer ? delegateRoot.textColorizer(leftContent) : leftContent
                         textFormat: delegateRoot.textColorizer ? Text.RichText : Text.PlainText
                         color: (isDel || isMod) ? Style.colors.softCoralMist : Style.colors.editorForeground
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         topPadding: 2
                         leftPadding: 8
@@ -285,7 +285,7 @@ Item {
                     text: (rightLineNum > 0) ? rightLineNum : ""
                     color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
                     font.pixelSize: Style.appFont.mediumPt
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     horizontalAlignment: Text.AlignRight
                     rightPadding: 10
                     topPadding: 4
@@ -320,7 +320,7 @@ Item {
                               ? delegateRoot.textColorizer(rightContent) : ""
                         textFormat: Text.RichText
                         color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
-                        font.family: "Cascadia Mono"
+                        font.family: Style.fontTypes.jetBrainsMono
                         font.pixelSize: Style.appFont.h3Pt
                     }
 
@@ -331,7 +331,7 @@ Item {
                         width: 2000
                         text: rightContent
                         color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         padding: 0
                         leftPadding: 8

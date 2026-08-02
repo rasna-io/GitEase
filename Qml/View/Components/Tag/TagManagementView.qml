@@ -166,7 +166,7 @@ UtilitiesCard {
 
                     ScrollingText {
                         text: modelData.name
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.smallPt
                         font.bold: true
                         color: Style.colors.foreground
@@ -177,7 +177,7 @@ UtilitiesCard {
                     Text {
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                         text: modelData.commitId.substring(0, 7)
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.captionPt
                         color: Style.colors.mutedText
 

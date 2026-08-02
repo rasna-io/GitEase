@@ -74,7 +74,7 @@ RowLayout {
                 return display.length > 0 ? "Write Filter By " + display : "Write Filter By"
             }
             text: headerRow.filterText
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.weight: 400
             font.pixelSize: Style.appFont.captionPt
             borderRadius: 5
@@ -99,7 +99,7 @@ RowLayout {
         Layout.preferredHeight: headerRow.controlSize
 
         text: "Filters"
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.weight: Font.Medium
         font.pixelSize: Style.appFont.smallPt
         leftPadding: 12
@@ -186,49 +186,38 @@ RowLayout {
         }
     }
 
-    Rectangle {
+    IconButton {
+        id: downButton
         Layout.preferredHeight: headerRow.controlSize
         Layout.preferredWidth: upDownRowLayout.implicitWidth
-        color : "transparent"
 
-        RowLayout {
-            id: upDownRowLayout
-            spacing: 0
+        visible: !compact && !crowded
+        enabled: headerRow.isGraphReady
 
-            IconButton {
-                id: downButton
-                Layout.preferredWidth: headerRow.controlSize
-                Layout.preferredHeight: headerRow.controlSize
+        display: IconButton.IconOnly
+        icon.name: Style.icons.caretDown
+        icon.width: Style.appFont.largerPt
+        icon.height: Style.appFont.largerPt
+        solidIcon: true
 
-                visible: !compact && !crowded
-                enabled: headerRow.isGraphReady
+        onClicked: headerRow.previousRequested(navigationRule)
+    }
 
-                display: IconButton.IconOnly
-                icon.name: Style.icons.caretDown
-                icon.width: Style.appFont.largerPt
-                icon.height: Style.appFont.largerPt
-                solidIcon: true
+    IconButton {
+        id: upButton
+        Layout.preferredWidth: headerRow.controlSize
+        Layout.preferredHeight: headerRow.controlSize
 
-                onClicked: headerRow.previousRequested(navigationRule)
-            }
+        visible: !compact && !crowded
+        enabled: headerRow.isGraphReady
 
-            IconButton {
-                id: upButton
-                Layout.preferredWidth: headerRow.controlSize
-                Layout.preferredHeight: headerRow.controlSize
+        display: IconButton.IconOnly
+        icon.name: Style.icons.caretUp
+        icon.width: Style.appFont.largerPt
+        icon.height: Style.appFont.largerPt
+        solidIcon: true
 
-                visible: !compact && !crowded
-                enabled: headerRow.isGraphReady
-
-                display: IconButton.IconOnly
-                icon.name: Style.icons.caretUp
-                icon.width: Style.appFont.largerPt
-                icon.height: Style.appFont.largerPt
-                solidIcon: true
-
-                onClicked: headerRow.nextRequested(navigationRule)
-            }
-        }
+        onClicked: headerRow.nextRequested(navigationRule)
     }
 
     Item {
@@ -243,7 +232,7 @@ RowLayout {
         icon.name: Style.icons.arrowDown
         icon.width: Style.appFont.h3Pt
         icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: "Pull"
@@ -281,7 +270,7 @@ RowLayout {
         icon.name: !isBusy ? Style.icons.arrowUp : ""
         icon.width: Style.appFont.h3Pt
         icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: !isBusy ? "Push" : ""
@@ -301,7 +290,7 @@ RowLayout {
         icon.name: Style.icons.download
         icon.width: Style.appFont.h3Pt
         icon.height: Style.appFont.h3Pt
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: "Fetch"

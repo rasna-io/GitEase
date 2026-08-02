@@ -98,7 +98,7 @@ Popup {
                         anchors.verticalCenter: parent.verticalCenter
 
                         text: optionRow.optionText
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.weight: 400
                         font.pixelSize: Style.appFont.defaultPt
                         color: Style.colors.foreground
@@ -162,7 +162,7 @@ Popup {
                 Text {
                     anchors.centerIn: parent
                     text: "Select all"
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.defaultPt
                     color: Style.colors.foreground
                     opacity: selectAllBtn.isEnabled ? 1.0 : 0.55
@@ -197,7 +197,7 @@ Popup {
                 Text {
                     anchors.centerIn: parent
                     text: "Clear all"
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.defaultPt
                     color: Style.colors.foreground
                     opacity: clearAllBtn.isEnabled ? 1.0 : 0.55

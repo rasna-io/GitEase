@@ -49,7 +49,7 @@ Rectangle {
                 visible: conflictFiles.length > 0
                 text: "Conflict Changes"
                 color: Style.colors.secondaryText
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.bold: true
                 font.pixelSize: Style.appFont.defaultPt
                 leftPadding: 12
@@ -67,7 +67,7 @@ Rectangle {
                 visible: stagedFiles.length > 0
                 text: "Staged Changes"
                 color: Style.colors.secondaryText
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.bold: true
                 font.pixelSize: Style.appFont.defaultPt
                 leftPadding: 12
@@ -132,7 +132,7 @@ Rectangle {
                 ScrollingText {
                     Layout.fillWidth: true
                     text: modelData.path || ""
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     color: Style.colors.lineNumberColor
                     font.pixelSize: Style.appFont.h3Pt
                 }
@@ -153,7 +153,7 @@ Rectangle {
                 }
 
                 Text {
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.defaultPt
                     font.bold: true
                     Layout.preferredWidth: 14

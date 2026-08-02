@@ -45,7 +45,7 @@ IPopup {
             Text {
                 text: "Create New Tag"
                 color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.bold: true
                 font.pixelSize: Style.appFont.xlPt
                 Layout.alignment: Qt.AlignLeft

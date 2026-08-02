@@ -78,7 +78,7 @@ IPopup {
                           ? ("stash@{" + root.stashEntry.index + "}  " + (root.stashEntry.message || "WIP"))
                           : "Stash"
                     color: Style.colors.foreground
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.bold: true
                     elide: Text.ElideLeft
                     font.pixelSize: Style.appFont.defaultPt
@@ -126,7 +126,7 @@ IPopup {
                     text: "Restore Staged / Index State"
                     checked: true
 
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
 
                     Material.accent: Style.colors.accent
@@ -219,7 +219,7 @@ IPopup {
                                 Text {
                                     text: modelData.path || ""
                                     color: Style.colors.foreground
-                                    font.family: Style.fontTypes.roboto
+                                    font.family: Style.fontTypes.inter
                                     font.pixelSize: Style.appFont.h3Pt
                                     Layout.fillWidth: true
                                     elide: Text.ElideMiddle

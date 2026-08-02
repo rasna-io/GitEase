@@ -35,7 +35,7 @@ Rectangle{
 
         Text {
             id: title
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.h2Pt
             font.weight: 500
             color: Style.colors.mutedText
@@ -46,7 +46,7 @@ Rectangle{
 
         Text {
             id: detailsText
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.mediumPt
             font.weight: 400
             color: Style.colors.placeholderText

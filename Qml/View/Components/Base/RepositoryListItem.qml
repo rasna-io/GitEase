@@ -64,7 +64,7 @@ Rectangle {
         Text {
             text: root.name
             font.pixelSize: Style.appFont.smallPt
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.weight: 400
             font.letterSpacing: 0
             color: root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
@@ -87,7 +87,7 @@ Rectangle {
             ScrollingText {
                 text: root.path
                 font.pixelSize: Style.appFont.smallPt
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 color: root.isSelected ? Style.colors.secondaryForeground : root.isExists ? Style.colors.mutedText : Style.colors.error
                 font.weight: 400
                 font.strikeout: !root.isExists

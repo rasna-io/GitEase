@@ -56,7 +56,7 @@ IPopup {
             width: parent.width
             color: Style.colors.descriptionText
             text: "Amend Commit Message"
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.largePt
             horizontalAlignment: Text.AlignHCenter
         }
@@ -74,7 +74,7 @@ IPopup {
             TextArea {
                 id: textArea
                 color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 wrapMode: TextArea.Wrap
                 font.pixelSize: Style.appFont.mediumPt
                 Material.accent: Style.colors.accent
@@ -113,7 +113,7 @@ IPopup {
                         anchors.centerIn: parent
                         text: "Amend"
                         color: Style.colors.secondaryForeground
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.mediumPt
                     }
 
@@ -154,7 +154,7 @@ IPopup {
                         anchors.centerIn: parent
                         text: "Cancel"
                         color: Style.colors.secondaryForeground
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.mediumPt
                     }
 

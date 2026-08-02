@@ -146,14 +146,14 @@ UtilitiesCard {
                             Layout.fillWidth: true
                             text: modelData.message || qsTr("WIP on %1").arg(modelData.author || "unknown")
                             color: Style.colors.foreground
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.smallPt
                         }
                         Text {
                             Layout.fillWidth: true
                             text: modelData.dateTime ? Qt.formatDateTime(modelData.dateTime, "MMM dd, yyyy hh:mm") : ""
                             color: Style.colors.mutedText
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.captionPt
                             elide: Text.ElideRight
                         }

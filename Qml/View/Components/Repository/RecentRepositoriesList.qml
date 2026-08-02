@@ -35,7 +35,7 @@ Item {
         Text {
             text: "Recents"
             font.pixelSize: Style.appFont.mediumPt
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.weight: 400
             font.letterSpacing: 0
             color: Style.colors.foreground

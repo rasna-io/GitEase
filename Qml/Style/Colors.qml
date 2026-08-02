@@ -79,6 +79,14 @@ QtObject{
     property color primaryBorder:       "#D7DCE5"
     property color secondaryBorder:     "#E7ECF5"
 
+    // Control / Input surfaces (settings & form controls)
+    property color controlBackground:      "#F4F6F9"
+    property color controlBackgroundHover: "#ECEFF4"
+    property color controlBorder:          "#D2D8E2"
+    property color controlBorderHover:     "#9CB8E0"
+    property color switchTrackOff:         "#C9D0DB"
+    property color switchHandle:           "#FFFFFF"
+
     property color diffRemovedBg:       "#FDECEC"
     property color diffAddedBg:         "#ECFDF3"
     property color diffRemovedBorder:   "#F5C2C7"

@@ -311,7 +311,7 @@ Rectangle {
 
                                     running: true
                                     text: modelData.name
-                                    font.family: Style.fontTypes.roboto
+                                    font.family: Style.fontTypes.inter
                                     font.weight: 400
                                     font.pixelSize: 16
                                     Behavior on font.pixelSize {
@@ -458,7 +458,7 @@ Rectangle {
 
                                 contentItem: Text {
                                     text: tip.text
-                                    font.family: Style.fontTypes.roboto
+                                    font.family: Style.fontTypes.inter
                                     font.pixelSize: Style.appFont.defaultPt
                                     color: "#ffffff"
                                 }
@@ -527,7 +527,7 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
                     text: "Add new"
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.weight: 400
                     font.pixelSize: Style.appFont.largePt
                     elide: Text.ElideRight
@@ -584,7 +584,7 @@ Rectangle {
             Text {
                 anchors.centerIn: parent
                 text: root.detachRepositoryInitials
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 600
                 font.pixelSize: Style.appFont.xxlPt
                 color: Style.theme == Style.Light

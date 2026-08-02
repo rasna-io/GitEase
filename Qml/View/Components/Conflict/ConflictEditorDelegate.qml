@@ -53,7 +53,7 @@ Item {
             height: parent.height
             text: isButtonRow ? "" : model.lineNumber
             color: Style.colors.linePanelForeground
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.mediumPt
             horizontalAlignment: Text.AlignRight
             rightPadding: 10
@@ -105,7 +105,7 @@ Item {
                 width: 2000
 
                 color: Style.colors.conflictMarkerText
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.h3Pt
                 padding: 0
                 leftPadding: 8
@@ -142,7 +142,7 @@ Item {
                 text: model.text
 
                 color: Style.colors.editorForeground
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.h3Pt
                 padding: 0
                 leftPadding: 8
@@ -195,7 +195,7 @@ Item {
                     text: "Accept Current"
                     flat: true
                     font.pixelSize: Style.appFont.smallPt
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
@@ -212,7 +212,7 @@ Item {
                     text: "Accept Incoming"
                     flat: true
                     font.pixelSize: Style.appFont.smallPt
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
@@ -229,7 +229,7 @@ Item {
                     text: "Accept Both"
                     flat: true
                     font.pixelSize: Style.appFont.smallPt
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground

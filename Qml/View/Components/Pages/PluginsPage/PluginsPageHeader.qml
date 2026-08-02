@@ -73,7 +73,7 @@ RowLayout {
         minHeight: 25
         placeholderText: "Search plugins"
         text: headerRow.filterText
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.weight: 400
         font.pixelSize: Style.appFont.captionPt
         borderRadius: 5

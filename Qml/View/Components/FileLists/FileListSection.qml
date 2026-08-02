@@ -81,7 +81,7 @@ Rectangle {
 
                 Text {
                     text: root.expanded ? Style.icons.caretDown : Style.icons.caretRight
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.h2Pt
                     color: Style.colors.mutedText
                     verticalAlignment: Text.AlignVCenter
@@ -90,7 +90,7 @@ Rectangle {
                 Text {
                     Layout.fillWidth: true
                     text: root.title
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.defaultPt
                     font.bold: true
                     color: Style.colors.foreground
@@ -115,7 +115,7 @@ Rectangle {
                         id: countText
                         anchors.centerIn: parent
                         text: listView.count
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         color: Style.colors.secondaryText
                     }
@@ -210,7 +210,7 @@ Rectangle {
                         visible: listView.count === 0
 
                         text: root.emptyText
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         color: Style.colors.mutedText
                         opacity: 0.9

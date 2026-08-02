@@ -89,7 +89,7 @@ Rectangle {
 
         contentItem: Text {
             text: tip.text
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.defaultPt
             color: "#ffffff"
         }

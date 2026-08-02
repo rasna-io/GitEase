@@ -29,7 +29,7 @@ Rectangle {
         Label {
             text: "Terminal"
             color: Style.colors.foreground
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.weight: 500
             font.pixelSize: Style.appFont.smallPt
             Layout.fillWidth: true

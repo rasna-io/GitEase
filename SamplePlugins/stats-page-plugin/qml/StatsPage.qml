@@ -157,13 +157,13 @@ Item {
 
                         Label {
                             text: modelData.time
-                            font.family: "Consolas, monospace"
+                            font.family: Style.fontTypes.jetBrainsMono
                             font.pixelSize: 11
                             color: Style.colors.mutedText
                         }
                         Label {
                             text: modelData.text
-                            font.family: "Consolas, monospace"
+                            font.family: Style.fontTypes.jetBrainsMono
                             font.pixelSize: 11
                             color: Style.colors.accent
                             Layout.fillWidth: true

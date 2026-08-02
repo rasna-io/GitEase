@@ -63,7 +63,7 @@ Popup {
         Text {
             text: "FILTER COMMITS"
             color: Style.colors.descriptionText
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.weight: Font.DemiBold
             font.pixelSize: Style.appFont.captionPt
         }
@@ -75,7 +75,7 @@ Popup {
             Text {
                 text: "SEARCH FIELD"
                 color: Style.colors.descriptionText
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.smallPt
             }
 
@@ -86,7 +86,7 @@ Popup {
                 model: root.filterFieldOptions
                 borderWidth: 0
                 focusBorderWidth: 1
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 400
                 font.pixelSize: Style.appFont.smallPt
 
@@ -107,7 +107,7 @@ Popup {
             Text {
                 text: "DATE RANGE"
                 color: Style.colors.descriptionText
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.smallPt
             }
 
@@ -142,7 +142,7 @@ Popup {
             Text {
                 text: "NAVIGATE BY"
                 color: Style.colors.descriptionText
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.smallPt
             }
 
@@ -153,7 +153,7 @@ Popup {
                 model: root.navigationRules
                 borderWidth: 0
                 focusBorderWidth: 1
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 400
                 font.pixelSize: Style.appFont.smallPt
 
@@ -179,7 +179,7 @@ Popup {
             Text {
                 text: "BRANCH"
                 color: Style.colors.descriptionText
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.smallPt
             }
 
@@ -190,7 +190,7 @@ Popup {
                 model: ["All branches"].concat(root.branchNames)
                 borderWidth: 0
                 focusBorderWidth: 1
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 400
                 font.pixelSize: Style.appFont.smallPt
 

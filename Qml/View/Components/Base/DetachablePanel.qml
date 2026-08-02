@@ -179,7 +179,7 @@ Item {
                     text: root.title
                     Layout.alignment: Qt.AlignLeft
                     color: Style.colors.foreground
-                    font.family: Style.fontTypes.roboto
+                    font.family: Style.fontTypes.inter
                     font.weight: 500
                     font.pixelSize: Style.appFont.smallPt
                     elide: Text.ElideRight
@@ -297,7 +297,7 @@ Item {
                         Layout.alignment: Qt.AlignLeft
                         text: root.title  + ` [${root.currentRepositoryName}]`
                         color: Style.colors.foreground
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.weight: 500
                         font.pixelSize: Style.appFont.mediumPt
                         elide: Text.ElideRight
