@@ -18,10 +18,6 @@ QtObject {
         appModel: root.appModel
     }
 
-    property PageController       pageController:       PageController {
-        appModel: root.appModel
-    }
-
     property WindowController   windowController:   WindowController    {}
 
     property ActivityController activityController: ActivityController {}
@@ -114,7 +110,6 @@ QtObject {
     }
 
     property ShellController shellController: ShellController {
-        pageController : root.pageController
         repositoryController : root.repositoryController
         notificationController: root.notificationController
     }
@@ -176,5 +171,9 @@ QtObject {
     }
 
     property UiSessionPopups      popups
+
+    // Injected by MainWindow after the SwipeView is ready; forwarded into PluginController
+    // so page plugins can add themselves to the navigation rail.
+    property var pageController: null
 }
 

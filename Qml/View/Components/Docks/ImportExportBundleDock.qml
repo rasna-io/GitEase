@@ -20,6 +20,10 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
+    implicitWidth: bundleCard.width
+    implicitHeight: bundleCard.height
+    width: implicitWidth
+    height: implicitHeight
 
     /* Signals
      * ****************************************************************************************/
@@ -27,7 +31,7 @@ Item {
     /* Children
      * ****************************************************************************************/
     ImportExportBundle {
-        anchors.fill: parent
+        id: bundleCard
 
         branchController: root.branchController
         bundleController: root.bundleController

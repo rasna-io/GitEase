@@ -24,10 +24,6 @@ Item {
 
     property                FileIO            fileIO:                   FileIO {}
 
-    property                var               pages:                    []
-
-    property                Page              currentPage:              null
-
     property                AppSettings       appSettings:              AppSettings {}
 
     property                var               userProfiles:             []
@@ -37,6 +33,8 @@ Item {
     property                var               plugins:                  []
 
     property                var               enabledPluginIds:         []
+
+    property                var               pluginsCategories:         []
 
     /* Signals
      * ****************************************************************************************/

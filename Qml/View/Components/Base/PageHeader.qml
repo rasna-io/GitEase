@@ -81,7 +81,7 @@ Item {
         height: 28
         width: 99
         fillMode: Image.PreserveAspectFit
-        source: "qrc:/GitEase/Resources/Images/Logo.svg"
+        source: Style.icons.appLogo
     }
 
     //! Drag region: we start native move so Snap/AeroShake remain native.

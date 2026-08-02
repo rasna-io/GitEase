@@ -1,6 +1,33 @@
 import QtQuick
 
 QtObject{
+    property color midnightBlack:       "#101013"
+    property color darkCharcoal:        "#1D1D22"
+    property color graphiteDark:        "#17171C"
+    property color obsidianDark:        "#0D0D0F"
+    property color onyxShadow:          "#17171C"
+    property color mintyFresh:          "#86EFAC"
+    property color softMintGlow:        "#144ADE80"
+    property color paleCoralMist:       "#14F87171"
+    property color deepObsidianOverlay: "#9914141E"
+    property color deepCharcoalBlue:    "#28283A"
+    property color graphiteMidnight:    "#17171C"
+    property color mutedLavenderSlate:  "#9898B4"
+    property color vibrantMint:         "#4ADE80"
+    property color softCoralMist:       "#F87171"
+    property color cornflowerBlue:      "#60a5fa"
+    property color amber:               "#d97706"
+    property color purple:              "#a855f7"
+    property color marigold:            "#fbbf24"
+
+
+    property color vibrantMintBg:       Qt.darker(vibrantMint, 7.5)
+    property color softCoralMistBg:     Qt.darker(softCoralMist, 7.5)
+    property color cornflowerBlueBg:    Qt.darker(cornflowerBlue, 7.5)
+    property color amberBg:             Qt.darker(amber, 7.5)
+    property color purpleBg:            Qt.darker(purple, 7.5)
+    property color marigoldBg:          Qt.darker(marigold, 7.5)
+
     // Primary colors
     property color primaryBackground:   "#FDFDFD"
     property color secondaryBackground: "#F9F9F9"

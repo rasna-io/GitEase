@@ -130,7 +130,11 @@ Item {
             Layout.minimumHeight: 35
             Layout.maximumHeight: 35
             visible: root.showInlineHeader && !root.detached
-            color: Style.colors.secondaryBackground
+            color: Style.colors.primaryBackground
+            border {
+                width: Style.dp(1)
+                color: Style.colors.primaryBorder
+            }
 
             GuideHoverTrigger {
                 guideController: root.guideController
@@ -276,7 +280,11 @@ Item {
                 Layout.fillWidth: true
                 Layout.minimumHeight: root.headerHeight
                 Layout.maximumHeight: root.headerHeight
-                color: Style.colors.secondaryBackground
+                color: Style.colors.primaryBackground
+                border {
+                    width: Style.dp(1)
+                    color: Style.colors.primaryBorder
+                }
 
                 RowLayout {
                     z: 1

@@ -14,6 +14,7 @@ UtilitiesCard {
 
     title: "Recent Activity"
     icon: Style.icons.clock
+    badgeCount: activityController ? activityController.activities.length : 0
 
     content: ColumnLayout {
         anchors.fill: parent

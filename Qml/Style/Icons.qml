@@ -2,6 +2,8 @@ import QtQuick
 
 QtObject{
 
+    property string appLogo:           "qrc:/GitEase/Resources/Images/Logo.svg"
+
     // Font Awesome codepoints (Solid)
     property string gitBranch:         "\uf126" // code-branch
     property string workflow:          "\uf542" // diagram-project

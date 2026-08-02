@@ -17,7 +17,6 @@ set(RESOURCES_CORE
     # Controllers
     Qml/Core/Controllers/WelcomeController.qml      # Welcome page controller
     Qml/Core/Controllers/DockController.qml         # Dock widget management controller
-    Qml/Core/Controllers/PageController.qml         # Page lifecycle and navigation controller
     Qml/Core/Controllers/LayoutController.qml       # Layout management controller (singleton)
     Qml/Core/Controllers/RepositoryController.qml   # Repository Controller
     Qml/Core/Controllers/BranchController.qml
@@ -173,6 +172,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/CommittingPage/CommittingPageHeader.qml
     Qml/View/Components/Pages/CommittingPage/UnsavedChangesDialog.qml
     Qml/View/Components/Pages/PluginsPage/PluginsPageHeader.qml
+    Qml/View/Components/Pages/PluginsPage/PluginsLeftPanel.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
     Qml/View/Components/GraphView/ResizableColumnHeader.qml
@@ -219,7 +219,6 @@ set(RESOURCES_PAGES
     Qml/Pages/WelcomePage.qml       # Initial welcome/onboarding page
     Qml/Pages/GraphViewPage.qml     # Main graph view page
     Qml/Pages/CommittingPage.qml    # Commit Page
-    Qml/Pages/UtilitiesPage.qml     # UtilitiesPage, import/export
     Qml/Pages/BlankPage.qml         # Blank placeholder page
     Qml/Pages/PluginsPage.qml       # Plugins page
 )

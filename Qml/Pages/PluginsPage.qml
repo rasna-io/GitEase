@@ -15,16 +15,22 @@ import GitEase
  * - Pagination: fetches the next page when the user scrolls to the bottom.
  */
 
-Item {
+Page {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
+    pageId: "plugins"
+    title: "Plugins"
+    icon: Style.icons.plugins
+
     property AppModel       appModel:           null
     property var            pluginController:   null
     property var            pluginsData:        root.appModel ? root.appModel.plugins : []
+    property var            categoriesData:     root.appModel ? root.appModel.pluginsCategories : []
+    property var            categoriesCounts:     ({})
     readonly property int   minCardWidth:       400
-    readonly property int   minCardHeight:      270
+    readonly property int   minCardHeight:      250
 
     property string         currentMode:        ""
     property string         currentSearch:      ""
@@ -32,17 +38,19 @@ Item {
     property bool           isSearchActive:     false
     property bool           fetchingMore:       false
 
+    property var installedModel: [
+        { name: "Enabled",      iconName: Style.icons.check,   iconColor: Style.colors.compatible },
+        { name: "Disabled",     iconName: Style.icons.pause,   iconColor: "#363650" },
+        { name: "Needs Update", iconName: Style.icons.warning, iconColor: Style.colors.warning }
+    ]
+
     // Header exposed to MainWindow
-    property Component headerContent: Component {
+    headerContent: Component {
         PluginsPageHeader {
             id: pluginsPageHeader
             onFilterRequested: (text, mode) => root.applyFilter(text, mode)
         }
     }
-
-    /* Object Properties
-     * ****************************************************************************************/
-    anchors.fill: parent
 
     /* Lifecycle
      * ****************************************************************************************/
@@ -62,6 +70,11 @@ Item {
 
         root.fetchingMore = false
         applyCurrentMode()
+        buildCategoriesCounts()
+    }
+
+    onCategoriesDataChanged: {
+        leftPanel.categoriesData = root.categoriesData.slice()
     }
 
     /* Children
@@ -84,60 +97,149 @@ Item {
         id: pluginsModel
     }
 
-    GridView {
-        id: gridView
+    RowLayout {
         anchors.fill: parent
-        anchors.margins: 10
-        clip: true
 
-        model: pluginsModel
+        PluginsLeftPanel {
+            id: leftPanel
+            pluginsCount: root.pluginsData.length
+            categoriesData: root.categoriesData
+            installedModel: root.installedModel
+            categoriesCounts: root.categoriesCounts
 
-        ScrollBar.vertical: ScrollBar {
-            policy: ScrollBar.AsNeeded
-        }
+            onCategorySelected:  (category) => {
+                pluginsModel.clear()
+                for (var i = 0; i < root.pluginsData.length; i++) {
+                    var plugin = root.pluginsData[i]
 
-        property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
+                    var matchesCategory = plugin.category === category || category === "All"
 
-        cellWidth: width / columns
-        cellHeight: root.minCardHeight
-
-        delegate: Item {
-            width: gridView.cellWidth
-            height: gridView.cellHeight
-
-            PluginCard {
-                anchors.centerIn: parent
-                width: gridView.cellWidth - 20
-                height: gridView.cellHeight - 20
-                plugin: model
-
-                onInstallClicked: function(pluginId) {
-                    root.pluginController?.installPlugin(pluginId)
-                }
-                onUninstallClicked: function(pluginId) {
-                    root.pluginController?.uninstallPlugin(pluginId)
-                }
-                onUpdateClicked: function(pluginId) {
-                    root.pluginController?.updatePlugin(pluginId)
-                }
-                onEnableToggled: function(pluginId, enabled) {
-                    root.pluginController?.togglePlugin(pluginId, enabled)
+                    if (matchesCategory) pluginsModel.append(plugin)
                 }
             }
         }
 
-        // Load next page when the user scrolls within one row of the bottom
-        onContentYChanged: {
-            if (contentHeight <= height)
-                return
+        Rectangle {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            color: Style.colors.obsidianDark
 
-            if (contentY + height >= contentHeight - gridView.cellHeight
-                    && !root.fetchingMore
-                    && root.pluginController?.hasMorePages) {
-                root.loadNextPage()
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 8
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Text {
+                        text: "INSTALLED"
+                        color: "#363650"
+                        font.pixelSize: Style.appFont.largePt
+                        font.family: Style.fontTypes.roboto
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 1
+                        color: Style.colors.primaryBorder
+                    }
+
+                    Text {
+                        text: "4 plugins"
+                        color: "#363650"
+                        font.pixelSize: Style.appFont.largePt
+                        font.family: Style.fontTypes.roboto
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Text {
+                        text: "AVAILABLE"
+                        color: "#363650"
+                        font.pixelSize: Style.appFont.largePt
+                        font.family: Style.fontTypes.roboto
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 1
+                        color: Style.colors.primaryBorder
+                    }
+
+                    Text {
+                        text: "6 plugins"
+                        color: "#363650"
+                        font.pixelSize: Style.appFont.largePt
+                        font.family: Style.fontTypes.roboto
+                    }
+                }
+
+                GridView {
+                    id: gridView
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+
+                    model: pluginsModel
+
+                    ScrollBar.vertical: ScrollBar {
+                        policy: ScrollBar.AsNeeded
+                    }
+
+                    property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
+
+                    cellWidth: width / columns
+                    cellHeight: root.minCardHeight
+
+                    delegate: Item {
+                        width: gridView.cellWidth
+                        height: gridView.cellHeight
+
+                        PluginCard {
+                            anchors.centerIn: parent
+                            width: gridView.cellWidth - 20
+                            height: gridView.cellHeight - 20
+                            plugin: model
+
+                            onInstallClicked: function(pluginId) {
+                                root.pluginController?.installPlugin(pluginId)
+                            }
+                            onUninstallClicked: function(pluginId) {
+                                root.pluginController?.uninstallPlugin(pluginId)
+                            }
+                            onUpdateClicked: function(pluginId) {
+                                root.pluginController?.updatePlugin(pluginId)
+                            }
+                            onEnableToggled: function(pluginId, enabled) {
+                                root.pluginController?.togglePlugin(pluginId, enabled)
+                            }
+                        }
+                    }
+
+                    // Load next page when the user scrolls within one row of the bottom
+                    onContentYChanged: {
+                        if (contentHeight <= height)
+                            return
+
+                        if (contentY + height >= contentHeight - gridView.cellHeight
+                                && !root.fetchingMore
+                                && root.pluginController?.hasMorePages) {
+                            root.loadNextPage()
+                        }
+                    }
+                }
+
             }
+
+
+
         }
     }
+
 
     /* Functions
      * ****************************************************************************************/
@@ -188,7 +290,7 @@ Item {
         root.isSearchActive = false
         root.currentSearch  = ""
         root.currentMode    = ""
-        root.pluginController.fetchAvailablePlugins(1, "")
+        root.pluginController.fetchPluginsCategories()
     }
 
     // Refills pluginsModel from appModel.plugins, applying the active mode filter.
@@ -209,5 +311,23 @@ Item {
             if (matchesMode)
                 pluginsModel.append(plugin)
         }
+    }
+
+    function buildCategoriesCounts() {
+        let counts = {}
+
+        // Initialize all categories to 0
+        for (const category of root.categoriesData)
+            counts[category.id] = 0
+
+        // Count plugins
+        for (const plugin of root.pluginsData) {
+            if (!counts.hasOwnProperty(plugin.category))
+                counts[plugin.category] = 0
+
+            counts[plugin.category]++
+        }
+
+        root.categoriesCounts = counts
     }
 }

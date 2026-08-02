@@ -22,6 +22,7 @@ UtilitiesCard {
      * ****************************************************************************************/
     title: "Repositories History"
     icon: Style.icons.clock
+    badgeCount: repositoryController ? repositoryController.appModel.repositoriesHistory.length : 0
 
     /* Children
      * ****************************************************************************************/

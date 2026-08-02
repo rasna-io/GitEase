@@ -22,7 +22,6 @@ Rectangle {
     property Repository              currentRepository:    null
     property var                     recentRepositories:   []
 
-    property bool                    expanded:             false
     property int                     detachLaunchDistance: 96
     property bool                    detachActive:         false
     property bool                    detachPreviewVisible: false
@@ -273,8 +272,7 @@ Rectangle {
                                 radius: 6
                                 clip: true
 
-                                width: root.expanded ?
-                                           repositoryRow.width - (repositoryRow.spacing + 2 + repositoryRow.anchors.margins) - closeButton.width : 33
+                                width: repositoryRow.width - (repositoryRow.spacing + 2 + repositoryRow.anchors.margins) - closeButton.width
                                 scale: repoMouseArea.pressed
                                        ? 0.96
                                        : (repoMouseArea.containsMouse ? 1.035 : 1.0)
@@ -308,14 +306,14 @@ Rectangle {
 
                                     anchors {
                                         fill: parent
-                                        margins: root.expanded ? 4 : 3
+                                        margins: 4
                                     }
 
-                                    running: root.expanded
-                                    text: root.expanded ? modelData.name : initials
+                                    running: true
+                                    text: modelData.name
                                     font.family: Style.fontTypes.roboto
                                     font.weight: 400
-                                    font.pixelSize:root.expanded ? 16 : 24
+                                    font.pixelSize: 16
                                     Behavior on font.pixelSize {
                                         NumberAnimation {
                                             duration: 120
@@ -327,7 +325,7 @@ Rectangle {
                                                Qt.darker(repositoryAvatar.repoColor, 2.0) :
                                                Qt.lighter(repositoryAvatar.repoColor, 2.0)
 
-                                    x: root.expanded ? 5 : ((repositoryAvatar.width - width) / 2)
+                                    x: 5
                                     y: (repositoryAvatar.height - height) / 2
 
                                     Behavior on x {
@@ -526,7 +524,6 @@ Rectangle {
                 }
 
                 Text {
-                    visible: root.expanded
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
                     text: "Add new"
@@ -543,7 +540,6 @@ Rectangle {
 
                 Item {
                     Layout.fillWidth: true
-                    visible: root.expanded
                 }
             }
 

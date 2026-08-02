@@ -11,6 +11,7 @@ import GitEase_Style_Impl
  * ************************************************************************************************/
 RowLayout {
     id: headerRow
+    spacing: 15
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -29,11 +30,46 @@ RowLayout {
         ListElement { text: "Available"; checked: false }
     }
 
+    Label {
+        text: "Plugins"
+        font.family: Style.fontTypes.roboto
+        font.pixelSize: Style.appFont.h2Pt
+        font.bold: true
+        color: Style.colors.placeholderText
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+    }
+
+    Rectangle {
+        Layout.preferredWidth: 100
+        Layout.preferredHeight: 30
+        Layout.alignment: Qt.AlignVCenter
+        color: "#1F3B82"
+        border.color: "#60A5FA"
+        border.width: 1
+        radius: 10
+
+        Label {
+            anchors.fill: parent
+            text: "4 installed"
+            font.family: Style.fontTypes.roboto
+            font.pixelSize: Style.appFont.largerPt
+            font.bold: true
+            color: "#60A5FA"
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+    }
+
+    Item {
+        Layout.fillWidth: true
+    }
+
     TextField {
         id: textFilterField
         placeholderTextColor: Style.colors.descriptionText
         backgroundColor: hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-        Layout.fillWidth: true
+        Layout.preferredWidth: 300
         minHeight: 25
         placeholderText: "Search plugins"
         text: headerRow.filterText

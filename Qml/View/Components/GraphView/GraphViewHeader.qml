@@ -25,6 +25,7 @@ RowLayout {
     property var    branchNames     : []
     property string branchFilter    : ""
     property bool   suppressBranchSelectorOpen: false
+    property bool   panelOpen        : false
 
     readonly property bool  compact         : headerRow.parent ? headerRow.parent.width < 650 : false
     readonly property bool  tight           : headerRow.parent ? headerRow.parent.width < 820 : false
@@ -53,6 +54,7 @@ RowLayout {
     signal nextRequested(string rule)
     signal previousRequested(string rule)
     signal reloadRequested()
+    signal panelToggleRequested()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -499,6 +501,37 @@ RowLayout {
         }
 
         onClicked: headerRow.reloadRequested()
+    }
+
+    ToolButton {
+        id: panelToggleButton
+        Layout.preferredWidth: headerRow.controlSize
+        Layout.preferredHeight: headerRow.controlSize
+        Layout.leftMargin: compact ? 3 : (tight ? 5 : 7)
+
+        hoverEnabled: true
+
+        text: Style.icons.tools
+        font.family: (headerRow.panelOpen || hovered) ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
+        font.pixelSize: 14
+
+        contentItem: Text {
+            anchors.centerIn: parent
+            text: panelToggleButton.text
+            font: panelToggleButton.font
+            color: headerRow.panelOpen ? Style.colors.accent : Style.colors.foreground
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        background: Rectangle {
+            radius: 5
+            color: panelToggleButton.down ? Style.colors.surfaceMuted :
+                   panelToggleButton.hovered ? Style.colors.cardBackground :
+                   headerRow.panelOpen ? Style.colors.secondaryBackground : "transparent"
+        }
+
+        onClicked: headerRow.panelToggleRequested()
     }
 
     CalendarPopup {

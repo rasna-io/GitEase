@@ -11,12 +11,14 @@ import GitEase
  * Committing Page shown commit actions placeholder, file list placeholder and diff placeholder
  * ************************************************************************************************/
 
-Item {
+Page {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var                     page:                    null
+    pageId: "committing"
+    title: "Committing"
+    icon: Style.icons.gitBranch
 
     property AppModel                appModel:                null
 
@@ -56,7 +58,7 @@ Item {
     property string                  selectedFilePath:        ""
 
     // Exposed to MainWindow's header area (see MainWindow.qml)
-    property Component headerContent: CommittingPageHeader {
+    headerContent: CommittingPageHeader {
         branchController: root.branchController
         notificationController: root.notificationController
         remoteController: root.remoteController
@@ -67,29 +69,24 @@ Item {
         branchController.getCurrentBranchName()
     }
 
-    onPageChanged: {
-        if (root.page) {
-            root.page.onPageChange = function(callback) {
-                if (!root.currentFileEdited) {
-                    callback(true)
-                    return
-                }
-                var d = unsavedChangesDialogComp.createObject(root)
-                d.title = "Unsaved Changes"
-                d.message = "You have unsaved changes in: " + root.selectedFilePath
-                d.saved.connect(() => {
-                    root.saveFile()
-                    callback(true)
-                })
-                d.aborted.connect(() => { callback(true) })
-                d.cancelled.connect(() => { callback(false) })
-                d.open()
+    Component.onCompleted: {
+        root.onPageChange = function(callback) {
+            if (!root.currentFileEdited) {
+                callback(true)
+                return
             }
+            var d = unsavedChangesDialogComp.createObject(root)
+            d.title = "Unsaved Changes"
+            d.message = "You have unsaved changes in: " + root.selectedFilePath
+            d.saved.connect(() => {
+                root.saveFile()
+                callback(true)
+            })
+            d.aborted.connect(() => { callback(true) })
+            d.cancelled.connect(() => { callback(false) })
+            d.open()
         }
     }
-    /* Object Properties
-     * ****************************************************************************************/
-    anchors.fill: parent
 
     /* Children
      * ****************************************************************************************/

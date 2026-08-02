@@ -30,7 +30,7 @@ IPopup {
 
     property GuideController        guideController:        null
 
-    property PageController         pageController:         null
+    property var                    switchToPageById:       function() {}
 
     /* Private state
      * ****************************************************************************************/
@@ -66,8 +66,8 @@ IPopup {
         _pendingTutorialId = ""
         _pendingTutorialPage = ""
 
-        if (pageId.length > 0 && root.pageController)
-            root.pageController.switchToPage(pageId)
+        if (pageId.length > 0 && typeof root.switchToPageById === "function")
+            root.switchToPageById(pageId)
 
         Qt.callLater(function() {
             if (!root.guideController || !root.guideController.forceShow(id)) {
@@ -159,7 +159,6 @@ IPopup {
                         {id: 3, title: "Updates", icon: Style.icons.refresh},
                         {id: 4, title: "Help",        icon: Style.icons.info},
                     ]
-                    expanded: true
                     onClicked: (modelData) => {
                         root.currentPage = modelData.id
                     }

@@ -23,9 +23,9 @@ Item {
     /* Children
      * ****************************************************************************************/
     MouseArea {
-
         id: dragArea
         anchors.fill: parent
+
         acceptedButtons: Qt.LeftButton
         onPressed: windowController.startSystemMove()
         onDoubleClicked: windowController.toggleMaxRestore()
@@ -37,23 +37,35 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 50
+            Layout.preferredHeight: Style.dp(44)
             spacing: 0
 
             Item {
-                Layout.preferredWidth: 120
+                Layout.preferredWidth: Style.dp(167)
+                Layout.margins: Style.dp(14)
 
                 Image {
-                    anchors.centerIn: parent
-                    width: 99
-                    height: 28
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                    }
+
+                    width: Style.dp(80)
+                    height: Style.dp(19)
                     fillMode: Image.PreserveAspectFit
-                    source: "qrc:/GitEase/Resources/Images/Logo.svg"
+                    source: Style.icons.appLogo
                 }
+            }
+
+            Rectangle {
+                Layout.preferredWidth: Style.dp(1)
+                Layout.fillHeight: true
+                color: Style.colors.primaryBorder
             }
 
             Loader {
                 Layout.fillWidth: true
+                Layout.leftMargin: Style.dp(14)
+                Layout.rightMargin: Style.dp(14)
                 clip: true
                 sourceComponent: root.content
             }
@@ -70,13 +82,17 @@ Item {
                     ToolTip.text: modelData.tooltip
                     ToolTip.visible: hovered
                     ToolTip.delay: 500
-                    onClicked: root.pluginManager.executeToolbarAction(
-                                   modelData.pluginId, modelData.id, {})
+                    onClicked: root.pluginManager.executeToolbarAction(modelData.pluginId, modelData.id, {})
                 }
+            }
+            Rectangle {
+                Layout.preferredWidth: Style.dp(1)
+                Layout.fillHeight: true
+                color: Style.colors.primaryBorder
             }
 
             WindowsHeader {
-                Layout.preferredWidth: 120
+                Layout.preferredWidth: Style.dp(120)
 
                 windowController: root.windowController
             }
@@ -84,12 +100,9 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 2
-            Layout.rightMargin: 4
-            Layout.leftMargin: 4
+            Layout.preferredHeight: Style.dp(1)
 
-            color: Style.colors.accent
-            radius: 3
+            color: Style.colors.primaryBorder
         }
     }
 }

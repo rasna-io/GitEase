@@ -1,33 +1,33 @@
 import QtQuick
-import QtQuick.Controls
-
-import GitEase
-import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * Page
- * Data model representing a application page with id, title, and etc.
+ * Common base type for every page hosted in MainWindow's SwipeView. Carries the identity
+ * (pageId/title/icon) and header/navigation-guard contract every page fulfils.
  * ************************************************************************************************/
 
-QtObject {
+Item {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string id: ""
+    property string pageId: ""
     property string title: "Page"
-
-    // QML file to load for this page (qrc:/...)
-    property url source: ""
-
-    // Icon glyph (usually from Style.icons.*)
     property string icon: ""
 
-    // Page-owned transient state that survives Loader recreation while the app is open.
-    property var state: ({})
+    // Header content exposed to MainWindow's Header (see MainWindow.qml)
+    property Component headerContent: null
 
     // Optional navigation guard. If set, called before leaving the page.
-    property var onPageChange
+    property var onPageChange: null
+
+    // Page-owned transient state (e.g. GraphViewPage's filter cache).
+    property var state: ({})
+
+    // Plugin pages set this to true so the rail can draw a separator before the first one.
+    property bool isPlugin: false
+    // Badge count shown in the rail item. -1 hides the badge.
+    property int  badgeCount: -1
+    // Override badge background color (defaults to accent blue)
+    property color badgeColor: "#3B82F6"
 }
-
-
