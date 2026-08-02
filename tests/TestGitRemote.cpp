@@ -186,7 +186,7 @@ void TestGitRemote::remoteCrudWorks()
 
     git_repository_free(renamedBareRemoteRepo);
     git_repository_free(bareRemoteRepo);
-    git_repository_free(localRepo);
+    // localRepo is owned by `current` (Repository), freed by its destructor.
 }
 
 void TestGitRemote::pushFetchAndUpstreamWork()
@@ -219,8 +219,11 @@ void TestGitRemote::pushFetchAndUpstreamWork()
 
     QVERIFY(localController.addRemote("origin", QDir::fromNativeSeparators(remotePath)).success());
 
-    GitResult pushResult = localController.push("origin", branch, "dummy-token", false);
-    QVERIFY(pushResult.success());
+    QSignalSpy pushSpy(&localController, &GitRemote::pushFinished);
+    GitResult pushStart = localController.push("origin", branch, "dummy-token", false);
+    QVERIFY(pushStart.success());
+    QVERIFY(pushSpy.wait(5000));
+    QVERIFY(pushSpy.at(0).at(0).toMap().value("success").toBool());
 
     git_reference* remoteBranch = nullptr;
     QCOMPARE(git_branch_lookup(&remoteBranch,
@@ -251,17 +254,20 @@ void TestGitRemote::pushFetchAndUpstreamWork()
     GitResult autoFetch = consumerController.fetch("origin");
     QVERIFY(!autoFetch.success());
 
-    GitResult fetchWithToken = consumerController.fetchWithToken("origin", "dummy-token");
-    QVERIFY(fetchWithToken.success());
+    QSignalSpy fetchSpy(&consumerController, &GitRemote::fetchFinished);
+    GitResult fetchStart = consumerController.fetchWithToken("origin", "dummy-token");
+    QVERIFY(fetchStart.success());
+    QVERIFY(fetchSpy.wait(5000));
+    QVERIFY(fetchSpy.at(0).at(0).toMap().value("success").toBool());
 
     git_reference* trackingRef = nullptr;
     const QByteArray trackingName = QString("refs/remotes/origin/%1").arg(branch).toUtf8();
     QCOMPARE(git_reference_lookup(&trackingRef, consumerRepo, trackingName.constData()), GIT_OK);
     git_reference_free(trackingRef);
 
-    git_repository_free(consumerRepo);
     git_repository_free(bareRemoteRepo);
-    git_repository_free(localRepo);
+    // localRepo and consumerRepo are owned by localWrapper/consumerWrapper
+    // (Repository), freed by their destructors.
 }
 
 void TestGitRemote::noRepositoryValidation()

@@ -119,6 +119,19 @@ GitResult GitRemote::push(const QString& remote,
                           const QString& branch,
                           bool force)
 {
+    if (remote.isEmpty()) {
+        return GitResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (branch.isEmpty()) {
+        return GitResult(false, QVariant(),
+                         "No branch specified and repository is in detached HEAD state");
+    }
+
     return pushStartAsyncInternal(remote, branch,
                         std::make_unique<GitSshAuth>(), force);
 }
@@ -128,6 +141,19 @@ GitResult GitRemote::push(const QString& remote,
                           const QString& token,
                           bool force)
 {
+    if (remote.isEmpty()) {
+        return GitResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
+    if (!m_currentRepo || !m_currentRepo->repo) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (branch.isEmpty()) {
+        return GitResult(false, QVariant(),
+                         "No branch specified and repository is in detached HEAD state");
+    }
+
     return pushStartAsyncInternal(remote, branch,
                         std::make_unique<GitHttpsAuth>(token), force);
 }
