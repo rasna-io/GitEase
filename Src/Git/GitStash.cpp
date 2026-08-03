@@ -8,6 +8,7 @@
 #include <git2/reset.h>
 #include <git2/tree.h>
 #include <git2/oid.h>
+#include <git2/diff.h>
 
 GitStash::GitStash(QObject *parent)
     : IGitController{parent}
@@ -409,6 +410,28 @@ GitResult GitStash::list()
                 if (parentOid) {
                     stash["parentId"] = QString::fromLatin1(git_oid_tostr_s(parentOid));
                 }
+
+                // Number of files the stash carries, i.e. the diff against the commit it was
+                // taken on top of (same view as "git stash show --name-only").
+                git_tree* stashTree = nullptr;
+                if (git_commit_tree(&stashTree, commit) == GIT_OK) {
+                    git_tree* parentTree = nullptr;
+                    git_commit* parent = nullptr;
+                    if (git_commit_parent(&parent, commit, 0) == GIT_OK) {
+                        git_commit_tree(&parentTree, parent);
+                        git_commit_free(parent);
+                    }
+
+                    git_diff* diff = nullptr;
+                    if (git_diff_tree_to_tree(&diff, payload->repo, parentTree, stashTree, nullptr) == GIT_OK) {
+                        stash["fileCount"] = static_cast<int>(git_diff_num_deltas(diff));
+                        git_diff_free(diff);
+                    }
+
+                    git_tree_free(parentTree);
+                    git_tree_free(stashTree);
+                }
+
                 git_commit_free(commit);
             }
 

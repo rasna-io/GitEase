@@ -331,6 +331,19 @@ QtObject {
         utilitiesActionIconActive:           "#7AB9FF"
         utilitiesActionIconWarning:          "#FFD966"
         utilitiesActionIconDanger:           softCoralMist
+
+        // stash card
+        stashCardBorderHover:                deepMidnight
+        stashCardBorderSelected:             "#93C5FD"
+
+        // stash card actions
+        stashActionText:                     "#7AB9FF"
+        stashActionBorder:                   "#2E4A78"
+        stashActionHoverBackground:          subtleAzureGlow
+        stashActionDangerText:               softCoralMist
+        stashActionDangerBorder:             "#4A2A2E"
+
+        stashDiffLinkHover:                  "#7AB9FF"
     }
 
     property           string       currentTheme:               "Modern Light"
