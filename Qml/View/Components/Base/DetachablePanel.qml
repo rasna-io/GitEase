@@ -231,7 +231,8 @@ Item {
                         anchors.centerIn: parent
                         text: Style.icons.detach
                         font {
-                            family: Style.fontTypes.font6ProSolid
+                            family: Style.fontTypes.font6Pro
+                            styleName: "Solid"
                             pixelSize: Style.appFont.smallPt
                         }
                         color: Style.colors.foreground
@@ -336,7 +337,8 @@ Item {
                             anchors.centerIn: parent
                             text: Style.icons.undo
                             font {
-                                family: Style.fontTypes.font6ProSolid
+                                family: Style.fontTypes.font6Pro
+                                styleName: "Solid"
                                 pixelSize: Style.appFont.largePt
                             }
                             color: Style.colors.foreground

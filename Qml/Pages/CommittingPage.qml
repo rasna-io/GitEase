@@ -326,7 +326,8 @@ Page {
                                 Text {
                                     anchors.centerIn: parent
                                     text: Style.icons.caretDown
-                                    font.family: Style.fontTypes.font6ProSolid
+                                    font.family: Style.fontTypes.font6Pro
+                                    font.styleName: "Solid"
                                     font.pixelSize: Style.appFont.defaultPt
                                     color: caretBtnMouse.containsMouse ? Style.colors.foreground : Style.colors.chipText
                                 }

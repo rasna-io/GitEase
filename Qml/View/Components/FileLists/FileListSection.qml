@@ -211,7 +211,8 @@ Rectangle {
                             Text {
                                 anchors.centerIn: parent
                                 text: Style.icons.plus
-                                font.family: Style.fontTypes.font6ProSolid
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
                                 font.pixelSize: Style.appFont.mediumPt
                                 color: Style.colors.emptyStateSubText
                             }

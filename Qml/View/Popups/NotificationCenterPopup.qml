@@ -244,7 +244,8 @@ Drawer {
 
                         Text {
                             text: Style.icons.trash
-                            font.family: Style.fontTypes.font6ProSolid
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: Style.appFont.smallPt
                             color: clearMouseArea.containsMouse ? Style.colors.foreground : Style.colors.mutedText
                         }
@@ -357,7 +358,8 @@ Drawer {
                                         return Style.icons.info
                                 }
                             }
-                            font.family: Style.fontTypes.font6ProSolid
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: Style.appFont.mediumPt
                             horizontalAlignment: Text.AlignHCenter
                             color: {

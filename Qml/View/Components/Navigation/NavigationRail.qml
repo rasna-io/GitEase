@@ -149,7 +149,8 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: Style.icons.gear
-                            font.family: settingButtonMouse.containsMouse ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: settingButtonMouse.containsMouse ? "Solid" : "Regular"
                             font.weight: 400
                             font.pixelSize: 14
                             color: Style.colors.foreground
@@ -240,7 +241,8 @@ Rectangle {
                             id: notificationIcon
                             anchors.centerIn: parent
                             text: Style.icons.bell
-                            font.family: notificationButtonMouse.containsMouse ? Style.fontTypes.font6ProSolid : Style.fontTypes.font6Pro
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: notificationButtonMouse.containsMouse ? "Solid" : "Regular"
                             font.weight: 400
                             font.pixelSize: 14
                             color: Style.colors.foreground

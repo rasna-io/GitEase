@@ -108,7 +108,8 @@ Item {
                         
                         Text {
                             text: Style.icons.plus
-                            font.family: Style.fontTypes.font6ProSolid
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: Style.appFont.smallPt
                             color: Style.colors.onAccentText
                             anchors.verticalCenter: parent.verticalCenter
@@ -481,7 +482,8 @@ Item {
                         Text {
                             Layout.alignment: Qt.AlignVCenter
                             text: Style.icons.circleExclamation
-                            font.family: Style.fontTypes.font6ProSolid
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: Style.appFont.mediumPt
                             color: Style.colors.error
                             verticalAlignment: Text.AlignVCenter

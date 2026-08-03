@@ -684,7 +684,8 @@ IPopup {
                                                     Text {
                                                         anchors.centerIn: parent
                                                         text: modelData.icon
-                                                        font.family: Style.fontTypes.font6ProSolid
+                                                        font.family: Style.fontTypes.font6Pro
+                                                        font.styleName: "Solid"
                                                         font.pixelSize: 14
                                                         color: Style.colors.accent
                                                     }

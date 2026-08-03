@@ -195,7 +195,8 @@ Item {
                             id: stageButton
                             anchors.centerIn: parent
                             text: Style.icons.plus
-                            font.family: Style.fontTypes.font6ProSolid
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: Style.appFont.captionPt
                             color: stageMsa.containsMouse ? Style.colors.stageGreen : Style.colors.actionIconIdle
                         }
@@ -223,7 +224,8 @@ Item {
                             id: revertButton
                             anchors.centerIn: parent
                             text: Style.icons.arrowRight
-                            font.family: Style.fontTypes.font6ProSolid
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: Style.appFont.captionPt
                             color: revertMsa.containsMouse ? Style.colors.discardRed : Style.colors.actionIconIdle
                         }
@@ -251,7 +253,8 @@ Item {
                             id: stashButton
                             anchors.centerIn: parent
                             text: Style.icons.archive
-                            font.family: Style.fontTypes.font6ProSolid
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: Style.appFont.captionPt
                             color: stashMsa.containsMouse ? Style.colors.stashAmber : Style.colors.actionIconIdle
                         }

@@ -80,7 +80,8 @@ Item {
                 Text {
                     text: root.expanded ? Style.icons.caretDown : Style.icons.caretUp
                     color: Style.colors.mutedText
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     font.pixelSize: Style.appFont.microPt
                 }
             }

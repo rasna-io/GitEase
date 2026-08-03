@@ -142,7 +142,8 @@ RowLayout {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: Style.icons.filter
-                font.family: Style.fontTypes.font6ProSolid
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
                 font.pixelSize: Style.appFont.smallPt
                 color: Style.colors.foreground
             }
@@ -157,7 +158,8 @@ RowLayout {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: Style.icons.caretDown
-                font.family: Style.fontTypes.font6ProSolid
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
                 font.pixelSize: Style.appFont.smallPt
                 color: Style.colors.foreground
             }

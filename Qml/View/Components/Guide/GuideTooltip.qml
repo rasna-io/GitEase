@@ -73,7 +73,8 @@ Item {
                     Text {
                         anchors.centerIn: parent
                         text: root.stepData?.icon ?? ""
-                        font.family: Style.fontTypes.font6ProSolid
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
                         font.pixelSize: 12
                         color: Style.colors.accent
                     }
@@ -280,7 +281,8 @@ Item {
                                 Text {
                                     anchors.centerIn: parent
                                     text: parent.copied ? "✓" : Style.icons.copy
-                                    font.family: Style.fontTypes.font6ProSolid
+                                    font.family: Style.fontTypes.font6Pro
+                                    font.styleName: "Solid"
                                     font.pixelSize: 10
                                     color: parent.copied ? "#4caf50" : Style.colors.secondaryText
                                 }

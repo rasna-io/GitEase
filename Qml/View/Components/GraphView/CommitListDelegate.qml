@@ -125,7 +125,8 @@ Rectangle {
                         spacing: 3
                         Text {
                             text: Style.icons.archive
-                            font.family: Style.fontTypes.font6ProSolid
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: Style.appFont.captionPt
                             color: GraphUtils.getContrastColor(indicatorColor.toString())
                             verticalAlignment: Text.AlignVCenter

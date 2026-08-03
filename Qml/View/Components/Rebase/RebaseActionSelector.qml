@@ -68,7 +68,8 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         text: Style.icons.caretDown
         color: root.accentColor
-        font.family: Style.fontTypes.font6ProSolid
+        font.family: Style.fontTypes.font6Pro
+        font.styleName: "Solid"
         font.pixelSize: Style.appFont.microPt
     }
 
@@ -148,7 +149,8 @@ Rectangle {
                             visible: entry.isCurrent
                             text: Style.icons.check
                             color: RebaseActions.menuColorOf(entry.modelData)
-                            font.family: Style.fontTypes.font6ProSolid
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: Style.appFont.microPt
                         }
 

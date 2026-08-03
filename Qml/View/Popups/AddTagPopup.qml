@@ -117,7 +117,8 @@ IPopup {
 
                     Text {
                         text: "\uf00c"
-                        font.family: Style.fontTypes.font6ProSolid
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
                         font.pixelSize: Style.appFont.mediumPt
                         color: "white"
                         anchors.centerIn: parent

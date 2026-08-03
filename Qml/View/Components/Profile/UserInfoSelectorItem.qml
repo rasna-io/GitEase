@@ -159,7 +159,8 @@ AccentCard {
 
                 Text {
                     text: Style.icons.check
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     font.pixelSize: Style.appFont.captionPt
                     color: Style.colors.compatible
                     verticalAlignment: Text.AlignVCenter

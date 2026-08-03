@@ -272,7 +272,8 @@ Item {
                     visible: rowRoot.isResolved
                     text: `${Style.icons.check}  RESOLVED`
                     color: Style.colors.conflictCardDoneLabel
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     font.pixelSize: Style.appFont.microPt
                 }
 

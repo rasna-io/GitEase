@@ -191,7 +191,8 @@ IPopup {
                         contentItem: Text {
                             anchors.centerIn: parent
                             text: Style.icons.close
-                            font.family: Style.fontTypes.font6ProSolid
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: 10
                             color: parent.hovered ? Style.colors.foreground : Style.colors.mutedText
                         }
@@ -271,7 +272,8 @@ IPopup {
                                             Layout.preferredWidth: 10
                                             Layout.preferredHeight: 10
                                             text: Style.icons.search
-                                            font.family: Style.fontTypes.font6ProSolid
+                                            font.family: Style.fontTypes.font6Pro
+                                            font.styleName: "Solid"
                                             font.pixelSize: 10
                                             color: Style.colors.mutedText
                                         }
@@ -349,7 +351,8 @@ IPopup {
                                             anchors.centerIn: parent
                                             visible: isFolder
                                             text: isExpanded ? Style.icons.caretDown : Style.icons.caretRight
-                                            font.family: Style.fontTypes.font6ProSolid
+                                            font.family: Style.fontTypes.font6Pro
+                                            font.styleName: "Solid"
                                             font.pixelSize: 9
                                             color: Style.colors.mutedText
                                             horizontalAlignment: Text.AlignHCenter
@@ -367,7 +370,8 @@ IPopup {
                                     // Icon (folder/file)
                                     Text {
                                         text: isFolder ? Style.icons.folder : Style.icons.file
-                                        font.family: Style.fontTypes.font6ProSolid
+                                        font.family: Style.fontTypes.font6Pro
+                                        font.styleName: "Solid"
                                         font.pixelSize: 10
                                         color: isFolder ? Style.colors.warning : root.fileIconColor(entryData.depth)
                                     }
@@ -484,7 +488,8 @@ IPopup {
                                     Layout.preferredWidth: 12
                                     Layout.preferredHeight: 12
                                     text: Style.icons.file
-                                    font.family: Style.fontTypes.font6ProSolid
+                                    font.family: Style.fontTypes.font6Pro
+                                    font.styleName: "Solid"
                                     font.pixelSize: 10
                                     color: Style.colors.accent
                                 }
@@ -536,7 +541,8 @@ IPopup {
 
                                             Text {
                                                 text: Style.icons.copy
-                                                font.family: Style.fontTypes.font6ProSolid
+                                                font.family: Style.fontTypes.font6Pro
+                                                font.styleName: "Solid"
                                                 font.pixelSize: 9
                                                 color: copyButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter
@@ -583,7 +589,8 @@ IPopup {
 
                                             Text {
                                                 text: Style.icons.download
-                                                font.family: Style.fontTypes.font6ProSolid
+                                                font.family: Style.fontTypes.font6Pro
+                                                font.styleName: "Solid"
                                                 font.pixelSize: 9
                                                 color: exportButton.hovered ? Style.colors.foreground : Style.colors.mutedText
                                                 Layout.alignment: Qt.AlignVCenter

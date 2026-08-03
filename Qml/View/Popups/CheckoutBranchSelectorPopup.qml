@@ -54,7 +54,8 @@ IPopup {
 
                     Text {
                         text: Style.icons.gitBranch
-                        font.family: Style.fontTypes.font6ProSolid
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
                         font.pixelSize: Style.appFont.h2Pt
                         color: Style.colors.accent
                     }
@@ -125,7 +126,8 @@ IPopup {
 
                             Text {
                                 text: Style.icons.gitBranch
-                                font.family: Style.fontTypes.font6ProSolid
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
                                 font.pixelSize: Style.appFont.mediumPt
                                 color: Style.colors.accent
                                 Layout.preferredWidth: 16
@@ -143,7 +145,8 @@ IPopup {
 
                             Text {
                                 text: Style.icons.arrowRight
-                                font.family: Style.fontTypes.font6ProSolid
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
                                 font.pixelSize: Style.appFont.defaultPt
                                 color: Style.colors.accent
                                 opacity: isHovered ? 1.0 : 0.0
