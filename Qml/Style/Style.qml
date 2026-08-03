@@ -332,6 +332,12 @@ QtObject {
         utilitiesActionIconWarning:          "#FFD966"
         utilitiesActionIconDanger:           softCoralMist
 
+        // scrollbars
+        scrollBarHandle:                     "#59FFFFFF"
+        scrollBarHandleHover:                "#8CFFFFFF"
+        scrollBarHandlePressed:              "#B3FFFFFF"
+        scrollBarTrackHover:                 "#14FFFFFF"
+
         // stash card
         stashCardBorderHover:                deepMidnight
         stashCardBorderSelected:             "#93C5FD"

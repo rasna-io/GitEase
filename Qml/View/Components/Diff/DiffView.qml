@@ -49,6 +49,9 @@ DetachablePanel {
 
     property alias scrollPosition: diffListView.contentY
 
+    //! Where the changed rows sit, as fractions of the row count — drawn on the vertical scrollbar.
+    property var changeMarkers: []
+
     /* Object Properties
      * ****************************************************************************************/
     title: qsTr("Diff View")
@@ -185,6 +188,13 @@ DetachablePanel {
         font.pixelSize: Style.appFont.h3Pt
     }
 
+    //! Coalesces the bursts of appends a model rebuild produces into a single remap.
+    Timer {
+        id: changeMarkersTimer
+        interval: 50
+        onTriggered: root.updateChangeMarkers()
+    }
+
     EmptyStateView {
         title: "No file changes to show"
         details: "Select a file to view the Diff"
@@ -201,7 +211,7 @@ DetachablePanel {
 
         ListView {
             id: diffListView
-            property real horizontalScrollOffset: 0
+            property real horizontalScrollOffset: hScrollBar.offset
             property real maxContentWidth: 0
 
             anchors.fill: parent
@@ -211,10 +221,12 @@ DetachablePanel {
             cacheBuffer: 0
             reuseItems: false
             anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: DiffScrollBar {
                 id: vScrollBar
-                active: true
+                markers: root.chunkMode ? [] : root.changeMarkers
             }
+
+            onCountChanged: changeMarkersTimer.restart()
 
             TextEdit {
                 id: clipboardHelper
@@ -416,20 +428,15 @@ DetachablePanel {
             }
         }
 
-        ScrollBar {
+        DiffScrollBar {
             id: hScrollBar
             orientation: Qt.Horizontal
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            size: diffListView.maxContentWidth === 0 ? 1 : (diffListView.width * 0.5) / diffListView.maxContentWidth
-            active: true
-            visible: size < 1.0
 
-            onPositionChanged: {
-                // Calculate the pixel offset based on scrollbar position
-                diffListView.horizontalScrollOffset = position * diffListView.maxContentWidth
-            }
+            contentSize:  diffListView.maxContentWidth
+            viewportSize: diffListView.width
         }
     }
 
@@ -804,6 +811,68 @@ DetachablePanel {
         }
     }
 
+    /* Change minimap
+     * ****************************************************************************************/
+    function updateChangeMarkers() {
+        let model = diffListView.model
+        let totalRows = model ? model.count : 0
+
+        if (totalRows === 0) {
+            root.changeMarkers = []
+            return
+        }
+
+        let markers = []
+        let runStart = -1
+        let runType  = GitDiff.Context
+
+        for (let i = 0; i < totalRows; ++i) {
+            let row = model.get(i)
+            let rowChange = (!row || row.rowType === "hidden" || row.diffType === undefined)
+                            ? GitDiff.Context
+                            : row.diffType
+
+            if (rowChange !== GitDiff.Context) {
+                if (runStart < 0) {
+                    runStart = i
+                    runType  = rowChange
+                } else if (rowChange !== runType) {
+                    // An added row butting against a deleted one reads as a modification.
+                    runType = GitDiff.Modified
+                }
+            } else if (runStart >= 0) {
+                markers.push(root.buildChangeMarker(runStart, i - 1, runType, totalRows))
+                runStart = -1
+            }
+        }
+
+        if (runStart >= 0)
+            markers.push(root.buildChangeMarker(runStart, totalRows - 1, runType, totalRows))
+
+        root.changeMarkers = markers
+    }
+
+    function buildChangeMarker(startRow, endRow, changeType, totalRows) {
+        return {
+            startRatio: startRow / totalRows,
+            sizeRatio:  (endRow - startRow + 1) / totalRows,
+            color:      root.changeMarkerColor(changeType)
+        }
+    }
+
+    function changeMarkerColor(changeType) {
+        switch (changeType) {
+        case GitDiff.Added:
+            return Style.colors.diffMarkerAdded
+
+        case GitDiff.Deleted:
+            return Style.colors.diffMarkerRemoved
+
+        default:
+            return Style.colors.diffMarkerModified
+        }
+    }
+
     /* Functions
      * ****************************************************************************************/
     function appendRow(model, type, lTxt, rTxt, lNum, rNum) {
@@ -823,6 +892,8 @@ DetachablePanel {
         let modified = row.leftText !== row.rightText
 
         model.setProperty(index, "diffType", modified ? GitDiff.Modified : GitDiff.Context)
+
+        changeMarkersTimer.restart()
     }
 
     function checkHasAction(model, index, type) {
@@ -993,6 +1064,7 @@ DetachablePanel {
         else
         {
             model.setProperty(index, "diffType", GitDiff.Deleted)
+            changeMarkersTimer.restart()
 
             if (chunkMode)
                 model.setProperty(index, "rowType", "diff")

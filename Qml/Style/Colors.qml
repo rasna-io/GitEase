@@ -204,6 +204,18 @@ QtObject{
     property color conflictStatusModifiedColor  :  "#FFA500"
     property color conflictStatusAddedColor     :     "#3BDB6A"
 
+    // Scrollbars — translucent so whatever sits in the strip behind them stays readable
+    property color scrollBarHandle:         "#40000000"
+    property color scrollBarHandleHover:    "#66000000"
+    property color scrollBarHandlePressed:  "#8C000000"
+    property color scrollBarTrack:          "transparent"
+    property color scrollBarTrackHover:     "#0F000000"
+
+    // Scrollbar minimap of where a diff's changes sit
+    property color diffMarkerAdded:         "#3BDB6A"
+    property color diffMarkerRemoved:       "#E05555"
+    property color diffMarkerModified:      "#D9A036"
+
     property color conflictFileSelectedBg:  "#1F3B82F6"
     property color conflictSectionLabel:    "#6B7280"
     property color conflictProgressTrack:   "#E3E6EB"
