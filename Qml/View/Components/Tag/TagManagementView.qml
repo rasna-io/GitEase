@@ -60,6 +60,12 @@ UtilitiesCard {
         ctrl.pushDeleteTag(tag.name);
     }
 
+    function pushTagToRemote(tag) {
+        notificationController.info("Pushing tag to remote...", "Tag", 1500);
+
+        tagController.pushTag(tag.name);
+    }
+
     function copyTagName(tag) {
         clipboardHelper.text = tag.name
         clipboardHelper.selectAll()
@@ -78,11 +84,24 @@ UtilitiesCard {
 
     function buildTagMenu(tag) {
         return [
-            { text: "Copy Name", icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
-            { text: "Copy Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } },
+
+            // { text: "Push Tag to Remote", icon: Style.icons.gitBranch, action: function() { root.checkout(tag) } },
+                    // TODO: Task "Checkout Tag"
+                    //       Implement GitTag::checkout(tagName) in TagController.
+                    //       This menu item will switch the working directory to the tag's commit.
+            // { separator: true },
+
+
+            { text: "Push Tag to Remote", icon: Style.icons.upload, action: function() { root.pushTagToRemote(tag) } },
+            // { text: "Delete", icon: Style.icons.trash, color: Style.colors.deletededFile, action: function() { root.deleteTagRemote(tag) } },
+                    // TODO: Task "Dynamic Remote/Local Actions"
+                    //       Show this menu item only when the tag is known to be on the remote.
+                    //       Requires fetching the list of remote tags (GitTag::remoteTagNames) and
+                    //       comparing. Part of the same task as the inline push/delete button logic.
             { separator: true },
-            { text: "Delete Tag (Local Only)", icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { root.deleteTagLocal(tag) } },
-            { text: "Delete Tag from Remote (Origin)", icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { root.deleteTagRemote(tag) } }
+
+            { text: "Copy Name", icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
+            { text: "Copy Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } }
         ]
     }
 
@@ -104,7 +123,7 @@ UtilitiesCard {
                         targetProvider: function() { return internalListView },
                         icon: Style.icons.tag,
                         title: "Your Tags",
-                        description: "Every tag in the repository is listed here. The first trash icon deletes it locally; the second deletes it from the remote too."
+                        description: "Every tag in the repository is listed here. The first icon pushes the tag to the remote; the second deletes it locally. Right-click a tag for more options, including deleting it from the remote."
                     },
                     {
                         targetProvider: function() { return addTagBtn },
@@ -185,27 +204,35 @@ UtilitiesCard {
                         elide: Text.ElideRight
                     }
 
-                    // 3. Delete Action (Fixed Position)
+                    // 3. Push Action
+                    ActionIconButton {
+                        iconText: Style.icons.upload
+                        textColor: Style.colors.accent
+                        tooltip: "Push Tag to Remote"
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+
+                        onClicked: root.pushTagToRemote(modelData)
+                        visible: false
+                        // TODO: Task "Dynamic Remote/Local Actions"
+                        //       Make visible when tag is NOT on the remote.
+                        //       Requires GitTag::remoteTagNames() to get origin's tags.
+                        //       Bind to: root.remoteTagNames.indexOf(modelData.name) === -1
+                        //       The corresponding remote‑delete button (not yet in the code)
+                        //       will be visible when the tag IS on the remote.
+                    }
+
+                    // 4. Delete Action
                     ActionIconButton {
                         iconText: Style.icons.trash
-                        textColor: Style.colors.utilitiesActionIconWarning
+                        textColor: Style.colors.deletededFile
                         tooltip: "Delete Tag (Local Only)"
                         Layout.preferredWidth: 24
                         Layout.preferredHeight: 24
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
                         onClicked: root.deleteTagLocal(modelData)
-                    }
-
-                    ActionIconButton {
-                        iconText: Style.icons.trash
-                        textColor: Style.colors.utilitiesActionIconDanger
-                        tooltip: "Delete Tag from Remote (Origin)"
-                        Layout.preferredWidth: 24
-                        Layout.preferredHeight: 24
-                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-
-                        onClicked: root.deleteTagRemote(modelData)
                     }
                 }
             }
@@ -236,6 +263,12 @@ UtilitiesCard {
                     root.addTagPopup.open();
                 }
             }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                acceptedButtons: Qt.NoButton
+            }
         }
     }
 
@@ -251,10 +284,10 @@ UtilitiesCard {
         function onPushTagFinished(result) {
             if (result.success) {
                 if (root.notificationController)
-                    root.notificationController.success("Tag created and pushed", "Success", 3000)
+                    root.notificationController.success("Tag pushed to remote", "Success", 3000)
             } else {
                 if (root.notificationController)
-                    root.notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+                    root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
             }
 
             root.update()
