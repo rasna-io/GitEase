@@ -272,6 +272,7 @@ property string                 targetHash: ""
                         }
                     }
                 }
+
                 // Separator
                 Rectangle {
                     Layout.fillWidth: true
@@ -359,6 +360,7 @@ property string                 targetHash: ""
                         }
                     }
                 }
+
                 // Git command preview
                 Rectangle {
                     Layout.fillWidth: true
@@ -380,6 +382,8 @@ property string                 targetHash: ""
                         color: Style.colors.popupCommandPreviewText
                     }
                 }
+}
+
             // Footer separator
             Rectangle {
                 Layout.fillWidth: true
