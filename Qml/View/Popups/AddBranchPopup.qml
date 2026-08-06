@@ -468,7 +468,8 @@ property string                 targetHash: ""
     }
 
     onAboutToHide: {
-        nameInput.text = "";
-        targetHash = "";
+        nameInput.text  = ""
+        targetHash      = ""
+        baseBranch      = "main"
+        baseBranchType  = "remote"
     }
-}
