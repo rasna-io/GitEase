@@ -62,7 +62,7 @@ property string                 targetHash: ""
                     color: Style.colors.popupTitleText
                     font.family: Style.fontTypes.inter
                     font.weight: Font.DemiBold
-                    font.pixelSize: 13
+                    font.pixelSize: Style.appFont.mediumPt
                     Layout.fillWidth: true
                 }
 
@@ -70,7 +70,7 @@ property string                 targetHash: ""
                 Text {
                     text: "\u00d7"
                 font.family: Style.fontTypes.inter
-                    font.pixelSize: 14
+                    font.pixelSize: Style.appFont.mediumPt
                     color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
                                                     : Style.colors.popupCloseButton
                     MouseArea {
@@ -109,7 +109,7 @@ property string                 targetHash: ""
                         text: "BRANCH NAME"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.captionPt
+                        font.pixelSize: Style.appFont.defaultPt
                     }
 
                 TextField {
@@ -118,7 +118,7 @@ property string                 targetHash: ""
                         Layout.fillWidth: true
                         selectByMouse: true
                         font.family: Style.fontTypes.mono
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.defaultPt
                         color: Style.colors.popupInputText
                         leftPadding: 10
                         rightPadding: 10
@@ -206,14 +206,14 @@ property string                 targetHash: ""
                                 Layout.fillWidth: true
                                 text: root.baseBranch
                                 font.family: Style.fontTypes.mono
-                                font.pixelSize: 12
+                                font.pixelSize: Style.appFont.defaultPt
                                 color: Style.colors.popupBaseBranchText
                             }
 
                             Text {
                                 text: "▾"
                                 font.family: Style.fontTypes.inter
-                                font.pixelSize: 9
+                                font.pixelSize: Style.appFont.extraSmallPt
                                 color: Style.colors.popupRadioBorder
                             }
                         }
@@ -260,7 +260,7 @@ property string                 targetHash: ""
                                     text: modelData.label
                                     color: Style.colors.popupCheckboxLabelText
                                     font.family: Style.fontTypes.inter
-                                    font.pixelSize: 12
+                                    font.pixelSize: Style.appFont.defaultPt
                                 }
 
                                 MouseArea {
