@@ -167,14 +167,107 @@ property string                 targetHash: ""
                         }
                     }
                 }
-                    Layout.fillWidth: true
-                    selectByMouse: true
 
-                    background: Rectangle {
-                        implicitHeight: 40
-                        color: Style.colors.secondaryBackground
+                // Based on
+                ColumnLayout {
+                    spacing: root.elementSpacing
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: root.sectionSpacing
+
+                    Text {
+                        text: "BASED ON"
+                        color: Style.colors.popupSectionLabel
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 26
                         radius: 5
-                        border.color: nameInput.activeFocus ? Style.colors.accent : "transparent"
+                        color: Style.colors.popupBaseBranchBackground
+                        border.color: Style.colors.popupBaseBranchBorder
+                        border.width: 1
+                        Layout.bottomMargin: 7
+
+                        RowLayout {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 8
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.baseBranch
+                                font.family: Style.fontTypes.mono
+                                font.pixelSize: 12
+                                color: Style.colors.popupBaseBranchText
+                            }
+
+                            Text {
+                                text: "▾"
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: 9
+                                color: Style.colors.popupRadioBorder
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                        }
+                    }
+
+                    RowLayout {
+                        spacing: 14
+                        Layout.fillWidth: true
+
+                        Repeater {
+                            model: [
+                                { label: "Local branch", value: "local" },
+                                { label: "Remote branch", value: "remote" }
+                            ]
+
+                            RowLayout {
+                                spacing: 6
+                                Layout.fillWidth: true
+
+                                Rectangle {
+                                    width: 16
+                                    height: 16
+                                    radius: 8
+                                    color: Style.colors.popupRadioDot
+                                    border.width: 1
+                                    Layout.alignment: Qt.AlignVCenter
+
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        width: 8
+                                        height: 8
+                                        radius: 4
+                                        color: Style.colors.popupRadioBorderChecked
+                                        visible: root.baseBranchType === modelData.value
+                                    }
+                                }
+
+                                Text {
+                                    text: modelData.label
+                                    color: Style.colors.popupCheckboxLabelText
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: 12
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.baseBranchType = modelData.value
+                                }
+                            }
+                        }
+                    }
+                }
                     }
                 }
             }
