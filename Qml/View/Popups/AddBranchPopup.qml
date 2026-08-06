@@ -95,11 +95,78 @@ property string                 targetHash: ""
             ColumnLayout {
                 spacing: 12
                 Layout.fillWidth: true
+                // Branch name
+                ColumnLayout {
+                    spacing: root.elementSpacing
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: root.sectionSpacing
 
-                // Name Input
+                    Text {
+                        text: "BRANCH NAME"
+                        color: Style.colors.popupSectionLabel
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                    }
+
                 TextField {
                     id: nameInput
-                    placeholderText: "Branch Name "
+                        placeholderText: "feature/new-work"
+                        Layout.fillWidth: true
+                        selectByMouse: true
+                        font.family: Style.fontTypes.mono
+                        font.pixelSize: 12
+                        color: Style.colors.popupInputText
+                        leftPadding: 10
+                        rightPadding: 10
+                        topPadding: 7
+                        bottomPadding: 7
+                        Layout.bottomMargin: 6
+
+                        background: Rectangle {
+                            implicitHeight: 26
+                            color: Style.colors.popupInputBackground
+                            radius: 5
+                            border.color: nameInput.activeFocus ? Style.colors.popupInputBorderFocus
+                                                                : Style.colors.popupInputBorder
+                            border.width: 1
+                        }
+                    }
+
+                    RowLayout {
+                        spacing: 5
+                        Layout.fillWidth: true
+
+                        Repeater {
+                            model: root.branchNameSuggestions
+
+                            Rectangle {
+                                id: chip
+                                required property string modelData
+                                radius: 4
+                                color: Style.colors.popupChipBackground
+                                border.color: Style.colors.popupChipBorder
+                                border.width: 1
+                                implicitWidth: chipText.implicitWidth + 12
+                                implicitHeight: 22
+
+                                Text {
+                                    id: chipText
+                                    anchors.centerIn: parent
+                                    text: chip.modelData
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.captionPt
+                                    color: Style.colors.popupChipText
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: nameInput.text = chip.modelData
+                                }
+                            }
+                        }
+                    }
+                }
                     Layout.fillWidth: true
                     selectByMouse: true
 
