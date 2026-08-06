@@ -473,3 +473,34 @@ property string                 targetHash: ""
         baseBranch      = "main"
         baseBranchType  = "remote"
     }
+
+    function createBranch(){
+
+        let branchName  = nameInput.text.trim()
+        let checkout    = checkoutCheckbox.checked
+        let push        = pushCheckbox.checked
+
+        let res
+        if (root.targetHash === "") {
+            res = root.branchController.createBranch(branchName)
+        } else {
+            res = root.branchController.createBranch(root.targetHash, branchName)
+        }
+
+        if (res && res.success) {
+            if (checkout)
+                root.branchController.checkoutBranch(branchName)
+
+            // TODO: Implement GitBranch::pushBranch(branchName) to push the newly created
+            //       branch to the remote (origin). Until then, the push checkbox has no effect.
+            // if (push)
+            //     root.branchController.pushBranch(branchName)
+
+            root.branchCreatedSuccessfully()
+            notificationController.success("Branch '" + branchName + "' created successfully", "Branch", 3000)
+            root.close()
+        } else {
+            notificationController.error(res.errorMessage || "Failed to create branch", "Branch Error", 5000)
+        }
+    }
+}
