@@ -33,12 +33,9 @@ property string                 targetHash: ""
 
     signal branchCreatedSuccessfully()
 
-    /* Object Properties
-     * ****************************************************************************************/
-
-    width: 360
-    height: 220
-    padding: 20
+    width: 300
+    height: 400
+    padding: 0
 
     contentItem: Rectangle {
         color: Style.colors.popupBackground
