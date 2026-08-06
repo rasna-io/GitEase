@@ -382,37 +382,77 @@ property string                 targetHash: ""
                 implicitHeight: 1
                 color: Style.colors.popupHeaderSeparator
             }
-                    enabled: root.canAccept
-                    Material.foreground: Style.colors.textButton
 
-                    opacity: enabled ? 1.0 : 0.5
+            // Footer
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 52
+                color: Style.colors.popupFooterBackground
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 18
+                    anchors.rightMargin: 18
+                    spacing: 8
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+
+                    Button {
+                        text: "Cancel"
+                        Layout.preferredWidth: 100
+                        Layout.alignment: Qt.AlignVCenter
+                        topPadding: 6
+                        bottomPadding: 6
+                        leftPadding: 14
+                        rightPadding: 14
 
                     background: Rectangle {
-                        implicitHeight: 35
-                        color: actionBtn.enabled ? (actionBtn.hovered) ? Style.colors.accentHover : Style.colors.accent
-                                                    : (Style.colors.disabledButton)
-                        border.color: Style.colors.accent
+                            implicitHeight: 32
+                            color: "transparent"
+                            border.color: Style.colors.popupCancelButtonBorder
+                            border.width: 1
                         radius: 5
                     }
 
-                    onClicked: {
-                        let res;
-
-                        if (root.targetHash === "") {
-                            res = root.branchController.createBranch(nameInput.text);
-                        } else {
-                            res = root.branchController.createBranch(root.targetHash, nameInput.text);
-                            root.branchController.checkoutBranch(nameInput.text);
+                        contentItem: Text {
+                            text: parent.text
+                            color: Style.colors.secondaryForeground
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
                         }
 
-                        if (res && res.success) {
-                            root.branchCreatedSuccessfully()
-                            notificationController.success("Branch '" + nameInput.text + "' created successfully", "Branch", 3000)
-                            root.close();
-                        } else {
-                            console.error("Error creating branch:", res.message);
-                            notificationController.error(res.errorMessage || "Failed to create branch", "Branch Error", 5000)
+                        onClicked: root.close()
+                    }
+
+                    Button {
+                        text: "Create Branch"
+                        Layout.preferredWidth: 130
+                        Layout.alignment: Qt.AlignVCenter
+                        enabled: root.canAccept
+                        topPadding: 6
+                        bottomPadding: 6
+                        leftPadding: 16
+                        rightPadding: 16
+
+                        background: Rectangle {
+                            implicitHeight: 32
+                            color: parent.enabled ? Style.colors.accent : "#222228"
+                            radius: 5
                         }
+
+                        contentItem: Text {
+                            text: parent.text
+                            color: Style.colors.secondaryForeground
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+
+                        onClicked: root.createBranch()
                     }
                 }
             }
