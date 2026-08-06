@@ -92,9 +92,15 @@ property string                 targetHash: ""
                 color: Style.colors.popupHeaderSeparator
             }
 
+            // Body
             ColumnLayout {
-                spacing: 12
                 Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                Layout.topMargin: 16
+                spacing: 0
+
                 // Branch name
                 ColumnLayout {
                     spacing: root.elementSpacing
