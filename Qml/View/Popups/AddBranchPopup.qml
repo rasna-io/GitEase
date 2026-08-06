@@ -376,6 +376,12 @@ property string                 targetHash: ""
                         color: Style.colors.popupCommandPreviewText
                     }
                 }
+            // Footer separator
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 1
+                color: Style.colors.popupHeaderSeparator
+            }
                     enabled: root.canAccept
                     Material.foreground: Style.colors.textButton
 
