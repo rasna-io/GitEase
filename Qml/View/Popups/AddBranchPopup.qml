@@ -276,30 +276,85 @@ property string                 targetHash: ""
                     Layout.topMargin: 10
                     Layout.bottomMargin: 10
                 }
+
+                // Checkboxes
+                ColumnLayout {
+                    spacing: 8
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: root.sectionSpacing
+
+                    // Checkout after creating
+                    RowLayout {
+                        spacing: 8
+                        Layout.fillWidth: true
+
+                        Rectangle {
+                            width: 16; height: 16
+                            radius: 3
+                            color: checkoutCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
+                            border.color: checkoutCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked
+                                                                    : Style.colors.popupCheckboxBorder
+                            border.width: 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\u2713"
+                                color: Style.colors.popupCheckboxCheckmark
+                                font.pixelSize: 10
+                                visible: checkoutCheckbox.checked
                 }
             }
 
+                        Text {
+                            text: "Checkout after creating"
+                            color: Style.colors.popupCheckboxLabelText
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: 12
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: checkoutCheckbox.checked = !checkoutCheckbox.checked
+                        }
+                    }
+
+                    // Push to remote immediately
             RowLayout {
                 spacing: 8
                 Layout.fillWidth: true
 
-                Button {
-                    text: "Cancel"
-                    Layout.preferredWidth: 120
-                    onClicked: root.close()
-                    Material.foreground: Style.colors.foreground
+                        Rectangle {
+                            width: 16; height: 16
+                            radius: 3
+                            color: pushCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
+                            border.color: pushCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked
+                                                                : Style.colors.popupCheckboxBorder
+                            border.width: 1
 
-                    background: Rectangle {
-                        implicitHeight: 35
-                        color: parent.hovered ? "#33ffffff" : "transparent"
-                        border.color: Style.colors.accent
-                        radius: 5
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\u2713"
+                                color: Style.colors.popupCheckboxCheckmark
+                                font.pixelSize: 10
+                                visible: pushCheckbox.checked
+                            }
+                        }
+
+                        Text {
+                            text: "Push to remote immediately"
+                            color: Style.colors.popupCheckboxLabelText
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: 12
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: pushCheckbox.checked = !pushCheckbox.checked
+                        }
                     }
                 }
-
-                Button {
-                    id: actionBtn
-                    text: "Create"
                     Layout.fillWidth: true
                     enabled: root.canAccept
                     Material.foreground: Style.colors.textButton
