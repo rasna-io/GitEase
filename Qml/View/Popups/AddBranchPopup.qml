@@ -41,15 +41,16 @@ property string                 targetHash: ""
     padding: 20
 
     contentItem: Rectangle {
-        color: Style.colors.primaryBackground
-        radius: 16
+        color: Style.colors.popupBackground
+        radius: 8
         clip: true
-        border.color: Style.colors.accent
+        border.color: Style.colors.popupBorder
         border.width: 1
 
         ColumnLayout {
-            spacing: 20
             anchors.fill: parent
+            spacing: 0
+
             // Header
             RowLayout {
                 Layout.fillWidth: true
