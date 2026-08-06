@@ -268,7 +268,14 @@ property string                 targetHash: ""
                         }
                     }
                 }
-                    }
+                // Separator
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 1
+                    color: Style.colors.popupHeaderSeparator
+                    Layout.topMargin: 10
+                    Layout.bottomMargin: 10
+                }
                 }
             }
 
