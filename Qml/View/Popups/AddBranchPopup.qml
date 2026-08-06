@@ -16,15 +16,21 @@ IPopup {
      * ****************************************************************************************/
     property BranchController       branchController
     property NotificationController notificationController: null
+property string                 targetHash: ""
+    property string                 baseBranchType: "remote"
+    property string                 baseBranch: "main"
 
     property string targetHash: ""
+
+    readonly property var branchNameSuggestions: ["feature/", "fix/", "chore/"]
 
     readonly property bool    isNameValid: nameInput.text.trim().length > 0
 
     readonly property bool    canAccept:   isNameValid
 
-    /* Signals
-     * ****************************************************************************************/
+    readonly property int sectionSpacing: 12
+    readonly property int elementSpacing: 2
+
     signal branchCreatedSuccessfully()
 
     /* Object Properties
