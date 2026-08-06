@@ -44,17 +44,40 @@ IPopup {
         ColumnLayout {
             spacing: 20
             anchors.fill: parent
-            anchors.margins: 20
+            // Header
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 48
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                spacing: 8
 
+                // Title
             Text {
                 text: "Create Branch"
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.inter
-                font.bold: true
-                font.pixelSize: Style.appFont.h2Pt
-                Layout.alignment: Qt.AlignHCenter
-            }
+                    color: Style.colors.popupTitleText
+                    font.family: Style.fontTypes.inter
+                    font.weight: Font.DemiBold
+                    font.pixelSize: 13
+                    Layout.fillWidth: true
+                }
 
+                // Close Button
+                Text {
+                    text: "\u00d7"
+                font.family: Style.fontTypes.inter
+                    font.pixelSize: 14
+                    color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
+                                                    : Style.colors.popupCloseButton
+                    MouseArea {
+                        id: closeMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.close()
+                    }
+                }
+            }
             ColumnLayout {
                 spacing: 12
                 Layout.fillWidth: true
