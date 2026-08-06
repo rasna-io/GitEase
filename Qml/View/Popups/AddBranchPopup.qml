@@ -355,7 +355,27 @@ property string                 targetHash: ""
                         }
                     }
                 }
+                // Git command preview
+                Rectangle {
                     Layout.fillWidth: true
+                    implicitHeight: 25
+                    radius: 5
+                    color: Style.colors.popupCommandPreviewBackground
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        text: "git checkout -b " +
+                              (nameInput.text || "feature/new-work") + " " +
+                              root.baseBranch
+                        font.family: Style.fontTypes.mono
+                        font.pixelSize: 11
+                        color: Style.colors.popupCommandPreviewText
+                    }
+                }
                     enabled: root.canAccept
                     Material.foreground: Style.colors.textButton
 
