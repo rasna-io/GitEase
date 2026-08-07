@@ -377,9 +377,15 @@ property string                 targetHash: ""
                         anchors.right: parent.right
                         anchors.leftMargin: 10
                         anchors.rightMargin: 10
-                        text: "git checkout -b " +
-                              (nameInput.text || "feature/new-work") + " " +
+                        textFormat: Text.RichText
+
+                        text:
+                            "git checkout -b " +
+                            "<span style=\"color:" + Style.colors.accent + "\">" +
+                            (nameInput.text || "feature/new-work") +
+                            "</span> " +
                               root.baseBranch
+
                         font.family: Style.fontTypes.mono
                         font.pixelSize: 11
                         color: Style.colors.popupCommandPreviewText
