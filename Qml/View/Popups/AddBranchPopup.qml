@@ -34,7 +34,7 @@ property string                 targetHash: ""
     signal branchCreatedSuccessfully()
 
     width: 300
-    height: 400
+    height: 300
     padding: 0
 
     contentItem: Rectangle {
@@ -177,6 +177,12 @@ property string                 targetHash: ""
                     spacing: root.elementSpacing
                     Layout.fillWidth: true
                     Layout.bottomMargin: root.sectionSpacing
+
+                    visible: false
+                    // TODO: Implement "Based on" feature – currently the baseBranch and
+                    //       baseBranchType are not used. Need GitBranch::createBranchFromBase()
+                    //       that creates a branch from a given base branch (local or remote).
+                    //       Until then, creation always happens from HEAD or the explicit targetHash.
 
                     Text {
                         text: "BASED ON"
@@ -505,6 +511,11 @@ property string                 targetHash: ""
         let branchName  = nameInput.text.trim()
         let checkout    = checkoutCheckbox.checked
         let push        = pushCheckbox.checked
+
+        // TODO: Implement "Based on" feature – currently the baseBranch and
+        //       baseBranchType are not used. Need GitBranch::createBranchFromBase()
+        //       that creates a branch from a given base branch (local or remote).
+        //       Until then, creation always happens from HEAD or the explicit targetHash.
 
         let res
         if (root.targetHash === "") {
