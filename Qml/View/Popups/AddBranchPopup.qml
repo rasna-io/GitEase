@@ -442,7 +442,11 @@ property string                 targetHash: ""
                             elide: Text.ElideRight
                         }
 
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
                         onClicked: root.close()
+                        }
                     }
 
                     Button {
@@ -469,7 +473,11 @@ property string                 targetHash: ""
                             elide: Text.ElideRight
                         }
 
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
                         onClicked: root.createBranch()
+                        }
                     }
                 }
             }
