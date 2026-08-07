@@ -290,6 +290,9 @@ property string                 targetHash: ""
 
                     // Checkout after creating
                     RowLayout {
+                        id: checkoutCheckbox
+                        property bool checked: true
+
                         spacing: 8
                         Layout.fillWidth: true
 
@@ -326,6 +329,9 @@ property string                 targetHash: ""
 
                     // Push to remote immediately
             RowLayout {
+                        id: pushCheckbox
+                        property bool checked: false
+
                 spacing: 8
                 Layout.fillWidth: true
                         visible: false  // TODO: Implement GitBranch::pushBranch(branchName) to push the newly created
