@@ -305,7 +305,7 @@ property string                 targetHash: ""
                                 anchors.centerIn: parent
                                 text: "\u2713"
                                 color: Style.colors.popupCheckboxCheckmark
-                                font.pixelSize: 10
+                                font.pixelSize: Style.appFont.smallPt
                                 visible: checkoutCheckbox.checked
                 }
             }
@@ -314,7 +314,7 @@ property string                 targetHash: ""
                             text: "Checkout after creating"
                             color: Style.colors.popupCheckboxLabelText
                             font.family: Style.fontTypes.inter
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.defaultPt
                         }
 
                         MouseArea {
@@ -344,7 +344,7 @@ property string                 targetHash: ""
                                 anchors.centerIn: parent
                                 text: "\u2713"
                                 color: Style.colors.popupCheckboxCheckmark
-                                font.pixelSize: 10
+                                font.pixelSize: Style.appFont.smallPt
                                 visible: pushCheckbox.checked
                             }
                         }
@@ -353,7 +353,7 @@ property string                 targetHash: ""
                             text: "Push to remote immediately"
                             color: Style.colors.popupCheckboxLabelText
                             font.family: Style.fontTypes.inter
-                            font.pixelSize: 12
+                            font.pixelSize: Style.appFont.defaultPt
                         }
 
                         MouseArea {
