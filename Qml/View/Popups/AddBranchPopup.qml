@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+// import QtQuick.Window
 
 import GitEase
 import GitEase_Style
@@ -16,11 +17,9 @@ IPopup {
      * ****************************************************************************************/
     property BranchController       branchController
     property NotificationController notificationController: null
-property string                 targetHash: ""
+    property string                 targetHash: ""
     property string                 baseBranchType: "remote"
     property string                 baseBranch: "main"
-
-    property string targetHash: ""
 
     readonly property var branchNameSuggestions: ["feature/", "fix/", "chore/"]
 
@@ -57,8 +56,8 @@ property string                 targetHash: ""
                 spacing: 8
 
                 // Title
-            Text {
-                text: "Create Branch"
+                Text {
+                    text: "Create Branch"
                     color: Style.colors.popupTitleText
                     font.family: Style.fontTypes.inter
                     font.weight: Font.DemiBold
@@ -69,7 +68,7 @@ property string                 targetHash: ""
                 // Close Button
                 Text {
                     text: "\u00d7"
-                font.family: Style.fontTypes.inter
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
                     color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
                                                     : Style.colors.popupCloseButton
@@ -112,8 +111,8 @@ property string                 targetHash: ""
                         font.pixelSize: Style.appFont.defaultPt
                     }
 
-                TextField {
-                    id: nameInput
+                    TextField {
+                        id: nameInput
                         placeholderText: "feature/new-work"
                         Layout.fillWidth: true
                         selectByMouse: true
@@ -316,8 +315,8 @@ property string                 targetHash: ""
                                 color: Style.colors.popupCheckboxCheckmark
                                 font.pixelSize: Style.appFont.smallPt
                                 visible: checkoutCheckbox.checked
-                }
-            }
+                            }
+                        }
 
                         Text {
                             text: "Checkout after creating"
@@ -334,12 +333,12 @@ property string                 targetHash: ""
                     }
 
                     // Push to remote immediately
-            RowLayout {
+                    RowLayout {
                         id: pushCheckbox
                         property bool checked: false
 
-                spacing: 8
-                Layout.fillWidth: true
+                        spacing: 8
+                        Layout.fillWidth: true
                         visible: false  // TODO: Implement GitBranch::pushBranch(branchName) to push the newly created
                                         // branch to the remote (origin). Until then, the push checkbox has no effect.
 
@@ -396,14 +395,14 @@ property string                 targetHash: ""
                             "<span style=\"color:" + Style.colors.accent + "\">" +
                             (nameInput.text || "feature/new-work") +
                             "</span> " +
-                              root.baseBranch
+                            root.baseBranch
 
                         font.family: Style.fontTypes.mono
                         font.pixelSize: Style.appFont.defaultPt
                         color: Style.colors.popupCommandPreviewText
                     }
                 }
-}
+            }
 
             // Footer separator
             Rectangle {
@@ -438,14 +437,14 @@ property string                 targetHash: ""
                         leftPadding: 14
                         rightPadding: 14
 
-                    background: Rectangle {
+                        background: Rectangle {
                             implicitHeight: 32
                             color: "transparent"
                             border.color: Style.colors.popupCancelButtonBorder
                             border.width: 1
-                        radius: 5
+                            radius: 5
                             opacity: parent.hovered ? 1.0 : 0.7
-                    }
+                        }
 
                         contentItem: Text {
                             text: parent.text
@@ -458,7 +457,7 @@ property string                 targetHash: ""
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                        onClicked: root.close()
+                            onClicked: root.close()
                         }
                     }
 
@@ -491,7 +490,7 @@ property string                 targetHash: ""
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                        onClicked: root.createBranch()
+                            onClicked: root.createBranch()
                         }
                     }
                 }
