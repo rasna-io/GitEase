@@ -432,6 +432,7 @@ property string                 targetHash: ""
                             border.color: Style.colors.popupCancelButtonBorder
                             border.width: 1
                         radius: 5
+                            opacity: parent.hovered ? 1.0 : 0.7
                     }
 
                         contentItem: Text {
@@ -450,6 +451,7 @@ property string                 targetHash: ""
                     }
 
                     Button {
+                        id: actionBtn
                         text: "Create Branch"
                         Layout.preferredWidth: 130
                         Layout.alignment: Qt.AlignVCenter
@@ -461,7 +463,8 @@ property string                 targetHash: ""
 
                         background: Rectangle {
                             implicitHeight: 32
-                            color: parent.enabled ? Style.colors.accent : "#222228"
+                            color: parent.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
+                                                  : Style.colors.disabledButton
                             radius: 5
                         }
 
