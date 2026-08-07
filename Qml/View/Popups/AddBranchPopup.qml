@@ -328,6 +328,9 @@ property string                 targetHash: ""
             RowLayout {
                 spacing: 8
                 Layout.fillWidth: true
+                        visible: false  // TODO: Implement GitBranch::pushBranch(branchName) to push the newly created
+                                        // branch to the remote (origin). Until then, the push checkbox has no effect.
+
 
                         Rectangle {
                             width: 16; height: 16
