@@ -387,7 +387,7 @@ property string                 targetHash: ""
                               root.baseBranch
 
                         font.family: Style.fontTypes.mono
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.defaultPt
                         color: Style.colors.popupCommandPreviewText
                     }
                 }
