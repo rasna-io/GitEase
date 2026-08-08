@@ -249,12 +249,13 @@ IPopup {
 
             // Tag Message
             ColumnLayout {
-                spacing: 6
+                    spacing: 5
                 Layout.fillWidth: true
+                    Layout.bottomMargin: root.sectionSpacing
 
                 Text {
                     text: "Message"
-                    color: Style.colors.mutedText
+                        color: Style.colors.popupSectionLabel
                     font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.captionPt
                 }
@@ -269,10 +270,12 @@ IPopup {
                     onAccepted: if (root.canAccept) actionBtn.clicked()
 
                     background: Rectangle {
-                        implicitHeight: 40
-                        color: Style.colors.secondaryBackground
+                            implicitHeight: 26
+                            color: Style.colors.popupInputBackground
                         radius: 5
-                        border.color: messageInput.activeFocus ? Style.colors.accent : "transparent"
+                            border.color: messageInput.activeFocus ? Style.colors.popupInputBorderFocus
+                                                                    : Style.colors.popupInputBorder
+                            border.width: 1
                     }
                 }
             }
