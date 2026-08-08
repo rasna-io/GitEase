@@ -81,6 +81,12 @@ IPopup {
                     }
                 }
             }
+
+            // Header separator
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 1
+                color: Style.colors.popupHeaderSeparator
             }
 
             // Tag Name
