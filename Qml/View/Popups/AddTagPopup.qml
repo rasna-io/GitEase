@@ -90,7 +90,7 @@ IPopup {
                 color: Style.colors.popupHeaderSeparator
             }
 
-            // Tag Name
+            // Body
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
