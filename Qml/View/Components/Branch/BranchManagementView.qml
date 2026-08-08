@@ -99,11 +99,10 @@ UtilitiesCard {
         Rectangle {
             id: viewControl
             Layout.fillWidth: true
-            Layout.leftMargin: Style.dp(10)
-            Layout.rightMargin: Style.dp(10)
-            Layout.preferredHeight: Style.dp(27)
+            Layout.margins: Style.dp(10)
+            implicitHeight: Style.dp(28)
             radius: Style.dp(5)
-            color: Style.colors.utilitiesSegmentTrackBackground
+            color: Style.colors.secondaryBackground
 
             border {
                 width: Style.dp(1)
