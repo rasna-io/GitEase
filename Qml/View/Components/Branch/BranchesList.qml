@@ -86,6 +86,9 @@ ListView {
             anchors.fill: parent
             acceptedButtons: Qt.RightButton
             onClicked: (mouse) => {
+                if(!root.isLocal)
+                    return
+
                 var pos = mapToItem(Overlay.overlay, mouse.x, mouse.y)
                 itemContextMenu.menuModel = root.buildBranchMenu(branchDelegate.branch)
                 itemContextMenu.x = pos.x
