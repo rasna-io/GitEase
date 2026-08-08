@@ -47,15 +47,40 @@ IPopup {
         ColumnLayout {
             spacing: 14
             anchors.fill: parent
-            anchors.margins: 24
+            // Header
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 48
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                spacing: 8
 
+                // Title
+                Text {
+                    text: "Create Tag"
+                    color: Style.colors.popupTitleText
+                    font.family: Style.fontTypes.inter
+                    font.weight: Font.DemiBold
+                    font.pixelSize: Style.appFont.mediumPt
+                    Layout.fillWidth: true
+                }
+
+                // Close Button
             Text {
-                text: "Create New Tag"
-                color: Style.colors.foreground
+                    text: "\u00d7"
                 font.family: Style.fontTypes.inter
-                font.bold: true
-                font.pixelSize: Style.appFont.xlPt
-                Layout.alignment: Qt.AlignLeft
+                    font.pixelSize: Style.appFont.mediumPt
+                    color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
+                                                    : Style.colors.popupCloseButton
+                    MouseArea {
+                        id: closeMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.close()
+                    }
+                }
+            }
             }
 
             // Tag Name
