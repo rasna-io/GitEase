@@ -480,6 +480,18 @@ IPopup {
         }
     }
 
+    // Reset state on close
+    onAboutToHide: {
+        nameInput.text = "";
+        messageInput.text = "";
+        targetHash = "";
+        targetLabel = "";
+        pushAfterCreate = true;
+        isAnnotated = true;
+    }
+
+    // Auto-focus logic when popup opens
+    onOpened: nameInput.forceActiveFocus()
 
     function createTag(){
                         let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
@@ -517,28 +529,4 @@ IPopup {
                             if (notif) notif.error(res.errorMessage || "Failed to create tag", "Tag Error", 5000);
                         }
                     }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        acceptedButtons: Qt.NoButton
-                    }
-                }
-            }
-        }
-    }
-
-
-    // Reset state on close
-    onAboutToHide: {
-        nameInput.text = "";
-        messageInput.text = "";
-        targetHash = "";
-        targetLabel = "";
-        pushAfterCreate = true;
-        isAnnotated = true;
-    }
-
-    // Auto-focus logic when popup opens
-    onOpened: nameInput.forceActiveFocus()
 }
