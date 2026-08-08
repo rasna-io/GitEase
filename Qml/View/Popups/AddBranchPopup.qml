@@ -447,7 +447,7 @@ IPopup {
 
                         contentItem: Text {
                             text: parent.text
-                            color: Style.colors.secondaryForeground
+                            color: Style.colors.popupCancelButtonText
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             elide: Text.ElideRight
