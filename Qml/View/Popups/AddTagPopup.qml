@@ -98,11 +98,17 @@ IPopup {
                 Layout.topMargin: 16
                 spacing: 0
 
+                // TAG name
+                ColumnLayout {
+                    spacing: root.elementSpacing
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: root.sectionSpacing
+
                 Text {
-                    text: "Tag Name"
-                    color: Style.colors.mutedText
+                        text: "TAG NAME"
+                        color: Style.colors.popupSectionLabel
                     font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.captionPt
+                        font.pixelSize: Style.appFont.defaultPt
                 }
 
                 TextField {
@@ -110,20 +116,27 @@ IPopup {
                     placeholderText: "v1.0.0"
                     Layout.fillWidth: true
                     selectByMouse: true
-                    focus: true
-
-                    onAccepted: if (root.canAccept) actionBtn.clicked()
+                        font.family: Style.fontTypes.mono
+                        font.pixelSize: Style.appFont.defaultPt
+                        color: Style.colors.popupInputText
+                        leftPadding: 10
+                        rightPadding: 10
+                        topPadding: 7
+                        bottomPadding: 7
+                        Layout.bottomMargin: 6
 
                     background: Rectangle {
-                        implicitHeight: 40
-                        color: Style.colors.secondaryBackground
+                            implicitHeight: 26
+                            color: Style.colors.popupInputBackground
                         radius: 5
-                        border.color: nameInput.activeFocus ? Style.colors.accent : "transparent"
+                            border.color: nameInput.activeFocus ? Style.colors.popupInputBorderFocus
+                                                                : Style.colors.popupInputBorder
+                            border.width: 1
                     }
                 }
 
                 RowLayout {
-                    spacing: 6
+                        spacing: 5
                     Layout.fillWidth: true
 
                     Repeater {
@@ -132,21 +145,20 @@ IPopup {
                         Rectangle {
                             id: chip
                             required property string modelData
-
                             radius: 4
-                            color: Style.colors.secondaryBackground
-                            border.color: Style.colors.mutedText
+                                color: Style.colors.popupChipBackground
+                                border.color: Style.colors.popupChipBorder
                             border.width: 1
-                            implicitWidth: chipLabel.implicitWidth + 16
-                            implicitHeight: 20
+                                implicitWidth: chipText.implicitWidth + 12
+                                implicitHeight: 22
 
                             Text {
-                                id: chipLabel
+                                    id: chipText
                                 anchors.centerIn: parent
                                 text: chip.modelData
                                 font.family: Style.fontTypes.inter
                                 font.pixelSize: Style.appFont.captionPt
-                                color: Style.colors.mutedText
+                                    color: Style.colors.popupChipText
                             }
 
                             MouseArea {
