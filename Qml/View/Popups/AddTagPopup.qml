@@ -342,46 +342,45 @@ IPopup {
                 }
             }
 
-            CheckBox {
+                // Push checkbox
+                RowLayout {
                 id: pushCheckBox
-                text: "Push to remote (origin)"
-                checked: root.pushAfterCreate
-                Layout.fillWidth: true
-                implicitHeight: 32
-                spacing: 1
+                    property bool checked: true
 
-                indicator: Rectangle {
-                    implicitWidth: 20
-                    implicitHeight: 20
-                    y: parent.height / 2 - height / 2
-                    radius: 6
-                    color: pushCheckBox.checked ? Style.colors.accent : Style.colors.secondaryBackground
-                    border.color: pushCheckBox.checked ? Style.colors.accent : Qt.lighter(Style.colors.secondaryBackground, 1.5)
+                    spacing: 8
+                Layout.fillWidth: true
+
+                    Rectangle {
+                        width: 16
+                        height: 16
+                        radius: 3
+                        color: pushCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
+                        border.color: pushCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked
+                                                                : Style.colors.popupCheckboxBorder
                     border.width: 1
 
                     Text {
-                        text: "\uf00c"
-                        font.family: Style.fontTypes.font6Pro
-                        font.styleName: "Solid"
-                        font.pixelSize: Style.appFont.mediumPt
-                        color: "white"
                         anchors.centerIn: parent
+                            text: "\u2713"
+                            color: Style.colors.popupCheckboxCheckmark
+                            font.pixelSize: Style.appFont.smallPt
                         visible: pushCheckBox.checked
                     }
                 }
 
-                contentItem: Text {
-                    text: pushCheckBox.text
-                    font: pushCheckBox.font
-                    color: Style.colors.foreground
-                    leftPadding: pushCheckBox.indicator.width + pushCheckBox.spacing
-                    verticalAlignment: Text.AlignVCenter
+                    Text {
+                        text: "Push to remote (origin)"
+                        color: Style.colors.popupCheckboxLabelText
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: pushCheckBox.checked = !pushCheckBox.checked
+                    }
                 }
-
-                onCheckedChanged: root.pushAfterCreate = checked
-            }
-
-            Item { Layout.fillHeight: true }
 
             RowLayout {
                 spacing: 12
