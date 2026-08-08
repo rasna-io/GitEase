@@ -288,6 +288,60 @@ ListView {
                 icon: Style.icons.copy,
                 action: function() { root.copyBranchHash(branch) }
                 })
+        } else {
+
+            menu.push({
+                text: "Fetch",
+                icon: Style.icons.download,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({
+                text: "Pull",
+                icon: Style.icons.arrowDown,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({
+                text: "Push",
+                icon: Style.icons.arrowUp,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({ separator: true })
+
+            menu.push({
+                text: "Edit Remote...",
+                icon: Style.icons.edit,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({
+                text: "Delete Remote",
+                icon: Style.icons.trash,
+                color: Style.colors.contextMenuDanger,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({ separator: true })
+
+            menu.push({
+                text: "Copy URL",
+                icon: Style.icons.copy,
+                action: function() {
+                    // TODO
+                }
+            })
         }
 
         return menu
