@@ -201,36 +201,95 @@ ListView {
     }
 
     function buildBranchMenu(branch) {
-        var items = [{
-            text: "Copy Branch Name",
-            icon: Style.icons.copy,
-            action: function() { root.copyBranchName(branch) }
-        }]
 
-        var actions = []
+        var menu = []
 
-        if (branch.name !== root.currentBranch) {
-            actions.push({
-                text: "Checkout",
-                icon: Style.icons.check,
-                action: function() { root.doCheckout(branch) }
+        if (root.isLocal){
+
+            if (branch.name !== root.currentBranch) {
+                menu.push({
+                    text: "Checkout",
+                    icon: Style.icons.branchPlus,
+                    action: function() { root.doCheckout(branch) }
+                })
+
+                menu.push({ separator: true })
+            }
+
+            // Rename
+            menu.push({
+                text: "Rename...",
+                icon: Style.icons.edit,
+                action: function() {
+                    // TODO
+                }
             })
-        }
 
-        if (branch.name !== root.currentBranch && root.isLocal) {
-            actions.push({
-                text: "Delete Branch",
-                icon: Style.icons.trash,
-                color: Style.colors.contextMenuDanger,
-                action: function() { root.doDeleteBranch(branch) }
+            // Delete
+            if (branch.name !== root.currentBranch) {
+                menu.push({
+                    text: "Delete",
+                    icon: Style.icons.trash,
+                    color: Style.colors.contextMenuDanger,
+                    action: function() { root.doDeleteBranch(branch) }
+                })
+            }
+
+            menu.push({ separator: true })
+
+            // Merge
+            menu.push({
+                text: "Merge into current",
+                icon: Style.icons.arowLeftRight,
+                action: function() {
+                    // TODO
+                }
             })
+
+            // Rebase
+            menu.push({
+                text: "Rebase onto current",
+                icon: Style.icons.clockRotateLeft,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            // Cherry-pick
+            menu.push({
+                text: "Cherry-pick range...",
+                icon: Style.icons.copy,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({ separator: true })
+
+            // Reset
+            menu.push({
+                text: "Reset current to here...",
+                icon: Style.icons.reset,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({ separator: true })
+
+            menu.push({
+                text: "Copy Branch Name",
+                icon: Style.icons.copy,
+                action: function() { root.copyBranchName(branch) }
+                })
+
+            menu.push({
+                text: "Copy Full SHA",
+                icon: Style.icons.copy,
+                action: function() { root.copyBranchHash(branch) }
+                })
         }
 
-        if (actions.length > 0) {
-            items.push({ separator: true })
-            items = items.concat(actions)
-        }
-
-        return items
+        return menu
     }
 }
