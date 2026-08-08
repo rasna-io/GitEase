@@ -112,71 +112,38 @@ UtilitiesCard {
 
             RowLayout {
                 anchors.fill: parent
-                spacing: 4
-                anchors.margins: 3
+                spacing: 2
+                anchors.margins: 2
 
-                IconButton {
-                    id: localBtn
+                Repeater {
+                    model: ["Local", "Remote"]
+
+                    Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                        radius: 4
+                        color: (index === 0 && content.currentIndex === 0) ||
+                               (index === 1 && content.currentIndex === 1)
+                               ? Style.colors.utilitiesSegmentSelectedBackground
+                               : "transparent"
 
-                    topInset: 0
-                    bottomInset: 0
-                    verticalPadding: 6
-
-                    checkable: true
-                    checked: content.currentIndex === 0
-                    ButtonGroup.group: headerButtonGroup
-
-                    display: IconButton.TextBesideIcon
-                    icon.name: Style.icons.laptop
-                    icon.width: Style.appFont.mediumPt
-                    icon.height: Style.appFont.mediumPt
-                    icon.color: localBtn.checked ? Style.colors.utilitiesSegmentSelectedText
+                        Text {
+                            anchors.centerIn: parent
+                            text: modelData
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.smallPt
+                            color: (index === 0 && content.currentIndex === 0) ||
+                                   (index === 1 && content.currentIndex === 1)
+                                   ? Style.colors.utilitiesSegmentSelectedText
                                                  : Style.colors.utilitiesSegmentText
-                    text: "Local"
-                    font.pixelSize: Style.appFont.mediumPt
+                        }
 
-                    background: Rectangle {
-                        radius: viewControl.radius
-                        color: localBtn.checked ? Style.colors.utilitiesSegmentSelectedBackground
-                               : (localBtn.hovered ? Style.colors.utilitiesSegmentHoverBackground
-                                                   : "transparent")
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: content.currentIndex = index
+                        }
                     }
-
-                    onClicked: content.currentIndex = 0
-                }
-
-                IconButton {
-                    id: remoteBtn
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-
-                    topInset: 0
-                    bottomInset: 0
-                    verticalPadding: 6
-
-                    checkable: true
-                    checked: content.currentIndex === 1
-                    ButtonGroup.group: headerButtonGroup
-
-                    display: IconButton.TextBesideIcon
-                    icon.name: Style.icons.cloud
-                    icon.width: Style.appFont.mediumPt
-                    icon.height: Style.appFont.mediumPt
-                    icon.color: remoteBtn.checked ? Style.colors.utilitiesSegmentSelectedText
-                                                  : Style.colors.utilitiesSegmentText
-                    text: "Remote"
-                    font.pixelSize: Style.appFont.mediumPt
-
-                    background: Rectangle {
-                        radius: viewControl.radius
-                        color: remoteBtn.checked ? Style.colors.utilitiesSegmentSelectedBackground
-                               : (remoteBtn.hovered ? Style.colors.utilitiesSegmentHoverBackground
-                                                    : "transparent")
-                    }
-
-                    onClicked: content.currentIndex = 1
                 }
             }
         }
