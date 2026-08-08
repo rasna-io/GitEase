@@ -171,14 +171,15 @@ IPopup {
                 }
             }
 
-            // Tag Type
+                // Tag Type section
             ColumnLayout {
-                spacing: 6
+                    spacing: root.elementSpacing
                 Layout.fillWidth: true
+                    Layout.bottomMargin: root.sectionSpacing
 
                 Text {
                     text: "Type"
-                    color: Style.colors.mutedText
+                        color: Style.colors.popupSectionLabel
                     font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.captionPt
                 }
@@ -189,8 +190,8 @@ IPopup {
 
                     Repeater {
                         model: [
-                            { label: "Annotated tag",   hint: "(recommended — includes message)",   value: true },
-                            { label: "Lightweight tag", hint: "",                                   value: false }
+                                { label: "Annotated tag",       hint: "(recommended — includes message)",   value: true },
+                                { label: "Lightweight tag",     hint: "",                                   value: false }
                         ]
 
                         RowLayout {
@@ -204,7 +205,9 @@ IPopup {
                                 radius: 8
                                 color: "transparent"
                                 border.width: 1
-                                border.color: root.isAnnotated === modelData.value ? Style.colors.accent : Style.colors.mutedText
+                                    border.color: root.isAnnotated === modelData.value
+                                                  ? Style.colors.popupRadioBorderChecked
+                                                  : Style.colors.popupRadioBorder
                                 Layout.alignment: Qt.AlignVCenter
 
                                 Rectangle {
@@ -212,30 +215,32 @@ IPopup {
                                     width: 8
                                     height: 8
                                     radius: 4
-                                    color: Style.colors.accent
+                                        color: Style.colors.popupRadioDot
                                     visible: root.isAnnotated === modelData.value
+                                    }
+                                }
+
+                                // Label
+                                Text {
+                                    text: modelData.label
+                                    color: Style.colors.popupCheckboxLabelText
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.defaultPt
+                                }
+
+                                // Hint
+                                Text {
+                                    text: modelData.hint
+                                    color: Style.colors.popupCheckboxLabelText
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: smallPt
+                                    visible: modelData.hint.length > 0
                                 }
 
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: root.isAnnotated = modelData.value
-                                }
-                            }
-
-                            Text {
-                                text: modelData.label
-                                color: Style.colors.foreground
-                                font.family: Style.fontTypes.inter
-                                font.pixelSize: Style.appFont.smallPt
-                            }
-
-                            Text {
-                                text: modelData.hint
-                                color: Style.colors.mutedText
-                                font.family: Style.fontTypes.inter
-                                font.pixelSize: Style.appFont.captionPt
-                                visible: modelData.hint.length > 0
                             }
                         }
                     }
