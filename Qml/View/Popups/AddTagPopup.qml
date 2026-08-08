@@ -29,6 +29,9 @@ IPopup {
 
     readonly property var versionSuggestions: ["v1.0.1", "v1.1.0", "v2.0.0"]
 
+    readonly property int sectionSpacing: 12
+    readonly property int elementSpacing: 2
+
     /* Signals */
     signal tagCreatedSuccessfully()
 
