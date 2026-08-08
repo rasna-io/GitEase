@@ -382,6 +382,12 @@ IPopup {
                     }
                 }
 
+                // Footer separator
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 1
+                    color: Style.colors.popupHeaderSeparator
+                }
             RowLayout {
                 spacing: 12
                 Layout.fillWidth: true
