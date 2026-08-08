@@ -192,6 +192,14 @@ ListView {
             root.notificationController.success("Branch name copied to clipboard", "Branch", 2000)
     }
 
+    function copyBranchHash(branch) {
+        clipboardHelper.text = branch.targetHash
+        clipboardHelper.selectAll()
+        clipboardHelper.copy()
+        if (root.notificationController)
+            root.notificationController.success("Commit SHA copied to clipboard", "Branch", 2000)
+    }
+
     function buildBranchMenu(branch) {
         var items = [{
             text: "Copy Branch Name",
