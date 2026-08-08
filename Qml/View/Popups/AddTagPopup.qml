@@ -282,25 +282,29 @@ IPopup {
 
             // Target Commit
             ColumnLayout {
-                spacing: 6
+                    spacing: 5
                 Layout.fillWidth: true
+                    Layout.bottomMargin: root.sectionSpacing
 
                 Text {
                     text: "Tag Commit"
-                    color: Style.colors.mutedText
+                        color: Style.colors.popupSectionLabel
                     font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.captionPt
                 }
 
                 Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 36
+                        implicitHeight: 26
                     radius: 5
-                    color: Style.colors.secondaryBackground
-                    border.color: "transparent"
+                        color: Style.colors.popupInputBackground
+                        border.color: Style.colors.popupInputBorder
+                        border.width: 1
 
                     RowLayout {
-                        anchors.fill: parent
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.right: parent.right
                         anchors.leftMargin: 10
                         anchors.rightMargin: 10
                         spacing: 8
@@ -324,10 +328,16 @@ IPopup {
                                   : (
                                         "HEAD" + (root.targetLabel !== "" ? " — " + root.targetLabel : "")
                                     )
-                            color: Style.colors.mutedText
-                            font.family: Style.fontTypes.inter
+                                color: Style.colors.popupInputText
+                                font.family: Style.fontTypes.mono
                             font.pixelSize: Style.appFont.defaultPt
                         }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                // TODO: open commit picker to change target
+                            }
                     }
                 }
             }
