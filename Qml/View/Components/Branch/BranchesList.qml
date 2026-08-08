@@ -223,6 +223,7 @@ ListView {
             menu.push({
                 text: "Rename...",
                 icon: Style.icons.edit,
+                visible: false,
                 action: function() {
                     // TODO
                 }
@@ -244,6 +245,7 @@ ListView {
             menu.push({
                 text: "Merge into current",
                 icon: Style.icons.arowLeftRight,
+                visible: false,
                 action: function() {
                     // TODO
                 }
@@ -253,6 +255,7 @@ ListView {
             menu.push({
                 text: "Rebase onto current",
                 icon: Style.icons.clockRotateLeft,
+                visible: false,
                 action: function() {
                     // TODO
                 }
@@ -262,23 +265,25 @@ ListView {
             menu.push({
                 text: "Cherry-pick range...",
                 icon: Style.icons.copy,
+                visible: false,
                 action: function() {
                     // TODO
                 }
             })
 
-            menu.push({ separator: true })
+            menu.push({ separator: true, visible: false })
 
             // Reset
             menu.push({
                 text: "Reset current to here...",
                 icon: Style.icons.reset,
+                visible: false,
                 action: function() {
                     // TODO
                 }
             })
 
-            menu.push({ separator: true })
+            menu.push({ separator: true, visible: false })
 
             menu.push({
                 text: "Copy Branch Name",
@@ -292,7 +297,6 @@ ListView {
                 action: function() { root.copyBranchHash(branch) }
                 })
         } else {
-
             menu.push({
                 text: "Fetch",
                 icon: Style.icons.download,
