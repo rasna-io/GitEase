@@ -350,6 +350,7 @@ IPopup {
                 RowLayout {
                 id: pushCheckBox
                     property bool checked: true
+                    Layout.bottomMargin: root.sectionSpacing
 
                     spacing: 8
                 Layout.fillWidth: true
