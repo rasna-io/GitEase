@@ -19,7 +19,7 @@ UtilitiesCard {
     property AddBranchPopup   addBranchPopup: null
 
     property string           currentBranch:    ""
-    
+
     property NotificationController notificationController: null
 
     property GuideController  guideController: null
@@ -118,8 +118,8 @@ UtilitiesCard {
                     model: ["Local", "Remote"]
 
                     Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
                         radius: 4
                         color: (index === 0 && content.currentIndex === 0) ||
                                (index === 1 && content.currentIndex === 1)
@@ -134,7 +134,7 @@ UtilitiesCard {
                             color: (index === 0 && content.currentIndex === 0) ||
                                    (index === 1 && content.currentIndex === 1)
                                    ? Style.colors.utilitiesSegmentSelectedText
-                                                 : Style.colors.utilitiesSegmentText
+                                   : Style.colors.utilitiesSegmentText
                         }
 
                         MouseArea {
@@ -172,16 +172,14 @@ UtilitiesCard {
         }
 
         function update() {
-            if (branchController) {
-                root.currentBranch = branchController.getCurrentBranchName()
-                let res = branchController.getBranches();
+            root.currentBranch = branchController.getCurrentBranchName()
+            let res = branchController.getBranches();
 
-                content.localBranches = content.headFirst(res.filter(branch => branch["isLocal"]))
-                content.remoteBranches = res.filter(branch => branch["isRemote"])
+            content.localBranches = content.headFirst(res.filter(branch => branch["isLocal"]))
+            content.remoteBranches = res.filter(branch => branch["isRemote"])
 
-                content.updateModel(res)
-                root.badgeCount = content.localBranches.length + content.remoteBranches.length
-            }
+            content.updateModel(res)
+            root.badgeCount = content.localBranches.length + content.remoteBranches.length
         }
 
         //! Moves the checked-out branch to the top; the rest keep the order git reported.
