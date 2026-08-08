@@ -472,6 +472,7 @@ IPopup {
                         }
                     }
                 }
+    function creatBranch(){
                         let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
                         let notif = root.notificationController || (typeof uiSession !== "undefined" ? uiSession.notifications : null);
 
