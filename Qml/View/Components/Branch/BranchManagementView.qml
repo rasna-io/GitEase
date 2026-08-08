@@ -26,7 +26,7 @@ UtilitiesCard {
 
     /* Object Properties
      * ****************************************************************************************/
-    title: "Branch Management"
+    title: "Branches"
     icon: Style.icons.branch
 
     content: ColumnLayout {
