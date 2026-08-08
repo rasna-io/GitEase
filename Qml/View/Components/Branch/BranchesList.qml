@@ -55,7 +55,8 @@ ListView {
         readonly property bool isSelected: branchDelegate.branch.name === root.currentBranch
 
         width: root.width
-        height: Style.dp(30)
+        height: Style.dp(28)
+        radius: 4
 
         color: branchDelegate.isSelected ? Style.colors.utilitiesRowSelectedBackground
                                          : (hoverHandler.hovered ? Style.colors.utilitiesRowHoverBackground
@@ -96,9 +97,9 @@ ListView {
         RowLayout {
             anchors.fill: parent
             //! Constant inset so rows stay aligned whether or not the indicator is shown
-            anchors.leftMargin: Style.dp(16)
-            anchors.rightMargin: Style.dp(10)
-            spacing: Style.dp(8)
+            anchors.leftMargin: Style.dp(8)
+            anchors.rightMargin: Style.dp(8)
+            spacing: Style.dp(6)
 
             Text {
                 text: root.isLocal ? Style.icons.branch : Style.icons.globe
