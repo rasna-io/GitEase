@@ -39,14 +39,15 @@ IPopup {
 
     contentItem: Rectangle {
         color: Style.colors.primaryBackground
-        radius: 12
+        radius: 8
         clip: true
-        border.color: Style.colors.accent
+        border.color: Style.colors.popupBorder
         border.width: 1
 
         ColumnLayout {
-            spacing: 14
             anchors.fill: parent
+            spacing: 0
+
             // Header
             RowLayout {
                 Layout.fillWidth: true
@@ -472,6 +473,11 @@ IPopup {
                         }
                     }
                 }
+            }
+        }
+    }
+
+
     function creatBranch(){
                         let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
                         let notif = root.notificationController || (typeof uiSession !== "undefined" ? uiSession.notifications : null);
