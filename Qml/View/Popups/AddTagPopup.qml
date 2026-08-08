@@ -388,28 +388,44 @@ IPopup {
                     implicitHeight: 1
                     color: Style.colors.popupHeaderSeparator
                 }
+
+                // Footer
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 52
+                    color: Style.colors.popupFooterBackground
+
             RowLayout {
-                spacing: 12
+                        anchors.fill: parent
+                        anchors.leftMargin: 18
+                        anchors.rightMargin: 18
+                        spacing: 8
+
+                        Item {
                 Layout.fillWidth: true
+                        }
 
                 Button {
                     text: "Cancel"
                     Layout.preferredWidth: 100
-                    onClicked: root.close()
+                            Layout.alignment: Qt.AlignVCenter
+                            topPadding: 6
+                            bottomPadding: 6
+                            leftPadding: 14
+                            rightPadding: 14
 
                     background: Rectangle {
-                        implicitHeight: 36
+                                implicitHeight: 32
                         color: "transparent"
-                        border.color: Style.colors.accent
+                                border.color: Style.colors.popupCancelButtonBorder
                         border.width: 1
-                        radius: 6
+                                radius: 5
                         opacity: parent.hovered ? 1.0 : 0.7
                     }
 
                     contentItem: Text {
                         text: parent.text
-                        font: parent.font
-                        color: Style.colors.accent
+                                color: Style.colors.popupCancelButtonText
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         elide: Text.ElideRight
@@ -418,24 +434,44 @@ IPopup {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        acceptedButtons: Qt.NoButton
+                                onClicked: root.close()
                     }
                 }
 
                 Button {
                     id: actionBtn
                     text: "Create Tag"
-                    Layout.fillWidth: true
+                            Layout.preferredWidth: 130
+                            Layout.alignment: Qt.AlignVCenter
                     enabled: root.canAccept
+                            topPadding: 6
+                            bottomPadding: 6
+                            leftPadding: 16
+                            rightPadding: 16
 
                     background: Rectangle {
-                        implicitHeight: 36
-                        color: actionBtn.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
+                                implicitHeight: 32
+                                color: parent.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
                                                  : Style.colors.disabledButton
-                        radius: 6
+                                radius: 5
                     }
 
-            }
+                            contentItem: Text {
+                                text: parent.text
+                                color: Style.colors.secondaryForeground
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                elide: Text.ElideRight
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.createBranch()
+                            }
+                        }
+                    }
+                }
                         let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
                         let notif = root.notificationController || (typeof uiSession !== "undefined" ? uiSession.notifications : null);
 
