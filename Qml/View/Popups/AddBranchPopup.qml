@@ -380,6 +380,7 @@ IPopup {
                     implicitHeight: 25
                     radius: 5
                     color: Style.colors.popupCommandPreviewBackground
+                    Layout.bottomMargin: root.sectionSpacing
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
