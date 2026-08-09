@@ -31,7 +31,7 @@ IPopup {
 
     signal branchCreatedSuccessfully()
 
-    width: 300
+    width: 380
     height: 300
     padding: 0
 
