@@ -271,7 +271,6 @@ IPopup {
                     selectByMouse: true
                     enabled: root.isAnnotated
                     opacity: root.isAnnotated ? 1.0 : 0.5
-                    onAccepted: if (root.canAccept) actionBtn.clicked()
 
                     background: Rectangle {
                             implicitHeight: 26
