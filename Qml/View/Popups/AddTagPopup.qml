@@ -289,6 +289,10 @@ IPopup {
                     spacing: 5
                 Layout.fillWidth: true
                     Layout.bottomMargin: root.sectionSpacing
+                    visible: false
+                    // TODO: Implement commit picker to change the target commit.
+                    //       Currently the popup receives targetHash from the caller;
+                    //       a future dialog could let the user browse commits and set it.
 
                 Text {
                     text: "Tag Commit"
