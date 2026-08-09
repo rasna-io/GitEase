@@ -398,16 +398,9 @@ IPopup {
                 }
 
                 // Footer
-                Rectangle {
+                RowLayout {
                     Layout.fillWidth: true
-                    implicitHeight: 52
-                    color: Style.colors.popupFooterBackground
-
-            RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 18
-                        anchors.rightMargin: 18
-                        spacing: 8
+                    spacing: root.elementSpacing
 
                         Item {
                 Layout.fillWidth: true
@@ -476,7 +469,6 @@ IPopup {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: root.createTag()
-                            }
                         }
                     }
                 }
