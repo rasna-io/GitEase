@@ -402,26 +402,18 @@ IPopup {
                         color: Style.colors.popupCommandPreviewText
                     }
                 }
-            }
 
-            // Footer separator
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 1
-                color: Style.colors.popupHeaderSeparator
-            }
+                // Footer separator
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 1
+                    color: Style.colors.popupHeaderSeparator
+                }
 
-            // Footer
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 52
-                color: Style.colors.popupFooterBackground
-
+                // Footer
                 RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 18
-                    anchors.rightMargin: 18
-                    spacing: 8
+                    Layout.fillWidth: true
+                    spacing: root.elementSpacing
 
                     Item {
                         Layout.fillWidth: true
