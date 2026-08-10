@@ -350,6 +350,39 @@ QtObject {
         stashActionDangerBorder:             "#4A2A2E"
 
         stashDiffLinkHover:                  "#7AB9FF"
+
+        // Popup
+        popupBackground:                  "#0f0f12"  
+        popupBorder:                      "#222230"
+        popupHeaderSeparator:             "#1a1a22"
+        popupTitleText:                   "#c0c0d0"
+        popupCloseButton:                 "#3a3a50"
+        popupCloseButtonHover:            "#c0c0d0"
+        popupSectionLabel:                "#282838"
+        popupInputBackground:             "#0d0d0f"
+        popupInputBorder:                 "#1e1e28"
+        popupInputBorderFocus:            accent          
+        popupInputText:                   "#a0a0b8"
+        popupChipBackground:              "#0d0d0f"
+        popupChipBorder:                  "#1e1e28"
+        popupChipText:                    "#606078"
+        popupBaseBranchBackground:        "#0d0d0f"
+        popupBaseBranchBorder:            "#1e1e28"
+        popupBaseBranchText:              "#606078"
+        popupRadioBorder:                 "#606078"
+        popupRadioBorderChecked:          accent
+        popupRadioDot:                    "#FFFFFF"
+        popupCheckboxBackgroundChecked:   accent
+        popupCheckboxBorder:              "#606078"
+        popupCheckboxCheckmark:           "#FFFFFF"
+        popupCheckboxLabelText:           "#606078"
+        popupCommandPreviewBackground:    "#0d0d10"
+        popupCommandPreviewText:          "#2e2e42"
+        popupFooterBackground:            "#0c0c0e"
+        popupCreateButtonBackground:      accent
+        popupCreateButtonText:            "#FFFFFF"
+        popupCancelButtonBorder:          "#222228"
+        popupCancelButtonText:            "#404058"
     }
 
     property           string       currentTheme:               "Modern Light"
