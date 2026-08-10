@@ -182,5 +182,14 @@ QtObject {
     // Injected by MainWindow after the SwipeView is ready; forwarded into PluginController
     // so page plugins can add themselves to the navigation rail.
     property var pageController: null
+
+    property RemoteOperationsSession remoteOperationsSession: RemoteOperationsSession {
+        remoteController:        root.remoteController
+        repositoryController:    root.repositoryController
+        branchController:        root.branchController
+        notificationController:  root.notificationController
+        userAuthenticationPopup: root.popups?.userAuthenticationPopup
+        fetchSummaryPopup:       root.popups?.fetchSummaryPopup
+    }
 }
 
