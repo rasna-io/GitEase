@@ -247,7 +247,7 @@ Popup {
                 }
 
                 onClicked: {
-                    var field = fieldCombo.currentIndex > 0 ? root.filterFieldOptions[fieldCombo.currentIndex - 1] : ""
+                    var field = fieldCombo.currentIndex > 0 ? root.filterFieldOptions[fieldCombo.currentIndex] : ""
                     var branch = branchCombo.currentIndex > 0 ? root.branchNames[branchCombo.currentIndex - 1] : ""
                     root.applyRequested(field, root.startDate, root.endDate, branch)
                     root.close()
