@@ -260,7 +260,7 @@ Popup {
      * ****************************************************************************************/
     function fieldIndexFor(value) {
         var idx = root.filterFieldOptions.indexOf(value)
-        return idx >= 0 ? idx + 1 : 0
+        return idx >= 0 ? idx : 0
     }
 
     function branchIndexFor(value) {
