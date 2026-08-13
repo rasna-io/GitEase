@@ -165,7 +165,6 @@ Popup {
                     color: navCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
                 }
 
-                currentIndex: root.navigationRules.indexOf(root.navigationRule)
                 onActivated: function(index) {
                     root.navigationRuleSelected(root.navigationRules[index])
                 }
@@ -230,6 +229,7 @@ Popup {
                     root.branchFilter = ""
                     fieldCombo.currentIndex = 0
                     branchCombo.currentIndex = 0
+                    navCombo.currentIndex = 0
                     root.clearRequested()
                 }
             }
