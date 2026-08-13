@@ -614,17 +614,6 @@ DetachablePanel {
         }
     }
 
-    function clearFilter() {
-        root.filterText         = ""
-        root.filterStartDate    = ""
-        root.filterEndDate      = ""
-        root.filterMode         = []
-        root.branchFilter       = ""
-        root.branchFilterHeadHash = ""
-        root.navigationRule     = "Message"
-        loadData(root.allCommits.slice(0))
-    }
-
     function loadData(items) {
         var positions = layoutCommits(items)
         root.commitPositions = positions
