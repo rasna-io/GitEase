@@ -694,4 +694,8 @@ Page {
             root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
         }
     }
+
+    function onPageActivated() {
+        changesFileLists.updateStatus()
+    }
 }
