@@ -27,6 +27,10 @@ Item {
     property var    pendingFetchRemoteNames: []
     property var    fetchBatchResults:       []
 
+    /* Signal
+     * ****************************************************************************************/
+    signal fetchCompleted()
+
     /* Functions
      * ****************************************************************************************/
     function fetch() {
@@ -191,6 +195,9 @@ Item {
 
             root.isFetching = root.activeFetchRemotes.length > 0 || root.pendingFetchRemoteNames.length > 0
             if (root.activeFetchRemotes.length === 0 && root.pendingFetchRemoteNames.length === 0 && root.fetchBatchResults.length > 0) {
+
+                root.fetchCompleted()
+
                 if (root.fetchSummaryPopup) {
                     root.fetchSummaryPopup.results = []
                     root.fetchSummaryPopup.results = root.fetchBatchResults
