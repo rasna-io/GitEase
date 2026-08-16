@@ -31,6 +31,8 @@ Rectangle {
 
     property real               contentBottomInset: Style.dp(10)
 
+    readonly property Item contentItem: contentLoader.item
+
     /* Object Properties
      * ****************************************************************************************/
     width: Style.dp(279)
