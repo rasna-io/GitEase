@@ -153,6 +153,7 @@ Window {
     /* Object Properties
      * ****************************************************************************************/
     modality: Qt.ApplicationModal
+    flags: Qt.Window | Qt.FramelessWindowHint
     color: "transparent"
 
     width: 1100
