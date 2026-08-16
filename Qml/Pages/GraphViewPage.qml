@@ -156,6 +156,14 @@ Page {
         }
     }
 
+    Connections {
+        target: root.remoteOperationsSession
+
+        function onFetchCompleted() {
+            utilityPanel.reload()
+        }
+    }
+
     /* Children
      * ****************************************************************************************/
     RowLayout {
