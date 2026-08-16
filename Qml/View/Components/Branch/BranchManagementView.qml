@@ -203,4 +203,9 @@ UtilitiesCard {
         addBranchPopup.branchController = root.branchController
         addBranchPopup.open()
     }
+
+    function update() {
+        if (root.contentItem)
+            root.contentItem.update()
+    }
 }
