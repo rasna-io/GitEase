@@ -112,17 +112,26 @@ Rectangle {
             }
         }
 
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.topMargin: 6
+            Layout.preferredHeight: 1
+            color: Style.colors.primaryBorder
+            opacity: 0.5
+        }
 
         Item {
             id: continueButtonContainer
 
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 20
-            Layout.preferredWidth: 320
-            Layout.preferredHeight: 43
+            Layout.fillWidth: true
+            Layout.topMargin: 8
+            Layout.preferredHeight: 40
 
             ProgressButton {
-                anchors.fill: parent
+                id: continueButton
+                anchors.right: parent.right
+                width: 140
+                height: 40
                 progress: repositorySelector.progress
                 busy: repositorySelector.busy
 
@@ -131,11 +140,11 @@ Rectangle {
                         return (repositorySelector.progress) + " %"
                     }
                     if (!root.controller) {
-                        return "Continue " + Style.icons.arrowRight
+                        return "Continue  " + Style.icons.arrowRight
                     }
                     switch(root.controller.currentPageIndex) {
-                        case Enums.WelcomePages.WelcomeBanner: return "Get Started " + Style.icons.arrowRight
-                        default: return "Continue " + Style.icons.arrowRight
+                        case Enums.WelcomePages.WelcomeBanner: return "Get Started  " + Style.icons.arrowRight
+                        default: return "Continue  " + Style.icons.arrowRight
                     }
                 }
 
@@ -159,6 +168,59 @@ Rectangle {
                     }
                 }
 
+                background: Rectangle {
+                    radius: 8
+                    color: continueButton.enabled
+                           ? (continueButton.hovered ? Style.colors.accentHover : Style.colors.accent)
+                           : Style.colors.disabledButton
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 150
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: -1
+                        radius: parent.radius + 1
+                        color: "transparent"
+                        border.width: 1
+                        border.color: Qt.rgba(0, 0, 0, 0.06)
+                        z: -1
+                    }
+
+                    // Progress overlay
+                    Rectangle {
+                        anchors.fill: parent
+                        visible: continueButton.busy
+                        radius: 8
+                        color: "#CCCCCC"
+
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: parent.width * (continueButton.progress / 100.0)
+                            radius: 8
+                            color: Style.colors.accent
+
+                            Behavior on width {
+                                NumberAnimation {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+
+                contentItem: Text {
+                    text: continueButton.text
+                    font: continueButton.font
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
 
                 onClicked: {
                     if (!root.controller) return
