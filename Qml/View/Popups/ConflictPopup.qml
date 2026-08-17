@@ -499,7 +499,16 @@ Window {
     }
 
     function labelFor(file) {
-        return file.indexStatus || "M"
+        if (file.isUntracked)
+            return GitFileStatus.Untracked
+
+        switch (file.indexStatus) {
+            case "A": return GitFileStatus.StagedNew
+            case "M": return GitFileStatus.StagedModified
+            case "D": return GitFileStatus.StagedDeleted
+            case "R": return GitFileStatus.StagedRenamed
+            default:  return GitFileStatus.StagedModified
+        }
     }
 
     function selectFile(path, forceRebuild = false) {
