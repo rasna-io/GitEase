@@ -129,6 +129,12 @@ Rectangle {
                 anchors.rightMargin: 8
                 spacing: 10
 
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: 4
+
+                    // Tick / Cross
                 Text {
                     Layout.preferredWidth: 14
                     horizontalAlignment: Text.AlignHCenter
