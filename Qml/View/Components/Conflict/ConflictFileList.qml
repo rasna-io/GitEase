@@ -145,14 +145,16 @@ Rectangle {
                     text: delegateItem.hasMarkers ? Style.icons.circleExclamation
                                                   : Style.icons.circleCheck
 
-                    color: {
-                        if (delegateItem.hasMarkers)
-                            return Style.colors.conflictStatusConflictColor
+                    FileStatusTag {
+                        Layout.preferredWidth: 14
+                        Layout.preferredHeight: 14
+                        Layout.alignment: Qt.AlignVCenter
 
-                        if (delegateItem.modelData.status === "A")
-                            return Style.colors.conflictStatusAddedColor
+                        visible: delegateItem.isStaged
 
-                        return Style.colors.conflictStatusAddedColor
+                        compact: true
+                        showBackground: false
+                        fileStatus: delegateItem.modelData.status
                     }
                 }
 
