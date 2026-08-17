@@ -137,13 +137,24 @@ Rectangle {
                     // Tick / Cross
                 Text {
                     Layout.preferredWidth: 14
+Layout.preferredHeight: 14
+                        Layout.alignment: Qt.AlignVCenter
+
                     horizontalAlignment: Text.AlignHCenter
+verticalAlignment: Text.AlignVCenter
+
                     font.family: Style.fontTypes.font6Pro
                     font.styleName: "Solid"
                     font.pixelSize: Style.appFont.captionPt
 
-                    text: delegateItem.hasMarkers ? Style.icons.circleExclamation
+                    text: delegateItem.hasMarkers
+? Style.icons.circleExclamation
                                                   : Style.icons.circleCheck
+
+color: delegateItem.hasMarkers
+                               ? Style.colors.conflictStatusConflictColor
+                               : Style.colors.conflictStatusAddedColor
+                        }
 
                     FileStatusTag {
                         Layout.preferredWidth: 14
