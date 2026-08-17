@@ -90,7 +90,7 @@ Item {
                     text: "No recent repositories"
                     horizontalAlignment: Text.AlignHCenter
                     font.family: Style.fontTypes.inter
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.captionPt
                     color: Style.colors.mutedText
                 }
 
