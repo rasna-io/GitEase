@@ -445,6 +445,9 @@ anchors.fill: parent
         }
 
         Button {
+            // TODO: Enable the Checkout button after implementing checkout for newly fetched remote branches.
+            //       Replace `visible: false` with `visible: modelData.hasAction === true`
+            //       and connect it to BranchController checkout logic.
             visible: false /*modelData.hasAction === true*/
 
             Layout.preferredWidth: 70
