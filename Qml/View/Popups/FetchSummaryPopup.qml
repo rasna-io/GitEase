@@ -36,28 +36,26 @@ property var updatedBranches: []
     modal: true
     focus: true
 
-    width: showRawOutput ? Math.min(parent ? parent.width * 0.9 : 1100, 1150)
-                         : Math.min(parent ? parent.width * 0.65 : 700, 750)
-    height: Math.min(parent ? parent.height * 0.85 : 700, 800)
+    width: 500
+    height: 420
 
-    Behavior on width { NumberAnimation { duration: 350; easing.type: Easing.OutQuint } }
+    padding: 0
 
-    onOpened: subtitleText = Qt.formatDateTime(new Date(), "MMM dd, yyyy • hh:mm ap")
 
-    background: Rectangle {
-        color: Style.colors.primaryBackground
-        radius: 20
-        border.color: Style.colors.primaryBorder
-        layer.enabled: true
-        layer.effect: DropShadow {
-            transparentBorder: true; radius: 28; samples: 36; color: "#60000000"; verticalOffset: 12
-        }
     }
 
     /* Children
      * ****************************************************************************************/
 
-    contentItem: ColumnLayout {
+    contentItem: Rectangle {
+        color: Style.colors.popupBackground
+        radius: 8
+        clip: true
+        border.color: Style.colors.popupBorder
+        border.width: 1
+
+ColumnLayout {
+anchors.fill: parent
         spacing: 0
 
         Rectangle {
