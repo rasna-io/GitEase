@@ -112,7 +112,31 @@ anchors.fill: parent
                 implicitHeight: 1
                 color: Style.colors.popupHeaderSeparator
             }
+
+            // Body
+            ScrollView {
+                id: bodyScroll
+
                     Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+
+                clip: true
+
+                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+
+                ColumnLayout {
+                    id: bodyColumn
+
+                    width: bodyScroll.availableWidth
+
+                    spacing: 0
+
+                    // Body horizontal padding
+                    Item {
+                        Layout.preferredHeight: 14
                 }
 
                 Row {
