@@ -11,7 +11,7 @@ import GitEase_Style_Impl
  * ManageStashPopup
  * ************************************************************************************************/
 
-IPopup {
+IWindow {
     id: root
 
     /* Property Declarations
@@ -91,7 +91,8 @@ IPopup {
      * ****************************************************************************************/
     width: 800
     height: 650
-    padding: 0
+    minimumWidth: 560
+    minimumHeight: 440
 
     onStashEntryChanged: {
         if (!root.stashEntry || !root.statusController) {
@@ -116,9 +117,18 @@ IPopup {
         }
     }
 
+    /* Shortcuts
+     * ****************************************************************************************/
+    Shortcut {
+        sequence: "Escape"
+        enabled: root.visible
+        onActivated: root.close()
+    }
+
     /* Children
      * ****************************************************************************************/
-    contentItem: Rectangle {
+    Rectangle {
+        anchors.fill: parent
         color: Style.colors.primaryBackground
         radius: 6
         clip: true
@@ -135,6 +145,8 @@ IPopup {
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
                 Layout.topMargin: 6
+
+                windowController: root.windowController
 
                 title:    root.headerTitle
                 stashRef: root.stashRef
