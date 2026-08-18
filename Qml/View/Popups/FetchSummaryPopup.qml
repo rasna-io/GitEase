@@ -389,32 +389,6 @@ anchors.fill: parent
                     }
                 }
             }
-
-            Rectangle {
-                Layout.fillHeight: true
-
-                Layout.preferredWidth: root.showRawOutput ? 380 : 0
-                color: Style.colors.secondaryBackground
-                clip: true
-                visible: root.showRawOutput
-
-                Behavior on Layout.preferredWidth { NumberAnimation { duration: 350; easing.type: Easing.OutQuint } }
-
-                ColumnLayout {
-                    anchors.fill: parent; anchors.margins: 20; spacing: 12
-                    Text { text: "RAW TERMINAL LOG"; font.pixelSize: Style.appFont.smallPt; font.weight: Font.Black; color: Style.colors.mutedText; font.letterSpacing: 1 }
-
-                    Rectangle { Layout.fillWidth: true; height: 1; color: Style.colors.primaryBorder }
-
-                    ScrollView {
-                        Layout.fillWidth: true; Layout.fillHeight: true
-                        Text {
-                            width: parent.width; text: logText(results)
-                            font.family: Style.fontTypes.jetBrainsMono; font.pixelSize: Style.appFont.defaultPt; color: Style.colors.secondaryText; wrapMode: Text.Wrap; lineHeight: 1.4
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -634,21 +608,28 @@ anchors.fill: parent
 
         return branch
     }
+
+    function shortSha(value) {
+        if (!value)
+            return ""
+
+        const text = String(value)
+
+        if (text.length <= 7)
+            return text
+
+        return text.substring(0, 7)
+    }
+
     function successCount(arr) {
-        return arr ? arr.filter(i => i.success).length : 0
+        return arr ? arr.filter(function(item) {
+            return item && item.success
+        }).length : 0
     }
 
     function failureCount(arr) {
-        return arr ? arr.filter(i => !i.success).length : 0
-    }
-
-    function shortSha(ts) {
-        return ts ? ts.split('T')[1].substring(0,5) : ""
-    }
-
-    function logText(res) {
-        let lines = [];
-        res.forEach(r => { if(r.data && r.data.log) lines = lines.concat(r.data.log) });
-        return lines.length ? lines.join("\n") : "No output recorded."
+        return arr ? arr.filter(function(item) {
+            return item && !item.success
+        }).length : 0
     }
 }
