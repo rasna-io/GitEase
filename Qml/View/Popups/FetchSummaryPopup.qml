@@ -344,6 +344,9 @@ anchors.fill: parent
                             }
 
                     Button {
+                        // TODO: Implement "Pull main now →" action.
+                        //       Enable this button after connecting it to the pull operation
+                        //       for the fetched main branch.
                         visible: false
                         id: actionBtn
                         Layout.preferredWidth: 130
