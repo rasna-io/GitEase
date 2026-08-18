@@ -171,6 +171,25 @@ void BorderlessWindowHelper::setMinimumSize(const QSize &newSize)
     m_minimumSize = newSize;
 }
 
+void BorderlessWindowHelper::refreshBorderless()
+{
+#ifdef Q_OS_WIN
+    if (!m_window)
+        return;
+
+    HWND hwnd = reinterpret_cast<HWND>(m_window->winId());
+    if (!hwnd)
+        return;
+
+    if (hwnd != m_hwnd)
+        m_hwnd = hwnd;
+
+    applyBorderlessNow();
+
+    ::EnableWindow(m_hwnd, TRUE);
+#endif
+}
+
 #ifdef Q_OS_WIN
 bool BorderlessWindowHelper::minimizePreservingState()
 {
@@ -252,6 +271,13 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
     case WM_SHOWWINDOW:
     {
         if (msg->wParam) { // becoming visible
+            HWND currentHwnd = m_window ? reinterpret_cast<HWND>(m_window->winId()) : nullptr;
+            if (currentHwnd && currentHwnd != m_hwnd)
+                m_hwnd = currentHwnd;
+
+            if (reinterpret_cast<HWND>(msg->hwnd) != m_hwnd)
+                return false; // not our window
+
             // Reassert styles and framecalc
             ensureWindowStyles();
             ::SetWindowPos(m_hwnd, nullptr, 0,0,0,0,
