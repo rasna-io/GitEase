@@ -195,34 +195,42 @@ anchors.fill: parent
                     Item {
                         Layout.preferredHeight: root.sectionSpacing
                     }
+
+                    // Updated Section
+                    Text {
+                        text: "Updated branches(" +
+                              root.updatedBranches.length +
+                              ")"
+
+                        Layout.fillWidth: true
+
+                        color: Style.colors.popupSectionLabel
+
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
+                        font.weight: Font.DemiBold
+                        font.capitalization: Font.AllUppercase
         }
 
+                    // separator
         Rectangle {
             Layout.fillWidth: true
-            Layout.leftMargin: 20
-            Layout.rightMargin: 20
-            Layout.preferredHeight: 44
-            color: Style.colors.secondaryBackground
-            border.color: Style.colors.primaryBorder
-            border.width: 1
+                        implicitHeight: 1
+                        color: Style.colors.popupHeaderSeparator
+                    }
 
+                    Item {
+                        Layout.preferredHeight: 6
+                    }
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 20
-                anchors.rightMargin: 20
-
-                CheckBox {
-                    id: rawLogCheck
-                    checked: root.showRawOutput
-                    text: "Show Raw Terminal Output"
-                    onCheckedChanged: root.showRawOutput = checked
-                    Material.accent: Style.colors.accent
-                    Material.foreground: Style.colors.foreground
-
+                    Repeater {
+                        model: root.updatedBranches
+                        delegate: FetchRow {}
                 }
 
-                Item { Layout.fillWidth: true }
+                    Item {
+                        Layout.preferredHeight: 12
+                    }
 
                 Text {
                     text: "View: " + (root.showRawOutput ? "Standard" : "Compact")
