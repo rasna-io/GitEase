@@ -230,6 +230,24 @@ anchors.fill: parent
                     Repeater {
                         model: root.updatedBranches
                         delegate: FetchRow {}
+                    // Updated empty state
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 100
+
+                        visible: root.updatedBranches.length === 0
+
+                        EmptyStateView {
+                            anchors.fill: parent
+
+                            title: root.failureCount(root.results) > 0
+                                   ? "Fetch failed"
+                                   : "No updated branches"
+
+                            details: root.failureCount(root.results) > 0
+                                     ? "Check your credentials or network connection."
+                                     : "No new updated branches were found."
+                        }
                 }
 
                     Item {
