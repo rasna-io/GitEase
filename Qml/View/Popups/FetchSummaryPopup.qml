@@ -232,12 +232,37 @@ anchors.fill: parent
                         Layout.preferredHeight: 12
                     }
 
+                    //New Section
                 Text {
-                    text: "View: " + (root.showRawOutput ? "Standard" : "Compact")
-                    font.pixelSize: Style.appFont.smallPt
-                    color: Style.colors.mutedText
+                        text: "New branches (" +
+                              root.newBranches.length +
+                              ")"
+
+                        Layout.fillWidth: true
+
+                        color: Style.colors.popupSectionLabel
+
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
+                        font.weight: Font.DemiBold
                     font.capitalization: Font.AllUppercase
                 }
+
+                    // separator
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 1
+                        color: Style.colors.popupHeaderSeparator
+                    }
+
+                    Item {
+                        Layout.preferredHeight: 6
+                    }
+
+                    Repeater {
+                        model: root.newBranches
+                        delegate: FetchRow {}
+                    }
             }
         }
 
