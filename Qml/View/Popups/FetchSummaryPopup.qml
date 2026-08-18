@@ -290,9 +290,19 @@ anchors.fill: parent
                         Layout.preferredHeight: 6
                     }
 
+                    // New branch rows
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 0
+
+                        visible: root.newBranches.length > 0
+
                     Repeater {
                         model: root.newBranches
                         delegate: FetchRow {}
+}
+                    }
+
                     // New branches empty state
                     Item {
                         Layout.fillWidth: true
