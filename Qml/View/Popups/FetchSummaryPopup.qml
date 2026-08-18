@@ -28,6 +28,9 @@ IPopup {
 
     readonly property color errorAccent:   Style.colors.notificationErrorIcon
 
+    readonly property int sectionSpacing: 12
+    readonly property int elementSpacing: 2
+
 property var updatedBranches: []
     property var newBranches    : []
 
