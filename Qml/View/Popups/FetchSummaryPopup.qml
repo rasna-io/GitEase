@@ -343,6 +343,7 @@ anchors.fill: parent
                             }
 
                     Button {
+                        visible: false
                         id: actionBtn
                         Layout.preferredWidth: 130
 
