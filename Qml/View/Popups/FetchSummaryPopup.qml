@@ -139,42 +139,62 @@ anchors.fill: parent
                         Layout.preferredHeight: 14
                 }
 
-                Row {
+                    // Subtitle Text
+                    RowLayout {
+                        Layout.fillWidth: true
                     spacing: 8
-                    StatChip {
-                        label: "Total";
-                        value: results.length;
-                        accent: root.infoAccent
-                    }
-                    StatChip {
-                        label: "Success";
-                        value: successCount(results);
-                        accent: root.successAccent;
-                        visible: value > 0
-                    }
-                    StatChip {
-                        label: "Failed";
-                        value: failureCount(results);
-                        accent: root.errorAccent;
-                        visible: value > 0
-                    }
-                }
 
-                Button {
-                    id: closeBtn; flat: true; onClicked: root.close()
-                    contentItem: Text {
-                        text: "✕";
-                        color: closeBtn.hovered ? Style.colors.foreground : Style.colors.mutedText;
-                        font.pixelSize: Style.appFont.h2Pt
+                        Item {
+                            width: 12
+                            height: 12
+                            Layout.alignment: Qt.AlignVCenter
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: width / 2
+                                color: "transparent"
+                                border.color: Style.colors.popupCancelButtonText
+                                border.width: 1
+                            }
+
+                            Rectangle {
+                                width: 1
+                                height: 10
+                                anchors.centerIn: parent
+                                color: Style.colors.popupCancelButtonText
+                            }
+
+                            Rectangle {
+                                width: 10
+                                height: 1
+                                anchors.centerIn: parent
+                                color: Style.colors.popupCancelButtonText
+                            }
+
+                            Rectangle {
+                                width: 1
+                                height: 10
+                                anchors.centerIn: parent
+                                rotation: 60
+                                color: Style.colors.popupCancelButtonText
+                                visible: false
+                            }
+                        }
+
+                        Text {
+                            text: root.subtitleText
+
+                            Layout.fillWidth: true
+
+                            color: Style.colors.popupCancelButtonText
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.defaultPt
+                        }
                     }
-                    background: Rectangle {
-                        implicitWidth: 32;
-                        implicitHeight: 32;
-                        radius: 8;
-                        color: closeBtn.hovered ? Style.colors.surfaceLight : "transparent"
+
+                    Item {
+                        Layout.preferredHeight: root.sectionSpacing
                     }
-                }
-            }
         }
 
         Rectangle {
@@ -321,6 +341,39 @@ anchors.fill: parent
     /* Functions
      * ****************************************************************************************/
 
+    function remoteSummary() {
+        if (!results || results.length === 0)
+            return ""
+
+        let names = []
+
+        for (let i = 0; i < results.length; ++i) {
+            const remote = results[i] && results[i].remote
+                         ? String(results[i].remote)
+                         : ""
+
+            if (remote.length > 0 && names.indexOf(remote) === -1)
+                names.push(remote)
+        }
+
+        if (names.length === 0)
+            return "origin"
+
+        return names.join(", ")
+    }
+
+    function fetchSubtitle() {
+        const remote = remoteSummary()
+
+        if (remote.length === 0)
+            return "fetched just now"
+
+        if (remote.indexOf(",") === -1)
+            return remote + " · fetched just now"
+
+        return remote + " · fetched just now"
+    }
+
     function buildFetchGroups() {
         let updatedBranches     = []
         let newBranches         = []
@@ -383,6 +436,16 @@ anchors.fill: parent
 
         root.updatedBranches    = updatedBranches
         root.newBranches        = newBranches
+    }
+
+    function remoteBranchName(remote, branch) {
+        if (!remote)
+            return branch
+
+        if (branch.indexOf(remote + "/") === 0)
+            return branch
+
+        return branch
     }
     function successCount(arr) {
         return arr ? arr.filter(i => i.success).length : 0
