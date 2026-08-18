@@ -443,7 +443,6 @@ anchors.fill: parent
             visible: false /*modelData.hasAction === true*/
 
             Layout.preferredWidth: 70
-            // Layout.preferredHeight: 24
 
             leftPadding: 8
             rightPadding: 8
