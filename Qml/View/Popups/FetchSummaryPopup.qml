@@ -14,8 +14,6 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property bool       showRawOutput: true
-
     property var        results:        []
 
     property string     titleText:      "Fetch Summary"
