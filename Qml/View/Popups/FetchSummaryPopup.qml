@@ -266,65 +266,124 @@ anchors.fill: parent
             }
         }
 
-        RowLayout {
+            // Footer separator
+            Rectangle {
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.leftMargin: 20
-            Layout.rightMargin: 20
-            spacing: 0
+                implicitHeight: 1
+                color: Style.colors.popupHeaderSeparator
+            }
 
-            ScrollView {
-                Layout.fillWidth: true; Layout.fillHeight: true; clip: true
-                ListView {
-                    model: results; spacing: 10
-                    topMargin: 20; bottomMargin: 20; leftMargin: 20; rightMargin: 20
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 52
 
-                    delegate: Rectangle {
-                        width: ListView.view.width - 40
-                        implicitHeight: cardCol.implicitHeight + 24
-                        radius: 12; color: Style.colors.secondaryBackground
-                        border.color: Style.colors.primaryBorder
+                color: Style.colors.popupFooterBackground
 
-                        ColumnLayout {
-                            id: cardCol; anchors.fill: parent; anchors.margins: 16; spacing: 10
                             RowLayout {
-                                Text {
-                                    text: modelData.remote; font.weight: Font.DemiBold
-                                    font.pixelSize: Style.appFont.h3Pt; color: Style.colors.foreground
-                                }
-                                Rectangle {
-                                    width: 4;
-                                    height: 4;
-                                    radius: 2;
-                                    color: Style.colors.primaryBorder
-                                }
-                                Text {
-                                    text: modelData.success ? "Successfully fetched" : "Fetch failed"
-                                    font.pixelSize: Style.appFont.mediumPt;
-                                    color: modelData.success ? root.successAccent : root.errorAccent
-                                }
-                                Item { Layout.fillWidth: true }
-                                Text {
-                                    text: shortSha(modelData.data.timestamp);
-                                    font.pixelSize: Style.appFont.defaultPt;
-                                    color: Style.colors.mutedText
+                    anchors.fill: parent
+
+                    anchors.leftMargin: 18
+                    anchors.rightMargin: 18
+
+                    spacing: 8
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    Button {
+                        text: "Close"
+
+                        Layout.preferredWidth: 100
+
+                        leftPadding     : 14
+                        rightPadding    : 14
+                        topPadding      : 6
+                        bottomPadding   : 6
+
+                        background: Rectangle {
+                            implicitHeight: 32
+
+                            radius: 5
+
+                            color: "transparent"
+
+                            border.color: Style.colors.popupCancelButtonBorder
+
+                            border.width: 1
+
+                            opacity: closeFooterMouse.containsMouse ? 1.0 : 0.7
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+
+                            color: Style.colors.popupCancelButtonText
+
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.defaultPt
+
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        MouseArea {
+                            id: closeFooterMouse
+
+                            anchors.fill: parent
+
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+
+                            onClicked: root.close()
                                 }
                             }
 
-                            ColumnLayout {
-                                Layout.fillWidth: true; spacing: 4
-                                visible: modelData.data.heads.length > 0
-                                Repeater {
-                                    model: modelData.data.heads
-                                    delegate: RowLayout {
-                                        Text { text: "•"; color: root.infoAccent }
-                                        Text {
-                                            text: modelData.summary.trim()
-                                            font.family: Style.fontTypes.jetBrainsMono; font.pixelSize: Style.appFont.defaultPt
-                                            color: Style.colors.secondaryText; Layout.fillWidth: true; elide: Text.ElideRight
-                                        }
-                                    }
-                                }
+                    Button {
+                        id: actionBtn
+                        Layout.preferredWidth: 130
+
+                        topPadding      : 6
+                        bottomPadding   : 6
+                        leftPadding     : 16
+                        rightPadding    : 16
+
+                        enabled: false
+
+
+                        background: Rectangle {
+                            implicitHeight: 32
+
+                            radius: 5
+
+                            color: parent.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
+                                                  : Style.colors.disabledButton
+
+                            border.width: 1
+
+                            opacity: enabled ? 1.0 : 0.5
+                        }
+
+                        contentItem: Text {
+                            text: "Pull main now →"
+
+                            color: Style.colors.secondaryForeground
+
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.defaultPt
+                            font.weight: Font.DemiBold
+
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: actionBtn.enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+
+                            onClicked: {
+                                // TODO: Implement "Pull main now →".
+                                //       Trigger pull of the fetched main branch.
                             }
                         }
                     }
