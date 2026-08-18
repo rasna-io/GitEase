@@ -58,34 +58,53 @@ ColumnLayout {
 anchors.fill: parent
         spacing: 0
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 70
-            color: "transparent"
-
+            // Header
             RowLayout {
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 16
+                Layout.fillWidth: true
+                Layout.preferredHeight: 48
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                spacing: 8
 
+                // Title
                 Text {
-                    text: titleText
-                    color: Style.colors.foreground
-                    font.pixelSize: Style.appFont.xlPt
-                    font.weight: Font.Bold
-                }
+                    text: root.titleText
 
-                Rectangle {
-                    width: 1;
-                    height: 16;
-                    color: Style.colors.primaryBorder;
-                    Layout.leftMargin: 4
-                }
+                    Layout.fillWidth: true
 
-                Text {
-                    text: subtitleText
-                    color: Style.colors.mutedText
+                    color: Style.colors.popupTitleText
+                    font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
+                    font.weight: Font.DemiBold
+                }
+
+                // Close Button
+                Text {
+                    text: "\u00d7"
+
+                    color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
+                                                    : Style.colors.popupCloseButton
+
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.h2Pt
+
+                    width: 18
+                    height: 18
+
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+
+                    MouseArea {
+                        id: closeMouse
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: root.close()
+                    }
+                }
+            }
                     Layout.fillWidth: true
                 }
 
