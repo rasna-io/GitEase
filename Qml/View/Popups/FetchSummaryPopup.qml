@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 
+import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
