@@ -129,6 +129,7 @@ anchors.fill: parent
                 clip: true
 
                 ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                 ColumnLayout {
                     id: bodyColumn
