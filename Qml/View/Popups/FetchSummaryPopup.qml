@@ -293,6 +293,24 @@ anchors.fill: parent
                     Repeater {
                         model: root.newBranches
                         delegate: FetchRow {}
+                    // New branches empty state
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 100
+
+                        visible: root.newBranches.length === 0
+
+                        EmptyStateView {
+                            anchors.fill: parent
+
+                            title: root.failureCount(root.results) > 0
+                                   ? "Fetch failed"
+                                   : "No new branches"
+
+                            details: root.failureCount(root.results) > 0
+                                     ? "Check your credentials or network connection."
+                                     : "No new remote branches were found."
+                        }
                     }
             }
         }
