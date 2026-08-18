@@ -44,6 +44,11 @@ property var updatedBranches: []
 
     padding: 0
 
+    onOpened: {
+        buildFetchGroups()
+        subtitleText = fetchSubtitle()
+    }
+
 
     }
 
