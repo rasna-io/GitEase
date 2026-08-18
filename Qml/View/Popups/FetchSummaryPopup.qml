@@ -417,7 +417,7 @@ anchors.fill: parent
             verticalAlignment: Text.AlignVCenter
         }
 
-        Text {
+        ScrollingText {
             text: modelData.name
 
             Layout.fillWidth: true
@@ -426,11 +426,9 @@ anchors.fill: parent
 
             font.family: Style.fontTypes.jetBrainsMono
             font.pixelSize: Style.appFont.defaultPt
-
-            elide: Text.ElideRight
         }
 
-        Text {
+        ScrollingText {
             text: modelData.meta
 
             Layout.maximumWidth: 220
@@ -439,9 +437,6 @@ anchors.fill: parent
             color: Style.colors.utilitiesRowSubText
             font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.smallPt
-
-            horizontalAlignment: Text.AlignRight
-            elide: Text.ElideLeft
         }
 
         Button {
