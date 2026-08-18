@@ -470,7 +470,7 @@ anchors.fill: parent
             }
 
             background: Rectangle {
-                implicitHeight: 32
+                implicitHeight: 20
 
                 radius: 4
 
