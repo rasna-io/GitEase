@@ -273,6 +273,69 @@ property var updatedBranches: []
     /* Functions
      * ****************************************************************************************/
 
+    function buildFetchGroups() {
+        let updatedBranches     = []
+        let newBranches         = []
+
+        for (let r = 0; r < results.length; ++r) {
+            const result = results[r]
+
+            if (!result || !result.data)
+                continue
+
+            const heads = result.data.heads || []
+
+            for (let i = 0; i < heads.length; ++i) {
+                const head = heads[i] || {}
+
+                const branchName    = head.branch || head.ref || ""
+                const oldCommit     = head.oldCommit || ""
+                const newCommit     = head.newCommit || ""
+                const summary       = String(head.summary || "").trim()
+
+                if (branchName.length === 0 && summary.length === 0)
+                    continue
+
+                const shortOld = shortSha(oldCommit)
+                const shortNew = shortSha(newCommit)
+
+                const isNewBranch =
+                        oldCommit.length === 0 ||
+                        summary.indexOf("[new branch]") !== -1
+
+                if (isNewBranch) {
+                    newBranches.push({
+                        icon: "+",
+                        name: branchName.length > 0 ? remoteBranchName(result.remote, branchName) : summary,
+                        meta: "",
+                        hasAction: true
+                    })
+
+                    continue
+                }
+
+                let meta = ""
+
+                if (shortOld.length > 0 && shortNew.length > 0) {
+                    meta = shortOld + " → " + shortNew
+                } else if (summary.length > 0) {
+                    meta = summary
+                }
+
+                updatedBranches.push({
+                    icon: "↓",
+                    name: branchName.length > 0
+                          ? branchName
+                          : summary,
+                    meta: meta,
+                    hasAction: false
+                })
+            }
+        }
+
+        root.updatedBranches    = updatedBranches
+        root.newBranches        = newBranches
+    }
     function successCount(arr) {
         return arr ? arr.filter(i => i.success).length : 0
     }
