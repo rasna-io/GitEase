@@ -47,9 +47,6 @@ property var updatedBranches: []
         subtitleText = fetchSubtitle()
     }
 
-
-    }
-
     /* Children
      * ****************************************************************************************/
 
