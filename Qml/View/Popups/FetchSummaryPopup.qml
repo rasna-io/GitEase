@@ -202,7 +202,7 @@ anchors.fill: parent
 
                     // Updated Section
                     Text {
-                        text: "Updated branches(" +
+                        text: "Updated branches (" +
                               root.updatedBranches.length +
                               ")"
 
