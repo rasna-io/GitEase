@@ -326,15 +326,110 @@ anchors.fill: parent
         }
     }
 
-    // --- SHARED COMPONENTS ---
-    component StatChip : Rectangle {
-        property string label; property string value; property color accent
-        implicitWidth: statRow.implicitWidth + 20; implicitHeight: 28; radius: 6
-        color: Qt.rgba(accent.r, accent.g, accent.b, 0.08)
-        border.color: Qt.rgba(accent.r, accent.g, accent.b, 0.15)
-        RowLayout { id: statRow; anchors.centerIn: parent; spacing: 6
-            Text { text: label; color: Style.colors.mutedText; font.pixelSize: Style.appFont.smallPt }
-            Text { text: value; color: accent; font.pixelSize: Style.appFont.defaultPt; font.weight: Font.Bold }
+    component FetchRow: RowLayout {
+
+        Layout.fillWidth: true
+        Layout.preferredHeight: 28
+        spacing: 8
+
+        Text {
+            text: modelData.icon
+
+            Layout.preferredWidth: 14
+
+            color: modelData.iconColor
+                   || root.successAccent
+
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.mediumPt
+            font.weight: Font.Bold
+
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        Text {
+            text: modelData.name
+
+            Layout.fillWidth: true
+
+            color: Style.colors.utilitiesRowMetaText
+
+            font.family: Style.fontTypes.jetBrainsMono
+            font.pixelSize: Style.appFont.defaultPt
+
+            elide: Text.ElideRight
+        }
+
+        Text {
+            text: modelData.meta
+
+            Layout.maximumWidth: 220
+
+
+            color: Style.colors.utilitiesRowSubText
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.smallPt
+
+            horizontalAlignment: Text.AlignRight
+            elide: Text.ElideLeft
+        }
+
+        Button {
+            visible: modelData.hasAction === true
+
+            Layout.preferredWidth: 70
+            // Layout.preferredHeight: 24
+
+            leftPadding: 8
+            rightPadding: 8
+            topPadding: 2
+            bottomPadding: 2
+
+            contentItem: Text {
+                text: "Checkout"
+
+                color: checkoutButtonMouse.containsMouse
+                       ? Style.colors.utilitiesRowText
+                       : Style.colors.popupCancelButtonText
+
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.smallPt
+
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            background: Rectangle {
+                implicitHeight: 32
+
+                radius: 4
+
+                color: checkoutButtonMouse.containsMouse
+                       ? Style.colors.controlBackgroundHover
+                       : Style.colors.actionPillBg
+
+                border.color: Style.colors.actionPillBorder
+                border.width: 1
+            }
+
+            MouseArea {
+                id: checkoutButtonMouse
+
+                anchors.fill: parent
+
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+
+                onClicked: {
+                    // TODO: Implement checkout of newly fetched remote branch.
+                    //       e.g. branchController.checkoutBranch(modelData.name)
+                    console.log(
+                        "Checkout clicked for:",
+                        modelData.name
+                    )
+                }
+            }
         }
     }
 
