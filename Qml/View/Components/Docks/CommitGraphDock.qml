@@ -512,6 +512,7 @@ DetachablePanel {
 
     CommitPlanPopup {
         id: commitPlanPopup
+        hostItem: root.activeItem
         statusController: root.statusController
         commitController: root.commitController
         rebaseController: root.rebaseController
@@ -523,6 +524,7 @@ DetachablePanel {
 
     CommitFileBrowserPopup {
         id: commitFileBrowserPopup
+        hostItem: root.activeItem
         gitTreeController       : root.gitTreeController
         repositoryController    : root.repositoryController
         notificationController  : root.notificationController
@@ -1072,7 +1074,7 @@ DetachablePanel {
 
     function executeRebase(commitHash) {
 
-        commitPlanPopup.open()
+        commitPlanPopup.show()
 
         rebaseController.startPreviewRebasePlan("", commitHash, "")
     }
