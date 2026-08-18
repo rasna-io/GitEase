@@ -227,9 +227,18 @@ anchors.fill: parent
                         Layout.preferredHeight: 6
                     }
 
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 0
+
+                        visible: root.updatedBranches.length > 0
+
                     Repeater {
                         model: root.updatedBranches
                         delegate: FetchRow {}
+}
+                    }
+
                     // Updated empty state
                     Item {
                         Layout.fillWidth: true
