@@ -21,6 +21,8 @@ Item {
     property string stashRef:   ""
     property string metaText:   ""
 
+    property WindowController windowController: null
+
     /* Signals
      * ****************************************************************************************/
     signal closeRequested()
@@ -31,10 +33,18 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    // Drag-to-move header (buttons on top still receive clicks)
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onPressed: root.windowController?.startSystemMove()
+        onDoubleClicked: root.windowController?.toggleMaxRestore()
+    }
+
     ColumnLayout {
         id: titleColumn
         anchors.left: parent.left
-        anchors.right: closeButton.left
+        anchors.right: minimizeButton.left
         anchors.verticalCenter: parent.verticalCenter
         anchors.rightMargin: 12
         spacing: 3
@@ -71,6 +81,29 @@ Item {
             font.pixelSize: Style.appFont.captionPt
             elide: Text.ElideRight
         }
+    }
+
+    WindowsButton {
+        id: minimizeButton
+
+        anchors.right: closeButton.left
+        anchors.rightMargin: 6
+        anchors.verticalCenter: parent.verticalCenter
+        width: 22
+        height: 22
+
+        Material.accent: Style.colors.windowsMinimize
+
+        content: Rectangle {
+            anchors.centerIn: parent
+            width: 10
+            height: 2
+            radius: 1
+            color: minimizeButton.containsMouse ? Style.colors.primaryBackground
+                                                 : Style.colors.foreground
+        }
+
+        onClicked: root.windowController?.minimize()
     }
 
     WindowsButton {
