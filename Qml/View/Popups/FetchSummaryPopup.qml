@@ -445,7 +445,7 @@ anchors.fill: parent
         }
 
         Button {
-            visible: modelData.hasAction === true
+            visible: false /*modelData.hasAction === true*/
 
             Layout.preferredWidth: 70
             // Layout.preferredHeight: 24
@@ -493,10 +493,6 @@ anchors.fill: parent
                 onClicked: {
                     // TODO: Implement checkout of newly fetched remote branch.
                     //       e.g. branchController.checkoutBranch(modelData.name)
-                    console.log(
-                        "Checkout clicked for:",
-                        modelData.name
-                    )
                 }
             }
         }
