@@ -28,6 +28,8 @@ IPopup {
 
     readonly property color errorAccent:   Style.colors.notificationErrorIcon
 
+property var updatedBranches: []
+    property var newBranches    : []
 
     /* Object Properties
      * ****************************************************************************************/
