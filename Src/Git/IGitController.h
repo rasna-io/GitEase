@@ -24,6 +24,14 @@ public:
     QString gitOidToString(const git_oid *oid);
 
     /**
+     * @brief Queues a method for execution on the Git worker thread.
+     * @param method Name of a Q_INVOKABLE declared on this controller.
+     * @param args   Arguments, converted to the declared parameter types.
+     * @return A process-unique request id, or 0 when the call could not be queued.
+     */
+    Q_INVOKABLE qint64 callAsync(const QString &method, const QVariantList &args = QVariantList());
+
+    /**
      * @brief Bumped every time currentRepo changes.
      *
      * Results produced for an older generation are dropped rather than delivered against the
