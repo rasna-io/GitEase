@@ -29,6 +29,10 @@ QRecursiveMutex *IGitController::repoMutex()
     return &mutex;
 }
 
+qint64 IGitController::repoGeneration() const
+{
+    return m_repoGeneration;
+}
 
 qint64 IGitController::callAsync(const QString &method, const QVariantList &args)
 {
