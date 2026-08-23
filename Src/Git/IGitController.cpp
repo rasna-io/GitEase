@@ -30,6 +30,11 @@ QRecursiveMutex *IGitController::repoMutex()
 }
 
 
+qint64 IGitController::callAsync(const QString &method, const QVariantList &args)
+{
+    return GitAsyncRunner::instance()->submit(this, method, args);
+}
+
 void IGitController::emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration)
 {
     emit asyncFinished(requestId, method, result, repoGeneration);
