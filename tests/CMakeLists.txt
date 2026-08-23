@@ -45,6 +45,7 @@ add_test(NAME test_file_io COMMAND test_file_io)
 
 add_library(gitease_git_backend_test_support STATIC
     ${CMAKE_SOURCE_DIR}/Src/Git/IGitController.cpp
+    ${CMAKE_SOURCE_DIR}/Src/Git/Async/GitAsyncRunner.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/GitResult.h
     ${CMAKE_SOURCE_DIR}/Src/Git/GitUtils.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/GitRepository.cpp
