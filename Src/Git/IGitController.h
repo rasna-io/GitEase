@@ -3,6 +3,8 @@
 #include "Repository.h"
 #include <QObject>
 #include <QQmlEngine>
+#include <QVariant>
+#include <QVariantList>
 #include <git2/deprecated.h>
 #include <QMutexLocker>
 #include <QMutex>
@@ -41,6 +43,11 @@ public:
      * the GUI thread take it via QMutexLocker directly.
      */
     static QRecursiveMutex *repoMutex();
+
+    //! Called by GitAsyncRunner on the GUI thread. Not meant for anything else.
+    void emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration);
+    void emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration);
+
 signals:
     void currentRepoChanged();
     void gitCommandGenerated(const QString &command);

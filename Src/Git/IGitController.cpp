@@ -30,6 +30,16 @@ QRecursiveMutex *IGitController::repoMutex()
 }
 
 
+void IGitController::emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration)
+{
+    emit asyncFinished(requestId, method, result, repoGeneration);
+}
+
+void IGitController::emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration)
+{
+    emit asyncFailed(requestId, method, error, repoGeneration);
+}
+
 QString IGitController::gitOidToString(const git_oid *oid)
 {
     if (!oid)
