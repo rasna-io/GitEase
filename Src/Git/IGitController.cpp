@@ -12,11 +12,20 @@ Repository *IGitController::currentRepo() const
 
 void IGitController::setCurrentRepo(Repository *newCurrentRepo)
 {
+    QMutexLocker<QRecursiveMutex> repoLocker(repoMutex());
+
     if (m_currentRepo == newCurrentRepo)
         return;
     m_currentRepo = newCurrentRepo;
     emit currentRepoChanged();
 }
+
+QRecursiveMutex *IGitController::repoMutex()
+{
+    static QRecursiveMutex mutex;
+    return &mutex;
+}
+
 
 QString IGitController::gitOidToString(const git_oid *oid)
 {
