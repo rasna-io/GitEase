@@ -22,6 +22,15 @@ public:
     QString gitOidToString(const git_oid *oid);
 
     /**
+     * @brief Bumped every time currentRepo changes.
+     *
+     * Results produced for an older generation are dropped rather than delivered against the
+     * wrong repository — this is what stops a slow status() on the previous repository from
+     * repainting the UI after the user has already switched away.
+     */
+    qint64 repoGeneration() const;
+
+    /**
      * @brief The lock every libgit2 access must hold.
      *
      * A `git_repository*` is not safe for concurrent use, and libgit2's own caches are shared
@@ -40,4 +49,7 @@ protected:
     static QString quoteCommandArg(const QString &argument);
 
     Repository *m_currentRepo = nullptr;
+
+private:
+    qint64 m_repoGeneration = 0;
 };

@@ -17,6 +17,9 @@ void IGitController::setCurrentRepo(Repository *newCurrentRepo)
     if (m_currentRepo == newCurrentRepo)
         return;
     m_currentRepo = newCurrentRepo;
+
+    ++m_repoGeneration;
+
     emit currentRepoChanged();
 }
 
