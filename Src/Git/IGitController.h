@@ -63,11 +63,11 @@ signals:
     void gitCommandGenerated(const QString &command);
 
     //! A queued call completed. \a result holds the result
-    void asyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration);
+    void asyncFinished(qint64 requestId, const QString &method, const QVariant &result, bool isRepoChanged);
 
     //! A queued call could not be delivered. \a error is "stale" when the repository changed
     //! underneath it, otherwise a resolution or invocation failure.
-    void asyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration);
+    void asyncFailed(qint64 requestId, const QString &method, const QString &error, bool isRepoChanged);
 
 protected:
     void emitGitCommand(const QString &command);
