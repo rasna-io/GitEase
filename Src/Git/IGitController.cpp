@@ -41,12 +41,14 @@ qint64 IGitController::callAsync(const QString &method, const QVariantList &args
 
 void IGitController::emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration)
 {
-    emit asyncFinished(requestId, method, result, repoGeneration);
+    bool isRepoChanged = (repoGeneration != m_repoGeneration);
+    emit asyncFinished(requestId, method, result, isRepoChanged);
 }
 
 void IGitController::emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration)
 {
-    emit asyncFailed(requestId, method, error, repoGeneration);
+   bool isRepoChanged = (repoGeneration != m_repoGeneration);
+    emit asyncFailed(requestId, method, error, isRepoChanged);
 }
 
 QString IGitController::gitOidToString(const git_oid *oid)
