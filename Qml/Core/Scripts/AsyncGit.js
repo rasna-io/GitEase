@@ -64,7 +64,7 @@ function _wire(controller) {
     _wired.push(controller)
 }
 
-function _onFinished(id, method, result) {
+function _onFinished(id, method, result, isRepoChanged) {
     var entry = _pending[id]
     if (!entry)
         return
@@ -72,10 +72,11 @@ function _onFinished(id, method, result) {
     delete _pending[id]
 
     if (entry.done)
-        entry.done(result, method)
+        if(isRepoChanged)
+            entry.done(result, method)
 }
 
-function _onFailed(id, method, error) {
+function _onFailed(id, method, error, isRepoChanged) {
     var entry = _pending[id]
     if (!entry)
         return
@@ -83,5 +84,6 @@ function _onFailed(id, method, error) {
     delete _pending[id]
 
     if (entry.fail)
-        entry.fail(error, method)
+        if(isRepoChanged)
+            entry.fail(error, method)
 }
