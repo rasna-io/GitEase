@@ -7,6 +7,7 @@ set(SOURCES_BACKEND
     Src/Utilities/UpdateManager/UpdateManager.cpp
 
     Src/Git/IGitController.cpp
+    Src/Git/Async/GitAsyncRunner.cpp
     Src/Git/GitRepository.cpp
     Src/Git/GitUtils.cpp
     Src/Git/GitBranch.cpp
@@ -52,6 +53,7 @@ set(HEADERS_BACKEND
     Src/Utilities/UpdateManager/UpdateManager.hpp
 
     Src/Git/IGitController.h
+    Src/Git/Async/GitAsyncRunner.h
     Src/Git/GitRepository.h
     Src/Git/GitResult.h
     Src/Git/GitUtils.h
@@ -111,6 +113,7 @@ set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Utilities/NetworkManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/UpdateManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/windowsManager/
+    ${CMAKE_SOURCE_DIR}/Src/Git/Async/
     ${CMAKE_SOURCE_DIR}/Src
     ${CMAKE_SOURCE_DIR}/Src/Git/
     ${CMAKE_SOURCE_DIR}/Src/Plugins/
