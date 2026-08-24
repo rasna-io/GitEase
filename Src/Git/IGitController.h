@@ -9,7 +9,7 @@
 #include <QMutexLocker>
 #include <QMutex>
 
-#include "Async/GitAsyncRunner.h"
+
 
 class IGitController : public QObject
 {

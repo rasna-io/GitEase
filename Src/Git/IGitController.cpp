@@ -1,5 +1,5 @@
 #include "IGitController.h"
-
+#include "Async/GitAsyncRunner.h"
 IGitController::IGitController(QObject *parent)
     : QObject{parent}
 {
