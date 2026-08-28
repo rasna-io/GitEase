@@ -22,8 +22,6 @@
 #include <QTimer>
 #include <git2/cherrypick.h>
 
-#include "QtConcurrent"
-
 GitRebase::GitRebase(QObject* parent)
     : IGitController{parent}
 {
@@ -51,27 +49,7 @@ GitResult GitRebase::startPreviewRebasePlan(const QString& onto,
     if (upstream.trimmed().isEmpty())
         return GitResult(false, QVariant(), "Upstream reference is required.");
 
-    const QString safeOnto     = onto;
-    const QString safeUpstream = upstream;
-    const QString safeBranch   = branch;
-
-    auto future = QtConcurrent::run(
-        [this, safeOnto, safeUpstream, safeBranch]() -> GitResult {
-
-            return previewRebasePlan(safeOnto,
-                                     safeUpstream,
-                                     safeBranch);
-        });
-
-    auto* watcher = new QFutureWatcher<GitResult>(this);
-    connect(watcher, &QFutureWatcher<GitResult>::finished, this,
-            [this, watcher]() {
-                emit previewRebasePlanReady(watcher->result());
-                watcher->deleteLater();
-            });
-    watcher->setFuture(future);
-
-    return GitResult(true);
+    return previewRebasePlan(onto, upstream, branch);
 }
 
 GitResult GitRebase::previewRebasePlan(const QString& onto,
