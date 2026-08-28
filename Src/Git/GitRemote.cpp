@@ -571,7 +571,9 @@ GitResult GitRemote::fetch(const QString& remote)
         }
     }
 
-    return startAsyncFetch(remote, std::move(auth));
+    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remote)));
+
+    return fetchInternal(remote, std::move(auth));
 }
 
 GitResult GitRemote::fetchWithToken(const QString& remote, const QString& token)
@@ -584,42 +586,9 @@ GitResult GitRemote::fetchWithToken(const QString& remote, const QString& token)
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    return startAsyncFetch(remote, std::make_unique<GitHttpsAuth>(token));
-}
+    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remote)));
 
-GitResult GitRemote::startAsyncFetch(const QString& remoteName,
-                                     std::unique_ptr<IGitAuth> auth)
-{
-    const QString safeRemote = remoteName;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeRemote,
-         auth = std::move(auth)]() mutable -> GitResult {
-            return fetchInternal(safeRemote, std::move(auth));
-        });
-
-    auto* watcher = new QFutureWatcher<GitResult>(this);
-
-    connect(watcher, &QFutureWatcher<GitResult>::finished,
-            this, [=]() {
-                const GitResult result = watcher->result();
-
-                QVariantMap payload;
-                payload["remote"] = safeRemote;
-                payload["success"] = result.success();
-                payload["errorMessage"] = result.errorMessage();
-                payload["data"] = result.data();
-
-                emit fetchFinished(payload);
-                watcher->deleteLater();
-            });
-
-    watcher->setFuture(future);
-
-    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remoteName)));
-
-    return GitResult(true, QVariant(), "Fetch started");
+    return fetchInternal(remote, std::make_unique<GitHttpsAuth>(token));
 }
 
 GitResult GitRemote::pull(const QString& remote, const QString& branch)
