@@ -1264,7 +1264,20 @@ DetachablePanel {
 
         commitPlanPopup.show()
 
-        rebaseController.startPreviewRebasePlan("", commitHash, "")
+        AsyncGit.call(rebaseController, "startPreviewRebasePlan", ["", commitHash, ""],
+            function(result) {
+                if (!result.success) {
+                    root.notificationController.error(result.errorMessage || "Failed to load rebase plan", "Rebase", 5000)
+                    commitPlanPopup.close()
+                    return
+                }
+                commitPlanPopup.showPlan(result.data)
+            },
+            function(error) {
+                root.notificationController.error(error || "Failed to load rebase plan", "Rebase", 5000)
+                commitPlanPopup.close()
+            }
+        )
     }
 
     function executeCherryPickSelected() {
