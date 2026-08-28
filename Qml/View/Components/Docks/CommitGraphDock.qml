@@ -76,6 +76,8 @@ DetachablePanel {
     property bool   isLoadingMore   : false
     property bool   hasMoreCommits  : true
 
+    property int    reloadToken     : 0
+
     property var commitPositions    : ({})
     property int commitItemHeight   : 24
     property int commitItemSpacing  : 4
