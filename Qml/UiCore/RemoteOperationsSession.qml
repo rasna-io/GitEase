@@ -98,7 +98,7 @@ Item {
         switch (protocol) {
         case RepositoryController.GitProtocol.SSH: {
             let branchName = branchController.getCurrentBranchName()
-            remoteController.push("origin", branchName, force)
+            root.startPush(branchName, force)
             if (notificationController)
                 notificationController.info("Push operation started", "Push", 3000)
 
@@ -209,20 +209,28 @@ Item {
             }
         }
 
-        function onPushFinished(result) {
-            if (!result || result.remote !== "origin")
-                return
+    function startPush(branchName, force, token) {
+        let args = token !== undefined ? ["origin", branchName, token, force] : ["origin", branchName, force]
+        AsyncGit.call(root.remoteController, "push", args,
+            function(result) { root.handlePushResult(result) },
+            function(error) { root.handlePushResult({ success: false, errorMessage: error }) }
+        )
+    }
 
+    function handlePushResult(gitResult) {
             root.isFetching = false
 
             if (!root.notificationController)
                 return
 
-            if (result.success) {
-                let isForce = result.data.force === true
+        let success = gitResult ? gitResult.success : false
+
+        if (success) {
+            let data = gitResult.data
+            let isForce = data && data.force === true
                 root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
             } else {
-                root.notificationController.error(result.errorMessage || "Push error", "Push Error", 5000)
+            root.notificationController.error((gitResult && gitResult.errorMessage) || "Push error", "Push Error", 5000)
             }
         }
 
@@ -275,7 +283,7 @@ Item {
                     root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
             } else {
                 let isForce = root.authPurpose === "pushForce"
-                root.remoteController.push("origin", branchName, password, isForce)
+                root.startPush(branchName, isForce, password)
                 if (root.notificationController)
                     root.notificationController.info("Push operation started", "Push", 3000)
             }
