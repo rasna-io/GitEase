@@ -2,6 +2,8 @@ import QtQuick
 
 import GitEase
 
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+
 /*! ***********************************************************************************************
  * RepositoryController
  * Manages repository operations including opening, cloning, and selecting repositories.
