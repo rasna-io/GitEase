@@ -53,20 +53,11 @@ UtilitiesCard {
 
         function onPasswordConfirm(password){
             if (root.authPurpose === "pull") {
-                let startRes = root.remoteController.pull(remote.name, "", password)
-                if (!startRes.success) {
-                    if (root.notificationController)
-                        root.notificationController.error(startRes.errorMessage || "Failed to start pull", "Pull Error", 5000)
-                    root.isFetching = false
-                    root.authPurpose = "fetch"
-                    return
-                }
                 root.isFetching = true
+                content.startPull([remote.name, "", password], remote.name)
             } else {
                 root.isFetching = true
-                let res = root.remoteController.fetchWithToken(remote.name, password)
-                if (res.success) {
-                    if (root.activeFetchRemotes.indexOf(remote.name) === -1)
+                if (root.activeFetchRemotes.indexOf(remote.name) === -1)
                     root.activeFetchRemotes.push(remote.name)
                 content.startFetch(remote.name)
             }
@@ -329,15 +320,8 @@ UtilitiesCard {
             let protocol = repositoryController.detectGitProtocol(url)
             switch (protocol) {
             case RepositoryController.GitProtocol.SSH:
-                let startRes = root.remoteController.pull(remoteItem.name)
-                if (!startRes.success) {
-                    if (root.notificationController)
-                        root.notificationController.error("Failed to pull from " + remoteItem.name + ": " + (startRes.errorMessage || "Failed to start pull"), "Pull Error", 7000)
-                    root.isFetching = false
-                    content.update()
-                    return
-                }
                 root.isFetching = true
+                content.startPull([remoteItem.name], remoteItem.name)
                 break
             case RepositoryController.GitProtocol.HTTPS:
             case RepositoryController.GitProtocol.HTTP:
@@ -366,6 +350,25 @@ UtilitiesCard {
                     root.notificationController.error("Failed to fetch from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Unknown error"), "Fetch Error", 7000)
             }
 
+            content.update()
+        }
+
+        function startPull(args, remoteName) {
+            AsyncGit.call(root.remoteController, "pull", args,
+                function(result) { content.handlePullResult(remoteName, result) },
+                function(error) { content.handlePullResult(remoteName, { success: false, errorMessage: error }) }
+            )
+        }
+
+        function handlePullResult(remoteName, gitResult) {
+            if (root.notificationController) {
+                if (gitResult && gitResult.success)
+                    root.notificationController.success("Successfully pulled from " + remoteName, "Pull", 5000)
+                else
+                    root.notificationController.error("Failed to pull from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Pull failed"), "Pull Error", 7000)
+            }
+
+            root.isFetching = false
             content.update()
         }
 
