@@ -65,7 +65,23 @@ UtilitiesCard {
     function pushTagToRemote(tag) {
         notificationController.info("Pushing tag to remote...", "Tag", 1500);
 
-        tagController.pushTag(tag.name);
+        AsyncGit.call(tagController, "pushTag", [tag.name],
+            function(result) {
+                if (result.success) {
+                    if (root.notificationController)
+                        root.notificationController.success("Tag pushed to remote", "Success", 3000)
+                } else {
+                    if (root.notificationController)
+                        root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
+                }
+                root.update()
+            },
+            function(error) {
+                if (root.notificationController)
+                    root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
+                root.update()
+            }
+        );
     }
 
     function copyTagName(tag) {
@@ -287,34 +303,6 @@ UtilitiesCard {
     Connections {
         target: (typeof uiSession !== "undefined") ? uiSession : null
         function onTagControllerChanged() { root.update() }
-    }
-
-    Connections {
-        target: root.tagController || uiSession.tagController
-
-        function onPushTagFinished(result) {
-            if (result.success) {
-                if (root.notificationController)
-                    root.notificationController.success("Tag pushed to remote", "Success", 3000)
-            } else {
-                if (root.notificationController)
-                    root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
-            }
-
-            root.update()
-        }
-
-        function onPushDeleteTagFinished(result, tagName) {
-            if (result.success)
-            {
-                let ctrl = root.tagController || uiSession.tagController;
-                if (root.notificationController) root.notificationController.success("Tag deleted from remote", "Success", 3000);
-                ctrl.remove(tagName);
-                root.update();
-            }
-            else
-                if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
-        }
     }
 
     Timer {
