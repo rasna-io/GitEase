@@ -35,6 +35,9 @@ UtilitiesCard {
 
     property bool canStash: false
 
+    property int  stashesToken:  0
+    property int  canStashToken: 0
+
     /* Object Properties
      * ****************************************************************************************/
     title: "Stash Manager"
@@ -355,34 +358,50 @@ UtilitiesCard {
 
     function updateStashes() {
         if (!root.stashController) {
-            root.stashes = []
-            root.selectedStash = null
-            root.stashFiles = []
-            root.stashDiffData = []
+            root.clearStashSelection()
 
             root.updateCanStash()
             return
         }
 
-        let result = root.stashController.list()
-        if (!result.success) {
-            root.stashes = []
-            root.selectedStash = null
-            root.stashFiles = []
-            root.stashDiffData = []
+        let token = ++root.stashesToken
 
-            root.updateCanStash()
-            return
-        }
+        AsyncGit.call(root.stashController, "list", [],
+            function (result) {
+                if (token !== root.stashesToken)
+                    return
 
-        root.stashes = result.data
+                if (!result || !result.success) {
+                    root.clearStashSelection()
 
-        root.selectedStash = null
-        root.previewStash = null
-        root.stashFiles = []
-        root.stashDiffData = []
+                    root.updateCanStash()
+                    return
+                }
 
-        root.updateCanStash()
+                root.stashes = result.data
+
+                root.selectedStash  = null
+                root.previewStash   = null
+                root.stashFiles     = []
+                root.stashDiffData   = []
+
+                root.updateCanStash()
+            },
+            function () {
+                if (token !== root.stashesToken)
+                    return
+
+                root.clearStashSelection()
+
+                root.updateCanStash()
+            })
+    }
+
+    function clearStashSelection() {
+        root.stashes        = []
+        root.selectedStash  = null
+        root.stashFiles     = []
+        root.stashDiffData  = []
     }
 
     function selectStash(stashEntry) {
