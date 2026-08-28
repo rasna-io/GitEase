@@ -6,6 +6,8 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+
 /*! ***********************************************************************************************
  * TagManagementView
  * ************************************************************************************************/
