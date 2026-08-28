@@ -59,7 +59,20 @@ UtilitiesCard {
 
         if (notif) notif.info("Deleting tag from remote...", "Remote", 1500);
 
-        ctrl.pushDeleteTag(tag.name);
+        AsyncGit.call(ctrl, "pushDeleteTag", [tag.name],
+            function(result) {
+                if (result.success) {
+                    if (notif) notif.success("Tag deleted from remote", "Success", 3000);
+                    ctrl.remove(tag.name);
+                    root.update();
+                } else {
+                    if (notif) notif.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
+                }
+            },
+            function(error) {
+                if (notif) notif.error("Failed to delete from remote: " + error, "Error", 5000);
+            }
+        );
     }
 
     function pushTagToRemote(tag) {
