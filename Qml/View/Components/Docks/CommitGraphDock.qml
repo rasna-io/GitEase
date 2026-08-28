@@ -12,6 +12,7 @@ import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphDataLoader.js"  as DataLoader
 import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphFilter.js"      as Filter
 import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphNavigation.js"  as Navigation
 import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphMenuBuilder.js" as MenuBuilder
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js"               as AsyncGit
 
 /*! ***********************************************************************************************
  * CommitGraphDock
