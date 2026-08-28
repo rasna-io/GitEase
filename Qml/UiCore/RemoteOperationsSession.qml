@@ -1,6 +1,8 @@
 import QtQuick
 
 import GitEase
+
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
 /*! ***********************************************************************************************
  * RemoteOperationsSession
  *
