@@ -411,11 +411,7 @@ DetachablePanel {
             if(branchName.length === 0){
                 root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
             }else{
-                remoteController.push(
-                        "origin",
-                        branchName,
-                        password,
-                        isForcePush)
+                root.startPush(branchName, isForcePush, password)
                 root.notificationController.info("Push operation started", "Push", 3000)
             }
             root.pendingPushBranch = ""
@@ -458,16 +454,6 @@ DetachablePanel {
         function onTagCreatedSuccessfully() {
             root.selectedCommit = null
             root.reloadAll()
-        }
-    }
-
-    Connections {
-        target: root.tagController
-        function onPushTagFinished(result) {
-            if (result.success)
-                notificationController.success("Tag created and pushed", "Success", 3000)
-            else
-                notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
         }
     }
 
@@ -1157,7 +1143,7 @@ DetachablePanel {
         let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
         switch (protocol) {
         case RepositoryController.GitProtocol.SSH: {
-            remoteController.push("origin", branchName, isForcePush)
+            root.startPush(branchName, isForcePush)
             root.notificationController.info("Push operation started", "Push", 3000)
             break
         }
@@ -1171,6 +1157,27 @@ DetachablePanel {
             break
         default:
             root.notificationController.error("Unsupported protocol", `${isForcePush ? "Force" : ""} Push Error`, 5000)
+        }
+    }
+
+    function startPush(branchName, force, token) {
+        let args = token !== undefined ? ["origin", branchName, token, force] : ["origin", branchName, force]
+        AsyncGit.call(remoteController, "push", args,
+            function(result) { root.handlePushResult(result) },
+            function(error) { root.handlePushResult({ success: false, errorMessage: error }) }
+        )
+    }
+
+    function handlePushResult(gitResult) {
+        if (!root.notificationController)
+            return
+
+        if (gitResult && gitResult.success) {
+            let data = gitResult.data
+            let isForce = data && data.force === true
+            root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
+        } else {
+            root.notificationController.error((gitResult && gitResult.errorMessage) || "Push error", "Push Error", 5000)
         }
     }
 
