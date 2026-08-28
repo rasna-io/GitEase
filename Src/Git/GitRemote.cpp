@@ -7,13 +7,9 @@
 
 #include <git2.h>
 #include <QDebug>
-#include <QtConcurrent>
-#include <QFutureWatcher>
 #include <QVariant>
 #include <QVariantList>
 #include <qdatetime.h>
-#include <QFutureWatcher>
-#include <QtConcurrent>
 
 namespace {
 QString lastGitErrorMessage()
