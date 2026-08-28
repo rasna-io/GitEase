@@ -2,7 +2,6 @@
 #include "GitResult.h"
 
 #include <QDir>
-#include <QtConcurrent>
 
 #include <git2.h>
 
@@ -160,86 +159,58 @@ GitResult GitRepository::cloneInternal(const QString& url,
         }
     }
 
-    const QString safeUrl = url;
-    const QString safePath = localPath;
+    GitPayload payload {
+        this,
+        auth.get()
+    };
 
-    auto future = QtConcurrent::run(
-        [this,
-         safeUrl,
-         safePath,
-         auth = std::move(auth)]() mutable -> QVariantMap {
+    auto progressCallback = [](const git_indexer_progress *stats, void *p) -> int {
+        auto *data = static_cast<GitPayload*>(p);
 
-        GitPayload payload {
-            this,
-            auth.get()
-        };
+        if (stats->total_objects > 0) {
+            int percent = static_cast<int>(
+                (100.0 * stats->received_objects) / stats->total_objects
+                );
 
-        auto progressCallback = [](const git_indexer_progress *stats, void *p) -> int {
-            auto *data = static_cast<GitPayload*>(p);
-
-            if (stats->total_objects > 0) {
-                int percent = static_cast<int>(
-                    (100.0 * stats->received_objects) / stats->total_objects
-                    );
-
-                QMetaObject::invokeMethod(
-                    data->parentThread,
-                    "cloneProgress",
-                    Qt::QueuedConnection,
-                    Q_ARG(int, percent)
-                    );
-            }
-            return 0;
-        };
-
-        git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
-        opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
-
-        opts.fetch_opts.callbacks.transfer_progress = progressCallback;
-        opts.fetch_opts.callbacks.payload = &payload;
-
-        auth->apply(opts.fetch_opts);
-
-        git_repository* repo = nullptr;
-        int result = git_clone(
-            &repo,
-            safeUrl.toUtf8().constData(),
-            safePath.toUtf8().constData(),
-            &opts
-            );
-
-        if (result != 0) {
-            const git_error *err = git_error_last();
-            QString msg = err ? err->message : "Unknown git error";
-            return QVariantMap { {"success", false}, {"error", msg}, {"path", safePath} };
+            QMetaObject::invokeMethod(
+                data->parentThread,
+                "cloneProgress",
+                Qt::QueuedConnection,
+                Q_ARG(int, percent)
+                );
         }
+        return 0;
+    };
 
-        git_repository_free(repo);
-        return QVariantMap { {"success", true}, {"data", safePath} };
-    });
+    git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
+    opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
 
-    auto* watcher = new QFutureWatcher<QVariantMap>(this);
+    opts.fetch_opts.callbacks.transfer_progress = progressCallback;
+    opts.fetch_opts.callbacks.payload = &payload;
 
-    connect(watcher, &QFutureWatcher<QVariantMap>::finished,
-            this, [=]() {
+    auth->apply(opts.fetch_opts);
 
-                QVariantMap result = watcher->result();
-
-                if (result["success"].toBool()) {
-                    result["path"] = safePath;
-                    m_currentRepoPath = safePath;
-                }
-
-                emit cloneFinished(result);
-                watcher->deleteLater();
-            });
-
-    watcher->setFuture(future);
+    git_repository* repo = nullptr;
+    int result = git_clone(
+        &repo,
+        url.toUtf8().constData(),
+        localPath.toUtf8().constData(),
+        &opts
+        );
 
     emitGitCommand(QString("git clone %1 %2")
                        .arg(quoteCommandArg(url), quoteCommandArg(localPath)));
 
-    return GitResult(true, {}, "Clone started");
+    if (result != 0) {
+        const git_error *err = git_error_last();
+        QString msg = err ? err->message : "Unknown git error";
+        return GitResult(false, {}, msg);
+    }
+
+    git_repository_free(repo);
+    m_currentRepoPath = localPath;
+
+    return GitResult(true, localPath);
 }
 
 GitResult GitRepository::close()
