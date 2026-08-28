@@ -58,20 +58,9 @@ Item {
             let protocol = repositoryController.detectGitProtocol(url)
             switch (protocol) {
             case RepositoryController.GitProtocol.SSH: {
-                let res = remoteController.fetch(remote.name)
-                if (res.success) {
                     if (root.activeFetchRemotes.indexOf(remote.name) === -1)
                         root.activeFetchRemotes.push(remote.name)
-                } else {
-                    let msg = res.errorMessage || "Fetch failed"
-                    sshFailed.push({ name: remote.name, message: msg })
-                    root.fetchBatchResults.push({
-                                                    remote: remote.name,
-                                                    success: false,
-                                                    errorMessage: msg,
-                                                    data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                                                })
-                }
+                root.startFetch(remote.name)
                 break
             }
             case RepositoryController.GitProtocol.HTTPS:
@@ -175,24 +164,36 @@ Item {
         root.pull(secret)
     }
 
-    /* Connections
-     * ****************************************************************************************/
-    Connections {
-        target: root.remoteController
+    function startFetch(remoteName) {
+        AsyncGit.call(root.remoteController, "fetch", [remoteName],
+            function(result) { root.handleFetchResult(remoteName, result) },
+            function(error) { root.handleFetchResult(remoteName, { success: false, errorMessage: error }) }
+        )
+    }
 
-        function onFetchFinished(result) {
-            if (!result || !result.remote)
-                return
+    function startFetchWithToken(remoteName, token) {
+        AsyncGit.call(root.remoteController, "fetchWithToken", [remoteName, token],
+            function(result) { root.handleFetchResult(remoteName, result) },
+            function(error) { root.handleFetchResult(remoteName, { success: false, errorMessage: error }) }
+        )
+    }
 
-            const remoteName = result.remote
-            root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
-            root.fetchBatchResults.push(result)
+    function handleFetchResult(remoteName, gitResult) {
+        root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
+
+        let payload = {
+            remote:         remoteName,
+            success:        gitResult ? gitResult.success : false,
+            errorMessage:   gitResult ? gitResult.errorMessage : "Unknown error",
+            data:           gitResult ? gitResult.data : null
+        }
+        root.fetchBatchResults.push(payload)
 
             if (root.notificationController) {
-                if (result.success)
+            if (payload.success)
                     root.notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
                 else
-                    root.notificationController.error("Fetch failed for " + remoteName + ": " + (result.errorMessage || "Unknown error"), "Fetch Error", 7000)
+                root.notificationController.error("Fetch failed for " + remoteName + ": " + (payload.errorMessage || "Unknown error"), "Fetch Error", 7000)
             }
 
             root.isFetching = root.activeFetchRemotes.length > 0 || root.pendingFetchRemoteNames.length > 0
@@ -249,28 +250,15 @@ Item {
 
         function onPasswordConfirm(password) {
             if (root.authPurpose === "fetch") {
-                let failed = []
-                for (let i = 0; i < root.pendingFetchRemoteNames.length; i++) {
-                    let name = root.pendingFetchRemoteNames[i]
-                    let res = root.remoteController.fetchWithToken(name, password)
-                    if (res.success) {
+                let names = root.pendingFetchRemoteNames
+                root.pendingFetchRemoteNames = []
+                for (let i = 0; i < names.length; i++) {
+                    let name = names[i]
                         if (root.activeFetchRemotes.indexOf(name) === -1)
                             root.activeFetchRemotes.push(name)
-                    } else {
-                        failed.push({ name: name, message: res.errorMessage || "Unknown error" })
-                        root.fetchBatchResults.push({
-                                                        remote: name,
-                                                        success: false,
-                                                        errorMessage: res.errorMessage || "Unknown error",
-                                                        data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                                                    })
-                    }
-                }
-                if (failed.length > 0 && root.notificationController) {
-                    root.notificationController.error("Fetch failed for: " + failed.map(function(f){ return f.name + " (" + f.message + ")" }).join("; "), "Fetch Error", 7000)
+                    root.startFetchWithToken(name, password)
                 }
                 root.isFetching = root.activeFetchRemotes.length > 0
-                root.pendingFetchRemoteNames = []
                 authConnection.enabled = false
                 return
             }
