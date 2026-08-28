@@ -260,25 +260,30 @@ Item {
     /* Functions
      * ****************************************************************************************/
     function updateStatus() {
-        let res = root.statusController.status()
+        statusCoalesceTimer.restart()
+    }
 
-        if (!res.success)
-            return;
+        if (!root.statusController)
+            return
 
-        root.unstagedModel = []
-        root.stagedModel = []
+        statusCoalesceTimer.restart()
+    }
 
-        res.data.forEach((file) => {
+    function applyStatus(files) {
+        let unstaged = []
+        let staged = []
+
+        files.forEach((file) => {
             if (file.isStaged) {
-                root.stagedModel.push(file)
+                staged.push(file)
             }
             if (file.isUnstaged || file.isUntracked) {
-                root.unstagedModel.push(file)
+                unstaged.push(file)
             }
         })
 
-        root.unstagedModel = root.unstagedModel.slice(0)
-        root.stagedModel = root.stagedModel.slice(0)
+        root.unstagedModel = unstaged
+        root.stagedModel = staged
 
         let path = ""
         let isStaged = false
