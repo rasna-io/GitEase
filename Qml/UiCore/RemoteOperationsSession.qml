@@ -133,21 +133,13 @@ Item {
         let protocol = repositoryController.detectGitProtocol(url)
         switch (protocol) {
         case RepositoryController.GitProtocol.SSH: {
-            let pullRes = remoteController.pull("origin", root.branchController.getCurrentBranchName())
-            if (!pullRes.success) {
-                if (notificationController)
-                    notificationController.error(pullRes.errorMessage || "Pull failed", "Pull Error", 5000)
-            }
+            root.startPull("origin", root.branchController.getCurrentBranchName())
             break
         }
         case RepositoryController.GitProtocol.HTTPS:
         case RepositoryController.GitProtocol.HTTP:
             if (secret && secret.length > 0 && secret !== "undefined") {
-                let res = root.remoteController.pull("origin", root.branchController.getCurrentBranchName(), secret)
-                if (!res.success) {
-                    if (notificationController)
-                        notificationController.error(res.errorMessage || "Pull failed", "Pull Error", 5000)
-                }
+                root.startPull("origin", root.branchController.getCurrentBranchName(), secret)
             } else {
                 root.authPurpose = "pull"
                 authConnection.enabled = true
@@ -234,19 +226,22 @@ Item {
             }
         }
 
-        // The real success/failure of a pull (see the note on pull() above).
-        function onPullFinished(result) {
-            if (!result || result.remote !== "origin")
-                return
+    function startPull(remoteName, branchName, token) {
+        let args = token !== undefined ? [remoteName, branchName, token] : [remoteName, branchName]
+        AsyncGit.call(root.remoteController, "pull", args,
+            function(result) { root.handlePullResult(result) },
+            function(error) { root.handlePullResult({ success: false, errorMessage: error }) }
+        )
+    }
 
+    function handlePullResult(gitResult) {
             if (!root.notificationController)
                 return
 
-            if (result.success)
+        if (gitResult && gitResult.success)
                 root.notificationController.success("Pulled successfully", "Pull", 3000)
             else
-                root.notificationController.error(result.errorMessage || "Pull failed", "Pull Error", 5000)
-        }
+            root.notificationController.error((gitResult && gitResult.errorMessage) || "Pull failed", "Pull Error", 5000)
     }
 
     // Gated so it only reacts when THIS session itself opened the shared auth popup — otherwise
