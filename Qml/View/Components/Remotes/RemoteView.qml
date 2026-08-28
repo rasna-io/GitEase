@@ -67,13 +67,8 @@ UtilitiesCard {
                 let res = root.remoteController.fetchWithToken(remote.name, password)
                 if (res.success) {
                     if (root.activeFetchRemotes.indexOf(remote.name) === -1)
-                        root.activeFetchRemotes.push(remote.name)
-                }
-                else {
-                    if (root.notificationController)
-                        root.notificationController.error("Failed to fetch from " + remote.name + ": " + (res.errorMessage || "Unknown error"), "Fetch Error", 7000)
-                    root.isFetching = root.activeFetchRemotes.length > 0
-                }
+                    root.activeFetchRemotes.push(remote.name)
+                content.startFetch(remote.name)
             }
             root.authPurpose = "fetch"
         }
@@ -141,41 +136,6 @@ UtilitiesCard {
 
             function onCurrentRepoChanged() {
                 content.update()
-            }
-
-            // This page's own async per-remote Pull (triggered below) has no equivalent in the
-            // shared RemoteOperationsSession, so it remains the sole notifier for pull results.
-            function onPullFinished(result) {
-                if (!root.isFetching || !root.remote || !result)
-                    return
-
-                if (result.remote !== root.remote.name)
-                    return
-
-                if (notificationController) {
-                    if (result.success)
-                        notificationController.success("Successfully pulled from " + root.remote.name, "Pull", 5000)
-                    else
-                        notificationController.error("Failed to pull from " + root.remote.name + ": " + (result.errorMessage || "Pull failed"), "Pull Error", 7000)
-                }
-
-                root.isFetching = false
-                content.update()
-            }
-        }
-
-        // Fetch completion notifications/summary-popup are handled once by the shared
-        // RemoteOperationsSession (regardless of which UI triggered the fetch) — this only
-        // tracks this card's own per-row busy state.
-        Connections {
-            target: root.remoteController
-
-            function onFetchFinished(result) {
-                if (!result || !result.remote)
-                    return
-
-                root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== result.remote })
-                root.isFetching = root.activeFetchRemotes.length > 0
             }
         }
 
@@ -343,16 +303,9 @@ UtilitiesCard {
             switch (protocol) {
             case RepositoryController.GitProtocol.SSH:
                 root.isFetching = true
-                res = root.remoteController.fetch(remoteItem.name)
-                if (res.success) {
-                    if (root.activeFetchRemotes.indexOf(remoteItem.name) === -1)
-                        root.activeFetchRemotes.push(remoteItem.name)
-                } else {
-                    if (root.notificationController)
-                        root.notificationController.error("Failed to fetch from " + remoteItem.name + ": " + (res.errorMessage || "Unknown error"), "Fetch Error", 7000)
-                }
-                root.isFetching = root.activeFetchRemotes.length > 0
-                content.update()
+                if (root.activeFetchRemotes.indexOf(remoteItem.name) === -1)
+                    root.activeFetchRemotes.push(remoteItem.name)
+                content.startFetch(remoteItem.name)
                 break;
             case RepositoryController.GitProtocol.HTTPS:
             case RepositoryController.GitProtocol.HTTP:
@@ -393,6 +346,27 @@ UtilitiesCard {
                 userAuthenticationPopup.open()
                 break
             }
+        }
+
+        function startFetch(remoteName) {
+            AsyncGit.call(root.remoteController, "fetch", [remoteName],
+                function(result) { content.handleFetchResult(remoteName, result) },
+                function(error) { content.handleFetchResult(remoteName, { success: false, errorMessage: error }) }
+            )
+        }
+
+        function handleFetchResult(remoteName, gitResult) {
+            root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
+            root.isFetching = root.activeFetchRemotes.length > 0
+
+            if (root.notificationController) {
+                if (gitResult && gitResult.success)
+                    root.notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
+                else
+                    root.notificationController.error("Failed to fetch from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Unknown error"), "Fetch Error", 7000)
+            }
+
+            content.update()
         }
 
         function editRemote(remoteItem) {
