@@ -6,6 +6,8 @@ import GitEase_Style_Impl
 import GitEase_Style
 import GitEase
 
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+
 /*! ***********************************************************************************************
  * StashManagerDock
  * ************************************************************************************************/
