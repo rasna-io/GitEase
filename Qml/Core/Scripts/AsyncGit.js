@@ -72,7 +72,7 @@ function _onFinished(id, method, result, isRepoChanged) {
     delete _pending[id]
 
     if (entry.done)
-        if(isRepoChanged)
+        if(!isRepoChanged)
             entry.done(result, method)
 }
 
@@ -84,6 +84,6 @@ function _onFailed(id, method, error, isRepoChanged) {
     delete _pending[id]
 
     if (entry.fail)
-        if(isRepoChanged)
+        if(!isRepoChanged)
             entry.fail(error, method)
 }
