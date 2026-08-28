@@ -115,7 +115,7 @@ int credentials_cb(git_credential **out, const char *url, const char *user_from_
 
 GitResult GitTag::pushTag(const QString &name)
 {
-    return pushTagStartAsyncInternal(name);
+    return pushTagInternal(name);
 }
 
 GitResult GitTag::pushTagInternal(const QString &name)
@@ -147,32 +147,6 @@ GitResult GitTag::pushTagInternal(const QString &name)
     }
 
     git_remote_free(remote);
-    return GitResult(true);
-}
-
-GitResult GitTag::pushTagStartAsyncInternal(const QString &name)
-{
-    if(m_pushTagInProgress)
-        return GitResult(false, "Pushing tag already in progress");
-
-    m_pushTagInProgress = true;
-
-    QString safeName = name;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeName]() {
-            return pushTagInternal(safeName);
-        });
-
-    auto* watcher = new QFutureWatcher<GitResult>(this);
-    connect(watcher, &QFutureWatcher<GitResult>::finished, this, [this, watcher]() {
-        m_pushTagInProgress = false;
-        emit pushTagFinished(watcher->result());
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
-
     return GitResult(true);
 }
 
