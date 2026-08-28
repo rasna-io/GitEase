@@ -635,7 +635,7 @@ GitResult GitRemote::pull(const QString& remote, const QString& branch)
         }
     }
 
-    return pullStartAsyncInternal(remote, branch, std::move(auth));
+    return pullInternal(remote, branch, std::move(auth));
 }
 
 GitResult GitRemote::pull(const QString& remote,
@@ -650,46 +650,7 @@ GitResult GitRemote::pull(const QString& remote,
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    return pullStartAsyncInternal(remote, branch, std::make_unique<GitHttpsAuth>(token));
-}
-
-GitResult GitRemote::pullStartAsyncInternal(const QString& remoteName,
-                                            const QString& branchName,
-                                            std::unique_ptr<IGitAuth> auth)
-{
-    if (m_pullInProgress) {
-        return GitResult(false, QVariant(), "Pull already in progress");
-    }
-
-    m_pullInProgress = true;
-
-    const QString safeRemote = remoteName;
-    const QString safeBranch = branchName;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeRemote,
-         safeBranch,
-         auth = std::move(auth)]() mutable -> QVariantMap {
-            GitResult res = pullInternal(safeRemote, safeBranch, std::move(auth));
-            QVariantMap out;
-            out["success"] = res.success();
-            out["errorMessage"] = res.errorMessage();
-            out["data"] = res.data();
-            out["remote"] = safeRemote;
-            out["branch"] = safeBranch;
-            return out;
-        });
-
-    auto* watcher = new QFutureWatcher<QVariantMap>(this);
-    connect(watcher, &QFutureWatcher<QVariantMap>::finished, this, [this, watcher]() {
-        m_pullInProgress = false;
-        emit pullFinished(watcher->result());
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
-
-    return GitResult(true, QVariant(), "Pull started");
+    return pullInternal(remote, branch, std::make_unique<GitHttpsAuth>(token));
 }
 
 GitResult GitRemote::pullInternal(const QString& remoteName,
