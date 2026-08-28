@@ -679,29 +679,131 @@ DetachablePanel {
         if (!root.appModel || !root.appModel.currentRepository)
             return
 
+        if (!root.statusController || !root.commitController)
+            return
+
         clearGraphCaches()
-        commitsOffset   = 0
-        hasMoreCommits  = true
-        isLoadingMore   = false
-        refreshBranchFilterHeadHash()
+        root.commitsOffset  = 0
+        root.hasMoreCommits = true
+        root.isLoadingMore  = false
 
-        root.headHash = root.statusController.getHeadHash()
+        var token = ++root.reloadToken
 
-        var commitRes = root.commitController.getCommits(pageSize, commitsOffset)
-        if (!commitRes.success || !commitRes.data) return
+        AsyncGit.call(root.statusController, "getHeadHash", [],
+            function (headHash) {
+                if (token !== root.reloadToken) return
+                root.headHash = headHash || ""
+                root.reloadFetchCommits(token)
+            },
+            function () {
+                if (token !== root.reloadToken) return
+                root.headHash = ""
+                root.reloadFetchCommits(token)
+            })
+    }
 
-        var page = commitRes.data
-        var compiled = compilePage(page)
+    function reloadFetchCommits(token) {
+        AsyncGit.call(root.commitController, "getCommits", [root.pageSize, 0],
+            function (commitRes) {
+                if (token !== root.reloadToken) return
+                if (!commitRes || !commitRes.success || !commitRes.data)
+                    return
 
-        var statusRes = root.statusController ? root.statusController.status() : null
-        var uncommitted = DataLoader.createUncommittedNode(statusRes && statusRes.success ? statusRes.data : null, root.headHash)
-        if (uncommitted) compiled.unshift(uncommitted)
+                root.reloadFetchBranches(token, commitRes.data)
+            })
+    }
 
-        commitsOffset = page.length
-        hasMoreCommits = (page.length === pageSize)
+    function reloadFetchBranches(token, page) {
+        if (!root.branchController) {
+            root.reloadFetchTags(token, page, [])
+            return
+        }
+
+        AsyncGit.call(root.branchController, "getBranches", [],
+            function (branches) {
+                if (token !== root.reloadToken) return
+
+                // Reuse the list we just fetched instead of asking for the branches again.
+                root.branchFilterHeadHash = root.branchHeadHashFrom(branches, root.branchFilter)
+                root.reloadFetchTags(token, page, branches || [])
+            },
+            function () {
+                if (token !== root.reloadToken) return
+                root.reloadFetchTags(token, page, [])
+            })
+    }
+
+    function reloadFetchTags(token, page, branches) {
+        if (!root.tagController) {
+            root.reloadFetchStashes(token, page, branches, [])
+            return
+        }
+
+        AsyncGit.call(root.tagController, "list", [],
+            function (tagRes) {
+                if (token !== root.reloadToken) return
+                root.reloadFetchStashes(token, page, branches,
+                                        (tagRes && tagRes.success && tagRes.data) ? tagRes.data : [])
+            },
+            function () {
+                if (token !== root.reloadToken) return
+                root.reloadFetchStashes(token, page, branches, [])
+            })
+    }
+
+    function reloadFetchStashes(token, page, branches, tags) {
+        if (!root.stashController) {
+            root.reloadPaintGraph(token, page, branches, tags, [])
+            return
+        }
+
+        AsyncGit.call(root.stashController, "list", [],
+            function (stashRes) {
+                if (token !== root.reloadToken) return
+                root.reloadPaintGraph(token, page, branches, tags,
+                                      (stashRes && stashRes.success && stashRes.data) ? stashRes.data : [])
+            },
+            function () {
+                if (token !== root.reloadToken) return
+                root.reloadPaintGraph(token, page, branches, tags, [])
+            })
+    }
+
+    //! Everything the graph itself needs is in hand — paint it, then go and get status().
+    function reloadPaintGraph(token, page, branches, tags, stashes) {
+        var compiled = DataLoader.compileGraphCommits(
+            page,
+            branches,
+            stashes,
+            tags,
+            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null)
+
+        root.commitsOffset  = page.length
+        root.hasMoreCommits = (page.length === root.pageSize)
 
         root.allCommits = compiled.slice(0)
         root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
+
+        root.reloadFetchStatus(token)
+    }
+
+    //! The slow one, on purpose last: the graph is already on screen by the time this runs.
+    function reloadFetchStatus(token) {
+        AsyncGit.call(root.statusController, "status", [],
+            function (statusRes) {
+                if (token !== root.reloadToken) return
+
+                var uncommitted = DataLoader.createUncommittedNode(
+                    (statusRes && statusRes.success) ? statusRes.data : null, root.headHash)
+                if (!uncommitted)
+                    return
+
+                var rest = root.allCommits.filter(function (c) { return !c.isUncommitted })
+                rest.unshift(uncommitted)
+                root.allCommits = rest
+
+                root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
+            })
     }
 
     /*!
@@ -1092,8 +1194,11 @@ DetachablePanel {
         if (!branchName || !root.branchController)
             return ""
 
-        var branches = root.branchController.getBranches()
-        if (!branches)
+        return root.branchHeadHashFrom(root.branchController.getBranches(), branchName)
+    }
+
+    function branchHeadHashFrom(branches, branchName) {
+        if (!branchName || !branches)
             return ""
 
         for (var i = 0; i < branches.length; i++) {
