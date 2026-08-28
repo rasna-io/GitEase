@@ -1,8 +1,6 @@
 #include "GitTag.h"
 
 #include <algorithm>
-#include <QFutureWatcher>
-#include <QtConcurrent>
 
 GitTag::GitTag(QObject *parent)
     : IGitController(parent)
