@@ -201,22 +201,37 @@ UtilitiesCard {
     /* Functions
      * ****************************************************************************************/
     function updateCanStash() {
-        root.canStash = false
-
-        if (!root.statusController)
+        if (!root.statusController) {
+            root.canStash = false
             return
-
-        let res = root.statusController.status()
-        if (!res.success)
-            return
-
-        for (let i = 0; i < res.data.length; ++i) {
-            let file = res.data[i]
-            if (file.isStaged || file.isUnstaged || file.isUntracked) {
-                root.canStash = true
-                return
-            }
         }
+
+        let token = ++root.canStashToken
+
+        AsyncGit.call(root.statusController, "status", [],
+            function (res) {
+                if (token !== root.canStashToken)
+                    return
+
+                root.canStash = false
+
+                if (!res || !res.success || !res.data)
+                    return
+
+                for (let i = 0; i < res.data.length; ++i) {
+                    let file = res.data[i]
+                    if (file.isStaged || file.isUnstaged || file.isUntracked) {
+                        root.canStash = true
+                        return
+                    }
+                }
+            },
+            function () {
+                if (token !== root.canStashToken)
+                    return
+
+                root.canStash = false
+            })
     }
 
 
