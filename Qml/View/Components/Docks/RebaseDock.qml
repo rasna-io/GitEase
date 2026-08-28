@@ -6,6 +6,8 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+
 /*! ***********************************************************************************************
  * RebaseDock
  * ************************************************************************************************/
@@ -271,7 +273,20 @@ UtilitiesCard {
 
         commitPlanPopup.show()
 
-        rebaseController.startPreviewRebasePlan(onto, upstream, branchValue)
+        AsyncGit.call(rebaseController, "startPreviewRebasePlan", [onto, upstream, branchValue],
+            function(result) {
+                if (!result.success) {
+                    notificationController.error(result.errorMessage || "Failed to load rebase plan", "Rebase", 5000)
+                    commitPlanPopup.close()
+                    return
+                }
+                commitPlanPopup.showPlan(result.data)
+            },
+            function(error) {
+                notificationController.error(error || "Failed to load rebase plan", "Rebase", 5000)
+                commitPlanPopup.close()
+            }
+        )
     }
 
     function validateInputs(upstream, onto, advanced, currentIndexBranchCombo) {
