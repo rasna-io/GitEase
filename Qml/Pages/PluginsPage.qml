@@ -48,6 +48,7 @@ Page {
     headerContent: Component {
         PluginsPageHeader {
             id: pluginsPageHeader
+            pluginsData: root.pluginsData
             onFilterRequested: (text, mode) => root.applyFilter(text, mode)
         }
     }
