@@ -292,11 +292,13 @@ Page {
         root.currentSearch  = ""
         root.currentMode    = ""
         root.pluginController.fetchPluginsCategories()
+        root.pluginController.fetchAvailablePlugins(1, "")
     }
 
-    // Refills pluginsModel from appModel.plugins, applying the active mode filter.
+    // Refills installed/available models from appModel.plugins, applying the active mode filter.
     function applyCurrentMode() {
-        pluginsModel.clear()
+        installedPluginsModel.clear()
+        availablePluginsModel.clear()
 
         if (!root.pluginsData)
             return
