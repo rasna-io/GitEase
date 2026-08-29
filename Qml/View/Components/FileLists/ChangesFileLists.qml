@@ -3,6 +3,9 @@ import QtQuick.Layouts
 
 import GitEase
 import GitEase_Style
+
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+
 /*! ***********************************************************************************************
  * ChangesFileLists
  * Two stacked file lists used in Committing page:
@@ -26,6 +29,8 @@ Item {
     property int currentFileStatus: -1
     property var showSaveDialog
 
+    property int statusToken: 0
+
     /* Signals
      * ****************************************************************************************/
     signal fileSelected(string filePath, bool isStaged)
@@ -36,7 +41,14 @@ Item {
     implicitWidth: 1
     implicitHeight: 1
 
-    Component.onCompleted: Qt.callLater(function() {root.updateStatus()})
+    Component.onCompleted: root.updateStatus()
+
+    Timer {
+        id: statusCoalesceTimer
+        interval: 16
+        repeat: false
+        onTriggered: root.requestStatus()
+    }
 
     GuideHoverTrigger {
         guideController: root.guideController
@@ -263,10 +275,22 @@ Item {
         statusCoalesceTimer.restart()
     }
 
+    function requestStatus() {
         if (!root.statusController)
             return
 
-        statusCoalesceTimer.restart()
+        let token = ++root.statusToken
+
+        AsyncGit.call(root.statusController, "status", [],
+            function (res) {
+                if (token !== root.statusToken)
+                    return
+
+                if (!res || !res.success || !res.data)
+                    return
+
+                root.applyStatus(res.data)
+            })
     }
 
     function applyStatus(files) {
