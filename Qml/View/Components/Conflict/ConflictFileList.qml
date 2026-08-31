@@ -129,24 +129,43 @@ Rectangle {
                 anchors.rightMargin: 8
                 spacing: 10
 
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: 4
+
+                    // Tick / Cross
                 Text {
                     Layout.preferredWidth: 14
+Layout.preferredHeight: 14
+                        Layout.alignment: Qt.AlignVCenter
+
                     horizontalAlignment: Text.AlignHCenter
+verticalAlignment: Text.AlignVCenter
+
                     font.family: Style.fontTypes.font6Pro
                     font.styleName: "Solid"
                     font.pixelSize: Style.appFont.captionPt
 
-                    text: delegateItem.hasMarkers ? Style.icons.circleExclamation
+                    text: delegateItem.hasMarkers
+? Style.icons.circleExclamation
                                                   : Style.icons.circleCheck
 
-                    color: {
-                        if (delegateItem.hasMarkers)
-                            return Style.colors.conflictStatusConflictColor
+color: delegateItem.hasMarkers
+                               ? Style.colors.conflictStatusConflictColor
+                               : Style.colors.conflictStatusAddedColor
+                        }
 
-                        if (delegateItem.modelData.status === "A")
-                            return Style.colors.conflictStatusAddedColor
+                    FileStatusTag {
+                        Layout.preferredWidth: 14
+                        Layout.preferredHeight: 14
+                        Layout.alignment: Qt.AlignVCenter
 
-                        return Style.colors.conflictStatusAddedColor
+                        visible: delegateItem.isStaged
+
+                        compact: true
+                        showBackground: false
+                        fileStatus: delegateItem.modelData.status
                     }
                 }
 
