@@ -62,7 +62,7 @@ Item {
         Text {
             text: "Select a folder containing a .git directory"
             font.family: Style.fontTypes.inter
-            font.pixelSize: 10
+            font.pixelSize: Style.appFont.captionPt
             color: Style.colors.mutedText
         }
 

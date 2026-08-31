@@ -100,4 +100,8 @@ QtObject{
     property string rules:             "\uf0ae" // rules
 
     property string togglePanel:       "qrc:/GitEase/Resources/Icons/togglePanel.svg"
+
+    // Feature card icons
+    property string rocket:            "\uf135" // rocket
+    property string robot:             "\uf544" // robot
 }
