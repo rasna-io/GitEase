@@ -357,17 +357,18 @@ UtilitiesCard {
         function startPull(args, remoteName) {
             AsyncGit.call(root.remoteController, "pull", args,
                 function(result) { content.handlePullResult(remoteName, result) },
-                function(error) { content.handlePullResult(remoteName, { success: false, errorMessage: error }) }
+                function(error) { content.handlePullResult(remoteName, { success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
             )
         }
 
         function handlePullResult(remoteName, gitResult) {
-            if (root.notificationController) {
-                if (gitResult && gitResult.success)
-                    root.notificationController.success("Successfully pulled from " + remoteName, "Pull", 5000)
-                else
-                    root.notificationController.error("Failed to pull from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Pull failed"), "Pull Error", 7000)
-            }
+            if (gitResult && gitResult.stale === true)
+                root.notificationController.info("Pull finished for the repository you switched away from", "Pull", 4000)
+            
+            if (gitResult && gitResult.success)
+                root.notificationController.success("Successfully pulled from " + remoteName, "Pull", 5000)
+            else
+                root.notificationController.error("Failed to pull from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Pull failed"), "Pull Error", 7000)
 
             root.isFetching = false
             content.update()
