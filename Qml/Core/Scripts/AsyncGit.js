@@ -91,6 +91,5 @@ function _onFailed(id, method, error, isRepoChanged) {
     delete _pending[id]
 
     if (entry.fail)
-        if(!isRepoChanged)
-            entry.fail(error, method)
+        entry.fail(isRepoChanged ? STALE : error, method)
 }
