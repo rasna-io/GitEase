@@ -159,34 +159,40 @@ Item {
     function startFetch(remoteName) {
         AsyncGit.call(root.remoteController, "fetch", [remoteName],
             function(result) { root.handleFetchResult(remoteName, result) },
-            function(error) { root.handleFetchResult(remoteName, { success: false, errorMessage: error }) }
+            function(error) { root.handleFetchResult(remoteName, { success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
         )
     }
 
     function startFetchWithToken(remoteName, token) {
         AsyncGit.call(root.remoteController, "fetchWithToken", [remoteName, token],
             function(result) { root.handleFetchResult(remoteName, result) },
-            function(error) { root.handleFetchResult(remoteName, { success: false, errorMessage: error }) }
+            function(error) { root.handleFetchResult(remoteName, { success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
         )
     }
 
     function handleFetchResult(remoteName, gitResult) {
         root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
 
-        let payload = {
-            remote:         remoteName,
-            success:        gitResult ? gitResult.success : false,
-            errorMessage:   gitResult ? gitResult.errorMessage : "Unknown error",
-            data:           gitResult ? gitResult.data : null
-        }
-        root.fetchBatchResults.push(payload)
+        let stale = gitResult && gitResult.stale === true
+
+        if (stale) {
+            root.notificationController.info("Fetch finished for the repository you switched away from", "Fetch", 4000)
+        } else {
+            let payload = {
+                remote:         remoteName,
+                success:        gitResult ? gitResult.success : false,
+                errorMessage:   gitResult ? gitResult.errorMessage : "Unknown error",
+                data:           gitResult ? gitResult.data : null
+            }
+            root.fetchBatchResults.push(payload)
 
             if (root.notificationController) {
-            if (payload.success)
+                if (payload.success)
                     root.notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
                 else
-                root.notificationController.error("Fetch failed for " + remoteName + ": " + (payload.errorMessage || "Unknown error"), "Fetch Error", 7000)
+                    root.notificationController.error("Fetch failed for " + remoteName + ": " + (payload.errorMessage || "Unknown error"), "Fetch Error", 7000)
             }
+        }
 
             root.isFetching = root.activeFetchRemotes.length > 0 || root.pendingFetchRemoteNames.length > 0
             if (root.activeFetchRemotes.length === 0 && root.pendingFetchRemoteNames.length === 0 && root.fetchBatchResults.length > 0) {
