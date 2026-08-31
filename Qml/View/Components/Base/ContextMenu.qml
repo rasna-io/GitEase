@@ -105,7 +105,6 @@ Popup {
             Rectangle {
                 visible: !isSep
                 anchors.fill: parent
-                anchors.margins: 2
                 radius: 4
                 color: (itemMouse.containsMouse && isEnabled) ? Style.colors.contextMenuHover : "transparent"
             }
@@ -144,8 +143,6 @@ Popup {
                     font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
                     Layout.preferredHeight: Style.dp(25)
-                    Material.accent: Style.colors.accent
-                    Material.foreground: Style.colors.foreground
                     checked: false
                     visible: modelData.hasCheckBox === true && modelData.enabled
                 }

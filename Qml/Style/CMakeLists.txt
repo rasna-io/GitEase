@@ -73,6 +73,7 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style_Impl
         impl/Switch.qml
         impl/Calendar.qml
         impl/TextArea.qml
+        impl/CheckBox.qml
 )
 
 target_link_libraries(${MAIN_TARGET_NAME}_Style PRIVATE
