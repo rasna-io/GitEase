@@ -245,7 +245,9 @@ Item {
         target: root.repositoryController
 
         function onCloneCompleted(res) {
-            if(!res.success)
+            if (res && res.stale === true)
+                notificationController.info("Clone finished while you were switching repository", "Clone", 4000)
+            else if(!res.success)
                 notificationController.error(`can't clone ${root.selectedUrl}, ${res.errorMessage}`, ` Repository clone failed`, 5000)
 
             root.busy = false
