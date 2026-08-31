@@ -389,4 +389,8 @@ Page {
     function pullAndUpdate(secret) {
         root.remoteOperationsSession?.pullAndUpdate(secret)
     }
+
+    function onPageActivated() {
+        utilityPanel.reload()
+    }
 }
