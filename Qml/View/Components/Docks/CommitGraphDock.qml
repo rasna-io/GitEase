@@ -1164,13 +1164,18 @@ DetachablePanel {
         let args = token !== undefined ? ["origin", branchName, token, force] : ["origin", branchName, force]
         AsyncGit.call(remoteController, "push", args,
             function(result) { root.handlePushResult(result) },
-            function(error) { root.handlePushResult({ success: false, errorMessage: error }) }
+            function(error) { root.handlePushResult({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
         )
     }
 
     function handlePushResult(gitResult) {
         if (!root.notificationController)
             return
+
+        if (gitResult && gitResult.stale === true) {
+            root.notificationController.info("Push finished for the repository you switched away from", "Push", 4000)
+            return
+        }
 
         if (gitResult && gitResult.success) {
             let data = gitResult.data
