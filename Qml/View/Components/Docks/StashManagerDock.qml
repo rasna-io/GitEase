@@ -102,15 +102,17 @@ UtilitiesCard {
 
         Connections {
             target: root.addStashPopup
-            function onAboutToHide() {
-                root.updateStashes()
+            function onVisibleChanged() {
+                if (root.addStashPopup && !root.addStashPopup.visible)
+                    root.updateStashes()
             }
         }
 
         Connections {
             target: root.manageStashPopup
-            function onAboutToHide() {
-                root.updateStashes()
+            function onVisibleChanged() {
+                if (root.manageStashPopup && !root.manageStashPopup.visible)
+                    root.updateStashes()
             }
         }
 
@@ -213,20 +215,22 @@ UtilitiesCard {
         if (!root.addStashPopup)
             return
 
+        root.addStashPopup.hostItem = root
         root.addStashPopup.stashController = root.stashController
         root.addStashPopup.statusController = root.statusController
-        root.addStashPopup.open()
+        root.addStashPopup.show()
     }
 
     function openPreview(stashEntry) {
         if (!root.manageStashPopup)
             return
 
+        root.manageStashPopup.hostItem = root
         root.manageStashPopup.stashController = root.stashController
         root.manageStashPopup.statusController = root.statusController
         root.manageStashPopup.commitController = root.commitController
         root.manageStashPopup.stashEntry = stashEntry
-        root.manageStashPopup.open()
+        root.manageStashPopup.show()
     }
 
     function popStash(stashEntry) {

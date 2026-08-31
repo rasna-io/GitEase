@@ -11,7 +11,7 @@ import GitEase_Style_Impl
  * AddStashPopup
  * ************************************************************************************************/
 
-IPopup {
+IWindow {
     id: root
 
     /* Property Declarations
@@ -55,13 +55,30 @@ IPopup {
      * ****************************************************************************************/
     width: 800
     height: 650
-    padding: 0
+    minimumWidth: 560
+    minimumHeight: 440
 
-    onOpened: root.loadFiles()
+    Connections {
+        target: root
+
+        function onVisibleChanged() {
+            if (root.visible)
+                root.loadFiles()
+        }
+    }
+
+    /* Shortcuts
+     * ****************************************************************************************/
+    Shortcut {
+        sequence: "Escape"
+        enabled: root.visible
+        onActivated: root.closePopUp()
+    }
 
     /* Children
      * ****************************************************************************************/
-    contentItem: Rectangle {
+    Rectangle {
+        anchors.fill: parent
         color: Style.colors.primaryBackground
         radius: 6
         clip: true
@@ -78,6 +95,8 @@ IPopup {
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
                 Layout.topMargin: 6
+
+                windowController: root.windowController
 
                 title:    qsTr("Create Stash")
                 metaText: root.headerMeta

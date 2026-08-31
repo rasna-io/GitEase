@@ -12,7 +12,7 @@ import GitEase
  * Browse the full repository file tree at a specific commit (read-only),
  * similar to GitHub's "Browse files" on a commit.
  * ************************************************************************************************/
-IPopup {
+IWindow {
     id: root
 
     /* Property Declarations
@@ -64,15 +64,22 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: Math.min(880, parent ? parent.width - 24 : 880)
-    height: Math.min(620, parent ? parent.height - 24 : 620)
-    modal: true
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-
-    onClosed: clear()
+    width: 920
+    height: 660
+    minimumWidth: 640
+    minimumHeight: 480
 
     /* Signals and Connections
      * ****************************************************************************************/
+    Connections {
+        target: root
+
+        function onVisibleChanged() {
+            if (!root.visible)
+                root.clear()
+        }
+    }
+
     Connections {
         target: repositoryController
 
@@ -80,6 +87,14 @@ IPopup {
             root.clear()
             root.closeRequested()
         }
+    }
+
+    /* Shortcuts
+     * ****************************************************************************************/
+    Shortcut {
+        sequence: "Escape"
+        enabled: root.visible
+        onActivated: root.close()
     }
 
     /* Children
@@ -117,7 +132,8 @@ IPopup {
         }
     }
 
-    contentItem: Rectangle {
+    Rectangle {
+        anchors.fill: parent
         color: Style.colors.primaryBackground
         radius: 8
         clip: true
@@ -134,6 +150,14 @@ IPopup {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
                 color: Style.colors.secondaryBackground
+
+                // Drag-to-move header (buttons on top still receive clicks)
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton
+                    onPressed: root.windowController?.startSystemMove()
+                    onDoubleClicked: root.windowController?.toggleMaxRestore()
+                }
 
                 // bottom border
                 Rectangle {
@@ -191,35 +215,35 @@ IPopup {
                             font.pixelSize: Style.appFont.defaultPt
                         }
 
-                        // Close button
-                        ToolButton {
+                        WindowsButton {
                             id: closeButton
-                            Layout.preferredWidth: 22
-                            Layout.preferredHeight: 22
-                            hoverEnabled: true
-
-                            contentItem: Text {
-                                anchors.centerIn: parent
-                                text: Style.icons.close
-                                font.family: Style.fontTypes.font6ProSolid
-                                font.pixelSize: Style.appFont.smallPt
-                                color: parent.hovered ? Style.colors.foreground : Style.colors.mutedText
-                            }
-
-                            background: Rectangle {
-                                radius: 5
-                                color: parent.hovered ? Style.colors.hoverTitle : "transparent"
-                            }
-
                             onClicked: {
                                 root.close()
                                 root.closeRequested()
                             }
+                            Material.accent: Style.colors.windowsClose
+                            content: Item {
+                                anchors.centerIn: parent
+                                width: 10
+                                height: 10
 
-                            MouseArea {
-                                anchors.fill: parent
-                                acceptedButtons: Qt.NoButton
-                                cursorShape: Qt.PointingHandCursor
+                                Rectangle {
+                                    width: 12
+                                    height: 2
+                                    radius: 1
+                                    color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                                    anchors.centerIn: parent
+                                    rotation: 45
+                                }
+
+                                Rectangle {
+                                    width: 12
+                                    height: 2
+                                    radius: 1
+                                    color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
+                                    anchors.centerIn: parent
+                                    rotation: -45
+                                }
                             }
                         }
                     }
@@ -768,7 +792,7 @@ IPopup {
             root.notificationController.error("Failed to load file tree for commit " + root.commitShortSha,
                                                   "Commit File Browser", 5000)
 
-        root.open()
+        root.show()
     }
 
     // Load the files changed in this commit and mark their ancestor folders

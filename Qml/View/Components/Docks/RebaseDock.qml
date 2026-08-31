@@ -211,6 +211,7 @@ UtilitiesCard {
 
     CommitPlanPopup {
         id: commitPlanPopup
+        hostItem: root
         statusController: root.statusController
         commitController: root.commitController
         rebaseController: root.rebaseController
@@ -259,7 +260,7 @@ UtilitiesCard {
 
         var branchValue = currentBranchValue(currentIndexBranchCombo)
 
-        commitPlanPopup.open()
+        commitPlanPopup.show()
 
         rebaseController.startPreviewRebasePlan(onto, upstream, branchValue)
     }

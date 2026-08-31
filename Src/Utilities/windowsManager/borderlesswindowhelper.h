@@ -24,6 +24,8 @@ public:
     QSize minimumSize() const;
     void setMinimumSize(const QSize &newSize);
 
+    void refreshBorderless();
+
     bool minimizePreservingState();
 
 private:

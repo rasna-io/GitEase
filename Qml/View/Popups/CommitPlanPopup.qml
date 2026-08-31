@@ -11,7 +11,7 @@ import GitEase_Style_Impl
  * Shows a previewable commits todo list with commit file changes and diff view.
  * ************************************************************************************************/
 
-IPopup {
+IWindow {
     id: root
 
     QtObject {
@@ -105,17 +105,22 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-    width   : Math.min(1180 , parent ? parent.width - 80    : 1180)
-    height  : Math.min(760  , parent ? parent.height - 80   : 760)
+    width   : 1180
+    height  : 760
+    minimumWidth: 720
+    minimumHeight: 560
 
-    modal           : true
-    closePolicy     : Popup.NoAutoClose
+    Connections {
+        target: root
 
-    onAboutToShow: root.ownsRebase = true
-
-    onClosed: {
-        root.ownsRebase = false
-        resetPopupState()
+        function onVisibleChanged() {
+            if (root.visible)
+                root.ownsRebase = true
+            else {
+                root.ownsRebase = false
+                root.resetPopupState()
+            }
+        }
     }
 
     /* Shortcuts
@@ -168,9 +173,16 @@ IPopup {
         onActivated: root.setAction(root.selectedIndex, RebaseActions.drop)
     }
 
+    Shortcut {
+        sequence: "Escape"
+        enabled: root.visible
+        onActivated: root.cancelPlan()
+    }
+
     /* Children
      * ****************************************************************************************/
-    contentItem: Rectangle {
+    Rectangle {
+        anchors.fill: parent
         color: Style.colors.primaryBackground
         radius: 12
         clip: true
@@ -239,6 +251,8 @@ IPopup {
                 Layout.rightMargin: root.contentInset
                 Layout.topMargin: Style.dp(14)
                 Layout.bottomMargin: Style.dp(12)
+
+                windowController: root.windowController
 
                 branch: root.planData.branch || ""
                 ontoRef: root.planData.onto || root.planData.upstream || ""
@@ -378,7 +392,7 @@ IPopup {
     ConflictPopup {
         id : rebaseConflictPopup
 
-        hostItem: root.hostOverlay
+        hostItem: root.hostItem
         currentOperation: ConflictPopup.OperationType.Rebase
         ontoRef: root.planData.onto || root.planData.upstream || ""
         rebaseController: root.rebaseController
