@@ -12,7 +12,7 @@ Repository *IGitController::currentRepo() const
 
 void IGitController::setCurrentRepo(Repository *newCurrentRepo)
 {
-    QMutexLocker<QRecursiveMutex> repoLocker(repoMutex());
+    // QMutexLocker<QRecursiveMutex> repoLocker(repoMutex());
 
     if (m_currentRepo == newCurrentRepo)
         return;
