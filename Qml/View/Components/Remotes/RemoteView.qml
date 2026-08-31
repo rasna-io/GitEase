@@ -335,7 +335,7 @@ UtilitiesCard {
         function startFetch(remoteName) {
             AsyncGit.call(root.remoteController, "fetch", [remoteName],
                 function(result) { content.handleFetchResult(remoteName, result) },
-                function(error) { content.handleFetchResult(remoteName, { success: false, errorMessage: error }) }
+                function(error) { content.handleFetchResult(remoteName, { success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
             )
         }
 
@@ -343,12 +343,13 @@ UtilitiesCard {
             root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
             root.isFetching = root.activeFetchRemotes.length > 0
 
-            if (root.notificationController) {
-                if (gitResult && gitResult.success)
-                    root.notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
-                else
-                    root.notificationController.error("Failed to fetch from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Unknown error"), "Fetch Error", 7000)
-            }
+            if (gitResult && gitResult.stale === true)
+                root.notificationController.info("Fetch finished for the repository you switched away from", "Fetch", 4000)
+
+            if (gitResult && gitResult.success)
+                root.notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
+            else
+                root.notificationController.error("Failed to fetch from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Unknown error"), "Fetch Error", 7000)
 
             content.update()
         }
