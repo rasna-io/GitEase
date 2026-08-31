@@ -20,6 +20,8 @@
  */
 
 
+var STALE       = "stale"
+
 var _pending    = ({})
 var _wired      = []
 
@@ -71,9 +73,14 @@ function _onFinished(id, method, result, isRepoChanged) {
 
     delete _pending[id]
 
+    if (isRepoChanged) {
+        if (entry.fail)
+            entry.fail(STALE, method)
+        return
+    }
+
     if (entry.done)
-        if(!isRepoChanged)
-            entry.done(result, method)
+        entry.done(result, method)
 }
 
 function _onFailed(id, method, error, isRepoChanged) {
