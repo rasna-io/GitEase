@@ -67,9 +67,16 @@ Rectangle {
 
         let current = pageSwipeView.currentItem
         if (current?.onPageChange) {
-            current.onPageChange(accepted => { if (accepted) pageSwipeView.setCurrentIndex(targetIndex) })
+            current.onPageChange(accepted => {
+                if (!accepted)
+                    return
+
+                pageSwipeView.setCurrentIndex(targetIndex)
+                pages[targetIndex]?.onPageActivated?.()
+            })
         } else {
             pageSwipeView.setCurrentIndex(targetIndex)
+            pages[targetIndex]?.onPageActivated?.()
         }
     }
 
