@@ -241,13 +241,18 @@ Item {
         let args = token !== undefined ? [remoteName, branchName, token] : [remoteName, branchName]
         AsyncGit.call(root.remoteController, "pull", args,
             function(result) { root.handlePullResult(result) },
-            function(error) { root.handlePullResult({ success: false, errorMessage: error }) }
+            function(error) { root.handlePullResult({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
         )
     }
 
     function handlePullResult(gitResult) {
             if (!root.notificationController)
                 return
+
+        if (gitResult && gitResult.stale === true) {
+            root.notificationController.info("Pull finished for the repository you switched away from", "Pull", 4000)
+            return
+        }
 
         if (gitResult && gitResult.success)
                 root.notificationController.success("Pulled successfully", "Pull", 3000)
