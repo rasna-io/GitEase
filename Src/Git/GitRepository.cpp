@@ -75,18 +75,12 @@ GitResult GitRepository::open(const QString &path)
 
     newRepo->setParent(this);
 
-    Repository *oldRepo = m_currentRepo;
     m_currentRepo = newRepo;
-    
+
     // Store path and emit signal
     m_currentRepoPath = path;
     emit currentRepoChanged();
     emitGitCommand(QString("git -C %1 rev-parse --git-dir").arg(quoteCommandArg(path)));
-
-    if (oldRepo)
-    {
-        oldRepo->deleteLater();
-    }
 
     return GitResult(true, path);
 }
