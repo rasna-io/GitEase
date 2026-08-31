@@ -64,6 +64,10 @@ Page {
         notificationController: root.notificationController
         remoteController: root.remoteController
         guideController: root.guideController
+
+        onPullRequested: root.pullAndUpdate()
+        onPushRequested: function(force) { root.pushAndUpdate(force) }
+        onFetchRequested: root.fetch()
     }
 
     onStatusControllerChanged: {

@@ -29,6 +29,9 @@ RowLayout {
 
     /* Signals
      * ****************************************************************************************/
+    signal pullRequested()
+    signal pushRequested(bool force)
+    signal fetchRequested()
 
     /* Children
      * ****************************************************************************************/
@@ -130,7 +133,7 @@ RowLayout {
             border.color: Style.colors.chipBorder
         }
 
-        onClicked: root.pullAndUpdate()
+        onClicked: headerRow.pullRequested()
 
         MouseArea {
             acceptedButtons: Qt.NoButton
@@ -187,7 +190,7 @@ RowLayout {
         }
 
         onClicked: {
-            root.pushAndUpdate()
+            headerRow.pushRequested(false)
         }
 
         MouseArea {
@@ -239,7 +242,7 @@ RowLayout {
             border.color: Style.colors.chipBorder
         }
 
-        onClicked: root.fetch()
+        onClicked: headerRow.fetchRequested()
 
         MouseArea {
             acceptedButtons: Qt.NoButton
@@ -296,7 +299,7 @@ RowLayout {
         }
 
         onClicked: {
-            root.pushAndUpdate(true)
+            headerRow.pushRequested(true)
         }
 
         MouseArea {
