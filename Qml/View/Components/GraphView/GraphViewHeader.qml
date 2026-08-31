@@ -198,6 +198,7 @@ RowLayout {
             headerRow.filterModes = []
             headerRow.filterStartDate = ""
             headerRow.filterEndDate = ""
+            headerRow.navigationRule = headerRow.navigationRules[0]
             headerRow.applyFilter()
             headerRow.branchSelected("")
         }

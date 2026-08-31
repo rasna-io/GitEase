@@ -59,7 +59,7 @@ DetachablePanel {
     property var selectedCommit         : null
     property int lastSelectedIndex      : -1
 
-    property string navigationRule  : "Message"
+    property string navigationRule  : "Author Email"
     property string filterText      : ""
     property string filterStartDate : ""
     property string filterEndDate   : ""
@@ -612,17 +612,6 @@ DetachablePanel {
         if (Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter)) {
             ensureMinimumResults()
         }
-    }
-
-    function clearFilter() {
-        root.filterText         = ""
-        root.filterStartDate    = ""
-        root.filterEndDate      = ""
-        root.filterMode         = []
-        root.branchFilter       = ""
-        root.branchFilterHeadHash = ""
-        root.navigationRule     = "Message"
-        loadData(root.allCommits.slice(0))
     }
 
     function loadData(items) {
