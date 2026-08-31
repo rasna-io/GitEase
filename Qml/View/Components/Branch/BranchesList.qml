@@ -55,7 +55,8 @@ ListView {
         readonly property bool isSelected: branchDelegate.branch.name === root.currentBranch
 
         width: root.width
-        height: Style.dp(30)
+        height: Style.dp(28)
+        radius: 4
 
         color: branchDelegate.isSelected ? Style.colors.utilitiesRowSelectedBackground
                                          : (hoverHandler.hovered ? Style.colors.utilitiesRowHoverBackground
@@ -85,6 +86,9 @@ ListView {
             anchors.fill: parent
             acceptedButtons: Qt.RightButton
             onClicked: (mouse) => {
+                if(!root.isLocal)
+                    return
+
                 var pos = mapToItem(Overlay.overlay, mouse.x, mouse.y)
                 itemContextMenu.menuModel = root.buildBranchMenu(branchDelegate.branch)
                 itemContextMenu.x = pos.x
@@ -96,9 +100,9 @@ ListView {
         RowLayout {
             anchors.fill: parent
             //! Constant inset so rows stay aligned whether or not the indicator is shown
-            anchors.leftMargin: Style.dp(16)
-            anchors.rightMargin: Style.dp(10)
-            spacing: Style.dp(8)
+            anchors.leftMargin: Style.dp(8)
+            anchors.rightMargin: Style.dp(8)
+            spacing: Style.dp(6)
 
             Text {
                 text: root.isLocal ? Style.icons.branch : Style.icons.globe
@@ -191,37 +195,162 @@ ListView {
             root.notificationController.success("Branch name copied to clipboard", "Branch", 2000)
     }
 
+    function copyBranchHash(branch) {
+        clipboardHelper.text = branch.targetHash
+        clipboardHelper.selectAll()
+        clipboardHelper.copy()
+        if (root.notificationController)
+            root.notificationController.success("Commit SHA copied to clipboard", "Branch", 2000)
+    }
+
     function buildBranchMenu(branch) {
-        var items = [{
-            text: "Copy Branch Name",
-            icon: Style.icons.copy,
-            action: function() { root.copyBranchName(branch) }
-        }]
 
-        var actions = []
+        var menu = []
 
-        if (branch.name !== root.currentBranch) {
-            actions.push({
-                text: "Checkout",
-                icon: Style.icons.check,
-                action: function() { root.doCheckout(branch) }
+        if (root.isLocal){
+
+            if (branch.name !== root.currentBranch) {
+                menu.push({
+                    text: "Checkout",
+                    icon: Style.icons.branchPlus,
+                    action: function() { root.doCheckout(branch) }
+                })
+
+                menu.push({ separator: true })
+            }
+
+            // Rename
+            menu.push({
+                text: "Rename...",
+                icon: Style.icons.edit,
+                visible: false,
+                action: function() {
+                    // TODO
+                }
             })
-        }
 
-        if (branch.name !== root.currentBranch && root.isLocal) {
-            actions.push({
-                text: "Delete Branch",
+            // Delete
+            if (branch.name !== root.currentBranch) {
+                menu.push({
+                    text: "Delete",
+                    icon: Style.icons.trash,
+                    color: Style.colors.contextMenuDanger,
+                    action: function() { root.doDeleteBranch(branch) }
+                })
+            }
+
+            menu.push({ separator: true })
+
+            // Merge
+            menu.push({
+                text: "Merge into current",
+                icon: Style.icons.arowLeftRight,
+                visible: false,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            // Rebase
+            menu.push({
+                text: "Rebase onto current",
+                icon: Style.icons.clockRotateLeft,
+                visible: false,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            // Cherry-pick
+            menu.push({
+                text: "Cherry-pick range...",
+                icon: Style.icons.copy,
+                visible: false,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({ separator: true, visible: false })
+
+            // Reset
+            menu.push({
+                text: "Reset current to here...",
+                icon: Style.icons.reset,
+                visible: false,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({ separator: true, visible: false })
+
+            menu.push({
+                text: "Copy Branch Name",
+                icon: Style.icons.copy,
+                action: function() { root.copyBranchName(branch) }
+                })
+
+            menu.push({
+                text: "Copy Full SHA",
+                icon: Style.icons.copy,
+                action: function() { root.copyBranchHash(branch) }
+                })
+        } else {
+            menu.push({
+                text: "Fetch",
+                icon: Style.icons.download,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({
+                text: "Pull",
+                icon: Style.icons.arrowDown,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({
+                text: "Push",
+                icon: Style.icons.arrowUp,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({ separator: true })
+
+            menu.push({
+                text: "Edit Remote...",
+                icon: Style.icons.edit,
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({
+                text: "Delete Remote",
                 icon: Style.icons.trash,
                 color: Style.colors.contextMenuDanger,
-                action: function() { root.doDeleteBranch(branch) }
+                action: function() {
+                    // TODO
+                }
+            })
+
+            menu.push({ separator: true })
+
+            menu.push({
+                text: "Copy URL",
+                icon: Style.icons.copy,
+                action: function() {
+                    // TODO
+                }
             })
         }
 
-        if (actions.length > 0) {
-            items.push({ separator: true })
-            items = items.concat(actions)
-        }
-
-        return items
+        return menu
     }
 }

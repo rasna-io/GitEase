@@ -410,4 +410,37 @@ QtObject{
 
     property color stashDiffLink:                        utilitiesRowMetaText
     property color stashDiffLinkHover:                   accent
+
+    // Popup
+    property color popupBackground:                  "#FFFFFF"           
+    property color popupBorder:                      primaryBorder       
+    property color popupHeaderSeparator:             primaryBorder
+    property color popupTitleText:                   foreground       
+    property color popupCloseButton:                 mutedText
+    property color popupCloseButtonHover:            foreground
+    property color popupSectionLabel:                secondaryText 
+    property color popupInputBackground:             controlBackground
+    property color popupInputBorder:                 controlBorder
+    property color popupInputBorderFocus:            accent
+    property color popupInputText:                   foreground
+    property color popupChipBackground:              controlBackground
+    property color popupChipBorder:                  controlBorder
+    property color popupChipText:                    secondaryText
+    property color popupBaseBranchBackground:        controlBackground
+    property color popupBaseBranchBorder:            controlBorder
+    property color popupBaseBranchText:              secondaryText
+    property color popupRadioBorder:                 mutedText
+    property color popupRadioBorderChecked:          accent
+    property color popupRadioDot:                    "#FFFFFF"
+    property color popupCheckboxBackgroundChecked:   accent
+    property color popupCheckboxBorder:              mutedText
+    property color popupCheckboxCheckmark:           "#FFFFFF"
+    property color popupCheckboxLabelText:           secondaryText
+    property color popupCommandPreviewBackground:    controlBackground
+    property color popupCommandPreviewText:          secondaryText
+    property color popupFooterBackground:            controlBackground
+    property color popupCreateButtonBackground:      accent
+    property color popupCreateButtonText:            "#FFFFFF"
+    property color popupCancelButtonBorder:          controlBorder
+    property color popupCancelButtonText:            secondaryText
 }
