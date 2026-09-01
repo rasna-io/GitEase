@@ -18,6 +18,11 @@ struct PluginInfo
     QString     cppEntry;       // relative path to .dll / .so inside pluginDir
     QString     qmlEntry;       // relative path to root QML component
     QString     pluginDir;      // absolute path to the plugin folder
+    QString     icon;           // icon path relative to pluginDir (from plugin.json)
+    QString     iconUrl;        // icon URL from server/CDN (from plugin.json)
+    QString     minAppVersion;  // minimum GitEase version required
+    QString     releaseDate;    // package release date
+    QString     size;           // display size string, e.g. "128 KB"
     bool        enabled      = true;
     bool        loaded       = false;
     QString     errorMessage;
@@ -37,6 +42,11 @@ struct PluginInfo
             { QStringLiteral("capabilities"), capabilities },
             { QStringLiteral("pluginDir"),    pluginDir    },
             { QStringLiteral("qmlEntry"),     qmlEntry     },
+            { QStringLiteral("icon"),         icon         },
+            { QStringLiteral("iconUrl"),      iconUrl      },
+            { QStringLiteral("minAppVersion"),minAppVersion},
+            { QStringLiteral("releaseDate"),  releaseDate  },
+            { QStringLiteral("size"),         size         },
             { QStringLiteral("enabled"),      enabled      },
             { QStringLiteral("loaded"),       loaded       },
             { QStringLiteral("errorMessage"), errorMessage },
@@ -52,6 +62,11 @@ struct PluginInfo
         info.apiVersion  = obj.value(QStringLiteral("apiVersion")).toString();
         info.author      = obj.value(QStringLiteral("author")).toString();
         info.description = obj.value(QStringLiteral("description")).toString();
+        info.icon           = obj.value(QStringLiteral("icon")).toString();
+        info.iconUrl        = obj.value(QStringLiteral("iconUrl")).toString();
+        info.minAppVersion  = obj.value(QStringLiteral("minAppVersion")).toString();
+        info.releaseDate    = obj.value(QStringLiteral("releaseDate")).toString();
+        info.size           = obj.value(QStringLiteral("size")).toString();
         info.cppEntry    = obj.value(QStringLiteral("cppEntry")).toString();
         info.qmlEntry    = obj.value(QStringLiteral("qmlEntry")).toString();
         info.enabled     = obj.value(QStringLiteral("enabled")).toBool(true);
