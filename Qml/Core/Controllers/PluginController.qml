@@ -39,6 +39,8 @@ QtObject {
     property var    pendingInstallKeys:   ({})
     // map of expected MD5 hashes for in-progress downloads: requestKey → md5 hex string
     property var    pendingInstallHashes: ({})
+    property string installingPluginId:   ""
+    property string installingPluginName: ""
 
 
     readonly property string pluginApiBaseUrl:               "https://gitease.app/api"
@@ -82,9 +84,17 @@ QtObject {
             }
         }
 
+        onPluginInstallStarted: function(id, name) {
+            console.log("[PluginController] Plugin install started:", id, name)
+            root.installingPluginId   = id
+            root.installingPluginName = name
+        }
+
         onPluginInstalled: function(id) {
             console.log("[PluginController] Plugin installed:", id)
             root.setPluginBusy(id, false)
+            if (root.installingPluginId === id)
+                root.installingPluginName = ""
             root.notificationController.success("Plugin installed successfully.", "Plugins")
         }
 
@@ -97,7 +107,10 @@ QtObject {
         onPluginInstallFailed: function(id, error) {
             console.warn("[PluginController] Plugin install failed:", id, error)
             root.setPluginBusy(id, false)
-            root.notificationController.error("Could not install plugin: " + error, "Plugins")
+            if (root.installingPluginId === id)
+                root.installingPluginName = ""
+            if (error)
+                root.notificationController.error("Could not install plugin: " + error, "Plugins")
         }
     }
 
@@ -305,6 +318,12 @@ QtObject {
         )
     }
 
+    function installGepFile(gepPath) {
+        if (!gepPath)
+            return
+        pluginManager.installGepFile(gepPath)
+    }
+
     function uninstallPlugin(pluginId) {
         root.setPluginBusy(pluginId, true)
         if (!pluginManager.removePlugin(pluginId))
@@ -471,8 +490,8 @@ QtObject {
             return
         }
 
-        // Pass expectedMd5 — empty string means "skip verification" (server didn't provide a hash)
-        pluginManager.installPluginFromBase64Zip(pluginId, base64Data, expectedMd5)
+        if (!pluginManager.installGepFromBase64(base64Data))
+            root.setPluginBusy(pluginId, false)
     }
 
     // Replaces appModel.plugins with the server list merged with local state.
@@ -563,12 +582,12 @@ QtObject {
             description:     local.description,
             author:          local.author,
             latestVersion:   local.version    || "",
-            minAppVersion:   local.apiVersion || "",
+            minAppVersion:   local.minAppVersion || local.apiVersion || "",
             category:        local.category,
             mainColor:       getCategoryColor(local.category),
-            size:            "",
-            iconUrl:         "",
-            releaseDate:     "",
+            size:            local.size       || "",
+            iconUrl:         local.iconUrl     ? local.iconUrl : (local.icon ? ("file://" + local.pluginDir + "/" + local.icon) : ""),
+            releaseDate:     local.releaseDate || "",
             isInstalled:     true,
             isEnabled:       local.enabled,
             isCompatible:    local.loaded,
