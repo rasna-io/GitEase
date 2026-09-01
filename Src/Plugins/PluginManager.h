@@ -61,6 +61,8 @@ public:
     Q_INVOKABLE void unloadPlugin(const QString& id);
     Q_INVOKABLE bool installPluginFromBase64Zip(const QString& pluginId, const QString& base64Data,
                                                 const QString& expectedMd5 = {});
+    Q_INVOKABLE bool installGepFile(const QString& gepPath);
+    Q_INVOKABLE bool installGepFromBase64(const QString& base64Data);
     Q_INVOKABLE bool removePlugin(const QString& id);
 
     // ── Diff plugin lookup ────────────────────────────────────────────────────
@@ -127,6 +129,7 @@ signals:
     void pluginError      (const QString& id, const QString& error);
     void pluginInstalled  (const QString& id);
     void pluginRemoved    (const QString& id);
+    void pluginInstallStarted(const QString& id, const QString& name);
     void pluginInstallFailed(const QString& id, const QString& error);
 
     // Forwarded from PluginContext — consumed by PluginController
@@ -151,6 +154,9 @@ signals:
 private:
     bool       loadPlugin   (const QString& pluginDir);
     PluginInfo parseManifest(const QString& pluginDir);
+    void startGepInstall(const QString& gepPath, const QString& tempFileToRemove);
+    void finishGepInstall(int resultCode, const QString& id, const QString& name,
+                          const QString& targetDir);
     bool       loadCppPlugin(const PluginInfo& info);
     void       wireContext  ();
     bool       activatePlugin(PluginInfo& info);
