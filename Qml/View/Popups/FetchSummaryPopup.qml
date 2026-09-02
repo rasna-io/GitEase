@@ -29,8 +29,9 @@ IPopup {
 
     readonly property int sectionSpacing: 12
     readonly property int elementSpacing: 2
+    readonly property int maxPopupHeight: Style.dp(500)
 
-property var updatedBranches: []
+    property var updatedBranches: []
     property var newBranches    : []
 
     /* Object Properties
@@ -38,8 +39,15 @@ property var updatedBranches: []
     modal: true
     focus: true
 
-    width: 500
-    height: 420
+    width: Style.dp(500)
+    height: Math.min(root.maxPopupHeight, popupColumn.implicitHeight)
+
+    Behavior on height {
+        NumberAnimation {
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+    }
 
     padding: 0
 
@@ -58,8 +66,9 @@ property var updatedBranches: []
         border.color: Style.colors.popupBorder
         border.width: 1
 
-ColumnLayout {
-anchors.fill: parent
+        ColumnLayout {
+            id: popupColumn
+            anchors.fill: parent
         spacing: 0
 
             // Header
@@ -121,8 +130,9 @@ anchors.fill: parent
             ScrollView {
                 id: bodyScroll
 
-                    Layout.fillWidth: true
+                Layout.fillWidth: true
                 Layout.fillHeight: true
+                implicitHeight: bodyColumn.implicitHeight
 
                 Layout.leftMargin: 18
                 Layout.rightMargin: 18
@@ -142,12 +152,12 @@ anchors.fill: parent
                     // Body horizontal padding
                     Item {
                         Layout.preferredHeight: 14
-                }
+                    }
 
                     // Subtitle Text
                     RowLayout {
                         Layout.fillWidth: true
-                    spacing: 8
+                        spacing: 8
 
                         Item {
                             width: 12
@@ -197,130 +207,162 @@ anchors.fill: parent
                         }
                     }
 
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.topMargin: Style.dp(12)
+                        implicitHeight: 1
+                        visible: root.updatedBranches.length === 0 &&
+                                 root.newBranches.length === 0
+                        color: Style.colors.popupHeaderSeparator
+                    }
+
                     Item {
+                        visible: root.updatedBranches.length > 0 ||
+                                 root.newBranches.length > 0
                         Layout.preferredHeight: root.sectionSpacing
                     }
 
-                    // Updated Section
-                    Text {
-                        text: "Updated branches (" +
-                              root.updatedBranches.length +
-                              ")"
-
-                        Layout.fillWidth: true
-
-                        color: Style.colors.popupSectionLabel
-
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.defaultPt
-                        font.weight: Font.DemiBold
-                        font.capitalization: Font.AllUppercase
-        }
-
-                    // separator
-        Rectangle {
-            Layout.fillWidth: true
-                        implicitHeight: 1
-                        color: Style.colors.popupHeaderSeparator
-                    }
-
+                    // Show one compact empty state only when fetch produced no branches.
                     Item {
-                        Layout.preferredHeight: 6
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 60
+                        visible: root.updatedBranches.length === 0 &&
+                                 root.newBranches.length === 0
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 12
+
+                            Rectangle {
+                                Layout.alignment: Qt.AlignVCenter
+                                width: 36
+                                height: 36
+                                radius: 18
+                                color: Style.colors.emptyCircleBg
+                                border.width: 1
+                                border.color: Style.colors.emptyCircleBorder
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.failureCount(root.results) > 0
+                                          ? Style.icons.warning
+                                          : Style.icons.plus
+                                    font.family: Style.fontTypes.font6Pro
+                                    font.pixelSize: Style.appFont.mediumPt
+                                    color: root.failureCount(root.results) > 0
+                                           ? root.errorAccent
+                                           : Style.colors.popupInputText
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 3
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: root.failureCount(root.results) > 0
+                                          ? "Fetch failed"
+                                          : "No branches fetched"
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.mediumPt
+                                    font.weight: Font.DemiBold
+                                    color: Style.colors.popupTitleText
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: root.failureCount(root.results) > 0
+                                          ? "Check your credentials or network connection."
+                                          : "No updated or new branches were found."
+                                    wrapMode: Text.WordWrap
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.defaultPt
+                                    color: Style.colors.popupInputText
+                                }
+                            }
+                        }
                     }
 
+                    // Updated branches section
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 0
-
                         visible: root.updatedBranches.length > 0
 
-                    Repeater {
-                        model: root.updatedBranches
-                        delegate: FetchRow {}
-}
-                    }
-
-                    // Updated empty state
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 100
-
-                        visible: root.updatedBranches.length === 0
-
-                        EmptyStateView {
-                            anchors.fill: parent
-
-                            title: root.failureCount(root.results) > 0
-                                   ? "Fetch failed"
-                                   : "No updated branches"
-
-                            details: root.failureCount(root.results) > 0
-                                     ? "Check your credentials or network connection."
-                                     : "No new updated branches were found."
+                        Text {
+                            text: "Updated branches (" + root.updatedBranches.length + ")"
+                            Layout.fillWidth: true
+                            color: Style.colors.popupSectionLabel
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.defaultPt
+                            font.weight: Font.DemiBold
+                            font.capitalization: Font.AllUppercase
                         }
-                }
 
-                    Item {
-                        Layout.preferredHeight: 12
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 1
+                            color: Style.colors.popupHeaderSeparator
+                        }
+
+                        Item {
+                            Layout.preferredHeight: 6
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
+
+                            Repeater {
+                                model: root.updatedBranches
+                                delegate: FetchRow {}
+                            }
+                        }
                     }
 
-                    //New Section
-                Text {
-                        text: "New branches (" +
-                              root.newBranches.length +
-                              ")"
-
-                        Layout.fillWidth: true
-
-                        color: Style.colors.popupSectionLabel
-
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.defaultPt
-                        font.weight: Font.DemiBold
-                    font.capitalization: Font.AllUppercase
-                }
-
-                    // separator
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: 1
-                        color: Style.colors.popupHeaderSeparator
-                    }
-
-                    Item {
-                        Layout.preferredHeight: 6
-                    }
-
-                    // New branch rows
+                    // New branches section
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 0
-
                         visible: root.newBranches.length > 0
 
-                    Repeater {
-                        model: root.newBranches
-                        delegate: FetchRow {}
-}
-                    }
+                        Item {
+                            Layout.preferredHeight: root.updatedBranches.length > 0 ? 12 : 0
+                        }
 
-                    // New branches empty state
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 100
+                        Text {
+                            text: "New branches (" + root.newBranches.length + ")"
+                            Layout.fillWidth: true
+                            color: Style.colors.popupSectionLabel
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.defaultPt
+                            font.weight: Font.DemiBold
+                            font.capitalization: Font.AllUppercase
+                        }
 
-                        visible: root.newBranches.length === 0
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 1
+                            color: Style.colors.popupHeaderSeparator
+                        }
 
-                        EmptyStateView {
-                            anchors.fill: parent
+                        Item {
+                            Layout.preferredHeight: 6
+                        }
 
-                            title: root.failureCount(root.results) > 0
-                                   ? "Fetch failed"
-                                   : "No new branches"
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
 
-                            details: root.failureCount(root.results) > 0
-                                     ? "Check your credentials or network connection."
-                                     : "No new remote branches were found."
+                            Repeater {
+                                model: root.newBranches
+                                delegate: FetchRow {}
+                            }
                         }
                     }
             }
