@@ -96,7 +96,7 @@ Item {
 
         let jsonContent = JSON.parse(fileIO.fileContent)
 
-        root.recentRepositories  = jsonContent.recentRepositories
+        root.recentRepositories  = jsonContent.recentRepositories ?? []
         root.repositoriesHistory = jsonContent.repositoriesHistory ?? []
         root.enabledPluginIds    = jsonContent.enabledPlugins ?? []
         root.appSettings.deserialize(jsonContent.settings)
