@@ -21,11 +21,21 @@
 #include "IGitController.h"
 
 /**
- * @brief Owns the single worker thread for all asynchronous libgit2 calls.
+ * @brief Owns the worker threads for all asynchronous libgit2 calls.
  *
  * The runner provides a generic submit() that accepts a controller, a method name,
  * and a list of arguments. It resolves the method through the meta‑object system
- * and invokes it on the worker thread. Results are delivered back to the GUI thread.
+ * and invokes it on a worker thread. Results are delivered back to the GUI thread.
+ *
+ * Work is grouped into lanes, one per repository. Jobs in a lane run in submission order and
+ * one at a time, which is what a `git_repository*` requires. Different lanes run on different
+ * threads, so a long fetch on one repository no longer delays work on another: opening a
+ * second repository loads its content straight away instead of waiting behind the fetch.
+ *
+ * Lanes are served by two separate pools. Anything that talks to a remote runs in the network
+ * pool; everything else runs in the local pool. Keeping them apart is what makes opening a
+ * repository work in *any* situation: however many fetches are hung on an unreachable host,
+ * they can only ever fill the network pool, and reading a repository never needs it.
  */
 class GitAsyncRunner : public QObject
 {
