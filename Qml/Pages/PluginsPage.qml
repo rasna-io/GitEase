@@ -29,10 +29,11 @@ Page {
     property var            pluginsData:        root.appModel ? root.appModel.plugins : []
     property var            categoriesData:     root.appModel ? root.appModel.pluginsCategories : []
     property var            categoriesCounts:     ({})
-    readonly property int   minCardWidth:       400
-    readonly property int   minCardHeight:      250
+    readonly property int   minCardWidth:       280
+    readonly property int   minCardHeight:      170
 
     property string         currentMode:        ""
+    property string         currentCategory:    "All"
     property string         currentSearch:      ""
     property var            initialPlugins:     []   // full list from the last no-search fetch
     property bool           isSearchActive:     false
@@ -40,9 +41,12 @@ Page {
 
     property var installedModel: [
         { name: "Enabled",      iconName: Style.icons.check,   iconColor: Style.colors.compatible },
-        { name: "Disabled",     iconName: Style.icons.pause,   iconColor: "#363650" },
-        { name: "Needs Update", iconName: Style.icons.warning, iconColor: Style.colors.warning }
+        { name: "Disabled",     iconName: Style.icons.pause,   iconColor: Style.colors.pluginSidebarRowText },
+        { name: "Needs Update", iconName: Style.icons.warning, iconColor: Style.colors.marigold }
     ]
+
+    // Counts for the left panel Installed filter rows
+    property var installedCounts: ({})
 
     // Header exposed to MainWindow
     headerContent: Component {
@@ -91,7 +95,7 @@ Page {
         details: (root.pluginController && root.pluginController.installingPluginName)
             ? "Please wait, this usually takes a few seconds"
             : "No plugins available at the moment"
-        visible: (installedPluginsModel.count === 0 && availablePluginsModel.count === 0)
+        visible: (root.pluginsData ? root.pluginsData.length === 0 : true)
                  || (root.pluginController && root.pluginController.installingPluginName)
     }
 
@@ -113,6 +117,7 @@ Page {
 
     RowLayout {
         anchors.fill: parent
+        spacing: 0
 
         PluginsLeftPanel {
             id: leftPanel
@@ -120,60 +125,56 @@ Page {
             categoriesData: root.categoriesData
             installedModel: root.installedModel
             categoriesCounts: root.categoriesCounts
+            installedCounts: root.installedCounts
 
             onCategorySelected:  (category) => {
-                installedPluginsModel.clear()
-                availablePluginsModel.clear()
-                for (var i = 0; i < root.pluginsData.length; i++) {
-                    var plugin = root.pluginsData[i]
+                root.currentCategory = category
+                root.applyCurrentMode()
+            }
 
-                    var matchesCategory = plugin.category === category || category === "All"
-                    var matchesMode = root.currentMode === ""
-                        || (root.currentMode === "Installed" && plugin.isInstalled)
-                        || (root.currentMode === "Enabled"   && plugin.isEnabled)
-                        || (root.currentMode === "Available"  && !plugin.isInstalled)
-
-                    if (matchesCategory && matchesMode) {
-                        if (plugin.isInstalled)
-                            installedPluginsModel.append(plugin)
-                        else
-                            availablePluginsModel.append(plugin)
-                    }
-                }
+            onInstalledModeSelected: (mode) => {
+                root.currentMode = mode
+                root.applyCurrentMode()
             }
         }
 
         Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
-            color: Style.colors.obsidianDark
+            color: Style.colors.pluginPageBackground
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 8
+                anchors.margins: Style.dp(14)
+                spacing: 0
 
+                // ── Installed section header ─────────────────────────
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 10
+                    Layout.bottomMargin: Style.dp(10)
+                    spacing: Style.dp(8)
 
-                    Text {
-                        text: "INSTALLED"
-                        color: "#363650"
-                        font.pixelSize: Style.appFont.largePt
-                        font.family: Style.fontTypes.roboto
+                    Label {
+                        text: "Installed"
+                        color: Style.colors.pluginSectionLabel
+                        font.pixelSize: Style.appFont.h4Pt
+                        font.weight: Font.DemiBold
+                        font.family: Style.fontTypes.inter
+                        font.capitalization: Font.AllUppercase
+                        font.letterSpacing: 0.7
                     }
 
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 1
-                        color: Style.colors.primaryBorder
+                        color: Style.colors.pluginDivider
                     }
 
-                    Text {
+                    Label {
                         text: (root.pluginsData ? root.pluginsData.filter(function(p) { return p.isInstalled }).length : 0) + " plugins"
-                        color: "#363650"
-                        font.pixelSize: Style.appFont.largePt
-                        font.family: Style.fontTypes.roboto
+                        color: Style.colors.pluginSectionMetaText
+                        font.pixelSize: Style.appFont.smallPt
+                        font.family: Style.fontTypes.inter
                     }
                 }
 
@@ -181,6 +182,7 @@ Page {
                     id: installedGridView
                     Layout.fillWidth: true
                     Layout.preferredHeight: installedGridView.contentHeight
+                    Layout.bottomMargin: Style.dp(20)
                     clip: true
 
                     model: installedPluginsModel
@@ -196,8 +198,8 @@ Page {
 
                         PluginCard {
                             anchors.centerIn: parent
-                            width: installedGridView.cellWidth - 20
-                            height: installedGridView.cellHeight - 20
+                            width: installedGridView.cellWidth - 8
+                            height: installedGridView.cellHeight - 8
                             plugin: model
 
                             onInstallClicked: function(pluginId) {
@@ -216,28 +218,33 @@ Page {
                     }
                 }
 
+                // ── Available section header ─────────────────────────
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 10
+                    Layout.bottomMargin: Style.dp(10)
+                    spacing: Style.dp(8)
 
-                    Text {
-                        text: "AVAILABLE"
-                        color: "#363650"
-                        font.pixelSize: Style.appFont.largePt
-                        font.family: Style.fontTypes.roboto
+                    Label {
+                        text: "Available"
+                        color: Style.colors.pluginSectionLabel
+                        font.pixelSize: Style.appFont.h4Pt
+                        font.weight: Font.DemiBold
+                        font.family: Style.fontTypes.inter
+                        font.capitalization: Font.AllUppercase
+                        font.letterSpacing: 0.7
                     }
 
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 1
-                        color: Style.colors.primaryBorder
+                        color: Style.colors.pluginDivider
                     }
 
-                    Text {
+                    Label {
                         text: (root.pluginsData ? root.pluginsData.filter(function(p) { return !p.isInstalled }).length : 0) + " plugins"
-                        color: "#363650"
-                        font.pixelSize: Style.appFont.largePt
-                        font.family: Style.fontTypes.roboto
+                        color: Style.colors.pluginSectionMetaText
+                        font.pixelSize: Style.appFont.smallPt
+                        font.family: Style.fontTypes.inter
                     }
                 }
 
@@ -264,8 +271,8 @@ Page {
 
                         PluginCard {
                             anchors.centerIn: parent
-                            width: availableGridView.cellWidth - 20
-                            height: availableGridView.cellHeight - 20
+                            width: availableGridView.cellWidth - 8
+                            height: availableGridView.cellHeight - 8
                             plugin: model
 
                             onInstallClicked: function(pluginId) {
@@ -297,9 +304,6 @@ Page {
                 }
 
             }
-
-
-
         }
     }
 
@@ -308,6 +312,9 @@ Page {
      * ****************************************************************************************/
     function applyFilter(text, mode) {
         root.currentMode = mode || ""
+
+        // Header filter overrides the left-panel Installed selection
+        leftPanel.selectedInstalledMode = -1
 
         if (text === root.currentSearch) {
             // Only mode changed — re-filter the current list locally
@@ -353,11 +360,15 @@ Page {
         root.isSearchActive = false
         root.currentSearch  = ""
         root.currentMode    = ""
+        root.currentCategory = "All"
+        leftPanel.selectedCategory = -1
+        leftPanel.selectedInstalledMode = -1
         root.pluginController.fetchPluginsCategories()
         root.pluginController.fetchAvailablePlugins(1, "")
     }
 
-    // Refills installed/available models from appModel.plugins, applying the active mode filter.
+    // Refills installed/available models from appModel.plugins, applying the active
+    // category and mode filters.
     function applyCurrentMode() {
         installedPluginsModel.clear()
         availablePluginsModel.clear()
@@ -368,18 +379,25 @@ Page {
         for (var i = 0; i < root.pluginsData.length; i++) {
             var plugin = root.pluginsData[i]
 
-            var matchesMode = root.currentMode === ""
-                || (root.currentMode === "Installed" && plugin.isInstalled)
-                || (root.currentMode === "Enabled"   && plugin.isEnabled)
-                || (root.currentMode === "Available"  && !plugin.isInstalled)
+            var matchesCategory = plugin.category === root.currentCategory
+                                  || root.currentCategory === "All"
 
-            if (matchesMode) {
+            var matchesMode = root.currentMode === ""
+                || (root.currentMode === "Installed"     && plugin.isInstalled)
+                || (root.currentMode === "Enabled"       && plugin.isInstalled && plugin.isEnabled)
+                || (root.currentMode === "Disabled"      && plugin.isInstalled && !plugin.isEnabled)
+                || (root.currentMode === "Needs Update"  && plugin.isInstalled && plugin.updateAvailable)
+                || (root.currentMode === "Available"     && !plugin.isInstalled)
+
+            if (matchesCategory && matchesMode) {
                 if (plugin.isInstalled)
                     installedPluginsModel.append(plugin)
                 else
                     availablePluginsModel.append(plugin)
             }
         }
+
+        buildInstalledCounts()
     }
 
     function buildCategoriesCounts() {
@@ -398,5 +416,29 @@ Page {
         }
 
         root.categoriesCounts = counts
+    }
+
+    // Counts for the left panel Installed filter rows
+    function buildInstalledCounts() {
+        let counts = {
+            "Enabled": 0,
+            "Disabled": 0,
+            "Needs Update": 0
+        }
+
+        for (const plugin of root.pluginsData) {
+            if (!plugin.isInstalled)
+                continue
+
+            if (plugin.isEnabled)
+                counts["Enabled"]++
+            else
+                counts["Disabled"]++
+
+            if (plugin.updateAvailable)
+                counts["Needs Update"]++
+        }
+
+        root.installedCounts = counts
     }
 }
