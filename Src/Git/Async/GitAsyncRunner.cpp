@@ -6,9 +6,6 @@ GitAsyncRunner::GitAsyncRunner()
     : QObject(nullptr)
     , m_nextRequestId(1)
 {
-    m_thread = new QThread();
-    m_thread->setObjectName(QStringLiteral("GitAsyncRunner"));
-
     m_guiAnchor = new QObject();
 
     // The runner lives on the worker thread; its slots are executed there.
