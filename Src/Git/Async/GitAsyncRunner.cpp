@@ -113,32 +113,91 @@ qint64 GitAsyncRunner::submit(IGitController *controller, const QString &method,
     return id;
 }
 
-void GitAsyncRunner::executeJob(qint64 requestId, void *controller, const QString &method, const QVariantList &args, qint64 repoGeneration)
+void GitAsyncRunner::workerLoop(Pool *pool)
 {
-    auto *target = static_cast<IGitController *>(controller);
+    QMutexLocker locker(&m_mutex);
 
-    // Serialise all libgit2 access.
-    QMutexLocker<QRecursiveMutex> repoLocker(target->repoMutex());
+    for (;;)
+    {
+        Repository *lane = nullptr;
+        Job         job;
+
+        if (!takeReadyJob(pool, &lane, &job))
+        {
+            if (m_stopping)
+                return;
+
+            m_wake.wait(&m_mutex);
+            continue;
+        }
+
+        locker.unlock();
+        runJob(job, lane);
+        locker.relock();
+
+        auto it = pool->lanes.find(lane);
+
+        if (it != pool->lanes.end())
+        {
+            it->running = false;
+
+            if (it->pending.isEmpty())
+                pool->lanes.erase(it);
+        }
+
+        m_wake.wakeAll();
+    }
+}
+
+bool GitAsyncRunner::takeReadyJob(Pool *pool, Repository **lane, Job *job)
+{
+    for (auto it = pool->lanes.begin(); it != pool->lanes.end(); ++it)
+    {
+        if (it->running || it->pending.isEmpty())
+            continue;
+
+        it->running = true;
+
+        *job  = it->pending.dequeue();
+        *lane = it.key();
+
+        return true;
+    }
+
+    return false;
+}
+
+void GitAsyncRunner::runJob(const Job &job, Repository *lane)
+{
+    // Only this repository is locked, so calls against other repositories run alongside it.
+    QRecursiveMutex *lock = usesNetworkHandle(job.method)
+                                ? IGitController::networkMutex(lane)
+                                : IGitController::repoMutex(lane);
+
+    QMutexLocker<QRecursiveMutex> repoLocker(lock);
+
+    IGitController *target  = job.controller;
+    auto *controller        = static_cast<void *>(target);
 
     // The repository may have changed while the job was queued.
-    if (target->repoGeneration() != repoGeneration)
+    if (target->repoGeneration() != job.repoGeneration)
     {
-        emit jobFailed(requestId, controller, method, QStringLiteral("stale"), repoGeneration);
+        emit jobFailed(job.requestId, controller, job.method, QStringLiteral("stale"), job.repoGeneration);
         return;
     }
 
     QVariant result;
     QString error;
 
-    const bool ok = invokeByName(target, method, args, &result, &error);
+    const bool ok = invokeByName(target, job.method, job.args, &result, &error);
 
     if (!ok)
     {
-        emit jobFailed(requestId, controller, method, error, repoGeneration);
+        emit jobFailed(job.requestId, controller, job.method, error, job.repoGeneration);
         return;
     }
 
-    emit jobFinished(requestId, controller, method, result, repoGeneration);
+    emit jobFinished(job.requestId, controller, job.method, result, job.repoGeneration);
 }
 
 bool GitAsyncRunner::invokeByName(QObject *target, const QString &methodName, const QVariantList &args, QVariant *result, QString *error)
