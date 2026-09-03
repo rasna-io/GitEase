@@ -12,8 +12,6 @@ Repository *IGitController::currentRepo() const
 
 void IGitController::setCurrentRepo(Repository *newCurrentRepo)
 {
-    // QMutexLocker<QRecursiveMutex> repoLocker(repoMutex());
-
     if (m_currentRepo == newCurrentRepo)
         return;
     m_currentRepo = newCurrentRepo;
@@ -23,10 +21,13 @@ void IGitController::setCurrentRepo(Repository *newCurrentRepo)
     emit currentRepoChanged();
 }
 
-QRecursiveMutex *IGitController::repoMutex()
+QRecursiveMutex *IGitController::repoMutex(Repository *repo)
 {
-    static QRecursiveMutex mutex;
-    return &mutex;
+    static QRecursiveMutex fallback;
+
+    return repo ? &repo->mutex : &fallback;
+}
+
 }
 
 qint64 IGitController::repoGeneration() const
