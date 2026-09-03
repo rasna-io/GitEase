@@ -81,6 +81,14 @@ private:
      */
     static bool isNetworkMethod(const QString &method);
 
+    /**
+     * @brief Whether a method runs on the repository's transfer handle.
+     *
+     * These take the repository's network lock instead of its main one, so reads on the same
+     * repository keep working while the transfer runs. It must list exactly the methods that
+     * actually use networkRepo(); anything else would run against the main handle unlocked.
+     */
+    static bool usesNetworkHandle(const QString &method);
 
     /**
      * @brief Resolves methodName on target by name and argument count, converts args to the
