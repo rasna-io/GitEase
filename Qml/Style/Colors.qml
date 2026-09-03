@@ -133,6 +133,10 @@ QtObject{
 
     property color userInfoSelectedBackground: Qt.rgba(59 / 255, 130 / 255, 246 / 255, 0.1)
 
+    property color pluginBadgeBackground:   "#1F3B82F6"
+    property color pluginBadgeBorder:       "#403B82F6"
+    property color pluginBadgeText:         "#60A5FA"
+
     property color repoSelectectedItem:     "#44074E96"
     
     // User Profile Level Badge Colors (darker shades for white text readability in light mode)
@@ -243,6 +247,32 @@ QtObject{
     property color updateButton: "#28a745"
     property color compatible:   "#22C55E"   // Green
     property color incompatible: "#EF4444"   // Red
+
+    property color pluginPageBackground:       "#F4F5F7"
+    property color pluginPanelBackground:      "#FFFFFF"
+    property color pluginPanelBorder:          "#E4E7EC"
+    property color pluginCardBackground:       "#FFFFFF"
+    property color pluginCardBorder:           "#E4E7EC"
+    property color pluginCardFooterBorder:     "#EEF0F3"
+    property color pluginDivider:              "#E8EAEE"
+    property color pluginSectionLabel:         "#6B7484"
+    property color pluginSectionMetaText:      "#9AA1B0"
+    property color pluginSidebarLabel:         "#9AA1B0"
+    property color pluginSidebarRowText:       "#4A5164"
+    property color pluginSidebarRowActiveText: "#2563EB"
+    property color pluginSidebarRowActiveBg:   "#1A3B82F6"
+    property color pluginSidebarRowHoverBg:    "#0D2563EB"
+    property color pluginCountPillBackground:  "#EFF1F4"
+    property color pluginCountPillText:        "#8A92A2"
+    property color pluginCardTitle:            "#23262E"
+    property color pluginCardMetaText:         "#9AA1B0"
+    property color pluginCardDescription:      "#5A6272"
+    property color pluginBtnSecondaryBorder:   "#D9DDE4"
+    property color pluginBtnSecondaryText:     "#5A6272"
+    property color pluginToggleTrackOff:       "#D5D9E0"
+    property color pluginToggleTrackOffBorder: "#C6CBD4"
+    property color pluginToggleThumbOff:       "#FFFFFF"
+
     // Terminal colors
     property color terminalBackground:  "#000000"
     property color terminalUserAndHost: "#3fb950"  // GitHub green
