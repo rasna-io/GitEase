@@ -114,7 +114,21 @@ qint64 GitAsyncRunner::submit(IGitController *controller, const QString &method,
 
     const qint64 id = m_nextRequestId.fetchAndAddOrdered(1);
 
-    emit jobQueued(id, static_cast<void *>(controller), method, args, controller->repoGeneration());
+    Job job;
+    job.requestId      = id;
+    job.controller     = controller;
+    job.method         = method;
+    job.args           = args;
+    job.repoGeneration = controller->repoGeneration();
+
+    Pool *pool = isNetworkMethod(method) ? &m_network : &m_local;
+
+    {
+        QMutexLocker locker(&m_mutex);
+        pool->lanes[controller->currentRepo()].pending.enqueue(job);
+    }
+
+    m_wake.wakeAll();
 
     return id;
 }
