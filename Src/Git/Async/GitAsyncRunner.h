@@ -32,6 +32,15 @@ class GitAsyncRunner : public QObject
     Q_OBJECT
 
 private:
+    //! One queued call, with everything about it captured at submit time.
+    struct Job
+    {
+        qint64          requestId      = 0;
+        IGitController *controller     = nullptr;
+        QString         method;
+        QVariantList    args;
+        qint64          repoGeneration = 0;
+    };
     static GitAsyncRunner *s_instance;
 
     QThread *m_thread = nullptr;
