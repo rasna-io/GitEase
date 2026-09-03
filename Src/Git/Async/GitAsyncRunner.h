@@ -48,6 +48,14 @@ private:
         QQueue<Job> pending;
         bool        running = false;
     };
+
+    //! A set of lanes and the threads that serve them.
+    struct Pool
+    {
+        QHash<Repository *, Lane> lanes;
+        QList<QThread *>          threads;
+    };
+
     static GitAsyncRunner *s_instance;
 
     QThread *m_thread = nullptr;
