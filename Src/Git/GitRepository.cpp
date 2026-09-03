@@ -109,6 +109,8 @@ Repository *GitRepository::openDetached(const QString &path)
         return nullptr;
     }
 
+    git_repository_open(&repo->netRepo, pathUtf8.constData());
+
     return repo;
 }
 
