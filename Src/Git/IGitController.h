@@ -8,6 +8,7 @@
 #include <git2/deprecated.h>
 #include <QMutexLocker>
 #include <QMutex>
+#include <QAtomicInteger>
 
 
 
@@ -93,5 +94,6 @@ protected:
     Repository *m_currentRepo = nullptr;
 
 private:
-    qint64 m_repoGeneration = 0;
+    //! Read from the worker threads while the GUI thread bumps it, so it is atomic.
+    QAtomicInteger<qint64> m_repoGeneration = 0;
 };
