@@ -28,6 +28,21 @@ QRecursiveMutex *IGitController::repoMutex(Repository *repo)
     return repo ? &repo->mutex : &fallback;
 }
 
+git_repository *IGitController::networkRepo() const
+{
+    if (!m_currentRepo)
+        return nullptr;
+
+    return m_currentRepo->netRepo ? m_currentRepo->netRepo : m_currentRepo->repo;
+}
+
+QRecursiveMutex *IGitController::networkMutex(Repository *repo)
+{
+    static QRecursiveMutex fallback;
+
+    return repo ? &repo->netMutex : &fallback;
+}
+
 }
 
 qint64 IGitController::repoGeneration() const
