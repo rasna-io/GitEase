@@ -44,6 +44,23 @@ void GitAsyncRunner::startWorkers(Pool *pool, int count, const QString &name)
         thread->start();
     }
 }
+
+bool GitAsyncRunner::isNetworkMethod(const QString &method)
+{
+    return method == QLatin1String("fetch")
+        || method == QLatin1String("fetchWithToken")
+        || method == QLatin1String("push")
+        || method == QLatin1String("pull")
+        || method == QLatin1String("clone")
+        || method == QLatin1String("pushTag")
+        || method == QLatin1String("pushDeleteTag");
+}
+
+bool GitAsyncRunner::usesNetworkHandle(const QString &method)
+{
+    return method == QLatin1String("fetch")
+        || method == QLatin1String("fetchWithToken")
+        || method == QLatin1String("push");
 }
 
 GitAsyncRunner::~GitAsyncRunner()
