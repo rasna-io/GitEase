@@ -72,6 +72,11 @@ private:
     ~GitAsyncRunner() override;
 
     /**
+     * @brief Worker body: takes one ready job from pool at a time until shutdown.
+     */
+    void workerLoop(Pool *pool);
+
+    /**
      * @brief Resolves methodName on target by name and argument count, converts args to the
      *        declared parameter types and invokes it directly on the current thread.
      * @param target       The object on which the method will be invoked.
