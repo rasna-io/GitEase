@@ -16,11 +16,17 @@ Rectangle {
     property int selectedInstalledMode: -1
     property int pluginsCount: 0
     property var categoriesData: []
-    property var installedModel: []
     property var categoriesCounts: ({})
 
     //! Counts for the Installed filter rows (Enabled / Disabled / Needs Update)
     property var installedCounts: ({})
+
+    property var installedModelWithAll: [
+        { name: "All", iconName: Style.icons.plugins, iconColor: Style.colors.pluginSidebarRowText },
+        { name: "Enabled", iconName: Style.icons.check, iconColor: Style.colors.compatible },
+        { name: "Disabled", iconName: Style.icons.pause, iconColor: Style.colors.incompatible },
+        { name: "Needs Update", iconName: Style.icons.warning, iconColor: Style.colors.marigold }
+    ]
 
     /* Signals
      * ****************************************************************************************/
@@ -270,7 +276,8 @@ Rectangle {
             }
 
             ListView {
-                model: root.installedModel
+                id: installedListView
+                model: root.installedModelWithAll
                 Layout.fillWidth: true
                 Layout.preferredHeight: contentHeight
                 Layout.leftMargin: Style.dp(10)
@@ -285,10 +292,11 @@ Rectangle {
                     radius: 5
 
                     property bool isSelected: index === root.selectedInstalledMode
+                    property bool isAllItem: index === 0
 
                     color: isSelected ? Style.colors.pluginSidebarRowActiveBg
                            : (installedModeHover.containsMouse ? Style.colors.pluginSidebarRowHoverBg
-                                                              : "transparent")
+                                                               : "transparent")
 
                     RowLayout {
                         anchors.fill: parent
@@ -297,16 +305,17 @@ Rectangle {
                         spacing: 8
 
                         Text {
-                            text: modelData.iconName
-                            font.family: Style.fontTypes.font6Pro
+                            text: isAllItem ? Style.icons.plugins : modelData.iconName
+                            font.family: isAllItem ? Style.fontTypes.font6Pro : Style.fontTypes.font6Pro
                             font.styleName: "Solid"
                             font.pixelSize: Style.fontIconSize.smallPt
                             color: isSelected ? Style.colors.pluginSidebarRowActiveText
-                                              : modelData.iconColor
+                                              : (isAllItem ? Style.colors.pluginSidebarRowText
+                                                           : modelData.iconColor)
                         }
 
                         Label {
-                            text: modelData.name
+                            text: isAllItem ? "All Installed" : modelData.name
                             Layout.fillWidth: true
                             font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.mediumPt
@@ -318,7 +327,7 @@ Rectangle {
                         }
 
                         Rectangle {
-                            visible: (root.installedCounts[modelData.name] || 0) > 0
+                            visible: !isAllItem && (root.installedCounts[modelData.name] || 0) > 0
                             radius: 8
                             color: Style.colors.pluginCountPillBackground
                             implicitHeight: installedCountLabel.implicitHeight + 3
@@ -341,14 +350,10 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (root.selectedInstalledMode === index)
-                                root.selectedInstalledMode = -1
-                            else
+                            if (root.selectedInstalledMode !== index) {
                                 root.selectedInstalledMode = index
-
-                            root.installedModeSelected(root.selectedInstalledMode === -1
-                                                       ? ""
-                                                       : modelData.name)
+                                root.installedModeSelected(index === 0 ? "All" : modelData.name)
+                            }
                         }
                     }
                 }
