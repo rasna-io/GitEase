@@ -65,16 +65,26 @@ bool GitAsyncRunner::usesNetworkHandle(const QString &method)
 
 GitAsyncRunner::~GitAsyncRunner()
 {
+    {
+        QMutexLocker locker(&m_mutex);
+        m_stopping = true;
+    }
+
+    m_wake.wakeAll();
+
+    const QList<QThread *> threads = m_local.threads + m_network.threads;
+
+    for (QThread *thread : threads)
+    {
+        if (thread->wait(10000))
+            delete thread;
+    }
+
+    m_local.threads.clear();
+    m_network.threads.clear();
+
     delete m_guiAnchor;
     m_guiAnchor = nullptr;
-
-    if (m_thread)
-    {
-        m_thread->quit();
-        m_thread->wait(10000);
-        delete m_thread;
-        m_thread = nullptr;
-    }
 }
 
 GitAsyncRunner *GitAsyncRunner::instance()
