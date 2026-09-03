@@ -43,14 +43,14 @@ public:
     qint64 repoGeneration() const;
 
     /**
-     * @brief The lock every libgit2 access must hold.
+     * @brief The lock a libgit2 access must hold, for one repository.
      *
-     * A `git_repository*` is not safe for concurrent use, and libgit2's own caches are shared
-     * process-wide, so one recursive lock guards all of it. Recursive because several
-     * Q_INVOKABLEs legitimately call one another on the same thread.
-     *
-     * The async runner takes this around every queued job. Synchronous calls still made from
-     * the GUI thread take it via QMutexLocker directly.
+     * A `git_repository*` is not safe for concurrent use, so work on the same repository is
+     * serialised. Two *different* repositories carry independent locks and run side by side,
+     * which is what lets a newly opened repository load while a fetch on the previous one is
+     * still in flight.
+     */
+    static QRecursiveMutex *repoMutex(Repository *repo);
      */
     static QRecursiveMutex *repoMutex();
 
