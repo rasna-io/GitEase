@@ -28,7 +28,22 @@ GitAsyncRunner::GitAsyncRunner()
             },
             Qt::QueuedConnection);
 
-    m_thread->start();
+    startWorkers(&m_local, qBound(2, QThread::idealThreadCount() / 2, 8), QStringLiteral("GitLocal"));
+
+    startWorkers(&m_network, 4, QStringLiteral("GitNetwork"));
+}
+
+void GitAsyncRunner::startWorkers(Pool *pool, int count, const QString &name)
+{
+    for (int i = 0; i < count; ++i)
+    {
+        QThread *thread = QThread::create([this, pool] { workerLoop(pool); });
+        thread->setObjectName(QStringLiteral("%1-%2").arg(name).arg(i));
+
+        pool->threads.append(thread);
+        thread->start();
+    }
+}
 }
 
 GitAsyncRunner::~GitAsyncRunner()
