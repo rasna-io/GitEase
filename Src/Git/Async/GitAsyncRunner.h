@@ -96,6 +96,19 @@ private:
     void startWorkers(Pool *pool, int count, const QString &name);
 
     /**
+     * @brief Takes the next job from a lane that is not already busy.
+     *
+     * Skipping busy lanes is what keeps a repository's jobs in order while still letting
+     * other repositories run. Call with m_mutex held.
+     *
+     * @param pool The pool to take from.
+     * @param lane Receives the repository the job belongs to.
+     * @param job  Receives the job itself.
+     * @return true when a job was taken.
+     */
+    bool takeReadyJob(Pool *pool, Repository **lane, Job *job);
+
+    /**
      * @brief Resolves methodName on target by name and argument count, converts args to the
      *        declared parameter types and invokes it directly on the current thread.
      * @param target       The object on which the method will be invoked.
