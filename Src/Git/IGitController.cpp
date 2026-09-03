@@ -43,11 +43,9 @@ QRecursiveMutex *IGitController::networkMutex(Repository *repo)
     return repo ? &repo->netMutex : &fallback;
 }
 
-}
-
 qint64 IGitController::repoGeneration() const
 {
-    return m_repoGeneration;
+    return m_repoGeneration.loadAcquire();
 }
 
 qint64 IGitController::callAsync(const QString &method, const QVariantList &args)
@@ -57,13 +55,13 @@ qint64 IGitController::callAsync(const QString &method, const QVariantList &args
 
 void IGitController::emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration)
 {
-    bool isRepoChanged = (repoGeneration != m_repoGeneration);
+    bool isRepoChanged = (repoGeneration != m_repoGeneration.loadAcquire());
     emit asyncFinished(requestId, method, result, isRepoChanged);
 }
 
 void IGitController::emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration)
 {
-   bool isRepoChanged = (repoGeneration != m_repoGeneration);
+    bool isRepoChanged = (repoGeneration != m_repoGeneration.loadAcquire());
     emit asyncFailed(requestId, method, error, isRepoChanged);
 }
 
