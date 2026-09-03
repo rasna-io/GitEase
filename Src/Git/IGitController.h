@@ -60,6 +60,17 @@ public:
      */
     static QRecursiveMutex *networkMutex(Repository *repo);
 
+protected:
+    /**
+     * @brief The handle a long remote transfer should use.
+     *
+     * Returns the current repository's dedicated transfer handle, falling back to the main one
+     * when a second handle could not be opened.
+     */
+    git_repository *networkRepo() const;
+
+public:
+
     //! Called by GitAsyncRunner on the GUI thread. Not meant for anything else.
     void emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration);
     void emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration);
