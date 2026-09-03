@@ -77,6 +77,12 @@ private:
     void workerLoop(Pool *pool);
 
     /**
+     * @brief Whether a method talks to a remote, and so belongs in the network pool.
+     */
+    static bool isNetworkMethod(const QString &method);
+
+
+    /**
      * @brief Resolves methodName on target by name and argument count, converts args to the
      *        declared parameter types and invokes it directly on the current thread.
      * @param target       The object on which the method will be invoked.
