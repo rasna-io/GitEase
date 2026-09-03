@@ -39,12 +39,6 @@ Page {
     property bool           isSearchActive:     false
     property bool           fetchingMore:       false
 
-    property var installedModel: [
-        { name: "Enabled",      iconName: Style.icons.check,   iconColor: Style.colors.compatible },
-        { name: "Disabled",     iconName: Style.icons.pause,   iconColor: Style.colors.pluginSidebarRowText },
-        { name: "Needs Update", iconName: Style.icons.warning, iconColor: Style.colors.marigold }
-    ]
-
     // Counts for the left panel Installed filter rows
     property var installedCounts: ({})
 
@@ -123,12 +117,13 @@ Page {
             id: leftPanel
             pluginsCount: root.pluginsData.length
             categoriesData: root.categoriesData
-            installedModel: root.installedModel
             categoriesCounts: root.categoriesCounts
             installedCounts: root.installedCounts
 
             onCategorySelected:  (category) => {
                 root.currentCategory = category
+                leftPanel.selectedInstalledMode = -1
+                root.currentMode = ""
                 root.applyCurrentMode()
             }
 
@@ -171,7 +166,7 @@ Page {
                     }
 
                     Label {
-                        text: (root.pluginsData ? root.pluginsData.filter(function(p) { return p.isInstalled }).length : 0) + " plugins"
+                        text: installedPluginsModel.count + " plugins"
                         color: Style.colors.pluginSectionMetaText
                         font.pixelSize: Style.appFont.smallPt
                         font.family: Style.fontTypes.inter
@@ -241,7 +236,7 @@ Page {
                     }
 
                     Label {
-                        text: (root.pluginsData ? root.pluginsData.filter(function(p) { return !p.isInstalled }).length : 0) + " plugins"
+                        text: availablePluginsModel.count + " plugins"
                         color: Style.colors.pluginSectionMetaText
                         font.pixelSize: Style.appFont.smallPt
                         font.family: Style.fontTypes.inter
@@ -383,7 +378,7 @@ Page {
                                   || root.currentCategory === "All"
 
             var matchesMode = root.currentMode === ""
-                || (root.currentMode === "Installed"     && plugin.isInstalled)
+                || (root.currentMode === "All"           && plugin.isInstalled)
                 || (root.currentMode === "Enabled"       && plugin.isInstalled && plugin.isEnabled)
                 || (root.currentMode === "Disabled"      && plugin.isInstalled && !plugin.isEnabled)
                 || (root.currentMode === "Needs Update"  && plugin.isInstalled && plugin.updateAvailable)
