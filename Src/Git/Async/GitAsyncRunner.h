@@ -1,11 +1,15 @@
 #pragma once
 
 #include <QAtomicInteger>
+#include <QHash>
+#include <QList>
 #include <QMutex>
 #include <QObject>
+#include <QQueue>
 #include <QSet>
 #include <QString>
 #include <QThread>
+#include <QWaitCondition>
 #include <QVariant>
 #include <QVariantList>
 #include <vector>
