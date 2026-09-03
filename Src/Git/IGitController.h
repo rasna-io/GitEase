@@ -51,8 +51,14 @@ public:
      * still in flight.
      */
     static QRecursiveMutex *repoMutex(Repository *repo);
+
+    /**
+     * @brief The lock for a repository's transfer handle.
+     *
+     * Held by fetch and push instead of repoMutex(), which is what keeps reads on the same
+     * repository responsive while a transfer is running.
      */
-    static QRecursiveMutex *repoMutex();
+    static QRecursiveMutex *networkMutex(Repository *repo);
 
     //! Called by GitAsyncRunner on the GUI thread. Not meant for anything else.
     void emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration);
