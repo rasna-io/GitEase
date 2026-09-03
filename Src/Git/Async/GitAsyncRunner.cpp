@@ -8,12 +8,8 @@ GitAsyncRunner::GitAsyncRunner()
 {
     m_guiAnchor = new QObject();
 
-    // The runner lives on the worker thread; its slots are executed there.
-    moveToThread(m_thread);
-
-    connect(this, &GitAsyncRunner::jobQueued, this, &GitAsyncRunner::executeJob, Qt::QueuedConnection);
-
-    // Results travel back to the thread the runner was created on, the GUI thread.
+    // The runner itself stays on the GUI thread; the workers below call into it directly. The
+    // result signals are queued, so they arrive back on the GUI thread where m_guiAnchor lives.
     connect(this, &GitAsyncRunner::jobFinished,
             m_guiAnchor, [this](qint64 id, void *controller, const QString &method, const QVariant &result, qint64 generation)
             {
