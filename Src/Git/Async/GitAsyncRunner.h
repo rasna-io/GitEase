@@ -41,6 +41,13 @@ private:
         QVariantList    args;
         qint64          repoGeneration = 0;
     };
+
+    //! Everything queued for one repository. At most one of its jobs runs at a time.
+    struct Lane
+    {
+        QQueue<Job> pending;
+        bool        running = false;
+    };
     static GitAsyncRunner *s_instance;
 
     QThread *m_thread = nullptr;
