@@ -41,22 +41,36 @@ void GitAsyncRunner::startWorkers(Pool *pool, int count, const QString &name)
     }
 }
 
-bool GitAsyncRunner::isNetworkMethod(const QString &method)
+GitAsyncRunner::RepoAccessInfo GitAsyncRunner::accessFor(const QString &method, Repository *lane)
 {
-    return method == QLatin1String("fetch")
+    RepoAccessInfo info;
+
+    if (method == QLatin1String("clone"))
+    {
+        info.pool = &m_network;
+        return info;
+    }
+
+    // Pure transfers. They move objects and remote refs and leave the working tree alone
+    if (method == QLatin1String("fetch")
         || method == QLatin1String("fetchWithToken")
         || method == QLatin1String("push")
-        || method == QLatin1String("pull")
-        || method == QLatin1String("clone")
         || method == QLatin1String("pushTag")
-        || method == QLatin1String("pushDeleteTag");
-}
+        || method == QLatin1String("pushDeleteTag"))
+    {
+        info.pool   = &m_network;
+        info.lock   = IGitController::networkMutex(lane);
+        info.handle = lane ? (lane->netRepo ? lane->netRepo : lane->repo) : nullptr;
 
-bool GitAsyncRunner::usesNetworkHandle(const QString &method)
-{
-    return method == QLatin1String("fetch")
-        || method == QLatin1String("fetchWithToken")
-        || method == QLatin1String("push");
+        return info;
+    }
+
+    // Everything else, pull included.
+    info.pool   = &m_local;
+    info.lock   = IGitController::repoMutex(lane);
+    info.handle = lane ? lane->repo : nullptr;
+
+    return info;
 }
 
 GitAsyncRunner::~GitAsyncRunner()
