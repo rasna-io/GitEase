@@ -203,12 +203,11 @@ bool GitAsyncRunner::takeReadyJob(Pool *pool, Repository **lane, Job *job)
 
 void GitAsyncRunner::runJob(const Job &job, Repository *lane)
 {
-    // Only this repository is locked, so calls against other repositories run alongside it.
-    QRecursiveMutex *lock = usesNetworkHandle(job.method)
-                                ? IGitController::networkMutex(lane)
-                                : IGitController::repoMutex(lane);
+    const RepoAccessInfo access = accessFor(job.method, lane);
 
-    QMutexLocker<QRecursiveMutex> repoLocker(lock);
+    QMutexLocker<QRecursiveMutex> repoLocker(access.lock);
+
+    IGitController::ActiveRepoScope repoScope(access.handle);
 
     IGitController *target  = job.controller;
     auto *controller        = static_cast<void *>(target);
