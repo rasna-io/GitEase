@@ -72,8 +72,8 @@ private:
 
     QAtomicInteger<qint64> m_nextRequestId;
 
-    Pool           m_local;      // reads, commits, stashes, tags - never touches a remote
-    Pool           m_network;    // fetch, push, pull, clone - may block for a long time
+    Pool           m_local;      // reads, commits, stashes, tags, and pull
+    Pool           m_network;    // fetch, push, clone - may block for a long time
     QMutex         m_mutex;      // guards both pools' lanes and m_stopping
     QWaitCondition m_wake;
     bool           m_stopping = false;
