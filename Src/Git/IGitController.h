@@ -61,16 +61,17 @@ public:
      */
     static QRecursiveMutex *networkMutex(Repository *repo);
 
-protected:
     /**
-     * @brief The handle a long remote transfer should use.
+     * @brief The repository handle the code running right now should use.
      *
-     * Returns the current repository's dedicated transfer handle, falling back to the main one
-     * when a second handle could not be opened.
+     * Every libgit2 call in the controllers goes through this rather than reaching for a
+     * handle itself, so that which handle a method uses is decided in exactly one place -
+     * GitAsyncRunner::accessForMethod() - instead of being hard-coded call site by call site.
+     *
+     * The runner binds this for the duration of each queued job. Synchronous calls made
+     * straight from the GUI thread bind nothing, and fall back to the main handle.
      */
-    git_repository *networkRepo() const;
-
-public:
+    git_repository *activeRepo() const;
 
     //! Called by GitAsyncRunner on the GUI thread. Not meant for anything else.
     void emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration);
