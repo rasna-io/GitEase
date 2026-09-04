@@ -906,13 +906,15 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
 
 GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IGitAuth> auth)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    git_repository* netRepo = networkRepo();
+
+    if (!netRepo) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
     git_remote* remote = nullptr;
     int result = git_remote_lookup(&remote,
-                                   m_currentRepo->repo,
+                                   netRepo,
                                    remoteName.toUtf8().constData());
 
     if (result != GIT_OK) {
@@ -1059,7 +1061,7 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
         return 0;
     };
 
-    git_repository_fetchhead_foreach(m_currentRepo->repo, fetchHeadCb, &headPayload);
+    git_repository_fetchhead_foreach(netRepo, fetchHeadCb, &headPayload);
     fetchResult["heads"] = fetchedHeads;
     if (!logLines.isEmpty())
         fetchResult["log"] = logLines;
