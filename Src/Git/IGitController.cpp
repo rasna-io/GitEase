@@ -98,3 +98,22 @@ QString IGitController::quoteCommandArg(const QString &argument)
     escaped.replace("\"", "\\\"");
     return "\"" + escaped + "\"";
 }
+
+IGitController::ActiveRepoScope::ActiveRepoScope(git_repository *repo)
+    : m_previous(t_activeRepo)
+{
+    t_activeRepo = repo;
+}
+
+IGitController::ActiveRepoScope::~ActiveRepoScope()
+{
+    t_activeRepo = m_previous;
+}
+
+git_repository *IGitController::activeRepo() const
+{
+    if (t_activeRepo)
+        return t_activeRepo;
+
+    return m_currentRepo ? m_currentRepo->repo : nullptr;
+}
