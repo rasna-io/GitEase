@@ -102,8 +102,14 @@ private:
         QRecursiveMutex *lock   = nullptr;
         git_repository  *handle = nullptr;
     };
+
+    /**
+     * @brief The pool, lock and handle for one method against one repository.
+     *
+     * The single table describing how every method is scheduled and guarded. Called once when
+     * the job is queued, for the pool, and once when it runs, for the lock and the handle.
      */
-    static bool usesNetworkHandle(const QString &method);
+    RepoAccessInfo accessFor(const QString &method, Repository *lane);
 
     /**
      * @brief Starts count threads serving pool.
