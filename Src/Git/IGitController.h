@@ -73,6 +73,28 @@ public:
      */
     git_repository *activeRepo() const;
 
+    /**
+     * @brief Binds activeRepo() to one handle for as long as it exists, on this thread only.
+     *
+     * Thread local because one controller can be running two jobs at once - a job for one
+     * repository on one worker and a job for another repository on a second - and a shared
+     * member would let them overwrite each other's handle. A job runs start to finish on a
+     * single thread, so a thread local value is private to it.
+     */
+    class ActiveRepoScope
+    {
+        public:
+            explicit ActiveRepoScope(git_repository *repo);
+            ~ActiveRepoScope();
+
+            ActiveRepoScope(const ActiveRepoScope &)            = delete;
+            ActiveRepoScope &operator=(const ActiveRepoScope &) = delete;
+
+        private:
+            git_repository *m_previous = nullptr;
+    };
+
+
     //! Called by GitAsyncRunner on the GUI thread. Not meant for anything else.
     void emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration);
     void emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration);
