@@ -1,5 +1,11 @@
 #include "IGitController.h"
 #include "Async/GitAsyncRunner.h"
+
+namespace
+{
+    thread_local git_repository *t_activeRepo = nullptr;
+}
+
 IGitController::IGitController(QObject *parent)
     : QObject{parent}
 {
