@@ -1074,12 +1074,15 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
 QHash<QString, QString> GitRemote::getRemoteTrackingTipsSnapshot(const QString& remoteName)
 {
     QHash<QString, QString> tips;
-    if (!m_currentRepo || !m_currentRepo->repo) {
+
+    git_repository* netRepo = networkRepo();
+
+    if (!netRepo) {
         return tips;
     }
 
     git_branch_iterator* it = nullptr;
-    if (git_branch_iterator_new(&it, m_currentRepo->repo, GIT_BRANCH_REMOTE) == GIT_OK && it) {
+    if (git_branch_iterator_new(&it, netRepo, GIT_BRANCH_REMOTE) == GIT_OK && it) {
         git_reference* ref = nullptr;
         git_branch_t branchType = GIT_BRANCH_REMOTE;
         while (git_branch_next(&ref, &branchType, it) == GIT_OK) {
