@@ -193,7 +193,9 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    git_repository* pushRepo = networkRepo();
+
+    if (!pushRepo) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -204,7 +206,7 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
 
     git_remote* remote = nullptr;
     int result = git_remote_lookup(&remote,
-                                   m_currentRepo->repo,
+                                   pushRepo,
                                    remoteName.toUtf8().constData());
 
     if (result != GIT_OK) {
