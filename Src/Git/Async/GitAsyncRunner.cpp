@@ -135,11 +135,11 @@ qint64 GitAsyncRunner::submit(IGitController *controller, const QString &method,
     job.args           = args;
     job.repoGeneration = controller->repoGeneration();
 
-    Pool *pool = isNetworkMethod(method) ? &m_network : &m_local;
+    Repository *lane = controller->currentRepo();
 
     {
         QMutexLocker locker(&m_mutex);
-        pool->lanes[controller->currentRepo()].pending.enqueue(job);
+        accessFor(method, lane).pool->lanes[lane].pending.enqueue(job);
     }
 
     m_wake.wakeAll();
