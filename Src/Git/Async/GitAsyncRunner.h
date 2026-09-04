@@ -87,16 +87,21 @@ private:
     void workerLoop(Pool *pool);
 
     /**
-     * @brief Whether a method talks to a remote, and so belongs in the network pool.
-     */
-    static bool isNetworkMethod(const QString &method);
-
-    /**
-     * @brief Whether a method runs on the repository's transfer handle.
+     * @brief Everything a method needs from the repository it runs against.
      *
-     * These take the repository's network lock instead of its main one, so reads on the same
-     * repository keep working while the transfer runs. It must list exactly the methods that
-     * actually use networkRepo(); anything else would run against the main handle unlocked.
+     * The three things that used to be worked out separately - which pool queues the job,
+     * which lock guards it, and which handle it runs on - are decided together, so they cannot
+     * drift apart as methods are added.
+     *
+     * A null lock means "take no lock", and a null handle means "bind nothing", which is what
+     * clone wants: it builds a new repository and touches no existing one.
+     */
+    struct RepoAccessInfo
+    {
+        Pool            *pool   = nullptr;
+        QRecursiveMutex *lock   = nullptr;
+        git_repository  *handle = nullptr;
+    };
      */
     static bool usesNetworkHandle(const QString &method);
 
