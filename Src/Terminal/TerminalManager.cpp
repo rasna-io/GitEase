@@ -272,7 +272,7 @@ void TerminalManager::updateWorkingDirectory()
         return;
 
     if (m_currentRepo) {
-        const char* workdir = git_repository_workdir(m_currentRepo->repo);
+        const char* workdir = git_repository_workdir(activeRepo());
         if (workdir) {
             QString dir = QString::fromUtf8(workdir);
             m_process->setWorkingDirectory(dir);
