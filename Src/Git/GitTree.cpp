@@ -11,7 +11,7 @@ GitTree::GitTree(QObject *parent)
 
 GitResult GitTree::getFileTree(const QString &sha)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not open");
 
     QString errorMessage;
@@ -31,7 +31,7 @@ GitResult GitTree::getFileTree(const QString &sha)
 
 GitResult GitTree::getFileContent(const QString &sha, const QString &path)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not open");
 
     QString errorMessage;
@@ -58,7 +58,7 @@ GitResult GitTree::getFileContent(const QString &sha, const QString &path)
 
 GitResult GitTree::saveFileContent(const QString &sha, const QString &path, const QString &targetPath)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not open");
 
     if (targetPath.isEmpty())
@@ -89,7 +89,7 @@ git_tree* GitTree::lookupCommitTree(const QString &sha, QString &errorMessage)
     QString revision = sha + "^{commit}";
 
     git_object *commitObj = nullptr;
-    if (git_revparse_single(&commitObj, m_currentRepo->repo, revision.toUtf8().constData()) < 0) {
+    if (git_revparse_single(&commitObj, activeRepo(), revision.toUtf8().constData()) < 0) {
         errorMessage = "Commit not found: " + sha;
         return nullptr;
     }
@@ -128,7 +128,7 @@ git_blob* GitTree::lookupBlob(const QString &sha, const QString &path, QString &
     }
 
     git_blob *blob = nullptr;
-    error = git_blob_lookup(&blob, m_currentRepo->repo, git_tree_entry_id(entry));
+    error = git_blob_lookup(&blob, activeRepo(), git_tree_entry_id(entry));
     git_tree_entry_free(entry);
 
     if (error < 0) {
@@ -181,7 +181,7 @@ bool GitTree::appendTreeEntries(git_tree *tree, const QString &basePath, int dep
         entries.append(entryMap);
 
         git_tree *subTree = nullptr;
-        if (git_tree_lookup(&subTree, m_currentRepo->repo, git_tree_entry_id(folder.entry)) < 0)
+        if (git_tree_lookup(&subTree, activeRepo(), git_tree_entry_id(folder.entry)) < 0)
             return false;
 
         bool ok = appendTreeEntries(subTree, fullPath, depth + 1, entries);
