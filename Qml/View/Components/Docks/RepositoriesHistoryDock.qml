@@ -94,8 +94,6 @@ UtilitiesCard {
                     root.repositoryController.openRepository(item.path)
                 }
             }
-
-            onContentHeightChanged: root.pageScrollBlocking = scrollView.contentHeight > scrollView.height + 1
         }
 
         DashedButton {
