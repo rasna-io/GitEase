@@ -27,12 +27,12 @@ GitResult GitCommit::getCommits(int limit, int offset)
     QList<Commit> commits;
 
     // Check if the repository is open
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
     git_revwalk *walker = nullptr;
-    int result = git_revwalk_new(&walker, m_currentRepo->repo);
+    int result = git_revwalk_new(&walker, activeRepo());
 
     // Check if the walker was successfully created
     if (result != GIT_OK) {
@@ -46,7 +46,7 @@ GitResult GitCommit::getCommits(int limit, int offset)
     // Push all branch tips to include commits reachable from any branch
     {
         git_branch_iterator* iter = nullptr;
-        if (git_branch_iterator_new(&iter, m_currentRepo->repo, GIT_BRANCH_ALL) == 0) {
+        if (git_branch_iterator_new(&iter, activeRepo(), GIT_BRANCH_ALL) == 0) {
             git_reference* ref = nullptr;
             git_branch_t type;
 
@@ -87,7 +87,7 @@ GitResult GitCommit::getCommits(int limit, int offset)
     // Walk through commits up to limit
     while (count < limit && git_revwalk_next(&oid, walker) == 0) {
         git_commit *gitCommit = nullptr;
-        result = git_commit_lookup(&gitCommit, m_currentRepo->repo, &oid);
+        result = git_commit_lookup(&gitCommit, activeRepo(), &oid);
 
         if (result == 0 && gitCommit) {
             // Wrap the git_commit into a Commit object and append to the list
@@ -121,7 +121,7 @@ GitResult GitCommit::getCommit(const QString &commitHash)
         return GitResult(false, QVariant(), "Commit hash cannot be empty");
     }
 
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -131,7 +131,7 @@ GitResult GitCommit::getCommit(const QString &commitHash)
     if (result != GIT_OK) {
         // Try with short hash
         git_object *obj = nullptr;
-        result = git_revparse_single(&obj, m_currentRepo->repo, commitHash.toUtf8().constData());
+        result = git_revparse_single(&obj, activeRepo(), commitHash.toUtf8().constData());
 
         if (result == GIT_OK) {
             git_oid_cpy(&oid, git_object_id(obj));
@@ -143,7 +143,7 @@ GitResult GitCommit::getCommit(const QString &commitHash)
     }
 
     git_commit *gitCommit = nullptr;
-    result = git_commit_lookup(&gitCommit, m_currentRepo->repo, &oid);
+    result = git_commit_lookup(&gitCommit, activeRepo(), &oid);
 
     if (result != GIT_OK) {
         return GitResult(false, QVariant(),
@@ -177,7 +177,7 @@ GitResult GitCommit::getCommit(const QString &commitHash)
 
 QString GitCommit::getParentHash(const QString &commitHash, int index)
 {
-    if (!m_currentRepo || !m_currentRepo->repo || commitHash.isEmpty() || index < 0)
+    if (!m_currentRepo || !activeRepo() || commitHash.isEmpty() || index < 0)
         return "";
 
     git_oid oid;
@@ -185,7 +185,7 @@ QString GitCommit::getParentHash(const QString &commitHash, int index)
         return "";
 
     git_commit* commit = nullptr;
-    if (git_commit_lookup(&commit, m_currentRepo->repo, &oid) != 0)
+    if (git_commit_lookup(&commit, activeRepo(), &oid) != 0)
         return "";
 
     QString parentHash;
@@ -226,7 +226,7 @@ GitResult GitCommit::commit(const QString& message,
     if(!context.result.success())
         return context.result;
 
-    git_signature* author = getAuthorSignature(m_currentRepo->repo);
+    git_signature* author = getAuthorSignature(activeRepo());
     if (!author) {
         return GitResult(false, QVariant(),
                          "Failed to create author signature. Check Git config.");
@@ -266,7 +266,7 @@ GitResult GitCommit::commit(const QString& message,
     else{
         result = git_commit_create(
             &newCommitOid,                      // Output: new commit's SHA-1
-            m_currentRepo->repo,                // Repository to create in
+            activeRepo(),                       // Repository to create in
             "HEAD",                             // Update HEAD reference
             author,                             // Who wrote the changes
             author,                             // Who committed them
@@ -295,7 +295,7 @@ GitResult GitCommit::commit(const QString& message,
     }
 
     git_commit* newCommit = nullptr;
-    result = git_commit_lookup(&newCommit, m_currentRepo->repo, &newCommitOid);
+    result = git_commit_lookup(&newCommit, activeRepo(), &newCommitOid);
 
     if (result != GIT_OK)
         return GitResult(false, QVariant(), "Failed to lookup new Commit.");
@@ -348,14 +348,14 @@ git_signature* GitCommit::getAuthorSignature(git_repository* repo)
 
 git_tree* GitCommit::createTreeFromStagedChanges()
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return nullptr;
     }
 
     git_index* index = nullptr;
 
     // Get the index for the repository
-    int result = git_repository_index(&index, m_currentRepo->repo);
+    int result = git_repository_index(&index, activeRepo());
     if (result != GIT_OK) {
         return nullptr;
     }
@@ -371,7 +371,7 @@ git_tree* GitCommit::createTreeFromStagedChanges()
 
     // Lookup the tree object in the repository
     git_tree* tree = nullptr;
-    result = git_tree_lookup(&tree, m_currentRepo->repo, &treeOid);
+    result = git_tree_lookup(&tree, activeRepo(), &treeOid);
     if (result != GIT_OK) {
         return nullptr;
     }
@@ -386,7 +386,7 @@ ParentCommits GitCommit::resolveParentCommits(bool amend)
     if (amend) {
         // Get current HEAD reference
         git_reference* headRef = nullptr;
-        int result = git_repository_head(&headRef, m_currentRepo->repo);
+        int result = git_repository_head(&headRef, activeRepo());
 
         if (result == 0 && headRef) {
             // Get the commit being amended
@@ -422,7 +422,7 @@ ParentCommits GitCommit::resolveParentCommits(bool amend)
         // REGULAR COMMIT CASE: Use HEAD as parent
 
         git_commit* headCommit = nullptr;
-        int result = git_revparse_single((git_object**)&headCommit, m_currentRepo->repo, "HEAD");
+        int result = git_revparse_single((git_object**)&headCommit, activeRepo(), "HEAD");
 
         if (result == 0 && headCommit) {
             // Normal commit: HEAD is the parent
@@ -463,7 +463,7 @@ GitResult GitCommit::amendLastCommit(const QString &newMessage)
 
 GitResult GitCommit::revertCommit(const QString &commitHash)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -481,7 +481,7 @@ GitResult GitCommit::revertCommit(const QString &commitHash)
 
     // Look up the commit to revert
     git_commit *commit_to_revert = nullptr;  // DECLARED HERE - FIXED!
-    result = git_commit_lookup(&commit_to_revert, m_currentRepo->repo, &oid);
+    result = git_commit_lookup(&commit_to_revert, activeRepo(), &oid);
     if (result != 0) {
         return GitResult(false, QVariant(),
                          QString("Commit not found: %1").arg(commitHash));
@@ -491,7 +491,7 @@ GitResult GitCommit::revertCommit(const QString &commitHash)
     // Get HEAD commit (the "our_commit" parameter)
     git_commit* head_commit = nullptr;
     git_object* head_obj = nullptr;
-    result = git_revparse_single(&head_obj, m_currentRepo->repo, "HEAD");
+    result = git_revparse_single(&head_obj, activeRepo(), "HEAD");
     if (result != 0 || !head_obj) {
         git_commit_free(commit_to_revert);
         return GitResult(false, QVariant(), "Cannot find HEAD commit");
@@ -506,7 +506,7 @@ GitResult GitCommit::revertCommit(const QString &commitHash)
 
     result = git_revert_commit(
         &revert_index,        // out: index with revert changes
-        m_currentRepo->repo,  // repo
+        activeRepo(),         // repo
         commit_to_revert,     // commit to revert
         head_commit,          // our commit (HEAD)
         mainline,             // parent number for merge commits
@@ -528,7 +528,7 @@ GitResult GitCommit::revertCommit(const QString &commitHash)
     // 6. Apply the revert index to working directory
     git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
     checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
-    result = git_checkout_index(m_currentRepo->repo, revert_index, &checkout_opts);
+    result = git_checkout_index(activeRepo(), revert_index, &checkout_opts);
 
     // 7. Clean up intermediate objects
     git_index_free(revert_index);
@@ -588,12 +588,12 @@ QStringList GitCommit::getAllParents(git_commit *gitCommit)
 
 QString GitCommit::getLastCommitMessage()
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return "";
     }
 
     git_reference* headRef = nullptr;
-    if (git_repository_head(&headRef, m_currentRepo->repo) != 0) {
+    if (git_repository_head(&headRef, activeRepo()) != 0) {
         return "";
     }
 
