@@ -7,14 +7,14 @@ GitReset::GitReset(QObject *parent)
 
 GitResult GitReset::resetHead(const QString &commit, ResetMode mode)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
     git_object *target = nullptr;
     int result = git_revparse_single(
         &target,
-        m_currentRepo->repo,
+        activeRepo(),
         commit.toUtf8().constData()
         );
 
@@ -49,7 +49,7 @@ GitResult GitReset::resetHead(const QString &commit, ResetMode mode)
 
     gitCmd += " " + commit;
 
-    result = git_reset(m_currentRepo->repo, target, resetType, nullptr);
+    result = git_reset(activeRepo(), target, resetType, nullptr);
 
     git_object_free(target);
 
