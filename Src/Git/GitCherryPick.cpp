@@ -17,7 +17,7 @@ GitResult GitCherryPick::cherryPickCommit(const QString& commitHash)
 
 GitResult GitCherryPick::cherryPickCommits(const QStringList& commitHashes)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository is not open.");
 
     if (commitHashes.isEmpty())
@@ -32,7 +32,7 @@ GitResult GitCherryPick::cherryPickCommits(const QStringList& commitHashes)
         return GitResult(false, QVariant(), "You have existing conflicts in your repository. Resolve them first.");
     }
 
-    int state = git_repository_state(m_currentRepo->repo);
+    int state = git_repository_state(activeRepo());
     if (state != GIT_REPOSITORY_STATE_NONE) {
         return GitResult(false, QVariant(),
                          "Repository is busy (merge/rebase/cherry-pick in progress).");
@@ -53,7 +53,7 @@ GitResult GitCherryPick::cherryPickCommits(const QStringList& commitHashes)
 
 GitResult GitCherryPick::continueOp()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository is not open.");
 
     if (!m_inProgress)
@@ -79,7 +79,7 @@ GitResult GitCherryPick::continueOp()
         return commitRes;
 
     // Clean up sequencer state
-    int cleanupError = git_repository_state_cleanup(m_currentRepo->repo);
+    int cleanupError = git_repository_state_cleanup(activeRepo());
     if (cleanupError != GIT_OK) {
         return GitResult(false, QVariant(), QString("Failed to cleanup repository state: %1")
                              .arg(git_error_last() ? git_error_last()->message : "Unknown error"));
@@ -87,13 +87,13 @@ GitResult GitCherryPick::continueOp()
 
     // Hard reset HEAD to update index and working directory
     git_object* newHead = nullptr;
-    int revparseError = git_revparse_single(&newHead, m_currentRepo->repo, "HEAD");
+    int revparseError = git_revparse_single(&newHead, activeRepo(), "HEAD");
     if (revparseError != GIT_OK) {
         return GitResult(false, QVariant(), QString("Failed to get HEAD object: %1")
                              .arg(git_error_last() ? git_error_last()->message : "Unknown error"));
     }
 
-    int resetError = git_reset(m_currentRepo->repo, newHead, GIT_RESET_HARD, nullptr);
+    int resetError = git_reset(activeRepo(), newHead, GIT_RESET_HARD, nullptr);
     git_object_free(newHead);
     if (resetError != GIT_OK) {
         return GitResult(false, QVariant(), QString("Failed to reset repository to HEAD: %1")
@@ -143,7 +143,7 @@ GitResult GitCherryPick::processCommits()
 
 GitResult GitCherryPick::abortOp()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not found.");
 
     if (!m_inProgress)
@@ -190,7 +190,7 @@ bool GitCherryPick::isCherryPickInProgress() const
 
 GitResult GitCherryPick::applyCommit(const QString& commitHash)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository is not open.");
 
     QString error;
@@ -210,7 +210,7 @@ GitResult GitCherryPick::applyCommit(const QString& commitHash)
         GIT_CHECKOUT_ALLOW_CONFLICTS |
         GIT_CHECKOUT_RECREATE_MISSING;
 
-    int result = git_cherrypick(m_currentRepo->repo, commit, &opts);
+    int result = git_cherrypick(activeRepo(), commit, &opts);
     if (result != GIT_OK && result != GIT_ECONFLICT) {
         git_commit_free(commit);
         return GitResult(false, QVariant(),
@@ -238,7 +238,7 @@ GitResult GitCherryPick::createCommitFromPick(git_commit* pickedCommit)
         return GitResult(false, QVariant(), "Invalid commit.");
 
     git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK || !index) {
+    if (git_repository_index(&index, activeRepo()) != GIT_OK || !index) {
         return GitResult(false, QVariant(), "Failed to open repository index.");
     }
 
@@ -254,13 +254,13 @@ GitResult GitCherryPick::createCommitFromPick(git_commit* pickedCommit)
     }
 
     git_tree* tree = nullptr;
-    if (git_tree_lookup(&tree, m_currentRepo->repo, &treeOid) != GIT_OK) {
+    if (git_tree_lookup(&tree, activeRepo(), &treeOid) != GIT_OK) {
         git_index_free(index);
         return GitResult(false, QVariant(), "Failed to lookup cherry-pick tree.");
     }
 
     git_object* headObj = nullptr;
-    if (git_revparse_single(&headObj, m_currentRepo->repo, "HEAD") != GIT_OK) {
+    if (git_revparse_single(&headObj, activeRepo(), "HEAD") != GIT_OK) {
         git_tree_free(tree);
         git_index_free(index);
         return GitResult(false, QVariant(), "Failed to resolve HEAD.");
@@ -275,7 +275,7 @@ GitResult GitCherryPick::createCommitFromPick(git_commit* pickedCommit)
     }
 
     git_signature* committer = nullptr;
-    if (git_signature_default(&committer, m_currentRepo->repo) != GIT_OK) {
+    if (git_signature_default(&committer, activeRepo()) != GIT_OK) {
         git_signature_now(&committer, "CherryPick", "CherryPick@example.com");
     }
 
@@ -287,7 +287,7 @@ GitResult GitCherryPick::createCommitFromPick(git_commit* pickedCommit)
     git_oid commitOid;
     int error = git_commit_create(
         &commitOid,
-        m_currentRepo->repo,
+        activeRepo(),
         "HEAD",
         authorCopy ? authorCopy : committer,
         committer,
@@ -307,7 +307,7 @@ GitResult GitCherryPick::createCommitFromPick(git_commit* pickedCommit)
         return GitResult(false, QVariant(), "Failed to create cherry-pick commit.");
     }
 
-    git_repository_state_cleanup(m_currentRepo->repo);
+    git_repository_state_cleanup(activeRepo());
 
     return GitResult(true, QVariant(), "Cherry-pick commit created.");
 }
@@ -330,11 +330,11 @@ GitResult GitCherryPick::resetToOriginalHead()
         return GitResult(false, QVariant(), "Original HEAD not recorded.");
 
     git_object* target = nullptr;
-    if (git_revparse_single(&target, m_currentRepo->repo, m_startHeadHash.toUtf8().constData()) != GIT_OK) {
+    if (git_revparse_single(&target, activeRepo(), m_startHeadHash.toUtf8().constData()) != GIT_OK) {
         return GitResult(false, QVariant(), "Failed to resolve original HEAD.");
     }
 
-    int result = git_reset(m_currentRepo->repo, target, GIT_RESET_HARD, nullptr);
+    int result = git_reset(activeRepo(), target, GIT_RESET_HARD, nullptr);
     git_object_free(target);
 
     if (result != GIT_OK) {
@@ -343,13 +343,13 @@ GitResult GitCherryPick::resetToOriginalHead()
     }
 
     git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) == GIT_OK && index) {
+    if (git_repository_index(&index, activeRepo()) == GIT_OK && index) {
         git_index_conflict_cleanup(index);
         git_index_write(index);
         git_index_free(index);
     }
 
-    git_repository_state_cleanup(m_currentRepo->repo);
+    git_repository_state_cleanup(activeRepo());
 
     return GitResult(true);
 }
@@ -366,14 +366,14 @@ void GitCherryPick::clearState()
 
 git_commit* GitCherryPick::lookupCommit(const QString& commitHash, QString* errorMessage) const
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return nullptr;
 
     git_oid oid;
     int result = git_oid_fromstr(&oid, commitHash.toUtf8().constData());
     if (result != GIT_OK) {
         git_object* obj = nullptr;
-        result = git_revparse_single(&obj, m_currentRepo->repo, commitHash.toUtf8().constData());
+        result = git_revparse_single(&obj, activeRepo(), commitHash.toUtf8().constData());
         if (result == GIT_OK && obj) {
             git_oid_cpy(&oid, git_object_id(obj));
             git_object_free(obj);
@@ -385,7 +385,7 @@ git_commit* GitCherryPick::lookupCommit(const QString& commitHash, QString* erro
     }
 
     git_commit* commit = nullptr;
-    if (git_commit_lookup(&commit, m_currentRepo->repo, &oid) != GIT_OK) {
+    if (git_commit_lookup(&commit, activeRepo(), &oid) != GIT_OK) {
         if (errorMessage)
             *errorMessage = QString("Commit not found: %1").arg(commitHash);
         return nullptr;
@@ -396,11 +396,11 @@ git_commit* GitCherryPick::lookupCommit(const QString& commitHash, QString* erro
 
 bool GitCherryPick::repositoryHasConflicts() const
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return false;
 
     git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK || !index)
+    if (git_repository_index(&index, activeRepo()) != GIT_OK || !index)
         return false;
 
     const bool hasConflicts = git_index_has_conflicts(index) != 0;
@@ -410,11 +410,11 @@ bool GitCherryPick::repositoryHasConflicts() const
 
 QString GitCherryPick::headHash() const
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return QString();
 
     git_reference* headRef = nullptr;
-    if (git_repository_head(&headRef, m_currentRepo->repo) != GIT_OK)
+    if (git_repository_head(&headRef, activeRepo()) != GIT_OK)
         return QString();
 
     const git_oid* oid = git_reference_target(headRef);
@@ -431,7 +431,7 @@ QString GitCherryPick::headHash() const
 
 GitResult GitCherryPick::skipOp()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository is not open.");
 
     if (!m_inProgress)
@@ -441,21 +441,21 @@ GitResult GitCherryPick::skipOp()
         return GitResult(false, QVariant(), "Cherry-pick state is invalid.");
 
     git_object* headObj = nullptr;
-    if (git_revparse_single(&headObj, m_currentRepo->repo, "HEAD") == GIT_OK) {
-        git_reset(m_currentRepo->repo, headObj, GIT_RESET_HARD, nullptr);
+    if (git_revparse_single(&headObj, activeRepo(), "HEAD") == GIT_OK) {
+        git_reset(activeRepo(), headObj, GIT_RESET_HARD, nullptr);
         git_object_free(headObj);
     } else {
         return GitResult(false, QVariant(), "Failed to resolve HEAD during skip.");
     }
 
     git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) == GIT_OK && index) {
+    if (git_repository_index(&index, activeRepo()) == GIT_OK && index) {
         git_index_conflict_cleanup(index);
         git_index_write(index);
         git_index_free(index);
     }
 
-    git_repository_state_cleanup(m_currentRepo->repo);
+    git_repository_state_cleanup(activeRepo());
 
     m_hasConflicts = false;
     emit cherryPickStateChanged();
