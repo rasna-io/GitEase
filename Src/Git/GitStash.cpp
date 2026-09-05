@@ -16,12 +16,12 @@ GitStash::GitStash(QObject *parent)
 
 GitResult GitStash::save(const QString &message, bool keepIndex)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
     git_signature *signature = nullptr;
-    int result = git_signature_default(&signature, m_currentRepo->repo);
+    int result = git_signature_default(&signature, activeRepo());
 
     if (result != GIT_OK) {
         return GitResult(false, QVariant(), "Failed to create signature.");
@@ -35,7 +35,7 @@ GitResult GitStash::save(const QString &message, bool keepIndex)
     git_oid stashOid;
     result = git_stash_save(
         &stashOid,
-        m_currentRepo->repo,
+        activeRepo(),
         signature,
         msg,
         flags
@@ -200,10 +200,10 @@ static GitResult createStashCommits(
 
 GitResult GitStash::stashFile(const QString &filePath, const QString &message)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, {}, "Repository not found.");
 
-    git_repository *repo = m_currentRepo->repo;
+    git_repository *repo = activeRepo();
     QByteArray pathBytes = filePath.toUtf8();
     const char *path = pathBytes.constData();
 
@@ -294,10 +294,10 @@ GitResult GitStash::stashFile(const QString &filePath, const QString &message)
 
 GitResult GitStash::stashSelectedLines(const QString &filePath, const QString &message, const QString &blob)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, {}, "Repository not found.");
 
-    git_repository *repo = m_currentRepo->repo;
+    git_repository *repo = activeRepo();
     QByteArray pathBytes = filePath.toUtf8();
     const char *path = pathBytes.constData();
 
@@ -371,16 +371,16 @@ GitResult GitStash::stashSelectedLines(const QString &filePath, const QString &m
 
 GitResult GitStash::list()
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, {}, "Repository not found.");
     }
 
     QVariantList resultList;
 
-    ListPayload payload { m_currentRepo->repo, &resultList };
+    ListPayload payload { activeRepo(), &resultList };
 
     int result = git_stash_foreach(
-        m_currentRepo->repo,
+        activeRepo(),
         [](size_t index,
            const char* message,
            const git_oid* stash_id,
@@ -456,7 +456,7 @@ GitResult GitStash::list()
 
 GitResult GitStash::apply(int index, bool reinstateIndex)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -467,7 +467,7 @@ GitResult GitStash::apply(int index, bool reinstateIndex)
         options.flags |= GIT_STASH_APPLY_REINSTATE_INDEX;
     }
 
-    int result = git_stash_apply(m_currentRepo->repo, index, &options);
+    int result = git_stash_apply(activeRepo(), index, &options);
 
     if (result != GIT_OK) {
         return GitResult(false, QVariant(), QString("Failed to apply stash: %1").arg(git_error_last()->message));
@@ -484,11 +484,11 @@ GitResult GitStash::apply(int index, bool reinstateIndex)
 
 GitResult GitStash::remove(int index)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
-    int result = git_stash_drop(m_currentRepo->repo, index);
+    int result = git_stash_drop(activeRepo(), index);
 
     if (result != GIT_OK) {
         return GitResult(false, QVariant(), QString("Failed to remove stash: %1").arg(git_error_last()->message));
@@ -501,7 +501,7 @@ GitResult GitStash::remove(int index)
 
 GitResult GitStash::pop(int index, bool reinstateIndex)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -512,7 +512,7 @@ GitResult GitStash::pop(int index, bool reinstateIndex)
         options.flags |= GIT_STASH_APPLY_REINSTATE_INDEX;
     }
 
-    int result = git_stash_pop(m_currentRepo->repo, index, &options);
+    int result = git_stash_pop(activeRepo(), index, &options);
 
     if (result != GIT_OK) {
         return GitResult(false, QVariant(), QString("Failed to pop stash: %1").arg(git_error_last()->message));
