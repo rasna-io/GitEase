@@ -22,8 +22,6 @@ void IGitController::setCurrentRepo(Repository *newCurrentRepo)
         return;
     m_currentRepo = newCurrentRepo;
 
-    m_repoGeneration.fetchAndAddOrdered(1);
-
     emit currentRepoChanged();
 }
 
