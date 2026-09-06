@@ -112,7 +112,4 @@ protected:
     static QString quoteCommandArg(const QString &argument);
 
     Repository *m_currentRepo = nullptr;
-
-private:
-    //! Read from the worker threads while the GUI thread bumps it, so it is atomic.
 };
