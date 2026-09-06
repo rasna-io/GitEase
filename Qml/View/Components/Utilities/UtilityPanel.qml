@@ -56,6 +56,32 @@ Rectangle {
 
     /* Children
      * ****************************************************************************************/
+    GuideHoverTrigger {
+        guideController: root.guideController
+        guideId: "utility_panel_tutorial"
+        guideName: "Utility Panel"
+        guideIcon: Style.icons.panelRight
+        guidePage: "utilities"
+        stepsFactory: function() {
+            return [
+                {
+                    targetProvider: function() { return filterField },
+                    icon: Style.icons.search,
+                    title: "Filter Docks",
+                    description: "Type to filter the list of utility docks — only matching titles remain visible.",
+                    isInPopup: false,
+                    activationDelay: 300,
+                },
+                {
+                    targetProvider: function() { return dockFlick },
+                    icon: Style.icons.panelRight,
+                    title: "Utility Docks",
+                    description: "Each card is a specialized dock (Branches, Remotes, Stashes, Tags, etc.). Click the header to expand/collapse. The panel remembers which docks you leave open.",
+                }
+            ]
+        }
+    }
+
     Rectangle {
         id: leftBorder
         anchors.left: parent.left
