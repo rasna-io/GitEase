@@ -62,6 +62,15 @@ UtilitiesCard {
             stepsFactory: function() {
                 return [
                     {
+                        targetProvider: function() { return root },
+                        icon: Style.icons.archive,
+                        title: "Stash Manager Dock",
+                        description: "Shelve and manage your stashed changes. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { root.collapsed = false }
+                    },
+                    {
                         targetProvider: function() { return stashListView },
                         icon: Style.icons.archive,
                         title: "Your Stashes",

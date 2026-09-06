@@ -120,6 +120,15 @@ UtilitiesCard {
             stepsFactory: function() {
                 return [
                     {
+                        targetProvider: function() { return root },
+                        icon: Style.icons.tag,
+                        title: "Tag Management Dock",
+                        description: "Create and manage git tags. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { root.collapsed = false }
+                    },
+                    {
                         targetProvider: function() { return internalListView },
                         icon: Style.icons.tag,
                         title: "Your Tags",
