@@ -133,9 +133,9 @@ qint64 GitAsyncRunner::submit(IGitController *controller, const QString &method,
     job.controller     = controller;
     job.method         = method;
     job.args           = args;
-    job.repoGeneration = controller->repoGeneration();
 
     Repository *lane = controller->currentRepo();
+    job.repo = lane;
 
     {
         QMutexLocker locker(&m_mutex);
