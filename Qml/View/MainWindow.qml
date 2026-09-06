@@ -140,6 +140,15 @@ Rectangle {
                     settingsPopup.fileIO = root.uiSession.appModel.fileIO
                     settingsPopup.guideController = root.uiSession.guideController
                     settingsPopup.switchToPageById = root.switchToPageById
+                    settingsPopup.openUtilityPanel = function(open) {
+                        let pages = pageSwipeView.contentChildren
+                        for (let i = 0; i < pages.length; i++) {
+                            if (pages[i].pageId === "graph") {
+                                pages[i].utilityPanelOpen = open
+                                break
+                            }
+                        }
+                    }
                     settingsPopup.open()
                 }
                 
@@ -245,6 +254,7 @@ Rectangle {
                         PluginsPage {
                             appModel: root.uiSession?.appModel
                             pluginController: root.uiSession?.pluginController
+                            guideController: root.uiSession?.guideController
                         }
 
                         Component.onCompleted: {
