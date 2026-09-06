@@ -102,6 +102,15 @@ UtilitiesCard {
             stepsFactory: function() {
                 return [
                     {
+                        targetProvider: function() { return root },
+                        icon: Style.icons.upload,
+                        title: "Remotes Dock",
+                        description: "Manage all git remotes for this repository. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { root.collapsed = false }
+                    },
+                    {
                         targetProvider: function() { return listView },
                         icon: Style.icons.upload,
                         title: "Manage Remotes",
