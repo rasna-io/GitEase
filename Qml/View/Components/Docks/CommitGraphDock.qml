@@ -294,6 +294,13 @@ DetachablePanel {
                                     root.hoverSource = ""
                                 }
                             }
+                            onCommitRightClicked: function(index, mouseX, mouseY) {
+                                var data = root.commits[index]
+                                if (!data)
+                                    return
+                                var pos = graphCanvas.mapToItem(root.activeItem, mouseX, mouseY)
+                                root.handleItemClick(data, Qt.RightButton, 0, index, pos.x, pos.y)
+                            }
                             onInfiniteScroll: root.loadMoreCommits()
                         }
                     }
