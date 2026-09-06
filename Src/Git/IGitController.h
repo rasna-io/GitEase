@@ -8,9 +8,6 @@
 #include <git2/deprecated.h>
 #include <QMutexLocker>
 #include <QMutex>
-#include <QAtomicInteger>
-
-
 
 class IGitController : public QObject
 {
@@ -118,5 +115,4 @@ protected:
 
 private:
     //! Read from the worker threads while the GUI thread bumps it, so it is atomic.
-    QAtomicInteger<qint64> m_repoGeneration = 0;
 };
