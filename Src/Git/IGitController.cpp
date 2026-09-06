@@ -44,16 +44,14 @@ qint64 IGitController::callAsync(const QString &method, const QVariantList &args
     return GitAsyncRunner::instance()->submit(this, method, args);
 }
 
-void IGitController::emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration)
+void IGitController::emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, Repository *jobRepo)
 {
-    bool isRepoChanged = (repoGeneration != m_repoGeneration.loadAcquire());
-    emit asyncFinished(requestId, method, result, isRepoChanged);
+    emit asyncFinished(requestId, method, result, jobRepo != m_currentRepo);
 }
 
-void IGitController::emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration)
+void IGitController::emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, Repository *jobRepo)
 {
-    bool isRepoChanged = (repoGeneration != m_repoGeneration.loadAcquire());
-    emit asyncFailed(requestId, method, error, isRepoChanged);
+    emit asyncFailed(requestId, method, error, jobRepo != m_currentRepo);
 }
 
 QString IGitController::gitOidToString(const git_oid *oid)
