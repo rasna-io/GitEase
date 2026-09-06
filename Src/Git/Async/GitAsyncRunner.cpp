@@ -212,13 +212,6 @@ void GitAsyncRunner::runJob(const Job &job, Repository *lane)
     IGitController *target  = job.controller;
     auto *controller        = static_cast<void *>(target);
 
-    // The repository may have changed while the job was queued.
-    if (target->repoGeneration() != job.repoGeneration)
-    {
-        emit jobFailed(job.requestId, controller, job.method, QStringLiteral("stale"), job.repoGeneration);
-        return;
-    }
-
     QVariant result;
     QString error;
 
@@ -226,11 +219,11 @@ void GitAsyncRunner::runJob(const Job &job, Repository *lane)
 
     if (!ok)
     {
-        emit jobFailed(job.requestId, controller, job.method, error, job.repoGeneration);
+        emit jobFailed(job.requestId, controller, job.method, error, static_cast<void *>(job.repo));
         return;
     }
 
-    emit jobFinished(job.requestId, controller, job.method, result, job.repoGeneration);
+    emit jobFinished(job.requestId, controller, job.method, result, static_cast<void *>(job.repo));
 }
 
 bool GitAsyncRunner::invokeByName(QObject *target, const QString &methodName, const QVariantList &args, QVariant *result, QString *error)
