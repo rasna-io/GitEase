@@ -12,6 +12,7 @@ Rectangle {
 
     property var    pluginManager: null
     property string pluginId:      "gitease.qml-highlighter"
+    property GuideController guideController: null
 
     color:        "#1E1E1E"   // VSCode dark background
     radius:       7
@@ -23,6 +24,44 @@ Rectangle {
         anchors.fill:    parent
         anchors.margins: 0
         spacing:         0
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "qml_highlighter_tutorial"
+            guideName: "QML Highlighter"
+            guideIcon: "{ }"
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return root },
+                        icon: "{ }",
+                        title: "QML Highlighter Dock",
+                        description: "View and edit QML files with syntax highlighting. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                    },
+                    {
+                        targetProvider: function() { return openArea },
+                        icon: "⊞",
+                        title: "Open QML File",
+                        description: "Click to select a .qml file from disk. The file will be loaded with full syntax highlighting."
+                    },
+                    {
+                        targetProvider: function() { return editor },
+                        icon: "{ }",
+                        title: "Code Editor",
+                        description: "Edit QML code with syntax highlighting, line numbers, and scrollable view. Paste code directly or open a file."
+                    },
+                    {
+                        targetProvider: function() { return clearArea },
+                        icon: "✕",
+                        title: "Clear",
+                        description: "Click the ✕ button to clear the editor and start fresh."
+                    }
+                ]
+            }
+        }
 
         // ── Header bar ───────────────────────────────────────────────────────
         Rectangle {
