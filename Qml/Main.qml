@@ -107,6 +107,7 @@ ApplicationWindow {
         height: window.height
         appModel: uiSession.appModel
         notificationController: uiSession.notificationController
+        guideController: uiSession.guideController
     }
 
     // Main content loader - switches between welcome flow and main application
