@@ -31,6 +31,7 @@ IPopup {
     property GuideController        guideController:        null
 
     property var                    switchToPageById:       function() {}
+    property var                    openUtilityPanel:       function() {}
 
     /* Private state
      * ****************************************************************************************/
@@ -71,6 +72,27 @@ IPopup {
         let pageId = _pendingTutorialPage
         _pendingTutorialId = ""
         _pendingTutorialPage = ""
+
+        if (pageId === "utilities") {
+            // Utility panel tutorials require the Graph page with utility panel open
+            if (typeof root.switchToPageById === "function")
+                root.switchToPageById("graph")
+
+            Qt.callLater(function() {
+                if (typeof root.openUtilityPanel === "function")
+                    root.openUtilityPanel(true)
+
+                Qt.callLater(function() {
+                    if (!root.guideController || !root.guideController.forceShow(id)) {
+                        if (root.notificationController)
+                            root.notificationController.warning(
+                                "Open the relevant page, then try this tutorial again from Settings.",
+                                "Help", 3500)
+                    }
+                })
+            })
+            return
+        }
 
         if (pageId.length > 0 && typeof root.switchToPageById === "function")
             root.switchToPageById(pageId)
@@ -355,7 +377,7 @@ IPopup {
                                             description: "Switch between light and dark visual themes for the whole app.",
                                             isInPopup: true,
                                             activationDelay: 300,
-                                            onActivate: function() { root.currentPage = 2 }
+                                            onActivate: function() { root.currentPage = 1 }
                                         }
                                     ]
                                 }
@@ -406,7 +428,7 @@ IPopup {
                                             description: "Manage the SSH keys used to authenticate with your git remotes — generate a new key pair, copy the public key, or import an existing one.",
                                             isInPopup: true,
                                             activationDelay: 300,
-                                            onActivate: function() { root.currentPage = 1 }
+                                            onActivate: function() { root.currentPage = 2 }
                                         }
                                     ]
                                 }
@@ -441,7 +463,7 @@ IPopup {
                                             description: "Choose whether notifications also pop up as floating windows, or only appear in the notification center.",
                                             isInPopup: true,
                                             activationDelay: 300,
-                                            onActivate: function() { root.currentPage = 5 }
+                                            onActivate: function() { root.currentPage = 3 }
                                         },
                                         {
                                             targetProvider: function() { return maxVisibleNotifications },
@@ -567,7 +589,7 @@ IPopup {
                                             description: "Turn contextual tutorials on or off — when enabled, each one pops up automatically the first time you encounter it.",
                                             isInPopup: true,
                                             activationDelay: 700,
-                                            onActivate: function() { root.currentPage = 4 }
+                                            onActivate: function() { root.currentPage = 5 }
                                         },
                                         {
                                             targetProvider: function() { return resetGuidesButton },
