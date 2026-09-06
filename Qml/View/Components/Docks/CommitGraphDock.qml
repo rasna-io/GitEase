@@ -59,6 +59,9 @@ DetachablePanel {
     property var selectedCommit         : null
     property int lastSelectedIndex      : -1
 
+    property int hoveredIndex           : -1
+    property string hoverSource         : ""   // "canvas" | "list" | "" - who last set hoveredIndex
+
     property string navigationRule  : "Author Email"
     property string filterText      : ""
     property string filterStartDate : ""
@@ -281,6 +284,16 @@ DetachablePanel {
                             graphColumnWidth: root.commitsColGraphWidth
                             branchTagColumnWidth: root.commitsColBranchTagWidth
                             allCommitsHash: root.allCommitsHash
+                            hoveredIndex: root.hoveredIndex
+                            onHoverIndexChanged: function(index) {
+                                if (index >= 0) {
+                                    root.hoverSource = "canvas"
+                                    root.hoveredIndex = index
+                                } else if (root.hoverSource === "canvas") {
+                                    root.hoveredIndex = -1
+                                    root.hoverSource = ""
+                                }
+                            }
                             onInfiniteScroll: root.loadMoreCommits()
                         }
                     }
@@ -328,6 +341,7 @@ DetachablePanel {
                         isHead      : modelData ? modelData.hash === root.headHash  : false
                         isStash     : modelData ? modelData.isStash === true        : false
                         parentRoot  : root.activeItem
+                        hoveredIndex: root.hoveredIndex
 
                         onItemClicked: function(button, modifiers, idx, mouseX, mouseY) {
                             root.handleItemClick(modelData, button, modifiers, idx, mouseX, mouseY)
@@ -339,6 +353,18 @@ DetachablePanel {
 
                         onResetHeadOne: {
                             root.executeResetHead("HEAD~1", ResetController.ResetMode.Mixed)
+                        }
+
+                        onHoverEntered: function(_index) {
+                            root.hoverSource = "list"
+                            root.hoveredIndex = _index
+                        }
+
+                        onHoverExited: function(_index) {
+                            if (root.hoverSource === "list" && root.hoveredIndex === _index) {
+                                root.hoveredIndex = -1
+                                root.hoverSource = ""
+                            }
                         }
                     }
                 }
