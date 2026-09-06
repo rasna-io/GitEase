@@ -49,7 +49,7 @@ private:
         IGitController *controller     = nullptr;
         QString         method;
         QVariantList    args;
-        qint64          repoGeneration = 0;
+        Repository     *repo           = nullptr;
     };
 
     //! Everything queued for one repository. At most one of its jobs runs at a time.
