@@ -93,8 +93,8 @@ public:
 
 
     //! Called by GitAsyncRunner on the GUI thread. Not meant for anything else.
-    void emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration);
-    void emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration);
+    void emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, Repository *jobRepo);
+    void emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, Repository *jobRepo);
 
 signals:
     void currentRepoChanged();
