@@ -39,11 +39,6 @@ QRecursiveMutex *IGitController::networkMutex(Repository *repo)
     return repo ? &repo->netMutex : &fallback;
 }
 
-qint64 IGitController::repoGeneration() const
-{
-    return m_repoGeneration.loadAcquire();
-}
-
 qint64 IGitController::callAsync(const QString &method, const QVariantList &args)
 {
     return GitAsyncRunner::instance()->submit(this, method, args);
