@@ -23,6 +23,7 @@ Rectangle {
     // Injected by PluginDockHost after component creation
     property var    pluginManager: null
     property string pluginId:      "com.gitease.repo-notes"
+    property GuideController guideController: null
 
     readonly property string settingKey: "notes"
 
@@ -42,6 +43,39 @@ Rectangle {
         anchors.fill: parent
         anchors.margins: 16
         spacing: 12
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "repo_notes_tutorial"
+            guideName: "Repo Notes"
+            guideIcon: Style.icons.note
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return root },
+                        icon: Style.icons.note,
+                        title: "Repo Notes Dock",
+                        description: "Write and save free-form notes for this repository. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { }
+                    },
+                    {
+                        targetProvider: function() { return noteArea },
+                        icon: Style.icons.edit,
+                        title: "Write Notes",
+                        description: "Type anything here — commit ideas, TODOs, links, or reminders. Notes are auto-saved per repository and persist across restarts."
+                    },
+                    {
+                        targetProvider: function() { return clearBtn },
+                        icon: Style.icons.trash,
+                        title: "Clear Notes",
+                        description: "Click the ✕ button to erase all notes for this repository."
+                    }
+                ]
+            }
+        }
 
         // Header
         RowLayout {
@@ -66,6 +100,7 @@ Rectangle {
 
             // Clear button
             Label {
+                id: clearBtn
                 text:           "✕"
                 color:          Style.colors.mutedText
                 font.pixelSize: 12
