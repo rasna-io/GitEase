@@ -39,6 +39,7 @@ Item {
      * ****************************************************************************************/
     signal infiniteScroll()
     signal hoverIndexChanged(int index)
+    signal commitRightClicked(int index, real mouseX, real mouseY)
 
     /* Children
      * ****************************************************************************************/
@@ -73,24 +74,11 @@ Item {
             id: hoverArea
             anchors.fill: flick.contentItem
             hoverEnabled: true
-            acceptedButtons: Qt.NoButton
+            acceptedButtons: Qt.RightButton
             z: 1000
 
             onPositionChanged: (mouse) => {
-                var newHoveredIndex = -1;
-                for (var i = 0; i < root.commits.length; i++) {
-                    var commit = root.commits[i];
-                    var pos = root.commitPositions[commit.hash];
-                    if (pos) {
-                        var rowTop = pos.y;
-                        var rowBottom = pos.y + root.commitItemHeight + root.commitItemSpacing * 2;
-                        if (mouse.y >= rowTop && mouse.y < rowBottom) {
-                            newHoveredIndex = i;
-                            break;
-                        }
-                    }
-                }
-
+                var newHoveredIndex = rowIndexAt(mouse.y);
                 if (newHoveredIndex !== root.hoveredIndex)
                     root.hoverIndexChanged(newHoveredIndex);
             }
@@ -98,6 +86,16 @@ Item {
             onExited: {
                 if (root.hoveredIndex !== -1)
                     root.hoverIndexChanged(-1);
+            }
+
+            onClicked: (mouse) => {
+                if (mouse.button !== Qt.RightButton)
+                    return;
+                var idx = rowIndexAt(mouse.y);
+                if (idx < 0)
+                    return;
+                var pos = hoverArea.mapToItem(root, mouse.x, mouse.y);
+                root.commitRightClicked(idx, pos.x, pos.y);
             }
         }
 
@@ -505,6 +503,20 @@ Item {
         if (commitObj && commitObj.isUncommitted) return "#888888"
         if (!commitObj || !commitObj.colorKey) return GraphUtils.getCategoryColor("main")
         return GraphUtils.getCategoryColor(commitObj.colorKey)
+    }
+
+    function rowIndexAt(y) {
+        for (var i = 0; i < root.commits.length; i++) {
+            var commit = root.commits[i];
+            var pos = root.commitPositions[commit.hash];
+            if (pos) {
+                var rowTop = pos.y;
+                var rowBottom = pos.y + root.commitItemHeight + root.commitItemSpacing * 2;
+                if (y >= rowTop && y < rowBottom)
+                    return i;
+            }
+        }
+        return -1;
     }
 
     function requestPaint() {
