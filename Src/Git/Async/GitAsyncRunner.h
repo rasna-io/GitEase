@@ -161,14 +161,14 @@ public:
     qint64 submit(IGitController *controller, const QString &method, const QVariantList &args);
 
 private slots:
-    void deliverFinished(qint64 requestId, void *controller, const QString &method, const QVariant &result, qint64 repoGeneration);
+    void deliverFinished(qint64 requestId, void *controller, const QString &method, const QVariant &result, void *repo);
 
-    void deliverFailed(qint64 requestId, void *controller, const QString &method, const QString &error, qint64 repoGeneration);
+    void deliverFailed(qint64 requestId, void *controller, const QString &method, const QString &error, void *repo);
 
 signals:
     //! Internal. Emitted on the worker thread, delivered queued back to the GUI thread.
-    void jobFinished(qint64 requestId, void *controller, const QString &method, const QVariant &result, qint64 repoGeneration);
+    void jobFinished(qint64 requestId, void *controller, const QString &method, const QVariant &result, void *repo);
 
     //! Internal. Emitted on the worker thread, delivered queued back to the GUI thread.
-    void jobFailed(qint64 requestId, void *controller, const QString &method, const QString &error, qint64 repoGeneration);
+    void jobFailed(qint64 requestId, void *controller, const QString &method, const QString &error, void *repo);
 };
