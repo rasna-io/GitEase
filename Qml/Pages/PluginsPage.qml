@@ -42,6 +42,8 @@ Page {
     // Counts for the left panel Installed filter rows
     property var installedCounts: ({})
 
+    property GuideController guideController: null
+
     // Header exposed to MainWindow
     headerContent: Component {
         PluginsPageHeader {
@@ -142,6 +144,43 @@ Page {
                 anchors.fill: parent
                 anchors.margins: Style.dp(14)
                 spacing: 0
+
+                GuideHoverTrigger {
+                    guideController: root.guideController
+                    guideId: "plugins_page_tutorial"
+                    guideName: "Plugins"
+                    guideIcon: Style.icons.plugins
+                    guidePage: "plugins"
+                    stepsFactory: function() {
+                        return [
+                            {
+                                targetProvider: function() { return leftPanel },
+                                icon: Style.icons.plugins,
+                                title: "Plugin Categories",
+                                description: "Browse plugins by category (All, Git, UI, Workflow, etc.) or filter installed plugins by status (Enabled, Disabled, Needs Update)."
+                            },
+                            {
+                                targetProvider: function() { return pluginsPageHeader?.textFilterField },
+                                icon: Style.icons.search,
+                                title: "Search Plugins",
+                                description: "Type a plugin name or keyword to search both installed and available plugins instantly.",
+                                activationDelay: 300,
+                            },
+                            {
+                                targetProvider: function() { return installedGridView },
+                                icon: Style.icons.cube,
+                                title: "Installed Plugins",
+                                description: "Your currently installed plugins. Click the gear icon to configure, the toggle to enable/disable, or the trash icon to uninstall."
+                            },
+                            {
+                                targetProvider: function() { return availableGridView },
+                                icon: Style.icons.cloudDownload,
+                                title: "Available Plugins",
+                                description: "Browse the plugin marketplace. Click Install to add a plugin — it downloads and enables automatically."
+                            }
+                        ]
+                    }
+                }
 
                 // ── Installed section header ─────────────────────────
                 RowLayout {
