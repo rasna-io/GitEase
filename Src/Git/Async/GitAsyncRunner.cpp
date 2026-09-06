@@ -11,16 +11,16 @@ GitAsyncRunner::GitAsyncRunner()
     // The runner itself stays on the GUI thread; the workers below call into it directly. The
     // result signals are queued, so they arrive back on the GUI thread where m_guiAnchor lives.
     connect(this, &GitAsyncRunner::jobFinished,
-            m_guiAnchor, [this](qint64 id, void *controller, const QString &method, const QVariant &result, qint64 generation)
+            m_guiAnchor, [this](qint64 id, void *controller, const QString &method, const QVariant &result, void *repo)
             {
-                deliverFinished(id, controller, method, result, generation);
+                deliverFinished(id, controller, method, result, repo);
             },
             Qt::QueuedConnection);
 
     connect(this, &GitAsyncRunner::jobFailed,
-            m_guiAnchor, [this](qint64 id, void *controller, const QString &method, const QString &error, qint64 generation)
+            m_guiAnchor, [this](qint64 id, void *controller, const QString &method, const QString &error, void *repo)
             {
-                deliverFailed(id, controller, method, error, generation);
+                deliverFailed(id, controller, method, error, repo);
             },
             Qt::QueuedConnection);
 
@@ -325,16 +325,16 @@ bool GitAsyncRunner::invokeByName(QObject *target, const QString &methodName, co
     return ok;
 }
 
-void GitAsyncRunner::deliverFinished(qint64 requestId,void *controller,const QString &method,const QVariant &result, qint64 repoGeneration)
+void GitAsyncRunner::deliverFinished(qint64 requestId, void *controller, const QString &method, const QVariant &result, void *repo)
 {
     auto *target = static_cast<IGitController *>(controller);
 
-    target->emitAsyncFinished(requestId, method, result, repoGeneration);
+    target->emitAsyncFinished(requestId, method, result, static_cast<Repository *>(repo));
 }
 
-void GitAsyncRunner::deliverFailed(qint64 requestId, void *controller, const QString &method, const QString &error, qint64 repoGeneration)
+void GitAsyncRunner::deliverFailed(qint64 requestId, void *controller, const QString &method, const QString &error, void *repo)
 {
     auto *target = static_cast<IGitController *>(controller);
 
-    target->emitAsyncFailed(requestId, method, error, repoGeneration);
+    target->emitAsyncFailed(requestId, method, error, static_cast<Repository *>(repo));
 }
