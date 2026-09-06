@@ -42,6 +42,15 @@ UtilitiesCard {
             stepsFactory: function() {
                 return [
                     {
+                        targetProvider: function() { return root },
+                        icon: Style.icons.clock,
+                        title: "Repositories History Dock",
+                        description: "Quickly reopen recently accessed repositories. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { root.collapsed = false }
+                    },
+                    {
                         targetProvider: function() { return scrollView },
                         icon: Style.icons.clock,
                         title: "Recently Opened",

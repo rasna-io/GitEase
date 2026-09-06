@@ -48,6 +48,15 @@ UtilitiesCard {
             stepsFactory: function() {
                 return [
                     {
+                        targetProvider: function() { return root },
+                        icon: Style.icons.arowLeftRight,
+                        title: "Export / Import Project Dock",
+                        description: "Share repository history without a remote server using git bundles. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { root.collapsed = false }
+                    },
+                    {
                         targetProvider: function() { return viewControl },
                         icon: Style.icons.arowLeftRight,
                         title: "Export / Import",
