@@ -15,6 +15,8 @@ QtObject {
 
     property                bool              showStashNodes:           false
 
+    property                bool              autoUpdate:               true    // Graph view
+
     property                int               chunkContextLines:        0
 
     property                int               chunkExpandLines:         10
@@ -26,6 +28,7 @@ QtObject {
             defaultPath: root.defaultPath,
             showAvatar: root.showAvatar,
             showStashNodes: root.showStashNodes,
+            autoUpdate: root.autoUpdate,
             chunkContextLines: root.chunkContextLines,
             chunkExpandLines: root.chunkExpandLines
         }
@@ -37,6 +40,7 @@ QtObject {
         root.defaultPath = data.defaultPath ?? ""
         root.showAvatar = data.showAvatar ?? true
         root.showStashNodes = data.showStashNodes ?? false
+        root.autoUpdate = data.autoUpdate ?? true
         root.chunkContextLines = data.chunkContextLines ?? 0
         root.chunkExpandLines = data.chunkExpandLines ?? 10
     }
