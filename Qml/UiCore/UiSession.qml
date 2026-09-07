@@ -152,6 +152,7 @@ QtObject {
     property CherryPickController cherryPickController: CherryPickController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
