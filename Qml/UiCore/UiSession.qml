@@ -14,6 +14,8 @@ QtObject {
      * ****************************************************************************************/
     property AppModel             appModel:             AppModel {}
 
+    property GitStateNotifier     gitStateNotifier:     GitStateNotifier {}
+
     property GuideController      guideController:      GuideController {
         appModel: root.appModel
     }
