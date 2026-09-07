@@ -69,6 +69,10 @@ QtObject {
             activityController.addActivity(command)
             gitStateNotifier.reportCommand(command)
         }
+
+        onFetchFinished: gitStateNotifier.notifyChanged()
+        onPullFinished:  gitStateNotifier.notifyChanged()
+        onPushFinished:  gitStateNotifier.notifyChanged()
     }
 
     property CommitController commitController: CommitController {
