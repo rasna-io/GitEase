@@ -114,6 +114,7 @@ QtObject {
     property TagController tagController: TagController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
