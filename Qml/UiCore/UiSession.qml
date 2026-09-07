@@ -67,6 +67,7 @@ QtObject {
     property RemoteController remoteController: RemoteController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
