@@ -55,6 +55,16 @@ Rectangle {
         }
     }
 
+    /* Signals and Connections
+     * ****************************************************************************************/
+    Connections {
+        target: root.gitStateNotifier
+
+        function onRepositoryChanged() {
+            root.reload()
+        }
+    }
+
     /* Children
      * ****************************************************************************************/
     Rectangle {
