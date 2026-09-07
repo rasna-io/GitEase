@@ -145,6 +145,7 @@ QtObject {
     property RebaseController rebaseController: RebaseController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
