@@ -315,11 +315,22 @@ Rectangle {
 
     /* Functions
      * ****************************************************************************************/
-    //! Re-reads every dock that caches repository state.
+    //! Re-reads every dock that caches repository state, plugin docks included
     function reload() {
-        branchManagementView.update()
-        stashManagerDock.updateStashes()
-        tagManagementView.update()
-        rebaseDock.refreshBranches()
+        for (let i = 0; i < dockFlow.children.length; ++i) {
+            let child = dockFlow.children[i]
+
+            // Plugin docks are wrapped in a Loader.
+            let dock = (child && typeof child.reload === "function") ? child
+                     : (child && child.item && typeof child.item.reload === "function") ? child.item
+                     : null
+
+            if (!dock)
+                continue
+
+            try {
+                dock.reload()
+            } catch (error) {}
+        }
     }
 }
