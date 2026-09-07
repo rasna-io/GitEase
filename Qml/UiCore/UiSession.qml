@@ -138,6 +138,7 @@ QtObject {
     property MergeController mergeController: MergeController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
