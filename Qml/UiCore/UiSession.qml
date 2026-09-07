@@ -159,6 +159,7 @@ QtObject {
     property ResetController resetController: ResetController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
