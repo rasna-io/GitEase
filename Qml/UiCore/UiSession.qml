@@ -80,6 +80,7 @@ QtObject {
     property StatusController statusController: StatusController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
