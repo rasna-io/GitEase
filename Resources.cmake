@@ -277,6 +277,7 @@ set(RESOURCES_PAGES
 # Define QML Services
 set(RESOURCES_SERVICES
     Qml/Core/Services/GitService.qml
+    Qml/Core/Services/GitStateNotifier.qml   # Single "repository changed" broadcast
 )
 
 # Define View Resources
