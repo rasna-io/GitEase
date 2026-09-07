@@ -116,6 +116,9 @@ QtObject {
             activityController.addActivity(command)
             gitStateNotifier.reportCommand(command)
         }
+
+        onPushTagFinished:       gitStateNotifier.notifyChanged()
+        onPushDeleteTagFinished: gitStateNotifier.notifyChanged()
     }
 
     property GitTreeController gitTreeController: GitTreeController {
