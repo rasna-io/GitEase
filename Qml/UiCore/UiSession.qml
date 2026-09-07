@@ -102,6 +102,7 @@ QtObject {
         statusController: root.statusController
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
