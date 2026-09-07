@@ -73,6 +73,7 @@ QtObject {
     property CommitController commitController: CommitController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
