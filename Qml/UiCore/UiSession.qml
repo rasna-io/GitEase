@@ -94,6 +94,7 @@ QtObject {
     property ConfigController configController: ConfigController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
