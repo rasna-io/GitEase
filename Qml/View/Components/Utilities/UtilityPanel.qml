@@ -35,6 +35,7 @@ Rectangle {
     property UserAuthenticationPopup userAuthenticationPopup : null
     property UiSessionPopups         uiSessionPopups         : null
     property var                     pluginController        : null
+    property GitStateNotifier        gitStateNotifier        : null
     property real                    animatedWidth           : root.open ? expandedWidth : 0
 
     /* Object Properties
