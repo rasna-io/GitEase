@@ -115,6 +115,7 @@ QtObject {
     property GitTreeController gitTreeController: GitTreeController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
