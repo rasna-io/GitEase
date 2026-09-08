@@ -236,7 +236,7 @@ UtilitiesCard {
      * ****************************************************************************************/
 
     // Populate branch combo
-    function refreshBranches() {
+    function reload() {
         branchModel.clear()
 
         if (!branchController)
