@@ -239,7 +239,6 @@ UtilitiesCard {
             if (root.notificationController) {
                 root.notificationController.success("Stash popped successfully", "Stash", 3000)
             }
-            root.updateStashes()
         } else {
             if (root.notificationController) {
                 root.notificationController.error(result.errorMessage || "Failed to pop stash", "Stash Error", 5000)
@@ -253,7 +252,6 @@ UtilitiesCard {
             if (root.notificationController) {
                 root.notificationController.success("Stash applied successfully", "Stash", 3000)
             }
-            root.updateStashes()
         } else {
             if (root.notificationController) {
                 root.notificationController.error(result.errorMessage || "Failed to apply stash", "Stash Error", 5000)
@@ -267,7 +265,6 @@ UtilitiesCard {
             if (root.notificationController) {
                 root.notificationController.success("Stash removed successfully", "Stash", 3000)
             }
-            root.updateStashes()
         } else {
             if (root.notificationController) {
                 root.notificationController.error(result.errorMessage || "Failed to remove stash", "Stash Error", 5000)
@@ -289,7 +286,6 @@ UtilitiesCard {
                     root.notificationController.error(result.errorMessage || "Failed to drop all stashes",
                                                      "Stash Error", 5000)
                 }
-                root.updateStashes()
                 return
             }
         }
@@ -299,8 +295,6 @@ UtilitiesCard {
                                                            : total + " stashes dropped",
                                                "Stash", 3000)
         }
-
-        root.updateStashes()
     }
 
     function buildStashMenu(stashEntry) {
