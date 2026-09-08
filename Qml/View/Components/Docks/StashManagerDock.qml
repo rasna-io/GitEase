@@ -114,22 +114,6 @@ UtilitiesCard {
             }
         }
 
-        Connections {
-            target: root.addStashPopup
-            function onVisibleChanged() {
-                if (root.addStashPopup && !root.addStashPopup.visible)
-                    root.updateStashes()
-            }
-        }
-
-        Connections {
-            target: root.manageStashPopup
-            function onVisibleChanged() {
-                if (root.manageStashPopup && !root.manageStashPopup.visible)
-                    root.updateStashes()
-            }
-        }
-
         ContextMenu {
             id: itemContextMenu
             parent: Overlay.overlay
