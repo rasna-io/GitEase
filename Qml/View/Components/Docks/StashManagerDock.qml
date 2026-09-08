@@ -356,7 +356,7 @@ UtilitiesCard {
         return id.substring(0, 7)
     }
 
-    function updateStashes() {
+    function reload() {
         if (!root.stashController) {
             root.clearStashSelection()
 
