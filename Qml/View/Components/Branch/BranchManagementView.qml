@@ -191,7 +191,7 @@ UtilitiesCard {
             }
         }
 
-        function update() {
+        function reload() {
             root.currentBranch = branchController.getCurrentBranchName()
             let res = branchController.getBranches();
 
@@ -224,8 +224,8 @@ UtilitiesCard {
         addBranchPopup.open()
     }
 
-    function update() {
+    function reload() {
         if (root.contentItem)
-            root.contentItem.update()
+            root.contentItem.reload()
     }
 }
