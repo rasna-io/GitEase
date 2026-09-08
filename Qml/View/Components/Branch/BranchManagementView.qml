@@ -86,15 +86,6 @@ UtilitiesCard {
             }
         }
 
-
-        Connections {
-            target: root.addBranchPopup
-
-            function onAboutToHide() {
-                content.update()
-            }
-        }
-
         ButtonGroup {
             id: headerButtonGroup
             exclusive: true
@@ -158,7 +149,6 @@ UtilitiesCard {
             currentBranch: root.currentBranch
             branchController: root.branchController
             notificationController: root.notificationController
-            onUpdateRequested: content.update()
         }
 
         DashedButton {
