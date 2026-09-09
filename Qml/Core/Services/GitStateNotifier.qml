@@ -102,8 +102,12 @@ QtObject {
 
         let readOnly = root.readOnlyArguments[verb]
         if (readOnly) {
+            let subcommand = tokens[index + 1]
+            if (subcommand !== undefined && !subcommand.startsWith("-") && readOnly.indexOf(subcommand) !== -1)
+                return false
+
             for (let i = index + 1; i < tokens.length; ++i) {
-                if (readOnly.indexOf(tokens[i]) !== -1)
+                if (tokens[i].startsWith("-") && readOnly.indexOf(tokens[i]) !== -1)
                     return false
             }
         }
