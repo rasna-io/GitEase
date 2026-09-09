@@ -411,5 +411,8 @@ Page {
 
     function onPageActivated() {
         utilityPanel.reload()
+
+        if (root.autoUpdate)
+            root.reloadGraph()
     }
 }
