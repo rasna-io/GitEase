@@ -35,13 +35,9 @@ UtilitiesCard {
         if (!root.tagController)
             return
 
-        if (ctrl) {
-            let res = ctrl.list();
-            if (res && res.success) {
-                root.tagListModel = res.data;
-                console.log("GitEase: Tag list updated.");
-            }
-        }
+        let res = root.tagController.list();
+        if (res && res.success)
+            root.tagListModel = res.data;
     }
 
     function deleteTagLocal(tag) {
