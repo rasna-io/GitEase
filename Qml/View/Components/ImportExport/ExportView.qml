@@ -219,7 +219,7 @@ Item {
     }
 
     onBranchControllerChanged: {
-        updateBranches()
+        reload()
     }
 
     /* Functions
