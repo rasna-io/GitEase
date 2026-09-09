@@ -88,14 +88,6 @@ UtilitiesCard {
             }
         }
 
-        Connections {
-            target: root.branchController
-
-            function onCurrentRepoChanged() {
-                content.update()
-            }
-        }
-
         ButtonGroup {
             id: headerButtonGroup
             exclusive: true
