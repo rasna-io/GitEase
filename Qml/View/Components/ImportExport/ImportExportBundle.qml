@@ -35,6 +35,7 @@ UtilitiesCard {
     icon: Style.icons.arowLeftRight
 
     content: ColumnLayout {
+        id: content
         anchors.fill: parent
         anchors.leftMargin: Style.dp(10)
         anchors.rightMargin: Style.dp(10)
@@ -175,11 +176,16 @@ UtilitiesCard {
                 notificationController: root.notificationController
             }
         }
+
+        function reload() {
+            exportView.reload()
+        }
     }
 
     /* Functions
      * ****************************************************************************************/
     function reload() {
-        exportView.reload()
+        if (root.contentItem)
+            root.contentItem.reload()
     }
 }
