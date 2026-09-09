@@ -319,7 +319,7 @@ UtilitiesCard {
         return branchModel.get(currentIndexBranchCombo).value
     }
 
-    onBranchControllerChanged: refreshBranches()
+    onBranchControllerChanged: reload()
 
-    Component.onCompleted: refreshBranches()
+    Component.onCompleted: reload()
 }
