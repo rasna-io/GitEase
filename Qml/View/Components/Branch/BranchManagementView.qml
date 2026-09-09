@@ -84,7 +84,7 @@ UtilitiesCard {
         Connections {
             target: root
             function onBranchControllerChanged() {
-                content.update()
+                content.reload()
             }
         }
 
