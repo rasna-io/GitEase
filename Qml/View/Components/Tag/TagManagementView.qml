@@ -280,7 +280,7 @@ UtilitiesCard {
     onTagControllerChanged: root.reload()
 
     Connections {
-        target: root.tagController || uiSession.tagController
+        target: root.tagController
 
         function onPushTagFinished(result) {
             if (result.success) {
@@ -295,9 +295,8 @@ UtilitiesCard {
         function onPushDeleteTagFinished(result, tagName) {
             if (result.success)
             {
-                let ctrl = root.tagController || uiSession.tagController;
                 if (root.notificationController) root.notificationController.success("Tag deleted from remote", "Success", 3000);
-                ctrl.remove(tagName);
+                root.tagController.remove(tagName);
             }
             else
                 if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
