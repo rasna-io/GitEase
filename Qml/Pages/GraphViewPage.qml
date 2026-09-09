@@ -398,6 +398,11 @@ Page {
         root.remoteOperationsSession?.pullAndUpdate(secret)
     }
 
+    //! Rebuilds the graph, keeping the filter and the selection that are in effect.
+    function reloadGraph() {
+        root.graphRef?.reloadAll()
+    }
+
     function onPageActivated() {
         utilityPanel.reload()
     }
