@@ -30,6 +30,7 @@ Rectangle {
     height: 28
     radius: 3
     color: msa.containsMouse ? Material.accent : Material.background
+    scale: msa.pressed ? 0.92 : 1.0
 
     Material.background: Style.colors.secondaryBackground
     
@@ -58,6 +59,13 @@ Rectangle {
     Behavior on border.color {
         ColorAnimation {
             duration: 200
+        }
+    }
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: 120
+            easing.type: Easing.OutCubic
         }
     }
 }

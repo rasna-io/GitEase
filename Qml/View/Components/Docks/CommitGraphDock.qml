@@ -316,7 +316,11 @@ DetachablePanel {
                     model   : root.commits
                     clip    : true
 
+                    cacheBuffer: 400
+
                     property bool syncScroll: false
+
+                    onMovementStarted: commitFocusAnimation.stop()
 
                     // Sync scroll position with graph
                     onContentYChanged: {
@@ -374,6 +378,14 @@ DetachablePanel {
                             }
                         }
                     }
+                }
+
+                NumberAnimation {
+                    id: commitFocusAnimation
+                    target: commitsListView
+                    property: "contentY"
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
                 }
             }
         }
@@ -803,6 +815,33 @@ DetachablePanel {
         root.lastSelectedIndex = index
     }
 
+    function focusCommitIndex(index) {
+        if (!commitsListView || index < 0 || index >= commitsListView.count)
+            return
+
+        var rowHeight = root.commitItemHeight + root.commitItemSpacing * 2
+        var rowTop = index * rowHeight
+        var rowBottom = rowTop + rowHeight
+
+        if (rowTop >= commitsListView.contentY
+                && rowBottom <= commitsListView.contentY + commitsListView.height)
+            return
+
+        var maxContentY = Math.max(0, commitsListView.contentHeight - commitsListView.height)
+        var targetY = index * rowHeight - (commitsListView.height - rowHeight) * 0.5
+        targetY = Math.max(0, Math.min(maxContentY, targetY))
+
+        if (!Style.motionEnabled) {
+            commitsListView.contentY = targetY
+            return
+        }
+
+        commitFocusAnimation.stop()
+        commitFocusAnimation.from = commitsListView.contentY
+        commitFocusAnimation.to = targetY
+        commitFocusAnimation.restart()
+    }
+
     function selectedCommitsInOrder() {
         var selected = []
         if (!root.commits || !root.selectedCommitHashes) return selected
@@ -850,6 +889,7 @@ DetachablePanel {
         if (selection) {
             root.selectedCommitHashes = selection.hashes
             root.lastSelectedIndex = selection.lastIndex
+            root.focusCommitIndex(idx)
         }
     }
 
@@ -1251,7 +1291,7 @@ DetachablePanel {
         root.commitClicked(result.selected.hash)
 
         if (result.scroll)
-            commitsListView.positionViewAtIndex(result.index, ListView.Contain)
+            root.focusCommitIndex(result.index)
     }
 
     function selectPrevious(rule) {
@@ -1269,6 +1309,6 @@ DetachablePanel {
         root.commitClicked(result.selected.hash)
 
         if (result.scroll)
-            commitsListView.positionViewAtIndex(result.index, ListView.Contain)
+            root.focusCommitIndex(result.index)
     }
 }

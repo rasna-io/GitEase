@@ -37,6 +37,46 @@ Popup {
 
     padding: 0
 
+    transformOrigin: Item.Center
+
+    enter: Transition {
+        ParallelAnimation {
+            NumberAnimation {
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+                property: "scale"
+                from: 0.96
+                to: 1
+                duration: 260
+                easing.type: Easing.OutCubic
+            }
+        }
+    }
+
+    exit: Transition {
+        ParallelAnimation {
+            NumberAnimation {
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: 160
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                property: "scale"
+                from: 1
+                to: 0.98
+                duration: 160
+                easing.type: Easing.InCubic
+            }
+        }
+    }
+
     background: Rectangle {
         color: "transparent"
     }

@@ -132,7 +132,8 @@ Rectangle {
 
     Behavior on border.color {
         ColorAnimation {
-            duration: 120
+            duration: Style.motionFast
+            easing.type: Easing.OutCubic
         }
     }
 

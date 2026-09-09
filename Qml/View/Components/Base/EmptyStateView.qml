@@ -16,6 +16,21 @@ Rectangle{
     color: Style.colors.primaryBackground
     z: 999
 
+    opacity: 0
+
+    NumberAnimation {
+        id: emptyStateFadeIn
+
+        target: root
+        property: "opacity"
+        from: 0
+        to: 1
+        duration: Style.motionPage
+        easing.type: Easing.OutCubic
+    }
+
+    Component.onCompleted: emptyStateFadeIn.start()
+
     Column {
         id: emptyStateColumn
         anchors.centerIn: parent

@@ -38,6 +38,15 @@ AbstractButton {
 
     hoverEnabled: true
 
+    scale: root.pressed ? 0.97 : 1.0
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: Style.motionFast
+            easing.type: Easing.OutCubic
+        }
+    }
+
     font.family:    Style.fontTypes.inter
     font.weight:    Font.Medium
     font.pixelSize: Style.appFont.captionPt

@@ -42,6 +42,21 @@ Rectangle {
     }
     border.width: root.selected ? 1 : 0
     border.color: Style.colors.accent
+    scale: rowMouse.pressed ? 0.985 : 1.0
+
+    Behavior on border.color {
+        ColorAnimation {
+            duration: 140
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: 120
+            easing.type: Easing.OutCubic
+        }
+    }
 
     /* Children
      * ****************************************************************************************/
