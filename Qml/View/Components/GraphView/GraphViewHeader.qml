@@ -358,6 +358,7 @@ RowLayout {
         icon.width: Style.appFont.largePt
         icon.height: Style.appFont.largePt
         solidIcon: false
+        tooltip: "Reload graph view"
 
         onClicked: headerRow.reloadRequested()
     }
