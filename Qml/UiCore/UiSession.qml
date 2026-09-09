@@ -46,6 +46,10 @@ QtObject {
             pluginController.currentRepo = currentRepo
             resetController.currentRepo = currentRepo
             terminalController.currentRepo = currentRepo
+
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
 
         onRepositorySelected: function(repo) {
