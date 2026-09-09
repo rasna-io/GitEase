@@ -195,9 +195,12 @@ GitResult GitTag::pushTagStartAsyncInternal(const QString &name)
 
 GitResult GitTag::pushDeleteTag(const QString &name)
 {
-    emitGitCommand(QString("git push origin --delete %1").arg(quoteCommandArg(name)));
+    GitResult result = pushDeleteTagStartAsyncInternal(name);
 
-    return pushDeleteTagStartAsyncInternal(name);
+    if (result.success())
+        emitGitCommand(QString("git push origin --delete %1").arg(quoteCommandArg(name)));
+
+    return result;
 }
 
 GitResult GitTag::pushDeleteTagInternal(const QString &name)
