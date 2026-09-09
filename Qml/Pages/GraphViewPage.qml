@@ -120,7 +120,7 @@ Page {
             }
 
             onReloadRequested: function() {
-                root.graphRef.reloadAll();
+                root.reload();
             }
         }
     }
