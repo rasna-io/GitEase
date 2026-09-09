@@ -433,6 +433,21 @@ IPopup {
                                     color: Style.colors.primaryBorder
                                 }
 
+                                CheckboxItem {
+                                    id: autoUpdate
+                                    Layout.fillWidth: true
+                                    title: "Auto Update"
+                                    description: "Reload graph view after each change, otherwise use the reload button"
+                                    checked: root.appSettings?.generalSettings?.autoUpdate ?? true
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Style.colors.primaryBorder
+                                }
+
                                 PathSelectorItem {
                                     id: defaultPath
                                     Layout.fillWidth: true
@@ -953,6 +968,7 @@ IPopup {
         root.appSettings.guidesEnabled = guidesEnabled.checked
         root.appSettings.generalSettings.showAvatar = displayAvatar.checked
         root.appSettings.generalSettings.showStashNodes = displayStashNodes.checked
+        root.appSettings.generalSettings.autoUpdate = autoUpdate.checked
         root.appSettings.generalSettings.defaultPath = defaultPath.text
         root.appSettings.appearanceSettings.currentTheme = theme.cmb.displayText
         root.appSettings.appearanceSettings.reducedMotion = reducedMotion.checked
@@ -979,6 +995,7 @@ IPopup {
         guidesEnabled.checked = root.appSettings?.guidesEnabled ?? true
         displayAvatar.checked = root.appSettings?.generalSettings?.showAvatar
         displayStashNodes.checked = root.appSettings?.generalSettings?.showStashNodes
+        autoUpdate.checked = root.appSettings?.generalSettings?.autoUpdate ?? true
         defaultPath.text = root.appSettings.generalSettings.defaultPath
 
         theme.cmb.currentIndex = theme.cmb.model.indexOf(root.appSettings.appearanceSettings.currentTheme)
