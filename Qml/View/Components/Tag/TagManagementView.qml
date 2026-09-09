@@ -41,8 +41,10 @@ UtilitiesCard {
     }
 
     function deleteTagLocal(tag) {
-        let ctrl = root.tagController || uiSession.tagController;
-        let res = ctrl.remove(tag.name);
+        if (!root.tagController)
+            return
+
+        let res = root.tagController.remove(tag.name);
         if (res.success) {
             if (root.notificationController)
                 root.notificationController.success("Tag deleted locally", "Tag", 2000);
@@ -50,30 +52,38 @@ UtilitiesCard {
     }
 
     function deleteTagRemote(tag) {
-        let ctrl = root.tagController || uiSession.tagController;
-        let notif = root.notificationController;
+        if (!root.tagController)
+            return
 
-        if (notif) notif.info("Deleting tag from remote...", "Remote", 1500);
+        if (root.notificationController)
+            root.notificationController.info("Deleting tag from remote...", "Remote", 1500);
 
-        AsyncGit.call(ctrl, "pushDeleteTag", [tag.name],
+        AsyncGit.call(root.tagController, "pushDeleteTag", [tag.name],
             function(result) {
                 if (result.success) {
-                    if (notif) notif.success("Tag deleted from remote", "Success", 3000);
-                    ctrl.remove(tag.name);
+                    if (root.notificationController)
+                        root.notificationController.success("Tag deleted from remote", "Success", 3000);
+                    root.tagController.remove(tag.name);
                 } else {
-                    if (notif) notif.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
+                    if (root.notificationController)
+                        root.notificationController.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
                 }
             },
             function(error) {
-                if (notif) notif.error("Failed to delete from remote: " + error, "Error", 5000);
+                if (root.notificationController)
+                    root.notificationController.error("Failed to delete from remote: " + error, "Error", 5000);
             }
         );
     }
 
     function pushTagToRemote(tag) {
-        notificationController.info("Pushing tag to remote...", "Tag", 1500);
+        if (!root.tagController)
+            return
 
-        AsyncGit.call(tagController, "pushTag", [tag.name],
+        if (root.notificationController)
+            root.notificationController.info("Pushing tag to remote...", "Tag", 1500);
+
+        AsyncGit.call(root.tagController, "pushTag", [tag.name],
             function(result) {
                 if (result.success) {
                     if (root.notificationController)
