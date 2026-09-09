@@ -161,6 +161,7 @@ UtilitiesCard {
             currentIndex: root.currentIndex
 
             ExportView {
+                id: exportView
                 Layout.fillWidth: true
                 branchController: root.branchController
                 bundleController: root.bundleController
@@ -178,4 +179,7 @@ UtilitiesCard {
 
     /* Functions
      * ****************************************************************************************/
+    function reload() {
+        exportView.reload()
+    }
 }
