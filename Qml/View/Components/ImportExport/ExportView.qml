@@ -233,7 +233,7 @@ Item {
     /* Functions
      * ****************************************************************************************/
 
-    function updateBranches() {
+    function reload() {
         if(!branchController)
             return
 
