@@ -150,7 +150,11 @@ Page {
         }
     }
 
-
+    onAutoUpdateChanged: {
+        if (root.autoUpdate)
+            root.reloadGraph()
+    }
+    
     Connections {
         target: root.gitStateNotifier
 
