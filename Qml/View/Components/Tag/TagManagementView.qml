@@ -302,7 +302,7 @@ UtilitiesCard {
 
             onClicked: {
                 if (root.addTagPopup) {
-                    root.addTagPopup.tagController = root.tagController || uiSession.tagController;
+                    root.addTagPopup.tagController = root.tagController;
                     root.addTagPopup.open();
                 }
             }
