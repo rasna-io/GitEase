@@ -48,7 +48,6 @@ UtilitiesCard {
         if (res.success) {
             if (root.notificationController)
                 root.notificationController.success("Tag deleted locally", "Tag", 2000);
-            root.update();
         }
     }
 
@@ -292,8 +291,6 @@ UtilitiesCard {
                 if (root.notificationController)
                     root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
             }
-
-            root.update()
         }
 
         function onPushDeleteTagFinished(result, tagName) {
@@ -302,7 +299,6 @@ UtilitiesCard {
                 let ctrl = root.tagController || uiSession.tagController;
                 if (root.notificationController) root.notificationController.success("Tag deleted from remote", "Success", 3000);
                 ctrl.remove(tagName);
-                root.update();
             }
             else
                 if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
