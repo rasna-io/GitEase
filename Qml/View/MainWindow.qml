@@ -222,6 +222,7 @@ Rectangle {
                             pluginController: root.uiSession?.pluginController
                             guideController: root.uiSession?.guideController
                             layoutController: root.uiSession?.layoutController
+                            gitStateNotifier: root.uiSession?.gitStateNotifier
                         }
 
                         CommittingPage {
