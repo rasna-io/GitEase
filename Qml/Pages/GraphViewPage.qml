@@ -159,10 +159,11 @@ Page {
     }
 
     Connections {
-        target: root.remoteOperationsSession
+        target: root.gitStateNotifier
 
-        function onFetchCompleted() {
-            utilityPanel.reload()
+        function onRepositoryChanged() {
+            if (root.autoUpdate)
+                root.reloadGraph()
         }
     }
 
