@@ -121,7 +121,7 @@ UtilitiesCard {
         Connections {
             target: root
             function onRemoteControllerChanged() {
-                content.update()
+                content.reload()
             }
         }
 
@@ -129,7 +129,7 @@ UtilitiesCard {
             target: root.remoteController
 
             function onCurrentRepoChanged() {
-                content.update()
+                content.reload()
             }
 
             // This page's own async per-remote Pull (triggered below) has no equivalent in the
