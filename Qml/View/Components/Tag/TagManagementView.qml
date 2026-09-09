@@ -305,12 +305,6 @@ UtilitiesCard {
         }
     }
 
-    Timer {
-        id: initTimer
-        interval: 500
-        running: true
-        repeat: false
-        onTriggered: root.update()
-    }
+
     Component.onCompleted: root.reload()
 }
