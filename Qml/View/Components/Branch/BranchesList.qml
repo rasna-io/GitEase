@@ -182,8 +182,6 @@ ListView {
                 root.notificationController.error(res.errorMessage || "Failed to checkout branch", "Checkout Error", 5000)
             }
         }
-
-        root.updateRequested()
     }
 
     function doDeleteBranch(branch) {
@@ -193,7 +191,6 @@ ListView {
             if (root.notificationController) {
                 root.notificationController.success("Branch '" + branch.name + "' deleted successfully", "Branch", 3000)
             }
-            root.updateRequested()
         } else {
             if (root.notificationController) {
                 root.notificationController.error(res.errorMessage || "Failed to delete branch", "Branch Error", 5000)
