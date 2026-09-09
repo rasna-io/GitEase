@@ -310,11 +310,7 @@ UtilitiesCard {
     }
 
     /* Event Handling */
-    Connections {
-        target: (typeof uiSession !== "undefined") ? uiSession : null
-        function onTagControllerChanged() { root.update() }
-    }
-    
+
     onTagControllerChanged: root.reload()
 
 
