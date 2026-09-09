@@ -396,6 +396,10 @@ UtilitiesCard {
 
     /* Functions
      * ****************************************************************************************/
+    function reload() {
+        if (root.contentItem)
+            root.contentItem.reload()
+    }
 
     function openAddEditPopup() {
         addEditRemotePopup.remoteController = root.remoteController
