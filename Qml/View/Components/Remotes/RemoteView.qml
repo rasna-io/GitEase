@@ -122,14 +122,6 @@ UtilitiesCard {
             }
         }
 
-        Connections {
-            target: root.remoteController
-
-            function onCurrentRepoChanged() {
-                content.reload()
-            }
-        }
-
         ContextMenu {
             id: itemContextMenu
             parent: Overlay.overlay
