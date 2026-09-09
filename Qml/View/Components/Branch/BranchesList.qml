@@ -22,10 +22,6 @@ ListView {
     property var notificationController: null
     property int maxHeight: 220
 
-    /* Signals
-     * ****************************************************************************************/
-    signal updateRequested()
-
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillWidth: true
