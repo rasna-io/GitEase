@@ -385,6 +385,13 @@ IPopup {
                                             isInPopup: true
                                         },
                                         {
+                                            targetProvider: function() { return autoUpdate },
+                                            icon: Style.icons.refresh,
+                                            title: "Auto Update",
+                                            description: "Reload the graph view automatically after every change. Turn it off on very large repositories and reload from the button in the graph view header instead.",
+                                            isInPopup: true
+                                        },
+                                        {
                                             targetProvider: function() { return defaultPath },
                                             icon: Style.icons.folder,
                                             title: "Default Path",
