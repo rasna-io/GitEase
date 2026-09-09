@@ -29,11 +29,6 @@ UtilitiesCard {
     title: "Branches"
     icon: Style.icons.branch
 
-    onVisibleChanged: {
-        if (visible && root.contentItem)
-            root.contentItem.update()
-    }
-
     content: ColumnLayout {
         id: content
 
