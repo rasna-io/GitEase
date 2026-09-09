@@ -130,14 +130,6 @@ UtilitiesCard {
             }
         }
 
-        Connections {
-            target: root.addEditRemotePopup
-
-            function onAboutToHide() {
-                content.update()
-            }
-        }
-
         ContextMenu {
             id: itemContextMenu
             parent: Overlay.overlay
@@ -350,8 +342,6 @@ UtilitiesCard {
                 root.notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
             else
                 root.notificationController.error("Failed to fetch from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Unknown error"), "Fetch Error", 7000)
-
-            content.update()
         }
 
         function startPull(args, remoteName) {
@@ -371,7 +361,6 @@ UtilitiesCard {
                 root.notificationController.error("Failed to pull from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Pull failed"), "Pull Error", 7000)
 
             root.isFetching = false
-            content.update()
         }
 
         function editRemote(remoteItem) {
@@ -381,7 +370,6 @@ UtilitiesCard {
 
         function removeRemoteItem(remoteItem) {
             root.remoteController.removeRemote(remoteItem.name)
-            content.update()
         }
 
         function copyRemoteUrl(remoteItem) {
