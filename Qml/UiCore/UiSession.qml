@@ -201,7 +201,9 @@ QtObject {
         notificationController: root.notificationController
     }
 
-    property TerminalController terminalController: TerminalController {}
+    property TerminalController terminalController: TerminalController {
+        onGitStateChanged: gitStateNotifier.notifyChanged()
+    }
 
     property LayoutController layoutController: LayoutController {
         appModel: root.appModel
