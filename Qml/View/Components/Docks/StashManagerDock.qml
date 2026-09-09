@@ -44,11 +44,6 @@ UtilitiesCard {
     icon: Style.icons.archive
     badgeCount: root.stashes.length
 
-    onVisibleChanged: {
-        if (visible)
-            root.updateStashes()
-    }
-
     /* Children
      * ****************************************************************************************/
     content: ColumnLayout {
