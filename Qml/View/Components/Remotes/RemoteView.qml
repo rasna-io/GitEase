@@ -128,10 +128,6 @@ UtilitiesCard {
         Connections {
             target: root.remoteController
 
-            function onCurrentRepoChanged() {
-                content.reload()
-            }
-
             // This page's own async per-remote Pull (triggered below) has no equivalent in the
             // shared RemoteOperationsSession, so it remains the sole notifier for pull results.
             function onPullFinished(result) {
