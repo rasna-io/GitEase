@@ -401,7 +401,6 @@ DetachablePanel {
             root.selectedCommit         = null
             root.selectedCommitHashes   = []
             root.lastSelectedIndex      = -1
-            root.reloadAll()
         }
     }
 
