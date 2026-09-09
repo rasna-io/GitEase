@@ -46,6 +46,7 @@ Page {
     property LayoutController        layoutController        : null
     property GuideController         guideController         : null
     property GitTreeController       gitTreeController       : null
+    readonly property bool           autoUpdate              : root.appModel?.appSettings?.generalSettings?.autoUpdate ?? true
 
     // Utility panel (moved in from the old UtilitiesPage), open by default.
     property bool                    utilityPanelOpen        : false
