@@ -31,8 +31,9 @@ UtilitiesCard {
     }
 
     /* Logic */
-    function update() {
-        let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
+    function reload() {
+        if (!root.tagController)
+            return
 
         if (ctrl) {
             let res = ctrl.list();
@@ -317,6 +318,8 @@ UtilitiesCard {
         target: (typeof uiSession !== "undefined") ? uiSession : null
         function onTagControllerChanged() { root.update() }
     }
+    
+    onTagControllerChanged: root.reload()
 
     Timer {
         id: initTimer
@@ -325,6 +328,5 @@ UtilitiesCard {
         repeat: false
         onTriggered: root.update()
     }
-
-    Component.onCompleted: root.update()
+    Component.onCompleted: root.reload()
 }
