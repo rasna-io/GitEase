@@ -50,7 +50,6 @@ UtilitiesCard {
         if (res.success) {
             if (root.notificationController)
                 root.notificationController.success("Tag deleted locally", "Tag", 2000);
-            root.update();
         }
     }
 
@@ -65,7 +64,6 @@ UtilitiesCard {
                 if (result.success) {
                     if (notif) notif.success("Tag deleted from remote", "Success", 3000);
                     ctrl.remove(tag.name);
-                    root.update();
                 } else {
                     if (notif) notif.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
                 }
@@ -88,12 +86,10 @@ UtilitiesCard {
                     if (root.notificationController)
                         root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
                 }
-                root.update()
             },
             function(error) {
                 if (root.notificationController)
                     root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
-                root.update()
             }
         );
     }
