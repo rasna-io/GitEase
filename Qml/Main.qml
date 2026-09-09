@@ -22,6 +22,7 @@ ApplicationWindow {
     /* Property Declarations
      * ****************************************************************************************/
     property bool closeAnimationPlayed: false
+    property bool hasActivatedBefore: false
 
 
     /* Object Properties
@@ -34,6 +35,16 @@ ApplicationWindow {
     
     /* Event Handlers
      * ****************************************************************************************/
+    onActiveChanged: {
+        if (!window.active)
+            return
+
+        if (window.hasActivatedBefore)
+            uiSession?.gitStateNotifier?.notifyChanged()
+
+        window.hasActivatedBefore = true
+    }
+
     onClosing: function(close) {
         if (Style.motionEnabled && !window.closeAnimationPlayed) {
             close.accepted = false
