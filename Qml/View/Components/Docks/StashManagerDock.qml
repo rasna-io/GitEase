@@ -83,7 +83,7 @@ UtilitiesCard {
         Connections {
             target: root
             function onStashControllerChanged() {
-                root.updateStashes(true)
+                root.reload()
             }
         }
 
@@ -385,5 +385,5 @@ UtilitiesCard {
         }
     }
 
-    Component.onCompleted: updateStashes()
+    Component.onCompleted: reload()
 }
