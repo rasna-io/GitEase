@@ -31,6 +31,8 @@ GitResult GitTag::list()
         return a.toMap()["name"].toString() < b.toMap()["name"].toString();
     });
 
+    emitGitCommand("git tag -l");
+
     return GitResult(true, tagList);
 }
 
