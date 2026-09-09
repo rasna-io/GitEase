@@ -39,8 +39,10 @@ UtilitiesCard {
     }
 
     function deleteTagLocal(tag) {
-        let ctrl = root.tagController || uiSession.tagController;
-        let res = ctrl.remove(tag.name);
+        if (!root.tagController)
+            return
+
+        let res = root.tagController.remove(tag.name);
         if (res.success) {
             if (root.notificationController)
                 root.notificationController.success("Tag deleted locally", "Tag", 2000);
@@ -48,18 +50,23 @@ UtilitiesCard {
     }
 
     function deleteTagRemote(tag) {
-        let ctrl = root.tagController || uiSession.tagController;
-        let notif = root.notificationController;
+        if (!root.tagController)
+            return
 
-        if (notif) notif.info("Deleting tag from remote...", "Remote", 1500);
+        if (root.notificationController)
+            root.notificationController.info("Deleting tag from remote...", "Remote", 1500);
 
-        ctrl.pushDeleteTag(tag.name);
+        root.tagController.pushDeleteTag(tag.name);
     }
 
     function pushTagToRemote(tag) {
-        notificationController.info("Pushing tag to remote...", "Tag", 1500);
+        if (!root.tagController)
+            return
 
-        tagController.pushTag(tag.name);
+        if (root.notificationController)
+            root.notificationController.info("Pushing tag to remote...", "Tag", 1500);
+
+        root.tagController.pushTag(tag.name);
     }
 
     function copyTagName(tag) {
