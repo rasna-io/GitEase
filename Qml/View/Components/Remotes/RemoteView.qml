@@ -149,7 +149,6 @@ UtilitiesCard {
                 }
 
                 root.isFetching = false
-                content.update()
             }
         }
 
@@ -165,14 +164,6 @@ UtilitiesCard {
 
                 root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== result.remote })
                 root.isFetching = root.activeFetchRemotes.length > 0
-            }
-        }
-
-        Connections {
-            target: root.addEditRemotePopup
-
-            function onAboutToHide() {
-                content.update()
             }
         }
 
@@ -331,7 +322,6 @@ UtilitiesCard {
                         root.notificationController.error("Failed to fetch from " + remoteItem.name + ": " + (res.errorMessage || "Unknown error"), "Fetch Error", 7000)
                 }
                 root.isFetching = root.activeFetchRemotes.length > 0
-                content.update()
                 break;
             case RepositoryController.GitProtocol.HTTPS:
             case RepositoryController.GitProtocol.HTTP:
@@ -360,7 +350,6 @@ UtilitiesCard {
                     if (root.notificationController)
                         root.notificationController.error("Failed to pull from " + remoteItem.name + ": " + (startRes.errorMessage || "Failed to start pull"), "Pull Error", 7000)
                     root.isFetching = false
-                    content.update()
                     return
                 }
                 root.isFetching = true
@@ -381,7 +370,6 @@ UtilitiesCard {
 
         function removeRemoteItem(remoteItem) {
             root.remoteController.removeRemote(remoteItem.name)
-            content.update()
         }
 
         function copyRemoteUrl(remoteItem) {
