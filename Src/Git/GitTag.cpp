@@ -125,6 +125,8 @@ int credentials_cb(git_credential **out, const char *url, const char *user_from_
 
 GitResult GitTag::pushTag(const QString &name)
 {
+    emitGitCommand(QString("git push origin %1").arg(quoteCommandArg(name)));
+
     return pushTagInternal(name);
 }
 
