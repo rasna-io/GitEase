@@ -101,14 +101,6 @@ UtilitiesCard {
             }
         }
 
-        Connections {
-            target: root.stashController
-
-            function onCurrentRepoChanged() {
-                root.updateStashes()
-            }
-        }
-
         ContextMenu {
             id: itemContextMenu
             parent: Overlay.overlay
