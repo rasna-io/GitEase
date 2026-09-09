@@ -47,6 +47,9 @@ QtObject {
             resetController.currentRepo = currentRepo
             terminalController.currentRepo = currentRepo
 
+            gitStateNotifier.notifyChanged()
+        }
+
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
             gitStateNotifier.reportCommand(command)
