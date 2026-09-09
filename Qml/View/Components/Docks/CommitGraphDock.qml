@@ -408,7 +408,6 @@ DetachablePanel {
         target: root.addTagPopup
         function onTagCreatedSuccessfully() {
             root.selectedCommit = null
-            root.reloadAll()
         }
     }
 
