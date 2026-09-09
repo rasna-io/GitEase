@@ -21,7 +21,7 @@ ApplicationWindow {
 
     /* Property Declarations
      * ****************************************************************************************/
-
+    property bool hasActivatedBefore: false
 
     /* Object Properties
      * ****************************************************************************************/
@@ -33,6 +33,16 @@ ApplicationWindow {
     
     /* Event Handlers
      * ****************************************************************************************/
+    onActiveChanged: {
+        if (!window.active)
+            return
+
+        if (window.hasActivatedBefore)
+            uiSession?.gitStateNotifier?.notifyChanged()
+
+        window.hasActivatedBefore = true
+    }
+
     onClosing: function(close) {
         close.accepted = true
 
