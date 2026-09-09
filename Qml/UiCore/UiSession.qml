@@ -222,6 +222,8 @@ QtObject {
         notificationController:  root.notificationController
         userAuthenticationPopup: root.popups?.userAuthenticationPopup
         fetchSummaryPopup:       root.popups?.fetchSummaryPopup
+
+        onFetchCompleted: root.gitStateNotifier.notifyChanged()
     }
 }
 
