@@ -271,7 +271,7 @@ UtilitiesCard {
             }
         }
 
-        function update() {
+        function reload() {
             if (remoteController) {
                 let res = remoteController.getRemotes();
                 if (res.success) {
