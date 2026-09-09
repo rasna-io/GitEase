@@ -270,6 +270,7 @@ Page {
             userAuthenticationPopup : root.userAuthenticationPopup
             uiSessionPopups         : root.uiSessionPopups
             pluginController        : root.pluginController
+            gitStateNotifier        : root.gitStateNotifier
         }
     }
 
