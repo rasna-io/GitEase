@@ -20,6 +20,15 @@ Button {
     font.family: Style.fontTypes.inter
     font.pixelSize: 12
 
+    scale: root.pressed ? 0.96 : 1.0
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: Style.motionFast
+            easing.type: Easing.OutCubic
+        }
+    }
+
     background: Rectangle {
         radius: 6
         color: root.hovered ? Style.colors.controlBackgroundHover : Style.colors.controlBackground
@@ -27,7 +36,8 @@ Button {
         border.color: root.hovered ? Style.colors.accent : Style.colors.controlBorder
         Behavior on border.color {
             ColorAnimation {
-                duration: 120
+                duration: Style.motionFast
+                easing.type: Easing.OutCubic
             }
         }
     }

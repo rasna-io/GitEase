@@ -70,9 +70,14 @@ UtilitiesCard {
                     width: listView.width
                     height: Style.dp(35)
                     radius: Style.dp(4)
-                    color: Style.colors.utilitiesRowBackground
+                    color: activityHover.hovered ? Style.colors.utilitiesRowHoverBackground
+                                                 : Style.colors.utilitiesRowBackground
                     border.width: 1
                     border.color: Style.colors.utilitiesRowBorder
+
+                    HoverHandler {
+                        id: activityHover
+                    }
 
                     ColumnLayout {
                         anchors.fill: parent

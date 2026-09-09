@@ -33,6 +33,12 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    WindowMotion {
+        id: windowMotion
+        window: root.Window.window
+        windowController: root.windowController
+    }
+
     // Left: Back button
     RoundButton {
         id: backButton
@@ -47,6 +53,15 @@ Item {
         flat: true
         Material.foreground: Style.colors.foreground
         z: 1
+
+        scale: backButton.pressed ? 0.9 : 1.0
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: Style.motionFast
+                easing.type: Easing.OutCubic
+            }
+        }
 
         background: Rectangle {
             implicitWidth: 45
@@ -90,7 +105,7 @@ Item {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
         onPressed: root.windowController.startSystemMove()
-        onDoubleClicked: root.windowController.toggleMaxRestore()
+        onDoubleClicked: windowMotion.toggleMaximize()
     }
 }
 

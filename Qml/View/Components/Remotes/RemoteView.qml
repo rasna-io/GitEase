@@ -216,6 +216,16 @@ UtilitiesCard {
                     width: listView.width
                     height: Style.dp(35)
 
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Style.dp(4)
+                        color: remoteHover.hovered ? Style.colors.utilitiesRowHoverBackground : "transparent"
+                    }
+
+                    HoverHandler {
+                        id: remoteHover
+                    }
+
                     MouseArea {
                         id: rightClickArea
                         anchors.fill: parent

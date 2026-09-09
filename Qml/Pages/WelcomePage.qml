@@ -76,8 +76,49 @@ Rectangle {
             Layout.fillHeight: true
 
             StackLayout {
+                id: welcomeStack
+
                 anchors.fill: parent
                 currentIndex: root.controller ? root.controller.currentPageIndex : Enums.WelcomePages.WelcomeBanner
+
+                property bool hasPresented: false
+
+                onCurrentIndexChanged: {
+                    if (!welcomeStack.hasPresented) {
+                        welcomeStack.hasPresented = true
+                        return
+                    }
+
+                    if (!Style.motionEnabled) {
+                        welcomeStack.opacity = 1
+                        welcomeStack.x = 0
+                        return
+                    }
+
+                    welcomeStack.opacity = 0
+                    welcomeStack.x = 14
+                    welcomePageTransition.restart()
+                }
+
+                ParallelAnimation {
+                    id: welcomePageTransition
+
+                    NumberAnimation {
+                        target: welcomeStack
+                        property: "opacity"
+                        to: 1
+                        duration: Style.motionPage
+                        easing.type: Easing.OutCubic
+                    }
+
+                    NumberAnimation {
+                        target: welcomeStack
+                        property: "x"
+                        to: 0
+                        duration: Style.motionPage
+                        easing.type: Easing.OutCubic
+                    }
+                }
 
                 // Step 1: Welcome
                 WelcomeContent {

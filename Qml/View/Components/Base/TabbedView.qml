@@ -68,6 +68,15 @@ ColumnLayout {
                     property int tabIndex: index
                     property var tabData: modelData
 
+                    scale: tabButton.pressed ? 0.96 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: Style.motionFast
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+
                     contentItem: Item {
                         implicitWidth: tabRow.implicitWidth
                         implicitHeight: tabRow.implicitHeight
@@ -99,7 +108,7 @@ ColumnLayout {
                         implicitHeight: 36
                         radius: 6
                         color: tabButton.checked ? Style.colors.accent : Style.colors.surfaceLight
-                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on color { ColorAnimation { duration: Style.motionFast; easing.type: Easing.OutCubic } }
                     }
 
                     checkable: true
@@ -128,8 +137,45 @@ ColumnLayout {
         Layout.preferredHeight: 200
         currentIndex: root.currentIndex
 
+        property bool hasPresented: false
+
         onCurrentIndexChanged: {
             root.currentIndex = currentIndex
+
+            if (!stackLayout.hasPresented) {
+                stackLayout.hasPresented = true
+                return
+            }
+
+            if (!Style.motionEnabled) {
+                stackLayout.opacity = 1
+                stackLayout.x = 0
+                return
+            }
+
+            stackLayout.opacity = 0
+            stackLayout.x = 6
+            tabContentTransition.restart()
+        }
+
+        ParallelAnimation {
+            id: tabContentTransition
+
+            NumberAnimation {
+                target: stackLayout
+                property: "opacity"
+                to: 1
+                duration: Style.motionMedium
+                easing.type: Easing.OutCubic
+            }
+
+            NumberAnimation {
+                target: stackLayout
+                property: "x"
+                to: 0
+                duration: Style.motionMedium
+                easing.type: Easing.OutCubic
+            }
         }
     }
 }

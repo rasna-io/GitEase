@@ -22,6 +22,7 @@ Item {
     property string                 currentRepositoryName
     property bool                   detached:               false
     property bool                   isMinimized:            false
+    property bool                   layoutVisible:           true
     property bool                   minimizable:            false
     property string                 title:                  ""
     property int                    headerHeight:           32
@@ -44,10 +45,37 @@ Item {
     property int lastHeight: 400
     property bool guideDetached: false
     property bool showLocalGuide: false
+    property bool transitionInitialized: false
 
     /* Object Properties
      * ****************************************************************************************/
-    visible: !root.isMinimized && !root.detached
+    visible: root.layoutVisible
+
+    function syncPanelVisibility() {
+        const shouldShow = !root.isMinimized && !root.detached
+
+        if (!root.transitionInitialized) {
+            root.transitionInitialized = true
+            root.layoutVisible = shouldShow
+            root.opacity = shouldShow ? 1 : 0
+            root.scale = shouldShow ? 1 : 0.985
+            return
+        }
+
+        if (shouldShow) {
+            panelExitAnimation.stop()
+            root.layoutVisible = true
+            root.opacity = 0
+            root.scale = 0.985
+            panelEnterAnimation.restart()
+            return
+        }
+
+        panelEnterAnimation.stop()
+        root.opacity = 1
+        root.scale = 1
+        panelExitAnimation.restart()
+    }
 
     /* Functions
      * ****************************************************************************************/
@@ -95,6 +123,25 @@ Item {
             guideDetached = false
         }
         moveContentTo(detached ? windowHost : inlineHost)
+        syncPanelVisibility()
+
+        if (detached) {
+            if (Style.motionEnabled) {
+                contentRoot.opacity = 0
+                contentRoot.scale = 0.96
+                detachedWindow.opacity = 0
+                detachEnterAnimation.restart()
+            } else {
+                contentRoot.opacity = 1
+                contentRoot.scale = 1
+                detachedWindow.opacity = 1
+            }
+        } else {
+            detachEnterAnimation.stop()
+            contentRoot.opacity = 1
+            contentRoot.scale = 1
+            detachedWindow.opacity = 1
+        }
     }
 
     onWidthChanged: {
@@ -124,6 +171,8 @@ Item {
 
         if (root.layoutId && root.layoutController)
             root.layoutController.persistPanelLayout(root)
+
+        syncPanelVisibility()
     }
 
     Component.onDestruction: {
@@ -132,6 +181,85 @@ Item {
 
         if (root.layoutId && root.layoutController)
             root.layoutController.persistPanelLayout(root)
+    }
+
+    Component.onCompleted: Qt.callLater(root.syncPanelVisibility)
+
+    ParallelAnimation {
+        id: detachEnterAnimation
+
+        NumberAnimation {
+            target: contentRoot
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: Style.motionMedium
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: contentRoot
+            property: "scale"
+            from: 0.96
+            to: 1
+            duration: Style.motionMedium
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: detachedWindow
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: Style.motionMedium
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    ParallelAnimation {
+        id: panelEnterAnimation
+
+        NumberAnimation {
+            target: root
+            property: "opacity"
+            to: 1
+            duration: Style.motionMedium
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: root
+            property: "scale"
+            to: 1
+            duration: Style.motionMedium
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    SequentialAnimation {
+        id: panelExitAnimation
+
+        ParallelAnimation {
+            NumberAnimation {
+                target: root
+                property: "opacity"
+                to: 0
+                duration: Style.motionFast
+                easing.type: Easing.InCubic
+            }
+
+            NumberAnimation {
+                target: root
+                property: "scale"
+                to: 0.985
+                duration: Style.motionFast
+                easing.type: Easing.InCubic
+            }
+        }
+
+        ScriptAction {
+            script: root.layoutVisible = false
+        }
     }
 
     /* Children
@@ -366,7 +494,7 @@ Item {
                     anchors.fill: parent
                     acceptedButtons: Qt.LeftButton
                     onPressed: detachedWindowController.startSystemMove()
-                    onDoubleClicked: detachedWindowController.toggleMaxRestore()
+                    onDoubleClicked: detachedWindowMotion.toggleMaximize()
                 }
             }
 
@@ -381,6 +509,12 @@ Item {
         WindowController {
             id: detachedWindowController
             window: detachedWindow
+        }
+
+        WindowMotion {
+            id: detachedWindowMotion
+            window: detachedWindow
+            windowController: detachedWindowController
         }
 
         QtObject {

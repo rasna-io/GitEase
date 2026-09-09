@@ -30,6 +30,7 @@ Rectangle {
     height: 20
     radius: 4
     opacity: root.enabled ? 1.0 : 0.4
+    scale: mouse.pressed ? 0.9 : mouse.containsMouse ? 1.04 : 1.0
 
     property color hoverBackgroundColor: {
         if (backgroundColor == "transparent" || Qt.colorEqual(backgroundColor, "transparent")) {
@@ -100,6 +101,13 @@ Rectangle {
             color: Qt.rgba(0, 0, 0, 0.85)
             border.color: Qt.rgba(1, 1, 1, 0.12)
             border.width: 1
+        }
+    }
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: 120
+            easing.type: Easing.OutCubic
         }
     }
 }

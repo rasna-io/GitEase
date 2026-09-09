@@ -56,6 +56,14 @@ Rectangle {
                 return root.backgroundColor
         }
     }
+    scale: msa.pressed ? 0.985 : 1.0
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: Style.motionFast
+            easing.type: Easing.OutCubic
+        }
+    }
 
     radius: 3
 

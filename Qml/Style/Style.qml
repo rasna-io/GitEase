@@ -418,7 +418,17 @@ QtObject {
         popupCancelButtonText:            "#B4BCCB"
     }
 
-    property           string       currentTheme:               "Modern Light"
+    property          string        currentTheme:               "Modern Light"
+
+    property          bool          reducedMotion:               false
+
+    readonly property bool          motionEnabled:               !style.reducedMotion
+
+    readonly property int           motionFast:                  style.motionEnabled ? 140 : 0
+
+    readonly property int           motionMedium:                style.motionEnabled ? 240 : 0
+
+    readonly property int           motionPage:                  style.motionEnabled ? 300 : 0
 
     onCurrentThemeChanged: changeTheme()
 
