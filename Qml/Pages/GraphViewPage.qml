@@ -150,13 +150,6 @@ Page {
         }
     }
 
-    Connections {
-        target: root.terminalController
-
-        function onGitStateChanged() {
-            utilityPanel.reload()
-        }
-    }
 
     Connections {
         target: root.gitStateNotifier
