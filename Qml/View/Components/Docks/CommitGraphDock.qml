@@ -467,14 +467,6 @@ DetachablePanel {
         }
     }
 
-    Connections {
-        target: root.terminalController
-
-        function onGitStateChanged() {
-            root.reloadAll()
-        }
-    }
-
     onRepositoryControllerChanged: root.reloadAll()
 
     onStashControllerChanged: {
