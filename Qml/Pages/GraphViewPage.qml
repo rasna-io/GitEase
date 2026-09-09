@@ -403,6 +403,12 @@ Page {
         root.graphRef?.reloadAll()
     }
 
+    //! Everything the page shows, from the header reload button.
+    function reload() {
+        root.reloadGraph()
+        utilityPanel.reload()
+    }
+
     function onPageActivated() {
         utilityPanel.reload()
     }
