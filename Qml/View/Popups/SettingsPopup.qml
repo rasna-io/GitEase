@@ -48,11 +48,45 @@ IPopup {
     readonly property var _ownGuideIds: [
         "settings_popup_tutorial",
         "settings_general_tutorial",
-        "settings_ssh_tutorial",
         "settings_appearance_tutorial",
+        "settings_ssh_tutorial",
         "settings_notifications_tutorial",
         "settings_help_tutorial"
     ]
+
+    // Mapping of guide IDs to their target page indices (for own guides that need page switching)
+    readonly property var _guideTargetPage: {
+        "settings_popup_tutorial": 0,
+        "settings_general_tutorial": 0,
+        "settings_appearance_tutorial": 1,
+        "settings_ssh_tutorial": 2,
+        "settings_notifications_tutorial": 3,
+        "settings_help_tutorial": 5
+    }
+
+    // Tracks a guide waiting for SwipeView to reach its target page
+    property string _pendingGuideId: ""
+    property int _pendingGuideTargetPage: -1
+
+    // Timer to wait for SwipeView animation to complete after index change
+    Timer {
+        id: _guideAnimationTimer
+        interval: 200
+        repeat: false
+        onTriggered: {
+            if (!root._pendingGuideId.length)
+                return
+            if (settingsSwipeView.currentIndex === root._pendingGuideTargetPage) {
+                let guideId = root._pendingGuideId
+                root._pendingGuideId = ""
+                root._pendingGuideTargetPage = -1
+                if (!root.guideController || !root.guideController.forceShow(guideId)) {
+                    if (root.notificationController)
+                        root.notificationController.warning("Couldn't start this tutorial.", "Help", 3000)
+                }
+            }
+        }
+    }
 
     /* Object Properties
      * ****************************************************************************************/
@@ -118,6 +152,13 @@ IPopup {
      */
     function playTutorial(entry) {
         if (root._ownGuideIds.indexOf(entry.id) !== -1) {
+            var targetPage = root._guideTargetPage[entry.id]
+            if (targetPage !== undefined && targetPage !== root.currentPage) {
+                root._pendingGuideId = entry.id
+                root._pendingGuideTargetPage = targetPage
+                root.currentPage = targetPage
+                return
+            }
             if (!root.guideController || !root.guideController.forceShow(entry.id)) {
                 if (root.notificationController)
                     root.notificationController.warning("Couldn't start this tutorial.", "Help", 3000)
@@ -262,9 +303,16 @@ IPopup {
                     clip: true
 
                     SwipeView {
+                        id: settingsSwipeView
                         anchors.fill: parent
                         currentIndex: root.currentPage
                         interactive: false
+
+                        onCurrentIndexChanged: {
+                            if (root._pendingGuideId.length && currentIndex === root._pendingGuideTargetPage) {
+                                _guideAnimationTimer.start()
+                            }
+                        }
 
                         Item {
                             GuideHoverTrigger {
@@ -452,7 +500,7 @@ IPopup {
                             GuideHoverTrigger {
                                 guideController: root.guideController
                                 guideId: "settings_notifications_tutorial"
-                                guideName: "Notifications"
+                                guideName: "Notifications - Settings"
                                 guideIcon: Style.icons.bell
                                 stepsFactory: function() {
                                     return [
