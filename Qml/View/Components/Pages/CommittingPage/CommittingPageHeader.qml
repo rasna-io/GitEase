@@ -76,9 +76,9 @@ RowLayout {
         }
 
         Connections {
-            target: repositoryController
-            function onCurrentRepoChanged() {
-                branchChip.branchName = branchController.getDisplayBranchName()
+            target: headerRow.gitStateNotifier
+            function onRepositoryChanged() {
+                branchChip.text = headerRow.branchController ? headerRow.branchController.getDisplayBranchName() : ""
             }
         }
 
