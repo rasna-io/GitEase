@@ -48,6 +48,8 @@ Page {
 
     property GuideController         guideController:         null
 
+    property GitStateNotifier        gitStateNotifier:        null
+
     // Remote actions (Pull / Push / Fetch) are owned by the shared RemoteOperationsSession so
     property RemoteOperationsSession remoteOperationsSession:              null
     property bool                    isFetching:             remoteOperationsSession ? remoteOperationsSession.isFetching : false
