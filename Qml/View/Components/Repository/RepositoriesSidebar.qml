@@ -104,6 +104,13 @@ Rectangle {
     onCurrentRepositoryChanged: Qt.callLater(root.refreshBranches)
     Component.onCompleted: root.refreshBranches()
 
+    Connections {
+        target: root.gitStateNotifier
+        function onRepositoryChanged() {
+            root.refreshBranches()
+        }
+    }
+
     /* Guide
      * ****************************************************************************************/
     GuideHoverTrigger {
