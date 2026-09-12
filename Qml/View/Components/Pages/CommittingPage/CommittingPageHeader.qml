@@ -55,7 +55,7 @@ RowLayout {
         leftPadding     : 10
         rightPadding    : 10
 
-        text: branchController.getDisplayBranchName()
+        text: headerRow.branchController ? headerRow.branchController.getDisplayBranchName() : ""
         visible: !headerRow.compact
         solidIcon: true
 
