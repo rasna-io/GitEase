@@ -242,6 +242,7 @@ Rectangle {
                             pluginController: root.uiSession?.pluginController
                             terminalController: root.uiSession?.terminalController
                             guideController: root.uiSession?.guideController
+                            gitStateNotifier: root.uiSession?.gitStateNotifier
                         }
 
                         PluginsPage {
