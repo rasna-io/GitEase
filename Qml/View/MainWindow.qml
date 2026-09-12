@@ -117,6 +117,7 @@ Rectangle {
                 notificationController: root.uiSession?.notificationController
                 guideController: root.uiSession?.guideController
                 userInfoSelectionPopup: root.uiSession?.popups?.userInfoSelectionPopup
+                gitStateNotifier: root.uiSession?.gitStateNotifier
 
                 pages: pageSwipeView.contentChildren
                 currentPageId: pageSwipeView.currentItem?.pageId ?? ""
