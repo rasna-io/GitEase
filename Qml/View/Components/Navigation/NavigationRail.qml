@@ -106,6 +106,7 @@ Rectangle {
                 currentRepository: root.appModel.currentRepository
                 recentRepositories: root.appModel.recentRepositories
                 guideController: root.guideController
+                gitStateNotifier: root.gitStateNotifier
                 onNewRepositoryRequested: function () {
                     root.newRepositoryRequested()
                 }
