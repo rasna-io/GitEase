@@ -18,6 +18,7 @@ RowLayout {
     property          NotificationController notificationController:    null
     property          RemoteController       remoteController:          null
     property          GuideController        guideController:           null
+    property          GitStateNotifier       gitStateNotifier:          null
     readonly property bool                   compact:                   parent.width < 550
 
     /* Object Properties
