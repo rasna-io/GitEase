@@ -264,6 +264,8 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/CommitPlanPopup.qml
     Qml/View/Popups/CommitFileBrowserPopup.qml #browse file tree at a commit
 
+    Qml/View/Popups/CommitFileBrowserPopup.qml #browse file tree at a commit
+
 )
 
 
