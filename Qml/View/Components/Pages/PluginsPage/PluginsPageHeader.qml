@@ -56,21 +56,24 @@ RowLayout {
     }
 
     Rectangle {
-        Layout.preferredWidth: 100
-        Layout.preferredHeight: 30
+        id: installed
         Layout.alignment: Qt.AlignVCenter
-        color: "#1F3B82"
-        border.color: "#60A5FA"
+        Layout.leftMargin: Style.dp(6)
+        color: Style.colors.pluginBadgeBackground
+        border.color: Style.colors.pluginBadgeBorder
         border.width: 1
-        radius: 10
+        radius: Style.dp(10)
+        Layout.preferredHeight: installedLabel.implicitHeight + Style.dp(4)
+        Layout.preferredWidth: installedLabel.implicitWidth + Style.dp(20)
 
         Label {
-            anchors.fill: parent
+            id: installedLabel
+            anchors.centerIn: parent
             text: (headerRow.pluginsData ? headerRow.pluginsData.filter(function(p) { return p.isInstalled }).length : 0) + " installed"
-            font.family: Style.fontTypes.roboto
-            font.pixelSize: Style.appFont.largerPt
+            font.family: Style.fontTypes.jetBrainsMono
+            font.pixelSize: Style.appFont.h4Pt
             font.bold: true
-            color: "#60A5FA"
+            color: Style.colors.pluginBadgeText
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
@@ -85,7 +88,7 @@ RowLayout {
         placeholderTextColor: Style.colors.descriptionText
         backgroundColor: hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
         Layout.preferredWidth: 300
-        minHeight: 25
+        minHeight: 27
         placeholderText: "Search plugins"
         text: headerRow.filterText
         font.family: Style.fontTypes.inter
@@ -100,33 +103,51 @@ RowLayout {
         }
     }
 
-    ToolButton {
+    IconButton {
         id: filterButton
-        Layout.preferredWidth: 25
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
         Layout.preferredHeight: 25
-        hoverEnabled: true
 
-        text: Style.icons.filter
-        font.family: Style.fontTypes.font6Pro
-        font.styleName: (filterOptionsPopup.visible || hovered) ? "Solid" : "Regular"
-        font.pixelSize: Style.appFont.largePt
+        text: "Filters"
+        font.family: Style.fontTypes.inter
+        font.weight: Font.Medium
+        font.pixelSize: Style.appFont.smallPt
+        leftPadding: 12
+        rightPadding: 12
+        topPadding: 4
+        bottomPadding: 4
+        spacing: 6
 
-        contentItem: Text {
-            anchors.centerIn: parent
-            text: filterButton.text
-            font: filterButton.font
-            color: filterButton.enabled ? Style.colors.foreground : Style.colors.mutedText
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
+        contentItem: Row {
+            spacing: filterButton.spacing
 
-        background: Rectangle {
-            radius: 5
-            color: !filterButton.enabled ? Style.colors.primaryBackground :
-                   filterButton.down ? Style.colors.surfaceMuted :
-                   filterButton.hovered ? Style.colors.headerButtonBackgroundHover : Style.colors.headerButtonBackground
-            border.width: 1
-            border.color: Style.colors.headerButtonBorder
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: Style.icons.filter
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.foreground
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: filterButton.text
+                font: filterButton.font
+                color: Style.colors.foreground
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: Style.icons.caretDown
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.foreground
+            }
         }
 
         onClicked: filterOptionsPopup.open()

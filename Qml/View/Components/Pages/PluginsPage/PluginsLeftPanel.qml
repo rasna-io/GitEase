@@ -16,18 +16,37 @@ Rectangle {
     property int selectedInstalledMode: -1
     property int pluginsCount: 0
     property var categoriesData: []
-    property var installedModel: []
     property var categoriesCounts: ({})
+
+    //! Counts for the Installed filter rows (Enabled / Disabled / Needs Update)
+    property var installedCounts: ({})
+
+    property var installedModelWithAll: [
+        { name: "All", iconName: Style.icons.plugins, iconColor: Style.colors.pluginSidebarRowText },
+        { name: "Enabled", iconName: Style.icons.check, iconColor: Style.colors.compatible },
+        { name: "Disabled", iconName: Style.icons.pause, iconColor: Style.colors.incompatible },
+        { name: "Needs Update", iconName: Style.icons.warning, iconColor: Style.colors.marigold }
+    ]
 
     /* Signals
      * ****************************************************************************************/
     signal categorySelected(string category)
+    signal installedModeSelected(string mode)
 
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillHeight: true
-    Layout.preferredWidth: 220
-    color: Style.colors.primaryBackground
+    Layout.preferredWidth: 188
+    color: Style.colors.pluginPanelBackground
+
+    // Right border of the sidebar
+    Rectangle {
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        width: 1
+        color: Style.colors.pluginPanelBorder
+    }
 
     onCategoriesDataChanged: root.populateCategoriesModel()
 
@@ -39,348 +58,398 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 8
-        spacing: 5
+        spacing: 0
 
-        Label {
-            text: "BROWSE"
-            color: "#363650"
-            font.pixelSize: Style.appFont.largePt
-            font.family: Style.fontTypes.roboto
-        }
-
-        Rectangle {
+        // ── Browse section ─────────────────────────────────────────
+        ColumnLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 30
-            radius: 5
+            Layout.topMargin: Style.dp(12)
+            Layout.bottomMargin: Style.dp(4)
+            spacing: 0
 
-            property bool isSelected: root.selectedCategory === -1
+            Label {
+                text: "Browse"
+                color: Style.colors.pluginSidebarLabel
+                font.pixelSize: Style.appFont.captionPt
+                font.weight: Font.DemiBold
+                font.family: Style.fontTypes.inter
+                font.letterSpacing: 0.7
+                font.capitalization: Font.AllUppercase
+                Layout.leftMargin: Style.dp(14)
+                Layout.bottomMargin: Style.dp(6)
+            }
 
-            color: isSelected ? "#1F3B82" : "transparent"
+            // All Plugins row
+            Rectangle {
+                id: allPluginsRow
+                Layout.fillWidth: true
+                Layout.leftMargin: Style.dp(10)
+                Layout.rightMargin: Style.dp(10)
+                implicitHeight: 28
+                radius: 5
+                color: root.selectedCategory === -1
+                       ? Style.colors.pluginSidebarRowActiveBg
+                       : (allPluginsHover.containsMouse ? Style.colors.pluginSidebarRowHoverBg
+                                                       : "transparent")
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 8
-                anchors.rightMargin: 8
-                spacing: 10
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Style.dp(10)
+                    anchors.rightMargin: Style.dp(10)
+                    spacing: 8
 
-                Item {
-                    Layout.preferredHeight: 20
-                    Layout.preferredWidth: 20
-                    Layout.alignment: Qt.AlignVCenter
-
-                    Label {
-                        anchors.fill: parent
+                    Text {
                         text: Style.icons.plugins
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.largerPt
-                        color: root.selectedCategory === -1 ? "#60A5FA" : "#363650"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                        font.styleName: "Solid"
+                        font.pixelSize: Style.fontIconSize.smallPt
+                        color: root.selectedCategory === -1
+                               ? Style.colors.pluginSidebarRowActiveText
+                               : Style.colors.pluginSidebarRowText
                     }
+
+                    Label {
+                        text: "All Plugins"
+                        Layout.fillWidth: true
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
+                        font.weight: root.selectedCategory === -1 ? Font.Medium : Font.Normal
+                        color: root.selectedCategory === -1
+                               ? Style.colors.pluginSidebarRowActiveText
+                               : Style.colors.pluginSidebarRowText
+                        elide: Text.ElideRight
+                    }
+
+                    Rectangle {
+                        visible: root.pluginsCount > 0
+                        radius: 8
+                        color: Style.colors.pluginCountPillBackground
+                        implicitHeight: allCountLabel.implicitHeight + 3
+                        implicitWidth: allCountLabel.implicitWidth + 12
+
+                        Label {
+                            id: allCountLabel
+                            anchors.centerIn: parent
+                            text: root.pluginsCount
+                            color: Style.colors.pluginCountPillText
+                            font.pixelSize: Style.appFont.smallPt
+                            font.family: Style.fontTypes.jetBrainsMono
+                        }
+                    }
+                }
+
+                MouseArea {
+                    id: allPluginsHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        root.selectedCategory = -1
+                        root.categorySelected("All")
+                    }
+                }
+            }
+
+            // Category rows
+            ListView {
+                model: categoriesModel
+                Layout.fillWidth: true
+                Layout.preferredHeight: contentHeight
+                interactive: false
+                spacing: 1
+                clip: true
+
+                delegate: Rectangle {
+                    id: categoryRow
+                    width: ListView.view.width
+                    height: 28
+                    radius: 5
+
+                    property bool isSelected: index === root.selectedCategory
+
+                    color: isSelected ? Style.colors.pluginSidebarRowActiveBg
+                           : (categoryRowHover.containsMouse ? Style.colors.pluginSidebarRowHoverBg
+                                                            : "transparent")
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Style.dp(10)
+                        anchors.rightMargin: Style.dp(10)
+                        spacing: 8
+
+                        Item {
+                            Layout.preferredWidth: 14
+                            Layout.preferredHeight: 14
+
+                            IconImage {
+                                id: categoryIconImage
+                                anchors.fill: parent
+                                source: iconUrl || ""
+                                fillMode: Image.PreserveAspectFit
+                                visible: status === Image.Ready
+                                color: isSelected
+                                       ? Style.colors.pluginSidebarRowActiveText
+                                       : Style.colors.pluginSidebarRowText
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                visible: categoryIconImage.status !== Image.Ready
+                                text: Style.icons.plugins
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.fontIconSize.smallPt
+                                color: isSelected
+                                       ? Style.colors.pluginSidebarRowActiveText
+                                       : Style.colors.pluginSidebarRowText
+                            }
+                        }
+
+                        Label {
+                            text: name
+                            Layout.fillWidth: true
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.mediumPt
+                            font.weight: isSelected ? Font.Medium : Font.Normal
+                            color: isSelected
+                                   ? Style.colors.pluginSidebarRowActiveText
+                                   : Style.colors.pluginSidebarRowText
+                            elide: Text.ElideRight
+                        }
+
+                        Rectangle {
+                            visible: (root.categoriesCounts[id] || 0) > 0
+                            radius: 8
+                            color: Style.colors.pluginCountPillBackground
+                            implicitHeight: categoryCountLabel.implicitHeight + 3
+                            implicitWidth: categoryCountLabel.implicitWidth + 12
+
+                            Label {
+                                id: categoryCountLabel
+                                anchors.centerIn: parent
+                                text: root.categoriesCounts[id] || 0
+                                color: Style.colors.pluginCountPillText
+                                font.pixelSize: Style.appFont.smallPt
+                                font.family: Style.fontTypes.jetBrainsMono
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: categoryRowHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.selectedCategory = index
+                            root.categorySelected(id)
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Installed section ──────────────────────────────────────
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Style.dp(8)
+            Layout.bottomMargin: Style.dp(4)
+            spacing: 0
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.bottomMargin: Style.dp(8)
+                Layout.preferredHeight: 1
+                color: Style.colors.pluginDivider
+            }
+
+            Label {
+                text: "Installed"
+                color: Style.colors.pluginSidebarLabel
+                font.pixelSize: Style.appFont.captionPt
+                font.weight: Font.DemiBold
+                font.family: Style.fontTypes.inter
+                font.letterSpacing: 0.7
+                font.capitalization: Font.AllUppercase
+                Layout.leftMargin: Style.dp(14)
+                Layout.bottomMargin: Style.dp(6)
+            }
+
+            ListView {
+                id: installedListView
+                model: root.installedModelWithAll
+                Layout.fillWidth: true
+                Layout.preferredHeight: contentHeight
+                Layout.leftMargin: Style.dp(10)
+                Layout.rightMargin: Style.dp(10)
+                interactive: false
+                spacing: 1
+
+                delegate: Rectangle {
+                    id: installedModeRow
+                    width: ListView.view.width
+                    height: 28
+                    radius: 5
+
+                    property bool isSelected: index === root.selectedInstalledMode
+                    property bool isAllItem: index === 0
+
+                    color: isSelected ? Style.colors.pluginSidebarRowActiveBg
+                           : (installedModeHover.containsMouse ? Style.colors.pluginSidebarRowHoverBg
+                                                               : "transparent")
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Style.dp(10)
+                        anchors.rightMargin: Style.dp(10)
+                        spacing: 8
+
+                        Text {
+                            text: isAllItem ? Style.icons.plugins : modelData.iconName
+                            font.family: isAllItem ? Style.fontTypes.font6Pro : Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
+                            font.pixelSize: Style.fontIconSize.smallPt
+                            color: isSelected ? Style.colors.pluginSidebarRowActiveText
+                                              : (isAllItem ? Style.colors.pluginSidebarRowText
+                                                           : modelData.iconColor)
+                        }
+
+                        Label {
+                            text: isAllItem ? "All Installed" : modelData.name
+                            Layout.fillWidth: true
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.mediumPt
+                            font.weight: isSelected ? Font.Medium : Font.Normal
+                            color: isSelected
+                                   ? Style.colors.pluginSidebarRowActiveText
+                                   : Style.colors.pluginSidebarRowText
+                            elide: Text.ElideRight
+                        }
+
+                        Rectangle {
+                            visible: !isAllItem && (root.installedCounts[modelData.name] || 0) > 0
+                            radius: 8
+                            color: Style.colors.pluginCountPillBackground
+                            implicitHeight: installedCountLabel.implicitHeight + 3
+                            implicitWidth: installedCountLabel.implicitWidth + 12
+
+                            Label {
+                                id: installedCountLabel
+                                anchors.centerIn: parent
+                                text: root.installedCounts[modelData.name] || 0
+                                color: Style.colors.pluginCountPillText
+                                font.pixelSize: Style.appFont.smallPt
+                                font.family: Style.fontTypes.jetBrainsMono
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: installedModeHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (root.selectedInstalledMode !== index) {
+                                root.selectedInstalledMode = index
+                                root.installedModeSelected(index === 0 ? "All" : modelData.name)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Item { Layout.fillHeight: true }
+
+        // ── Compatibility legend ───────────────────────────────────
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 0
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: Style.colors.pluginDivider
+            }
+
+            Label {
+                text: "Compatibility"
+                color: Style.colors.pluginSidebarLabel
+                font.pixelSize: Style.appFont.captionPt
+                font.weight: Font.DemiBold
+                font.family: Style.fontTypes.inter
+                font.letterSpacing: 0.7
+                font.capitalization: Font.AllUppercase
+                Layout.topMargin: Style.dp(12)
+                Layout.leftMargin: Style.dp(14)
+                Layout.bottomMargin: Style.dp(8)
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Style.dp(14)
+                Layout.rightMargin: Style.dp(14)
+                Layout.bottomMargin: Style.dp(6)
+                spacing: 7
+
+                Rectangle {
+                    Layout.preferredWidth: 8
+                    Layout.preferredHeight: 8
+                    radius: 4
+                    color: Style.colors.compatible
                 }
 
                 Label {
-                    text: "All Plugins"
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: Style.appFont.largePt
-                    color: root.selectedCategory === -1 ? "#60A5FA" : "#363650"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                    text: "Compatible"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.h4Pt
+                    color: Style.colors.pluginSidebarRowText
                 }
+            }
 
-                Item {
-                    Layout.fillWidth: true
-                }
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Style.dp(14)
+                Layout.rightMargin: Style.dp(14)
+                Layout.bottomMargin: Style.dp(6)
+                spacing: 7
 
                 Rectangle {
-                    width: 25
-                    height: 18
+                    Layout.preferredWidth: 8
+                    Layout.preferredHeight: 8
                     radius: 4
-                    color: Style.colors.secondaryBackground
+                    color: Style.colors.marigold
+                }
 
-                    Label {
-                        anchors.centerIn: parent
-                        text: root.pluginsCount
-                        color: Style.colors.mutedText
-                        font.pixelSize: Style.appFont.largePt
-                        font.family: Style.fontTypes.roboto
-                    }
+                Label {
+                    text: "Needs update"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.h4Pt
+                    color: Style.colors.pluginSidebarRowText
                 }
             }
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    root.selectedCategory = -1
-                    root.categorySelected("All")
-                }
-            }
-        }
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: Style.dp(14)
+                Layout.rightMargin: Style.dp(14)
+                Layout.bottomMargin: Style.dp(12)
+                spacing: 7
 
-        ListView {
-            model: categoriesModel
-            Layout.fillWidth: true
-            Layout.preferredHeight: contentHeight
-            interactive: false
-            spacing: 5
-
-            delegate: Rectangle {
-                width: parent.width
-                height: 30
-                radius: 5
-
-                property bool isSelected: index === root.selectedCategory
-
-                color: isSelected ? "#1F3B82" : "transparent"
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 8
-                    anchors.rightMargin: 8
-                    spacing: 10
-
-                    Item {
-                        Layout.preferredHeight: 20
-                        Layout.preferredWidth: 20
-                        Layout.alignment: Qt.AlignVCenter
-
-                        IconImage {
-                            id: categoryIconImage
-                            anchors.fill: parent
-                            source: iconUrl || ""
-                            fillMode: Image.PreserveAspectFit
-                            visible: status === Image.Ready
-                            color: isSelected ? "#60A5FA" : "#363650"
-                        }
-
-                        Text {
-                            anchors.centerIn: parent
-                            visible: categoryIconImage.status !== Image.Ready
-                            text: Style.icons.plugins
-                            font.family: Style.fontTypes.font6Pro
-                            font.pixelSize: Style.appFont.largePt
-                            color: "#363650"
-                        }
-                    }
-
-                    // Text {
-                    //     text: Style.icons.plugins
-                    //     font.family: Style.fontTypes.font6Pro
-                    //     font.pixelSize: Style.appFont.largePt
-                    //     color: Style.colors.mutedText
-                    //     horizontalAlignment: Text.AlignHCenter
-                    //     verticalAlignment: Text.AlignVCenter
-                    // }
-
-                    Label {
-                        text: name
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: Style.appFont.largePt
-                        color: isSelected ? "#60A5FA" : "#363650"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    Rectangle {
-                        width: 25
-                        height: 18
-                        radius: 4
-                        color: Style.colors.secondaryBackground
-
-                        Label {
-                            anchors.centerIn: parent
-                            text: root.categoriesCounts[id] || 0
-                            color: Style.colors.mutedText
-                            font.pixelSize: Style.appFont.largePt
-                            font.family: Style.fontTypes.roboto
-                        }
-                    }
+                Rectangle {
+                    Layout.preferredWidth: 8
+                    Layout.preferredHeight: 8
+                    radius: 4
+                    color: Style.colors.incompatible
                 }
 
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        root.selectedCategory = index
-                        root.categorySelected(id)
-                    }
+                Label {
+                    text: "Incompatible"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.h4Pt
+                    color: Style.colors.pluginSidebarRowText
                 }
-            }
-        }
-
-        // Separator
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            color: Style.colors.primaryBorder
-        }
-
-        Label {
-            text: "INSTALLED"
-            color: "#363650"
-            font.pixelSize: Style.appFont.largePt
-            font.family: Style.fontTypes.roboto
-        }
-
-        ListView {
-            model: installedModel
-            Layout.fillWidth: true
-            Layout.preferredHeight: contentHeight
-            interactive: false
-            spacing: 5
-
-            delegate: Rectangle {
-                width: parent.width
-                height: 30
-                radius: 5
-
-                property bool isSelected: index === root.selectedInstalledMode
-
-                color: isSelected ? "#1F3B82F6" : "transparent"
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 8
-                    anchors.rightMargin: 8
-                    spacing: 10
-
-                    Item {
-                        Layout.preferredHeight: 20
-                        Layout.preferredWidth: 20
-                        Layout.alignment: Qt.AlignVCenter
-
-                        Label {
-                            anchors.centerIn: parent
-                            text: modelData.iconName
-                            color: modelData.iconColor
-                            font.pixelSize: Style.appFont.largePt
-                            font.family: Style.fontTypes.font6Pro
-                        }
-                    }
-
-                    Label {
-                        text: modelData.name
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: Style.appFont.largePt
-                        color: isSelected ? "#60A5FA" : "#363650"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    Rectangle {
-                        width: 25
-                        height: 18
-                        radius: 4
-                        color: Style.colors.secondaryBackground
-
-                        Label {
-                            anchors.centerIn: parent
-                            text: "5"
-                            color: Style.colors.mutedText
-                            font.pixelSize: Style.appFont.largePt
-                            font.family: Style.fontTypes.roboto
-                        }
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        if(root.selectedInstalledMode === index) root.selectedInstalledMode = -1
-                        else root.selectedInstalledMode = index
-                    }
-                }
-            }
-        }
-
-        Item {
-            Layout.fillHeight: true
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            color: Style.colors.primaryBorder
-        }
-
-        Label {
-            text: "Compatibility"
-            color: "#363650"
-            font.pixelSize: Style.appFont.largePt
-            font.family: Style.fontTypes.roboto
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 30
-            spacing: 10
-
-            Rectangle {
-                Layout.preferredWidth: 10
-                Layout.preferredHeight: 10
-                radius: 5
-                color: Style.colors.compatible
-                Layout.alignment: Qt.AlignVCenter
-            }
-
-            Label {
-                text: "Compatible"
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: Style.appFont.largePt
-                color: "#363650"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                Layout.alignment: Qt.AlignVCenter
-            }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 30
-            spacing: 10
-            Rectangle {
-                Layout.preferredWidth: 10
-                Layout.preferredHeight: 10
-                radius: 5
-                color: Style.colors.warning
-                Layout.alignment: Qt.AlignVCenter
-            }
-            Label {
-                text: "Needs Update"
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: Style.appFont.largePt
-                color: "#363650"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 30
-            spacing: 10
-            Rectangle {
-                Layout.preferredWidth: 10
-                Layout.preferredHeight: 10
-                radius: 5
-                color: Style.colors.incompatible
-                Layout.alignment: Qt.AlignVCenter
-            }
-            Label {
-                text: "Incompatible"
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: Style.appFont.largePt
-                color: "#363650"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
             }
         }
     }
