@@ -39,6 +39,8 @@ IPopup {
     // guide can actually be seen, and possibly navigate to that tutorial's page first.
     property string _pendingTutorialId:   ""
     property string _pendingTutorialPage: ""
+    property var    _originalSettings:    null
+    property bool   _saveConfirmed:       false
 
     // Guide ids whose targets live inside this popup — forceShow runs immediately for these
     // (no close-then-reopen), same treatment NavigationRail gives its own guides.
@@ -57,7 +59,10 @@ IPopup {
     height: parent.height * 0.8
 
     onClosed: {
-        load()
+        if (!root._saveConfirmed) {
+            root.cancel()
+        }
+        root._saveConfirmed = false
 
         if (_pendingTutorialId.length === 0)
             return
@@ -79,7 +84,10 @@ IPopup {
             }
         })
     }
-    onOpened: load()
+    onOpened: {
+        root._originalSettings = root.appSettings.serialize()
+        root.load()
+    }
 
     /**
      * Play a tutorial selected from the Help tab. Tutorials whose target lives inside this
@@ -755,7 +763,10 @@ IPopup {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    onClicked: root.close()
+                    onClicked: {
+                        root.cancel()
+                        root.close()
+                    }
                 }
 
                 Button {
@@ -776,7 +787,12 @@ IPopup {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    onClicked: root.apply()
+                    onClicked: {
+                        root.apply()
+                        if (root.notificationController) {
+                            root.notificationController.success("Settings applied", "Settings", 2000)
+                        }
+                    }
                 }
 
                 Button {
@@ -798,6 +814,11 @@ IPopup {
                     }
                     onClicked: {
                         root.apply()
+                        root.appModel.save()
+                        root._saveConfirmed = true
+                        if (root.notificationController) {
+                            root.notificationController.success("Settings saved successfully", "Settings", 3000)
+                        }
                         root.close()
                     }
                 }
@@ -821,11 +842,12 @@ IPopup {
             "Left Top": "left-top"
         }
         root.appSettings.notificationSettings.notificationPosition = positionMap[notificationPosition.cmb.displayText] || "right-bottom"
+    }
 
-        root.appModel.save()
-        
-        if (notificationController) {
-            notificationController.success("Settings saved successfully", "Settings", 3000)
+    function cancel() {
+        if (root._originalSettings) {
+            root.appSettings.deserialize(root._originalSettings)
+            root.load()
         }
     }
 
