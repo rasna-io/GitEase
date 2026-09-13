@@ -16,6 +16,7 @@ RowLayout {
     /* Property Declarations
      * ****************************************************************************************/
     property string filterText: ""
+    property var pluginsData: []
 
     /* Signals
      * ****************************************************************************************/
@@ -51,7 +52,7 @@ RowLayout {
 
         Label {
             anchors.fill: parent
-            text: "4 installed"
+            text: (headerRow.pluginsData ? headerRow.pluginsData.filter(function(p) { return p.isInstalled }).length : 0) + " installed"
             font.family: Style.fontTypes.roboto
             font.pixelSize: Style.appFont.largerPt
             font.bold: true
