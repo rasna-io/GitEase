@@ -68,8 +68,8 @@ QtObject {
 
         cardBackground:      charcoalGray
 
-        primaryBorder:       darkCharcoal
-        secondaryBorder:     darkCharcoal
+        primaryBorder:       "#26262F"
+        secondaryBorder:     "#23232C"
 
         controlBackground:      "#1B1B22"
         controlBackgroundHover: "#232330"
@@ -85,6 +85,9 @@ QtObject {
 
         resizeHandle:        primaryBorder
         resizeHandlePressed: "#9b9b9b"
+
+        // Blue selection/toggle wash — stronger alpha so it reads on dark surfaces
+        subtleAzureGlow:       "#3D3B82F6"
 
         selectedText:            "#FFFFFF"
         onAccentText:            "#FFFFFF"
@@ -106,7 +109,7 @@ QtObject {
         levelWorktreeBadge:      "#D44D4D"
         levelAppBadge:           "#4D4DD4"
 
-        userInfoSelectedBackground: Qt.rgba(59 / 255, 130 / 255, 246 / 255, 0.1)
+        userInfoSelectedBackground: Qt.rgba(59 / 255, 130 / 255, 246 / 255, 0.2)
 
         notificationInfo:            "#12324A"
         notificationInfoBorder:      "#2B6AA3"
@@ -206,25 +209,25 @@ QtObject {
         forcePushBorder:       "#4DEF4444"
 
         // File list sections
-        countBadgeText:      "#1E1E30"
-        countBadgeBg:        "#141424"
-        sectionHeaderBg:     midnightBlack         // #101013
-        sectionLabel:        "#323248"
-        emptyCircleBg:       "#141420"
-        emptyCircleBorder:   "#1C1C28"
-        emptyStateText:      "#1E1E30"
-        emptyStateSubText:   "#181828"
+        countBadgeText:      "#A8B0C2"
+        countBadgeBg:        "#26262E"
+        sectionHeaderBg:     "#202028"
+        sectionLabel:        "#A0A8BC"
+        emptyCircleBg:       "#1C1C26"
+        emptyCircleBorder:   "#2C2C38"
+        emptyStateText:      "#929AAA"
+        emptyStateSubText:   "#6E7686"
 
         // Section actions and badge
-        actionIconIdle:        "#3A3A52"
+        actionIconIdle:        "#7C8496"
         stashAmber:            "#FBBF24"
         stageGreen:            "#4ADE80"
         discardRed:            softCoralMist       // #F87171 – reuse existing
         countText:             "#FBBF24"
-        countBg:               "#12FBBF24"
+        countBg:               "#30FBBF24"
 
         // Action pill (row-level)
-        actionPillBg:         onyxShadow          // #17171C
+        actionPillBg:         graphiteDark         // #17171C (was unresolved onyxShadow)
         actionPillBorder:     "#1E1E2A"
         openBlue:             branchAccent        // #60A5FA
 
@@ -352,62 +355,67 @@ QtObject {
         stashDiffLinkHover:                  "#7AB9FF"
 
         pluginPageBackground:       "#0D0D0F"
-        pluginPanelBackground:      "#101013"
-        pluginPanelBorder:          "#1D1D22"
-        pluginCardBackground:       "#101013"
-        pluginCardBorder:           "#1D1D22"
-        pluginCardFooterBorder:     "#171720"
-        pluginDivider:              "#1A1A20"
-        pluginSectionLabel:         "#3A3A52"
-        pluginSectionMetaText:      "#28283A"
-        pluginSidebarLabel:         "#222232"
-        pluginSidebarRowText:       "#40405A"
+        pluginPanelBackground:      "#131316"
+        pluginPanelBorder:          "#26262F"
+        pluginCardBackground:       "#1A1A20"
+        pluginCardBorder:           "#2A2A34"
+        pluginCardFooterBorder:     "#22222A"
+        pluginDivider:              "#202028"
+        pluginSectionLabel:         "#B4BCCD"
+        pluginSectionMetaText:      "#8A92A4"
+        pluginSidebarLabel:         "#9898B4"
+        pluginSidebarRowText:       "#C4CAD8"
         pluginSidebarRowActiveText: "#93C5FD"
-        pluginSidebarRowActiveBg:   "#1A3B82F6"
-        pluginSidebarRowHoverBg:    "#1A3B82F6"
-        pluginCountPillBackground:  "#181820"
-        pluginCountPillText:        "#28283A"
-        pluginCardTitle:            "#C8C8D8"
-        pluginCardMetaText:         "#2E2E3E"
-        pluginCardDescription:      "#4A4A60"
-        pluginBtnSecondaryBorder:   "#222230"
-        pluginBtnSecondaryText:     "#32324A"
-        pluginToggleTrackOff:       "#1E1E2C"
-        pluginToggleTrackOffBorder: "#2A2A38"
-        pluginToggleThumbOff:       "#3A3A52"
+        pluginSidebarRowActiveBg:   "#26262F"
+        pluginSidebarRowHoverBg:    "#202028"
+        pluginCountPillBackground:  "#2A2A35"
+        pluginCountPillText:        "#A2AAB8"
+        pluginCardTitle:            "#D8D8E6"
+        pluginCardMetaText:         "#9898B4"
+        pluginCardDescription:      "#AEB4C4"
+        pluginBtnSecondaryBorder:   "#3A3A48"
+        pluginBtnSecondaryText:     "#C0C6D4"
+        pluginToggleTrackOff:       "#3A3A44"
+        pluginToggleTrackOffBorder: "#4E4E5C"
+        pluginToggleThumbOff:       "#EDEDF2"
+
+        // Installed badge in the plugins page header
+        pluginBadgeBackground:      "#2E3B82F6"
+        pluginBadgeBorder:          "#4D3B82F6"
+        pluginBadgeText:            "#93C5FD"
 
         // Popup
-        popupBackground:                  "#0f0f12"  
-        popupBorder:                      "#222230"
-        popupHeaderSeparator:             "#1a1a22"
-        popupTitleText:                   "#c0c0d0"
-        popupCloseButton:                 "#3a3a50"
-        popupCloseButtonHover:            "#c0c0d0"
-        popupSectionLabel:                "#282838"
-        popupInputBackground:             "#0d0d0f"
-        popupInputBorder:                 "#1e1e28"
+        popupBackground:                  "#15151C"
+        popupBorder:                      "#2E2E3A"
+        popupHeaderSeparator:             "#26262F"
+        popupTitleText:                   "#D6D6E0"
+        popupCloseButton:                 "#8A8A98"
+        popupCloseButtonHover:            "#E6E6F0"
+        popupSectionLabel:                "#9898B4"
+        popupInputBackground:             "#1A1A22"
+        popupInputBorder:                 "#33333D"
         popupInputBorderFocus:            accent          
-        popupInputText:                   "#a0a0b8"
-        popupChipBackground:              "#0d0d0f"
-        popupChipBorder:                  "#1e1e28"
-        popupChipText:                    "#606078"
-        popupBaseBranchBackground:        "#0d0d0f"
-        popupBaseBranchBorder:            "#1e1e28"
-        popupBaseBranchText:              "#606078"
-        popupRadioBorder:                 "#606078"
+        popupInputText:                   "#D8DCE6"
+        popupChipBackground:              "#1A1A22"
+        popupChipBorder:                  "#2E2E3A"
+        popupChipText:                    "#B0B8C8"
+        popupBaseBranchBackground:        "#1A1A22"
+        popupBaseBranchBorder:            "#2E2E3A"
+        popupBaseBranchText:              "#B0B8C8"
+        popupRadioBorder:                 "#8A8A9A"
         popupRadioBorderChecked:          accent
         popupRadioDot:                    "#FFFFFF"
         popupCheckboxBackgroundChecked:   accent
-        popupCheckboxBorder:              "#606078"
+        popupCheckboxBorder:              "#8A8A9A"
         popupCheckboxCheckmark:           "#FFFFFF"
-        popupCheckboxLabelText:           "#606078"
-        popupCommandPreviewBackground:    "#0d0d10"
-        popupCommandPreviewText:          "#2e2e42"
-        popupFooterBackground:            "#0c0c0e"
+        popupCheckboxLabelText:           "#B0B8C8"
+        popupCommandPreviewBackground:    "#101016"
+        popupCommandPreviewText:          "#A6AEBE"
+        popupFooterBackground:            "#111116"
         popupCreateButtonBackground:      accent
         popupCreateButtonText:            "#FFFFFF"
-        popupCancelButtonBorder:          "#222228"
-        popupCancelButtonText:            "#404058"
+        popupCancelButtonBorder:          "#3A3A48"
+        popupCancelButtonText:            "#B4BCCB"
     }
 
     property           string       currentTheme:               "Modern Light"
