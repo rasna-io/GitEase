@@ -50,6 +50,10 @@ Page {
             id: pluginsPageHeader
             pluginsData: root.pluginsData
             onFilterRequested: (text, mode) => root.applyFilter(text, mode)
+            onInstallGepRequested: (path) => {
+                if (root.pluginController)
+                    root.pluginController.installGepFile(path)
+            }
         }
     }
 
@@ -81,9 +85,14 @@ Page {
     /* Children
      * ****************************************************************************************/
     EmptyStateView {
-        title: "No plugins to show"
-        details: "No plugins available at the moment"
-        visible: installedPluginsModel.count === 0 && availablePluginsModel.count === 0
+        title: (root.pluginController && root.pluginController.installingPluginName)
+            ? "Installing " + root.pluginController.installingPluginName + "…"
+            : "No plugins to show"
+        details: (root.pluginController && root.pluginController.installingPluginName)
+            ? "Please wait, this usually takes a few seconds"
+            : "No plugins available at the moment"
+        visible: (installedPluginsModel.count === 0 && availablePluginsModel.count === 0)
+                 || (root.pluginController && root.pluginController.installingPluginName)
     }
 
     // Debounce timer — fires the API search after the user stops typing

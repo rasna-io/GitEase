@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 
 import GitEase
@@ -21,6 +22,7 @@ RowLayout {
     /* Signals
      * ****************************************************************************************/
     signal filterRequested(string text, string mode)
+    signal installGepRequested(string gepPath)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -29,6 +31,18 @@ RowLayout {
         ListElement { text: "Installed"; checked: false }
         ListElement { text: "Enabled"; checked: false }
         ListElement { text: "Available"; checked: false }
+    }
+
+    FileDialog {
+        id: gepFileDialog
+        title: "Install plugin from .gep"
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["GitEase Package (*.gep)"]
+
+        onAccepted: {
+            let path = selectedFile.toString().replace(new RegExp("^file://+"), "")
+            headerRow.installGepRequested(path)
+        }
     }
 
     Label {
@@ -128,6 +142,37 @@ RowLayout {
         onSelectionChanged: function(items) {
             headerRow.applyFilter()
         }
+    }
+
+    IconButton {
+        id: installGepButton
+        Layout.preferredWidth: 30
+        Layout.preferredHeight: 25
+        hoverEnabled: true
+
+        icon.color: headerRow.panelOpen ? Style.colors.accent : Style.colors.foreground
+
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
+
+        display: IconButton.IconOnly
+        icon.name: Style.icons.upload
+        icon.width: Style.appFont.largePt
+        icon.height: Style.appFont.largePt
+        solidIcon: false
+
+        background: Rectangle {
+            radius: 5
+            color: !installGepButton.enabled ? Style.colors.primaryBackground :
+                   installGepButton.down ? Style.colors.surfaceMuted :
+                   installGepButton.hovered ? Style.colors.headerButtonBackgroundHover : Style.colors.headerButtonBackground
+            border.width: 1
+            border.color: Style.colors.headerButtonBorder
+        }
+
+        onClicked: gepFileDialog.open()
     }
 
     /* Functions
