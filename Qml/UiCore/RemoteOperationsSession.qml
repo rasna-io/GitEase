@@ -1,6 +1,8 @@
 import QtQuick
 
 import GitEase
+
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
 /*! ***********************************************************************************************
  * RemoteOperationsSession
  *
@@ -56,20 +58,9 @@ Item {
             let protocol = repositoryController.detectGitProtocol(url)
             switch (protocol) {
             case RepositoryController.GitProtocol.SSH: {
-                let res = remoteController.fetch(remote.name)
-                if (res.success) {
                     if (root.activeFetchRemotes.indexOf(remote.name) === -1)
                         root.activeFetchRemotes.push(remote.name)
-                } else {
-                    let msg = res.errorMessage || "Fetch failed"
-                    sshFailed.push({ name: remote.name, message: msg })
-                    root.fetchBatchResults.push({
-                                                    remote: remote.name,
-                                                    success: false,
-                                                    errorMessage: msg,
-                                                    data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                                                })
-                }
+                root.startFetch(remote.name)
                 break
             }
             case RepositoryController.GitProtocol.HTTPS:
@@ -107,7 +98,7 @@ Item {
         switch (protocol) {
         case RepositoryController.GitProtocol.SSH: {
             let branchName = branchController.getCurrentBranchName()
-            remoteController.push("origin", branchName, force)
+            root.startPush(branchName, force)
             if (notificationController)
                 notificationController.info("Push operation started", "Push", 3000)
 
@@ -142,21 +133,13 @@ Item {
         let protocol = repositoryController.detectGitProtocol(url)
         switch (protocol) {
         case RepositoryController.GitProtocol.SSH: {
-            let pullRes = remoteController.pull("origin", root.branchController.getCurrentBranchName())
-            if (!pullRes.success) {
-                if (notificationController)
-                    notificationController.error(pullRes.errorMessage || "Pull failed", "Pull Error", 5000)
-            }
+            root.startPull("origin", root.branchController.getCurrentBranchName())
             break
         }
         case RepositoryController.GitProtocol.HTTPS:
         case RepositoryController.GitProtocol.HTTP:
             if (secret && secret.length > 0 && secret !== "undefined") {
-                let res = root.remoteController.pull("origin", root.branchController.getCurrentBranchName(), secret)
-                if (!res.success) {
-                    if (notificationController)
-                        notificationController.error(res.errorMessage || "Pull failed", "Pull Error", 5000)
-                }
+                root.startPull("origin", root.branchController.getCurrentBranchName(), secret)
             } else {
                 root.authPurpose = "pull"
                 authConnection.enabled = true
@@ -173,25 +156,43 @@ Item {
         root.pull(secret)
     }
 
-    /* Connections
-     * ****************************************************************************************/
-    Connections {
-        target: root.remoteController
+    function startFetch(remoteName) {
+        AsyncGit.call(root.remoteController, "fetch", [remoteName],
+            function(result) { root.handleFetchResult(remoteName, result) },
+            function(error) { root.handleFetchResult(remoteName, { success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
+        )
+    }
 
-        function onFetchFinished(result) {
-            if (!result || !result.remote)
-                return
+    function startFetchWithToken(remoteName, token) {
+        AsyncGit.call(root.remoteController, "fetchWithToken", [remoteName, token],
+            function(result) { root.handleFetchResult(remoteName, result) },
+            function(error) { root.handleFetchResult(remoteName, { success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
+        )
+    }
 
-            const remoteName = result.remote
-            root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
-            root.fetchBatchResults.push(result)
+    function handleFetchResult(remoteName, gitResult) {
+        root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
+
+        let stale = gitResult && gitResult.stale === true
+
+        if (stale) {
+            root.notificationController.info("Fetch finished for the repository you switched away from", "Fetch", 4000)
+        } else {
+            let payload = {
+                remote:         remoteName,
+                success:        gitResult ? gitResult.success : false,
+                errorMessage:   gitResult ? gitResult.errorMessage : "Unknown error",
+                data:           gitResult ? gitResult.data : null
+            }
+            root.fetchBatchResults.push(payload)
 
             if (root.notificationController) {
-                if (result.success)
+                if (payload.success)
                     root.notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
                 else
-                    root.notificationController.error("Fetch failed for " + remoteName + ": " + (result.errorMessage || "Unknown error"), "Fetch Error", 7000)
+                    root.notificationController.error("Fetch failed for " + remoteName + ": " + (payload.errorMessage || "Unknown error"), "Fetch Error", 7000)
             }
+        }
 
             root.isFetching = root.activeFetchRemotes.length > 0 || root.pendingFetchRemoteNames.length > 0
             if (root.activeFetchRemotes.length === 0 && root.pendingFetchRemoteNames.length === 0 && root.fetchBatchResults.length > 0) {
@@ -206,36 +207,57 @@ Item {
             }
         }
 
-        function onPushFinished(result) {
-            if (!result || result.remote !== "origin")
-                return
+    function startPush(branchName, force, token) {
+        let args = token !== undefined ? ["origin", branchName, token, force] : ["origin", branchName, force]
+        AsyncGit.call(root.remoteController, "push", args,
+            function(result) { root.handlePushResult(result) },
+            function(error) { root.handlePushResult({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
+        )
+    }
 
+    function handlePushResult(gitResult) {
             root.isFetching = false
 
             if (!root.notificationController)
                 return
 
-            if (result.success) {
-                let isForce = result.data.force === true
+        if (gitResult && gitResult.stale === true) {
+            root.notificationController.info("Push finished for the repository you switched away from", "Push", 4000)
+            return
+        }
+
+        let success = gitResult ? gitResult.success : false
+
+        if (success) {
+            let data = gitResult.data
+            let isForce = data && data.force === true
                 root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
             } else {
-                root.notificationController.error(result.errorMessage || "Push error", "Push Error", 5000)
+            root.notificationController.error((gitResult && gitResult.errorMessage) || "Push error", "Push Error", 5000)
             }
         }
 
-        // The real success/failure of a pull (see the note on pull() above).
-        function onPullFinished(result) {
-            if (!result || result.remote !== "origin")
-                return
+    function startPull(remoteName, branchName, token) {
+        let args = token !== undefined ? [remoteName, branchName, token] : [remoteName, branchName]
+        AsyncGit.call(root.remoteController, "pull", args,
+            function(result) { root.handlePullResult(result) },
+            function(error) { root.handlePullResult({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
+        )
+    }
 
+    function handlePullResult(gitResult) {
             if (!root.notificationController)
                 return
 
-            if (result.success)
+        if (gitResult && gitResult.stale === true) {
+            root.notificationController.info("Pull finished for the repository you switched away from", "Pull", 4000)
+            return
+        }
+
+        if (gitResult && gitResult.success)
                 root.notificationController.success("Pulled successfully", "Pull", 3000)
             else
-                root.notificationController.error(result.errorMessage || "Pull failed", "Pull Error", 5000)
-        }
+            root.notificationController.error((gitResult && gitResult.errorMessage) || "Pull failed", "Pull Error", 5000)
     }
 
     // Gated so it only reacts when THIS session itself opened the shared auth popup — otherwise
@@ -247,28 +269,15 @@ Item {
 
         function onPasswordConfirm(password) {
             if (root.authPurpose === "fetch") {
-                let failed = []
-                for (let i = 0; i < root.pendingFetchRemoteNames.length; i++) {
-                    let name = root.pendingFetchRemoteNames[i]
-                    let res = root.remoteController.fetchWithToken(name, password)
-                    if (res.success) {
+                let names = root.pendingFetchRemoteNames
+                root.pendingFetchRemoteNames = []
+                for (let i = 0; i < names.length; i++) {
+                    let name = names[i]
                         if (root.activeFetchRemotes.indexOf(name) === -1)
                             root.activeFetchRemotes.push(name)
-                    } else {
-                        failed.push({ name: name, message: res.errorMessage || "Unknown error" })
-                        root.fetchBatchResults.push({
-                                                        remote: name,
-                                                        success: false,
-                                                        errorMessage: res.errorMessage || "Unknown error",
-                                                        data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                                                    })
-                    }
-                }
-                if (failed.length > 0 && root.notificationController) {
-                    root.notificationController.error("Fetch failed for: " + failed.map(function(f){ return f.name + " (" + f.message + ")" }).join("; "), "Fetch Error", 7000)
+                    root.startFetchWithToken(name, password)
                 }
                 root.isFetching = root.activeFetchRemotes.length > 0
-                root.pendingFetchRemoteNames = []
                 authConnection.enabled = false
                 return
             }
@@ -285,7 +294,7 @@ Item {
                     root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
             } else {
                 let isForce = root.authPurpose === "pushForce"
-                root.remoteController.push("origin", branchName, password, isForce)
+                root.startPush(branchName, isForce, password)
                 if (root.notificationController)
                     root.notificationController.info("Push operation started", "Push", 3000)
             }

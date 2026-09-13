@@ -407,21 +407,6 @@ IWindow {
         target: root.rebaseController
         enabled: root.ownsRebase
 
-        function onPreviewRebasePlanReady(result) {
-            if (!result.success) {
-                notificationController.error(result.errorMessage || "Failed to load rebase plan", "Rebase", 5000)
-                root.close()
-                return
-            }
-            var data = result.data
-            if (!data || !data.commits || data.commits.length === 0) {
-                notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000)
-                root.close()
-                return
-            }
-            showPlan(data)
-        }
-
         function onRebaseOperationStarted(hash) {
             setCommitStatus(hash, commitStatus.inProgress);
 

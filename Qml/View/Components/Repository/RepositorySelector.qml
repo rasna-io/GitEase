@@ -244,9 +244,11 @@ Item {
     Connections {
         target: root.repositoryController
 
-        function onCloneFinished(res) {
-            if(!res.success)
-                notificationController.error(`can't clone ${root.selectedUrl}, ${res.error}`, ` Repository clone failed`, 5000)
+        function onCloneCompleted(res) {
+            if (res && res.stale === true)
+                notificationController.info("Clone finished while you were switching repository", "Clone", 4000)
+            else if(!res.success)
+                notificationController.error(`can't clone ${root.selectedUrl}, ${res.errorMessage}`, ` Repository clone failed`, 5000)
 
             root.busy = false
             root.progress = 0

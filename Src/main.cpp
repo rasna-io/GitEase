@@ -6,6 +6,8 @@
 #include <QtQuick/QQuickWindow>
 #include <git2/global.h>
 
+#include "Git/Async/GitAsyncRunner.h"
+
 int main(int argc, char *argv[])
 {
     git_libgit2_init();
@@ -32,5 +34,9 @@ int main(int argc, char *argv[])
 
     win->setIcon(app.windowIcon());
 
-    return app.exec();
+    const int exitCode = app.exec();
+
+    GitAsyncRunner::shutdown();
+
+    return exitCode;
 }

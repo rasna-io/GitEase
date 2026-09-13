@@ -6,6 +6,8 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+
 /*! ***********************************************************************************************
  * TagManagementView
  * ************************************************************************************************/
@@ -57,13 +59,42 @@ UtilitiesCard {
 
         if (notif) notif.info("Deleting tag from remote...", "Remote", 1500);
 
-        ctrl.pushDeleteTag(tag.name);
+        AsyncGit.call(ctrl, "pushDeleteTag", [tag.name],
+            function(result) {
+                if (result.success) {
+                    if (notif) notif.success("Tag deleted from remote", "Success", 3000);
+                    ctrl.remove(tag.name);
+                    root.update();
+                } else {
+                    if (notif) notif.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
+                }
+            },
+            function(error) {
+                if (notif) notif.error("Failed to delete from remote: " + error, "Error", 5000);
+            }
+        );
     }
 
     function pushTagToRemote(tag) {
         notificationController.info("Pushing tag to remote...", "Tag", 1500);
 
-        tagController.pushTag(tag.name);
+        AsyncGit.call(tagController, "pushTag", [tag.name],
+            function(result) {
+                if (result.success) {
+                    if (root.notificationController)
+                        root.notificationController.success("Tag pushed to remote", "Success", 3000)
+                } else {
+                    if (root.notificationController)
+                        root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
+                }
+                root.update()
+            },
+            function(error) {
+                if (root.notificationController)
+                    root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
+                root.update()
+            }
+        );
     }
 
     function copyTagName(tag) {
@@ -285,34 +316,6 @@ UtilitiesCard {
     Connections {
         target: (typeof uiSession !== "undefined") ? uiSession : null
         function onTagControllerChanged() { root.update() }
-    }
-
-    Connections {
-        target: root.tagController || uiSession.tagController
-
-        function onPushTagFinished(result) {
-            if (result.success) {
-                if (root.notificationController)
-                    root.notificationController.success("Tag pushed to remote", "Success", 3000)
-            } else {
-                if (root.notificationController)
-                    root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
-            }
-
-            root.update()
-        }
-
-        function onPushDeleteTagFinished(result, tagName) {
-            if (result.success)
-            {
-                let ctrl = root.tagController || uiSession.tagController;
-                if (root.notificationController) root.notificationController.success("Tag deleted from remote", "Success", 3000);
-                ctrl.remove(tagName);
-                root.update();
-            }
-            else
-                if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
-        }
     }
 
     Timer {
