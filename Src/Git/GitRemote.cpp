@@ -7,13 +7,9 @@
 
 #include <git2.h>
 #include <QDebug>
-#include <QtConcurrent>
-#include <QFutureWatcher>
 #include <QVariant>
 #include <QVariantList>
 #include <qdatetime.h>
-#include <QFutureWatcher>
-#include <QtConcurrent>
 
 namespace {
 QString lastGitErrorMessage()
@@ -132,8 +128,18 @@ GitResult GitRemote::push(const QString& remote,
                          "No branch specified and repository is in detached HEAD state");
     }
 
-    return pushStartAsyncInternal(remote, branch,
-                        std::make_unique<GitSshAuth>(), force);
+    m_forcePush = force;
+    emit forcePushChanged();
+
+    m_pushInProgress = true;
+    emit pushInProgressChanged();
+
+    GitResult result = pushInternal(remote, branch, std::make_unique<GitSshAuth>(), force);
+
+    m_pushInProgress = false;
+    emit pushInProgressChanged();
+
+    return result;
 }
 
 GitResult GitRemote::push(const QString& remote,
@@ -154,8 +160,18 @@ GitResult GitRemote::push(const QString& remote,
                          "No branch specified and repository is in detached HEAD state");
     }
 
-    return pushStartAsyncInternal(remote, branch,
-                        std::make_unique<GitHttpsAuth>(token), force);
+    m_forcePush = force;
+    emit forcePushChanged();
+
+    m_pushInProgress = true;
+    emit pushInProgressChanged();
+
+    GitResult result = pushInternal(remote, branch, std::make_unique<GitHttpsAuth>(token), force);
+
+    m_pushInProgress = false;
+    emit pushInProgressChanged();
+
+    return result;
 }
 
 bool GitRemote::isPushInProgress() const
@@ -258,52 +274,6 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
                             quoteCommandArg(branchName)));
 
     return GitResult(true, pushResult);
-}
-
-GitResult GitRemote::pushStartAsyncInternal(const QString& remoteName,
-                                 const QString& branchName,
-                                 std::unique_ptr<IGitAuth> auth,
-                                 bool force)
-{
-    if (m_pushInProgress) {
-        return GitResult(false, QVariant(), "Push already in progress");
-    }
-
-    m_pushInProgress = true;
-    emit pushInProgressChanged();
-
-    m_forcePush = force;
-    emit forcePushChanged();
-
-    const QString safeRemote = remoteName;
-    const QString safeBranch = branchName;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeRemote,
-         safeBranch,
-         force,
-         auth = std::move(auth)]() mutable -> QVariantMap {
-            GitResult res = pushInternal(safeRemote, safeBranch, std::move(auth), force);
-            QVariantMap out;
-            out["success"] = res.success();
-            out["errorMessage"] = res.errorMessage();
-            out["data"] = res.data();
-            out["remote"] = safeRemote;
-            out["branch"] = safeBranch;
-            return out;
-        });
-
-    auto* watcher = new QFutureWatcher<QVariantMap>(this);
-    connect(watcher, &QFutureWatcher<QVariantMap>::finished, this, [this, watcher]() {
-        m_pushInProgress = false;
-        emit pushInProgressChanged();
-        emit pushFinished(watcher->result());
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
-
-    return GitResult(true, QVariant(), "Push started");
 }
 
 GitResult GitRemote::getRemoteUrl(const QString& remoteName)
@@ -597,7 +567,9 @@ GitResult GitRemote::fetch(const QString& remote)
         }
     }
 
-    return startAsyncFetch(remote, std::move(auth));
+    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remote)));
+
+    return fetchInternal(remote, std::move(auth));
 }
 
 GitResult GitRemote::fetchWithToken(const QString& remote, const QString& token)
@@ -610,42 +582,9 @@ GitResult GitRemote::fetchWithToken(const QString& remote, const QString& token)
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    return startAsyncFetch(remote, std::make_unique<GitHttpsAuth>(token));
-}
+    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remote)));
 
-GitResult GitRemote::startAsyncFetch(const QString& remoteName,
-                                     std::unique_ptr<IGitAuth> auth)
-{
-    const QString safeRemote = remoteName;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeRemote,
-         auth = std::move(auth)]() mutable -> GitResult {
-            return fetchInternal(safeRemote, std::move(auth));
-        });
-
-    auto* watcher = new QFutureWatcher<GitResult>(this);
-
-    connect(watcher, &QFutureWatcher<GitResult>::finished,
-            this, [=]() {
-                const GitResult result = watcher->result();
-
-                QVariantMap payload;
-                payload["remote"] = safeRemote;
-                payload["success"] = result.success();
-                payload["errorMessage"] = result.errorMessage();
-                payload["data"] = result.data();
-
-                emit fetchFinished(payload);
-                watcher->deleteLater();
-            });
-
-    watcher->setFuture(future);
-
-    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remoteName)));
-
-    return GitResult(true, QVariant(), "Fetch started");
+    return fetchInternal(remote, std::make_unique<GitHttpsAuth>(token));
 }
 
 GitResult GitRemote::pull(const QString& remote, const QString& branch)
@@ -692,7 +631,7 @@ GitResult GitRemote::pull(const QString& remote, const QString& branch)
         }
     }
 
-    return pullStartAsyncInternal(remote, branch, std::move(auth));
+    return pullInternal(remote, branch, std::move(auth));
 }
 
 GitResult GitRemote::pull(const QString& remote,
@@ -707,46 +646,7 @@ GitResult GitRemote::pull(const QString& remote,
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    return pullStartAsyncInternal(remote, branch, std::make_unique<GitHttpsAuth>(token));
-}
-
-GitResult GitRemote::pullStartAsyncInternal(const QString& remoteName,
-                                            const QString& branchName,
-                                            std::unique_ptr<IGitAuth> auth)
-{
-    if (m_pullInProgress) {
-        return GitResult(false, QVariant(), "Pull already in progress");
-    }
-
-    m_pullInProgress = true;
-
-    const QString safeRemote = remoteName;
-    const QString safeBranch = branchName;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeRemote,
-         safeBranch,
-         auth = std::move(auth)]() mutable -> QVariantMap {
-            GitResult res = pullInternal(safeRemote, safeBranch, std::move(auth));
-            QVariantMap out;
-            out["success"] = res.success();
-            out["errorMessage"] = res.errorMessage();
-            out["data"] = res.data();
-            out["remote"] = safeRemote;
-            out["branch"] = safeBranch;
-            return out;
-        });
-
-    auto* watcher = new QFutureWatcher<QVariantMap>(this);
-    connect(watcher, &QFutureWatcher<QVariantMap>::finished, this, [this, watcher]() {
-        m_pullInProgress = false;
-        emit pullFinished(watcher->result());
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
-
-    return GitResult(true, QVariant(), "Pull started");
+    return pullInternal(remote, branch, std::make_unique<GitHttpsAuth>(token));
 }
 
 GitResult GitRemote::pullInternal(const QString& remoteName,

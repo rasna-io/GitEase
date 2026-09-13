@@ -6,6 +6,8 @@ import GitEase_Style_Impl
 import GitEase_Style
 import GitEase
 
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+
 /*! ***********************************************************************************************
  * StashManagerDock
  * ************************************************************************************************/
@@ -32,6 +34,9 @@ UtilitiesCard {
     property var previewStash: null
 
     property bool canStash: false
+
+    property int  stashesToken:  0
+    property int  canStashToken: 0
 
     /* Object Properties
      * ****************************************************************************************/
@@ -199,22 +204,37 @@ UtilitiesCard {
     /* Functions
      * ****************************************************************************************/
     function updateCanStash() {
-        root.canStash = false
-
-        if (!root.statusController)
+        if (!root.statusController) {
+            root.canStash = false
             return
-
-        let res = root.statusController.status()
-        if (!res.success)
-            return
-
-        for (let i = 0; i < res.data.length; ++i) {
-            let file = res.data[i]
-            if (file.isStaged || file.isUnstaged || file.isUntracked) {
-                root.canStash = true
-                return
-            }
         }
+
+        let token = ++root.canStashToken
+
+        AsyncGit.call(root.statusController, "status", [],
+            function (res) {
+                if (token !== root.canStashToken)
+                    return
+
+                root.canStash = false
+
+                if (!res || !res.success || !res.data)
+                    return
+
+                for (let i = 0; i < res.data.length; ++i) {
+                    let file = res.data[i]
+                    if (file.isStaged || file.isUnstaged || file.isUntracked) {
+                        root.canStash = true
+                        return
+                    }
+                }
+            },
+            function () {
+                if (token !== root.canStashToken)
+                    return
+
+                root.canStash = false
+            })
     }
 
 
@@ -338,34 +358,50 @@ UtilitiesCard {
 
     function updateStashes() {
         if (!root.stashController) {
-            root.stashes = []
-            root.selectedStash = null
-            root.stashFiles = []
-            root.stashDiffData = []
+            root.clearStashSelection()
 
             root.updateCanStash()
             return
         }
 
-        let result = root.stashController.list()
-        if (!result.success) {
-            root.stashes = []
-            root.selectedStash = null
-            root.stashFiles = []
-            root.stashDiffData = []
+        let token = ++root.stashesToken
 
-            root.updateCanStash()
-            return
-        }
+        AsyncGit.call(root.stashController, "list", [],
+            function (result) {
+                if (token !== root.stashesToken)
+                    return
 
-        root.stashes = result.data
+                if (!result || !result.success) {
+                    root.clearStashSelection()
 
-        root.selectedStash = null
-        root.previewStash = null
-        root.stashFiles = []
-        root.stashDiffData = []
+                    root.updateCanStash()
+                    return
+                }
 
-        root.updateCanStash()
+                root.stashes = result.data
+
+                root.selectedStash  = null
+                root.previewStash   = null
+                root.stashFiles     = []
+                root.stashDiffData   = []
+
+                root.updateCanStash()
+            },
+            function () {
+                if (token !== root.stashesToken)
+                    return
+
+                root.clearStashSelection()
+
+                root.updateCanStash()
+            })
+    }
+
+    function clearStashSelection() {
+        root.stashes        = []
+        root.selectedStash  = null
+        root.stashFiles     = []
+        root.stashDiffData  = []
     }
 
     function selectStash(stashEntry) {

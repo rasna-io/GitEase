@@ -7,6 +7,8 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+
 /*! ***********************************************************************************************
  * AddTagPopup
  * ************************************************************************************************/
@@ -379,7 +381,18 @@ IPopup {
                             if (root.pushAfterCreate) {
                                 if (notif) notif.info("Pushing tag to GitHub...", "Tag", 1500);
 
-                                ctrl.pushTag(tagName);
+                                AsyncGit.call(ctrl, "pushTag", [tagName],
+                                    function(pushResult) {
+                                        if (pushResult.success) {
+                                            if (notif) notif.success("Tag created and pushed", "Success", 3000);
+                                        } else {
+                                            if (notif) notif.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+                                        }
+                                    },
+                                    function(error) {
+                                        if (notif) notif.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+                                    }
+                                );
                             }
 
                             root.tagCreatedSuccessfully();

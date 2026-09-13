@@ -1,8 +1,6 @@
 #include "GitTag.h"
 
 #include <algorithm>
-#include <QFutureWatcher>
-#include <QtConcurrent>
 
 GitTag::GitTag(QObject *parent)
     : IGitController(parent)
@@ -115,7 +113,7 @@ int credentials_cb(git_credential **out, const char *url, const char *user_from_
 
 GitResult GitTag::pushTag(const QString &name)
 {
-    return pushTagStartAsyncInternal(name);
+    return pushTagInternal(name);
 }
 
 GitResult GitTag::pushTagInternal(const QString &name)
@@ -150,35 +148,9 @@ GitResult GitTag::pushTagInternal(const QString &name)
     return GitResult(true);
 }
 
-GitResult GitTag::pushTagStartAsyncInternal(const QString &name)
-{
-    if(m_pushTagInProgress)
-        return GitResult(false, "Pushing tag already in progress");
-
-    m_pushTagInProgress = true;
-
-    QString safeName = name;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeName]() {
-            return pushTagInternal(safeName);
-        });
-
-    auto* watcher = new QFutureWatcher<GitResult>(this);
-    connect(watcher, &QFutureWatcher<GitResult>::finished, this, [this, watcher]() {
-        m_pushTagInProgress = false;
-        emit pushTagFinished(watcher->result());
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
-
-    return GitResult(true);
-}
-
 GitResult GitTag::pushDeleteTag(const QString &name)
 {
-    return pushDeleteTagStartAsyncInternal(name);
+    return pushDeleteTagInternal(name);
 }
 
 GitResult GitTag::pushDeleteTagInternal(const QString &name)
@@ -213,32 +185,6 @@ GitResult GitTag::pushDeleteTagInternal(const QString &name)
         QString errorDetail = lastError ? QString::fromUtf8(lastError->message) : "Unknown error";
         return GitResult(false, "Remote delete failed: " + errorDetail);
     }
-
-    return GitResult(true);
-}
-
-GitResult GitTag::pushDeleteTagStartAsyncInternal(const QString &name)
-{
-    if(m_pushDeleteTagInProgress)
-        return GitResult(false, "Deleting tag already in progress");
-
-    m_pushDeleteTagInProgress = true;
-
-    QString safeName = name;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeName]() {
-            return pushDeleteTagInternal(safeName);
-        });
-
-    auto* watcher = new QFutureWatcher<GitResult>(this);
-    connect(watcher, &QFutureWatcher<GitResult>::finished, this, [this, safeName, watcher]() {
-        m_pushDeleteTagInProgress = false;
-        emit pushDeleteTagFinished(watcher->result(), safeName);
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
 
     return GitResult(true);
 }

@@ -53,6 +53,7 @@ set(RESOURCES_CORE
     Qml/Core/Scripts/CommitGraphFilter.js
     Qml/Core/Scripts/CommitGraphNavigation.js
     Qml/Core/Scripts/CommitGraphMenuBuilder.js
+    Qml/Core/Scripts/AsyncGit.js                     # Callback wrapper over IGitController::callAsync
 )
 
 
