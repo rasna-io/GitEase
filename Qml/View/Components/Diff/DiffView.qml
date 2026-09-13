@@ -125,6 +125,7 @@ DetachablePanel {
 
         root.fileIsEdited = false
         root.clearSelection()
+        root.animateDiffSwap()
     }
 
     onChunkDataChanged: {
@@ -135,6 +136,7 @@ DetachablePanel {
 
         root.fileIsEdited = false
         root.clearSelection()
+        root.animateDiffSwap()
     }
 
     onChunkModeChanged: {
@@ -166,6 +168,7 @@ DetachablePanel {
 
         root.fileIsEdited = false
         root.clearSelection()
+        root.animateDiffSwap()
     }
 
     onFileIsEditedChanged: {
@@ -883,6 +886,26 @@ DetachablePanel {
                      "oldLineNum": lNum,
                      "newLineNum": rNum
                  })
+    }
+
+    function animateDiffSwap() {
+        if (!Style.motionEnabled) {
+            diffContent.opacity = 1
+            return
+        }
+
+        diffContent.opacity = 0.35
+        diffSwapAnimation.restart()
+    }
+
+    OpacityAnimator {
+        id: diffSwapAnimation
+
+        target: diffContent
+        from: 0.35
+        to: 1
+        duration: Style.motionFast
+        easing.type: Easing.OutCubic
     }
 
     function updateRowState(model, index)

@@ -114,11 +114,16 @@ Rectangle {
                             property bool isSelected: (modelData)
                                                       ? (modelData.pageId === root.currentId)
                                                       : false
+                            property bool isHovered: false
 
                             readonly property color activeColor:   root.useAccentIndicator ? Style.colors.accent : "#60A5FA"
                             readonly property color inactiveColor: root.useAccentIndicator ? Style.colors.mutedText : "#363650"
 
-                            color: item.isSelected ? "#1F3B82F6" : "transparent"
+                            color: item.isSelected
+                                   ? "#1F3B82F6"
+                                   : item.isHovered
+                                     ? Qt.darker(Style.colors.navButton, 1.3)
+                                     : "transparent"
 
                             // Active indicator bar (accent-indicator variant only)
                             Rectangle {
@@ -128,7 +133,15 @@ Rectangle {
                                 width: 3
                                 radius: 1.5
                                 color: Style.colors.accent
-                                visible: root.useAccentIndicator && item.isSelected
+                                visible: root.useAccentIndicator
+                                opacity: item.isSelected ? 1 : 0
+
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 180
+                                        easing.type: Easing.OutCubic
+                                    }
+                                }
                             }
 
                             RowLayout {
@@ -198,6 +211,8 @@ Rectangle {
                                 cursorShape: Qt.PointingHandCursor
                                 hoverEnabled: true
 
+                                onEntered: item.isHovered = true
+                                onExited: item.isHovered = false
                                 onClicked: root.clicked(modelData)
                             }
                         }

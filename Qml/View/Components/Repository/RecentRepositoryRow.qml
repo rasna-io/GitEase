@@ -32,18 +32,29 @@ Rectangle {
      * ****************************************************************************************/
     implicitHeight: 50
     radius: 8
-    color: root.selected
-           ? Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.12)
-           : (rowMouse.containsMouse
-              ? Qt.rgba(Style.colors.foreground.r, Style.colors.foreground.g, Style.colors.foreground.b, 0.04)
-              : Style.colors.secondaryBackground)
+    color: {
+        var accent = Style.colors.accent
+        if (root.selected)
+            return Qt.rgba(accent.r, accent.g, accent.b, rowMouse.containsMouse ? 0.25 : 0.12)
+        if (rowMouse.containsMouse)
+            return Qt.rgba(accent.r, accent.g, accent.b, 0.15)
+        return Style.colors.secondaryBackground
+    }
     border.width: root.selected ? 1 : 0
     border.color: Style.colors.accent
+    scale: rowMouse.pressed ? 0.985 : 1.0
 
-    Behavior on color {
-        ColorAnimation
-        {
+    Behavior on border.color {
+        ColorAnimation {
+            duration: 140
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on scale {
+        NumberAnimation {
             duration: 120
+            easing.type: Easing.OutCubic
         }
     }
 

@@ -308,9 +308,55 @@ IPopup {
                         currentIndex: root.currentPage
                         interactive: false
 
-                        onCurrentIndexChanged: {
-                            if (root._pendingGuideId.length && currentIndex === root._pendingGuideTargetPage) {
-                                _guideAnimationTimer.start()
+                        contentItem: ListView {
+                            id: settingsPageContent
+                            model: settingsSwipeView.contentModel
+                            interactive: false
+                            currentIndex: settingsSwipeView.currentIndex
+                            orientation: ListView.Horizontal
+                            snapMode: ListView.SnapOneItem
+                            boundsBehavior: Flickable.StopAtBounds
+                            highlightRangeMode: ListView.StrictlyEnforceRange
+                            preferredHighlightBegin: 0
+                            preferredHighlightEnd: 0
+                            highlightMoveDuration: 0
+                            highlightResizeDuration: 0
+
+                            property bool hasPresentedPage: false
+
+                            onCurrentIndexChanged: {
+                                if (!hasPresentedPage) {
+                                    hasPresentedPage = true
+                                    return
+                                }
+
+                                if (!Style.motionEnabled) {
+                                    opacity = 1
+                                    scale = 1
+                                    return
+                                }
+
+                                opacity = 0
+                                scale = 0.985
+                                settingsPageTransition.restart()
+                            }
+
+                            ParallelAnimation {
+                                id: settingsPageTransition
+                                NumberAnimation {
+                                    target: settingsPageContent
+                                    property: "opacity"
+                                    to: 1
+                                    duration: Style.motionMedium
+                                    easing.type: Easing.OutCubic
+                                }
+                                NumberAnimation {
+                                    target: settingsPageContent
+                                    property: "scale"
+                                    to: 1
+                                    duration: Style.motionMedium
+                                    easing.type: Easing.OutCubic
+                                }
                             }
                         }
 
@@ -400,6 +446,14 @@ IPopup {
                                     Layout.preferredHeight: 2
                                     Layout.alignment: Qt.AlignHCenter
                                     color: Style.colors.primaryBorder
+                                }
+
+                                CheckboxItem {
+                                    id: reducedMotion
+                                    Layout.fillWidth: true
+                                    title: "Reduce Motion"
+                                    description: "Use instant transitions and minimal movement"
+                                    checked: root.appSettings?.appearanceSettings?.reducedMotion ?? false
                                 }
 
                                 Item {
@@ -740,11 +794,10 @@ IPopup {
                                             anchors.margins: 6
                                             radius: 10
                                             color: tutorialMouseArea.containsMouse
-                                                   ? Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.10)
+                                                   ? Qt.darker(Style.colors.primaryBackground, 1.2)
                                                    : Style.colors.primaryBackground
                                             border.width: 1
                                             border.color: tutorialMouseArea.containsMouse ? Style.colors.accent : Style.colors.primaryBorder
-                                            Behavior on color        { ColorAnimation { duration: 100 } }
                                             Behavior on border.color { ColorAnimation { duration: 100 } }
 
                                             ColumnLayout {
@@ -902,6 +955,7 @@ IPopup {
         root.appSettings.generalSettings.showStashNodes = displayStashNodes.checked
         root.appSettings.generalSettings.defaultPath = defaultPath.text
         root.appSettings.appearanceSettings.currentTheme = theme.cmb.displayText
+        root.appSettings.appearanceSettings.reducedMotion = reducedMotion.checked
         root.appSettings.notificationSettings.displayRealtimeNotifications = displayRealtimeNotifications.checked
         root.appSettings.notificationSettings.maxVisibleNotifications = maxVisibleNotifications.value
         
@@ -928,6 +982,7 @@ IPopup {
         defaultPath.text = root.appSettings.generalSettings.defaultPath
 
         theme.cmb.currentIndex = theme.cmb.model.indexOf(root.appSettings.appearanceSettings.currentTheme)
+        reducedMotion.checked = root.appSettings?.appearanceSettings?.reducedMotion ?? false
         
         displayRealtimeNotifications.checked = root.appSettings?.notificationSettings?.displayRealtimeNotifications ?? true
         maxVisibleNotifications.value = root.appSettings?.notificationSettings?.maxVisibleNotifications ?? 5

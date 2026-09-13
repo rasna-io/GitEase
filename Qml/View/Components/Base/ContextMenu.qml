@@ -28,6 +28,48 @@ Popup {
     implicitWidth: 200
     padding: 6
 
+    transformOrigin: Item.Top
+
+    enter: Transition {
+        ParallelAnimation {
+            NumberAnimation {
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: Style.motionFast
+                easing.type: Easing.OutCubic
+            }
+
+            NumberAnimation {
+                property: "scale"
+                from: 0.95
+                to: 1
+                duration: Style.motionFast
+                easing.type: Easing.OutCubic
+            }
+        }
+    }
+
+    exit: Transition {
+        ParallelAnimation {
+            NumberAnimation {
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: Style.motionFast
+                easing.type: Easing.InCubic
+            }
+
+            NumberAnimation {
+                property: "scale"
+                from: 1
+                to: 0.97
+                duration: Style.motionFast
+                easing.type: Easing.InCubic
+            }
+        }
+    }
+
     background: Rectangle {
         color: Style.colors.contextMenuBackground
         radius: 4
@@ -50,6 +92,46 @@ Popup {
         modal: false
         focus: false
         dim: false
+
+        transformOrigin: Item.TopLeft
+
+        enter: Transition {
+            ParallelAnimation {
+                NumberAnimation {
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: Style.motionFast
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    property: "scale"
+                    from: 0.96
+                    to: 1
+                    duration: Style.motionFast
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
+
+        exit: Transition {
+            ParallelAnimation {
+                NumberAnimation {
+                    property: "opacity"
+                    from: 1
+                    to: 0
+                    duration: Style.motionFast
+                    easing.type: Easing.InCubic
+                }
+                NumberAnimation {
+                    property: "scale"
+                    from: 1
+                    to: 0.98
+                    duration: Style.motionFast
+                    easing.type: Easing.InCubic
+                }
+            }
+        }
 
         background: Rectangle {
             color: Style.colors.contextMenuBackground

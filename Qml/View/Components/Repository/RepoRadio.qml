@@ -43,6 +43,14 @@ RadioButton {
                 radius: width / 2
                 color: Style.colors.accent
                 visible: rb.checked
+                scale: rb.checked ? 1.0 : 0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: Style.motionFast
+                        easing.type: Easing.OutBack
+                    }
+                }
             }
         }
 

@@ -22,6 +22,13 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    WindowMotion {
+        id: windowMotion
+
+        window: root.Window.window
+        windowController: root.windowController
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Style.colors.headerBackground
@@ -33,7 +40,7 @@ Item {
 
         acceptedButtons: Qt.LeftButton
         onPressed: windowController.startSystemMove()
-        onDoubleClicked: windowController.toggleMaxRestore()
+        onDoubleClicked: windowMotion.toggleMaximize()
     }
 
     ColumnLayout {
@@ -68,11 +75,26 @@ Item {
             }
 
             Loader {
+                id: headerContentLoader
                 Layout.fillWidth: true
                 Layout.leftMargin: Style.dp(14)
                 Layout.rightMargin: Style.dp(14)
                 clip: true
+                opacity: 0
                 sourceComponent: root.content
+
+                onLoaded: headerContentFadeIn.restart()
+
+                NumberAnimation {
+                    id: headerContentFadeIn
+
+                    target: headerContentLoader
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
+                }
             }
 
             // Plugin toolbar actions

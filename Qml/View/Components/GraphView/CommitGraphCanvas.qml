@@ -33,9 +33,13 @@ Item {
     property real   branchTagColumnWidth: 80
     property var    allCommitsHash      : ({})
 
+    property int    hoveredIndex        : -1
+
     /* Signals
      * ****************************************************************************************/
     signal infiniteScroll()
+    signal hoverIndexChanged(int index)
+    signal commitRightClicked(int index, real mouseX, real mouseY)
 
     /* Children
      * ****************************************************************************************/
@@ -66,6 +70,35 @@ Item {
             }
         }
 
+        MouseArea {
+            id: hoverArea
+            anchors.fill: flick.contentItem
+            hoverEnabled: true
+            acceptedButtons: Qt.RightButton
+            z: 1000
+
+            onPositionChanged: (mouse) => {
+                var newHoveredIndex = rowIndexAt(mouse.y);
+                if (newHoveredIndex !== root.hoveredIndex)
+                    root.hoverIndexChanged(newHoveredIndex);
+            }
+
+            onExited: {
+                if (root.hoveredIndex !== -1)
+                    root.hoverIndexChanged(-1);
+            }
+
+            onClicked: (mouse) => {
+                if (mouse.button !== Qt.RightButton)
+                    return;
+                var idx = rowIndexAt(mouse.y);
+                if (idx < 0)
+                    return;
+                var pos = hoverArea.mapToItem(root, mouse.x, mouse.y);
+                root.commitRightClicked(idx, pos.x, pos.y);
+            }
+        }
+
         // ---------- Canvas (draws the entire DAG) ----------
         Canvas {
             id: graphCanvas
@@ -83,6 +116,7 @@ Item {
                 target: root
                 function onCommitsChanged() { graphCanvas.requestPaint() }
                 function onSelectedHashesChanged() { graphCanvas.requestPaint() }
+                function onHoveredIndexChanged() { graphCanvas.requestPaint() }
             }
 
             onPaint: {
@@ -402,14 +436,23 @@ Item {
 
                     var isSelected = isCommitSelected(commit3.hash);
                     var isHead = commit3.hash === root.headHash;
+                    var isHovered = (root.hoveredIndex >= 0 && k === root.hoveredIndex);
+                    let isUncommitted = commit3.isUncommitted;
 
                     if (isSelected) {
                         ctx.fillStyle = "#6088B2DF";
-                        ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + root.commitItemSpacing*2);
+                    } else if (isUncommitted && isHovered) {
+                        ctx.fillStyle = Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.35);
+                    } else if (isHovered) {
+                        ctx.fillStyle = Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.15);
+                    } else if (isUncommitted) {
+                        ctx.fillStyle = Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.22);
                     } else if (isHead) {
                         ctx.fillStyle = "#40FFA500";
-                        ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + root.commitItemSpacing*2);
                     }
+
+                    if (isUncommitted || isSelected || isHovered || isHead)
+                        ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + root.commitItemSpacing*2);
 
                     ctx.save();
                     ctx.strokeStyle = isSelected ? GraphUtils.darkenColor(branchColor3, 0.2) : GraphUtils.lightenColor(branchColor3, 0.3);
@@ -460,6 +503,20 @@ Item {
         if (commitObj && commitObj.isUncommitted) return "#888888"
         if (!commitObj || !commitObj.colorKey) return GraphUtils.getCategoryColor("main")
         return GraphUtils.getCategoryColor(commitObj.colorKey)
+    }
+
+    function rowIndexAt(y) {
+        for (var i = 0; i < root.commits.length; i++) {
+            var commit = root.commits[i];
+            var pos = root.commitPositions[commit.hash];
+            if (pos) {
+                var rowTop = pos.y;
+                var rowBottom = pos.y + root.commitItemHeight + root.commitItemSpacing * 2;
+                if (y >= rowTop && y < rowBottom)
+                    return i;
+            }
+        }
+        return -1;
     }
 
     function requestPaint() {

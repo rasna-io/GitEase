@@ -37,6 +37,14 @@ Rectangle {
     implicitHeight: 28
     color: root.selected ? Style.colors.subtleAzureGlow
                     : (isHovered ? Style.colors.rowHoverBg : "transparent")
+    scale: rowMouse.pressed ? 0.985 : 1.0
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: Style.motionFast
+            easing.type: Easing.OutCubic
+        }
+    }
 
     /* Signals
      * ****************************************************************************************/
@@ -50,6 +58,7 @@ Rectangle {
     }
 
     MouseArea {
+        id: rowMouse
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
