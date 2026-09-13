@@ -55,9 +55,24 @@ UtilitiesCard {
             stepsFactory: function() {
                 return [
                     {
+                        targetProvider: function() { return root },
+                        icon: Style.icons.branch,
+                        title: "Branch Management Dock",
+                        description: "View and manage all local and remote branches. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { root.collapsed = false }
+                    },
+                    {
+                        targetProvider: function() { return viewControl },
+                        icon: Style.icons.filter,
+                        title: "Local / Remote Switch",
+                        description: "Toggle between viewing local branches and remote-tracking branches.",
+                    },
+                    {
                         targetProvider: function() { return listView },
                         icon: Style.icons.branch,
-                        title: "All Branches",
+                        title: "Branch List",
                         description: "Every local and remote-tracking branch appears here. The current branch is marked HEAD. Right-click a branch to check it out, copy its name or delete it."
                     },
                     {

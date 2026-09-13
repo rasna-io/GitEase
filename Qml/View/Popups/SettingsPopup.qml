@@ -31,6 +31,7 @@ IPopup {
     property GuideController        guideController:        null
 
     property var                    switchToPageById:       function() {}
+    property var                    openUtilityPanel:       function() {}
 
     /* Private state
      * ****************************************************************************************/
@@ -47,11 +48,45 @@ IPopup {
     readonly property var _ownGuideIds: [
         "settings_popup_tutorial",
         "settings_general_tutorial",
-        "settings_ssh_tutorial",
         "settings_appearance_tutorial",
+        "settings_ssh_tutorial",
         "settings_notifications_tutorial",
         "settings_help_tutorial"
     ]
+
+    // Mapping of guide IDs to their target page indices (for own guides that need page switching)
+    readonly property var _guideTargetPage: {
+        "settings_popup_tutorial": 0,
+        "settings_general_tutorial": 0,
+        "settings_appearance_tutorial": 1,
+        "settings_ssh_tutorial": 2,
+        "settings_notifications_tutorial": 3,
+        "settings_help_tutorial": 5
+    }
+
+    // Tracks a guide waiting for SwipeView to reach its target page
+    property string _pendingGuideId: ""
+    property int _pendingGuideTargetPage: -1
+
+    // Timer to wait for SwipeView animation to complete after index change
+    Timer {
+        id: _guideAnimationTimer
+        interval: 200
+        repeat: false
+        onTriggered: {
+            if (!root._pendingGuideId.length)
+                return
+            if (settingsSwipeView.currentIndex === root._pendingGuideTargetPage) {
+                let guideId = root._pendingGuideId
+                root._pendingGuideId = ""
+                root._pendingGuideTargetPage = -1
+                if (!root.guideController || !root.guideController.forceShow(guideId)) {
+                    if (root.notificationController)
+                        root.notificationController.warning("Couldn't start this tutorial.", "Help", 3000)
+                }
+            }
+        }
+    }
 
     /* Object Properties
      * ****************************************************************************************/
@@ -71,6 +106,27 @@ IPopup {
         let pageId = _pendingTutorialPage
         _pendingTutorialId = ""
         _pendingTutorialPage = ""
+
+        if (pageId === "utilities") {
+            // Utility panel tutorials require the Graph page with utility panel open
+            if (typeof root.switchToPageById === "function")
+                root.switchToPageById("graph")
+
+            Qt.callLater(function() {
+                if (typeof root.openUtilityPanel === "function")
+                    root.openUtilityPanel(true)
+
+                Qt.callLater(function() {
+                    if (!root.guideController || !root.guideController.forceShow(id)) {
+                        if (root.notificationController)
+                            root.notificationController.warning(
+                                "Open the relevant page, then try this tutorial again from Settings.",
+                                "Help", 3500)
+                    }
+                })
+            })
+            return
+        }
 
         if (pageId.length > 0 && typeof root.switchToPageById === "function")
             root.switchToPageById(pageId)
@@ -96,6 +152,13 @@ IPopup {
      */
     function playTutorial(entry) {
         if (root._ownGuideIds.indexOf(entry.id) !== -1) {
+            var targetPage = root._guideTargetPage[entry.id]
+            if (targetPage !== undefined && targetPage !== root.currentPage) {
+                root._pendingGuideId = entry.id
+                root._pendingGuideTargetPage = targetPage
+                root.currentPage = targetPage
+                return
+            }
             if (!root.guideController || !root.guideController.forceShow(entry.id)) {
                 if (root.notificationController)
                     root.notificationController.warning("Couldn't start this tutorial.", "Help", 3000)
@@ -240,9 +303,16 @@ IPopup {
                     clip: true
 
                     SwipeView {
+                        id: settingsSwipeView
                         anchors.fill: parent
                         currentIndex: root.currentPage
                         interactive: false
+
+                        onCurrentIndexChanged: {
+                            if (root._pendingGuideId.length && currentIndex === root._pendingGuideTargetPage) {
+                                _guideAnimationTimer.start()
+                            }
+                        }
 
                         Item {
                             GuideHoverTrigger {
@@ -355,7 +425,7 @@ IPopup {
                                             description: "Switch between light and dark visual themes for the whole app.",
                                             isInPopup: true,
                                             activationDelay: 300,
-                                            onActivate: function() { root.currentPage = 2 }
+                                            onActivate: function() { root.currentPage = 1 }
                                         }
                                     ]
                                 }
@@ -406,7 +476,7 @@ IPopup {
                                             description: "Manage the SSH keys used to authenticate with your git remotes — generate a new key pair, copy the public key, or import an existing one.",
                                             isInPopup: true,
                                             activationDelay: 300,
-                                            onActivate: function() { root.currentPage = 1 }
+                                            onActivate: function() { root.currentPage = 2 }
                                         }
                                     ]
                                 }
@@ -430,7 +500,7 @@ IPopup {
                             GuideHoverTrigger {
                                 guideController: root.guideController
                                 guideId: "settings_notifications_tutorial"
-                                guideName: "Notifications"
+                                guideName: "Notifications - Settings"
                                 guideIcon: Style.icons.bell
                                 stepsFactory: function() {
                                     return [
@@ -441,7 +511,7 @@ IPopup {
                                             description: "Choose whether notifications also pop up as floating windows, or only appear in the notification center.",
                                             isInPopup: true,
                                             activationDelay: 300,
-                                            onActivate: function() { root.currentPage = 5 }
+                                            onActivate: function() { root.currentPage = 3 }
                                         },
                                         {
                                             targetProvider: function() { return maxVisibleNotifications },
@@ -567,7 +637,7 @@ IPopup {
                                             description: "Turn contextual tutorials on or off — when enabled, each one pops up automatically the first time you encounter it.",
                                             isInPopup: true,
                                             activationDelay: 700,
-                                            onActivate: function() { root.currentPage = 4 }
+                                            onActivate: function() { root.currentPage = 5 }
                                         },
                                         {
                                             targetProvider: function() { return resetGuidesButton },

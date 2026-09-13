@@ -44,6 +44,15 @@ UtilitiesCard {
             stepsFactory: function() {
                 return [
                     {
+                        targetProvider: function() { return root },
+                        icon: Style.icons.copy,
+                        title: "Rebase Dock",
+                        description: "Reapply commits on top of another base. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { root.collapsed = false }
+                    },
+                    {
                         targetProvider: function() { return upstreamInput },
                         icon: Style.icons.copy,
                         title: "Upstream",
