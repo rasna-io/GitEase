@@ -27,10 +27,299 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPluginLoader>
+#include <QStringList>
 #include <QQmlEngine>
 #include <QStandardPaths>
 #include <QCoreApplication>
 #include <QCryptographicHash>
+#include <QDateTime>
+#include <QElapsedTimer>
+#include <QThread>
+#include <QMetaObject>
+
+#include <thread>
+
+// ── GEP helpers ───────────────────────────────────────────────────────────────
+namespace {
+    QString slugify(const QString& name)
+    {
+        QString slug;
+        slug.reserve(name.size());
+        bool prevDash = false;
+        for (const QChar c : name) {
+            if (c.isLetterOrNumber()) {
+                slug += c.toLower();
+                prevDash = false;
+            } else if (!slug.isEmpty() && !prevDash) {
+                slug += QLatin1Char('-');
+                prevDash = true;
+            }
+        }
+        while (slug.endsWith(QLatin1Char('-')))
+            slug.chop(1);
+        return slug;
+    }
+
+    QString manifestIdOfDir(const QString& dir)
+    {
+        QFile f(dir + QStringLiteral("/plugin.json"));
+        if (!f.open(QIODevice::ReadOnly))
+            return {};
+        const auto doc = QJsonDocument::fromJson(f.readAll());
+        return doc.isObject() ? doc.object().value(QStringLiteral("id")).toString()
+                              : QString();
+    }
+
+    int compareVersions(const QString& a, const QString& b)
+    {
+        const QStringList pa = a.split(QLatin1Char('.'));
+        const QStringList pb = b.split(QLatin1Char('.'));
+        const int n = qMax(pa.size(), pb.size());
+        for (int i = 0; i < n; ++i) {
+            const int x = i < pa.size() ? pa.at(i).toInt() : 0;
+            const int y = i < pb.size() ? pb.at(i).toInt() : 0;
+            if (x != y)
+                return x < y ? -1 : 1;
+        }
+        return 0;
+    }
+
+    IContextMenuPlugin::MenuTarget menuTargetFor(const QString& target)
+    {
+        using T = IContextMenuPlugin::MenuTarget;
+        if      (target == QStringLiteral("branch")) return T::Branch;
+        else if (target == QStringLiteral("file"))   return T::File;
+        return T::CommitGraph;
+    }
+
+    PluginInfo readGepManifest(const QString& gepPath)
+    {
+        PluginInfo info;
+
+        struct archive* reader = archive_read_new();
+        if (!reader)
+            return info;
+        archive_read_support_format_all(reader);
+        archive_read_support_filter_all(reader);
+        if (archive_read_open_filename(reader, gepPath.toUtf8().constData(), 10240) != ARCHIVE_OK) {
+            archive_read_free(reader);
+            return info;
+        }
+
+        struct archive_entry* entry = nullptr;
+        QByteArray data;
+        while (archive_read_next_header(reader, &entry) == ARCHIVE_OK) {
+            const QString name = QString::fromUtf8(archive_entry_pathname(entry));
+            if (QFileInfo(name).fileName() != QStringLiteral("plugin.json"))
+                continue;
+
+            data.clear();
+            const void* buf = nullptr;
+            size_t size = 0;
+            la_int64_t offset = 0;
+            int r;
+            while ((r = archive_read_data_block(reader, &buf, &size, &offset)) == ARCHIVE_OK)
+                data.append(static_cast<const char*>(buf), int(size));
+            if (r != ARCHIVE_EOF)
+                data.clear(); // incomplete read — keep scanning for another plugin.json
+            else
+                break;
+        }
+        archive_read_free(reader);
+
+        if (data.isEmpty())
+            return info;
+        const auto doc = QJsonDocument::fromJson(data);
+        if (doc.isObject())
+            info = PluginInfo::fromJson(doc.object(), QString());
+        return info;
+    }
+
+    bool removeDirectoryPatiently(const QString& path, int timeoutMs)
+    {
+        QElapsedTimer timer;
+        timer.start();
+        while (QDir(path).exists()) {
+            QDir(path).removeRecursively();
+            if (!QDir(path).exists())
+                return true;
+            if (timer.elapsed() >= timeoutMs)
+                return false;
+            QThread::msleep(50);
+        }
+        return true;
+    }
+
+    bool waitUntilReadable(const QString& dir, int timeoutMs)
+    {
+        QElapsedTimer timer;
+        timer.start();
+        while (true) {
+            bool allReadable = true;
+            QDirIterator it(dir, QDir::Files, QDirIterator::Subdirectories);
+            while (it.hasNext()) {
+                it.next();
+                QFile f(it.filePath());
+                if (!f.open(QIODevice::ReadOnly)) {
+                    allReadable = false;
+                    break;
+                }
+                f.close();
+            }
+            if (allReadable)
+                return true;
+            if (timer.elapsed() >= timeoutMs)
+                return false;
+            QThread::msleep(50);
+        }
+    }
+
+    enum class GepWorkResult {
+        Ok,
+        RestartRequired,
+        PlaceFailed,
+        ExtractFailed
+    };
+
+    bool extractPackage(const QString& gepPath, const QString& targetDir);
+
+    GepWorkResult placeGepPayload(const QString& gepPath, const QString& payloadSource,
+                                const QString& targetDir, const QString& pluginId,
+                                bool hasBinary)
+    {
+        if (!removeDirectoryPatiently(targetDir, 4000)) {
+            if (!payloadSource.isEmpty())
+                QDir(payloadSource).removeRecursively();
+            return GepWorkResult::RestartRequired;
+        }
+
+        if (payloadSource.isEmpty()) {
+            // Nothing staged yet: write each file once, in place.
+            if (!extractPackage(gepPath, targetDir))
+                return GepWorkResult::ExtractFailed;
+        } else {
+            bool moved = false;
+            for (int attempt = 0; attempt < 15 && !moved; ++attempt) {
+                if (QDir().rename(payloadSource, targetDir) || !QDir(payloadSource).exists())
+                    moved = true;
+                else
+                    QThread::msleep(qMin(300, 100 + 100 * attempt));
+            }
+            if (!moved)
+                moved = extractPackage(gepPath, targetDir);
+            QDir(payloadSource).removeRecursively();
+            if (!moved)
+                return GepWorkResult::PlaceFailed;
+        }
+
+        if (hasBinary)
+            waitUntilReadable(targetDir, 2500);
+
+        if (!pluginId.isEmpty()) {
+            const QDir root(QFileInfo(targetDir).absolutePath());
+            const auto entries = root.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+            for (const QString& entry : entries) {
+                const QString p = root.absoluteFilePath(entry);
+                if (p != targetDir && manifestIdOfDir(p) == pluginId)
+                    QDir(p).removeRecursively();
+            }
+        }
+        return GepWorkResult::Ok;
+    }
+
+    bool extractPackage(const QString& gepPath, const QString& targetDir)
+    {
+        if (!QDir().mkpath(targetDir))
+            return false;
+
+        struct archive *reader = archive_read_new();
+        struct archive *writer = archive_write_disk_new();
+        struct archive_entry *entry = nullptr;
+
+        if (!reader || !writer) {
+            if (reader) archive_read_free(reader);
+            if (writer) archive_write_free(writer);
+            return false;
+        }
+
+        archive_read_support_format_all(reader);
+        archive_read_support_filter_all(reader);
+        archive_write_disk_set_options(writer,
+            ARCHIVE_EXTRACT_TIME |
+            ARCHIVE_EXTRACT_PERM |
+            ARCHIVE_EXTRACT_SECURE_NODOTDOT);
+
+        int r = archive_read_open_filename(reader, gepPath.toUtf8().constData(), 10240);
+        if (r != ARCHIVE_OK) {
+            const QString err = QString::fromUtf8(archive_error_string(reader));
+            qWarning() << "[GEP] Cannot open archive:" << err;
+            archive_read_free(reader);
+            archive_write_free(writer);
+            return false;
+        }
+
+        bool extractOk = true;
+
+        while ((r = archive_read_next_header(reader, &entry)) == ARCHIVE_OK) {
+            const QString entryName = QString::fromUtf8(archive_entry_pathname(entry));
+
+            // Normalize and reject unsafe paths (absolute, .. traversal)
+            const QString cleanRel = QDir::cleanPath(entryName);
+            if (cleanRel.isEmpty() || cleanRel.startsWith(QLatin1Char('/')) ||
+                cleanRel == QStringLiteral("..") || cleanRel.startsWith(QStringLiteral("../")))
+            {
+                qWarning() << "[GEP] Skipping unsafe path:" << entryName;
+                continue;
+            }
+
+            const QString absolutePath = targetDir + QLatin1Char('/') + cleanRel;
+            archive_entry_set_pathname(entry, absolutePath.toUtf8().constData());
+
+            int hr = archive_write_header(writer, entry);
+            if (hr == ARCHIVE_FATAL) {
+                qWarning() << "[GEP] Fatal writing header for:" << entryName
+                           << QString::fromUtf8(archive_error_string(writer));
+                extractOk = false;
+                break;
+            }
+
+            if (archive_entry_size(entry) > 0) {
+                const void* buf = nullptr;
+                size_t bufSize = 0;
+                la_int64_t offset = 0;
+                int dataResult = 0;
+
+                while ((dataResult = archive_read_data_block(reader, &buf, &bufSize, &offset)) == ARCHIVE_OK) {
+                    if (archive_write_data_block(writer, buf, bufSize, offset) != ARCHIVE_OK) {
+                        qWarning() << "[GEP] Failed writing data for:" << entryName
+                                   << QString::fromUtf8(archive_error_string(writer));
+                        extractOk = false;
+                        break;
+                    }
+                }
+
+                if (!extractOk)
+                    break;
+
+                if (dataResult != ARCHIVE_EOF) {
+                    qWarning() << "[GEP] Unexpected end of data for:" << entryName;
+                    extractOk = false;
+                    break;
+                }
+            }
+
+            archive_write_finish_entry(writer);
+        }
+
+        if (r != ARCHIVE_EOF)
+            extractOk = false;
+
+        archive_read_free(reader);
+        archive_write_free(writer);
+        return extractOk;
+    }
+
+} // namespace
 
 // ── Construction / destruction ───────────────────────────────────────────────
 
@@ -208,9 +497,44 @@ void PluginManager::scanDirectory(const QString& path)
     QDir dir(path);
     if (!dir.exists()) return;
 
+    struct Candidate { QString dir; QString id; QString version; };
+    QList<Candidate> candidates;
+
     const auto entries = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-    for (const QString& entry : entries)
-        loadPlugin(dir.absoluteFilePath(entry));
+    for (const QString& entry : entries) {
+        if (entry.startsWith(QLatin1Char('.')))
+            continue; // staging dirs / markers
+
+        const QString dirPath = dir.absoluteFilePath(entry);
+        if (QFile::exists(dirPath + QStringLiteral("/.gitease-uninstalled"))) {
+            QDir(dirPath).removeRecursively(); // marked for removal on a previous run
+            continue;
+        }
+
+        const PluginInfo info = parseManifest(dirPath);
+        if (!info.isValid() || info.id.isEmpty() || info.version.isEmpty())
+            continue;
+        candidates.append({ dirPath, info.id, info.version });
+    }
+
+    QMap<QString, QString> bestVersion;
+    QMap<QString, QString> bestDir;
+    for (const auto& c : std::as_const(candidates)) {
+        auto it = bestVersion.find(c.id);
+        if (it == bestVersion.end() || compareVersions(c.version, it.value()) > 0) {
+            bestVersion[c.id] = c.version;
+            bestDir[c.id]     = c.dir;
+        }
+    }
+
+    // Drop older versions of the same plugin id (nothing is loaded yet).
+    for (const auto& c : std::as_const(candidates)) {
+        if (bestDir.value(c.id) != c.dir)
+            QDir(c.dir).removeRecursively();
+    }
+
+    for (auto it = bestDir.cbegin(); it != bestDir.cend(); ++it)
+        loadPlugin(it.value());
 }
 
 // ── Loading ──────────────────────────────────────────────────────────────────
@@ -290,11 +614,14 @@ bool PluginManager::loadCppPlugin(const PluginInfo& info)
 
 PluginInfo PluginManager::parseManifest(const QString& pluginDir)
 {
+    QJsonObject obj;
     QFile f(QDir(pluginDir).filePath(QStringLiteral("plugin.json")));
     if (!f.open(QIODevice::ReadOnly)) return {};
     const auto doc = QJsonDocument::fromJson(f.readAll());
-    if (doc.isNull() || !doc.isObject()) return {};
-    return PluginInfo::fromJson(doc.object(), pluginDir);
+    if (!doc.isNull() && doc.isObject())
+        obj = doc.object();
+
+    return PluginInfo::fromJson(obj, pluginDir);
 }
 
 // ── State forwarding ─────────────────────────────────────────────────────────
@@ -376,6 +703,14 @@ void PluginManager::deactivatePlugin(const QString& id)
         if (m_docks.at(i).toMap().value(QStringLiteral("id")).toString() == id)
             m_docks.removeAt(i);
     }
+    emit docksChanged();
+
+    // Toolbar action registrations (same story as docks).
+    for (int i = m_toolbarActions.size() - 1; i >= 0; --i) {
+        if (m_toolbarActions.at(i).toMap().value(QStringLiteral("pluginId")).toString() == id)
+            m_toolbarActions.removeAt(i);
+    }
+    emit toolbarActionsChanged();
 
     // Diff viewer / colorizer extension mappings — matched by plugin dir
     const QString pluginDir = [&]() -> QString {
@@ -390,6 +725,20 @@ void PluginManager::deactivatePlugin(const QString& id)
         for (auto it = m_colorizers.begin(); it != m_colorizers.end(); )
             it = it.value().toLocalFile().startsWith(pluginDir) ? m_colorizers.erase(it) : ++it;
     }
+
+    const auto eraseByPluginId = [&id](auto& list) {
+        for (auto it = list.begin(); it != list.end(); )
+            it = ((*it)->id() == id) ? list.erase(it) : ++it;
+    };
+    eraseByPluginId(m_contextMenuPlugins);
+    eraseByPluginId(m_workflowPlugins);
+    eraseByPluginId(m_toolbarPlugins);
+
+    for (auto it = m_rulePlugins.begin(); it != m_rulePlugins.end(); ) {
+        auto* ruleOwner = dynamic_cast<IPlugin*>(*it);
+        it = (ruleOwner && ruleOwner->id() == id) ? m_rulePlugins.erase(it) : ++it;
+    }
+    emit contextMenusChanged();
 }
 
 void PluginManager::tearDownPlugin(const QString& id)
@@ -534,89 +883,14 @@ bool PluginManager::installPluginFromBase64Zip(const QString& pluginId, const QS
     // Tear down any existing version — cleans all member variables, no intermediate signal.
     tearDownPlugin(pluginId);
 
-    // ── libarchive extraction ─────────────────────────────────────────────────
-    struct archive *reader = archive_read_new();
-    struct archive *writer = archive_write_disk_new();
-    struct archive_entry *entry  = nullptr;
-
-    archive_read_support_format_all(reader);
-    archive_read_support_filter_all(reader);
-
-    archive_write_disk_set_options(writer,
-        ARCHIVE_EXTRACT_TIME |
-        ARCHIVE_EXTRACT_PERM |
-        ARCHIVE_EXTRACT_SECURE_NODOTDOT);
-
-    int r = archive_read_open_filename(reader, tempPath.toUtf8().constData(), static_cast<size_t>(archiveData.size()));
-    if (r != ARCHIVE_OK) {
-        const QString err = QString::fromUtf8(archive_error_string(reader));
-        archive_read_free(reader);
-        archive_write_free(writer);
+    // Extract the archive via the shared, safety-checked extractor (it rejects
+    // traversal paths and handles per-entry data the same way GEP does).
+    if (!extractPackage(tempPath, targetDir)) {
         QFile::remove(tempPath);
-        emit pluginInstallFailed(pluginId, QStringLiteral("Cannot open archive: ") + err);
-        return false;
-    }
-
-    bool extractOk = true;
-
-    while ((r = archive_read_next_header(reader, &entry)) == ARCHIVE_OK) {
-        // Rebase the entry path under the plugin's target directory
-        const QString entryName = QString::fromUtf8(archive_entry_pathname(entry));
-        const QString absolutePath = targetDir + QChar('/') + entryName;
-        archive_entry_set_pathname(entry, absolutePath.toUtf8().constData());
-
-        int hr = archive_write_header(writer, entry);
-        if (hr == ARCHIVE_FATAL) {
-            qWarning() << "Fatal error writing header for:" << entryName
-                       << QString::fromUtf8(archive_error_string(writer));
-            extractOk = false;
-            break;
-        }
-        if (hr < ARCHIVE_OK)
-            qWarning() << "Warning writing header for:" << entryName
-                       << QString::fromUtf8(archive_error_string(writer));
-
-        if (archive_entry_size(entry) > 0) {
-            const void *buf;
-            size_t bufSize;
-            la_int64_t offset;
-            int dataResult;
-
-            while ((dataResult = archive_read_data_block(reader, &buf, &bufSize, &offset)) == ARCHIVE_OK) {
-                if (archive_write_data_block(writer, buf, bufSize, offset) != ARCHIVE_OK) {
-                    qWarning() << "Failed to write data for:" << entryName
-                               << QString::fromUtf8(archive_error_string(writer));
-                    extractOk = false;
-                    break;
-                }
-            }
-
-            if (!extractOk)
-                break;
-
-            if (dataResult != ARCHIVE_EOF) {
-                qWarning() << "Unexpected end of data for:" << entryName;
-                extractOk = false;
-                break;
-            }
-
-        }
-
-        archive_write_finish_entry(writer);
-    }
-
-    if (r != ARCHIVE_EOF)
-        extractOk = false;
-
-    archive_read_free(reader);
-    archive_write_free(writer);
-    QFile::remove(tempPath);
-    // ── end extraction ────────────────────────────────────────────────────────
-
-    if (!extractOk) {
         emit pluginInstallFailed(pluginId, QStringLiteral("Failed to extract plugin archive"));
         return false;
     }
+    QFile::remove(tempPath);
 
     // Some archives wrap files in a top-level subdirectory — find where plugin.json actually lives
     QString actualPluginDir = targetDir;
@@ -637,29 +911,189 @@ bool PluginManager::installPluginFromBase64Zip(const QString& pluginId, const QS
     return ok;
 }
 
-bool PluginManager::removePlugin(const QString& id)
+bool PluginManager::installGepFile(const QString& gepPath)
 {
-    QString pluginDir;
-    for (const auto& info : std::as_const(m_infos)) {
-        if (info.id == id) {
-            pluginDir = info.pluginDir;
-            break;
+    if (gepPath.isEmpty() || !QFileInfo::exists(gepPath))
+        return false;
+    startGepInstall(gepPath, QString());
+    return true;
+}
+
+bool PluginManager::installGepFromBase64(const QString& base64Data)
+{
+    const QByteArray archiveData = QByteArray::fromBase64(base64Data.toLatin1());
+    if (archiveData.isEmpty())
+        return false;
+
+    const QString tempPath = QDir::tempPath()
+                             + QStringLiteral("/gitease_plugin_%1.gep")
+                                   .arg(QDateTime::currentMSecsSinceEpoch());
+    {
+        QFile tempFile(tempPath);
+        if (!tempFile.open(QIODevice::WriteOnly)) {
+            qWarning() << "[GEP] Cannot create temp file:" << tempPath;
+            return false;
+        }
+        tempFile.write(archiveData);
+    }
+
+    // Temp file is handed off and removed once the async install finishes.
+    startGepInstall(tempPath, tempPath);
+    return true;
+}
+
+void PluginManager::startGepInstall(const QString& gepPath, const QString& tempToRemove)
+{
+    const QString appData    = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    const QString pluginRoot = appData + QStringLiteral("/plugins");
+    QDir().mkpath(pluginRoot);
+
+    PluginInfo manifest = readGepManifest(gepPath);
+    QString payloadSource;
+    QString staging;
+    if (!manifest.isValid() || manifest.id.isEmpty()) {
+        staging = pluginRoot + QStringLiteral("/.stage_")
+                  + QString::number(QDateTime::currentMSecsSinceEpoch());
+        if (extractPackage(gepPath, staging)) {
+            QString actualStagingDir = staging;
+            if (!QFile::exists(staging + QStringLiteral("/plugin.json"))) {
+                QDirIterator it(staging, {QStringLiteral("plugin.json")},
+                                QDir::Files, QDirIterator::Subdirectories);
+                if (it.hasNext()) {
+                    it.next();
+                    actualStagingDir = QFileInfo(it.filePath()).absolutePath();
+                }
+            }
+            manifest = parseManifest(actualStagingDir);
+            if (manifest.isValid() && !manifest.id.isEmpty())
+                payloadSource = staging; // already extracted — reuse it
         }
     }
 
-    if (pluginDir.isEmpty())
+    const auto abort = [this, tempToRemove](const QString& id, const QString& msg) {
+        if (!tempToRemove.isEmpty())
+            QFile::remove(tempToRemove);
+        emit pluginInstallFailed(id, msg);
+    };
+
+    if (!manifest.isValid() || manifest.id.isEmpty()) {
+        if (!staging.isEmpty() && staging != payloadSource)
+            QDir(staging).removeRecursively();
+        abort(QStringLiteral("unknown"),
+              QStringLiteral("Not a valid GEP package (missing plugin.json)"));
+        return;
+    }
+
+    const QString id      = manifest.id;
+    const QString name    = manifest.name;
+    const QString version = manifest.version;
+
+    emit pluginInstallStarted(id, name);
+
+    tearDownPlugin(id);
+
+    const QString targetDir = pluginRoot + QLatin1Char('/') + id + QLatin1Char('-') + version;
+    const bool hasBinary = !manifest.cppEntry.isEmpty();
+
+    std::thread([gepPath, payloadSource, targetDir, id, hasBinary, name, tempToRemove, this]() {
+        const GepWorkResult result = placeGepPayload(gepPath, payloadSource, targetDir, id, hasBinary);
+        QMetaObject::invokeMethod(this, [this, result, id, name, targetDir, tempToRemove]() {
+            if (!tempToRemove.isEmpty())
+                QFile::remove(tempToRemove);
+            finishGepInstall(static_cast<int>(result), id, name, targetDir);
+        }, Qt::QueuedConnection);
+    }).detach();
+
+    const QString downloadsDir = appData + QStringLiteral("/downloads/plugins");
+    if (QDir().mkpath(downloadsDir)) {
+        const QString savedName = slugify(name).isEmpty() ? id : slugify(name);
+        const QString savedPath = downloadsDir + QLatin1Char('/')
+                                  + savedName + QLatin1Char('-') + version
+                                  + QStringLiteral(".gep");
+        QFile::remove(savedPath);
+        QFile::copy(gepPath, savedPath);
+    }
+}
+
+void PluginManager::finishGepInstall(int resultCode, const QString& id,
+                                     const QString& name, const QString& targetDir)
+{
+    switch (static_cast<GepWorkResult>(resultCode)) {
+    case GepWorkResult::Ok: {
+        const bool ok = loadPlugin(targetDir);
+        if (ok)
+            emit pluginInstalled(id);
+        else
+            emit pluginInstallFailed(id, QStringLiteral("Plugin extracted but failed to load"));
+        break;
+    }
+    case GepWorkResult::RestartRequired: {
+        QDir(targetDir).removeRecursively();
+        const QString displayName = name.isEmpty() ? id : name;
+        emit notifyRequested(
+            QStringLiteral("The plugin \"%1\" is currently loaded in this session. "
+                           "Please restart GitEase, then install it again.").arg(displayName),
+            QStringLiteral("warning"));
+        emit pluginInstallFailed(id, QString()); // resets UI busy state; no toast
+        break;
+    }
+    case GepWorkResult::PlaceFailed:
+        QDir(targetDir).removeRecursively();
+        emit pluginInstallFailed(id, QStringLiteral("Failed to place plugin directory"));
+        break;
+    case GepWorkResult::ExtractFailed:
+        QDir(targetDir).removeRecursively();
+        emit pluginInstallFailed(id, QStringLiteral("Failed to extract GEP package"));
+        break;
+    }
+}
+
+bool PluginManager::removePlugin(const QString& id)
+{
+    // Locate every version folder of this plugin (plugins/<id>-<version>/,
+    // including legacy plugins/<id>/ installs).
+    const QString pluginRoot = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                               + QStringLiteral("/plugins");
+    QDir root(pluginRoot);
+    QStringList dirs;
+    const auto entries = root.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    for (const QString& entry : entries) {
+        if (entry.startsWith(QLatin1Char('.')))
+            continue;
+        const QString dirPath = root.absoluteFilePath(entry);
+        if (parseManifest(dirPath).id == id)
+            dirs << dirPath;
+    }
+
+    if (dirs.isEmpty())
         return false;
 
     // Tear down — cleans all member variables, no intermediate signal.
     tearDownPlugin(id);
 
-    const bool ok = QDir(pluginDir).removeRecursively();
+    bool allRemoved = true;
+    for (const QString& dirPath : std::as_const(dirs)) {
+        if (!QDir(dirPath).removeRecursively() && QDir(dirPath).exists()) {
+            // The DLL may still be memory-mapped by this session. Mark the folder
+            // so the next launch deletes it instead of reloading the plugin.
+            allRemoved = false;
+            QFile marker(dirPath + QStringLiteral("/.gitease-uninstalled"));
+            if (marker.open(QIODevice::WriteOnly)) {
+                marker.write("1");
+                marker.close();
+            }
+        }
+    }
+
     emit pluginsChanged();
-
-    if (ok)
-        emit pluginRemoved(id);
-
-    return ok;
+    emit pluginRemoved(id);
+    if (!allRemoved) {
+        emit notifyRequested(
+            QStringLiteral("\"%1\" was removed — its files will be cleaned up on the next launch.")
+                .arg(id),
+            QStringLiteral("info"));
+    }
+    return allRemoved;
 }
 
 // ── Queries ──────────────────────────────────────────────────────────────────
@@ -705,9 +1139,7 @@ void PluginManager::unsubscribeEvent(int token)
 QVariantList PluginManager::pluginContextMenuItems(const QString& target,
                                                     const QVariantMap& ctx) const
 {
-    IContextMenuPlugin::MenuTarget t = IContextMenuPlugin::MenuTarget::CommitGraph;
-    if      (target == QStringLiteral("branch")) t = IContextMenuPlugin::MenuTarget::Branch;
-    else if (target == QStringLiteral("file"))   t = IContextMenuPlugin::MenuTarget::File;
+    const IContextMenuPlugin::MenuTarget t = menuTargetFor(target);
 
     QVariantList result;
     for (auto* plugin : m_contextMenuPlugins) {
@@ -738,9 +1170,7 @@ void PluginManager::executeContextMenuAction(const QString& pluginId,
                                               const QString& target,
                                               const QVariantMap& ctx)
 {
-    IContextMenuPlugin::MenuTarget t = IContextMenuPlugin::MenuTarget::CommitGraph;
-    if      (target == QStringLiteral("branch")) t = IContextMenuPlugin::MenuTarget::Branch;
-    else if (target == QStringLiteral("file"))   t = IContextMenuPlugin::MenuTarget::File;
+    const IContextMenuPlugin::MenuTarget t = menuTargetFor(target);
 
     for (auto* plugin : m_contextMenuPlugins) {
         if (plugin->id() == pluginId) {
