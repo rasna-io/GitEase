@@ -48,6 +48,7 @@ Page {
     headerContent: Component {
         PluginsPageHeader {
             id: pluginsPageHeader
+            pluginsData: root.pluginsData
             onFilterRequested: (text, mode) => root.applyFilter(text, mode)
         }
     }
@@ -82,7 +83,7 @@ Page {
     EmptyStateView {
         title: "No plugins to show"
         details: "No plugins available at the moment"
-        visible: pluginsModel.count === 0
+        visible: installedPluginsModel.count === 0 && availablePluginsModel.count === 0
     }
 
     // Debounce timer — fires the API search after the user stops typing
@@ -94,7 +95,11 @@ Page {
     }
 
     ListModel {
-        id: pluginsModel
+        id: installedPluginsModel
+    }
+
+    ListModel {
+        id: availablePluginsModel
     }
 
     RowLayout {
@@ -108,13 +113,23 @@ Page {
             categoriesCounts: root.categoriesCounts
 
             onCategorySelected:  (category) => {
-                pluginsModel.clear()
+                installedPluginsModel.clear()
+                availablePluginsModel.clear()
                 for (var i = 0; i < root.pluginsData.length; i++) {
                     var plugin = root.pluginsData[i]
 
                     var matchesCategory = plugin.category === category || category === "All"
+                    var matchesMode = root.currentMode === ""
+                        || (root.currentMode === "Installed" && plugin.isInstalled)
+                        || (root.currentMode === "Enabled"   && plugin.isEnabled)
+                        || (root.currentMode === "Available"  && !plugin.isInstalled)
 
-                    if (matchesCategory) pluginsModel.append(plugin)
+                    if (matchesCategory && matchesMode) {
+                        if (plugin.isInstalled)
+                            installedPluginsModel.append(plugin)
+                        else
+                            availablePluginsModel.append(plugin)
+                    }
                 }
             }
         }
@@ -146,10 +161,49 @@ Page {
                     }
 
                     Text {
-                        text: "4 plugins"
+                        text: (root.pluginsData ? root.pluginsData.filter(function(p) { return p.isInstalled }).length : 0) + " plugins"
                         color: "#363650"
                         font.pixelSize: Style.appFont.largePt
                         font.family: Style.fontTypes.roboto
+                    }
+                }
+
+                GridView {
+                    id: installedGridView
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: installedGridView.contentHeight
+                    clip: true
+
+                    model: installedPluginsModel
+
+                    property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
+
+                    cellWidth: width / columns
+                    cellHeight: root.minCardHeight
+
+                    delegate: Item {
+                        width: installedGridView.cellWidth
+                        height: installedGridView.cellHeight
+
+                        PluginCard {
+                            anchors.centerIn: parent
+                            width: installedGridView.cellWidth - 20
+                            height: installedGridView.cellHeight - 20
+                            plugin: model
+
+                            onInstallClicked: function(pluginId) {
+                                root.pluginController?.installPlugin(pluginId)
+                            }
+                            onUninstallClicked: function(pluginId) {
+                                root.pluginController?.uninstallPlugin(pluginId)
+                            }
+                            onUpdateClicked: function(pluginId) {
+                                root.pluginController?.updatePlugin(pluginId)
+                            }
+                            onEnableToggled: function(pluginId, enabled) {
+                                root.pluginController?.togglePlugin(pluginId, enabled)
+                            }
+                        }
                     }
                 }
 
@@ -171,7 +225,7 @@ Page {
                     }
 
                     Text {
-                        text: "6 plugins"
+                        text: (root.pluginsData ? root.pluginsData.filter(function(p) { return !p.isInstalled }).length : 0) + " plugins"
                         color: "#363650"
                         font.pixelSize: Style.appFont.largePt
                         font.family: Style.fontTypes.roboto
@@ -179,12 +233,12 @@ Page {
                 }
 
                 GridView {
-                    id: gridView
+                    id: availableGridView
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
 
-                    model: pluginsModel
+                    model: availablePluginsModel
 
                     ScrollBar.vertical: ScrollBar {
                         policy: ScrollBar.AsNeeded
@@ -196,13 +250,13 @@ Page {
                     cellHeight: root.minCardHeight
 
                     delegate: Item {
-                        width: gridView.cellWidth
-                        height: gridView.cellHeight
+                        width: availableGridView.cellWidth
+                        height: availableGridView.cellHeight
 
                         PluginCard {
                             anchors.centerIn: parent
-                            width: gridView.cellWidth - 20
-                            height: gridView.cellHeight - 20
+                            width: availableGridView.cellWidth - 20
+                            height: availableGridView.cellHeight - 20
                             plugin: model
 
                             onInstallClicked: function(pluginId) {
@@ -225,7 +279,7 @@ Page {
                         if (contentHeight <= height)
                             return
 
-                        if (contentY + height >= contentHeight - gridView.cellHeight
+                        if (contentY + height >= contentHeight - availableGridView.cellHeight
                                 && !root.fetchingMore
                                 && root.pluginController?.hasMorePages) {
                             root.loadNextPage()
@@ -291,11 +345,13 @@ Page {
         root.currentSearch  = ""
         root.currentMode    = ""
         root.pluginController.fetchPluginsCategories()
+        root.pluginController.fetchAvailablePlugins(1, "")
     }
 
-    // Refills pluginsModel from appModel.plugins, applying the active mode filter.
+    // Refills installed/available models from appModel.plugins, applying the active mode filter.
     function applyCurrentMode() {
-        pluginsModel.clear()
+        installedPluginsModel.clear()
+        availablePluginsModel.clear()
 
         if (!root.pluginsData)
             return
@@ -303,13 +359,17 @@ Page {
         for (var i = 0; i < root.pluginsData.length; i++) {
             var plugin = root.pluginsData[i]
 
-            var matchesMode = currentMode === ""
-                || (currentMode === "Installed" && plugin.isInstalled)
-                || (currentMode === "Enabled"   && plugin.isEnabled)
-                || (currentMode === "Available"  && !plugin.isInstalled)
+            var matchesMode = root.currentMode === ""
+                || (root.currentMode === "Installed" && plugin.isInstalled)
+                || (root.currentMode === "Enabled"   && plugin.isEnabled)
+                || (root.currentMode === "Available"  && !plugin.isInstalled)
 
-            if (matchesMode)
-                pluginsModel.append(plugin)
+            if (matchesMode) {
+                if (plugin.isInstalled)
+                    installedPluginsModel.append(plugin)
+                else
+                    availablePluginsModel.append(plugin)
+            }
         }
     }
 
