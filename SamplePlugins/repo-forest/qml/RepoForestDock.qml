@@ -47,6 +47,15 @@ UtilitiesCard {
             stepsFactory: function() {
                 return [
                     {
+                        targetProvider: function() { return root },
+                        icon: Style.icons.tree,
+                        title: "Repo Forest Dock",
+                        description: "Manage multiple git repositories from a single parent folder. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { root.collapsed = false }
+                    },
+                    {
                         targetProvider: function() { return actionBtn },
                         icon: Style.icons.folder,
                         title: "Browse a Root Folder",

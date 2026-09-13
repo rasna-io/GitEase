@@ -13,6 +13,7 @@ Item {
     id: root
 
     property AppModel               appModel:               null
+    property GuideController        guideController:        null
 
     property NotificationController notificationController: null
 
@@ -28,6 +29,7 @@ Item {
     property SettingsPopup              settingsPopup:              SettingsPopup {
         notificationController: root.notificationController
         sshKeyController:       sshKeyCtrl
+        guideController:        root.guideController
     }
 
     property UserAuthenticationPopup    userAuthenticationPopup:    UserAuthenticationPopup {}

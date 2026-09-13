@@ -31,6 +31,15 @@ UtilitiesCard {
             stepsFactory: function() {
                 return [
                     {
+                        targetProvider: function() { return root },
+                        icon: Style.icons.clock,
+                        title: "Recent Activity Dock",
+                        description: "View a log of every git command GitEase has run. Click the header to expand this dock if it's collapsed.",
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { root.collapsed = false }
+                    },
+                    {
                         targetProvider: function() { return listView },
                         icon: Style.icons.clock,
                         title: "Command History",
