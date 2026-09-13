@@ -49,7 +49,7 @@ Rectangle {
         // Maximize/Restore Button
         WindowsButton {
             id: maximizeButton
-            onClicked: windowMotion.toggleMaximize()
+            onClicked: windowController.toggleMaxRestore()
             Material.accent: Style.colors.windowsMaximize
             content: Rectangle {
                 anchors.centerIn: parent

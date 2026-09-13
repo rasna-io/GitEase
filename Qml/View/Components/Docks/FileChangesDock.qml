@@ -296,38 +296,14 @@ DetachablePanel {
                                 Layout.fillWidth: false
                                 Layout.fillHeight: true
                                 spacing: 0
+                                Layout.alignment: Qt.AlignVCenter
 
-                                Label {
-                                    text: {
-                                        switch(fileData.deltaStatus) {
-                                            case GitFileStatus.ADDED:
-                                                return "Added"
-                                            case GitFileStatus.DELETED:
-                                                return "Deleted"
-                                            case GitFileStatus.MODIFIED:
-                                                return "Modified"
-                                            case GitFileStatus.RENAMED:
-                                                return "Renamed"
-                                            case GitFileStatus.UNTRACKED:
-                                                return "Untracked"
-                                            default:
-                                                return "Untracked"
-                                        }
-                                    }
-
-                                    color: Style.colors.titleText
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: Style.appFont.mediumPt
-                                    Layout.fillWidth: true
+                                FileStatusTag {
+                                    deltaStatus: fileData.deltaStatus
                                     Layout.leftMargin: 8
                                     Layout.rightMargin: 8
-                                    horizontalAlignment: Text.AlignHCenter
-                                    elide: Text.ElideRight
-                                    wrapMode: Text.NoWrap
-                                    background: Rectangle {
-                                        radius: 3
-                                        color: root.getChangeColor(fileData.deltaStatus)
-                                    }
+                                    Layout.alignment: Qt.AlignHCenter
+                                    compact: true
                                 }
                             }
 
