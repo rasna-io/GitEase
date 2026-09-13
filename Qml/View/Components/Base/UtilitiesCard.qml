@@ -137,12 +137,20 @@ Rectangle {
 
                 Label {
                     Layout.alignment: Qt.AlignVCenter
-                    text: root.collapsed ? Style.icons.caretDown : Style.icons.caretUp
+                    text: Style.icons.caretUp
                     color: Style.colors.utilitiesCardChevron
                     font.family: Style.fontTypes.inter
                     font.pixelSize: 10
                     font.bold: true
                     verticalAlignment: Text.AlignVCenter
+                    rotation: root.collapsed ? -90 : 0
+
+                    Behavior on rotation {
+                        NumberAnimation {
+                            duration: Style.motionMedium
+                            easing.type: Easing.OutCubic
+                        }
+                    }
                 }
 
                 TapHandler {

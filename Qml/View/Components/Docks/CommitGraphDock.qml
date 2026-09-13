@@ -59,6 +59,9 @@ DetachablePanel {
     property var selectedCommit         : null
     property int lastSelectedIndex      : -1
 
+    property int hoveredIndex           : -1
+    property string hoverSource         : ""   // "canvas" | "list" | "" - who last set hoveredIndex
+
     property string navigationRule  : "Author Email"
     property string filterText      : ""
     property string filterStartDate : ""
@@ -281,6 +284,23 @@ DetachablePanel {
                             graphColumnWidth: root.commitsColGraphWidth
                             branchTagColumnWidth: root.commitsColBranchTagWidth
                             allCommitsHash: root.allCommitsHash
+                            hoveredIndex: root.hoveredIndex
+                            onHoverIndexChanged: function(index) {
+                                if (index >= 0) {
+                                    root.hoverSource = "canvas"
+                                    root.hoveredIndex = index
+                                } else if (root.hoverSource === "canvas") {
+                                    root.hoveredIndex = -1
+                                    root.hoverSource = ""
+                                }
+                            }
+                            onCommitRightClicked: function(index, mouseX, mouseY) {
+                                var data = root.commits[index]
+                                if (!data)
+                                    return
+                                var pos = graphCanvas.mapToItem(root.activeItem, mouseX, mouseY)
+                                root.handleItemClick(data, Qt.RightButton, 0, index, pos.x, pos.y)
+                            }
                             onInfiniteScroll: root.loadMoreCommits()
                         }
                     }
@@ -296,7 +316,11 @@ DetachablePanel {
                     model   : root.commits
                     clip    : true
 
+                    cacheBuffer: 400
+
                     property bool syncScroll: false
+
+                    onMovementStarted: commitFocusAnimation.stop()
 
                     // Sync scroll position with graph
                     onContentYChanged: {
@@ -328,6 +352,7 @@ DetachablePanel {
                         isHead      : modelData ? modelData.hash === root.headHash  : false
                         isStash     : modelData ? modelData.isStash === true        : false
                         parentRoot  : root.activeItem
+                        hoveredIndex: root.hoveredIndex
 
                         onItemClicked: function(button, modifiers, idx, mouseX, mouseY) {
                             root.handleItemClick(modelData, button, modifiers, idx, mouseX, mouseY)
@@ -340,7 +365,27 @@ DetachablePanel {
                         onResetHeadOne: {
                             root.executeResetHead("HEAD~1", ResetController.ResetMode.Mixed)
                         }
+
+                        onHoverEntered: function(_index) {
+                            root.hoverSource = "list"
+                            root.hoveredIndex = _index
+                        }
+
+                        onHoverExited: function(_index) {
+                            if (root.hoverSource === "list" && root.hoveredIndex === _index) {
+                                root.hoveredIndex = -1
+                                root.hoverSource = ""
+                            }
+                        }
                     }
+                }
+
+                NumberAnimation {
+                    id: commitFocusAnimation
+                    target: commitsListView
+                    property: "contentY"
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
                 }
             }
         }
@@ -770,6 +815,33 @@ DetachablePanel {
         root.lastSelectedIndex = index
     }
 
+    function focusCommitIndex(index) {
+        if (!commitsListView || index < 0 || index >= commitsListView.count)
+            return
+
+        var rowHeight = root.commitItemHeight + root.commitItemSpacing * 2
+        var rowTop = index * rowHeight
+        var rowBottom = rowTop + rowHeight
+
+        if (rowTop >= commitsListView.contentY
+                && rowBottom <= commitsListView.contentY + commitsListView.height)
+            return
+
+        var maxContentY = Math.max(0, commitsListView.contentHeight - commitsListView.height)
+        var targetY = index * rowHeight - (commitsListView.height - rowHeight) * 0.5
+        targetY = Math.max(0, Math.min(maxContentY, targetY))
+
+        if (!Style.motionEnabled) {
+            commitsListView.contentY = targetY
+            return
+        }
+
+        commitFocusAnimation.stop()
+        commitFocusAnimation.from = commitsListView.contentY
+        commitFocusAnimation.to = targetY
+        commitFocusAnimation.restart()
+    }
+
     function selectedCommitsInOrder() {
         var selected = []
         if (!root.commits || !root.selectedCommitHashes) return selected
@@ -817,6 +889,7 @@ DetachablePanel {
         if (selection) {
             root.selectedCommitHashes = selection.hashes
             root.lastSelectedIndex = selection.lastIndex
+            root.focusCommitIndex(idx)
         }
     }
 
@@ -1218,7 +1291,7 @@ DetachablePanel {
         root.commitClicked(result.selected.hash)
 
         if (result.scroll)
-            commitsListView.positionViewAtIndex(result.index, ListView.Contain)
+            root.focusCommitIndex(result.index)
     }
 
     function selectPrevious(rule) {
@@ -1236,6 +1309,6 @@ DetachablePanel {
         root.commitClicked(result.selected.hash)
 
         if (result.scroll)
-            commitsListView.positionViewAtIndex(result.index, ListView.Contain)
+            root.focusCommitIndex(result.index)
     }
 }

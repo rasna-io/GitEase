@@ -61,6 +61,13 @@ ListView {
         color: branchDelegate.isSelected ? Style.colors.utilitiesRowSelectedBackground
                                          : (hoverHandler.hovered ? Style.colors.utilitiesRowHoverBackground
                                                                  : "transparent")
+        scale: rightClickArea.pressed ? 0.985 : 1.0
+        Behavior on scale {
+            NumberAnimation {
+                duration: Style.motionFast
+                easing.type: Easing.OutCubic
+            }
+        }
 
         border.width: 0
 
@@ -71,13 +78,20 @@ ListView {
         //! Selected-row indicator
         Rectangle {
             id: selectedIndicator
-            visible: branchDelegate.isSelected
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             width: Style.dp(3)
             radius: Style.dp(1.5)
             color: Style.colors.utilitiesRowSelectedIndicator
+            opacity: branchDelegate.isSelected ? 1 : 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
+                }
+            }
         }
 
         //! Every branch action lives in the context menu

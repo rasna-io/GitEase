@@ -29,7 +29,12 @@ Rectangle {
     radius: 10
     color: Style.colors.secondaryBackground
     border.width: 1
-    border.color: Style.colors.primaryBorder
+    border.color: cardHover.hovered ? Style.colors.controlBorderHover : Style.colors.primaryBorder
+
+    HoverHandler {
+        id: cardHover
+        cursorShape: Qt.PointingHandCursor
+    }
 
     /* Children
      * ****************************************************************************************/

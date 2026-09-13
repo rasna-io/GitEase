@@ -29,7 +29,9 @@ Rectangle {
     property bool   isHead          : false
     property bool   isStash         : false
 
-    property bool   isHovered       : mouseArea.containsMouse
+    property int    hoveredIndex    : -1
+
+    property bool   isHovered       : mouseArea.containsMouse || (hoveredIndex >= 0 && index === hoveredIndex)
 
     property Item   parentRoot      : null
 
@@ -38,13 +40,13 @@ Rectangle {
     signal itemClicked(int mouseButton, int mouseModifiers, int _index, real mouseX, real mouseY)
     signal itemDoubleClicked(int mouseButton, int mouseModifiers, var _index)
     signal resetHeadOne()
+    signal hoverEntered(int _index)
+    signal hoverExited(int _index)
 
     /* Object Properties
      * ****************************************************************************************/
     width   : ListView.view ? ListView.view.width : parent.width
     height  : 24 + 4*2
-
-    radius  : (isSelected || isHovered) ? 4 : 0
 
     color: {
         if (!commitData)
@@ -54,12 +56,12 @@ Rectangle {
             return "#6088B2DF";
 
         if (commitData.isUncommitted) {
-            return isHovered ? Qt.darker(Style.colors.hoverTitle, 1.03)
-                             : (Style.colors.secondaryBackground || Style.colors.primaryBackground);
+            return isHovered ? Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.35)
+                             : Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.22);
         }
 
         if (isHovered)
-            return Style.colors.hoverTitle;
+            return Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.15);
 
         if (isHead)
             return "#40FFA500";
@@ -74,6 +76,9 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+        onEntered: commitItem.hoverEntered(index)
+        onExited: commitItem.hoverExited(index)
 
         onClicked: (mouse) => {
             var pos = parentRoot ? commitItem.mapToItem(parentRoot, mouse.x, mouse.y) : Qt.point(mouse.x, mouse.y)

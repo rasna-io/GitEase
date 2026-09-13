@@ -34,25 +34,35 @@ Item {
             const visibleChildren = children.filter(child => {
                 const hasDetached = child.hasOwnProperty('detached')
                 const hasMinimized = child.hasOwnProperty('isMinimized')
+                const hasLayoutVisible = child.hasOwnProperty('layoutVisible')
 
-                if (hasDetached || hasMinimized) {
+                if (hasDetached || hasMinimized || hasLayoutVisible) {
                     try {
                         child.detachedChanged.disconnect(updateLayout)
                     } catch(e) {}
                     try {
                         child.isMinimizedChanged.disconnect(updateLayout)
                     } catch(e) {}
+                    try {
+                        child.layoutVisibleChanged.disconnect(updateLayout)
+                    } catch(e) {}
 
-                    child.visible = Qt.binding(() => {
-                        return (!hasDetached || !child.detached) && (!hasMinimized || !child.isMinimized)
-                    })
+                    child.visible = Qt.binding(() => hasLayoutVisible
+                                                ? child.layoutVisible
+                                                : (!hasDetached || !child.detached)
+                                                  && (!hasMinimized || !child.isMinimized))
 
                     if (hasDetached)
                         child.detachedChanged.connect(updateLayout)
                     if (hasMinimized)
                         child.isMinimizedChanged.connect(updateLayout)
+                    if (hasLayoutVisible)
+                        child.layoutVisibleChanged.connect(updateLayout)
 
-                    return (!hasDetached || !child.detached) && (!hasMinimized || !child.isMinimized)
+                    return hasLayoutVisible
+                            ? child.layoutVisible
+                            : (!hasDetached || !child.detached)
+                              && (!hasMinimized || !child.isMinimized)
                 }
                 child.visible = true
                 return true

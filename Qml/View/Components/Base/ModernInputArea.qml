@@ -37,6 +37,20 @@ Rectangle {
     border.width: 1
     border.color: commitTextArea.activeFocus ? Style.colors.accent : Style.colors.chipBorder
 
+    Behavior on border.color {
+        ColorAnimation {
+            duration: Style.motionFast
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on border.width {
+        NumberAnimation {
+            duration: Style.motionFast
+            easing.type: Easing.OutCubic
+        }
+    }
+
     implicitHeight: {
         var lines = commitTextArea.lineCount
         var desiredLines = Math.min(maxLines, Math.max(minLines, lines))

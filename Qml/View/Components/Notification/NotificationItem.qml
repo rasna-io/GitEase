@@ -69,6 +69,31 @@ Item {
     width: cardArea.width
     height: cardArea.height + (root.autoHide ? progressBarHeight : 0)
 
+    opacity: 0
+    scale: 0.94
+
+    ParallelAnimation {
+        id: slideInAnimation
+        NumberAnimation {
+            target: root
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: Style.motionMedium
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: root
+            property: "scale"
+            from: 0.94
+            to: 1
+            duration: Style.motionMedium
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Component.onCompleted: slideInAnimation.start()
+
     /* Children
      * ****************************************************************************************/
     // Accent background peeks out from behind the card on the left.
@@ -87,8 +112,8 @@ Item {
 
         Behavior on scale {
             NumberAnimation {
-                duration: 150
-                easing.type: Easing.OutQuad
+                duration: Style.motionFast
+                easing.type: Easing.OutCubic
             }
         }
 
@@ -274,12 +299,4 @@ Item {
 
     /* Animations
      * ****************************************************************************************/
-    NumberAnimation on opacity {
-        id: fadeIn
-        from: 0
-        to: 1
-        duration: 200
-        easing.type: Easing.OutQuad
-        running: true
-    }
 }

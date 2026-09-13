@@ -42,6 +42,46 @@ Popup {
     padding: 18
     width: 300
 
+    transformOrigin: Item.TopRight
+
+    enter: Transition {
+        ParallelAnimation {
+            NumberAnimation {
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: Style.motionFast
+                easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+                property: "scale"
+                from: 0.96
+                to: 1
+                duration: Style.motionFast
+                easing.type: Easing.OutCubic
+            }
+        }
+    }
+
+    exit: Transition {
+        ParallelAnimation {
+            NumberAnimation {
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: Style.motionFast
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                property: "scale"
+                from: 1
+                to: 0.98
+                duration: Style.motionFast
+                easing.type: Easing.InCubic
+            }
+        }
+    }
+
     background: Rectangle {
         color: Style.colors.primaryBackground
         radius: 14
@@ -214,6 +254,15 @@ Popup {
                 Layout.fillWidth: true
                 Material.foreground: Style.colors.foreground
 
+                scale: clearButton.pressed ? 0.97 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: Style.motionFast
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
                 background: Rectangle {
                     implicitHeight: 34
                     radius: 5
@@ -240,10 +289,26 @@ Popup {
                 Layout.fillWidth: true
                 Material.foreground: "white"
 
+                scale: applyButton.pressed ? 0.97 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: Style.motionFast
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
                 background: Rectangle {
                     implicitHeight: 34
                     radius: 5
                     color: applyButton.hovered ? Style.colors.accentHover : Style.colors.accent
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: Style.motionFast
+                            easing.type: Easing.OutCubic
+                        }
+                    }
                 }
 
                 onClicked: {

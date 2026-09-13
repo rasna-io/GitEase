@@ -128,8 +128,9 @@ Rectangle {
                 Layout.preferredHeight: 33
                 radius: 6
                 color: "transparent"
+                scale: settingButtonMouse.pressed ? 0.97 : 1.0
 
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
                 RowLayout {
                     anchors.fill: parent
@@ -219,8 +220,9 @@ Rectangle {
                 Layout.preferredHeight: 33
                 radius: 6
                 color: "transparent"
+                scale: notificationButtonMouse.pressed ? 0.97 : 1.0
 
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
                 RowLayout {
                     anchors.fill: parent
@@ -333,8 +335,9 @@ Rectangle {
                 Layout.preferredHeight: 33
                 radius: 6
                 color: "transparent"
+                scale: profileButtonMouse.pressed ? 0.97 : 1.0
 
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
                 RowLayout {
                     anchors.fill: parent
@@ -380,6 +383,7 @@ Rectangle {
 
                 // Make the whole row clickable
                 MouseArea {
+                    id: profileButtonMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true

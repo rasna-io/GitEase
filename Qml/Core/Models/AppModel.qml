@@ -115,6 +115,7 @@ Item {
     Component.onCompleted: {
         Style.currentTheme = Qt.binding(function() { return appSettings.appearanceSettings.currentTheme})
         Style.appFont.defaultPt = Qt.binding(function() { return appSettings.appearanceSettings.fontSizePt})
+        Style.reducedMotion = Qt.binding(function() { return appSettings.appearanceSettings.reducedMotion})
         load()
     }
 

@@ -21,6 +21,7 @@ ApplicationWindow {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property bool closeAnimationPlayed: false
 
 
     /* Object Properties
@@ -34,6 +35,13 @@ ApplicationWindow {
     /* Event Handlers
      * ****************************************************************************************/
     onClosing: function(close) {
+        if (Style.motionEnabled && !window.closeAnimationPlayed) {
+            close.accepted = false
+            window.closeAnimationPlayed = true
+            windowCloseAnimation.restart()
+            return
+        }
+
         close.accepted = true
 
         try {
@@ -45,6 +53,28 @@ ApplicationWindow {
         Qt.callLater(function() {
             Qt.exit(0)
         })
+    }
+
+    ParallelAnimation {
+        id: windowCloseAnimation
+
+        NumberAnimation {
+            target: window
+            property: "opacity"
+            to: 0
+            duration: Style.motionMedium
+            easing.type: Easing.InCubic
+        }
+
+        NumberAnimation {
+            target: window.contentItem
+            property: "scale"
+            to: 0.985
+            duration: Style.motionMedium
+            easing.type: Easing.InCubic
+        }
+
+        onStopped: window.close()
     }
 
 
@@ -115,9 +145,23 @@ ApplicationWindow {
     Loader {
         id: mainContentLoader
         anchors.fill: parent
+        opacity: 0
 
         sourceComponent: uiSession?.shellController.commandExecuted
                          ? mainApplicationComponent : welcomeFlowComponent
+
+        onLoaded: mainContentFadeIn.restart()
+
+        NumberAnimation {
+            id: mainContentFadeIn
+
+            target: mainContentLoader
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: Style.motionPage
+            easing.type: Easing.OutCubic
+        }
     }
 
     // Welcome Flow Component

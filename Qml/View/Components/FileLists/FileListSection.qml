@@ -63,7 +63,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: root.headerHeight
-            color: Style.colors.sectionHeaderBg
+            color: headerMouseArea.containsMouse ? Style.colors.hoverTitle : Style.colors.sectionHeaderBg
             border.width: 1
             border.color: Style.colors.primaryBorder
 
@@ -71,6 +71,7 @@ Rectangle {
                 id: headerMouseArea
                 anchors.fill: parent
                 hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     root.expanded = !root.expanded
                     root.toggled(root.expanded)
@@ -91,6 +92,22 @@ Rectangle {
                     font.bold: true
                     font.letterSpacing: 0.6
                     color: Style.colors.sectionLabel
+                }
+
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: Style.icons.caretDown
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: Style.appFont.secondaryPt
+                    color: Style.colors.sectionLabel
+                    rotation: root.expanded ? 0 : -90
+
+                    Behavior on rotation {
+                        NumberAnimation {
+                            duration: Style.motionMedium
+                            easing.type: Easing.OutCubic
+                        }
+                    }
                 }
 
                 // Count badge

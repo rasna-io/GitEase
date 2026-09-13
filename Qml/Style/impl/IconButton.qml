@@ -169,7 +169,7 @@ T.Button {
             name: "pressed"
             PropertyChanges {
                 target: control
-                scale: 0.8
+                scale: 0.96
             }
         }
     ]
@@ -178,16 +178,20 @@ T.Button {
         Transition {
             from: ""
             to: "pressed"
-            NumberAnimation { properties: "scale"; duration: 100 }
+            NumberAnimation {
+                properties: "scale";
+                duration: Style.motionFast;
+                easing.type: Easing.OutCubic
+            }
         },
+
         Transition {
             from: "pressed"
             to: ""
             NumberAnimation {
                 properties: "scale"
-                duration: 200
-                easing.type: Easing.OutElastic
-                easing.amplitude: 0.6
+                duration: Style.motionFast
+                easing.type: Easing.OutCubic
             }
         }
     ]

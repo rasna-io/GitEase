@@ -193,6 +193,8 @@ Rectangle {
 
                         // Switch pages instantly instead of sliding/dragging between them.
                         contentItem: ListView {
+                            id: pageContent
+
                             model: pageSwipeView.contentModel
                             interactive: false
                             currentIndex: pageSwipeView.currentIndex
@@ -204,6 +206,45 @@ Rectangle {
                             preferredHighlightEnd: 0
                             highlightMoveDuration: 0
                             highlightResizeDuration: 0
+
+                            property bool hasPresentedPage: false
+
+                            onCurrentIndexChanged: {
+                                if (!hasPresentedPage) {
+                                    hasPresentedPage = true
+                                    return
+                                }
+
+                                if (!Style.motionEnabled) {
+                                    opacity = 1
+                                    scale = 1
+                                    return
+                                }
+
+                                opacity = 0
+                                scale = 0.985
+                                pageTransition.restart()
+                            }
+
+                            ParallelAnimation {
+                                id: pageTransition
+
+                                NumberAnimation {
+                                    target: pageContent
+                                    property: "opacity"
+                                    to: 1
+                                    duration: Style.motionMedium
+                                    easing.type: Easing.OutCubic
+                                }
+
+                                NumberAnimation {
+                                    target: pageContent
+                                    property: "scale"
+                                    to: 1
+                                    duration: Style.motionMedium
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
                         }
 
                         GraphViewPage {
@@ -265,16 +306,68 @@ Rectangle {
                     }
                 }
 
-                Terminal {
-                    id: terminalRect
-                    minimizable: true
-                    layoutController: root.uiSession?.layoutController
-                    layoutId: "mainWindow.terminal"
+                Item {
+                    id: terminalHost
                     SplitView.fillWidth: true
-                    SplitView.minimumHeight: 150
-                    SplitView.preferredHeight: 250
-                    currentRepositoryName: root.uiSession?.appModel?.currentRepository?.name || ""
-                    terminalController: root.uiSession?.terminalController
+                    SplitView.minimumHeight: 0
+                    SplitView.preferredHeight: terminalHost.animHeight
+                    clip: true
+
+                    property real animHeight: 250
+                    property real openHeight: 250
+                    property bool animRunning: false
+
+                    visible: !terminalRect.isMinimized || terminalHost.animHeight > 0
+
+                    onHeightChanged: {
+                        if (!terminalRect.isMinimized && !terminalHost.animRunning
+                                && terminalHost.height > 0)
+                            terminalHost.openHeight = terminalHost.height
+                    }
+
+                    function animateTo(target) {
+                        if (!Style.motionEnabled) {
+                            terminalHost.animHeight = target
+                            return
+                        }
+
+                        terminalHost.animRunning = true
+                        heightAnim.from = terminalHost.height
+                        heightAnim.to = target
+                        heightAnim.restart()
+                    }
+
+                    NumberAnimation {
+                        id: heightAnim
+
+                        target: terminalHost
+                        property: "animHeight"
+                        duration: Style.motionMedium
+                        easing.type: Easing.OutCubic
+                        onStopped: terminalHost.animRunning = false
+                    }
+
+                    Terminal {
+                        id: terminalRect
+
+                        anchors.fill: parent
+                        minimizable: true
+                        layoutController: root.uiSession?.layoutController
+                        layoutId: "mainWindow.terminal"
+                        currentRepositoryName: root.uiSession?.appModel?.currentRepository?.name || ""
+                        terminalController: root.uiSession?.terminalController
+                    }
+
+                    Connections {
+                        target: terminalRect
+                        function onIsMinimizedChanged() {
+                            terminalHost.animateTo(terminalRect.isMinimized ? 0 : terminalHost.openHeight)
+                        }
+                    }
+
+                    Component.onCompleted: {
+                        terminalHost.animHeight = terminalRect.isMinimized ? 0 : terminalHost.openHeight
+                    }
                 }
             }
         }
