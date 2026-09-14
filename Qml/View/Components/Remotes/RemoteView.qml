@@ -118,23 +118,7 @@ UtilitiesCard {
         Connections {
             target: root
             function onRemoteControllerChanged() {
-                content.update()
-            }
-        }
-
-        Connections {
-            target: root.remoteController
-
-            function onCurrentRepoChanged() {
-                content.update()
-            }
-        }
-
-        Connections {
-            target: root.addEditRemotePopup
-
-            function onAboutToHide() {
-                content.update()
+                content.reload()
             }
         }
 
@@ -271,7 +255,7 @@ UtilitiesCard {
             }
         }
 
-        function update() {
+        function reload() {
             if (remoteController) {
                 let res = remoteController.getRemotes();
                 if (res.success) {
@@ -350,8 +334,6 @@ UtilitiesCard {
                 root.notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
             else
                 root.notificationController.error("Failed to fetch from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Unknown error"), "Fetch Error", 7000)
-
-            content.update()
         }
 
         function startPull(args, remoteName) {
@@ -371,7 +353,6 @@ UtilitiesCard {
                 root.notificationController.error("Failed to pull from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Pull failed"), "Pull Error", 7000)
 
             root.isFetching = false
-            content.update()
         }
 
         function editRemote(remoteItem) {
@@ -381,7 +362,6 @@ UtilitiesCard {
 
         function removeRemoteItem(remoteItem) {
             root.remoteController.removeRemote(remoteItem.name)
-            content.update()
         }
 
         function copyRemoteUrl(remoteItem) {
@@ -408,6 +388,10 @@ UtilitiesCard {
 
     /* Functions
      * ****************************************************************************************/
+    function reload() {
+        if (root.contentItem)
+            root.contentItem.reload()
+    }
 
     function openAddEditPopup() {
         addEditRemotePopup.remoteController = root.remoteController

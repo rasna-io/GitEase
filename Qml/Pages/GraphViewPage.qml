@@ -46,6 +46,8 @@ Page {
     property LayoutController        layoutController        : null
     property GuideController         guideController         : null
     property GitTreeController       gitTreeController       : null
+    property GitStateNotifier        gitStateNotifier        : null
+    readonly property bool           autoUpdate              : root.appModel?.appSettings?.generalSettings?.autoUpdate ?? true
 
     // Utility panel (moved in from the old UtilitiesPage), open by default.
     property bool                    utilityPanelOpen        : false
@@ -118,7 +120,7 @@ Page {
             }
 
             onReloadRequested: function() {
-                root.graphRef.reloadAll();
+                root.reload();
             }
         }
     }
@@ -148,19 +150,17 @@ Page {
         }
     }
 
-    Connections {
-        target: root.terminalController
-
-        function onGitStateChanged() {
-            utilityPanel.reload()
-        }
+    onAutoUpdateChanged: {
+        if (root.autoUpdate)
+            root.reloadGraph()
     }
-
+    
     Connections {
-        target: root.remoteOperationsSession
+        target: root.gitStateNotifier
 
-        function onFetchCompleted() {
-            utilityPanel.reload()
+        function onRepositoryChanged() {
+            if (root.autoUpdate)
+                root.reloadGraph()
         }
     }
 
@@ -270,6 +270,7 @@ Page {
             userAuthenticationPopup : root.userAuthenticationPopup
             uiSessionPopups         : root.uiSessionPopups
             pluginController        : root.pluginController
+            gitStateNotifier        : root.gitStateNotifier
         }
     }
 
@@ -398,7 +399,21 @@ Page {
         root.remoteOperationsSession?.pullAndUpdate(secret)
     }
 
+    //! Rebuilds the graph, keeping the filter and the selection that are in effect.
+    function reloadGraph() {
+        root.graphRef?.reloadAll()
+    }
+
+    //! Everything the page shows, from the header reload button.
+    function reload() {
+        root.reloadGraph()
+        utilityPanel.reload()
+    }
+
     function onPageActivated() {
         utilityPanel.reload()
+
+        if (root.autoUpdate)
+            root.reloadGraph()
     }
 }

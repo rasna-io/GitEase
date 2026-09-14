@@ -29,6 +29,7 @@ Rectangle {
 
     required property GuideController        guideController
     required property UserInfoSelectionPopup userInfoSelectionPopup
+    property GitStateNotifier                gitStateNotifier: null
 
     // Guide ids owned by this rail (including PagesRail / RepositoriesSidebar). While one of
     // these is active, force the rail open — otherwise it can collapse mid-guide (mouse over
@@ -105,6 +106,7 @@ Rectangle {
                 currentRepository: root.appModel.currentRepository
                 recentRepositories: root.appModel.recentRepositories
                 guideController: root.guideController
+                gitStateNotifier: root.gitStateNotifier
                 onNewRepositoryRequested: function () {
                     root.newRepositoryRequested()
                 }

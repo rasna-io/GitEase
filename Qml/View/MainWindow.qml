@@ -117,6 +117,7 @@ Rectangle {
                 notificationController: root.uiSession?.notificationController
                 guideController: root.uiSession?.guideController
                 userInfoSelectionPopup: root.uiSession?.popups?.userInfoSelectionPopup
+                gitStateNotifier: root.uiSession?.gitStateNotifier
 
                 pages: pageSwipeView.contentChildren
                 currentPageId: pageSwipeView.currentItem?.pageId ?? ""
@@ -272,6 +273,7 @@ Rectangle {
                             pluginController: root.uiSession?.pluginController
                             guideController: root.uiSession?.guideController
                             layoutController: root.uiSession?.layoutController
+                            gitStateNotifier: root.uiSession?.gitStateNotifier
                         }
 
                         CommittingPage {
@@ -290,6 +292,7 @@ Rectangle {
                             pluginController: root.uiSession?.pluginController
                             terminalController: root.uiSession?.terminalController
                             guideController: root.uiSession?.guideController
+                            gitStateNotifier: root.uiSession?.gitStateNotifier
                         }
 
                         PluginsPage {

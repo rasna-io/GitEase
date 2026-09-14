@@ -18,6 +18,7 @@ RowLayout {
     property          NotificationController notificationController:    null
     property          RemoteController       remoteController:          null
     property          GuideController        guideController:           null
+    property          GitStateNotifier       gitStateNotifier:          null
     readonly property bool                   compact:                   parent.width < 550
 
     /* Object Properties
@@ -54,7 +55,7 @@ RowLayout {
         leftPadding     : 10
         rightPadding    : 10
 
-        text: branchController.getDisplayBranchName()
+        text: headerRow.branchController ? headerRow.branchController.getDisplayBranchName() : ""
         visible: !headerRow.compact
         solidIcon: true
 
@@ -75,9 +76,9 @@ RowLayout {
         }
 
         Connections {
-            target: repositoryController
-            function onCurrentRepoChanged() {
-                branchChip.branchName = branchController.getDisplayBranchName()
+            target: headerRow.gitStateNotifier
+            function onRepositoryChanged() {
+                branchChip.text = headerRow.branchController ? headerRow.branchController.getDisplayBranchName() : ""
             }
         }
 

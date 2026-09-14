@@ -218,22 +218,14 @@ Item {
         }
     }
 
-    Connections {
-        target: root.branchController
-
-        function onCurrentRepoChanged() {
-            updateBranches()
-        }
-    }
-
     onBranchControllerChanged: {
-        updateBranches()
+        reload()
     }
 
     /* Functions
      * ****************************************************************************************/
 
-    function updateBranches() {
+    function reload() {
         if(!branchController)
             return
 

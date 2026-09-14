@@ -29,11 +29,6 @@ UtilitiesCard {
     title: "Branches"
     icon: Style.icons.branch
 
-    onVisibleChanged: {
-        if (visible && root.contentItem)
-            root.contentItem.update()
-    }
-
     content: ColumnLayout {
         id: content
 
@@ -89,24 +84,7 @@ UtilitiesCard {
         Connections {
             target: root
             function onBranchControllerChanged() {
-                content.update()
-            }
-        }
-
-        Connections {
-            target: root.branchController
-
-            function onCurrentRepoChanged() {
-                content.update()
-            }
-        }
-
-
-        Connections {
-            target: root.addBranchPopup
-
-            function onAboutToHide() {
-                content.update()
+                content.reload()
             }
         }
 
@@ -173,7 +151,6 @@ UtilitiesCard {
             currentBranch: root.currentBranch
             branchController: root.branchController
             notificationController: root.notificationController
-            onUpdateRequested: content.update()
         }
 
         DashedButton {
@@ -191,7 +168,7 @@ UtilitiesCard {
             }
         }
 
-        function update() {
+        function reload() {
             root.currentBranch = branchController.getCurrentBranchName()
             let res = branchController.getBranches();
 
@@ -224,8 +201,8 @@ UtilitiesCard {
         addBranchPopup.open()
     }
 
-    function update() {
+    function reload() {
         if (root.contentItem)
-            root.contentItem.update()
+            root.contentItem.reload()
     }
 }

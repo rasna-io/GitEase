@@ -14,6 +14,8 @@ QtObject {
      * ****************************************************************************************/
     property AppModel             appModel:             AppModel {}
 
+    property GitStateNotifier     gitStateNotifier:     GitStateNotifier {}
+
     property GuideController      guideController:      GuideController {
         appModel: root.appModel
     }
@@ -44,6 +46,13 @@ QtObject {
             pluginController.currentRepo = currentRepo
             resetController.currentRepo = currentRepo
             terminalController.currentRepo = currentRepo
+
+            gitStateNotifier.notifyChanged()
+        }
+
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
 
         onRepositorySelected: function(repo) {
@@ -58,36 +67,46 @@ QtObject {
     property BranchController branchController: BranchController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
     property RemoteController remoteController: RemoteController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
+
+        onFetchFinished: gitStateNotifier.notifyChanged()
+        onPullFinished:  gitStateNotifier.notifyChanged()
+        onPushFinished:  gitStateNotifier.notifyChanged()
     }
 
     property CommitController commitController: CommitController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
     property StatusController statusController: StatusController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
     property BundleController bundleController: BundleController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
     property ConfigController configController: ConfigController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
@@ -95,18 +114,24 @@ QtObject {
         statusController: root.statusController
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
     property TagController tagController: TagController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
+
+        onPushTagFinished:       gitStateNotifier.notifyChanged()
+        onPushDeleteTagFinished: gitStateNotifier.notifyChanged()
     }
 
     property GitTreeController gitTreeController: GitTreeController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
@@ -129,30 +154,35 @@ QtObject {
     property MergeController mergeController: MergeController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
     property RebaseController rebaseController: RebaseController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
     property CherryPickController cherryPickController: CherryPickController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
     property ResetController resetController: ResetController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
     property ConflictController conflictController: ConflictController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
         }
     }
 
@@ -171,7 +201,9 @@ QtObject {
         notificationController: root.notificationController
     }
 
-    property TerminalController terminalController: TerminalController {}
+    property TerminalController terminalController: TerminalController {
+        onGitStateChanged: gitStateNotifier.notifyChanged()
+    }
 
     property LayoutController layoutController: LayoutController {
         appModel: root.appModel
@@ -190,6 +222,8 @@ QtObject {
         notificationController:  root.notificationController
         userAuthenticationPopup: root.popups?.userAuthenticationPopup
         fetchSummaryPopup:       root.popups?.fetchSummaryPopup
+
+        onFetchCompleted: root.gitStateNotifier.notifyChanged()
     }
 }
 
