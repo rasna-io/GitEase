@@ -6,46 +6,95 @@ GitAsyncRunner::GitAsyncRunner()
     : QObject(nullptr)
     , m_nextRequestId(1)
 {
-    m_thread = new QThread();
-    m_thread->setObjectName(QStringLiteral("GitAsyncRunner"));
-
     m_guiAnchor = new QObject();
 
-    // The runner lives on the worker thread; its slots are executed there.
-    moveToThread(m_thread);
-
-    connect(this, &GitAsyncRunner::jobQueued, this, &GitAsyncRunner::executeJob, Qt::QueuedConnection);
-
-    // Results travel back to the thread the runner was created on, the GUI thread.
+    // The runner itself stays on the GUI thread; the workers below call into it directly. The
+    // result signals are queued, so they arrive back on the GUI thread where m_guiAnchor lives.
     connect(this, &GitAsyncRunner::jobFinished,
-            m_guiAnchor, [this](qint64 id, void *controller, const QString &method, const QVariant &result, qint64 generation)
+            m_guiAnchor, [this](qint64 id, void *controller, const QString &method, const QVariant &result, void *repo)
             {
-                deliverFinished(id, controller, method, result, generation);
+                deliverFinished(id, controller, method, result, repo);
             },
             Qt::QueuedConnection);
 
     connect(this, &GitAsyncRunner::jobFailed,
-            m_guiAnchor, [this](qint64 id, void *controller, const QString &method, const QString &error, qint64 generation)
+            m_guiAnchor, [this](qint64 id, void *controller, const QString &method, const QString &error, void *repo)
             {
-                deliverFailed(id, controller, method, error, generation);
+                deliverFailed(id, controller, method, error, repo);
             },
             Qt::QueuedConnection);
 
-    m_thread->start();
+    startWorkers(&m_local, qBound(2, QThread::idealThreadCount() / 2, 8), QStringLiteral("GitLocal"));
+
+    startWorkers(&m_network, 4, QStringLiteral("GitNetwork"));
+}
+
+void GitAsyncRunner::startWorkers(Pool *pool, int count, const QString &name)
+{
+    for (int i = 0; i < count; ++i)
+    {
+        QThread *thread = QThread::create([this, pool] { workerLoop(pool); });
+        thread->setObjectName(QStringLiteral("%1-%2").arg(name).arg(i));
+
+        pool->threads.append(thread);
+        thread->start();
+    }
+}
+
+GitAsyncRunner::RepoAccessInfo GitAsyncRunner::accessFor(const QString &method, Repository *lane)
+{
+    RepoAccessInfo info;
+
+    if (method == QLatin1String("clone"))
+    {
+        info.pool = &m_network;
+        return info;
+    }
+
+    // Pure transfers. They move objects and remote refs and leave the working tree alone
+    if (method == QLatin1String("fetch")
+        || method == QLatin1String("fetchWithToken")
+        || method == QLatin1String("push")
+        || method == QLatin1String("pushTag")
+        || method == QLatin1String("pushDeleteTag"))
+    {
+        info.pool   = &m_network;
+        info.lock   = IGitController::networkMutex(lane);
+        info.handle = lane ? (lane->netRepo ? lane->netRepo : lane->repo) : nullptr;
+
+        return info;
+    }
+
+    // Everything else, pull included.
+    info.pool   = &m_local;
+    info.lock   = IGitController::repoMutex(lane);
+    info.handle = lane ? lane->repo : nullptr;
+
+    return info;
 }
 
 GitAsyncRunner::~GitAsyncRunner()
 {
+    {
+        QMutexLocker locker(&m_mutex);
+        m_stopping = true;
+    }
+
+    m_wake.wakeAll();
+
+    const QList<QThread *> threads = m_local.threads + m_network.threads;
+
+    for (QThread *thread : threads)
+    {
+        if (thread->wait(10000))
+            delete thread;
+    }
+
+    m_local.threads.clear();
+    m_network.threads.clear();
+
     delete m_guiAnchor;
     m_guiAnchor = nullptr;
-
-    if (m_thread)
-    {
-        m_thread->quit();
-        m_thread->wait(10000);
-        delete m_thread;
-        m_thread = nullptr;
-    }
 }
 
 GitAsyncRunner *GitAsyncRunner::instance()
@@ -79,37 +128,102 @@ qint64 GitAsyncRunner::submit(IGitController *controller, const QString &method,
 
     const qint64 id = m_nextRequestId.fetchAndAddOrdered(1);
 
-    emit jobQueued(id, static_cast<void *>(controller), method, args, controller->repoGeneration());
+    Job job;
+    job.requestId      = id;
+    job.controller     = controller;
+    job.method         = method;
+    job.args           = args;
+
+    Repository *lane = controller->currentRepo();
+    job.repo = lane;
+
+    {
+        QMutexLocker locker(&m_mutex);
+        accessFor(method, lane).pool->lanes[lane].pending.enqueue(job);
+    }
+
+    m_wake.wakeAll();
 
     return id;
 }
 
-void GitAsyncRunner::executeJob(qint64 requestId, void *controller, const QString &method, const QVariantList &args, qint64 repoGeneration)
+void GitAsyncRunner::workerLoop(Pool *pool)
 {
-    auto *target = static_cast<IGitController *>(controller);
+    QMutexLocker locker(&m_mutex);
 
-    // Serialise all libgit2 access.
-    QMutexLocker<QRecursiveMutex> repoLocker(target->repoMutex());
-
-    // The repository may have changed while the job was queued.
-    if (target->repoGeneration() != repoGeneration)
+    for (;;)
     {
-        emit jobFailed(requestId, controller, method, QStringLiteral("stale"), repoGeneration);
-        return;
+        Repository *lane = nullptr;
+        Job         job;
+
+        if (!takeReadyJob(pool, &lane, &job))
+        {
+            if (m_stopping)
+                return;
+
+            m_wake.wait(&m_mutex);
+            continue;
+        }
+
+        locker.unlock();
+        runJob(job, lane);
+        locker.relock();
+
+        auto it = pool->lanes.find(lane);
+
+        if (it != pool->lanes.end())
+        {
+            it->running = false;
+
+            if (it->pending.isEmpty())
+                pool->lanes.erase(it);
+        }
+
+        m_wake.wakeAll();
     }
+}
+
+bool GitAsyncRunner::takeReadyJob(Pool *pool, Repository **lane, Job *job)
+{
+    for (auto it = pool->lanes.begin(); it != pool->lanes.end(); ++it)
+    {
+        if (it->running || it->pending.isEmpty())
+            continue;
+
+        it->running = true;
+
+        *job  = it->pending.dequeue();
+        *lane = it.key();
+
+        return true;
+    }
+
+    return false;
+}
+
+void GitAsyncRunner::runJob(const Job &job, Repository *lane)
+{
+    const RepoAccessInfo access = accessFor(job.method, lane);
+
+    QMutexLocker<QRecursiveMutex> repoLocker(access.lock);
+
+    IGitController::ActiveRepoScope repoScope(access.handle);
+
+    IGitController *target  = job.controller;
+    auto *controller        = static_cast<void *>(target);
 
     QVariant result;
     QString error;
 
-    const bool ok = invokeByName(target, method, args, &result, &error);
+    const bool ok = invokeByName(target, job.method, job.args, &result, &error);
 
     if (!ok)
     {
-        emit jobFailed(requestId, controller, method, error, repoGeneration);
+        emit jobFailed(job.requestId, controller, job.method, error, static_cast<void *>(job.repo));
         return;
     }
 
-    emit jobFinished(requestId, controller, method, result, repoGeneration);
+    emit jobFinished(job.requestId, controller, job.method, result, static_cast<void *>(job.repo));
 }
 
 bool GitAsyncRunner::invokeByName(QObject *target, const QString &methodName, const QVariantList &args, QVariant *result, QString *error)
@@ -204,16 +318,16 @@ bool GitAsyncRunner::invokeByName(QObject *target, const QString &methodName, co
     return ok;
 }
 
-void GitAsyncRunner::deliverFinished(qint64 requestId,void *controller,const QString &method,const QVariant &result, qint64 repoGeneration)
+void GitAsyncRunner::deliverFinished(qint64 requestId, void *controller, const QString &method, const QVariant &result, void *repo)
 {
     auto *target = static_cast<IGitController *>(controller);
 
-    target->emitAsyncFinished(requestId, method, result, repoGeneration);
+    target->emitAsyncFinished(requestId, method, result, static_cast<Repository *>(repo));
 }
 
-void GitAsyncRunner::deliverFailed(qint64 requestId, void *controller, const QString &method, const QString &error, qint64 repoGeneration)
+void GitAsyncRunner::deliverFailed(qint64 requestId, void *controller, const QString &method, const QString &error, void *repo)
 {
     auto *target = static_cast<IGitController *>(controller);
 
-    target->emitAsyncFailed(requestId, method, error, repoGeneration);
+    target->emitAsyncFailed(requestId, method, error, static_cast<Repository *>(repo));
 }

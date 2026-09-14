@@ -17,4 +17,9 @@ Repository::~Repository()
         git_repository_free(repo);
         repo = nullptr;
     }
+
+    if (netRepo) {
+        git_repository_free(netRepo);
+        netRepo = nullptr;
+    }
 }

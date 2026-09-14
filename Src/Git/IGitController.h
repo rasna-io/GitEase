@@ -9,8 +9,6 @@
 #include <QMutexLocker>
 #include <QMutex>
 
-
-
 class IGitController : public QObject
 {
     Q_OBJECT
@@ -43,20 +41,60 @@ public:
     qint64 repoGeneration() const;
 
     /**
-     * @brief The lock every libgit2 access must hold.
+     * @brief The lock a libgit2 access must hold, for one repository.
      *
-     * A `git_repository*` is not safe for concurrent use, and libgit2's own caches are shared
-     * process-wide, so one recursive lock guards all of it. Recursive because several
-     * Q_INVOKABLEs legitimately call one another on the same thread.
-     *
-     * The async runner takes this around every queued job. Synchronous calls still made from
-     * the GUI thread take it via QMutexLocker directly.
+     * A `git_repository*` is not safe for concurrent use, so work on the same repository is
+     * serialised. Two *different* repositories carry independent locks and run side by side,
+     * which is what lets a newly opened repository load while a fetch on the previous one is
+     * still in flight.
      */
-    static QRecursiveMutex *repoMutex();
+    static QRecursiveMutex *repoMutex(Repository *repo);
+
+    /**
+     * @brief The lock for a repository's transfer handle.
+     *
+     * Held by fetch and push instead of repoMutex(), which is what keeps reads on the same
+     * repository responsive while a transfer is running.
+     */
+    static QRecursiveMutex *networkMutex(Repository *repo);
+
+    /**
+     * @brief The repository handle the code running right now should use.
+     *
+     * Every libgit2 call in the controllers goes through this rather than reaching for a
+     * handle itself, so that which handle a method uses is decided in exactly one place -
+     * GitAsyncRunner::accessForMethod() - instead of being hard-coded call site by call site.
+     *
+     * The runner binds this for the duration of each queued job. Synchronous calls made
+     * straight from the GUI thread bind nothing, and fall back to the main handle.
+     */
+    git_repository *activeRepo() const;
+
+    /**
+     * @brief Binds activeRepo() to one handle for as long as it exists, on this thread only.
+     *
+     * Thread local because one controller can be running two jobs at once - a job for one
+     * repository on one worker and a job for another repository on a second - and a shared
+     * member would let them overwrite each other's handle. A job runs start to finish on a
+     * single thread, so a thread local value is private to it.
+     */
+    class ActiveRepoScope
+    {
+        public:
+            explicit ActiveRepoScope(git_repository *repo);
+            ~ActiveRepoScope();
+
+            ActiveRepoScope(const ActiveRepoScope &)            = delete;
+            ActiveRepoScope &operator=(const ActiveRepoScope &) = delete;
+
+        private:
+            git_repository *m_previous = nullptr;
+    };
+
 
     //! Called by GitAsyncRunner on the GUI thread. Not meant for anything else.
-    void emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration);
-    void emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration);
+    void emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, Repository *jobRepo);
+    void emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, Repository *jobRepo);
 
 signals:
     void currentRepoChanged();
@@ -74,7 +112,4 @@ protected:
     static QString quoteCommandArg(const QString &argument);
 
     Repository *m_currentRepo = nullptr;
-
-private:
-    qint64 m_repoGeneration = 0;
 };

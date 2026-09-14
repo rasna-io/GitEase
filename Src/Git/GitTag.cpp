@@ -9,16 +9,16 @@ GitTag::GitTag(QObject *parent)
 
 GitResult GitTag::list()
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not open");
     }
 
     QVariantList tagList;
     TagPayload payload;
-    payload.repo = m_currentRepo->repo;
+    payload.repo = activeRepo();
     payload.list = &tagList;
 
-    int error = git_tag_foreach(m_currentRepo->repo, tagForeachCallback, &payload);
+    int error = git_tag_foreach(activeRepo(), tagForeachCallback, &payload);
 
     if (error < 0) {
         return GitResult(false, QVariant(), "Failed to iterate tags");
@@ -34,7 +34,7 @@ GitResult GitTag::list()
 
 GitResult GitTag::create(const QString &name, const QString &targetId, const QString &message, bool force)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not open");
 
     git_oid target_oid;
@@ -44,7 +44,7 @@ GitResult GitTag::create(const QString &name, const QString &targetId, const QSt
     int error = 0;
 
     if (strcmp(targetId.toUtf8().constData(), "HEAD") == 0) {
-        error = git_revparse_single(&target_obj, m_currentRepo->repo, "HEAD^{commit}");
+        error = git_revparse_single(&target_obj, activeRepo(), "HEAD^{commit}");
         if (error != 0)
             return GitResult(false, "Failed to resolve HEAD");
 
@@ -54,7 +54,7 @@ GitResult GitTag::create(const QString &name, const QString &targetId, const QSt
         if (git_oid_fromstr(&target_oid, targetId.toUtf8().constData()) < 0)
             return GitResult(false, QVariant(), "Invalid Commit ID");
 
-        if (git_object_lookup(&target_obj, m_currentRepo->repo, &target_oid, GIT_OBJECT_ANY) < 0)
+        if (git_object_lookup(&target_obj, activeRepo(), &target_oid, GIT_OBJECT_ANY) < 0)
         {
             git_object_free(target_obj);
             return GitResult(false);
@@ -62,14 +62,14 @@ GitResult GitTag::create(const QString &name, const QString &targetId, const QSt
     }
 
     if (message.isEmpty()) {
-        error = git_tag_create_lightweight(&tag_oid, m_currentRepo->repo, name.toUtf8().constData(), target_obj, force ? 1 : 0);
+        error = git_tag_create_lightweight(&tag_oid, activeRepo(), name.toUtf8().constData(), target_obj, force ? 1 : 0);
     } else {
-        if (git_signature_default(&signature, m_currentRepo->repo) < 0) {
+        if (git_signature_default(&signature, activeRepo()) < 0) {
             git_object_free(target_obj);
             return GitResult(false, QVariant(), "Git signature not found (set user.name and user.email)");
         }
 
-        error = git_tag_create(&tag_oid, m_currentRepo->repo, name.toUtf8().constData(), target_obj, signature, message.toUtf8().constData(), force ? 1 : 0);
+        error = git_tag_create(&tag_oid, activeRepo(), name.toUtf8().constData(), target_obj, signature, message.toUtf8().constData(), force ? 1 : 0);
     }
 
     if (signature) git_signature_free(signature);
@@ -84,10 +84,10 @@ GitResult GitTag::create(const QString &name, const QString &targetId, const QSt
 
 GitResult GitTag::remove(const QString &name)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not open");
 
-    int error = git_tag_delete(m_currentRepo->repo, name.toUtf8().constData());
+    int error = git_tag_delete(activeRepo(), name.toUtf8().constData());
 
     if (error < 0)
         return GitResult(false);
@@ -118,11 +118,11 @@ GitResult GitTag::pushTag(const QString &name)
 
 GitResult GitTag::pushTagInternal(const QString &name)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, "Repository not open");
 
     git_remote *remote = nullptr;
-    if (git_remote_lookup(&remote, m_currentRepo->repo, "origin") != 0)
+    if (git_remote_lookup(&remote, activeRepo(), "origin") != 0)
         return GitResult(false, "Remote 'origin' not found");
 
     QString refSpec = QString("refs/tags/%1:refs/tags/%1").arg(name);
@@ -155,11 +155,11 @@ GitResult GitTag::pushDeleteTag(const QString &name)
 
 GitResult GitTag::pushDeleteTagInternal(const QString &name)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, "Repository not open");
 
     git_remote *remote = nullptr;
-    if (git_remote_lookup(&remote, m_currentRepo->repo, "origin") != 0)
+    if (git_remote_lookup(&remote, activeRepo(), "origin") != 0)
         return GitResult(false, "Remote 'origin' not found");
 
     QString refSpec = QString(":refs/tags/%1").arg(name);

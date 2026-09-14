@@ -10,7 +10,7 @@ GitConfig::GitConfig(QObject *parent)
 GitResult GitConfig::getAllConfigs()
 {
     // Check if the repository is open
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -38,9 +38,9 @@ GitResult GitConfig::getAllConfigs()
     }
 
     // Get Local config (if repository is open)
-    if (m_currentRepo && m_currentRepo->repo) {
+    if (m_currentRepo && activeRepo()) {
         git_config *repoConfig = nullptr;
-        error = git_repository_config(&repoConfig, m_currentRepo->repo);
+        error = git_repository_config(&repoConfig, activeRepo());
         if (error == 0) {
             Config localConfig = getConfigAtLevel(repoConfig, Config::ConfigLevel::Local);
             if (!localConfig.name().isEmpty() || !localConfig.email().isEmpty()) {
@@ -66,12 +66,12 @@ GitResult GitConfig::getConfig(int level)
 
     // For local/worktree, need repository
     if ((configLevel == Config::ConfigLevel::Local || configLevel == Config::ConfigLevel::Worktree) &&
-        (!m_currentRepo || !m_currentRepo->repo)) {
+        (!m_currentRepo || !activeRepo())) {
         return GitResult(false, QVariant(), "No repository open");
     }
 
     if (configLevel == Config::ConfigLevel::Local || configLevel == Config::ConfigLevel::Worktree) {
-        error = git_repository_config(&cfg, m_currentRepo->repo);
+        error = git_repository_config(&cfg, activeRepo());
     } else {
         error = git_config_open_default(&cfg);
     }
@@ -101,12 +101,12 @@ GitResult GitConfig::setConfig(int level, const QString &name, const QString &em
 
     // For local/worktree, need repository
     if ((configLevel == Config::ConfigLevel::Local || configLevel == Config::ConfigLevel::Worktree) &&
-        (!m_currentRepo || !m_currentRepo->repo)) {
+        (!m_currentRepo || !activeRepo())) {
         return GitResult(false, QVariant(), "No repository open");
     }
 
     if (configLevel == Config::ConfigLevel::Local || configLevel == Config::ConfigLevel::Worktree) {
-        error = git_repository_config(&cfg, m_currentRepo->repo);
+        error = git_repository_config(&cfg, activeRepo());
     } else {
         error = git_config_open_default(&cfg);
     }
@@ -244,12 +244,12 @@ GitResult GitConfig::setValue(int level, const QString &key, const QString &valu
 
     // For local/worktree, need repository
     if ((configLevel == Config::ConfigLevel::Local || configLevel == Config::ConfigLevel::Worktree) &&
-        (!m_currentRepo || !m_currentRepo->repo)) {
+        (!m_currentRepo || !activeRepo())) {
         return GitResult(false, QVariant(), "No repository open");
     }
 
     if (configLevel == Config::ConfigLevel::Local || configLevel == Config::ConfigLevel::Worktree) {
-        error = git_repository_config(&cfg, m_currentRepo->repo);
+        error = git_repository_config(&cfg, activeRepo());
     } else {
         error = git_config_open_default(&cfg);
     }
@@ -317,12 +317,12 @@ GitResult GitConfig::getValue(int level, const QString &key)
 
     // For local/worktree, need repository
     if ((configLevel == Config::ConfigLevel::Local || configLevel == Config::ConfigLevel::Worktree) &&
-        (!m_currentRepo || !m_currentRepo->repo)) {
+        (!m_currentRepo || !activeRepo())) {
         return GitResult(false, QVariant(), "No repository open");
     }
 
     if (configLevel == Config::ConfigLevel::Local || configLevel == Config::ConfigLevel::Worktree) {
-        error = git_repository_config(&cfg, m_currentRepo->repo);
+        error = git_repository_config(&cfg, activeRepo());
     } else {
         error = git_config_open_default(&cfg);
     }

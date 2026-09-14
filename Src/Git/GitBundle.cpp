@@ -108,7 +108,7 @@ GitResult GitBundle::buildCompleteBundle(const QString &resolvedBranchName,
     context.bundlePath = path.endsWith(".bundle") ? path : path + ".bundle";
 
     // Resolve branch to commit
-    git_object* commit = GitBranch::getHead(m_currentRepo->repo, resolvedBranchName);
+    git_object* commit = GitBranch::getHead(activeRepo(), resolvedBranchName);
 
     const git_oid* commitOid = git_object_id(commit);
     QString headCommitSha = gitOidToString(commitOid);
@@ -217,7 +217,7 @@ GitResult GitBundle::setupCompletePackbuilder(const git_oid *targetOid,
                                               git_packbuilder *&packbuilder,
                                               git_revwalk *&walker)
 {
-    int error = git_packbuilder_new(&packbuilder, m_currentRepo->repo);
+    int error = git_packbuilder_new(&packbuilder, activeRepo());
     if (error != GIT_OK) {
         return GitResult(false, QVariant(),
                          "Failed to create packbuilder.");
@@ -230,7 +230,7 @@ GitResult GitBundle::setupCompletePackbuilder(const git_oid *targetOid,
     }
 
     // Walk through history to include all commits
-    error = git_revwalk_new(&walker, m_currentRepo->repo);
+    error = git_revwalk_new(&walker, activeRepo());
     if (error == GIT_OK) {
         git_revwalk_sorting(walker, GIT_SORT_TOPOLOGICAL);
         git_revwalk_push(walker, targetOid);
@@ -249,7 +249,7 @@ GitResult GitBundle::setupCompletePackbuilder(const git_oid *targetOid,
 QPair<const git_oid *, QString> GitBundle::getReferenceCommit(const QString &ref)
 {
     git_object* obj = nullptr;
-    int error = git_revparse_single(&obj, m_currentRepo->repo,
+    int error = git_revparse_single(&obj, activeRepo(),
                                     ref.toUtf8().constData());
     if (error != 0) {
         return QPair<git_oid *, QString>(nullptr, "");
@@ -264,12 +264,12 @@ QPair<const git_oid *, QString> GitBundle::getReferenceCommit(const QString &ref
 
 GitResult GitBundle::setupDiffPackbuilder(const git_oid *baseOid, const git_oid *targetOid, git_packbuilder *&packbuilder, git_revwalk *&walker, int &commitCount, QStringList &newCommitShas)
 {
-    int error = git_packbuilder_new(&packbuilder, m_currentRepo->repo);
+    int error = git_packbuilder_new(&packbuilder, activeRepo());
     if (error != GIT_OK) {
         return GitResult(false, QVariant(), "Failed to create packbuilder.");
     }
 
-    error = git_revwalk_new(&walker, m_currentRepo->repo);
+    error = git_revwalk_new(&walker, activeRepo());
     if (error != GIT_OK) {
         return GitResult(false, QVariant(), "Failed to create revision walker.");
     }
@@ -327,7 +327,7 @@ void GitBundle::collectCommitObjects(const git_oid *commitOid, QSet<QString> &co
 {
     // Get commit object
     git_commit* commit = nullptr;
-    if (git_commit_lookup(&commit, m_currentRepo->repo, commitOid) != 0) {
+    if (git_commit_lookup(&commit, activeRepo(), commitOid) != 0) {
         return;
     }
 
@@ -344,7 +344,7 @@ void GitBundle::collectCommitObjects(const git_oid *commitOid, QSet<QString> &co
 
             // Get tree object and collect its contents
             git_tree* tree = nullptr;
-            if (git_tree_lookup(&tree, m_currentRepo->repo, treeOid) == 0) {
+            if (git_tree_lookup(&tree, activeRepo(), treeOid) == 0) {
                 collectTreeObjects(tree, collectedObjects);
                 git_tree_free(tree);
             }
@@ -373,7 +373,7 @@ void GitBundle::collectTreeObjects(git_tree *tree, QSet<QString> &collectedObjec
         // If this is a subtree, recurse
         if (git_tree_entry_type(entry) == GIT_OBJECT_TREE) {
             git_tree* subtree = nullptr;
-            if (git_tree_lookup(&subtree, m_currentRepo->repo, entryOid) == 0) {
+            if (git_tree_lookup(&subtree, activeRepo(), entryOid) == 0) {
                 collectTreeObjects(subtree, collectedObjects);
                 git_tree_free(subtree);
             }
@@ -477,7 +477,7 @@ GitResult GitBundle::unbundle(const QString &bundlePath)
     }
 
     git_object *commit_obj = nullptr;
-    int error = git_object_lookup(&commit_obj, m_currentRepo->repo, &target_oid, GIT_OBJECT_COMMIT);
+    int error = git_object_lookup(&commit_obj, activeRepo(), &target_oid, GIT_OBJECT_COMMIT);
     if (error != 0) {
         const git_error *e = giterr_last();
         QString errorMsg = e ? QString::fromUtf8(e->message) : "Commit object not found in repository";
@@ -541,7 +541,7 @@ GitResult GitBundle::checkCommitExists(const QString &commitSha, bool &exists)
     git_object *commitObj = nullptr;
     int err = git_object_lookup(
         &commitObj,
-        m_currentRepo->repo,
+        activeRepo(),
         &targetOid,
         GIT_OBJECT_COMMIT
         );
@@ -632,7 +632,7 @@ bool GitBundle::verifyPackDataManually(const QByteArray &packData)
 bool GitBundle::addPackDataToRepository(const QByteArray &packData)
 {
     // Get repository's objects/pack directory
-    const char *repoPath = git_repository_path(m_currentRepo->repo);
+    const char *repoPath = git_repository_path(activeRepo());
     QString objectsPackDir = QString::fromUtf8(repoPath) + "/objects/pack";
 
     QDir packDir(objectsPackDir);
@@ -644,7 +644,7 @@ bool GitBundle::addPackDataToRepository(const QByteArray &packData)
 
     // Get the repository's ODB for the indexer
     git_odb *odb = nullptr;
-    int error = git_repository_odb(&odb, m_currentRepo->repo);
+    int error = git_repository_odb(&odb, activeRepo());
     if (error != 0) {
         const git_error *e = giterr_last();
         return false;
