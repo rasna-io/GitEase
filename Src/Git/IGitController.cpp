@@ -1,5 +1,11 @@
 #include "IGitController.h"
 #include "Async/GitAsyncRunner.h"
+
+namespace
+{
+    thread_local git_repository *t_activeRepo = nullptr;
+}
+
 IGitController::IGitController(QObject *parent)
     : QObject{parent}
 {
@@ -12,26 +18,25 @@ Repository *IGitController::currentRepo() const
 
 void IGitController::setCurrentRepo(Repository *newCurrentRepo)
 {
-    // QMutexLocker<QRecursiveMutex> repoLocker(repoMutex());
-
     if (m_currentRepo == newCurrentRepo)
         return;
     m_currentRepo = newCurrentRepo;
 
-    ++m_repoGeneration;
-
     emit currentRepoChanged();
 }
 
-QRecursiveMutex *IGitController::repoMutex()
+QRecursiveMutex *IGitController::repoMutex(Repository *repo)
 {
-    static QRecursiveMutex mutex;
-    return &mutex;
+    static QRecursiveMutex fallback;
+
+    return repo ? &repo->mutex : &fallback;
 }
 
-qint64 IGitController::repoGeneration() const
+QRecursiveMutex *IGitController::networkMutex(Repository *repo)
 {
-    return m_repoGeneration;
+    static QRecursiveMutex fallback;
+
+    return repo ? &repo->netMutex : &fallback;
 }
 
 qint64 IGitController::callAsync(const QString &method, const QVariantList &args)
@@ -39,16 +44,14 @@ qint64 IGitController::callAsync(const QString &method, const QVariantList &args
     return GitAsyncRunner::instance()->submit(this, method, args);
 }
 
-void IGitController::emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, qint64 repoGeneration)
+void IGitController::emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, Repository *jobRepo)
 {
-    bool isRepoChanged = (repoGeneration != m_repoGeneration);
-    emit asyncFinished(requestId, method, result, isRepoChanged);
+    emit asyncFinished(requestId, method, result, jobRepo != m_currentRepo);
 }
 
-void IGitController::emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, qint64 repoGeneration)
+void IGitController::emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, Repository *jobRepo)
 {
-   bool isRepoChanged = (repoGeneration != m_repoGeneration);
-    emit asyncFailed(requestId, method, error, isRepoChanged);
+    emit asyncFailed(requestId, method, error, jobRepo != m_currentRepo);
 }
 
 QString IGitController::gitOidToString(const git_oid *oid)
@@ -77,4 +80,23 @@ QString IGitController::quoteCommandArg(const QString &argument)
     escaped.replace("\\", "\\\\");
     escaped.replace("\"", "\\\"");
     return "\"" + escaped + "\"";
+}
+
+IGitController::ActiveRepoScope::ActiveRepoScope(git_repository *repo)
+    : m_previous(t_activeRepo)
+{
+    t_activeRepo = repo;
+}
+
+IGitController::ActiveRepoScope::~ActiveRepoScope()
+{
+    t_activeRepo = m_previous;
+}
+
+git_repository *IGitController::activeRepo() const
+{
+    if (t_activeRepo)
+        return t_activeRepo;
+
+    return m_currentRepo ? m_currentRepo->repo : nullptr;
 }
