@@ -445,7 +445,6 @@ DetachablePanel {
             root.selectedCommit         = null
             root.selectedCommitHashes   = []
             root.lastSelectedIndex      = -1
-            root.reloadAll()
         }
     }
 
@@ -453,7 +452,6 @@ DetachablePanel {
         target: root.addTagPopup
         function onTagCreatedSuccessfully() {
             root.selectedCommit = null
-            root.reloadAll()
         }
     }
 
@@ -465,14 +463,6 @@ DetachablePanel {
 
         function onShowStashNodesChanged() {
             root.refreshStashNodes()
-        }
-    }
-
-    Connections {
-        target: root.terminalController
-
-        function onGitStateChanged() {
-            root.reloadAll()
         }
     }
 

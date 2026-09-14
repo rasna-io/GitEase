@@ -18,6 +18,7 @@ Rectangle {
      * ****************************************************************************************/
     property RepositoryController    repositoryController: null
     property GuideController         guideController:      null
+    property GitStateNotifier        gitStateNotifier:     null
     property var                     repositories:         []
     property Repository              currentRepository:    null
     property var                     recentRepositories:   []
@@ -102,6 +103,13 @@ Rectangle {
     onRepositoriesChanged: Qt.callLater(root.refreshBranches)
     onCurrentRepositoryChanged: Qt.callLater(root.refreshBranches)
     Component.onCompleted: root.refreshBranches()
+
+    Connections {
+        target: root.gitStateNotifier
+        function onRepositoryChanged() {
+            root.refreshBranches()
+        }
+    }
 
     /* Guide
      * ****************************************************************************************/

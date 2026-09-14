@@ -358,6 +358,7 @@ RowLayout {
         icon.width: Style.appFont.largePt
         icon.height: Style.appFont.largePt
         solidIcon: false
+        tooltip: "Reload graph view"
 
         onClicked: headerRow.reloadRequested()
     }
@@ -464,7 +465,7 @@ RowLayout {
                     targetProvider: function() { return reloadButton },
                     icon: Style.icons.refresh,
                     title: "Reload Graph",
-                    description: "Reload the entire commit graph from the repository. Use this after external changes."
+                    description: "Reload the commit graph and the utility docks from the repository. With \"Auto Update\" turned off in the settings this is the only thing that rebuilds the graph."
                 }
             ]
         }

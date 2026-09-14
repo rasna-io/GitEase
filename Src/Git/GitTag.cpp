@@ -29,6 +29,8 @@ GitResult GitTag::list()
         return a.toMap()["name"].toString() < b.toMap()["name"].toString();
     });
 
+    emitGitCommand("git tag -l");
+
     return GitResult(true, tagList);
 }
 
@@ -78,6 +80,14 @@ GitResult GitTag::create(const QString &name, const QString &targetId, const QSt
     if (error < 0)
         return GitResult(false);
 
+    QString command = "git tag";
+    if (force)
+        command += " -f";
+    if (!message.isEmpty())
+        command += " -a -m " + quoteCommandArg(message);
+    command += " " + quoteCommandArg(name);
+    emitGitCommand(command);
+
     emit tagsChanged();
     return GitResult(true);
 }
@@ -91,6 +101,8 @@ GitResult GitTag::remove(const QString &name)
 
     if (error < 0)
         return GitResult(false);
+
+    emitGitCommand(QString("git tag -d %1").arg(quoteCommandArg(name)));
 
     emit tagsChanged();
     return GitResult(true);
@@ -113,7 +125,12 @@ int credentials_cb(git_credential **out, const char *url, const char *user_from_
 
 GitResult GitTag::pushTag(const QString &name)
 {
-    return pushTagInternal(name);
+    GitResult result = pushTagInternal(name);
+
+    if (result.success())
+        emitGitCommand(QString("git push origin %1").arg(quoteCommandArg(name)));
+
+    return result;
 }
 
 GitResult GitTag::pushTagInternal(const QString &name)
@@ -150,7 +167,12 @@ GitResult GitTag::pushTagInternal(const QString &name)
 
 GitResult GitTag::pushDeleteTag(const QString &name)
 {
-    return pushDeleteTagInternal(name);
+    GitResult result = pushDeleteTagInternal(name);
+
+    if (result.success())
+        emitGitCommand(QString("git push origin --delete %1").arg(quoteCommandArg(name)));
+
+    return result;
 }
 
 GitResult GitTag::pushDeleteTagInternal(const QString &name)
