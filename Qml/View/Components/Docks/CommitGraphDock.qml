@@ -74,6 +74,7 @@ DetachablePanel {
     property int    pageSize        : 200
     property int    commitsOffset   : 0
     property bool   isLoadingMore   : false
+    property bool   loadMoreIndicatorVisible: false
     property bool   hasMoreCommits  : true
 
     property int    reloadToken     : 0
@@ -117,6 +118,17 @@ DetachablePanel {
         context: Qt.WindowShortcut
         enabled: root.canRebaseSelected
         onActivated: root.executeRebase(root.selectedCommit.hash)
+    }
+
+    Timer {
+        id: loadMoreIndicatorMinimumTimer
+        interval: 600
+        repeat: false
+
+        onTriggered: {
+            if (!root.isLoadingMore)
+                root.loadMoreIndicatorVisible = false
+        }
     }
 
     Rectangle {
@@ -414,6 +426,57 @@ DetachablePanel {
                 }
             }
         }
+
+        Rectangle {
+            id: loadMoreIndicator
+
+            anchors {
+                horizontalCenter: parent.horizontalCenter
+                bottom: parent.bottom
+                bottomMargin: 10
+            }
+
+            width: loadMoreIndicatorRow.implicitWidth + 20
+            height: 30
+            radius: 5
+            color: Style.colors.headerButtonBackground
+            border.width: 1
+            border.color: Style.colors.headerButtonBorder
+            z: 100
+            opacity: root.loadMoreIndicatorVisible ? 1 : 0
+            visible: opacity > 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 120
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Row {
+                id: loadMoreIndicatorRow
+
+                anchors.centerIn: parent
+                spacing: 6
+
+                BusyIndicator {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 30
+                    height: 30
+                    running: root.loadMoreIndicatorVisible
+                    Material.accent: Style.colors.accent
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Loading more commits…")
+                    color: Style.colors.secondaryText
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
+                    font.weight: Font.Medium
+                }
+            }
+        }
     }
 
     ContextMenu {
@@ -489,6 +552,15 @@ DetachablePanel {
     }
 
     onRepositoryControllerChanged: root.reloadAll()
+
+    onIsLoadingMoreChanged: {
+        if (root.isLoadingMore) {
+            root.loadMoreIndicatorVisible = true
+            loadMoreIndicatorMinimumTimer.restart()
+        } else if (!loadMoreIndicatorMinimumTimer.running) {
+            root.loadMoreIndicatorVisible = false
+        }
+    }
 
     onStashControllerChanged: {
         if (root.allCommits.length)
