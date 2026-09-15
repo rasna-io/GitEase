@@ -20,6 +20,20 @@ QtObject {
 
     /* Functions
      * ****************************************************************************************/
+    function toggleMaximize() {
+        if (!root.window || !root.windowController)
+            return
+
+        if (!Style.motionEnabled) {
+            root.windowController.toggleMaxRestore()
+            return
+        }
+
+        root.window.contentItem.scale = root.window.visibility === Window.Maximized ? 0.985 : 1
+        root.windowController.toggleMaxRestore()
+        restoreAnimation.restart()
+    }
+
     function minimize() {
         if (!root.window || !root.windowController)
             return
