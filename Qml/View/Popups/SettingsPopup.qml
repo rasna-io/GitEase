@@ -308,6 +308,12 @@ IPopup {
                         currentIndex: root.currentPage
                         interactive: false
 
+                        onCurrentIndexChanged: {
+                            if (root._pendingGuideId.length && currentIndex === root._pendingGuideTargetPage) {
+                                _guideAnimationTimer.start()
+                            }
+                        }
+
                         contentItem: ListView {
                             id: settingsPageContent
                             model: settingsSwipeView.contentModel
