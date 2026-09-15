@@ -77,6 +77,12 @@ DetachablePanel {
     property bool   loadMoreIndicatorVisible: false
     property bool   hasMoreCommits  : true
 
+    property real   lastContentY            : 0
+    property real   pendingRestoreContentY  : -1
+    property real   restoreDestinationY     : -1
+    property bool   suppressContentYTracking: false
+    property bool   scrollRestoreScheduled  : false
+
     property int    reloadToken     : 0
 
     property var commitPositions    : ({})
@@ -275,21 +281,27 @@ DetachablePanel {
 
                         clip: true
 
-                        interactive: commitViewsLayout.canScroll
+                        interactive: commitViewsLayout.canScroll && !scrollRestoreAnimation.running
                         flickableDirection: Flickable.VerticalFlick
 
                         property bool syncScroll: false
 
                         onContentYChanged: {
                             if (!syncScroll) {
+                                root.rememberScrollPosition(graphFlickable)
                                 commitsListView.syncScroll = true
                                 commitsListView.contentY = contentY
                                 commitsListView.syncScroll = false
                             }
                         }
 
+                        onMovementStarted: {
+                            if (!scrollRestoreAnimation.running)
+                                root.cancelPendingScrollRestore(graphFlickable)
+                        }
+
                         onInteractiveChanged: {
-                            if (!interactive) {
+                            if (!interactive && !commitViewsLayout.canScroll) {
                                 cancelFlick()
                                 contentY = originY
                             }
@@ -344,16 +356,22 @@ DetachablePanel {
 
                     model   : root.commits
                     clip    : true
-                    interactive: commitViewsLayout.canScroll
+                    interactive: commitViewsLayout.canScroll && !scrollRestoreAnimation.running
 
                     cacheBuffer: 400
 
                     property bool syncScroll: false
 
-                    onMovementStarted: commitFocusAnimation.stop()
+                    onMovementStarted: {
+                        commitFocusAnimation.stop()
+                        if (!scrollRestoreAnimation.running)
+                            root.cancelPendingScrollRestore(commitsListView)
+                    }
+
+                    onContentHeightChanged: root.scheduleScrollRestore()
 
                     onInteractiveChanged: {
-                        if (!interactive) {
+                        if (!interactive && !commitViewsLayout.canScroll) {
                             cancelFlick()
                             contentY = originY
                         }
@@ -362,13 +380,17 @@ DetachablePanel {
                     // Sync scroll position with graph
                     onContentYChanged: {
                         if (!syncScroll) {
+                            root.rememberScrollPosition(commitsListView)
                             graphFlickable.syncScroll = true
                             graphFlickable.contentY = contentY
                             graphFlickable.syncScroll = false
                         }
 
                         // Infinite scroll trigger (list side)
-                        if (!root.isLoadingMore && root.hasMoreCommits) {
+                        if (!root.suppressContentYTracking
+                                && root.pendingRestoreContentY < 0
+                                && !root.isLoadingMore
+                                && root.hasMoreCommits) {
                             var remaining = commitsListView.contentHeight - (commitsListView.contentY + commitsListView.height)
                             if (remaining < 300) {
                                 root.loadMoreCommits()
@@ -423,6 +445,16 @@ DetachablePanel {
                     property: "contentY"
                     duration: Style.motionMedium
                     easing.type: Easing.OutCubic
+                }
+
+                NumberAnimation {
+                    id: scrollRestoreAnimation
+                    target: commitsListView
+                    property: "contentY"
+                    duration: 200
+                    easing.type: Easing.InOutCubic
+
+                    onStopped: root.finishScrollRestore()
                 }
             }
         }
@@ -519,7 +551,7 @@ DetachablePanel {
     Connections {
         target: root.repositoryController
         function onRepositorySelected() {
-            root.reloadAll()
+            root.reloadAll(false)
         }
     }
 
@@ -551,7 +583,7 @@ DetachablePanel {
         }
     }
 
-    onRepositoryControllerChanged: root.reloadAll()
+    onRepositoryControllerChanged: root.reloadAll(false)
 
     onIsLoadingMoreChanged: {
         if (root.isLoadingMore) {
@@ -698,6 +730,106 @@ DetachablePanel {
         return GraphLayout.calculateDAGPositions(items, root.columnSpacing, root.commitItemHeight, root.commitItemSpacing)
     }
 
+    function scrollOffset(view) {
+        if (!view)
+            return 0
+
+        return Math.max(0, view.contentY - view.originY)
+    }
+
+    function rememberScrollPosition(view) {
+        if (root.suppressContentYTracking || root.pendingRestoreContentY >= 0)
+            return
+
+        root.lastContentY = scrollOffset(view)
+    }
+
+    function captureScrollPositionForReload() {
+        if (root.pendingRestoreContentY >= 0)
+            return
+
+        root.lastContentY = scrollOffset(commitsListView)
+        root.pendingRestoreContentY = root.lastContentY
+    }
+
+    function cancelPendingScrollRestore(view) {
+        root.pendingRestoreContentY = -1
+        root.restoreDestinationY = -1
+        scrollRestoreAnimation.stop()
+        root.rememberScrollPosition(view)
+    }
+
+    function resetScrollPosition() {
+        root.pendingRestoreContentY = -1
+        root.restoreDestinationY = -1
+        root.lastContentY = 0
+        scrollRestoreAnimation.stop()
+
+        root.suppressContentYTracking = true
+        if (commitsListView) {
+            commitsListView.cancelFlick()
+            commitsListView.contentY = commitsListView.originY
+        }
+        if (graphFlickable) {
+            graphFlickable.cancelFlick()
+            graphFlickable.contentY = graphFlickable.originY
+        }
+        root.suppressContentYTracking = false
+    }
+
+    function scheduleScrollRestore() {
+        if (root.pendingRestoreContentY < 0 || root.scrollRestoreScheduled)
+            return
+
+        root.scrollRestoreScheduled = true
+        Qt.callLater(function() {
+            root.scrollRestoreScheduled = false
+            root.restoreScrollPosition()
+        })
+    }
+
+    function restoreScrollPosition() {
+        if (root.pendingRestoreContentY < 0 || !commitsListView)
+            return
+
+        if (scrollRestoreAnimation.running)
+            return
+
+        var maximumOffset = Math.max(0, commitsListView.contentHeight - commitsListView.height)
+
+        if (maximumOffset + 0.5 < root.pendingRestoreContentY && root.hasMoreCommits) {
+            if (!root.isLoadingMore)
+                root.loadMoreCommits()
+            return
+        }
+
+        root.restoreDestinationY = Math.min(root.pendingRestoreContentY, maximumOffset)
+        var destinationContentY = commitsListView.originY + root.restoreDestinationY
+        var distance = Math.abs(destinationContentY - commitsListView.contentY)
+
+        if (distance < 0.5) {
+            root.finishScrollRestore()
+            return
+        }
+
+        scrollRestoreAnimation.from = commitsListView.contentY
+        scrollRestoreAnimation.to = destinationContentY
+        scrollRestoreAnimation.restart()
+    }
+
+    function finishScrollRestore() {
+        if (root.pendingRestoreContentY < 0 || root.restoreDestinationY < 0)
+            return
+
+        var currentOffset = scrollOffset(commitsListView)
+        if (Math.abs(currentOffset - root.restoreDestinationY) >= 0.5)
+            return
+
+        root.lastContentY = root.restoreDestinationY
+        root.pendingRestoreContentY = -1
+        root.restoreDestinationY = -1
+    }
+
     function applyFilter(text, startDate, endDate, modes) {
         if (text !== undefined)
             root.filterText = text
@@ -738,6 +870,7 @@ DetachablePanel {
         var positions = layoutCommits(items)
         root.commitPositions = positions
         root.commits = items.slice(0)
+        root.scheduleScrollRestore()
     }
 
     function update() {
@@ -745,12 +878,17 @@ DetachablePanel {
 
     }
 
-    function reloadAll() {
+    function reloadAll(preserveScrollPosition) {
         if (!root.appModel || !root.appModel.currentRepository)
             return
 
         if (!root.statusController || !root.commitController)
             return
+
+        if (preserveScrollPosition === undefined || preserveScrollPosition)
+            root.captureScrollPositionForReload()
+        else
+            root.resetScrollPosition()
 
         clearGraphCaches()
         root.commitsOffset  = 0
@@ -914,6 +1052,7 @@ DetachablePanel {
         if (!page.length) {
             hasMoreCommits = false
             isLoadingMore = false
+            root.scheduleScrollRestore()
             return
         }
 
