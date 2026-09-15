@@ -51,12 +51,12 @@ Rectangle {
                     color:          "#569CD6"
                     font.pixelSize: 14
                     font.bold:      true
-                    font.family:    Style.fontTypes.roboto
+                    font.family:    Style.fontTypes.inter
                 }
                 Label {
                     text:             filePathLabel.text !== "" ? filePathLabel.text : "QML Viewer"
                     color:            "#CCCCCC"
-                    font.family:      Style.fontTypes.roboto
+                    font.family:      Style.fontTypes.inter
                     font.pixelSize:   12
                     elide:            Text.ElideLeft
                     Layout.fillWidth: true
@@ -147,7 +147,7 @@ Rectangle {
                                 height:          Math.ceil(editor.contentHeight / Math.max(editor.lineCount, 1))
                                 text:            index + 1
                                 color:           "#858585"
-                                font.family:     "Consolas, Courier New, monospace"
+                                font.family:     Style.fontTypes.jetBrainsMono
                                 font.pixelSize:  13
                                 horizontalAlignment: Text.AlignRight
                                 rightPadding:    8
@@ -179,7 +179,7 @@ Rectangle {
                     visible:        editor.text.length === 0
                     text:           "Open a .qml file or paste code here…"
                     color:          "#555555"
-                    font.family:    "Consolas, Courier New, monospace"
+                    font.family:    Style.fontTypes.jetBrainsMono
                     font.pixelSize: 13
                     topPadding:     4
                     leftPadding:    8
@@ -195,7 +195,7 @@ Rectangle {
                     color:       "#D4D4D4"
                     selectionColor:         "#264F78"
                     selectedTextColor:      "#D4D4D4"
-                    font.family:            "Consolas, Courier New, monospace"
+                    font.family:            Style.fontTypes.jetBrainsMono
                     font.pixelSize:         13
                     // ── Syntax highlighter bound to this editor ───────────────
                     QmlSyntaxHighlighter {

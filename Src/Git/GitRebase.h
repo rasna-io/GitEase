@@ -55,10 +55,24 @@ public:
                                      const QString& upstream,
                                      QString branch = QString());
 
-    /// Build an interactive rebase plan without changing the repository.
-    Q_INVOKABLE GitResult previewRebasePlan(const QString& onto,
-                                            const QString& upstream,
-                                            const QString& branch = QString());
+    /**
+     * @brief Start an asynchronous generation of an interactive rebase plan.
+     *
+     * This function computes the list of commits that would be replayed by a
+     * rebase of `branch` onto `onto` (or `upstream` if `onto` is empty) in a
+     * background thread.  The plan is returned via the `previewRebasePlanReady`
+     * signal, allowing the UI to remain responsive while the computation runs.
+     *
+     * @param onto     New base commit (may be empty).
+     * @param upstream Upstream boundary; commits after this point are replayed.
+     * @param branch   Branch to rebase (empty = current HEAD).
+     * @return A GitResult indicating whether the asynchronous operation was
+     *         successfully started.  The actual plan is delivered through the
+     *         previewRebasePlanReady signal.
+     */
+    Q_INVOKABLE GitResult startPreviewRebasePlan(const QString& onto,
+                                                 const QString& upstream,
+                                                 const QString& branch);
 
 
     /// Continue an in-progress rebase (`git rebase --continue`).
@@ -137,6 +151,11 @@ private:
     QString getCurrentBranchName();
 
 
+    /// Build an interactive rebase plan without changing the repository.
+    GitResult previewRebasePlan(const QString& onto,
+                                const QString& upstream,
+                                const QString& branch = QString());
+
     /**
      * @brief Process the next entry in the plan.
      *
@@ -210,6 +229,19 @@ private:
     git_signature*  m_defaultSignature      = nullptr;
 
 signals:
+
+    /**
+     * @brief Emitted when the asynchronous rebase plan generation finishes.
+     *
+     * This signal is emitted after a call to startPreviewRebasePlan completes
+     * its background work.  The `result` parameter contains the GitResult
+     * object produced by the plan computation; on success its data field holds
+     * the plan map (commits, upstream, onto, branch, etc.).
+     *
+     * @param result The result of the plan generation.
+     */
+    void previewRebasePlanReady(GitResult result);
+
     /**
      * @brief Emitted when a rebase operation begins for a commit.
      *

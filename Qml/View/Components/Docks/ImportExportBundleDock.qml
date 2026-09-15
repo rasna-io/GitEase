@@ -15,9 +15,15 @@ Item {
 
     property BranchController branchController: null
     property BundleController bundleController: null
+    property NotificationController notificationController: null
+    property GuideController  guideController:  null
 
     /* Property Declarations
      * ****************************************************************************************/
+    implicitWidth: bundleCard.width
+    implicitHeight: bundleCard.height
+    width: implicitWidth
+    height: implicitHeight
 
     /* Signals
      * ****************************************************************************************/
@@ -25,10 +31,12 @@ Item {
     /* Children
      * ****************************************************************************************/
     ImportExportBundle {
-        anchors.fill: parent
+        id: bundleCard
 
         branchController: root.branchController
         bundleController: root.bundleController
+        notificationController: root.notificationController
+        guideController: root.guideController
     }
 
     /* Functions

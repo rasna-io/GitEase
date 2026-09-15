@@ -13,7 +13,10 @@ Popup {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var menuModel: [] // Format: [{ text: "Checkout", icon: "\uf00c", action: function(){}, enabled: true }]
+    //! Format: [{ text: "Checkout", icon: "\uf00c", action: function(){}, enabled: true,
+    //!            color: "#DC3545",      // optional: tints both label and icon
+    //!            iconColor: "#DC3545" }] // optional: tints the icon only
+    property var menuModel: []
 
     /* Object Properties
      * ****************************************************************************************/
@@ -26,9 +29,9 @@ Popup {
     padding: 6
 
     background: Rectangle {
-        color: Style.colors.secondaryBackground
+        color: Style.colors.contextMenuBackground
         radius: 4
-        border.color: Style.colors.primaryBorder
+        border.color: Style.colors.contextMenuBorder
         border.width: 1
     }
 
@@ -40,7 +43,7 @@ Popup {
         id: subMenuPopup
         property var subModel: []
         visible: subMenuPopup.subModel.length > 0
-        width: 200
+        width: 240
         padding: 6
         x: root.width - 4
         y: -padding
@@ -49,14 +52,14 @@ Popup {
         dim: false
 
         background: Rectangle {
-            color: Style.colors.secondaryBackground
+            color: Style.colors.contextMenuBackground
             radius: 4
-            border.color: Style.colors.primaryBorder
+            border.color: Style.colors.contextMenuBorder
             border.width: 1
         }
 
         contentItem: Column {
-            spacing: 2
+            spacing: 1
             width: parent.width
 
             Repeater {
@@ -71,11 +74,20 @@ Popup {
         Item {
             id: menuOption
             width: parent.width
-            height: modelData.separator ? 9 : 40
+            height: modelData.separator ? 9 : Style.dp(25)
             visible: modelData.visible !== false
             readonly property bool isSep:     !!modelData.separator
             readonly property bool isEnabled: !isSep && modelData.enabled !== false
             readonly property bool hasSub:    !isSep && !!modelData.subItems && modelData.subItems.length > 0
+
+            //! Per-item tinting: "color" applies to label and icon, "iconColor" overrides the icon.
+            readonly property bool  hasColor:  !isSep && modelData.color !== undefined && modelData.color !== ""
+            readonly property color textColor: hasColor ? modelData.color : Style.colors.foreground
+            readonly property color iconColor: (!isSep && modelData.iconColor !== undefined && modelData.iconColor !== "")
+                                               ? modelData.iconColor
+                                               : (hasColor ? modelData.color
+                                                           : (itemMouse.containsMouse ? Style.colors.accent
+                                                                                      : Style.colors.foreground))
 
             // Separator line
             Rectangle {
@@ -86,7 +98,7 @@ Popup {
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8
                 height: 1
-                color: Style.colors.primaryBorder
+                color: Style.colors.contextMenuSeparator
             }
 
             // Normal item background
@@ -95,7 +107,7 @@ Popup {
                 anchors.fill: parent
                 anchors.margins: 2
                 radius: 4
-                color: (itemMouse.containsMouse && isEnabled) ? Style.colors.surfaceLight : "transparent"
+                color: (itemMouse.containsMouse && isEnabled) ? Style.colors.contextMenuHover : "transparent"
             }
 
             RowLayout {
@@ -109,9 +121,10 @@ Popup {
                 // Icon
                 Text {
                     text: modelData.icon || ""
-                    font.family: Style.fontTypes.font6ProSolid
-                    font.pixelSize: 12
-                    color: itemMouse.containsMouse ? Style.colors.accent : Style.colors.foreground
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
+                    font.pixelSize: Style.appFont.mediumPt
+                    color: menuOption.iconColor
                     visible: text !== ""
                     Layout.preferredWidth: 16
                 }
@@ -119,28 +132,37 @@ Popup {
                 // Label
                 ScrollingText {
                     text: modelData.text || ""
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
-                    color: Style.colors.foreground
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.mediumPt
+                    color: menuOption.textColor
                     Layout.fillWidth: true
                 }
 
                 CheckBox {
                     id: checkBox
                     text: modelData.checkBoxText
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
-                    Layout.preferredHeight: 40
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.mediumPt
+                    Layout.preferredHeight: Style.dp(25)
                     Material.accent: Style.colors.accent
                     Material.foreground: Style.colors.foreground
                     checked: false
                     visible: modelData.hasCheckBox === true && modelData.enabled
                 }
 
+                // Shortcut hint
+                Text {
+                    text: modelData.shortcut || ""
+                    visible: !hasSub && modelData.shortcut !== undefined && modelData.shortcut !== ""
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.mutedText
+                }
+
                 Text {
                     text: "❯"
                     visible: hasSub
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     color: Style.colors.foreground
                 }
             }
@@ -171,7 +193,7 @@ Popup {
 
     contentItem: Column {
         id: mainMenuColumn
-        spacing: 2
+        spacing: 1
         width: parent.width
         Repeater {
             model: root.menuModel

@@ -43,6 +43,9 @@ function clearSelection() {
  * @param {string} commitId - The hash of the selected commit, or "__uncommitted__".
  */
 function handleCommitClicked(commitId) {
+    if (!fileChangesDock)
+        return;
+
     selectedCommit = commitId;
 
     fileChangesDock.commitHash = commitId;

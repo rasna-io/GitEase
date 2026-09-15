@@ -3,11 +3,11 @@ set(SOURCES_BACKEND
     Src/Utilities/windowsManager/borderlesswindowhelper.cpp
     Src/Utilities/windowsManager/TaskbarHelper.cpp
     Src/Utilities/FileManager/FileIO.cpp
-    Src/Utilities/GitScanner/GitScanner.cpp
+    Src/Utilities/NetworkManager/NetworkManager.cpp
+    Src/Utilities/UpdateManager/UpdateManager.cpp
 
     Src/Git/IGitController.cpp
     Src/Git/GitRepository.cpp
-    Src/Git/GitResult.cpp
     Src/Git/GitUtils.cpp
     Src/Git/GitBranch.cpp
     Src/Git/GitCommit.cpp
@@ -21,6 +21,8 @@ set(SOURCES_BACKEND
     Src/Git/GitMerge.cpp
     Src/Git/GitConflict.cpp
     Src/Git/GitTag.cpp
+    Src/Git/GitReset.cpp
+    Src/Git/GitTree.cpp
 
     Src/Git/Models/Remote.cpp
     Src/Git/Models/Commit.cpp
@@ -36,6 +38,8 @@ set(SOURCES_BACKEND
 
     Src/Plugins/PluginContext.cpp
     Src/Plugins/PluginManager.cpp
+
+    Src/Terminal/TerminalManager.cpp
 )
 
 set(HEADERS_BACKEND
@@ -44,7 +48,8 @@ set(HEADERS_BACKEND
     Src/Utilities/windowsManager/TaskbarHelper.hpp
     Src/Utilities/windowsManager/borderlesswindowhelper.h
     Src/Utilities/FileManager/FileIO.hpp
-    Src/Utilities/GitScanner/GitScanner.hpp
+    Src/Utilities/NetworkManager/NetworkManager.hpp
+    Src/Utilities/UpdateManager/UpdateManager.hpp
 
     Src/Git/IGitController.h
     Src/Git/GitRepository.h
@@ -62,6 +67,8 @@ set(HEADERS_BACKEND
     Src/Git/GitMerge.h
     Src/Git/GitConflict.h
     Src/Git/GitTag.h
+    Src/Git/GitReset.h
+    Src/Git/GitTree.h
 
     Src/Git/Models/Remote.h
     Src/Git/Models/Commit.h
@@ -87,6 +94,11 @@ set(HEADERS_BACKEND
     Src/Plugins/PluginInfo.h
     Src/Plugins/PluginContext.h
     Src/Plugins/PluginManager.h
+    Src/Plugins/ActionContext.h
+    Src/Plugins/IRulePlugin.h
+    Src/Plugins/IRepositoryAwarePlugin.h
+
+    Src/Terminal/TerminalManager.h
 )
 
 set(INCLUDE_DIRS_BACKEND
@@ -96,10 +108,13 @@ set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Utilities/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/SshKeyManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/GitScanner/
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/NetworkManager/
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/UpdateManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/windowsManager/
     ${CMAKE_SOURCE_DIR}/Src
     ${CMAKE_SOURCE_DIR}/Src/Git/
     ${CMAKE_SOURCE_DIR}/Src/Plugins/
+    ${CMAKE_SOURCE_DIR}/Src/Terminal/
 )
 
 #Add libgit2 include path to all backend files

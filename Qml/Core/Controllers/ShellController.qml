@@ -13,7 +13,6 @@ QtObject {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property PageController            pageController
     required property RepositoryController      repositoryController
     required property NotificationController    notificationController
 
@@ -52,10 +51,7 @@ QtObject {
             notificationController.error(`can't ${action} ${root.arguments["path"]}`, ` Repository ${action} failed`, 5000)
         }
 
-        // --page=page name
-        if(root.arguments["page"]) {
-            pageController.switchToPage(root.arguments["page"])
-        }
+        // --page=page name is read directly by MainWindow.qml once its pages exist.
 
         // Handle stash commands
         if (root.arguments["stash-pop"])

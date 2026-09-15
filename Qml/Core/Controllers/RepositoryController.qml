@@ -30,31 +30,40 @@ GitRepository {
      * ****************************************************************************************/
     signal repositorySelected(Repository repo)
 
-    /* Functions
+    /* Repository color scheme
      * ****************************************************************************************/
-
-    // Random color assignment for repositories.
     readonly property var repoColorPalette: [
-        "#aaFF1744", // neon red
-        "#aaFF9100", // vivid orange
-        "#aaFFD600", // bright yellow
-        "#aa00E676", // neon green
-        "#aa00B0FF", // bright cyan-blue
-        "#aa2979FF", // vivid blue
-        "#aa651FFF", // electric indigo
-        "#aaD500F9", // neon purple
-        "#aaFF4081", // hot pink
-        "#aa1DE9B6", // bright teal
-        "#aa76FF03", // lime
-        "#aaF50057"  // magenta
+        "#FF5252", // red
+        "#FF9800", // orange
+        "#FFC400", // amber
+        "#00C853", // green
+        "#00B0FF", // light blue
+        "#2979FF", // blue
+        "#7C4DFF", // indigo
+        "#D500F9", // purple
+        "#FF4081", // pink
+        "#1DE9B6", // teal
+        "#76FF03", // lime
+        "#F50057"  // magenta
     ]
 
-    function randomRepoColor() {
-        if (!root.repoColorPalette || root.repoColorPalette.length === 0)
-            return "#4E79A7"
-        const idx = Math.floor(Math.random() * root.repoColorPalette.length)
-        return root.repoColorPalette[idx]
+    function repoColor(key) {
+        var s = key ? String(key) : ""
+        var h = 0
+        for (var i = 0; i < s.length; ++i)
+            h = ((h << 5) - h + s.charCodeAt(i)) | 0
+        return root.repoColorPalette[Math.abs(h) % root.repoColorPalette.length]
     }
+
+    function isValidRepoColor(c) {
+        if (!c)
+            return false
+        var s = String(c).toLowerCase()
+        return s !== "" && s !== "transparent" && s !== "#00000000"
+    }
+
+    /* Functions
+     * ****************************************************************************************/
 
     /**
      * Initialize a new Git repository
@@ -157,7 +166,8 @@ GitRepository {
                     id: "repo_" + Date.now(),
                     path: path,
                     name: name,
-                    color: repo ? repo.color : randomRepoColor()
+                    color: (repo && root.isValidRepoColor(repo.color)) ? repo.color
+                                                                       : root.repoColor(path)
                 })
                 
                 // Add to repositories array

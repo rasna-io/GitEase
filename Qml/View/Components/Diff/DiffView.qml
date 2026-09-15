@@ -4,6 +4,7 @@ import QtQuick.Layouts
 
 import GitEase
 import GitEase_Style
+import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * DiffView
@@ -19,6 +20,8 @@ DetachablePanel {
     property var originalFileBuffer: []
     property var editedFileBuffer: [] // holds the value of the edited file
 
+    property AppModel appModel: null
+
     /* Chunking configuration */
     property bool chunkMode     : false
     property int  contextLines  : 0         // how many unchanged lines to show around each hunk
@@ -29,6 +32,7 @@ DetachablePanel {
     property int currentIndex: -1
     property bool fileIsEdited: false
     property string selectedFile: ""
+    property int selectedFileStatus: -1
     property bool hasHeaderMiddleComponent: false
 
     // Properties used for selection
@@ -44,6 +48,9 @@ DetachablePanel {
     property bool dragging: false
 
     property alias scrollPosition: diffListView.contentY
+
+    //! Where the changed rows sit, as fractions of the row count — drawn on the vertical scrollbar.
+    property var changeMarkers: []
 
     /* Object Properties
      * ****************************************************************************************/
@@ -66,6 +73,30 @@ DetachablePanel {
 
     ListModel {
         id: chunkModel
+    }
+
+    onAppModelChanged: {
+        if (!root.appModel)
+            return
+
+        let gs = appModel.appSettings.generalSettings
+        root.contextLines = gs.chunkContextLines
+        root.expandLines = gs.chunkExpandLines
+    }
+
+    readonly property int addedLineCount: {
+        let n = 0
+        for (let i = 0; i < diffData.length; i++)
+            if (diffData[i].type === GitDiff.Added || diffData[i].type === GitDiff.Modified)
+                n++
+        return n
+    }
+    readonly property int deletedLineCount: {
+        let n = 0
+        for (let i = 0; i < diffData.length; i++)
+            if (diffData[i].type === GitDiff.Deleted || diffData[i].type === GitDiff.Modified)
+                n++
+        return n
     }
 
     onDiffDataChanged: {
@@ -146,10 +177,22 @@ DetachablePanel {
         }
     }
 
+    onContextLinesChanged: {
+        if (chunkMode)
+            buildChunkModel()
+    }
+
     TextMetrics {
         id: widthCalculator
-        font.family: "Cascadia Mono"
-        font.pixelSize: 13
+        font.family: Style.fontTypes.jetBrainsMono
+        font.pixelSize: Style.appFont.h3Pt
+    }
+
+    //! Coalesces the bursts of appends a model rebuild produces into a single remap.
+    Timer {
+        id: changeMarkersTimer
+        interval: 50
+        onTriggered: root.updateChangeMarkers()
     }
 
     EmptyStateView {
@@ -160,6 +203,7 @@ DetachablePanel {
     }
 
     Rectangle {
+        id: diffContent
         anchors.fill: parent
         color: Style.colors.editorBackgroound
         visible: chunkMode ? (chunkData && chunkData.length > 0)
@@ -167,7 +211,7 @@ DetachablePanel {
 
         ListView {
             id: diffListView
-            property real horizontalScrollOffset: 0
+            property real horizontalScrollOffset: hScrollBar.offset
             property real maxContentWidth: 0
 
             anchors.fill: parent
@@ -177,10 +221,12 @@ DetachablePanel {
             cacheBuffer: 0
             reuseItems: false
             anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: DiffScrollBar {
                 id: vScrollBar
-                active: true
+                markers: root.chunkMode ? [] : root.changeMarkers
             }
+
+            onCountChanged: changeMarkersTimer.restart()
 
             TextEdit {
                 id: clipboardHelper
@@ -192,11 +238,39 @@ DetachablePanel {
                 height: parent.height
                 width: parent.width - (vScrollBar.visible ? vScrollBar.width : 0)
                 propagateComposedEvents: true
+                hoverEnabled: true
                 z: 1
                 focus: true
                 Keys.enabled: true
                 enabled: root.selectEnabled || root.readOnly || root.chunkMode
                 visible: root.selectEnabled || root.readOnly || root.chunkMode
+
+                cursorShape: {
+                    if (!diffListView.count)
+                        return Qt.ArrowCursor
+
+                    var idx = diffListView.indexAt(mouseX, mouseY + diffListView.contentY)
+                    if (idx < 0)
+                        return Qt.ArrowCursor
+
+                    var row = diffListView.model.get(idx)
+                    if (!row)
+                        return Qt.ArrowCursor
+
+                    if (row.rowType === "hidden") {
+                        return (mouseX > selectMsa.width - 140) ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    }
+
+                    var halfW = selectMsa.width / 2
+                    var inGutter = mouseX >= halfW && mouseX < halfW + 44
+                    if (inGutter &&
+                        checkHasAction(diffListView.model, idx, row.diffType) &&
+                        root.selectedFileStatus !== GitFileStatus.Deleted) {
+                        return Qt.PointingHandCursor
+                    }
+
+                    return Qt.ArrowCursor
+                }
 
                 onPressed: (mouse) => {
                    diffListView.interactive = false // Disable flicking during selection
@@ -298,7 +372,12 @@ DetachablePanel {
             delegate: Item{
                 id: delegateItem
                 width: diffListView.width
-                implicitHeight: model.rowType === "hidden" ? 45 : diffLineItem.implicitHeight
+                implicitHeight: model.rowType === "hidden" ? 28 : diffLineItem.implicitHeight
+
+                // Exposed so the guide can find a currently visible row's action buttons /
+                // hidden-context bar (see findActionableDelegate / findHiddenBarDelegate below).
+                property alias diffLineItem: diffLineItem
+                property alias hiddenLoader: loader
 
                 Loader {
                     id: loader
@@ -312,6 +391,7 @@ DetachablePanel {
 
                         item.direction      = Qt.binding(function() { return model.direction })
                         item.remaining      = Qt.binding(function() { return model.remaining })
+                        item.rangeLabel     = Qt.binding(function() { return model.rangeLabel !== undefined ? model.rangeLabel : "" })
                         item.delegateIndex  = Qt.binding(function() { return index })
                     }
                 }
@@ -334,6 +414,7 @@ DetachablePanel {
                     selectionEnd: root.selectionEnd
                     selectedSide: root.selectedSide
                     hasAction: checkHasAction(diffListView.model, index, diffType)
+                    selectedFileStatus: root.selectedFileStatus
 
                     onRequestTextChange: (newText) => root.changeText(index, newText)
                     onRequestSplit: (pos, txt) => root.splitLine(index, pos, txt)
@@ -347,61 +428,146 @@ DetachablePanel {
             }
         }
 
-        ScrollBar {
+        DiffScrollBar {
             id: hScrollBar
             orientation: Qt.Horizontal
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            size: diffListView.maxContentWidth === 0 ? 1 : (diffListView.width * 0.5) / diffListView.maxContentWidth
-            active: true
-            visible: size < 1.0
 
-            onPositionChanged: {
-                // Calculate the pixel offset based on scrollbar position
-                diffListView.horizontalScrollOffset = position * diffListView.maxContentWidth
-            }
+            contentSize:  diffListView.maxContentWidth
+            viewportSize: diffListView.width
         }
     }
 
     Component {
         id: headerMiddleComp
-        RowLayout {
-            CheckBox {
-                text: "Chunk View"
-                Layout.alignment: Qt.AlignLeft
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
-                Layout.preferredHeight: 35
-                Material.accent: Style.colors.accent
-                Material.foreground: Style.colors.foreground
-                checked: true
 
-                onClicked: {
-                    if(root.fileIsEdited) {
-                        var d = unsavedChangesDialogComp.createObject(root)
-                        d.title = "Unsaved Changes"
-                        d.message = "You have unsaved changes in: " + root.selectedFile
-                        d.saved.connect(() => {
-                                            root.saveFile()
-                                            root.chunkMode = checked
-                                        })
-                        d.aborted.connect(() => { root.chunkMode = checked })
-                        d.cancelled.connect(() => {
-                                                checked = false
-                                            })
-                        d.open()
-                    } else {
-                        root.chunkMode = checked
-                    }
+        Item {
+
+            ScrollingText {
+                text: root.selectedFile
+                font.family: Style.fontTypes.jetBrainsMono
+                font.pixelSize: Style.appFont.secondaryPt
+                color: Style.colors.mutedText
+                anchors.left: parent.left
+                anchors.leftMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, parent.width * 0.55)
+            }
+
+            RowLayout {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+
+                Text {
+                    visible: root.selectedFile !== "" && (root.addedLineCount > 0 || root.deletedLineCount > 0)
+                    text: "+" + root.addedLineCount
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.diffAddedCount
+                }
+
+                Text {
+                    visible: root.selectedFile !== "" && (root.addedLineCount > 0 || root.deletedLineCount > 0)
+                    text: "−" + root.deletedLineCount
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.diffRemovedCount
+                }
+
+                ActionIconButton{
+                    iconText: Style.icons.gear
+                    textColor: Style.colors.secondaryText
+                    hoverTextColor: Style.colors.openBlue
+                    hoverBackgroundColor: Qt.rgba(Style.colors.openBlue.r, Style.colors.openBlue.g, Style.colors.openBlue.b, 0.1)
+                    tooltip: "Diff settings"
+
+                    onClicked: settingsPopup.open()
                 }
             }
 
-            Label {
-                text: root.selectedFile
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
+            Popup {
+                id: settingsPopup
+                y: parent.height + 4
+                x: parent.width - width - 8
+                width: 350
+                padding: 12
+                modal: false
+                closePolicy: Popup.CloseOnPressOutside | Popup.CloseOnEscape
+
+                background: Rectangle {
+                    color: Style.colors.secondaryBackground
+                    border.color: Style.colors.primaryBorder
+                    radius: 6
+                }
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 10
+
+                    CheckboxItem {
+                        id: chunkViewCheck
+                        Layout.fillWidth: true
+                        title: "Chunk View"
+                        description: "Enable chunk-based diff display"
+                        checked: root.chunkMode
+
+                        onCheckedChanged: {
+                            if (root.fileIsEdited) {
+                                var d = unsavedChangesDialogComp.createObject(root.activeItem)
+                                d.title = "Unsaved Changes"
+                                d.message = "You have unsaved changes in: " + root.selectedFile
+                                d.saved.connect(() => {
+                                    root.saveFile()
+                                    root.chunkMode = checked
+                                })
+                                d.aborted.connect(() => {
+                                    root.chunkMode = checked
+                                })
+                                d.cancelled.connect(() => {
+                                    checked = Qt.binding(() => root.chunkMode)
+                                })
+                                d.open()
+                            } else {
+                                root.chunkMode = checked
+                            }
+                        }
+                    }
+
+                    SpinboxItem {
+                        id: contextSpin
+                        Layout.fillWidth: true
+                        title: "Context Lines"
+                        description: "Number of context lines around changes"
+                        from: 0
+                        to: 100
+                        value: root.contextLines
+                        enabled: root.chunkMode
+                        onValueChanged:
+                            if (root.contextLines !== value) {
+                                root.contextLines = value
+                                root.persistSettings()
+                            }
+                    }
+
+                    SpinboxItem {
+                        id: expandSpin
+                        Layout.fillWidth: true
+                        title: "Expand Step"
+                        description: "Lines to show when expanding"
+                        from: 1
+                        to: 500
+                        value: root.expandLines
+                        enabled: root.chunkMode
+                        onValueChanged:
+                            if (root.expandLines !== value) {
+                                root.expandLines = value
+                                root.persistSettings()
+                            }
+                    }
+                }
             }
         }
     }
@@ -411,50 +577,152 @@ DetachablePanel {
         Item {
             property string direction: ""
             property int remaining: 0
+            property string rangeLabel: ""
             property int delegateIndex: -1
 
             anchors.fill: parent
 
-            MouseArea {
-                id: hiddenMarker
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.expandHiddenBlock(delegateIndex, direction)
-            }
-
             Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                height: 1
-                color: hiddenMarker.containsMouse ? Style.colors.accent : Style.colors.primaryBorder
-            }
+                id: pill
 
-            Row {
-                anchors.centerIn: parent
-                spacing: 6
-                Label {
-                    text: direction === "up" ? Style.icons.arrowUpToLine : Style.icons.arrowDownToLine
-                    font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: 12
-                    color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 4
-                    background: Rectangle {
-                        color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                          : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 4
-                    }
+                anchors.fill: parent
+
+                color: Style.colors.actionPillBg
+                border.width: 0
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: Style.colors.actionPillBorder
                 }
-                Label {
-                    text: remaining
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 9
-                    color: hiddenMarker.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 3
-                    background: Rectangle {
-                        color: hiddenMarker.containsMouse ? Style.colors.accent
-                                                          : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 3
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: Style.colors.actionPillBorder
+                }
+
+                HoverHandler {
+                    id: pillHoverHandler
+                    blocking: false
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: rangeLabel !== ""
+
+                    text: rangeLabel
+
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.secondaryPt
+                    color: Style.colors.mutedText
+                }
+
+                // Centre: "N lines hidden"
+                Text {
+                    anchors.centerIn: parent
+
+                    text: remaining + " lines hidden"
+
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
+                    color: pillHoverHandler.hovered
+                           ? Style.colors.secondaryText
+                           : Style.colors.mutedText
+                }
+
+                // Right: two expand buttons
+                Row {
+                    anchors {
+                        right: parent.right
+                        rightMargin: 8
+                        verticalCenter: parent.verticalCenter
+                    }
+
+                    spacing: 4
+
+                    // Expand step button
+                    Rectangle {
+                        id: stepBtn
+
+                        width: stepBtnText.implicitWidth + 12
+                        height: 20
+
+                        radius: 4
+
+                        color: "transparent"
+                        border.color: stepBtnMouse.containsMouse
+                                      ? Style.colors.accent
+                                      : Style.colors.actionPillBorder
+                        border.width: 1
+
+                        Text {
+                            id: stepBtnText
+
+                            anchors.centerIn: parent
+
+                            text: "↕ " + root.expandLines
+
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.secondaryPt
+                            color: stepBtnMouse.containsMouse
+                                   ? Style.colors.accent
+                                   : Style.colors.mutedText
+                        }
+
+                        MouseArea {
+                            id: stepBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.expandHiddenBlock(
+                                delegateIndex, direction, root.expandLines)
+                        }
+                    }
+
+                    // Expand all button
+                    Rectangle {
+                        id: allBtn
+
+                        width: allBtnText.implicitWidth + 12
+                        height: 20
+
+                        radius: 4
+
+                        color: "transparent"
+                        border.color: allBtnMouse.containsMouse
+                                      ? Style.colors.accent
+                                      : Style.colors.actionPillBorder
+                        border.width: 1
+
+                        Text {
+                            id: allBtnText
+
+                            anchors.centerIn: parent
+
+                            text: "↕ All"
+
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.secondaryPt
+                            color: allBtnMouse.containsMouse
+                                   ? Style.colors.accent
+                                   : Style.colors.mutedText
+                        }
+
+                        MouseArea {
+                            id: allBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.expandHiddenBlock(
+                                delegateIndex, direction, remaining)
+                        }
                     }
                 }
             }
@@ -465,6 +733,146 @@ DetachablePanel {
         id: unsavedChangesDialogComp
         UnsavedChangesDialog { }
     }
+
+    /* Guide
+     * Two independent guides — one per mode — so seeing the read-only tour doesn't mark the
+     * editable tour (or vice versa) as already shown.
+     * ****************************************************************************************/
+    GuideHoverTrigger {
+        enabled: diffContent.visible
+        guideController: root.guideController
+        guideId: root.readOnly ? "diff_view_readonly_tutorial" : "diff_view_editable_tutorial"
+        guideName: root.readOnly ? "Diff View (Read-only)" : "Diff View (Editable)"
+        guideIcon: Style.icons.penToSquare
+        guidePage: root.readOnly ? "graph" : "committing"
+        stepsFactory: function() {
+            var steps = [
+                {
+                    targetProvider: function() { return diffContent },
+                    icon: Style.icons.penToSquare,
+                    title: "Reading Diffs",
+                    description:    "Green lines were added, red lines were removed, grey lines are unchanged context. You are always viewing the right-hand (new) version of the file."
+                }
+            ]
+            if (root.readOnly) {
+                steps.push({
+                    targetProvider: function() { return diffContent },
+                    icon: Style.icons.arrowRight,
+                    title: "Read-only View",
+                    description: "This diff shows a historical commit snapshot. You can read and copy lines but nothing can be staged, reverted, or edited from here."
+                })
+            } else if (root.chunkMode) {
+                steps.push({
+                    targetProvider: function() {
+                        var item = root.findActionableDelegate()
+                        return item ? item.stageButton : diffContent
+                    },
+                    icon: Style.icons.arrowRight,
+                    title: "Stage a Block",
+                    description: "Hover any green or red block and click the + button that appears on the right to stage only those lines. The rest of the file stays unstaged.",
+                    commands: [{ command: "git add -p" }]
+                })
+                steps.push({
+                    targetProvider: function() {
+                        var item = root.findActionableDelegate()
+                        return item ? item.revertButton : diffContent
+                    },
+                    icon: Style.icons.arrowRight,
+                    title: "Revert a Block",
+                    description: "Click the ↺ button on a changed block to discard those specific lines and restore them to the last committed state. Useful for undoing a mistake without losing other changes.",
+                    commands: [{ command: "git checkout -p" }]
+                })
+                steps.push({
+                    targetProvider: function() {
+                        var item = root.findActionableDelegate()
+                        return item ? item.stashButton : diffContent
+                    },
+                    icon: Style.icons.arrowRight,
+                    title: "Stash a Block",
+                    description: "Click the ↓ button to save just those lines aside without committing. They land in a stash entry you can reapply later — handy for parking half-finished work."
+                })
+                steps.push({
+                    targetProvider: function() {
+                        return root.findHiddenBarDelegate() || diffContent
+                    },
+                    icon: Style.icons.arrowRight,
+                    title: "Expand Hidden Context",
+                    description: "The dotted bar between hunks hides unchanged lines to keep the view focused. Click it to reveal more context around the changed code."
+                })
+            } else {
+                steps.push({
+                    targetProvider: function() { return diffContent },
+                    icon: Style.icons.arrowRight,
+                    title: "Chunk View",
+                    description: "Enable Chunk View in the header to switch to per-block mode. Each changed block gets Stage, Revert, and Stash buttons — commit exactly the lines you want, nothing more."
+                })
+            }
+            return steps
+        }
+    }
+
+    /* Change minimap
+     * ****************************************************************************************/
+    function updateChangeMarkers() {
+        let model = diffListView.model
+        let totalRows = model ? model.count : 0
+
+        if (totalRows === 0) {
+            root.changeMarkers = []
+            return
+        }
+
+        let markers = []
+        let runStart = -1
+        let runType  = GitDiff.Context
+
+        for (let i = 0; i < totalRows; ++i) {
+            let row = model.get(i)
+            let rowChange = (!row || row.rowType === "hidden" || row.diffType === undefined)
+                            ? GitDiff.Context
+                            : row.diffType
+
+            if (rowChange !== GitDiff.Context) {
+                if (runStart < 0) {
+                    runStart = i
+                    runType  = rowChange
+                } else if (rowChange !== runType) {
+                    // An added row butting against a deleted one reads as a modification.
+                    runType = GitDiff.Modified
+                }
+            } else if (runStart >= 0) {
+                markers.push(root.buildChangeMarker(runStart, i - 1, runType, totalRows))
+                runStart = -1
+            }
+        }
+
+        if (runStart >= 0)
+            markers.push(root.buildChangeMarker(runStart, totalRows - 1, runType, totalRows))
+
+        root.changeMarkers = markers
+    }
+
+    function buildChangeMarker(startRow, endRow, changeType, totalRows) {
+        return {
+            startRatio: startRow / totalRows,
+            sizeRatio:  (endRow - startRow + 1) / totalRows,
+            color:      root.changeMarkerColor(changeType)
+        }
+    }
+
+    function changeMarkerColor(changeType) {
+        switch (changeType) {
+        case GitDiff.Added:
+            return Style.colors.diffMarkerAdded
+
+        case GitDiff.Deleted:
+            return Style.colors.diffMarkerRemoved
+
+        default:
+            return Style.colors.diffMarkerModified
+        }
+    }
+
     /* Functions
      * ****************************************************************************************/
     function appendRow(model, type, lTxt, rTxt, lNum, rNum) {
@@ -484,6 +892,8 @@ DetachablePanel {
         let modified = row.leftText !== row.rightText
 
         model.setProperty(index, "diffType", modified ? GitDiff.Modified : GitDiff.Context)
+
+        changeMarkersTimer.restart()
     }
 
     function checkHasAction(model, index, type) {
@@ -500,6 +910,50 @@ DetachablePanel {
             return false;
 
         return prevItem.diffType === GitDiff.Context;
+    }
+
+    /* Guide helpers — locate a currently visible delegate to spotlight a real button instead
+     * of the whole diff panel. diffListView only instantiates visible (+ small buffer) delegates,
+     * so these search the current viewport and fall back to null when nothing qualifies there. */
+    function visibleDelegateRange() {
+        if (!diffListView.count)
+            return null
+
+        var first = diffListView.indexAt(1, diffListView.contentY + 1)
+        var last  = diffListView.indexAt(1, diffListView.contentY + diffListView.height - 1)
+        if (first < 0)
+            first = 0
+
+        if (last < 0 || last < first)
+            last = Math.min(diffListView.count - 1, first + 40)
+
+        return { first: first, last: last }
+    }
+
+    function findActionableDelegate() {
+        var range = root.visibleDelegateRange()
+        if (!range)
+            return null
+
+        for (var i = range.first; i <= range.last; i++) {
+            var d = diffListView.itemAtIndex(i)
+            if (d && d.diffLineItem && d.diffLineItem.hasAction)
+                return d.diffLineItem
+        }
+        return null
+    }
+
+    function findHiddenBarDelegate() {
+        var range = root.visibleDelegateRange()
+        if (!range)
+            return null
+
+        for (var i = range.first; i <= range.last; i++) {
+            var d = diffListView.itemAtIndex(i)
+            if (d && d.hiddenLoader && d.hiddenLoader.active)
+                return d.hiddenLoader
+        }
+        return null
     }
 
     // Called when user interacts with the textEdit
@@ -610,6 +1064,7 @@ DetachablePanel {
         else
         {
             model.setProperty(index, "diffType", GitDiff.Deleted)
+            changeMarkersTimer.restart()
 
             if (chunkMode)
                 model.setProperty(index, "rowType", "diff")
@@ -685,6 +1140,7 @@ DetachablePanel {
                         direction: "down",
                         hiddenCount: chunk.hiddenCount,
                         remaining: chunk.hiddenCount,
+                        rangeLabel: hiddenRangeLabel(chunk),
                         chunkIndex: c
                     })
                 }
@@ -695,6 +1151,7 @@ DetachablePanel {
                         direction: "up",
                         hiddenCount: chunk.hiddenCount,
                         remaining: chunk.hiddenCount,
+                        rangeLabel: hiddenRangeLabel(chunk),
                         chunkIndex: c
                     })
                 }
@@ -777,6 +1234,7 @@ DetachablePanel {
                 direction: "down",
                 hiddenCount: totalHidden,
                 remaining: newRemaining,
+                rangeLabel: hiddenRangeLabel(chunk),
                 chunkIndex: chunkIdx
             })
 
@@ -801,15 +1259,18 @@ DetachablePanel {
                 direction: "up",
                 hiddenCount: totalHidden,
                 remaining: newRemaining,
+                rangeLabel: hiddenRangeLabel(chunk),
                 chunkIndex: chunkIdx
             })
         }
 
         let finalRemaining = totalHidden - chunk.visibleTop - chunk.visibleBottom
+        let finalRangeLabel = hiddenRangeLabel(chunk)
         for (let i = 0; i < chunkModel.count; i++) {
             let r = chunkModel.get(i)
             if (r.rowType === "hidden" && r.chunkIndex === chunkIdx) {
                 chunkModel.setProperty(i, "remaining", finalRemaining)
+                chunkModel.setProperty(i, "rangeLabel", finalRangeLabel)
             }
         }
 
@@ -823,6 +1284,27 @@ DetachablePanel {
 
         for (let line of newLines)
             updateMaxContentWidth(line.leftText)
+    }
+
+    function hiddenRangeLabel(chunk) {
+        if (!chunk || !chunk.hiddenLines || chunk.hiddenLines.length === 0)
+            return ""
+
+        let visibleTop = chunk.visibleTop || 0
+        let visibleBottom = chunk.visibleBottom || 0
+        let lines = chunk.hiddenLines
+        let firstIdx = visibleTop
+        let lastIdx = lines.length - 1 - visibleBottom
+
+        if (firstIdx > lastIdx || firstIdx < 0 || lastIdx >= lines.length)
+            return ""
+
+        let first = lines[firstIdx]
+        let last = lines[lastIdx]
+        let startNum = (first.newLine > 0) ? first.newLine : first.oldLine
+        let endNum = (last.newLine > 0) ? last.newLine : last.oldLine
+
+        return startNum + "-" + endNum
     }
 
     function makeContextLine(lineObj) {
@@ -913,5 +1395,19 @@ DetachablePanel {
         }
 
         return false
+    }
+
+    function persistSettings() {
+        if (!appModel)
+            return
+
+        let gs = appModel.appSettings.generalSettings
+        if (gs.chunkContextLines !== root.contextLines) {
+            gs.chunkContextLines = root.contextLines
+        }
+        if (gs.chunkExpandLines !== root.expandLines) {
+            gs.chunkExpandLines = root.expandLines
+        }
+        appModel.save()
     }
 }

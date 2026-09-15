@@ -32,15 +32,27 @@ Item {
 
         function updateLayout() {
             const visibleChildren = children.filter(child => {
-                if (child.hasOwnProperty('detached')) {
+                const hasDetached = child.hasOwnProperty('detached')
+                const hasMinimized = child.hasOwnProperty('isMinimized')
+
+                if (hasDetached || hasMinimized) {
                     try {
                         child.detachedChanged.disconnect(updateLayout)
                     } catch(e) {}
+                    try {
+                        child.isMinimizedChanged.disconnect(updateLayout)
+                    } catch(e) {}
 
-                    child.visible = Qt.binding(() => !child.detached)
-                    child.detachedChanged.connect(updateLayout)
+                    child.visible = Qt.binding(() => {
+                        return (!hasDetached || !child.detached) && (!hasMinimized || !child.isMinimized)
+                    })
 
-                    return !child.detached
+                    if (hasDetached)
+                        child.detachedChanged.connect(updateLayout)
+                    if (hasMinimized)
+                        child.isMinimizedChanged.connect(updateLayout)
+
+                    return (!hasDetached || !child.detached) && (!hasMinimized || !child.isMinimized)
                 }
                 child.visible = true
                 return true

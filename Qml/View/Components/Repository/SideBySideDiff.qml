@@ -40,6 +40,13 @@ Item {
     readonly property bool isMod: diffType === GitDiff.Modified
     readonly property bool isUnchanged: diffType === GitDiff.Context
     property bool hasAction: false
+    property int selectedFileStatus: -1
+
+    // Guide targets — the stage/revert/stash action buttons, exposed so a GuideController
+    // step can spotlight the actual button instead of the whole row.
+    readonly property alias stageButton:  stageButton
+    readonly property alias revertButton: revertButton
+    readonly property alias stashButton:  stashButton
 
     /* Signals
      * ****************************************************************************************/
@@ -101,9 +108,9 @@ Item {
                     width: 45
                     height: parent.height
                     text: (leftLineNum > 0) ? leftLineNum : ""
-                    color: Style.colors.linePanelForeground
-                    font.pixelSize: 12
-                    font.family: Style.fontTypes.roboto
+                    color: (isDel || isMod) ? Style.colors.softCoralMist : Style.colors.editorForeground
+                    font.pixelSize: Style.appFont.mediumPt
+                    font.family: Style.fontTypes.inter
                     horizontalAlignment: Text.AlignRight
                     rightPadding: 10
                     topPadding: 4
@@ -134,9 +141,9 @@ Item {
                         x: -delegateRoot.horizontalOffset
                         text: delegateRoot.textColorizer ? delegateRoot.textColorizer(leftContent) : leftContent
                         textFormat: delegateRoot.textColorizer ? Text.RichText : Text.PlainText
-                        color: Style.colors.editorForeground
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 11
+                        color: (isDel || isMod) ? Style.colors.softCoralMist : Style.colors.editorForeground
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
                         topPadding: 2
                         leftPadding: 8
                         TextMetrics { id: leftTextMetrics; text: leftContent; font: leftDisplay.font;}
@@ -150,96 +157,121 @@ Item {
           */
         Rectangle {
             Layout.fillHeight: true
-            Layout.preferredWidth: 40
-            color: Style.colors.surfaceLight
-            visible: !isUnchanged // Only show for changes
+            Layout.preferredWidth: 44
+            color: Style.colors.linePanelBackgroound
             z: 3
 
             Rectangle {
-                width: 2
-                color: Style.colors.surfaceMuted
+                width: 1
+                color: Style.colors.primaryBorder
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                visible: !isUnchanged
             }
 
-            ColumnLayout {
-
+            Rectangle {
+                id: actionPill
                 anchors.centerIn: parent
-                visible: hasAction
+                visible: hasAction && selectedFileStatus !== GitFileStatus.Deleted
+                width: 26
+                height: actionRow.implicitHeight + 6
+                radius: 4
+                color: Style.colors.actionPillBg
+                border.width: 1
+                border.color: Style.colors.actionPillBorder
 
-                Label {
-                    text: Style.icons.plus
-                    font.family: Style.fontTypes.font6ProSolid
-                    color: stageMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 5
-                    background: Rectangle {
-                        color: stageMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 5
+                Column {
+                    id: actionRow
+                    anchors.centerIn: parent
+                    spacing: 2
+
+                    Rectangle {
+                        width: 22
+                        height: 18
+                        radius: 3
+                        color: stageMsa.containsMouse ? Qt.rgba(Style.colors.stageGreen.r, Style.colors.stageGreen.g, Style.colors.stageGreen.b, 0.1) : "transparent"
+
+                        Label {
+                            id: stageButton
+                            anchors.centerIn: parent
+                            text: Style.icons.plus
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
+                            font.pixelSize: Style.appFont.captionPt
+                            color: stageMsa.containsMouse ? Style.colors.stageGreen : Style.colors.actionIconIdle
+                        }
+
+                        MouseArea {
+                            id: stageMsa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                let range = getRange()
+
+                                requestStage(range.start, range.end, range.type);
+                            }
+                        }
                     }
 
-                    MouseArea {
-                        id: stageMsa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: "PointingHandCursor"
-                        onClicked: {
-                            let range = getRange()
+                    Rectangle {
+                        width: 22
+                        height: 18
+                        radius: 3
+                        color: revertMsa.containsMouse ? Qt.rgba(Style.colors.discardRed.r, Style.colors.discardRed.g, Style.colors.discardRed.b, 0.1) : "transparent"
 
-                            requestStage(range.start, range.end, range.type);
+                        Label {
+                            id: revertButton
+                            anchors.centerIn: parent
+                            text: Style.icons.arrowRight
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
+                            font.pixelSize: Style.appFont.captionPt
+                            color: revertMsa.containsMouse ? Style.colors.discardRed : Style.colors.actionIconIdle
+                        }
+
+                        MouseArea {
+                            id: revertMsa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                let range = getRange()
+
+                                requestRevert(range.start, range.end, range.type);
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 22
+                        height: 18
+                        radius: 3
+                        color: stashMsa.containsMouse ? Qt.rgba(Style.colors.stashAmber.r, Style.colors.stashAmber.g, Style.colors.stashAmber.b, 0.1) : "transparent"
+
+                        Label {
+                            id: stashButton
+                            anchors.centerIn: parent
+                            text: Style.icons.archive
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
+                            font.pixelSize: Style.appFont.captionPt
+                            color: stashMsa.containsMouse ? Style.colors.stashAmber : Style.colors.actionIconIdle
+                        }
+
+                        MouseArea {
+                            id: stashMsa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                let range = getRange()
+
+                                requestStash(range.start, range.end, range.type);
+                            }
                         }
                     }
                 }
-
-
-
-                Label {
-                    text: Style.icons.arrowRight
-                    font.family: Style.fontTypes.font6ProSolid
-                    color: revertMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 5
-                    background: Rectangle {
-                        color: revertMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 5
-                    }
-
-                    MouseArea {
-                        id: revertMsa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: "PointingHandCursor"
-                        onClicked: {
-                            let range = getRange()
-
-                            requestRevert(range.start, range.end, range.type);
-                        }
-                    }
-                }
-
-                Label {
-                    text: Style.icons.archive
-                    font.family: Style.fontTypes.font6ProSolid
-                    color: stashMsa.containsMouse ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                    padding: 5
-                    background: Rectangle {
-                        color: stashMsa.containsMouse ? Style.colors.accent : Qt.darker(Style.colors.linePanelBackgroound, 1.05)
-                        radius: 5
-                    }
-
-                    MouseArea {
-                        id: stashMsa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: "PointingHandCursor"
-                        onClicked: {
-                            let range = getRange()
-
-                            requestStash(range.start, range.end, range.type);
-                        }
-                    }
-                }
-
             }
         }
 
@@ -273,9 +305,9 @@ Item {
                     height: parent.height
                     z: 2
                     text: (rightLineNum > 0) ? rightLineNum : ""
-                    color: Style.colors.linePanelForeground
-                    font.pixelSize: 12
-                    font.family: Style.fontTypes.roboto
+                    color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
+                    font.pixelSize: Style.appFont.mediumPt
+                    font.family: Style.fontTypes.inter
                     horizontalAlignment: Text.AlignRight
                     rightPadding: 10
                     topPadding: 4
@@ -309,9 +341,9 @@ Item {
                         text: (delegateRoot.textColorizer && delegateRoot.readOnly)
                               ? delegateRoot.textColorizer(rightContent) : ""
                         textFormat: Text.RichText
-                        color: Style.colors.editorForeground
-                        font.family: "Cascadia Mono"
-                        font.pixelSize: 13
+                        color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
+                        font.family: Style.fontTypes.jetBrainsMono
+                        font.pixelSize: Style.appFont.h3Pt
                     }
 
                     TextArea {
@@ -320,9 +352,9 @@ Item {
                         x: -delegateRoot.horizontalOffset
                         width: 2000
                         text: rightContent
-                        color: Style.colors.editorForeground
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 11
+                        color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
                         padding: 0
                         leftPadding: 8
                         topPadding: 2

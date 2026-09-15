@@ -22,6 +22,8 @@
 #include <QTimer>
 #include <git2/cherrypick.h>
 
+#include "QtConcurrent"
+
 GitRebase::GitRebase(QObject* parent)
     : IGitController{parent}
 {
@@ -39,9 +41,9 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
     return startRebase(onto, upstream, branch, {});
 }
 
-GitResult GitRebase::previewRebasePlan(const QString& onto,
-                                       const QString& upstream,
-                                       const QString& branch)
+GitResult GitRebase::startPreviewRebasePlan(const QString& onto,
+                                            const QString& upstream,
+                                            const QString& branch)
 {
     if (!m_currentRepo || !m_currentRepo->repo)
         return GitResult(false, QVariant(), "Repository not found.");
@@ -49,6 +51,33 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
     if (upstream.trimmed().isEmpty())
         return GitResult(false, QVariant(), "Upstream reference is required.");
 
+    const QString safeOnto     = onto;
+    const QString safeUpstream = upstream;
+    const QString safeBranch   = branch;
+
+    auto future = QtConcurrent::run(
+        [this, safeOnto, safeUpstream, safeBranch]() -> GitResult {
+
+            return previewRebasePlan(safeOnto,
+                                     safeUpstream,
+                                     safeBranch);
+        });
+
+    auto* watcher = new QFutureWatcher<GitResult>(this);
+    connect(watcher, &QFutureWatcher<GitResult>::finished, this,
+            [this, watcher]() {
+                emit previewRebasePlanReady(watcher->result());
+                watcher->deleteLater();
+            });
+    watcher->setFuture(future);
+
+    return GitResult(true);
+}
+
+GitResult GitRebase::previewRebasePlan(const QString& onto,
+                                       const QString& upstream,
+                                       const QString& branch)
+{
     git_repository* repo = m_currentRepo->repo;
 
     git_object* upstreamObject  = nullptr;
@@ -91,6 +120,9 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
                          QString("Invalid branch '%1'.").arg(branchSpec));
     }
 
+    git_diff_options diff_opts = GIT_DIFF_OPTIONS_INIT;
+    diff_opts.flags = GIT_DIFF_SKIP_BINARY_CHECK | GIT_DIFF_DISABLE_PATHSPEC_MATCH;
+
     // STEP 1: Collect patch-ids from ONTO history
     QSet<QByteArray> upstreamPatchIds;
 
@@ -98,6 +130,11 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
     git_revwalk_new(&upstreamWalk, repo);
     git_revwalk_sorting(upstreamWalk, GIT_SORT_TOPOLOGICAL);
     git_revwalk_push(upstreamWalk, git_object_id(ontoObject));
+
+    git_oid mergeBase;
+    if (git_merge_base(&mergeBase, repo, git_object_id(branchObject), git_object_id(ontoObject)) == GIT_OK) {
+        git_revwalk_hide(upstreamWalk, &mergeBase);
+    }
 
     git_oid upstreamOid;
     while (git_revwalk_next(&upstreamOid, upstreamWalk) == GIT_OK)
@@ -118,7 +155,7 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
             git_commit_tree(&parentTree, parent);
 
             git_diff* diff = nullptr;
-            git_diff_tree_to_tree(&diff, repo, parentTree, tree, nullptr);
+            git_diff_tree_to_tree(&diff, repo, parentTree, tree, &diff_opts);
 
             git_oid patchId;
             if (git_diff_patchid(&patchId, diff, nullptr) == GIT_OK)
@@ -153,11 +190,8 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
 
     git_revwalk_sorting(walk, GIT_SORT_TOPOLOGICAL | GIT_SORT_TIME);
 
-    QString range = QString("%1..%2")
-                        .arg(upstream.trimmed())
-                        .arg(branchSpec);
-
-    git_revwalk_push_range(walk, range.toUtf8().constData());
+    git_revwalk_push(walk, git_object_id(branchObject));
+    git_revwalk_hide(walk, git_object_id(upstreamObject));
 
     QVariantList commits;
     git_oid oid;
@@ -188,7 +222,7 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
             git_commit_tree(&parentTree, parent);
 
             git_diff* diff = nullptr;
-            git_diff_tree_to_tree(&diff, repo, parentTree, tree, nullptr);
+            git_diff_tree_to_tree(&diff, repo, parentTree, tree, &diff_opts);
 
             git_oid patchId;
             if (git_diff_patchid(&patchId, diff, nullptr) == GIT_OK)

@@ -110,15 +110,19 @@ function buildDisplayModel(selectedConflict, modifiedFiles, selectedPath, displa
     var i = 0;
     var runningLine = 1;
 
+    var cardNumber = 0;
+
     while (i < lines.length) {
         var lineNumber = i + 1;
 
         if (blockMap[lineNumber]) {
             var block = blockMap[lineNumber];
+            cardNumber++;
 
             displayModel.append({
                 type: "blockButton",
-                blockIndex: block.index
+                blockIndex: block.index,
+                cardNumber: cardNumber
             });
 
             for (var j = 0; j < block.lines.length; j++) {
@@ -223,3 +227,163 @@ function mergeLineUp(displayModel, rowIndex, conflictListView) {
     conflictListView.currentIndex = rowIndex - 1;
 }
 
+/**
+ * Finds the start and end indices of a conflict block in the display model.
+ * @param model      - ListModel to search
+ * @param blockIndex - The block's index property (1‑based)
+ * @returns { start: number, end: number } or { start: -1, end: -1 } if not found
+ */
+function findBlockRowRange(model, blockIndex) {
+    let start = -1, end = -1
+    for (let i = 0; i < model.count; ++i) {
+        if (model.get(i).blockIndex === blockIndex) {
+            if (start < 0) start = i
+            end = i
+        }
+    }
+    return { start, end }
+}
+
+/**
+ * Finds a block object in an array by its index property.
+ * @param blocks - Array of block objects (from selectedConflict.blocks)
+ * @param idx    - The index property to look for
+ * @returns { block: object, pos: number } or null
+ */
+function findBlockByIndex(blocks, idx) {
+    for (let i = 0; i < blocks.length; ++i) {
+        if (blocks[i].index === idx)
+            return { block: blocks[i], pos: i }
+    }
+    return null
+}
+
+/**
+ * Returns the lines that should replace a resolved conflict block.
+ * @param block - The block object (with currentText, incomingText)
+ * @param mode  - "ours", "theirs", or "both"
+ * @returns String[] of resolved lines
+ */
+function computeResolvedLines(block, mode) {
+    if (mode === "ours")
+        return block.currentText  ? block.currentText.split("\n")  : []
+
+    if (mode === "theirs")
+        return block.incomingText ? block.incomingText.split("\n") : []
+
+    if (mode === "both") {
+        let ours   = block.currentText  ? block.currentText.split("\n")  : []
+        let theirs = block.incomingText ? block.incomingText.split("\n") : []
+        return ours.concat(theirs)
+    }
+
+    return []
+}
+
+/**
+ * Replaces a conflict block's rows in the displayModel with resolved lines.
+ * Also updates line numbers and blockIndex values of subsequent rows.
+ * @param displayModel  - The ListModel
+ * @param blockIndex    - The block's index (1‑based)
+ * @param block         - The block object (needs startLine, endLine)
+ * @param resolvedLines - The resolved text lines to insert
+ * @param mode          - "ours", "theirs" or "both": which side settled the block
+ */
+function replaceBlockInModel(displayModel, blockIndex, block, resolvedLines, mode) {
+    let { start, end } = findBlockRowRange(displayModel, blockIndex)
+    if (start < 0)
+        return
+
+    let removedRowCount     = end - start + 1
+    let originalLineCount   = block.endLine - block.startLine + 1
+    let lineDelta           = resolvedLines.length - originalLineCount
+
+    let cardNumber = displayModel.get(start).cardNumber
+
+    // Remove old conflict rows
+    displayModel.remove(start, removedRowCount)
+
+    // Card header for the resolved block. Type "blockButton" so it is skipped when the file content
+    // is rebuilt, exactly like the header of an unresolved block.
+    displayModel.insert(start, {
+        type: "blockButton",
+        blockIndex: -1,
+        cardNumber: cardNumber,
+        resolvedGroup: blockIndex,
+        resolvedMode: mode || ""
+    })
+
+    // Insert resolved rows
+    for (let i = 0; i < resolvedLines.length; ++i) {
+        displayModel.insert(start + 1 + i, {
+            type: "line",
+            text: resolvedLines[i],
+            lineNumber: block.startLine + i,
+            blockIndex: -1,
+            role: "resolved",
+            cardNumber: cardNumber,
+            resolvedGroup: blockIndex,
+            resolvedMode: mode || ""
+        })
+    }
+
+    // Shift line numbers of rows after the block
+    if (lineDelta !== 0) {
+        for (let i = start + resolvedLines.length + 1; i < displayModel.count; ++i) {
+            let row = displayModel.get(i)
+            if (row.lineNumber !== undefined && row.lineNumber !== null) {
+                displayModel.setProperty(i, "lineNumber", row.lineNumber + lineDelta)
+            }
+        }
+    }
+
+    // Decrement blockIndex for later blocks
+    for (let i = 0; i < displayModel.count; ++i) {
+        let bi = displayModel.get(i).blockIndex
+        if (bi !== undefined && bi > blockIndex) {
+            displayModel.setProperty(i, "blockIndex", bi - 1)
+        }
+    }
+}
+
+/**
+ * Updates the remaining blocks array after one block is resolved.
+ * Renumbers indices and shifts line references accordingly.
+ * @param selectedConflict  - The conflict object (must have a blocks array)
+ * @param blockIndex        - The resolved block's original index
+ * @param resolvedPos       - Position of the resolved block in the array
+ * @param lineDelta         - Number of lines gained/lost
+ * @param blockEndLine      - The original endLine of the resolved block
+ */
+function updateRemainingBlocks(selectedConflict, blockIndex, resolvedPos, lineDelta, blockEndLine) {
+    for (let i = 0; i < selectedConflict.blocks.length; ++i) {
+        if (i === resolvedPos)
+            continue
+
+        let b = selectedConflict.blocks[i]
+        if (b.index > blockIndex)
+            b.index -= 1
+
+        if (b.startLine > blockEndLine) {
+            b.startLine += lineDelta
+            b.endLine   += lineDelta
+        }
+    }
+    selectedConflict.blocks.splice(resolvedPos, 1)
+}
+
+/**
+ * Replaces the conflict block in the raw file-lines array.
+ * @param lines         - The lines array (selectedConflict.lines)
+ * @param block         - The resolved block object (needs startLine, endLine)
+ * @param resolvedLines - The resolved text lines
+ * @returns The updated lines array
+ */
+function updateLinesArray(lines, block, resolvedLines) {
+    if (!lines)
+        return lines
+
+    let prefix = lines.slice(0, block.startLine - 1)
+    let suffix = lines.slice(block.endLine)
+    return prefix.concat(resolvedLines, suffix)
+}

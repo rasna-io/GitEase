@@ -5,7 +5,8 @@
 // for a commit.
 // ====================================================================
 
-function buildMenu(state) {
+// pluginItems: optional array of {pluginId, id, label, icon, separator, order} from IContextMenuPlugin
+function buildMenu(state, pluginItems) {
     var model = [];
 
     // Checkout section
@@ -45,6 +46,10 @@ function buildMenu(state) {
     }
 
     model.push({
+        separator: true
+    });
+
+    model.push({
         text: "Push",
         icon: "arrowUp",
         action: "push",
@@ -69,12 +74,20 @@ function buildMenu(state) {
         payload: { hash: state.fullHash }
     });
 
+    model.push({
+        separator: true
+    });
+
+    // Browse files
+    model.push({
+        text: "Browse files at this commit",
+        icon: "folder",
+        action: "browseFiles",
+        payload: { hash: state.fullHash, message: state.commitMessage, date: state.commitDate }
+    });
+
     // Merge
     if (state.hasMergeableBranches) {
-        model.push({
-                separator: true
-        });
-
         state.mergeableBranches.forEach(function(bName) {
             model.push({
                 text: "Merge '" + bName + "' into '" + state.currentBranch + "'",
@@ -91,6 +104,7 @@ function buildMenu(state) {
             text: "Rebase onto " + state.shortHash,
             icon: "clockRotateLeft",
             action: "rebase",
+            shortcut: "Ctrl+R",
             payload: { hash: state.fullHash }
         });
     }
@@ -111,6 +125,39 @@ function buildMenu(state) {
             enabled: state.canCherryPick,
             action: "cherryPickSingle",
             payload: { hash: state.fullHash }
+        });
+    }
+
+    model.push({
+        separator: true
+    });
+
+    // Reset
+    model.push({
+        text: "Reset " + state.currentBranch + " into this commit",
+        icon: "reset",
+        action: "reset",
+        subItems: [
+           {text: "--Soft (Keep all changes)",  icon: "resetSoft",  action: "resetSoft",  payload: { hash: state.fullHash }},
+           {text: "--Mixed (Reset index to commit)", icon: "resetMixed", action: "resetMixed", payload: { hash: state.fullHash }},
+           {text: "--Hard (Discard all changes)", icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
+        ]
+    });
+
+    // Plugin context menu items (appended after a separator when non-empty)
+    if (pluginItems && pluginItems.length > 0) {
+        model.push({ separator: true });
+        pluginItems.forEach(function(pi) {
+            if (pi.separator) {
+                model.push({ separator: true });
+                return;
+            }
+            model.push({
+                text:    pi.label,
+                icon:    pi.icon || "",
+                action:  "pluginAction",
+                payload: { pluginId: pi.pluginId, itemId: pi.id, hash: state.fullHash }
+            });
         });
     }
 

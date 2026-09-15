@@ -14,7 +14,7 @@ QtObject {
      * ****************************************************************************************/
     property AppModel             appModel:             AppModel {}
 
-    property PageController       pageController:       PageController {
+    property GuideController      guideController:      GuideController {
         appModel: root.appModel
     }
 
@@ -40,7 +40,10 @@ QtObject {
             cherryPickController.currentRepo = currentRepo
             conflictController.currentRepo = currentRepo
             tagController.currentRepo = currentRepo
+            gitTreeController.currentRepo = currentRepo
             pluginController.currentRepo = currentRepo
+            resetController.currentRepo = currentRepo
+            terminalController.currentRepo = currentRepo
         }
 
         onRepositorySelected: function(repo) {
@@ -101,6 +104,12 @@ QtObject {
         }
     }
 
+    property GitTreeController gitTreeController: GitTreeController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
+
     property UserProfileController userProfileController: UserProfileController {
         appModel: root.appModel
         configController: root.configController
@@ -108,7 +117,6 @@ QtObject {
     }
 
     property ShellController shellController: ShellController {
-        pageController : root.pageController
         repositoryController : root.repositoryController
         notificationController: root.notificationController
     }
@@ -136,6 +144,12 @@ QtObject {
         }
     }
 
+    property ResetController resetController: ResetController {
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+        }
+    }
+
     property ConflictController conflictController: ConflictController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
@@ -144,8 +158,38 @@ QtObject {
 
     property PluginController pluginController: PluginController {
         notificationController: root.notificationController
+        appModel:               root.appModel
+        networkController:      root.networkController
+        pageController:         root.pageController
+        commitController:       root.commitController
+    }
+
+    property NetworkController networkController: NetworkController {}
+
+    property UpdateController updateController: UpdateController {
+        networkController: root.networkController
+        notificationController: root.notificationController
+    }
+
+    property TerminalController terminalController: TerminalController {}
+
+    property LayoutController layoutController: LayoutController {
+        appModel: root.appModel
     }
 
     property UiSessionPopups      popups
+
+    // Injected by MainWindow after the SwipeView is ready; forwarded into PluginController
+    // so page plugins can add themselves to the navigation rail.
+    property var pageController: null
+
+    property RemoteOperationsSession remoteOperationsSession: RemoteOperationsSession {
+        remoteController:        root.remoteController
+        repositoryController:    root.repositoryController
+        branchController:        root.branchController
+        notificationController:  root.notificationController
+        userAuthenticationPopup: root.popups?.userAuthenticationPopup
+        fetchSummaryPopup:       root.popups?.fetchSummaryPopup
+    }
 }
 

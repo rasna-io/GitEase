@@ -46,7 +46,9 @@ public:
     }
 
     Q_INVOKABLE void minimize() {
-        if (m_window)
+        if (!m_window)
+            return;
+        if (!m_helper || !m_helper->minimizePreservingState())
             m_window->showMinimized();
     }
     Q_INVOKABLE void toggleMaxRestore() {

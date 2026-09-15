@@ -9,12 +9,12 @@ GitStatus::GitStatus(QObject *parent)
     : IGitController{parent}
 {}
 
-GitResult GitStatus::stageFile(const QString &filePath)
+GitResult GitStatus::stageFile(const QString &filePath, bool isDeleted)
 {
     if (filePath.isEmpty())
         return GitResult(false, QVariant(), "File path cannot be empty");
 
-    GitResult result = addToIndex(filePath);  // Stage the file
+    GitResult result = addToIndex(filePath, isDeleted);  // Stage the file
     if (result.success()) {
         emitGitCommand(QString("git add -- %1").arg(quoteCommandArg(filePath)));
     }
@@ -75,7 +75,7 @@ GitResult GitStatus::stageAll(bool includeUntrackedFiles)
     // Stage all unstaged files
     for (const GitFileStatus& file : files) {
         if (file.isUnstaged()) {
-            GitResult result = addToIndex(file.path());  // Stage the unstaged file
+            GitResult result = addToIndex(file.path(), file.status() == GitFileStatus::Deleted);  // Stage the unstaged file
             if (result.success()) {
                 stagedCount++;
                 stagedFiles.append(file.path());
@@ -115,7 +115,7 @@ GitResult GitStatus::status()
 
     git_status_options opts = GIT_STATUS_OPTIONS_INIT;
     opts.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
-    opts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED;
+    opts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED | GIT_STATUS_OPT_RECURSE_UNTRACKED_DIRS;
 
     git_status_list *status_list = nullptr;
     git_diff *diff = nullptr;
@@ -935,7 +935,26 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
     uint32_t baseMode = 0;
     getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
 
-    GitResult writeResult = writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
+    // Convert the staged (LF) content to worktree representation (CRLF if needed)
+    QByteArray smudged = smudgeText(m_currentRepo->repo, filePath, stagedText);
+
+    const char* workdir = git_repository_workdir(m_currentRepo->repo);
+    QString absPath = QDir(QString::fromUtf8(workdir)).filePath(filePath);
+    QFile wf(absPath);
+    if (!wf.open(QIODevice::ReadOnly)) {
+        return writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
+    }
+    QByteArray worktreeBytes = wf.readAll();
+    wf.close();
+
+    GitResult writeResult;
+    if (smudged == worktreeBytes) {
+        writeResult = addToIndex(filePath, false);  // Stage via real file
+    } else {
+        // Partial stage: still need to update the index with our reconstructed (LF) text
+        writeResult = writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
+    }
+
     if (writeResult.success()) {
         emitGitCommand(QString("git add -p -- %1").arg(quoteCommandArg(filePath)));
     }
@@ -957,15 +976,11 @@ QString GitStatus::buildSelectedLinesContent(const QString &filePath, int startL
     git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
     diffOpts.flags |= (GIT_DIFF_PATIENCE | GIT_DIFF_MINIMAL);
 
-    if (type == GIT_DELTA_DELETED) {
-        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
-    } else {
-        QByteArray pathUtf8 = filePath.toUtf8();
-        char *path = const_cast<char *>(pathUtf8.constData());
-        diffOpts.pathspec.strings = &path;
-        diffOpts.pathspec.count = 1;
-        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
-    }
+    QByteArray pathUtf8 = filePath.toUtf8();
+    char *path = const_cast<char *>(pathUtf8.constData());
+    diffOpts.pathspec.strings = &path;
+    diffOpts.pathspec.count = 1;
+    git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
 
     UniqueDiff diff(diffRaw);
     git_patch *patchRaw = nullptr;
@@ -979,8 +994,25 @@ QString GitStatus::buildSelectedLinesContent(const QString &filePath, int startL
     const char *rawContent = static_cast<const char *>(git_blob_rawcontent(indexBlob.get()));
     git_object_size_t rawSize = git_blob_rawsize(indexBlob.get());
     QByteArray originalData = QByteArray::fromRawData(rawContent, static_cast<int>(rawSize));
-    if (originalData.contains("\r\n"))
-        selectedText.replace("\n", "\r\n");
+
+    git_filter_list *filters = nullptr;
+    if (git_filter_list_load(&filters, m_currentRepo->repo, nullptr,
+                             filePath.toUtf8().constData(),
+                             GIT_FILTER_TO_ODB, GIT_FILTER_DEFAULT) == 0) {
+        git_buf src = GIT_BUF_INIT;
+        git_buf filtered = GIT_BUF_INIT;
+
+        QByteArray utf8 = selectedText.toUtf8();
+        git_buf_set(&src, utf8.constData(), utf8.size());
+
+        if (git_filter_list_apply_to_data(&filtered, filters, &src) == 0) {
+            selectedText = QString::fromUtf8(filtered.ptr, filtered.size);
+        }
+
+        git_buf_dispose(&src);
+        git_buf_dispose(&filtered);
+        git_filter_list_free(filters);
+    }
 
     return selectedText;
 }
@@ -1371,3 +1403,30 @@ GitResult GitStatus::revertAll()
 
     return GitResult(true, QVariant(), "All changes discarded.");
 }
+
+QByteArray GitStatus::smudgeText(git_repository* repo, const QString& path, const QString& lfContent)
+{
+    git_filter_list *filters = nullptr;
+    if (git_filter_list_load(&filters, repo, nullptr,
+                             path.toUtf8().constData(),
+                             GIT_FILTER_TO_WORKTREE, GIT_FILTER_DEFAULT) != 0)
+        return lfContent.toUtf8();
+
+    git_buf src = GIT_BUF_INIT;
+    git_buf dest = GIT_BUF_INIT;
+    QByteArray utf8 = lfContent.toUtf8();
+    git_buf_set(&src, utf8.constData(), utf8.size());
+
+    int rc = git_filter_list_apply_to_data(&dest, filters, &src);
+    git_filter_list_free(filters);
+    git_buf_dispose(&src);
+
+    if (rc == 0) {
+        QByteArray result = QByteArray(dest.ptr, dest.size);
+        git_buf_dispose(&dest);
+        return result;
+    }
+    git_buf_dispose(&dest);
+    return lfContent.toUtf8();
+}
+

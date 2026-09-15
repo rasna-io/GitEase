@@ -15,6 +15,8 @@
 
 #include <QRegularExpression>
 
+
+
 GitCommit::GitCommit(QObject *parent)
     : IGitController{parent}
 {}
@@ -216,6 +218,13 @@ GitResult GitCommit::commit(const QString& message,
         return GitResult(false, QVariant(),
                          "Commit failed: The commit message is invalid. Ensure it is properly formatted.");
 
+    ActionContext context;
+    context.type = ActionType::Commit_msg;
+    context.commitMessage = message;
+    emit beforeAction(&context);
+
+    if(!context.result.success())
+        return context.result;
 
     git_signature* author = getAuthorSignature(m_currentRepo->repo);
     if (!author) {

@@ -1,4 +1,4 @@
-﻿import QtQuick
+import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
@@ -16,26 +16,45 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property bool expanded: false
-
     property alias model: rpt.model
 
     property var   currentId
+
+    property GuideController   guideController: null
+
+    property bool   useAccentIndicator: false
 
     /* Signals
      * ****************************************************************************************/
 
     signal clicked(var modelData);
 
+    /* Guide
+     * ****************************************************************************************/
+    GuideHoverTrigger {
+        guideController: root.guideController
+        guideId: "pages_rail_tutorial"
+        guideName: "Pages Rail"
+        guideIcon: Style.icons.list
+        stepsFactory: function() {
+            return [
+                {
+                    targetProvider: function() { return root },
+                    icon: Style.icons.list,
+                    title: "Pages",
+                    description: "Switch between the app's pages — like Committing and Graph View — from this list. Hover the rail to see full names, or click a page to jump to it."
+                }
+            ]
+        }
+    }
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: 4
-        anchors.rightMargin: 4
+        anchors.leftMargin: root.useAccentIndicator ? 0 : Style.dp(4)
+        anchors.rightMargin: root.useAccentIndicator ? 0 : Style.dp(4)
         anchors.topMargin: 12
-
-        spacing: 8
 
         // Pages list
         Flickable {
@@ -47,49 +66,84 @@ Rectangle {
             Column {
                 id: pagesColumn
                 width: parent.width
-                spacing: 8
 
                 Repeater {
                     id: rpt
 
-                    Item {
-                        id: item
+                    Column {
+                        id: rowWrapper
                         width: parent.width
-                        height: 36
+                        spacing: 0
 
-                        property bool isSelected: (modelData)
-                                                  ? (modelData.id === root.currentId)
-                                                  : false
-                        property bool isHovered: false
+                        // A group boundary is either the legacy plugin-section break, or an
+                        // explicit groupStart flag (accent-indicator variant only).
+                        readonly property bool isGroupBoundary:
+                            ((modelData?.isPlugin === true) &&
+                             (index === 0 || !(rpt.model[index - 1]?.isPlugin === true)))
+                            || (root.useAccentIndicator && modelData?.groupStart === true && index > 0)
+
+                        // Spacer above separator
+                        Item {
+                            width: parent.width
+                            height: 6
+                            visible: rowWrapper.isGroupBoundary
+                        }
+
+                        // Separator before a new group
+                        Rectangle {
+                            width: root.useAccentIndicator ? parent.width : parent.width - 16
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            height: 1
+                            color: Style.colors.primaryBorder
+                            visible: rowWrapper.isGroupBoundary
+                        }
+
+                        // Spacer above separator
+                        Item {
+                            width: parent.width
+                            height: 6
+                            visible: rowWrapper.isGroupBoundary
+                        }
 
                         Rectangle {
-                            anchors.fill: parent
-                            anchors.leftMargin: 2
-                            anchors.rightMargin: 2
-                            radius: 4
+                            id: item
+                            width: parent.width
+                            height: Style.dp(30)
+                            radius: root.useAccentIndicator ? 0 : Style.dp(6)
 
-                            color: {
-                                if (item.isSelected) {
-                                    return Style.colors.primaryBackground
-                                }
-                                return parent.isHovered ? Qt.darker(root.color, 1.05) : "transparent"
+                            property bool isSelected: (modelData)
+                                                      ? (modelData.pageId === root.currentId)
+                                                      : false
+
+                            readonly property color activeColor:   root.useAccentIndicator ? Style.colors.accent : "#60A5FA"
+                            readonly property color inactiveColor: root.useAccentIndicator ? Style.colors.mutedText : "#363650"
+
+                            color: item.isSelected ? "#1F3B82F6" : "transparent"
+
+                            // Active indicator bar (accent-indicator variant only)
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                width: 3
+                                radius: 1.5
+                                color: Style.colors.accent
+                                visible: root.useAccentIndicator && item.isSelected
                             }
 
-
-                            border.width: parent.isSelected ? 1 : 0
-                            border.color: parent.isSelected ? Style.colors.secondaryText : "transparent"
-
                             RowLayout {
-                                anchors.centerIn: parent
-                                width: parent.width - 12
-                                spacing: 8
+                                anchors {
+                                    fill: parent
+                                    leftMargin: root.useAccentIndicator ? Style.dp(16) : Style.dp(12)
+                                    rightMargin: Style.dp(8)
+                                }
+                                spacing: root.useAccentIndicator ? 10 : 8
 
                                 // Icon
                                 Rectangle {
                                     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                                    width: 20
-                                    height: 20
-                                    radius: 3
+                                    width: Style.dp(14)
+                                    height: Style.dp(14)
                                     color: "transparent"
 
                                     Text {
@@ -97,10 +151,10 @@ Rectangle {
                                         text: (modelData && modelData.icon && modelData.icon.length)
                                               ? modelData.icon
                                               : Style.icons.download
-                                        font.pixelSize: 16
+                                        font.pixelSize: Style.appFont.h3Pt
                                         font.family: Style.fontTypes.font6Pro
-                                        font.weight: 500
-                                        color: parent.parent.parent.parent.isSelected ? Style.colors.secondaryText : Style.colors.mutedText
+                                        font.weight: (root.useAccentIndicator && item.isSelected) ? 600 : 500
+                                        color: item.isSelected ? item.activeColor : item.inactiveColor
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
@@ -111,31 +165,41 @@ Rectangle {
                                     Layout.fillWidth: true
                                     Layout.alignment: Qt.AlignVCenter
                                     text: (modelData && modelData.title) ? modelData.title : ""
-                                    font.pixelSize: 13
-                                    font.family: Style.fontTypes.roboto
-                                    color: parent.parent.parent.isSelected ? Style.colors.secondaryText : Style.colors.mutedText
+                                    font.pixelSize: Style.appFont.h3Pt
+                                    font.family: Style.fontTypes.inter
+                                    font.weight: (root.useAccentIndicator && item.isSelected) ? Font.DemiBold : Font.Normal
+                                    color: item.isSelected ? item.activeColor : item.inactiveColor
                                     elide: Text.ElideRight
-                                    visible: root.expanded
-                                    opacity: root.expanded ? 1 : 0
+                                }
 
-                                    Behavior on opacity {
-                                        NumberAnimation {
-                                            duration: 100
-                                            easing.type: Easing.InOutQuad
-                                        }
+                                // Badge
+                                Rectangle {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    visible: (modelData?.badgeCount ?? -1) >= 0
+                                    implicitHeight: 16
+                                    implicitWidth: Math.max(implicitHeight, badgeLabel.implicitWidth + 8)
+                                    radius: implicitHeight / 2
+                                    color: modelData?.badgeColor ?? "#3B82F6"
+
+                                    Label {
+                                        id: badgeLabel
+                                        anchors.centerIn: parent
+                                        text: modelData?.badgeCount ?? ""
+                                        color: "white"
+                                        font.family: Style.fontTypes.inter
+                                        font.pixelSize: Style.appFont.smallPt
+                                        font.bold: true
                                     }
                                 }
                             }
-                        }
 
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                hoverEnabled: true
 
-                            onClicked: root.clicked(modelData)
-                            onEntered: parent.isHovered = true
-                            onExited: parent.isHovered = false
+                                onClicked: root.clicked(modelData)
+                            }
                         }
                     }
                 }

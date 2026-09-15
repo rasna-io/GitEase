@@ -13,13 +13,20 @@ UtilitiesCard {
     id: root
 
     /* Property Declarations */
-    property TagController tagController: null
-    property var           addTagPopup:   null
+    property TagController          tagController:          null
+    property var                    addTagPopup:            null
     property NotificationController notificationController: null
-    property var           tagListModel:  []
+    property var                    tagListModel:           []
+    property GuideController        guideController:        null
 
     title: "Tag Management"
     icon:  Style.icons.tag
+    badgeCount: root.tagListModel.length
+
+    TextEdit {
+        id: clipboardHelper
+        visible: false
+    }
 
     /* Logic */
     function update() {
@@ -34,158 +41,233 @@ UtilitiesCard {
         }
     }
 
+    function deleteTagLocal(tag) {
+        let ctrl = root.tagController || uiSession.tagController;
+        let res = ctrl.remove(tag.name);
+        if (res.success) {
+            if (root.notificationController)
+                root.notificationController.success("Tag deleted locally", "Tag", 2000);
+            root.update();
+        }
+    }
+
+    function deleteTagRemote(tag) {
+        let ctrl = root.tagController || uiSession.tagController;
+        let notif = root.notificationController;
+
+        if (notif) notif.info("Deleting tag from remote...", "Remote", 1500);
+
+        ctrl.pushDeleteTag(tag.name);
+    }
+
+    function pushTagToRemote(tag) {
+        notificationController.info("Pushing tag to remote...", "Tag", 1500);
+
+        tagController.pushTag(tag.name);
+    }
+
+    function copyTagName(tag) {
+        clipboardHelper.text = tag.name
+        clipboardHelper.selectAll()
+        clipboardHelper.copy()
+        if (root.notificationController)
+            root.notificationController.success("Tag name copied to clipboard", "Tag", 2000)
+    }
+
+    function copyTagHash(tag) {
+        clipboardHelper.text = tag.commitId
+        clipboardHelper.selectAll()
+        clipboardHelper.copy()
+        if (root.notificationController)
+            root.notificationController.success("Commit hash copied to clipboard", "Tag", 2000)
+    }
+
+    function buildTagMenu(tag) {
+        return [
+
+            // { text: "Push Tag to Remote", icon: Style.icons.gitBranch, action: function() { root.checkout(tag) } },
+                    // TODO: Task "Checkout Tag"
+                    //       Implement GitTag::checkout(tagName) in TagController.
+                    //       This menu item will switch the working directory to the tag's commit.
+            // { separator: true },
+
+
+            { text: "Push Tag to Remote", icon: Style.icons.upload, action: function() { root.pushTagToRemote(tag) } },
+            // { text: "Delete", icon: Style.icons.trash, color: Style.colors.deletededFile, action: function() { root.deleteTagRemote(tag) } },
+                    // TODO: Task "Dynamic Remote/Local Actions"
+                    //       Show this menu item only when the tag is known to be on the remote.
+                    //       Requires fetching the list of remote tags (GitTag::remoteTagNames) and
+                    //       comparing. Part of the same task as the inline push/delete button logic.
+            { separator: true },
+
+            { text: "Copy Name", icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
+            { text: "Copy Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } }
+        ]
+    }
+
     content: ColumnLayout {
         anchors.fill: parent
-        spacing: 12
+        anchors.leftMargin: Style.dp(10)
+        anchors.rightMargin: Style.dp(10)
+        spacing: 6
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "tag_management_tutorial"
+            guideName: "Tag Management"
+            guideIcon: Style.icons.tag
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return internalListView },
+                        icon: Style.icons.tag,
+                        title: "Your Tags",
+                        description: "Every tag in the repository is listed here. The first icon pushes the tag to the remote; the second deletes it locally. Right-click a tag for more options, including deleting it from the remote."
+                    },
+                    {
+                        targetProvider: function() { return addTagBtn },
+                        icon: Style.icons.plus,
+                        title: "Create a Tag",
+                        description: "Mark the current commit with a version label like v1.0.0 — handy for marking releases.",
+                        commands: [{ command: "git tag <name>" }]
+                    }
+                ]
+            }
+        }
+
+        ContextMenu {
+            id: itemContextMenu
+            parent: Overlay.overlay
+            width: 220
+        }
 
         ListView {
             id: internalListView
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 8
+            Layout.preferredHeight: Math.min(contentHeight, 220)
             clip: true
             model: root.tagListModel
 
-            delegate: Rectangle {
+            delegate: Item {
                 id: tagDelegate
                 width: internalListView.width
-                height: 48
-                radius: 6
-                color: Style.colors.secondaryBackground
+                height: tagRow.implicitHeight + Style.dp(2)
+
+                MouseArea {
+                    id: rightClickArea
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    onClicked: (mouse) => {
+                        var pos = mapToItem(Overlay.overlay, mouse.x, mouse.y)
+                        itemContextMenu.menuModel = root.buildTagMenu(modelData)
+                        itemContextMenu.x = pos.x
+                        itemContextMenu.y = pos.y
+                        itemContextMenu.open()
+                    }
+                }
 
                 RowLayout {
+                    id: tagRow
                     anchors.fill: parent
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 8
-                    spacing: 10
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 6
+                    spacing: 6
 
                     // 1. Tag Icon
                     Text {
                         text: Style.icons.tag || "#"
                         font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 14
-                        color: modelData.isAnnotated ? Style.colors.accent : Style.colors.secondaryForeground
+                        font.pixelSize: Style.appFont.mediumPt
+                        color: modelData.isAnnotated ? Style.colors.utilitiesRowIconAccent
+                                                     : Style.colors.utilitiesRowIcon
                         Layout.alignment: Qt.AlignVCenter
                     }
 
-                    // 2. Text Column (Flexible Space)
-                    ColumnLayout {
-                        spacing: 2
+                    ScrollingText {
+                        text: modelData.name
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.smallPt
+                        font.bold: true
+                        color: Style.colors.utilitiesRowText
+
                         Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
-
-                        ScrollingText {
-                            text: modelData.name
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
-                            font.bold: true
-                            color: Style.colors.foreground
-
-                            Layout.fillWidth: true
-                        }
-
-                        Text {
-                            text: modelData.commitId.substring(0, 7)
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 10
-                            color: Style.colors.mutedText
-
-                            Layout.fillWidth: true
-                            elide: Text.ElideRight
-                        }
                     }
 
-                    // 3. Delete Action (Fixed Position)
+                    Text {
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        text: modelData.commitId.substring(0, 7)
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.utilitiesRowMetaText
+
+                        elide: Text.ElideRight
+                    }
+
+                    // 3. Push Action
                     ActionIconButton {
-                        iconText: Style.icons.trash
-                        textColor: Style.colors.modifiediedFile
-                        tooltip: "Delete Tag (Local Only)"
-                        Layout.preferredWidth: 28
-                        Layout.preferredHeight: 28
+                        iconText: Style.icons.upload
+                        textColor: Style.colors.accent
+                        tooltip: "Push Tag to Remote"
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
-                        onClicked: {
-                            let ctrl = root.tagController || uiSession.tagController;
-                            let res = ctrl.remove(modelData.name);
-                            if (res.success) {
-                                if (root.notificationController)
-                                    root.notificationController.success("Tag deleted locally", "Tag", 2000);
-                                root.update();
-                            }
-                        }
+                        onClicked: root.pushTagToRemote(modelData)
+                        visible: false
+                        // TODO: Task "Dynamic Remote/Local Actions"
+                        //       Make visible when tag is NOT on the remote.
+                        //       Requires GitTag::remoteTagNames() to get origin's tags.
+                        //       Bind to: root.remoteTagNames.indexOf(modelData.name) === -1
+                        //       The corresponding remote‑delete button (not yet in the code)
+                        //       will be visible when the tag IS on the remote.
                     }
 
+                    // 4. Delete Action
                     ActionIconButton {
                         iconText: Style.icons.trash
                         textColor: Style.colors.deletededFile
-                        tooltip: "Delete Tag from Remote (Origin)"
-                        Layout.preferredWidth: 28
-                        Layout.preferredHeight: 28
+                        tooltip: "Delete Tag (Local Only)"
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
-                        onClicked: {
-                            let ctrl = root.tagController || uiSession.tagController;
-                            let notif = root.notificationController;
-
-                            if (notif) notif.info("Deleting tag from remote...", "Remote", 1500);
-
-                            ctrl.pushDeleteTag(modelData.name);
-                        }
+                        onClicked: root.deleteTagLocal(modelData)
                     }
                 }
             }
+
+            onContentHeightChanged: root.pageScrollBlocking = internalListView.contentHeight > internalListView.height + 1
 
             // Empty State
             Label {
                 anchors.centerIn: parent
                 text: "No tags available"
-                color: Style.colors.secondaryForeground
+                color: Style.colors.utilitiesEmptyStateText
                 visible: internalListView.count === 0
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.smallPt
             }
         }
 
         // Add Tag Button
-        Button {
+        DashedButton {
             id: addTagBtn
             Layout.fillWidth: true
-            implicitHeight: 44
+            Layout.topMargin: Style.dp(2)
 
-            background: Rectangle {
-                radius: 8
-                color: addTagBtn.enabled ? Style.colors.accent : Style.colors.disabledButton
-            }
-            contentItem: Item {
-                anchors.fill: parent
+            text: "Add Tag"
 
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.plus
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
-                        color: Style.colors.textButton
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Add New Tag"
-                        color: Style.colors.textButton
-                        font.pixelSize: 13
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-            }
             onClicked: {
                 if (root.addTagPopup) {
                     root.addTagPopup.tagController = root.tagController || uiSession.tagController;
                     root.addTagPopup.open();
                 }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                acceptedButtons: Qt.NoButton
             }
         }
     }
@@ -200,13 +282,15 @@ UtilitiesCard {
         target: root.tagController || uiSession.tagController
 
         function onPushTagFinished(result) {
-            if (result.success)
-            {
-                if (root.notificationController) root.notificationController.success("Tag created and pushed", "Success", 3000)
-                root.update()
+            if (result.success) {
+                if (root.notificationController)
+                    root.notificationController.success("Tag pushed to remote", "Success", 3000)
+            } else {
+                if (root.notificationController)
+                    root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
             }
-            else
-                if (root.notificationController) root.notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
+
+            root.update()
         }
 
         function onPushDeleteTagFinished(result, tagName) {
@@ -218,7 +302,7 @@ UtilitiesCard {
                 root.update();
             }
             else
-                if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + res.errorMessage, "Error", 5000);
+                if (root.notificationController) root.notificationController.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
         }
     }
 

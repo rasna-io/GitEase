@@ -2,6 +2,8 @@ import QtQuick
 
 QtObject{
 
+    property string appLogo:           "qrc:/GitEase/Resources/Images/Logo.svg"
+
     // Font Awesome codepoints (Solid)
     property string gitBranch:         "\uf126" // code-branch
     property string workflow:          "\uf542" // diagram-project
@@ -17,6 +19,7 @@ QtObject{
     property string caretUp:           "\uf0d8" // caret-up
     property string refresh:           "\uf021" // arrows-rotate
     property string filter:            "\uf0b0" // filter
+    property string search:            "\uf002" // magnifying-glass
 
     property string user:              "\uf007" // user
     property string envelope:          "\uf0e0" // envelope
@@ -39,6 +42,7 @@ QtObject{
     property string warning:           "\uf071"
     property string star:              "\uf005" // star
     property string circleExclamation: "\uf06a" // exclamation-circle
+    property string circleCheck:       "\uf058" // check-circle
     property string users:             "\uf0c0" // users
     property string info:              "\uf05a" // info
     property string check:             "\uf00c"
@@ -46,6 +50,8 @@ QtObject{
     property string undo:              "\uf0E2"
     property string tree:              "\uF1BB" // tree
     property string cloud:             "\uf0c2" // cloud
+    property string laptop:            "\uf109" // laptop
+    property string globe:             "\uf0ac" // globe
 
     property string palette:           "\uf53f"
     property string terminal:          "\uf120"
@@ -65,12 +71,33 @@ QtObject{
     property string calendarCheck:     "\uf274" // calendar-check
     property string clockRotateLeft:   "\uf1da" // clock-rotate-left (history)
     property string list:              "\uf03a" // list
+    property string ellipsisVertical:  "\uf142" // ellipsis-vertical
+    property string grip:              "\uf58e" // grip-vertical (drag handle)
 
     property string arrowUpToLine:     "\uf341"
     property string arrowDownToLine:   "\uf33d"
 
     property string close:              "\uf00d" // close
+
+    property string reset:             "\uf2ea" // reset
+    property string resetSoft:         "\uf0e2" // undo
+    property string resetMixed:        "\uf021" // rotate / reset index
+    property string resetHard:         "\uf12d" // eraser
+
     property string play:              "\uf04b" // play
     property string pause:             "\uf28b" // pause
     property string stop:              "\uf04d" // stop
+
+    property string plugins:           "\uf12e" // plugins
+    property string windowMinimize:    "\uf2d1" // window-minimize
+    property string install:           "\uf0ed" // install
+    property string uninstall:         "\uf2ed" // uninstall
+    property string update:            "\uf2f1" // update
+    property string compatible:        "\uf058" // compatible
+    property string incompatible:      "\uf057" // incompatible
+
+    property string detach:            "\uf35d" // external-link-alt
+    property string rules:             "\uf0ae" // rules
+
+    property string togglePanel:       "qrc:/GitEase/Resources/Icons/togglePanel.svg"
 }

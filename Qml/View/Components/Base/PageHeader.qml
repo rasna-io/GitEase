@@ -41,7 +41,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         text: root.backButtonText
         font.family: Style.fontTypes.font6Pro
-        font.pixelSize: 16
+        font.pixelSize: Style.appFont.h2Pt
         width: 45
         height: 45
         flat: true
@@ -65,9 +65,9 @@ Item {
         anchors.centerIn: parent
         text: root.pageTitle
         visible: text !== ""
-        font.pixelSize: 20
+        font.pixelSize: Style.appFont.xxlPt
         font.bold: true
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.weight: 400
         color: Style.colors.foreground
         horizontalAlignment: Text.AlignHCenter
@@ -81,7 +81,7 @@ Item {
         height: 28
         width: 99
         fillMode: Image.PreserveAspectFit
-        source: "qrc:/GitEase/Resources/Images/Logo.svg"
+        source: Style.icons.appLogo
     }
 
     //! Drag region: we start native move so Snap/AeroShake remain native.

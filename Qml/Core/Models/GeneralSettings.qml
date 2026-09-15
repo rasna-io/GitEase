@@ -15,13 +15,19 @@ QtObject {
 
     property                bool              showStashNodes:           false
 
+    property                int               chunkContextLines:        0
+
+    property                int               chunkExpandLines:         10
+
     /* Functions
      * ****************************************************************************************/
     function serialize() {
         let data = {
             defaultPath: root.defaultPath,
             showAvatar: root.showAvatar,
-            showStashNodes: root.showStashNodes
+            showStashNodes: root.showStashNodes,
+            chunkContextLines: root.chunkContextLines,
+            chunkExpandLines: root.chunkExpandLines
         }
 
         return data;
@@ -31,6 +37,8 @@ QtObject {
         root.defaultPath = data.defaultPath ?? ""
         root.showAvatar = data.showAvatar ?? true
         root.showStashNodes = data.showStashNodes ?? false
+        root.chunkContextLines = data.chunkContextLines ?? 0
+        root.chunkExpandLines = data.chunkExpandLines ?? 10
     }
 }
 

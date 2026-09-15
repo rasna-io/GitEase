@@ -20,6 +20,65 @@ Rectangle {
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
 
+    /* Plugin page host — dynamically instantiated for each registered IPagePlugin
+     * ****************************************************************************************/
+    Component {
+        id: pluginPageComponent
+        Page {
+            property url pluginUrl: ""
+            isPlugin: true
+            Loader {
+                anchors.fill: parent
+                source: parent.pluginUrl
+            }
+        }
+    }
+
+    /* Wiring
+     * ****************************************************************************************/
+    onUiSessionChanged: {
+        if (!uiSession) return
+        uiSession.pageController = { createPage: root.addPluginPage }
+        let early = uiSession.pluginController.registeredPages
+        for (let p of early)
+            addPluginPage(p.id, p.title, p.qmlUrl, p.icon)
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function addPluginPage(id, title, qmlUrl, icon) {
+        let page = pluginPageComponent.createObject(pageSwipeView, {
+            pageId: id, title: title, icon: icon, pluginUrl: qmlUrl
+        })
+        pageSwipeView.addItem(page)
+    }
+
+    function switchToPageById(pageId) {
+        let pages = pageSwipeView.contentChildren
+        let targetIndex = -1
+        for (let i = 0; i < pages.length; i++) {
+            if (pages[i].pageId === pageId) {
+                targetIndex = i
+                break
+            }
+        }
+        if (targetIndex < 0)
+            return
+
+        let current = pageSwipeView.currentItem
+        if (current?.onPageChange) {
+            current.onPageChange(accepted => {
+                if (!accepted)
+                    return
+
+                pageSwipeView.setCurrentIndex(targetIndex)
+                pages[targetIndex]?.onPageActivated?.()
+            })
+        } else {
+            pageSwipeView.setCurrentIndex(targetIndex)
+            pages[targetIndex]?.onPageActivated?.()
+        }
+    }
 
     /* Children
      * ****************************************************************************************/
@@ -29,12 +88,13 @@ Rectangle {
 
         //Header
         Header {
-            Layout.minimumHeight: 50
-            Layout.maximumHeight: 50
+            Layout.minimumHeight: Style.dp(44)
+            Layout.maximumHeight: Style.dp(44)
             Layout.fillWidth: true
 
             windowController: root.uiSession.windowController
-            content: (pageLoader.item && pageLoader.item.hasOwnProperty("headerContent")) ? pageLoader.item.headerContent : null
+            content: pageSwipeView.currentItem?.headerContent ?? null
+            pluginManager: root.uiSession?.pluginController?.pluginManager ?? null
         }
 
         Item {
@@ -47,17 +107,24 @@ Rectangle {
                     left: parent.left
                     top: parent.top
                     bottom: parent.bottom
-                    margins: 1
                 }
 
                 z: 1
 
                 appModel: root.uiSession?.appModel
-                pageController: root.uiSession?.pageController
                 repositoryController: root.uiSession?.repositoryController
                 userProfileController: root.uiSession?.userProfileController
                 notificationController: root.uiSession?.notificationController
-                
+                guideController: root.uiSession?.guideController
+                userInfoSelectionPopup: root.uiSession?.popups?.userInfoSelectionPopup
+
+                pages: pageSwipeView.contentChildren
+                currentPageId: pageSwipeView.currentItem?.pageId ?? ""
+
+                onPageSelected: function (pageId) {
+                    root.switchToPageById(pageId)
+                }
+
                 onNewRepositoryRequested: function () {
                     let popup = root.uiSession?.popups?.repositorySelectorPopup
                     popup.repositoryController = Qt.binding(function () {return uiSession.repositoryController})
@@ -69,14 +136,11 @@ Rectangle {
                 onOpenSettingsRequested: {
                     let settingsPopup = root.uiSession?.popups?.settingsPopup
                     settingsPopup.appModel = root.uiSession.appModel
+                    settingsPopup.updateController = root.uiSession.updateController
                     settingsPopup.fileIO = root.uiSession.appModel.fileIO
+                    settingsPopup.guideController = root.uiSession.guideController
+                    settingsPopup.switchToPageById = root.switchToPageById
                     settingsPopup.open()
-                }
-
-                onOpenUserSelectionRequested: {
-                    let userInfoSelectionPopup = root.uiSession?.popups?.userInfoSelectionPopup
-                    userInfoSelectionPopup.userProfileController = root.uiSession.userProfileController
-                    userInfoSelectionPopup.open()
                 }
                 
                 onOpenNotificationsRequested: {
@@ -88,114 +152,132 @@ Rectangle {
                 }
             }
 
-            Rectangle {
+            SplitView {
                 anchors {
+                    left: navigationRail.right
                     right: parent.right
                     top: parent.top
                     bottom: parent.bottom
-                    margins: 4
+                    margins: 0
+                }
+                width: parent.width - navigationRail.collapsedWidth - (anchors.leftMargin + anchors.rightMargin)
+                orientation: Qt.Vertical
+
+                handle: SplitViewHandle {
+                    orientation: Qt.Vertical
                 }
 
-                width: parent.width - navigationRail.collapsedWidth - (anchors.leftMargin + anchors.rightMargin)
+                Rectangle {
+                    id: diffViewRect
+                    SplitView.fillWidth: true
+                    SplitView.minimumHeight: 500
+                    SplitView.fillHeight: true
+                    color: Style.colors.primaryBackground
+                    radius: 6
 
-                color: Style.colors.primaryBackground
-                radius: 6
+                    SwipeView {
+                        id: pageSwipeView
+                        anchors.fill: parent
 
-                Loader {
-                    id: pageLoader
-                    anchors.fill: parent
-                    anchors.margins: 0
+                        // Page switching is driven by the NavigationRail only.
+                        interactive: false
 
-                    source: root.uiSession?.appModel?.currentPage?.source ?? ""
-
-                    onLoaded: {
-                        // Bind common context properties if the loaded page exposes them.
-                        if (!item)
-                            return
-
-                        // If the loaded page exposes a `page` property, bind it to the current page model.
-                        if (item && item.hasOwnProperty("page")) {
-                            item.page = Qt.binding(function() { return root.uiSession?.appModel?.currentPage })
+                        // Switch pages instantly instead of sliding/dragging between them.
+                        contentItem: ListView {
+                            model: pageSwipeView.contentModel
+                            interactive: false
+                            currentIndex: pageSwipeView.currentIndex
+                            orientation: ListView.Horizontal
+                            snapMode: ListView.SnapOneItem
+                            boundsBehavior: Flickable.StopAtBounds
+                            highlightRangeMode: ListView.StrictlyEnforceRange
+                            preferredHighlightBegin: 0
+                            preferredHighlightEnd: 0
+                            highlightMoveDuration: 0
+                            highlightResizeDuration: 0
                         }
 
-                        // Repository controller (for pages that need repository context)
-                        if (item.hasOwnProperty("appModel")) {
-                            item.appModel = Qt.binding(function() { return root.uiSession?.appModel })
+                        GraphViewPage {
+                            appModel: root.uiSession?.appModel
+                            branchController: root.uiSession?.branchController
+                            remoteController: root.uiSession?.remoteController
+                            remoteOperationsSession: root.uiSession?.remoteOperationsSession
+                            userAuthenticationPopup: root.uiSession?.popups?.userAuthenticationPopup
+                            commitController: root.uiSession?.commitController
+                            statusController: root.uiSession?.statusController
+                            repositoryController: root.uiSession?.repositoryController
+                            notificationController: root.uiSession?.notificationController
+                            uiSessionPopups: root.uiSession?.popups
+                            stashController: root.uiSession?.stashController
+                            conflictController: root.uiSession?.conflictController
+                            mergeController: root.uiSession?.mergeController
+                            rebaseController: root.uiSession?.rebaseController
+                            cherryPickController: root.uiSession?.cherryPickController
+                            tagController: root.uiSession?.tagController
+                            gitTreeController: root.uiSession?.gitTreeController
+                            resetController: root.uiSession?.resetController
+                            terminalController: root.uiSession?.terminalController
+                            bundleController: root.uiSession?.bundleController
+                            activityController: root.uiSession?.activityController
+                            pluginController: root.uiSession?.pluginController
+                            guideController: root.uiSession?.guideController
+                            layoutController: root.uiSession?.layoutController
                         }
-                        if (item.hasOwnProperty("branchController")) {
-                            item.branchController = Qt.binding(function() { return root.uiSession?.branchController })
+
+                        CommittingPage {
+                            appModel: root.uiSession?.appModel
+                            repositoryController: root.uiSession?.repositoryController
+                            statusController: root.uiSession?.statusController
+                            branchController: root.uiSession?.branchController
+                            commitController: root.uiSession?.commitController
+                            remoteController: root.uiSession?.remoteController
+                            remoteOperationsSession: root.uiSession?.remoteOperationsSession
+                            userProfileController: root.uiSession?.userProfileController
+                            stashController: root.uiSession?.stashController
+                            notificationController: root.uiSession?.notificationController
+                            userAuthenticationPopup: root.uiSession?.popups?.userAuthenticationPopup
+                            uiSessionPopups: root.uiSession?.popups
+                            pluginController: root.uiSession?.pluginController
+                            terminalController: root.uiSession?.terminalController
+                            guideController: root.uiSession?.guideController
                         }
-                        if (item.hasOwnProperty("commitController")) {
-                            item.commitController = Qt.binding(function() { return root.uiSession?.commitController })
+
+                        PluginsPage {
+                            appModel: root.uiSession?.appModel
+                            pluginController: root.uiSession?.pluginController
                         }
-                        if (item.hasOwnProperty("statusController")) {
-                            item.statusController = Qt.binding(function() { return root.uiSession?.statusController })
-                        }
-                        if (item.hasOwnProperty("repositoryController")) {
-                            item.repositoryController = Qt.binding(function() { return root.uiSession?.repositoryController })
-                        }
-                        if (item.hasOwnProperty("remoteController")) {
-                            item.remoteController = Qt.binding(function() { return root.uiSession?.remoteController })
-                        }
-                        if (item.hasOwnProperty("userProfileController")) {
-                            item.userProfileController = Qt.binding(function() { return root.uiSession?.userProfileController })
-                        }
-                        if (item.hasOwnProperty("bundleController")) {
-                            item.bundleController = Qt.binding(function() { return root.uiSession?.bundleController })
-                        }
-                        if (item.hasOwnProperty("stashController")) {
-                            item.stashController = Qt.binding(function() { return root.uiSession?.stashController })
-                        }
-                        if (item.hasOwnProperty("tagController")) {
-                            item.tagController = Qt.binding(function() { return root.uiSession?.tagController })
-                        }
-                        if (item.hasOwnProperty("notificationController")) {
-                            item.notificationController = Qt.binding(function() { return root.uiSession?.notificationController })
-                        }
-                        if (item.hasOwnProperty("userAuthenticationPopup")) {
-                            item.userAuthenticationPopup = Qt.binding(function() { return root.uiSession?.popups?.userAuthenticationPopup })
-                        }
-                        if (item.hasOwnProperty("uiSessionPopups")) {
-                            item.uiSessionPopups = Qt.binding(function() { return root.uiSession?.popups })
-                        }
-                        if (item.hasOwnProperty("activityController")) {
-                            item.activityController = Qt.binding(function() { return root.uiSession?.activityController })
-                        }
-                        if (item.hasOwnProperty("mergeController")) {
-                            item.mergeController = Qt.binding(function() { return root.uiSession?.mergeController })
-						}
-                        if (item.hasOwnProperty("repoForestPopup")) {
-                            item.repoForestPopup = Qt.binding(function() { return root.uiSession?.popups?.repoForestPopup })
-                        }
-                        if (item.hasOwnProperty("conflictController")) {
-                            item.conflictController = Qt.binding(function() { return root.uiSession?.conflictController })
-                        }
-                        if (item.hasOwnProperty("rebaseController")) {
-                            item.rebaseController = Qt.binding(function() { return root.uiSession?.rebaseController })
-                        }
-                        if (item.hasOwnProperty("cherryPickController")) {
-                            item.cherryPickController = Qt.binding(function() { return root.uiSession?.cherryPickController })
-                        }
-                        if (item.hasOwnProperty("conflictController")) {
-                            item.conflictController = Qt.binding(function() { return root.uiSession?.conflictController })
-                        }
-                        if (item.hasOwnProperty("windowController")) {
-                            item.windowController = Qt.binding(function() {return root.uiSession?.windowController})
-                        if (item.hasOwnProperty("commitAmendPopup")) {
-                            item.commitAmendPopup = Qt.binding(function() { return root.uiSession?.popups?.commitAmendPopup })
-                        }
-                        if (item.hasOwnProperty("pluginController")) {
-                            item.pluginController = Qt.binding(function() { return root.uiSession?.pluginController })
+
+                        Component.onCompleted: {
+                            let requestedPageId = root.uiSession?.shellController?.arguments?.["page"]
+                            if (requestedPageId)
+                                root.switchToPageById(requestedPageId)
                         }
                     }
+                }
 
-                    onStatusChanged: {
-                        if (status === Loader.Error)
-                            console.error("[MainWindow] Failed to load page:", source)
-                        }
-                    }
+                Terminal {
+                    id: terminalRect
+                    minimizable: true
+                    layoutController: root.uiSession?.layoutController
+                    layoutId: "mainWindow.terminal"
+                    SplitView.fillWidth: true
+                    SplitView.minimumHeight: 150
+                    SplitView.preferredHeight: 250
+                    currentRepositoryName: root.uiSession?.appModel?.currentRepository?.name || ""
+                    terminalController: root.uiSession?.terminalController
                 }
             }
         }
+
+        MinimizedPanels {
+            layoutController: root.uiSession?.layoutController
+        }
+    }
+
+    // Guide overlay — sits above all content; spotlight + tooltip rendered here
+    GuideOverlay {
+        anchors.fill: parent
+        z: 100
+        guideController: root.uiSession?.guideController
     }
 }

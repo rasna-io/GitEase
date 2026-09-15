@@ -61,7 +61,7 @@ T.TextField {
     
     // Font setup
     font.pixelSize: baseFontSize
-    font.family: Style.fontTypes.roboto
+    font.family: Style.fontTypes.inter
     font.weight: 400
 
     /* Placeholder Text

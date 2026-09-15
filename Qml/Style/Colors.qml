@@ -1,9 +1,55 @@
 import QtQuick
 
 QtObject{
+    property color midnightBlack:       "#101013"
+    property color warmChalk:           "#EFEFEC"
+    property color darkCharcoal:        "#1D1D22"
+    property color graphiteDark:        "#17171C"
+    property color obsidianDark:        "#0D0D0F"
+    property color mintyFresh:          "#86EFAC"
+    property color softMintGlow:        "#144ADE80"
+    property color paleCoralMist:       "#14F87171"
+    property color deepObsidianOverlay: "#9914141E"
+    property color deepCharcoalBlue:    "#28283A"
+    property color graphiteMidnight:    "#17171C"
+    property color mutedLavenderSlate:  "#9898B4"
+    property color vibrantMint:         "#4ADE80"
+    property color softCoralMist:       "#F87171"
+    property color cornflowerBlue:      "#60a5fa"
+    property color amber:               "#d97706"
+    property color purple:              "#a855f7"
+    property color marigold:            "#fbbf24"
+
+
+    property color vibrantMintBg:       Qt.darker(vibrantMint, 7.5)
+    property color softCoralMistBg:     Qt.darker(softCoralMist, 7.5)
+    property color cornflowerBlueBg:    Qt.darker(cornflowerBlue, 7.5)
+    property color amberBg:             Qt.darker(amber, 7.5)
+    property color purpleBg:            Qt.darker(purple, 7.5)
+    property color marigoldBg:          Qt.darker(marigold, 7.5)
+    property color subtleAzureGlow:     "#243B82F6"
+    property color obsidianDeep:        "#111118"
+    property color softCloudWhite:      "#F4F4F8"
+    property color slateLavender:       "#9898B4"
+    property color deepMidnight:        "#323248"
+    property color darkObsidian:        "#222230"
+    property color abyssBlack:          "#131316"
+    property color offWhite:            "#E8E8E3"
+    property color softParchment:       "#ECECE9"
+    property color darkGraphite:        "#0D0D0F"
+    property color charcoalGray:        "#222228"
+    property color lightPlatinum:       "#DDDDDF"
+    property color azureTint:           "#1F3B82F6"
+    property color accentWash:          "#14074E96"
+    property color graphiteSurface:     "#1A1A20"
+    property color graphiteHover:       "#202028"
+    property color graphiteSelected:    "#26262F"
+    property color slateMuted:          "#6A6A78"
+    property color frostWash:           "#14F4F4F8"
+
     // Primary colors
     property color primaryBackground:   "#FDFDFD"
-    property color secondaryBackground: "#F9F9F9"
+    property color secondaryBackground: "#e5e5e5"
     property color foreground:          "#363636"
     property color secondaryForeground: "#FDFDFD"
     property color accent:              "#074E96"
@@ -17,7 +63,6 @@ QtObject{
     property color navButton:           "#F3F3F3"
     property color hoverTitle:          "#E8E8E8"
     property color textButton:          "#FDFDFD"
-
     
     // Files Status
     property color addedFile:           "#B9FAB9"
@@ -32,7 +77,7 @@ QtObject{
     property color titleText:           "#000000"
     property color descriptionText:     "#777272"
     property color hintText:            "#484848"
-    property color placeholderText:     "#C9C9C9"
+    property color placeholderText:     "#8C8C8C"
 
     property color voidStripe:          "#f4f4f4"
     property color editorBackgroound:   "#fcfcfc"
@@ -41,14 +86,22 @@ QtObject{
     property color linePanelForeground: "#666666"
     
     // Surface & Background colors
-    property color cardBackground:      "#E8E8E8"
+    property color cardBackground:      "#DCDCDC"
     property color surfaceLight:        "#F3F3F3"
-    property color surfaceMuted:        "#D9D9D9"
+    property color surfaceMuted:        "#CECECE"
     property color hintBackground:      "#DEE5EB"
     
     // Border colors
     property color primaryBorder:       "#D7DCE5"
     property color secondaryBorder:     "#E7ECF5"
+
+    // Control / Input surfaces (settings & form controls)
+    property color controlBackground:      "#F4F6F9"
+    property color controlBackgroundHover: "#ECEFF4"
+    property color controlBorder:          "#D2D8E2"
+    property color controlBorderHover:     "#9CB8E0"
+    property color switchTrackOff:         "#C9D0DB"
+    property color switchHandle:           "#FFFFFF"
 
     property color diffRemovedBg:       "#FDECEC"
     property color diffAddedBg:         "#ECFDF3"
@@ -61,7 +114,7 @@ QtObject{
     property color windowsClose:        "#FF5555"
 
     // Header indicator
-    property color resizeHandle:        "#E8E8E8"
+    property color resizeHandle:        primaryBorder
     property color resizeHandlePressed: "#A0a0a0"
 
     property color selectedText:            "#FFFFFF"
@@ -78,7 +131,7 @@ QtObject{
     property color iconOnSurface:           "#9D9D9D"
     property color iconOnDefault:           "#8B6914"
 
-    property color userInfoSelectectedItem: "#44074E96"
+    property color userInfoSelectedBackground: Qt.rgba(59 / 255, 130 / 255, 246 / 255, 0.1)
 
     property color repoSelectectedItem:     "#44074E96"
     
@@ -132,13 +185,52 @@ QtObject{
     property color repoItemStatusPATText:       "#43525D"
 
     // Conflict marker backgrounds
-    property color conflictMarkerStartBg:   "#A1DFCB"
-    property color conflictMarkerEndBg:     "#99CFFF"
-    property color conflictOursBg:          "#D9F2EA"
-    property color conflictTheirsBg:        "#D9EDFF"
-    property color conflictSeparatorBg:     "transparent"
-    property color conflictMarkerText:      "#333333"
+    property color conflictOursBg:          "#E8F1FE"
+    property color conflictOursLabel:       "#1D4ED8"
+    property color conflictTheirsBg:        "#F6EBFC"
+    property color conflictTheirsLabel:     "#7E22CE"
+
+    property color conflictCardOpenBorder:  "#D9A036"
+    property color conflictCardOpenStrip:   "#FDF3DC"
+    property color conflictCardOpenLabel:   "#92610E"
+    property color conflictCardDoneBorder:  "#3E9E5A"
+    property color conflictCardDoneStrip:   "#E4F6E9"
+    property color conflictCardDoneLabel:   "#1B7B3A"
+
     property color lineNumberColor:         "#808080"
+    property color conflictMarker:          "#E05555"
+
+    property color conflictStatusConflictColor  :  "#E05555"
+    property color conflictStatusModifiedColor  :  "#FFA500"
+    property color conflictStatusAddedColor     :     "#3BDB6A"
+
+    // Scrollbars — translucent so whatever sits in the strip behind them stays readable
+    property color scrollBarHandle:         "#40000000"
+    property color scrollBarHandleHover:    "#66000000"
+    property color scrollBarHandlePressed:  "#8C000000"
+    property color scrollBarTrack:          "transparent"
+    property color scrollBarTrackHover:     "#0F000000"
+
+    // Scrollbar minimap of where a diff's changes sit
+    property color diffMarkerAdded:         "#3BDB6A"
+    property color diffMarkerRemoved:       "#E05555"
+    property color diffMarkerModified:      "#D9A036"
+
+    property color conflictFileSelectedBg:  "#1F3B82F6"
+    property color conflictSectionLabel:    "#6B7280"
+    property color conflictProgressTrack:   "#E3E6EB"
+    property color conflictProgressFiles:   "#2563EB"
+    property color conflictProgressChunks:  "#22C55E"
+    property color conflictDestructive:     "#DC2626"
+    property color conflictAssistAccent:    "#B45309"
+
+    property color rebaseActionPick:       "#6B7280"
+    property color rebaseActionPickOnMenu: "#4B5563"
+    property color rebaseActionReword:     "#2563EB"
+    property color rebaseActionSquash:     "#7E22CE"
+    property color rebaseActionFixup:      "#BE185D"
+    property color rebaseActionEdit:       "#B45309"
+    property color rebaseActionDrop:       "#DC2626"
 
     // Interactive rebase status colors
     property color rebaseStatusPending:    mutedText
@@ -146,4 +238,209 @@ QtObject{
     property color rebaseStatusRebased:    "#1B7B3A"       // dark green
     property color rebaseStatusConflict:   "#C0392B"       // deep red
     property color rebaseStatusSkipped:    mutedText       // dimmed
+
+    // Plugins page colors
+    property color updateButton: "#28a745"
+    property color compatible:   "#22C55E"   // Green
+    property color incompatible: "#EF4444"   // Red
+    // Terminal colors
+    property color terminalBackground:  "#000000"
+    property color terminalUserAndHost: "#3fb950"  // GitHub green
+    property color terminalWorkDir:     "#58a6ff"  // GitHub blue
+    property color terminalCommand:     "#e6edf3"  // GitHub text
+
+    property color contextMenuBackground: softCloudWhite
+    property color contextMenuBorder:     "#CDD2DA"
+    property color contextMenuSeparator:  "#DCE1E9"
+    property color contextMenuHover:      "#E7E7E7"
+    property color contextMenuDanger:     "#DC3545"
+
+    property color branchSelectedAccent:  "#2563EB"
+
+    // Committing page header
+    property color branchAccent:    branchSelectedAccent   // #2563EB
+    property color chipBorder:      primaryBorder          // #D7DCE5
+    property color chipText:        secondaryText          // #5F6A7A
+    property color forcePushText:   "#DC2626"              // distinct warning red
+    property color forcePushBorder: "#4DEF4444"            // semi‑transparent red
+
+    // File list sections
+    property color countBadgeText:      secondaryText          // #5F6A7A
+    property color countBadgeBg:        cardBackground         // #E8E8E8
+    property color sectionHeaderBg:     surfaceLight           // #F3F3F3
+    property color sectionLabel:        "#7A8398"
+    property color emptyCircleBg:       surfaceLight           // #F3F3F3
+    property color emptyCircleBorder:   "#E0E0E0"
+    property color emptyStateText:      "#9AA1B0"
+    property color emptyStateSubText:   "#B8BEC9"
+
+    // Section actions and badge
+    property color actionIconIdle:        "#9AA1B0"
+    property color stashAmber:            "#D97706"
+    property color stageGreen:            "#16A34A"
+    property color discardRed:            "#DC2626"
+    property color countText:             "#B45309"
+    property color countBg:               "#12FBBF24"
+
+    // Action pill (row-level)
+    property color actionPillBg:          surfaceLight         // #F3F3F3
+    property color actionPillBorder:      primaryBorder        // #D7DCE5
+    property color openBlue:              branchAccent         // #2563EB
+
+    // Row-level
+    property color filePathText:         "#686880"
+    property color rowHoverBg:           "#EFEFEF"
+
+    // Diff view header line counts
+    property color diffAddedCount:       "#16A34A"
+    property color diffRemovedCount:     "#DC2626"
+
+    // Commit Panel
+    property color commitButton:         branchAccent         // #2563EB
+    property color fileBrowserRowHoverBg: Qt.rgba(0,0,0,0.04)
+    property color fileBrowserSearchBg:  Qt.rgba(0,0,0,0.05)
+    property color headerBackground:            warmChalk
+    property color headerButtonBackground:      offWhite
+    property color headerButtonBackgroundHover: "#E0E0DC"
+    property color headerButtonBorder:          lightPlatinum
+
+    property color segmentedSelected:           "#FDFDFD"
+
+    property color utilitiesPanelBackground:            controlBackground
+    property color utilitiesPanelBorder:                primaryBorder
+    property color utilitiesPanelScrollBar:             controlBorder
+    property color utilitiesPanelScrollBarHover:        mutedText
+
+    property color utilitiesFilterBackground:           primaryBackground
+    property color utilitiesFilterBorder:               controlBorder
+    property color utilitiesFilterBorderFocus:          accent
+    property color utilitiesFilterText:                 foreground
+    property color utilitiesFilterPlaceholder:          placeholderText
+
+    property color utilitiesCardBackground:             primaryBackground
+    property color utilitiesCardSeparator:              primaryBorder
+
+    property color utilitiesCardHeaderBackground:       controlBackground
+    property color utilitiesCardHeaderHoverBackground:  controlBackgroundHover
+    property color utilitiesCardHeaderIcon:             accent
+    property color utilitiesCardTitle:                  foreground
+    property color utilitiesCardChevron:                mutedText
+
+    property color utilitiesCardBadgeBackground:        primaryBackground
+    property color utilitiesCardBadgeBorder:            controlBorder
+    property color utilitiesCardBadgeText:              secondaryText
+
+    property color utilitiesSegmentTrackBackground:     secondaryBorder
+    property color utilitiesSegmentTrackBorder:         controlBorder
+    property color utilitiesSegmentHoverBackground:     controlBackground
+    property color utilitiesSegmentSelectedBackground:  segmentedSelected
+    property color utilitiesSegmentText:                secondaryText
+    property color utilitiesSegmentSelectedText:        foreground
+
+    property color utilitiesSurfaceBackground:          controlBackground
+    property color utilitiesSurfaceBorder:              secondaryBorder
+    property color utilitiesHintText:                   secondaryText
+
+    property color utilitiesRowBackground:              primaryBackground
+    property color utilitiesRowHoverBackground:         controlBackground
+    property color utilitiesRowSelectedBackground:      azureTint
+    property color utilitiesRowBorder:                  controlBorder
+    property color utilitiesRowSelectedIndicator:       accent
+    property color utilitiesRowText:                    foreground
+    property color utilitiesRowSelectedText:            accent
+    property color utilitiesRowIcon:                    secondaryText
+    property color utilitiesRowIconAccent:              accent
+    property color utilitiesRowMetaText:                secondaryText
+    property color utilitiesRowSubText:                 mutedText
+    property color utilitiesRowMissingText:             error
+    property color utilitiesEmptyStateText:             mutedText
+
+    property color utilitiesFieldLabel:                 secondaryText
+    property color utilitiesInputBackground:            controlBackground
+    property color utilitiesInputHoverBackground:       controlBackgroundHover
+    property color utilitiesInputBorder:                controlBorder
+    property color utilitiesInputBorderFocus:           accent
+    property color utilitiesInputText:                  foreground
+    property color utilitiesInputPlaceholder:           placeholderText
+    property color utilitiesInputPopupBackground:       primaryBackground
+
+    property color utilitiesCheckBoxAccent:             accent
+    property color utilitiesCheckBoxText:               foreground
+
+    property color utilitiesPickerButtonBackground:      "transparent"
+    property color utilitiesPickerButtonHoverBackground: accentHover
+    property color utilitiesPickerButtonBorder:          controlBorder
+    property color utilitiesPickerButtonIcon:            secondaryText
+    property color utilitiesPickerButtonIconHover:       onAccentText
+
+    property color dashedButtonText:                    secondaryText
+    property color dashedButtonBorder:                  controlBorder
+    property color dashedButtonTextHover:               accent
+    property color dashedButtonBorderHover:             accent
+    property color dashedButtonBackgroundHover:         accentWash
+    property color dashedButtonTextDanger:              error
+    property color dashedButtonBorderDanger:            error
+
+    property color utilitiesActionIcon:                 secondaryText
+    property color utilitiesActionIconActive:           accent
+    property color utilitiesActionIconWarning:          "#B26A00"
+    property color utilitiesActionIconDanger:           error
+
+    // stash card
+    property color stashCardBackground:                  utilitiesRowBackground
+    property color stashCardBorder:                      utilitiesRowBorder
+    property color stashCardBorderHover:                 controlBorderHover
+    property color stashCardBorderSelected:              accent
+    property color stashCardRef:                         utilitiesRowSubText
+    property color stashCardMessage:                     utilitiesRowText
+    property color stashCardTime:                        utilitiesRowSubText
+    property color stashCardMeta:                        utilitiesRowMetaText
+    property color stashCardMetaSeparator:               utilitiesRowSubText
+
+    // stash card actions
+    property color stashActionText:                      accent
+    property color stashActionBorder:                    accent
+    property color stashActionHoverBackground:           accentWash
+    property color stashActionFilledText:                onAccentText
+    property color stashActionFilledBackground:          accent
+    property color stashActionFilledHoverBackground:     accentHover
+    property color stashActionDangerText:                error
+    property color stashActionDangerBorder:              error
+    property color stashActionDangerHoverBackground:     paleCoralMist
+
+    property color stashDiffLink:                        utilitiesRowMetaText
+    property color stashDiffLinkHover:                   accent
+
+    // Popup
+    property color popupBackground:                  "#FFFFFF"           
+    property color popupBorder:                      primaryBorder       
+    property color popupHeaderSeparator:             primaryBorder
+    property color popupTitleText:                   foreground       
+    property color popupCloseButton:                 mutedText
+    property color popupCloseButtonHover:            foreground
+    property color popupSectionLabel:                secondaryText 
+    property color popupInputBackground:             controlBackground
+    property color popupInputBorder:                 controlBorder
+    property color popupInputBorderFocus:            accent
+    property color popupInputText:                   foreground
+    property color popupChipBackground:              controlBackground
+    property color popupChipBorder:                  controlBorder
+    property color popupChipText:                    secondaryText
+    property color popupBaseBranchBackground:        controlBackground
+    property color popupBaseBranchBorder:            controlBorder
+    property color popupBaseBranchText:              secondaryText
+    property color popupRadioBorder:                 mutedText
+    property color popupRadioBorderChecked:          accent
+    property color popupRadioDot:                    "#FFFFFF"
+    property color popupCheckboxBackgroundChecked:   accent
+    property color popupCheckboxBorder:              mutedText
+    property color popupCheckboxCheckmark:           "#FFFFFF"
+    property color popupCheckboxLabelText:           secondaryText
+    property color popupCommandPreviewBackground:    controlBackground
+    property color popupCommandPreviewText:          secondaryText
+    property color popupFooterBackground:            controlBackground
+    property color popupCreateButtonBackground:      accent
+    property color popupCreateButtonText:            "#FFFFFF"
+    property color popupCancelButtonBorder:          controlBorder
+    property color popupCancelButtonText:            secondaryText
 }

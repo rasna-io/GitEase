@@ -25,14 +25,11 @@ DetachablePanel {
     property var selectedFile: null
 
     // Property to receive list of fileData objects
-    property int filesColPathWidth: root.width * 0.4
-    property int filesColExtensionWidth: root.width * 0.15
-    property int filesColStatusWidth: root.width * 0.15
-    property int filesColAddedLinesWidth: root.width * 0.15
-    property int filesColRemovedLinesWidth: root.width * 0.15
-    
-    // Minimum widths for each column
-    readonly property int minColWidth: root.width / 7
+    property int filesColStatusWidth: root.activeItem.width * 0.13
+    property int filesColPathWidth: root.activeItem.width * 0.46
+    property int filesColExtensionWidth: root.activeItem.width * 0.10
+    property int filesColAddedLinesWidth: root.activeItem.width * 0.16
+    property int filesColRemovedLinesWidth: root.activeItem.width * 0.15
 
     /* Object Properties
      * ****************************************************************************************/
@@ -61,10 +58,41 @@ DetachablePanel {
     }
 
     Rectangle{
+        id: filesContainer
         anchors.fill: parent
         color: Style.colors.primaryBackground
         visible: root.files && root.files.length > 0
         clip: true
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "file_changes_tutorial"
+            guideName: "File Changes"
+            guideIcon: Style.icons.list
+            guidePage: "graph"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return header },
+                        icon: Style.icons.list,
+                        title: "File Changes",
+                        description: "Every file touched by the selected commit is listed here, along with its extension, status, and how many lines were added or removed."
+                    },
+                    {
+                        targetProvider: function() { return statusHeaderCol },
+                        icon: Style.icons.info,
+                        title: "Status",
+                        description: "A color-coded badge shows whether the file was Added, Modified, Deleted, Renamed, or is Untracked."
+                    },
+                    {
+                        targetProvider: function() { return filesListView },
+                        icon: Style.icons.arrowRight,
+                        title: "Preview a File",
+                        description: "Click any row to preview that file's diff in the panel next to this list."
+                    }
+                ]
+            }
+        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -81,167 +109,11 @@ DetachablePanel {
                     spacing: 0
 
                     Rectangle {
-                        Layout.preferredWidth: root.filesColPathWidth
-                        Layout.fillHeight: true
-                        color: pathHeaderMouseArea.containsMouse ? Style.colors.hoverTitle : "transparent"
-                        
-                        MouseArea {
-                            id: pathHeaderMouseArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            propagateComposedEvents: true
-                            onPressed: function(mouse) { mouse.accepted = false }
-                            onReleased: function(mouse) { mouse.accepted = false }
-                        }
-
-                        Label {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            horizontalAlignment: Text.AlignLeft
-                            anchors.leftMargin: 5
-                            text: "Path"
-                            color: Style.colors.foreground
-                            font.pixelSize: 11
-                            font.bold: true
-                            elide: Text.ElideRight
-                        }
-
-                        Rectangle {
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            width: 1
-                            color: pathDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
-
-                            MouseArea {
-                                id: pathDividerMouseArea
-                                anchors.right: parent.right
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                width: 10
-                                anchors.rightMargin: -5
-                                hoverEnabled: true
-                                cursorShape: Qt.SizeHorCursor
-
-                                property real startX: 0
-                                property int startWidth: 0
-
-                                onPressed: function(mouse) {
-                                    startX = mouseX + mapToItem(header, 0, 0).x
-                                    startWidth = root.filesColPathWidth
-                                }
-
-                                onPositionChanged: function(mouse) {
-                                    if (!pressed) return
-
-                                    var currentX = mouseX + mapToItem(header, 0, 0).x
-                                    var delta = currentX - startX
-                                    
-                                    // Calculate new width with minimum constraint
-                                    var newWidth = Math.max(root.minColWidth, startWidth + delta)
-                                    var actualDelta = newWidth - root.filesColPathWidth
-                                    
-                                    // Adjust next column (BranchTag) inversely
-                                    var newBranchTagWidth = root.filesColExtensionWidth - actualDelta
-                                    
-                                    // Ensure next column doesn't go below minimum
-                                    if (newBranchTagWidth < root.minColWidth) {
-                                        newBranchTagWidth = root.minColWidth
-                                        newWidth = root.filesColPathWidth + (root.filesColExtensionWidth - root.minColWidth)
-                                    }
-                                    
-                                    if (newWidth !== root.filesColPathWidth) {
-                                        root.filesColPathWidth = newWidth
-                                        root.filesColExtensionWidth = newBranchTagWidth
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.preferredWidth: root.filesColExtensionWidth
-                        Layout.fillHeight: true
-                        color: extensionHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
-                        
-                        MouseArea {
-                            id: extensionHeaderMouseArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            propagateComposedEvents: true
-                            onPressed: function(mouse) { mouse.accepted = false }
-                            onReleased: function(mouse) { mouse.accepted = false }
-                        }
-
-                        Label {
-                            anchors.left: parent.left
-                            anchors.centerIn: parent
-                            anchors.leftMargin: 5
-                            text: "Extension"
-                            color: Style.colors.foreground
-                            font.pixelSize: 11
-                            font.bold: true
-                            elide: Text.ElideRight
-                        }
-
-                        Rectangle {
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            width: 1
-                            color: extensionDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
-
-                            MouseArea {
-                                id: extensionDividerMouseArea
-                                anchors.right: parent.right
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                width: 10
-                                anchors.rightMargin: -5
-                                hoverEnabled: true
-                                cursorShape: Qt.SizeHorCursor
-
-                                property real startX: 0
-                                property int startWidth: 0
-
-                                onPressed: function(mouse) {
-                                    startX = mouseX + mapToItem(header, 0, 0).x
-                                    startWidth = root.filesColExtensionWidth
-                                }
-
-                                onPositionChanged: function(mouse) {
-                                    if (!pressed) return
-
-                                    var currentX = mouseX + mapToItem(header, 0, 0).x
-                                    var delta = currentX - startX
-                                    
-                                    // Calculate new width with minimum constraint
-                                    var newWidth = Math.max(root.minColWidth, startWidth + delta)
-                                    var actualDelta = newWidth - root.filesColExtensionWidth
-                                    
-                                    // Adjust next column (Message) inversely
-                                    var newMessageWidth = root.filesColStatusWidth - actualDelta
-                                    
-                                    // Ensure next column doesn't go below minimum
-                                    if (newMessageWidth < root.minColWidth) {
-                                        newMessageWidth = root.minColWidth
-                                        newWidth = root.filesColExtensionWidth + (root.filesColStatusWidth - root.minColWidth)
-                                    }
-                                    
-                                    if (newWidth !== root.filesColExtensionWidth) {
-                                        root.filesColExtensionWidth = newWidth
-                                        root.filesColStatusWidth = newMessageWidth
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Rectangle {
+                        id: statusHeaderCol
                         Layout.preferredWidth: root.filesColStatusWidth
                         Layout.fillHeight: true
                         color: statusHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
-                        
+
                         MouseArea {
                             id: statusHeaderMouseArea
                             anchors.fill: parent
@@ -252,66 +124,72 @@ DetachablePanel {
                         }
 
                         Label {
-                            anchors.left: parent.left
-                            anchors.centerIn: parent
-                            anchors.leftMargin: 5
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
                             text: "Status"
                             color: Style.colors.foreground
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             font.bold: true
                             elide: Text.ElideRight
                         }
+                    }
 
-                        Rectangle {
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            width: 1
-                            color: statusDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
+                    Rectangle {
+                        Layout.preferredWidth: root.filesColPathWidth
+                        Layout.fillHeight: true
+                        color: pathHeaderMouseArea.containsMouse ? Style.colors.hoverTitle : "transparent"
 
-                            MouseArea {
-                                id: statusDividerMouseArea
-                                anchors.right: parent.right
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                width: 10
-                                anchors.rightMargin: -5
-                                hoverEnabled: true
-                                cursorShape: Qt.SizeHorCursor
+                        MouseArea {
+                            id: pathHeaderMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            propagateComposedEvents: true
+                            onPressed: function(mouse) { mouse.accepted = false }
+                            onReleased: function(mouse) { mouse.accepted = false }
+                        }
 
-                                property real startX: 0
-                                property int startWidth: 0
+                        Label {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignLeft
+                            text: "Path"
+                            color: Style.colors.foreground
+                            font.pixelSize: Style.appFont.defaultPt
+                            font.bold: true
+                            elide: Text.ElideRight
+                        }
+                    }
 
-                                onPressed: function(mouse) {
-                                    startX = mouseX + mapToItem(header, 0, 0).x
-                                    startWidth = root.filesColStatusWidth
-                                }
+                    Rectangle {
+                        Layout.preferredWidth: root.filesColExtensionWidth
+                        Layout.fillHeight: true
+                        color: extensionHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
 
-                                onPositionChanged: function(mouse) {
-                                    if (!pressed) return
+                        MouseArea {
+                            id: extensionHeaderMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            propagateComposedEvents: true
+                            onPressed: function(mouse) { mouse.accepted = false }
+                            onReleased: function(mouse) { mouse.accepted = false }
+                        }
 
-                                    var currentX = mouseX + mapToItem(header, 0, 0).x
-                                    var delta = currentX - startX
-                                    
-                                    // Calculate new width with minimum constraint
-                                    var newWidth = Math.max(root.minColWidth, startWidth + delta)
-                                    var actualDelta = newWidth - root.filesColStatusWidth
-                                    
-                                    // Adjust next column (Author) inversely
-                                    var newAuthorWidth = root.filesColAddedLinesWidth - actualDelta
-                                    
-                                    // Ensure next column doesn't go below minimum
-                                    if (newAuthorWidth < root.minColWidth) {
-                                        newAuthorWidth = root.minColWidth
-                                        newWidth = root.filesColStatusWidth + (root.filesColAddedLinesWidth - root.minColWidth)
-                                    }
-                                    
-                                    if (newWidth !== root.filesColStatusWidth) {
-                                        root.filesColStatusWidth = newWidth
-                                        root.filesColAddedLinesWidth = newAuthorWidth
-                                    }
-                                }
-                            }
+                        Label {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
+                            text: "Extension"
+                            color: Style.colors.foreground
+                            font.pixelSize: Style.appFont.defaultPt
+                            font.bold: true
+                            elide: Text.ElideRight
                         }
                     }
 
@@ -319,7 +197,7 @@ DetachablePanel {
                         Layout.preferredWidth: root.filesColAddedLinesWidth
                         Layout.fillHeight: true
                         color: linesAddedHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
-                        
+
                         MouseArea {
                             id: linesAddedHeaderMouseArea
                             anchors.fill: parent
@@ -330,75 +208,24 @@ DetachablePanel {
                         }
 
                         Label {
-                            anchors.left: parent.left
-                            anchors.centerIn: parent
-                            anchors.leftMargin: 5
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
                             text: "Lines Added"
                             color: Style.colors.foreground
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             font.bold: true
                             elide: Text.ElideRight
-                        }
-
-                        Rectangle {
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            width: 1
-                            color: linesAddedDividerMouseArea.pressed ? Style.colors.resizeHandlePressed : Style.colors.resizeHandle
-
-                            MouseArea {
-                                id: linesAddedDividerMouseArea
-                                anchors.right: parent.right
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                width: 10
-                                anchors.rightMargin: -5
-                                hoverEnabled: true
-                                cursorShape: Qt.SizeHorCursor
-
-                                property real startX: 0
-                                property int startWidth: 0
-
-                                onPressed: function(mouse) {
-                                    startX = mouseX + mapToItem(header, 0, 0).x
-                                    startWidth = root.filesColAddedLinesWidth
-                                }
-
-                                onPositionChanged: function(mouse) {
-                                    if (!pressed) return
-
-                                    var currentX = mouseX + mapToItem(header, 0, 0).x
-                                    var delta = currentX - startX
-                                    
-                                    // Calculate new width with minimum constraint
-                                    var newWidth = Math.max(root.minColWidth, startWidth + delta)
-                                    var actualDelta = newWidth - root.filesColAddedLinesWidth
-                                    
-                                    // Adjust next column (Date) inversely
-                                    var newDateWidth = root.filesColRemovedLinesWidth - actualDelta
-                                    
-                                    // Ensure next column doesn't go below minimum
-                                    if (newDateWidth < root.minColWidth) {
-                                        newDateWidth = root.minColWidth
-                                        newWidth = root.filesColAddedLinesWidth + (root.filesColRemovedLinesWidth - root.minColWidth)
-                                    }
-                                    
-                                    if (newWidth !== root.filesColAddedLinesWidth) {
-                                        root.filesColAddedLinesWidth = newWidth
-                                        root.filesColRemovedLinesWidth = newDateWidth
-                                    }
-                                }
-                            }
                         }
                     }
 
                     Rectangle {
                         Layout.preferredWidth: root.filesColRemovedLinesWidth
                         Layout.fillHeight: true
-                        Layout.alignment: Qt.AlignRight
                         color: linesRemovedHeaderMouseArea.containsMouse ?  Style.colors.hoverTitle : "transparent"
-                        
+
                         MouseArea {
                             id: linesRemovedHeaderMouseArea
                             anchors.fill: parent
@@ -409,15 +236,16 @@ DetachablePanel {
                         }
 
                         Label {
-                            anchors.left: parent.left
-                            anchors.centerIn: parent
-                            anchors.leftMargin: 5
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
                             text: "Lines Removed"
                             color: Style.colors.foreground
-                            font.pixelSize: 11
+                            font.pixelSize: Style.appFont.defaultPt
                             font.bold: true
                             elide: Text.ElideRight
-                            wrapMode: "Wrap"
                         }
                     }
                 }
@@ -462,74 +290,12 @@ DetachablePanel {
                             anchors.topMargin: 5
                             anchors.bottomMargin: 5
 
-                            // Column 1: File Path
-                            RowLayout {
-                                Layout.preferredWidth: root.filesColPathWidth
-                                Layout.fillHeight: true
-                                spacing: 0
-
-                                Rectangle {
-                                    Layout.preferredWidth: 1
-                                    Layout.fillHeight: true
-                                    width: 1
-                                    color: Style.colors.hoverTitle
-                                }
-
-                                Label {
-                                    text: fileData.path || ""
-                                    color: Style.colors.foreground
-                                    font.pixelSize: 10
-                                    font.family: Style.fontTypes.roboto
-                                    font.weight: 400
-                                    font.letterSpacing: 0.2
-                                    Layout.fillWidth: true
-                                    Layout.leftMargin: 6
-                                    elide: Text.ElideLeft
-                                }
-                            }
-
-                            // Column 2: File Extension
-                            RowLayout {
-                                Layout.preferredWidth: root.filesColExtensionWidth
-                                Layout.fillHeight: true
-                                Layout.alignment: Qt.AlignVCenter
-                                spacing: 0
-
-                                Rectangle {
-                                    Layout.preferredWidth: 1
-                                    Layout.fillHeight: true
-                                    width: 1
-                                    color: Style.colors.hoverTitle
-                                }
-
-                                Label {
-                                    text: root.getFileExtension(fileData.path) || ""
-                                    color: Style.colors.foreground
-                                    verticalAlignment: Text.AlignVCenter
-                                    horizontalAlignment: Text.AlignHCenter
-                                    font.pixelSize: 10
-                                    font.family: Style.fontTypes.roboto
-                                    font.weight: 400
-                                    font.letterSpacing: 0.2
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    Layout.leftMargin: 6
-                                    elide: Text.ElideRight
-                                }
-                            }
-
-                            // Column 3: File Status
+                            // Column 1: File Status
                             RowLayout {
                                 Layout.preferredWidth: root.filesColStatusWidth
+                                Layout.fillWidth: false
                                 Layout.fillHeight: true
                                 spacing: 0
-
-                                Rectangle {
-                                    Layout.preferredWidth: 1
-                                    Layout.fillHeight: true
-                                    width: 1
-                                    color: Style.colors.hoverTitle
-                                }
 
                                 Label {
                                     text: {
@@ -551,8 +317,10 @@ DetachablePanel {
 
                                     color: Style.colors.titleText
                                     verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 12
+                                    font.pixelSize: Style.appFont.mediumPt
                                     Layout.fillWidth: true
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
                                     horizontalAlignment: Text.AlignHCenter
                                     elide: Text.ElideRight
                                     wrapMode: Text.NoWrap
@@ -563,51 +331,90 @@ DetachablePanel {
                                 }
                             }
 
-                            // Column 4: Added Lines
+                            // Column 2: File Path
                             RowLayout {
-                                Layout.preferredWidth: root.filesColAddedLinesWidth
+                                Layout.preferredWidth: root.filesColPathWidth
+                                Layout.fillWidth: false
                                 Layout.fillHeight: true
                                 spacing: 0
 
-                                Rectangle {
-                                    Layout.preferredWidth: 1
-                                    Layout.fillHeight: true
-                                    width: 1
-                                    color: Style.colors.hoverTitle
+                                Label {
+                                    text: fileData.path || ""
+                                    color: Style.colors.foreground
+                                    font.pixelSize: Style.appFont.smallPt
+                                    font.family: Style.fontTypes.inter
+                                    font.weight: 400
+                                    font.letterSpacing: 0.2
+                                    Layout.fillWidth: true
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
+                                    horizontalAlignment: Text.AlignLeft
+                                    elide: Text.ElideLeft
                                 }
+                            }
+
+                            // Column 3: File Extension
+                            RowLayout {
+                                Layout.preferredWidth: root.filesColExtensionWidth
+                                Layout.fillWidth: false
+                                Layout.fillHeight: true
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 0
+
+                                Label {
+                                    text: root.getFileExtension(fileData.path) || ""
+                                    color: Style.colors.foreground
+                                    verticalAlignment: Text.AlignVCenter
+                                    horizontalAlignment: Text.AlignHCenter
+                                    font.pixelSize: Style.appFont.smallPt
+                                    font.family: Style.fontTypes.inter
+                                    font.weight: 400
+                                    font.letterSpacing: 0.2
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            // Column 4: Added Lines
+                            RowLayout {
+                                Layout.preferredWidth: root.filesColAddedLinesWidth
+                                Layout.fillWidth: false
+                                Layout.fillHeight: true
+                                spacing: 0
 
                                 Label {
                                     text: fileData.additionsCount  || "0"
-                                    color: Style.colors.foreground
+                                    color: Style.colors.compatible
                                     verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 10
+                                    font.pixelSize: Style.appFont.smallPt
                                     Layout.fillWidth: true
                                     horizontalAlignment: Text.AlignHCenter
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
                                     wrapMode: Text.NoWrap
                                 }
                             }
 
-                            // Column 4: Removed Lines
+                            // Column 5: Removed Lines
                             RowLayout {
                                 Layout.preferredWidth: root.filesColRemovedLinesWidth
+                                Layout.fillWidth: false
                                 Layout.fillHeight: true
                                 spacing: 0
 
-                                Rectangle {
-                                    Layout.preferredWidth: 1
-                                    Layout.fillHeight: true
-                                    width: 1
-                                    color: Style.colors.hoverTitle
-                                }
-
                                 Label {
                                     text: fileData.deletionsCount  || "0"
-                                    color: Style.colors.foreground
+                                    color: Style.colors.incompatible
                                     verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 10
+                                    font.pixelSize: Style.appFont.smallPt
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     horizontalAlignment: Text.AlignHCenter
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
                                     wrapMode: Text.NoWrap
                                 }
                             }

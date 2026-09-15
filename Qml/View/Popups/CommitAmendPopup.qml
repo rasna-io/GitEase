@@ -31,7 +31,6 @@ IPopup {
 
     modal           : true
     closePolicy     : Popup.NoAutoClose
-    anchors.centerIn: Overlay.overlay
 
     onOpened:{
         textArea.text = commitController.getLastCommitMessage()
@@ -57,15 +56,15 @@ IPopup {
             width: parent.width
             color: Style.colors.descriptionText
             text: "Amend Commit Message"
-            font.family: Style.fontTypes.roboto
-            font.pixelSize: 14
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.largePt
             horizontalAlignment: Text.AlignHCenter
         }
 
         Label {
             color: Style.colors.descriptionText
             text: "Edit the message for your amended commit (Optional):"
-            font.pixelSize: 12
+            font.pixelSize: Style.appFont.mediumPt
         }
 
         ScrollView {
@@ -75,9 +74,9 @@ IPopup {
             TextArea {
                 id: textArea
                 color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 wrapMode: TextArea.Wrap
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.mediumPt
                 Material.accent: Style.colors.accent
             }
         }
@@ -114,8 +113,8 @@ IPopup {
                         anchors.centerIn: parent
                         text: "Amend"
                         color: Style.colors.secondaryForeground
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 12
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
                     }
 
                     onClicked: {
@@ -155,8 +154,8 @@ IPopup {
                         anchors.centerIn: parent
                         text: "Cancel"
                         color: Style.colors.secondaryForeground
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 12
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
                     }
 
                     onClicked: root.close();

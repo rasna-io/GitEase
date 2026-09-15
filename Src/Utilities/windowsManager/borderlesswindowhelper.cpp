@@ -171,6 +171,31 @@ void BorderlessWindowHelper::setMinimumSize(const QSize &newSize)
     m_minimumSize = newSize;
 }
 
+#ifdef Q_OS_WIN
+bool BorderlessWindowHelper::minimizePreservingState()
+{
+    if (!m_hwnd)
+        return false;
+
+    WINDOWPLACEMENT wp{ sizeof(WINDOWPLACEMENT) };
+    if (!::GetWindowPlacement(m_hwnd, &wp))
+        return false;
+
+    if (::IsZoomed(m_hwnd))
+        wp.flags |= WPF_RESTORETOMAXIMIZED;
+    else
+        wp.flags &= ~WPF_RESTORETOMAXIMIZED;
+    wp.showCmd = SW_SHOWMINIMIZED;
+
+    return ::SetWindowPlacement(m_hwnd, &wp);
+}
+#else
+bool BorderlessWindowHelper::minimizePreservingState()
+{
+    return false;
+}
+#endif
+
 
 bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result)
 {

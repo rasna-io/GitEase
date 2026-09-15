@@ -54,17 +54,18 @@ IPopup {
 
                     Text {
                         text: Style.icons.gitBranch
-                        font.family: Style.fontTypes.font6ProSolid
-                        font.pixelSize: 16
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
+                        font.pixelSize: Style.appFont.h2Pt
                         color: Style.colors.accent
                     }
 
                     Text {
                         text: "Select Branch"
                         color: Style.colors.foreground
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.bold: true
-                        font.pixelSize: 15
+                        font.pixelSize: Style.appFont.largerPt
                         Layout.fillWidth: true
                     }
                 }
@@ -77,8 +78,8 @@ IPopup {
                 Layout.bottomMargin: 12
                 text: "Multiple branches point to this commit. Choose which one to check out."
                 color: Style.colors.mutedText
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.mediumPt
                 wrapMode: Text.WordWrap
             }
 
@@ -125,8 +126,9 @@ IPopup {
 
                             Text {
                                 text: Style.icons.gitBranch
-                                font.family: Style.fontTypes.font6ProSolid
-                                font.pixelSize: 12
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.appFont.mediumPt
                                 color: Style.colors.accent
                                 Layout.preferredWidth: 16
                                 horizontalAlignment: Text.AlignHCenter
@@ -135,16 +137,17 @@ IPopup {
                             Text {
                                 Layout.fillWidth: true
                                 text: modelData
-                                font.family: Style.fontTypes.roboto
-                                font.pixelSize: 13
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: Style.appFont.h3Pt
                                 color: Style.colors.foreground
                                 elide: Text.ElideMiddle
                             }
 
                             Text {
                                 text: Style.icons.arrowRight
-                                font.family: Style.fontTypes.font6ProSolid
-                                font.pixelSize: 11
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.appFont.defaultPt
                                 color: Style.colors.accent
                                 opacity: isHovered ? 1.0 : 0.0
                                 Behavior on opacity {

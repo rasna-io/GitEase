@@ -247,8 +247,8 @@ Rectangle {
             Text {
                 id: messageText
                 text: "Loading"
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.h3Pt
                 font.weight: 400
                 color: Style.colors.mutedText
             }
@@ -261,8 +261,8 @@ Rectangle {
                     model: 3
                     delegate: Text {
                         text: "."
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 13
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.h3Pt
                         color: Style.colors.mutedText
 
                         SequentialAnimation on opacity {

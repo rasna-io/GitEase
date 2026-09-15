@@ -20,9 +20,11 @@ Item {
     property BranchController   branchController:     null
     property BundleController   bundleController:     null
     property string             selectedFolder:       ""
+    property NotificationController notificationController: null
 
     /* Object Properties (sized by parent layout when used in StackLayout)
      * ****************************************************************************************/
+    implicitHeight: mainLayout.implicitHeight
 
     /* Children
      * ****************************************************************************************/
@@ -33,8 +35,9 @@ Item {
     }
 
     ColumnLayout {
+        id: mainLayout
         anchors.fill: parent
-        spacing: 10
+        spacing: 0
 
         ColumnLayout {
             Layout.fillWidth: true
@@ -42,28 +45,32 @@ Item {
 
             Text {
                 text: "Target Branch"
-                font.pixelSize: 12
-                color: Style.colors.mutedText
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.utilitiesFieldLabel
             }
 
             ComboBox {
                 id: branchesCombo
                 Layout.fillWidth: true
-                minHeight: 40
-                focusBorderWidth: 1
-                font.family: Style.fontTypes.roboto
+                minHeight: Style.dp(25)
+                focusBorderWidth: Style.dp(1)
+                font.family: Style.fontTypes.inter
                 font.weight: 400
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.smallPt
                 textRole: "name"
 
                 placeholderText: "Select branch"
 
-                Material.background: Style.colors.primaryBackground
-                Material.foreground: Style.colors.secondaryText
+                Material.background: Style.colors.utilitiesInputPopupBackground
+                Material.foreground: Style.colors.utilitiesInputText
 
                 background: Rectangle {
-                    radius: 5
-                    color: branchesCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                    radius: Style.dp(5)
+                    color: branchesCombo.hovered ? Style.colors.utilitiesInputHoverBackground
+                                                 : Style.colors.utilitiesInputBackground
+                    border.width: 1
+                    border.color: branchesCombo.activeFocus ? Style.colors.utilitiesInputBorderFocus
+                                                              : Style.colors.utilitiesInputBorder
                 }
 
                 onCurrentIndexChanged: {
@@ -87,27 +94,31 @@ Item {
 
             Text {
                 text: "Base Branch"
-                font.pixelSize: 12
-                color: Style.colors.mutedText
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.utilitiesFieldLabel
             }
 
             ComboBox {
                 id: baseBranchCombo
                 Layout.fillWidth: true
-                minHeight: 40
-                focusBorderWidth: 1
-                font.family: Style.fontTypes.roboto
+                minHeight: Style.dp(25)
+                focusBorderWidth: Style.dp(1)
+                font.family: Style.fontTypes.inter
                 font.weight: 400
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.smallPt
 
                 placeholderText: "Select Base"
 
-                Material.background: Style.colors.primaryBackground
-                Material.foreground: Style.colors.secondaryText
+                Material.background: Style.colors.utilitiesInputPopupBackground
+                Material.foreground: Style.colors.utilitiesInputText
 
                 background: Rectangle {
-                    radius: 5
-                    color: baseBranchCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+                    radius: Style.dp(5)
+                    color: baseBranchCombo.hovered ? Style.colors.utilitiesInputHoverBackground
+                                                   : Style.colors.utilitiesInputBackground
+                    border.width: 1
+                    border.color: baseBranchCombo.activeFocus ? Style.colors.utilitiesInputBorderFocus
+                                                                : Style.colors.utilitiesInputBorder
                 }
             }
         }
@@ -118,61 +129,60 @@ Item {
 
             Text {
                 text: "Output Directory"
-                font.pixelSize: 12
-                color: Style.colors.mutedText
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.utilitiesFieldLabel
             }
 
             RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 20
-                spacing: 8
+                Layout.preferredHeight: Style.dp(25)
+                spacing: Style.dp(8)
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 40
-                    radius: 5
-                    color: Style.colors.secondaryBackground
+                    Layout.preferredHeight: Style.dp(25)
+                    radius: Style.dp(5)
+                    color: Style.colors.utilitiesInputBackground
+                    border.width: 1
+                    border.color: Style.colors.utilitiesInputBorder
+
                     ScrollingText {
                         id: fileLabel
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: 15
+                        anchors.leftMargin: Style.dp(15)
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        color: root.selectedFolder === "" ? Style.colors.placeholderText : Style.colors.secondaryText
+                        font.pixelSize: Style.appFont.smallPt
+                        color: root.selectedFolder === "" ? Style.colors.utilitiesInputPlaceholder
+                                                         : Style.colors.utilitiesInputText
                         text: root.selectedFolder !== "" ? root.selectedFolder : "Select Directory..."
                     }
                 }
 
 
-                Button {
+                IconButton {
                     id: fileButton
 
-                    implicitWidth: 40
-                    implicitHeight: 40
-
-                    text: Style.icons.folder
-                    font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: 14
+                    implicitWidth: Style.dp(25)
+                    implicitHeight: Style.dp(25)
 
                     topInset: 0
                     bottomInset: 0
 
-                    flat: true
-                    Material.elevation: 0
+                    display: IconButton.IconOnly
+                    icon.name: Style.icons.folder
+                    icon.width: Style.appFont.smallPt
+                    icon.height: Style.appFont.smallPt
+                    icon.color: fileButton.hovered ? Style.colors.utilitiesPickerButtonIconHover
+                                                   : Style.colors.utilitiesPickerButtonIcon
+                    tooltip: "Select Directory"
 
                     background: Rectangle {
                         radius: 6
-                        color: fileButton.hovered ? Style.colors.accentHover : "transparent"
+                        color: fileButton.hovered ? Style.colors.utilitiesPickerButtonHoverBackground
+                                                  : Style.colors.utilitiesPickerButtonBackground
                         border.width: 1
-                        border.color: Style.colors.primaryBorder
-                    }
-
-                    contentItem: Text {
-                        text: fileButton.text
-                        font: fileButton.font
-                        color: fileButton.hovered ? Style.colors.secondaryForeground : Style.colors.secondaryText
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                        border.color: Style.colors.utilitiesPickerButtonBorder
                     }
 
                     onClicked: folderDialog.open()
@@ -180,46 +190,14 @@ Item {
             }
         }
 
-        Item {
-            Layout.fillHeight: true
-        }
-
-        Button {
+        DashedButton {
+            id: exportButton
             Layout.fillWidth: true
-            implicitHeight: 44
+            Layout.topMargin: Style.dp(5)
             enabled: root.selectedFolder !== "" && branchesCombo.currentIndex !== -1 && baseBranchCombo.currentIndex !== -1
-            background: Rectangle {
-                radius: 8
-                color: enabled ? Style.colors.accent : Style.colors.disabledButton
-            }
 
-            contentItem: Item {
-                anchors.fill: parent
-
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.download
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
-                        color: Style.colors.secondaryForeground
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Export"
-                        color: Style.colors.secondaryForeground
-                        font.pixelSize: 13
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-            }
+            iconText: Style.icons.download
+            text: "Export"
 
             onClicked: {
                 let base   = baseBranchCombo.model[baseBranchCombo.currentIndex]
@@ -229,7 +207,13 @@ Item {
                 let bundleName = buildBundleName(base, target)
                 let path = `${root.selectedFolder}/${bundleName}`
 
-                root.bundleController.buildDiffBundle(base, target, refName, path)
+                let res = root.bundleController.buildDiffBundle(base, target, refName, path)
+
+                if (res.success && root.notificationController) {
+                    root.notificationController.success("Project exported successfully", "Export", 3000)
+                } else if (!res.success && root.notificationController) {
+                    root.notificationController.error(res.errorMessage || "Failed to export project", "Export Error", 5000)
+                }
             }
         }
     }

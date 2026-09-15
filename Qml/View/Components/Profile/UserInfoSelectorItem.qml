@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
 
 import GitEase
 import GitEase_Style
@@ -11,7 +10,7 @@ import GitEase_Style_Impl
  * UserInfoSelectorItem
  * Modern user profile list item with actions: select, edit, delete
  * ************************************************************************************************/
-Rectangle {
+AccentCard {
     id: root
 
     /* Property Declarations
@@ -20,6 +19,7 @@ Rectangle {
     property string email:          ""
     property var    levels:         []
     property bool   isSelected:     false
+    property string avatarColor:    ""
 
     /* Signals
      * ****************************************************************************************/
@@ -30,26 +30,21 @@ Rectangle {
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillWidth: true
-    Layout.preferredHeight: 55
-    color: {
-        if(hoverHandler.hovered){
-            if(isSelected){
-                 return Qt.darker(Style.colors.userInfoSelectectedItem, 1.5)
-            }else {
-                return Style.colors.surfaceLight
-            }
-        }else{
-            if(isSelected){
-                 return Style.colors.userInfoSelectectedItem
-            }else {
-                return Style.colors.secondaryBackground
-            }
-        }
-    }
+    Layout.preferredHeight: contentRow.implicitHeight + 12
 
-    radius: 6
-    border.color: root.isSelected ? Style.colors.accent : Style.colors.primaryBorder
-    border.width: root.isSelected ? 2 : 1
+    readonly property color cardHoverColor: Style.theme == Style.Light
+                                            ? Qt.darker(Style.colors.secondaryBackground, 1.06)
+                                            : Qt.lighter(Style.colors.secondaryBackground, 1.6)
+
+    peek: 3
+    accentRadius: 9
+    cardRadius: 7
+    accentColor: avatar.resolvedColor
+    cardColor: hoverHandler.hovered ? root.cardHoverColor : Style.colors.secondaryBackground
+    cardBorderColor: root.isSelected ? Style.colors.accent : Style.colors.primaryBorder
+    cardBorderWidth: 1
+    tintColor: Style.colors.userInfoSelectedBackground
+    tintVisible: root.isSelected
 
     /* Children
      * ****************************************************************************************/
@@ -62,54 +57,47 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: false
         cursorShape: Qt.PointingHandCursor
-        onClicked: {
-            root.selectForRepository(root.username, root.email)
-        }
+        onClicked: root.selectForRepository(root.username, root.email)
     }
 
     RowLayout {
+        id: contentRow
         anchors.fill: parent
         anchors.leftMargin: 10
-        anchors.topMargin: 5
+        anchors.topMargin: 6
         anchors.rightMargin: 10
-        anchors.bottomMargin: 5
+        anchors.bottomMargin: 6
         spacing: 10
 
-        // User Icon
-        Rectangle {
-            Layout.preferredWidth: 42
-            Layout.preferredHeight: 42
+        // User Avatar
+        ProfileAvatar {
+            id: avatar
             Layout.alignment: Qt.AlignVCenter
-            radius: 21
-            color: Style.colors.surfaceMuted
-
-            Text {
-                anchors.centerIn: parent
-                text: Style.icons.user
-                font.family: Style.fontTypes.font6ProSolid
-                font.pixelSize: 18
-                color: Style.colors.iconOnSurface
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
+            size: 34
+            username: root.username
+            avatarColor: root.avatarColor
+            levels: root.levels
         }
 
         // User Info
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            spacing: 3
+            spacing: 2
 
             RowLayout {
+                Layout.fillWidth: true
                 spacing: 6
 
                 Text {
                     text: root.username
-                    font.pixelSize: 13
-                    font.family: Style.fontTypes.roboto
-                    font.weight: 600
+                    font.pixelSize: Style.appFont.mediumPt
+                    font.family: Style.fontTypes.inter
+                    font.weight: 700
                     color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                    Layout.maximumWidth: 160
                 }
 
                 // Level Badges
@@ -118,60 +106,162 @@ Rectangle {
                     
                     Rectangle {
                         Layout.preferredHeight: 16
-                        Layout.preferredWidth: levelText.implicitWidth + 10
+                        Layout.preferredWidth: levelText.implicitWidth + 12
                         Layout.alignment: Qt.AlignVCenter
-                        radius: 2
-                        color: getLevelColor(modelData)
+                        radius: 4
+                        color: Qt.rgba(root.getLevelColor(modelData).r,
+                                       root.getLevelColor(modelData).g,
+                                       root.getLevelColor(modelData).b, 0.18)
+                        border.width: 1
+                        border.color: Qt.rgba(root.getLevelColor(modelData).r,
+                                              root.getLevelColor(modelData).g,
+                                              root.getLevelColor(modelData).b, 0.5)
 
                         Text {
                             id: levelText
                             anchors.centerIn: parent
-                            text: getLevelName(modelData)
-                            font.pixelSize: 9
-                            font.family: Style.fontTypes.roboto
-                            font.weight: 300
-                            color: Style.colors.secondaryForeground
+                            text: root.getLevelName(modelData)
+                            font.pixelSize: Style.appFont.captionPt
+                            font.family: Style.fontTypes.inter
+                            font.weight: 600
+                            color: root.getLevelColor(modelData)
                             verticalAlignment: Text.AlignVCenter
                             horizontalAlignment: Text.AlignHCenter
                         }
                     }
                 }
+
+                Item { Layout.fillWidth: true }
             }
 
             ScrollingText {
                 text: root.email
-                font.pixelSize: 11
-                font.family: Style.fontTypes.roboto
+                font.pixelSize: Style.appFont.smallPt
+                font.family: Style.fontTypes.inter
                 color: Style.colors.mutedText
                 Layout.fillWidth: true
             }
+
+            // Active identity status line
+            RowLayout {
+                visible: root.isSelected
+                Layout.fillWidth: true
+                spacing: 5
+
+                Text {
+                    text: "Active — commits will use this identity"
+                    font.pixelSize: Style.appFont.captionPt
+                    font.family: Style.fontTypes.inter
+                    font.weight: 500
+                    color: Style.colors.compatible
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                Text {
+                    text: Style.icons.check
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
+                    font.pixelSize: Style.appFont.captionPt
+                    color: Style.colors.compatible
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                Item { Layout.fillWidth: true }
+            }
         }
 
-        // Action Buttons
+        // Action area — active profile shows edit/delete, others show Use + menu
         RowLayout {
             Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-            spacing: 4
-            visible: hoverHandler.hovered || root.isSelected
+            spacing: 6
 
-            ActionIconButton {
-                iconText: Style.icons.penToSquare
-                tooltip: "Edit profile"
-                textColor: Style.colors.foreground
-                hoverBackgroundColor: Style.colors.iconOnSurface
-                borderColor: Style.colors.primaryBorder
-                borderWidth: 1
+            // Edit / Delete (active profile)
+            RowLayout {
+                visible: root.isSelected
+                spacing: 2
 
-                onClicked: root.editUser(root.username, root.email)
+                ActionIconButton {
+                    iconText: Style.icons.penToSquare
+                    tooltip: "Edit profile"
+                    textColor: Style.colors.secondaryText
+                    width: 24
+                    height: 24
+
+                    onClicked: root.editUser(root.username, root.email)
+                }
+
+                ActionIconButton {
+                    iconText: Style.icons.trash
+                    tooltip: "Delete profile"
+                    textColor: Style.colors.error
+                    width: 24
+                    height: 24
+
+                    onClicked: root.deleteUser(root.username, root.email)
+                }
             }
 
-            ActionIconButton {
-                iconText: Style.icons.trash
-                tooltip: "Delete profile"
-                textColor: Style.colors.error
-                borderColor: Style.colors.primaryBorder
-                borderWidth: 1
+            // Use button (inactive profiles)
+            Button {
+                visible: !root.isSelected
+                Layout.preferredHeight: 26
+                Layout.preferredWidth: 46
+                Layout.alignment: Qt.AlignVCenter
+                leftPadding: 0
+                rightPadding: 0
 
-                onClicked: root.deleteUser(root.username, root.email)
+                contentItem: Text {
+                    text: "Use"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
+                    font.weight: 500
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                background: Rectangle {
+                    anchors.fill: parent
+                    color: parent.hovered ? Style.colors.controlBackgroundHover : "transparent"
+                    radius: 6
+                    border.color: Style.colors.controlBorder
+                    border.width: 1
+                }
+
+                onClicked: root.selectForRepository(root.username, root.email)
+            }
+
+            // Overflow menu (inactive profiles)
+            ActionIconButton {
+                visible: !root.isSelected
+                iconText: Style.icons.ellipsisVertical
+                tooltip: "More"
+                textColor: Style.colors.secondaryText
+                width: 24
+                height: 24
+
+                onClicked: {
+                    overflowMenu.x = width - overflowMenu.width
+                    overflowMenu.y = height + 4
+                    overflowMenu.open()
+                }
+
+                ContextMenu {
+                    id: overflowMenu
+                    implicitWidth: 150
+                    menuModel: [
+                        {
+                            text: "Edit",
+                            icon: Style.icons.penToSquare,
+                            action: function() { root.editUser(root.username, root.email) }
+                        },
+                        {
+                            text: "Delete",
+                            icon: Style.icons.trash,
+                            action: function() { root.deleteUser(root.username, root.email) }
+                        }
+                    ]
+                }
             }
         }
     }

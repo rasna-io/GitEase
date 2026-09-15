@@ -26,6 +26,15 @@ Rectangle {
 
     property bool   isExists:       false
 
+    property color backgroundColor:              Style.colors.secondaryBackground
+    property color hoverBackgroundColor:         Qt.darker(Style.colors.surfaceLight, 1.05)
+    property color selectedBackgroundColor:      Style.colors.accent
+    property color selectedHoverBackgroundColor: Style.colors.accentHover
+    property color nameColor:                    Style.colors.foreground
+    property color pathColor:                    Style.colors.mutedText
+    property color selectedTextColor:            Style.colors.secondaryForeground
+    property color missingPathColor:             Style.colors.error
+
     /* Signals
      * ****************************************************************************************/
     signal clicked(index : int)
@@ -33,18 +42,18 @@ Rectangle {
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillWidth: true
-    Layout.preferredHeight: 50
+    Layout.preferredHeight: Style.dp(35)
     color: {
         if (msa.containsMouse) {
             if (isSelected)
-                return Style.colors.accentHover
+                return root.selectedHoverBackgroundColor
             else
-                return Qt.darker(Style.colors.surfaceLight, 1.05)
+                return root.hoverBackgroundColor
         } else {
             if (isSelected)
-                return Style.colors.accent
+                return root.selectedBackgroundColor
             else
-                return Style.colors.secondaryBackground
+                return root.backgroundColor
         }
     }
 
@@ -54,17 +63,20 @@ Rectangle {
      * ****************************************************************************************/
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 6
+        anchors.leftMargin: 6
+        anchors.topMargin: 2
+        anchors.rightMargin: 6
+        anchors.bottomMargin: 2
         spacing: 2
 
         // Project name
         Text {
             text: root.name
-            font.pixelSize: 12
-            font.family: Style.fontTypes.roboto
+            font.pixelSize: Style.appFont.smallPt
+            font.family: Style.fontTypes.inter
             font.weight: 400
             font.letterSpacing: 0
-            color: root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
+            color: root.isSelected ? root.selectedTextColor : root.nameColor
         }
 
         // Path row
@@ -76,16 +88,17 @@ Rectangle {
             Text {
                 text: Style.icons.folder
                 font.family: Style.fontTypes.font6Pro
-                font.pixelSize: 14
-                color: root.isSelected ? Style.colors.secondaryForeground : Style.colors.foreground
+                font.pixelSize: Style.appFont.smallPt
+                color: root.isSelected ? root.selectedTextColor : root.nameColor
             }
 
             // Path
             ScrollingText {
                 text: root.path
-                font.pixelSize: 12
-                font.family: Style.fontTypes.roboto
-                color: root.isSelected ? Style.colors.secondaryForeground : root.isExists ? Style.colors.mutedText : Style.colors.error
+                font.pixelSize: Style.appFont.smallPt
+                font.family: Style.fontTypes.inter
+                color: root.isSelected ? root.selectedTextColor
+                                       : root.isExists ? root.pathColor : root.missingPathColor
                 font.weight: 400
                 font.strikeout: !root.isExists
                 font.letterSpacing: 0

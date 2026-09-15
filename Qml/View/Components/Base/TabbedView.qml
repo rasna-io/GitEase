@@ -80,14 +80,14 @@ ColumnLayout {
                             Text {
                                 text: tabData.icon || ""
                                 font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 16
+                                font.pixelSize: Style.appFont.h2Pt
                                 color: tabButton.checked ? "white" : Style.colors.foreground
                                 visible: tabData.icon !== undefined && tabData.icon !== ""
                             }
 
                             Text {
                                 text: tabData.title || ""
-                                font.pixelSize: 12
+                                font.pixelSize: Style.appFont.mediumPt
                                 font.bold: tabButton.checked
                                 color: tabButton.checked ? "white" : Style.colors.foreground
                             }

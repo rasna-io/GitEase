@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 
 import GitEase
+import GitEase_Style
 /*! ***********************************************************************************************
  * ChangesFileLists
  * Two stacked file lists used in Committing page:
@@ -17,10 +18,12 @@ Item {
     property StatusController        statusController:        null
     property NotificationController  notificationController:  null
     property StashController         stashController:         null
+    property GuideController         guideController:         null
 
     property var unstagedModel: []
     property var stagedModel: []
     property string currentFile: ""
+    property int currentFileStatus: -1
     property var showSaveDialog
 
     /* Signals
@@ -35,18 +38,42 @@ Item {
 
     Component.onCompleted: Qt.callLater(function() {root.updateStatus()})
 
+    GuideHoverTrigger {
+        guideController: root.guideController
+        guideId: "staging_tutorial"
+        guideName: "Staging Changes"
+        guideIcon: Style.icons.arrowRight
+        guidePage: "committing"
+        stepsFactory: function() {
+            return [
+                {
+                    targetProvider: function() { return stagedSection },
+                    icon: Style.icons.arrowRight,
+                    title: "Staged Changes",
+                    description: "Files here are queued for your next commit — they will be included in the snapshot. Click any file to preview its diff."
+                },
+                {
+                    targetProvider: function() { return unstagedSection },
+                    icon: Style.icons.arrowRight,
+                    title: "Unstaged Changes",
+                    description: "Files here have local edits not yet marked for commit. Stage individual files from the list, select specific lines in the diff view, or use the header button to stage everything at once."
+                }
+            ]
+        }
+    }
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
         anchors.fill: parent
-        spacing: 10
+        spacing: 0
 
         StagedFileListSection {
             id: stagedSection
             Layout.fillWidth: true
             Layout.fillHeight: wantsFillHeight
-            Layout.minimumHeight: 32
-            Layout.preferredHeight: expanded ? -1 : 32
+            Layout.minimumHeight: 30
+            Layout.preferredHeight: expanded ? -1 : 30
 
             model: root.stagedModel
 
@@ -113,15 +140,15 @@ Item {
             id: unstagedSection
             Layout.fillWidth: true
             Layout.fillHeight: wantsFillHeight
-            Layout.minimumHeight: 32
-            Layout.preferredHeight: expanded ? -1 : 32
+            Layout.minimumHeight: 30
+            Layout.preferredHeight: expanded ? -1 : 30
 
             model: root.unstagedModel
 
-            onStageFileRequested: function(filePath) {
+            onStageFileRequested: function(filePath, isDeleted) {
                 root.showSaveDialog(
                             () => {
-                                let res = statusController.stageFile(filePath)
+                                let res = statusController.stageFile(filePath, isDeleted)
                                 if (!res.success) {
                                     root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
                                 }
@@ -215,8 +242,9 @@ Item {
                 )
             }
 
-            onFileSelected: function(filePath) {
+            onFileSelected: function(filePath, fileStatus) {
                 stagedSection.selectedFilePath = ""
+                root.currentFileStatus = fileStatus
                 root.fileSelected(filePath, false)
             }
         }
@@ -258,13 +286,15 @@ Item {
         if (root.unstagedModel.length > 0) {
             path = root.unstagedModel[0].path
         } else if (root.stagedModel.length > 0) {
-            isStaged = true
             path = root.stagedModel[0].path
         }
 
-        unstagedSection.selectedFilePath = isStaged ? "" : path
-        stagedSection.selectedFilePath = isStaged ? path : ""
+        const targetPath = root.currentFile || path
+        isStaged = !(root.unstagedModel.some(file => file.path === targetPath))
 
-        root.fileSelected(path, isStaged)
+        unstagedSection.selectedFilePath = isStaged ? "" : targetPath
+        stagedSection.selectedFilePath = isStaged ? targetPath : ""
+
+        root.fileSelected(targetPath, isStaged)
     }
 }

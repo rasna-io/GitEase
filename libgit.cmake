@@ -7,10 +7,11 @@ set(LIBGIT2_ROOT "${THIRD_PARTY_DIR}/libgit2")
 
 if (WIN32)
     set(PLATFORM "Windows")
+elseif (APPLE)
+    set(PLATFORM "Darwin")
 elseif (LINUX)
     set(PLATFORM "Linux")
 endif()
-
 
 set(LIBGIT2_LIBRARY "${LIBGIT2_ROOT}/lib/${PLATFORM}/libgit2.a")
 set(LIBSSH2_LIBRARY "${LIBSSH2_ROOT}/lib/${PLATFORM}/libssh2.a")
@@ -40,6 +41,18 @@ if (MINGW)
         "${ZLIB_LIBRARY}"
         ws2_32 secur32 crypt32 bcrypt winhttp rpcrt4
     )
+elseif(APPLE)
+    # Built with USE_GSSAPI=OFF and USE_HTTPS=OpenSSL, so no Kerberos/GSSAPI
+    # or Security/CoreFoundation framework dependency is needed here.
+    target_link_libraries(libgit2 INTERFACE
+        libssh2
+        "${SSL_LIBRARY}"
+        "${CRYPTO_LIBRARY}"
+        "${ZLIB_LIBRARY}"
+        iconv
+        pthread
+        m
+    )
 elseif(UNIX)
     target_link_libraries(libgit2 INTERFACE
         libssh2              
@@ -54,6 +67,7 @@ elseif(UNIX)
         dl
         rt
         m
+        pcre
     )
 endif()
 

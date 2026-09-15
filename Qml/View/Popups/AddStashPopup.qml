@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 
 import GitEase
@@ -19,49 +20,105 @@ IPopup {
     property NotificationController notificationController: null
     property StatusController       statusController:       null
 
-    readonly property bool    isNameValid: true
+    property var    stashFiles:       []
+    property var    stashDiffData:    []
+    property string selectedFilePath: ""
 
-    readonly property bool    canAccept:   isNameValid
+    readonly property bool canAccept: root.stashFiles.length > 0 && root.stashController !== null
+
+    readonly property string headerMeta: {
+        if (root.stashFiles.length === 0)
+            return qsTr("Nothing to shelve — the working tree is clean")
+
+        let parts = [root.stashFiles.length === 1 ? qsTr("1 file") : qsTr("%1 files").arg(root.stashFiles.length)]
+
+        if (root.stagedCount > 0)
+            parts.push(qsTr("%1 staged").arg(root.stagedCount))
+        if (root.untrackedCount > 0)
+            parts.push(qsTr("%1 untracked").arg(root.untrackedCount))
+
+        return parts.join("  •  ")
+    }
+
+    readonly property int stagedCount:    root.stashFiles.filter(file => file.isStaged).length
+    readonly property int untrackedCount: root.stashFiles.filter(file => file.isUntracked).length
+
+    readonly property var fileEntries: root.stashFiles.map(file => ({
+        path:        file.path,
+        statusText:  root.statusLabel(file),
+        statusColor: root.statusColor(file),
+        additions:   file.additionsCount || 0,
+        deletions:   file.deletionsCount || 0
+    }))
 
     /* Object Properties
      * ****************************************************************************************/
     width: 800
     height: 650
-    padding: 12
+    padding: 0
 
-    property var stashFiles: []
-    property string selectedFilePath: ""
-    property var stashDiffData: []
-
-    onOpened: {
-        loadFiles()
-    }
+    onOpened: root.loadFiles()
 
     /* Children
      * ****************************************************************************************/
-
     contentItem: Rectangle {
         color: Style.colors.primaryBackground
-        radius: 16
+        radius: 6
         clip: true
-        border.color: Style.colors.accent
+        border.color: Style.colors.primaryBorder
         border.width: 1
 
         ColumnLayout {
-            spacing: 8
             anchors.fill: parent
-            anchors.margins: 20
+            anchors.margins: Style.dp(3)
+            spacing: 0
 
-            RowLayout{
+            StashPopupHeader {
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.topMargin: 6
+
+                title:    qsTr("Create Stash")
+                metaText: root.headerMeta
+
+                onCloseRequested: root.closePopUp()
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.topMargin: 6
+                Layout.bottomMargin: 6
+                spacing: 10
+
+                TextField {
+                    id: stashMessageField
+                    Layout.fillWidth: true
+
+                    placeholderText: "Stash message (optional)"
+
+                    minHeight: Style.dp(26)
+                    topPadding: 4
+                    bottomPadding: 4
+                    borderRadius: 4
+                    baseFontSize: 12
+                    backgroundColor: Style.colors.controlBackground
+                    borderColor: Style.colors.controlBorder
+                    focusBorderColor: Style.colors.accent
+                    placeholderTextColor: Style.colors.placeholderText
+                }
 
                 CheckBox {
                     id: keepIndexCheckBox
-                    Layout.fillWidth: false
-                    text: "Keep staged changes in index"
+                    Layout.alignment: Qt.AlignVCenter
+                    padding: 0
                     checked: true
+                    text: "Keep staged changes in index"
 
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
 
                     Material.accent: Style.colors.accent
                     Material.foreground: Style.colors.foreground
@@ -70,152 +127,94 @@ IPopup {
                         text: Style.colors.foreground
                     }
                 }
-
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                // Close Button
-                WindowsButton {
-                    id: closeButton
-
-                    Material.accent: Style.colors.windowsClose
-                    content: Item {
-                        anchors.centerIn: parent
-                        width: 10
-                        height: 10
-
-                        Rectangle {
-                            width: 12
-                            height: 2
-                            radius: 1
-                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                            anchors.centerIn: parent
-                            rotation: 45
-                        }
-
-                        Rectangle {
-                            width: 12
-                            height: 2
-                            radius: 1
-                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                            anchors.centerIn: parent
-                            rotation: -45
-                        }
-                    }
-                    onClicked: closePopUp()
-                }
             }
 
-            RowLayout{
+            Rectangle {
                 Layout.fillWidth: true
-                spacing: 8
+                Layout.preferredHeight: 1
+                color: Style.colors.primaryBorder
+            }
 
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: 0
 
-                TextField {
-                    id: stashMessageField
-                    Layout.fillWidth: true
-                    placeholderText: "Stash Message (Optional)"
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
+                StashFileList {
+                    files:        root.fileEntries
+                    currentPath:  root.selectedFilePath
+                    sectionTitle: "CHANGES TO STASH"
+                    emptyText:    "No uncommitted changes"
 
-                    background: Rectangle {
-                        radius: 4
-                        color: Style.colors.secondaryBackground
-                        border.width: parent.activeFocus ? 2 : 1
-                        border.color: parent.activeFocus ? Style.colors.accent : Style.colors.primaryBorder
-                    }
+                    onFileSelected: (path) => root.selectPath(path)
                 }
 
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.fillHeight: true
+                    color: Style.colors.primaryBorder
+                }
 
-                Button {
-                    flat: true
-                    text: "Create Stash"
-                    Layout.alignment: Qt.AlignRight
-                    Layout.preferredHeight: 50
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                    background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
-                    }
-                    onClicked: {
-                        let message = stashMessageField.text.trim()
-                        let keepIndex = keepIndexCheckBox.checked
-                        let result = stashController.save(message, keepIndex)
-                        if (result.success) {
-                            closePopUp()
-
-                        }
-                    }
+                DiffView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    readOnly: true
+                    diffData: root.stashDiffData
                 }
             }
 
             Rectangle {
-                Layout.topMargin: 10
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                radius: 6
-                color: Style.colors.secondaryBackground
-                border.width: 1
-                border.color: Style.colors.primaryBorder
+                Layout.preferredHeight: 1
+                color: Style.colors.primaryBorder
+            }
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 8
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.topMargin: 10
+                Layout.bottomMargin: 10
+                spacing: 10
 
-                    ListView {
-                        id: fileList
-                        Layout.preferredWidth: 240
-                        Layout.fillHeight: true
-                        clip: true
-                        model: stashFiles
+                //! The command this window is about to run, kept in sync with GitStash::save()
+                Text {
+                    Layout.fillWidth: true
+                    text: {
+                        let command = "git stash push"
+                        if (keepIndexCheckBox.checked)
+                            command += " --keep-index"
 
-                        delegate: Rectangle {
-                            width: parent.width
-                            height: 24
-                            radius: 3
-                            color: (selectedFilePath === modelData.path) ? Style.colors.hoverTitle : "transparent"
+                        let message = stashMessageField.text.trim()
+                        if (message.length > 0)
+                            command += ` -m "${message}"`
 
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 4
-                                anchors.rightMargin: 4
-                                spacing: 6
-
-                                Text {
-                                    text: statusLabel(modelData)
-                                    color: Style.colors.mutedText
-                                    font.pixelSize: 8
-                                    Layout.preferredWidth: 14
-                                    horizontalAlignment: Text.AlignHCenter
-                                    font.bold: true
-                                }
-
-                                ScrollingText {
-                                    text: modelData.path || ""
-                                    color: Style.colors.foreground
-                                    font.family: Style.fontTypes.roboto
-                                    font.pixelSize: 13
-                                    Layout.fillWidth: true
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: selectFile(modelData)
-                            }
-                        }
+                        return command
                     }
+                    color: Style.colors.conflictSectionLabel
+                    elide: Text.ElideRight
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.captionPt
+                }
 
-                    DiffView {
-                        id: diffView
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        readOnly: true
-                        diffData: root.stashDiffData
-                    }
+                ConflictPillButton {
+                    Layout.preferredHeight: Style.dp(30)
+                    text: "Cancel"
+                    accentColor: Style.colors.mutedText
+                    tooltip: "Close without shelving anything"
+                    onClicked: root.closePopUp()
+                }
+
+                ConflictPillButton {
+                    Layout.preferredHeight: Style.dp(30)
+                    text: "Create stash"
+                    trailingText: Style.icons.arrowRight
+                    accentColor: Style.colors.accent
+                    prominent: root.canAccept
+                    actionEnabled: root.canAccept
+                    tooltip: root.canAccept ? "Shelve these changes and clean the working tree"
+                                            : "There are no uncommitted changes to stash"
+                    onClicked: root.createStash()
                 }
             }
         }
@@ -223,16 +222,31 @@ IPopup {
 
     /* Functions
      * ****************************************************************************************/
-
-    function loadFiles() {
-        stashFiles = []
-        stashDiffData = []
-        selectedFilePath = ""
-
-        if (!statusController)
+    function createStash() {
+        if (!root.canAccept)
             return
 
-        let res = statusController.status()
+        let result = root.stashController.save(stashMessageField.text.trim(), keepIndexCheckBox.checked)
+        if (result.success) {
+            root.closePopUp()
+            return
+        }
+
+        if (root.notificationController) {
+            root.notificationController.error(result.errorMessage || "Failed to create stash",
+                                              "Stash Error", 5000)
+        }
+    }
+
+    function loadFiles() {
+        root.stashFiles = []
+        root.stashDiffData = []
+        root.selectedFilePath = ""
+
+        if (!root.statusController)
+            return
+
+        let res = root.statusController.status()
         if (!res.success)
             return
 
@@ -242,42 +256,58 @@ IPopup {
                 filtered.push(file)
             }
         })
-        stashFiles = filtered
+        root.stashFiles = filtered
 
-        if (stashFiles.length > 0) {
-            selectFile(stashFiles[0])
+        if (root.stashFiles.length > 0) {
+            root.selectFile(root.stashFiles[0])
+        }
+    }
+
+    function selectPath(filePath) {
+        for (let i = 0; i < root.stashFiles.length; ++i) {
+            if (root.stashFiles[i].path === filePath) {
+                root.selectFile(root.stashFiles[i])
+                return
+            }
         }
     }
 
     function selectFile(file) {
-        selectedFilePath = file.path
-        stashDiffData = []
+        root.selectedFilePath = file.path
+        root.stashDiffData = []
 
-        if (!statusController || !selectedFilePath)
+        if (!root.statusController || !root.selectedFilePath)
             return
 
-        let res = statusController.getDiffView(selectedFilePath, !!file.isStaged)
+        let res = root.statusController.getDiffView(root.selectedFilePath, !!file.isStaged)
 
         if (res.success) {
-            stashDiffData = res.data.lines  // Use the lines for DiffView
+            root.stashDiffData = res.data.lines  // Use the lines for DiffView
         }
     }
 
-    function closePopUp(){
+    function closePopUp() {
         stashMessageField.text = ""
-        keepIndexCheckBox.checked = false
-        selectedFilePath = ""
-        stashDiffData = []
-        stashFiles = []
+        keepIndexCheckBox.checked = true
+        root.selectedFilePath = ""
+        root.stashDiffData = []
+        root.stashFiles = []
         root.close()
     }
 
-
-    function statusLabel(fileOrDelta) {
-        if (fileOrDelta.isStaged)
+    function statusLabel(file) {
+        if (file.isStaged)
             return "S"
-        if (fileOrDelta.isUntracked)
+        if (file.isUntracked)
             return "U"
         return "M"
+    }
+
+    function statusColor(file) {
+        if (file.isStaged)
+            return Style.colors.conflictStatusAddedColor
+        if (file.isUntracked)
+            return Style.colors.mutedText
+        return Style.colors.conflictStatusModifiedColor
     }
 }

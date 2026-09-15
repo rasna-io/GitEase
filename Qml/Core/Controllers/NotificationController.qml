@@ -173,6 +173,7 @@ QtObject {
             notificationHistory[i].read = true
         }
         unreadCount = 0
+        saveNotifications()
     }
     
     function clearHistory() {
@@ -373,47 +374,63 @@ QtObject {
             return
         }
         
-        // Calculate total height of all notifications
-        var totalHeight = 0
-        for (var i = 0; i < activeNotifications.length; i++) {
-            var notifItem = activeNotifications[i]
-            if (notifItem) {
-                totalHeight += notifItem.height
-                if (i > 0) {
-                    totalHeight += notificationSpacing
-                }
-            }
-        }
-        
-        if (closeAllHeader && closeAllHeader.visible) {
-            var headerMargin = 16
 
-            switch(root.notificationPosition) {
+        // Position each notification using actual cumulative heights to avoid overlap
+        var cumulative = 0
+        for (var j = 0; j < activeNotifications.length; j++) {
+            var notifWindow = activeNotifications[j]
+            if (!notifWindow)
+                continue
+
+            notifWindow.notificationIndex = j
+
+            switch (root.notificationPosition) {
                 case "right-top":
-                    closeAllHeader.x = screenWidth - closeAllHeader.width - rightMargin
-                    closeAllHeader.y = topMargin + totalHeight + (totalHeight > 0 ? notificationSpacing : 0)
-                    break
-                case "left-bottom":
-                    closeAllHeader.x = headerMargin
-                    closeAllHeader.y = screenHeight - bottomMargin - closeAllHeader.height - totalHeight - (totalHeight > 0 ? notificationSpacing : 0)
+                    notifWindow.x = screenWidth - notifWindow.width - rightMargin
+                    notifWindow.y = topMargin + cumulative
                     break
                 case "left-top":
-                    closeAllHeader.x = headerMargin
-                    closeAllHeader.y = topMargin + totalHeight + (totalHeight > 0 ? notificationSpacing : 0)
+                    notifWindow.x = rightMargin
+                    notifWindow.y = topMargin + cumulative
+                    break
+                case "left-bottom":
+                    notifWindow.x = rightMargin
+                    notifWindow.y = screenHeight - bottomMargin - cumulative - notifWindow.height
+                    break
+                case "right-bottom":
+                default:
+                    notifWindow.x = screenWidth - notifWindow.width - rightMargin
+                    notifWindow.y = screenHeight - bottomMargin - cumulative - notifWindow.height
+                    break
+            }
+
+            cumulative += notifWindow.height + notificationSpacing
+        }
+
+        // stackHeight is cumulative without the trailing spacing added after the last item
+        var stackHeight = cumulative > 0 ? cumulative - notificationSpacing : 0
+
+        if (closeAllHeader && closeAllHeader.visible) {
+            var headerGap = stackHeight > 0 ? notificationSpacing : 0
+
+            switch (root.notificationPosition) {
+                case "right-top":
+                    closeAllHeader.x = screenWidth - closeAllHeader.width - rightMargin
+                    closeAllHeader.y = topMargin + stackHeight + headerGap
+                    break
+                case "left-top":
+                    closeAllHeader.x = rightMargin
+                    closeAllHeader.y = topMargin + stackHeight + headerGap
+                    break
+                case "left-bottom":
+                    closeAllHeader.x = rightMargin
+                    closeAllHeader.y = screenHeight - bottomMargin - closeAllHeader.height - stackHeight - headerGap
                     break
                 case "right-bottom":
                 default:
                     closeAllHeader.x = screenWidth - closeAllHeader.width - rightMargin
-                    closeAllHeader.y = screenHeight - bottomMargin - closeAllHeader.height - totalHeight - (totalHeight > 0 ? notificationSpacing : 0)
+                    closeAllHeader.y = screenHeight - bottomMargin - closeAllHeader.height - stackHeight - headerGap
                     break
-            }
-        }
-        
-        for (var j = 0; j < activeNotifications.length; j++) {
-            var notifWindow = activeNotifications[j]
-            if (notifWindow) {
-                notifWindow.notificationIndex = j
-                notifWindow.positionWindow()
             }
         }
     }

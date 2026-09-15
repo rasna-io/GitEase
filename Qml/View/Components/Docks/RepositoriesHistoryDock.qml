@@ -16,77 +16,93 @@ UtilitiesCard {
     /* Property Declarations
      * ****************************************************************************************/
     property RepositoryController repositoryController: null
+    property GuideController      guideController:      null
 
     /* Object Properties
      * ****************************************************************************************/
     title: "Repositories History"
     icon: Style.icons.clock
+    badgeCount: repositoryController ? repositoryController.appModel.repositoriesHistory.length : 0
 
     /* Children
      * ****************************************************************************************/
     content: ColumnLayout {
         id: content
         anchors.fill: parent
-        spacing: 8
+        anchors.leftMargin: Style.dp(10)
+        anchors.rightMargin: Style.dp(10)
+        spacing: 6
 
-        ScrollView {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-
-            ColumnLayout {
-                width: parent.width
-                spacing: 7
-
-                Repeater {
-                    model: root.repositoryController.appModel.repositoriesHistory
-                    delegate: RepositoryListItem {
-                        id: item
-                        name: modelData.split('/').pop() || modelData.split('\\').pop()
-                        path: modelData
-                        isExists: root.repositoryController.appModel.fileIO.isFileExist(modelData)
-                        onClicked: {
-                            root.repositoryController.openRepository(item.path)
-                        }
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "repositories_history_tutorial"
+            guideName: "Repositories History"
+            guideIcon: Style.icons.clock
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return scrollView },
+                        icon: Style.icons.clock,
+                        title: "Recently Opened",
+                        description: "Every repository you've opened is listed here, even after restarting GitEase. Click one to reopen it instantly."
+                    },
+                    {
+                        targetProvider: function() { return actionBtn },
+                        icon: Style.icons.trash,
+                        title: "Clear History",
+                        description: "Removes every entry from this list. This only clears the list — it doesn't touch your actual repositories on disk."
                     }
-                }
+                ]
             }
         }
 
-        Button {
+        ListView {
+            id: scrollView
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(contentHeight, 220)
+            clip: true
+            spacing: Style.dp(2)
+
+            model: root.repositoryController.appModel.repositoriesHistory
+            delegate: RepositoryListItem {
+                id: item
+                implicitWidth: parent.width
+                implicitHeight: Style.dp(35)
+                border.width: 1
+                border.color: Style.colors.utilitiesRowBorder
+
+                backgroundColor:      Style.colors.utilitiesRowBackground
+                hoverBackgroundColor: Style.colors.utilitiesRowHoverBackground
+                nameColor:            Style.colors.utilitiesRowText
+                pathColor:            Style.colors.utilitiesRowSubText
+                missingPathColor:     Style.colors.utilitiesRowMissingText
+
+                name: modelData.split('/').pop() || modelData.split('\\').pop()
+                path: modelData
+                isExists: root.repositoryController.appModel.fileIO.isFileExist(modelData)
+                onClicked: {
+                    root.repositoryController.openRepository(item.path)
+                }
+            }
+
+            onContentHeightChanged: root.pageScrollBlocking = scrollView.contentHeight > scrollView.height + 1
+        }
+
+        DashedButton {
             id: actionBtn
             Layout.fillWidth: true
-            implicitHeight: 44
+            Layout.topMargin: Style.dp(2)
 
             enabled: root.repositoryController.appModel.repositoriesHistory.length > 0
 
-            background: Rectangle {
-                radius: 8
-                color: actionBtn.enabled ? Style.colors.error : (Style.colors.disabledButton)
-            }
+            iconText: Style.icons.trash
+            text: "Clear history"
 
-            contentItem: Item {
-                anchors.fill: parent
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.trash
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
-                        color: Style.colors.selectedText
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Clear history"
-                        color: Style.colors.selectedText
-                        font.pixelSize: 13
-                    }
-                }
-            }
+            textColor: actionBtn.hovered && actionBtn.enabled ? Style.colors.dashedButtonTextDanger
+                                                              : Style.colors.dashedButtonText
+            borderColor: actionBtn.hovered && actionBtn.enabled ? Style.colors.dashedButtonBorderDanger
+                                                                : Style.colors.dashedButtonBorder
 
             onClicked: {
                 root.repositoryController.appModel.repositoriesHistory = []

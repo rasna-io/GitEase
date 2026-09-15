@@ -60,8 +60,9 @@ Rectangle {
     Text {
         anchors.centerIn: parent
         text: root.iconText
-        font.family: Style.fontTypes.font6ProSolid
-        font.pixelSize: 11
+        font.family: Style.fontTypes.font6Pro
+        font.styleName: "Solid"
+        font.pixelSize: Style.appFont.defaultPt
         color: mouse.containsMouse ? root.hoverTextColor : root.textColor
     }
 
@@ -89,8 +90,8 @@ Rectangle {
 
         contentItem: Text {
             text: tip.text
-            font.family: Style.fontTypes.roboto
-            font.pixelSize: 11
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
             color: "#ffffff"
         }
 

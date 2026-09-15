@@ -38,8 +38,8 @@ IPopup {
             ScrollingText {
                 text: root.sourceBranch + "  →  " + root.targetBranch
                 color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 14
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.largePt
                 font.bold: true
                 Layout.fillWidth: true
             }
@@ -63,8 +63,8 @@ IPopup {
                         text: "Fast-forward"
                         checked: true
                         Layout.fillWidth: true
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 13
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.h3Pt
                         Material.accent: Style.colors.accent
                         Material.foreground: Style.colors.foreground
                         MouseArea {
@@ -83,8 +83,8 @@ IPopup {
                         text: "No fast-forward  (--no-ff)"
                         checked: false
                         Layout.fillWidth: true
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 13
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.h3Pt
                         Material.accent: Style.colors.accent
                         Material.foreground: Style.colors.foreground
                         MouseArea {
@@ -109,8 +109,8 @@ IPopup {
                     text: "Cancel"
                     flat: true
                     Layout.preferredWidth: 100
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.mediumPt
                     Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
                     background: Rectangle {
                         color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
@@ -128,8 +128,8 @@ IPopup {
                     id: mergeBtn
                     text: "Merge"
                     Layout.preferredWidth: 100
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 12
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.mediumPt
                     Material.foreground: Style.colors.textButton
                     background: Rectangle {
                         implicitHeight: 32

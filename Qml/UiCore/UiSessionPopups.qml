@@ -56,10 +56,6 @@ Item {
 
     property FetchSummaryPopup          fetchSummaryPopup:          FetchSummaryPopup {}
 
-    property RepoForestPopup            repoForestPopup:            RepoForestPopup {
-        userAuthenticationPopup: root.userAuthenticationPopup
-    }
-
     property CommitAmendPopup commitAmendPopup: CommitAmendPopup{}
 
 }

@@ -21,6 +21,8 @@ UtilitiesCard {
     property StatusController       statusController:       null
     property NotificationController notificationController: null
     property ConflictController     conflictController:     null
+    property LayoutController       layoutController:       null
+    property GuideController        guideController:        null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -28,7 +30,48 @@ UtilitiesCard {
     icon: Style.icons.copy
 
     content: ColumnLayout {
-        spacing: 10
+        anchors.fill: parent
+        anchors.leftMargin: Style.dp(10)
+        anchors.rightMargin: Style.dp(10)
+        spacing: 6
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "rebase_dock_tutorial"
+            guideName: "Rebase"
+            guideIcon: Style.icons.copy
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return upstreamInput },
+                        icon: Style.icons.copy,
+                        title: "Upstream",
+                        description: "The branch, tag, or commit you want to replay your commits onto."
+                    },
+                    {
+                        targetProvider: function() { return branchCombo },
+                        icon: Style.icons.branch,
+                        title: "Branch to Rebase",
+                        description: "Choose which local branch gets rebased. Defaults to your current branch."
+                    },
+                    {
+                        targetProvider: function() { return advancedToggle },
+                        icon: Style.icons.filter,
+                        title: "Advanced: --onto",
+                        description: "Enable this to move only a range of commits onto a different base, instead of replaying the whole upstream history.",
+                        commands: [{ command: "git rebase --onto <newbase> <upstream> <branch>" }]
+                    },
+                    {
+                        targetProvider: function() { return startRebaseBtn },
+                        icon: Style.icons.copy,
+                        title: "Preview & Run",
+                        description: "Shows exactly which commits will be replayed before anything happens, so you can confirm the plan before committing to the rebase.",
+                        commands: [{ command: "git rebase <upstream>" }]
+                    }
+                ]
+            }
+        }
 
         // Upstream field (required)
         ColumnLayout {
@@ -37,21 +80,26 @@ UtilitiesCard {
 
             Text {
                 text: "Upstream"
-                font.pixelSize: 12
-                color: Style.colors.mutedText
+                font.pixelSize: Style.appFont.captionPt
+                color: Style.colors.utilitiesFieldLabel
             }
             TextField {
                 id: upstreamInput
                 Layout.fillWidth: true
+                implicitHeight: Style.dp(25)
                 placeholderText: "branch, tag, or commit SHA"
                 selectByMouse: true
-
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.utilitiesInputText
+                placeholderTextColor: Style.colors.utilitiesInputPlaceholder
 
                 background: Rectangle {
-                    implicitHeight: 40
-                    color: Style.colors.secondaryBackground
-                    radius: 5
-                    border.color: upstreamInput.activeFocus ? Style.colors.accent : "transparent"
+                    implicitHeight: Style.dp(25)
+                    color: Style.colors.utilitiesInputBackground
+                    radius: Style.dp(4)
+                    border.width: 1
+                    border.color: upstreamInput.activeFocus ? Style.colors.utilitiesInputBorderFocus
+                                                              : Style.colors.utilitiesInputBorder
                 }
             }
         }
@@ -63,29 +111,32 @@ UtilitiesCard {
 
             Text {
                 text: "Branch to rebase"
-                font.pixelSize: 12
-                color: Style.colors.mutedText
+                font.pixelSize: Style.appFont.captionPt
+                color: Style.colors.utilitiesFieldLabel
             }
 
             ComboBox {
                 id: branchCombo
                 Layout.fillWidth: true
-                minHeight: 40
+                minHeight: Style.dp(25)
                 focusBorderWidth: 1
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.weight: 400
-                font.pixelSize: 12
+                font.pixelSize: Style.appFont.smallPt
                 textRole: "label"
                 model: branchModel
                 currentIndex: 0
 
-                Material.background: Style.colors.primaryBackground
-                Material.foreground: Style.colors.secondaryText
+                Material.background: Style.colors.utilitiesInputPopupBackground
+                Material.foreground: Style.colors.utilitiesInputText
 
                 background: Rectangle {
-                    radius: 5
-                    color: branchCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                    border.color: branchCombo.activeFocus ? Style.colors.accent : "transparent"
+                    radius: Style.dp(4)
+                    color: branchCombo.hovered ? Style.colors.utilitiesInputHoverBackground
+                                               : Style.colors.utilitiesInputBackground
+                    border.width: 1
+                    border.color: branchCombo.activeFocus ? Style.colors.utilitiesInputBorderFocus
+                                                            : Style.colors.utilitiesInputBorder
                 }
             }
         }
@@ -95,12 +146,13 @@ UtilitiesCard {
             id: advancedToggle
             Layout.fillWidth: false
             text: "Use --onto (advanced)"
-            font.family: Style.fontTypes.roboto
-            font.pixelSize: 12
-            Material.accent: Style.colors.accent
-            Material.foreground: Style.colors.foreground
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.smallPt
+            implicitHeight: Style.dp(25)
+            Material.accent: Style.colors.utilitiesCheckBoxAccent
+            Material.foreground: Style.colors.utilitiesCheckBoxText
             palette {
-                text: Style.colors.foreground
+                text: Style.colors.utilitiesCheckBoxText
             }
 
             checked: false
@@ -115,67 +167,39 @@ UtilitiesCard {
             Text {
                 text: "Onto (new base)"
                 Layout.fillWidth: true
-                font.pixelSize: 12
-                color: Style.colors.mutedText
+                font.pixelSize: Style.appFont.captionPt
+                color: Style.colors.utilitiesFieldLabel
             }
             TextField {
                 id: ontoInput
                 Layout.fillWidth: true
+                implicitHeight: Style.dp(25)
                 placeholderText: "branch, tag, or commit SHA"
                 selectByMouse: true
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.utilitiesInputText
+                placeholderTextColor: Style.colors.utilitiesInputPlaceholder
 
                 background: Rectangle {
-                    implicitHeight: 40
-                    color: Style.colors.secondaryBackground
-                    radius: 5
-                    border.color: ontoInput.activeFocus ? Style.colors.accent : "transparent"
+                    implicitHeight: Style.dp(25)
+                    color: Style.colors.utilitiesInputBackground
+                    radius: Style.dp(4)
+                    border.width: 1
+                    border.color: ontoInput.activeFocus ? Style.colors.utilitiesInputBorderFocus
+                                                          : Style.colors.utilitiesInputBorder
                 }
             }
-        }
-
-        // Spacer
-        Item {
-            Layout.fillHeight: true
         }
 
         // Rebase button
-        Button {
+        DashedButton {
+            id: startRebaseBtn
             Layout.fillWidth: true
-            implicitHeight: 44
+            Layout.topMargin: Style.dp(2)
             enabled: upstreamInput.text.trim().length > 0
 
-            background: Rectangle {
-                radius: 8
-                color: enabled ? (parent.hovered ? Style.colors.accentHover : Style.colors.accent)
-                               : Style.colors.disabledButton
-            }
-
-            contentItem: Item {
-                anchors.fill: parent
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.copy
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
-                        color: Style.colors.secondaryForeground
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Start Rebase"
-                        color: Style.colors.secondaryForeground
-                        font.pixelSize: 13
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-            }
+            iconText: Style.icons.copy
+            text: "Start Rebase"
 
             onClicked: previewRebase(upstreamInput.text, ontoInput.text, advancedToggle.checked, branchCombo.currentIndex)
         }
@@ -192,6 +216,8 @@ UtilitiesCard {
         rebaseController: root.rebaseController
         conflictController: root.conflictController
         notificationController: root.notificationController
+        layoutController: root.layoutController
+        guideController: root.guideController
     }
 
     /* Functions
@@ -232,19 +258,10 @@ UtilitiesCard {
         onto        = advanced ? onto.trim() : ""
 
         var branchValue = currentBranchValue(currentIndexBranchCombo)
-        var res = rebaseController.previewRebasePlan(onto, upstream, branchValue)
 
-        if (!res || !res.success) {
-            notificationController.error(res ? res.errorMessage : "Could not prepare rebase plan", "Rebase", 5000)
-            return
-        }
+        commitPlanPopup.open()
 
-        if (!res.data || !res.data.commits || res.data.commits.length === 0) {
-            notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000)
-            return
-        }
-
-        commitPlanPopup.showPlan(res.data)
+        rebaseController.startPreviewRebasePlan(onto, upstream, branchValue)
     }
 
     function validateInputs(upstream, onto, advanced, currentIndexBranchCombo) {

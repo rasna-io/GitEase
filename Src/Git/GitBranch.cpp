@@ -411,6 +411,32 @@ QString GitBranch::getCurrentBranchName()
     return branchName;  // "main", "master", or Detached HEAD if detached
 }
 
+QString GitBranch::getDisplayBranchName()
+{
+    QString branch = getCurrentBranchName();
+    if (!branch.isEmpty())
+        return branch;
+
+    // Detached HEAD — fall back to short SHA
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return "";
+
+    git_reference* head = nullptr;
+    if (git_repository_head(&head, m_currentRepo->repo) != GIT_OK)
+        return "";
+
+    const git_oid* oid = git_reference_target(head);
+    QString sha;
+    if (oid) {
+        char buf[8];
+        git_oid_tostr(buf, sizeof(buf), oid);
+        sha = QString::fromUtf8(buf);
+    }
+
+    git_reference_free(head);
+    return sha;
+}
+
 QString GitBranch::formatRefName(const QString &branchName)
 {
     QString name = branchName;

@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
     git_libgit2_init();
 
     QGuiApplication app(argc, argv);
+    app.setApplicationVersion(QStringLiteral(GITEASE_VERSION));
 
     app.setWindowIcon(QIcon(":/GitEase/Resources/Images/LogoSVG.svg"));
 

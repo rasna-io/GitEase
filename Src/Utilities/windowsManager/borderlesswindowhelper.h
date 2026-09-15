@@ -24,6 +24,8 @@ public:
     QSize minimumSize() const;
     void setMinimumSize(const QSize &newSize);
 
+    bool minimizePreservingState();
+
 private:
 #ifdef Q_OS_WIN
     void attach();

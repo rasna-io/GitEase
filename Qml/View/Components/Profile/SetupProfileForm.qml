@@ -37,9 +37,9 @@ Item {
             wrapMode: Text.WordWrap
             color: Style.colors.mutedText
             horizontalAlignment: Text.AlignHCenter
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
             font.weight: 300
-            font.pixelSize: 16
+            font.pixelSize: Style.appFont.h2Pt
             font.italic: true
             font.letterSpacing: 0
         }
@@ -92,9 +92,9 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "💡 Tip: You can change these settings later in the Settings page"
                             wrapMode: Text.WordWrap
-                            font.pixelSize: 10
+                            font.pixelSize: Style.appFont.smallPt
                             color: Style.colors.hintText
-                            font.family: Style.fontTypes.roboto
+                            font.family: Style.fontTypes.inter
                             font.weight: 300
                             font.styleName: "Light"
                             font.letterSpacing: 0
@@ -126,8 +126,8 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: root.errorMessage
                             wrapMode: Text.WordWrap
-                            font.pixelSize: 10
-                            font.family: Style.fontTypes.roboto
+                            font.pixelSize: Style.appFont.smallPt
+                            font.family: Style.fontTypes.inter
                             font.weight: 300
                             font.styleName: "Light"
                             font.letterSpacing: 0
