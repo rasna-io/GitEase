@@ -33,7 +33,18 @@ Item {
     property real   branchTagColumnWidth: 80
     property var    allCommitsHash      : ({})
 
+    property real   viewportY           : 0
+    property real   graphContentHeight  : Math.max(height, commits.length * rowHeight)
+    readonly property int rowHeight     : commitItemHeight + commitItemSpacing * 2
+
     property int    hoveredIndex        : -1
+    property var    renderCache         : ({
+        commitsHash: ({}),
+        commitByHash: ({}),
+        branchLatestCommit: ({}),
+        parentInSameLane: ({}),
+        crossLaneEdges: []
+    })
 
     /* Signals
      * ****************************************************************************************/
@@ -41,44 +52,27 @@ Item {
     signal hoverIndexChanged(int index)
     signal commitRightClicked(int index, real mouseX, real mouseY)
 
+    onCommitsChanged: {
+        rebuildRenderCache()
+    }
+    onCommitPositionsChanged: rebuildRenderCache()
+
     /* Children
      * ****************************************************************************************/
-    Flickable {
+    Item {
         id: flick
         anchors.fill: parent
         clip: true
 
-        contentWidth: {
-            if (!commits.length) return width
-            var maxCols = 0
-            for (var i = 0; i < commits.length; i++) {
-                var hash = commits[i].hash
-                var pos = commitPositions[hash]
-                if (pos && pos.column > maxCols) maxCols = pos.column
-            }
-            return Math.max(width, 40 + (maxCols+1) * columnSpacing + 300)
-        }
-        contentHeight: Math.max(height, commits.length * (commitItemHeight + commitItemSpacing*2))
-        boundsBehavior: Flickable.StopAtBounds
-
-        property bool syncScroll: false
-
-        onContentYChanged: {
-            if (flick.contentHeight > flick.height) {
-                var remaining = flick.contentHeight - (flick.contentY + flick.height)
-                if (remaining < 300) root.infiniteScroll()
-            }
-        }
-
         MouseArea {
             id: hoverArea
-            anchors.fill: flick.contentItem
+            anchors.fill: parent
             hoverEnabled: true
             acceptedButtons: Qt.RightButton
             z: 1000
 
             onPositionChanged: (mouse) => {
-                var newHoveredIndex = rowIndexAt(mouse.y);
+                var newHoveredIndex = rowIndexAt(mouse.y + root.viewportY);
                 if (newHoveredIndex !== root.hoveredIndex)
                     root.hoverIndexChanged(newHoveredIndex);
             }
@@ -91,7 +85,7 @@ Item {
             onClicked: (mouse) => {
                 if (mouse.button !== Qt.RightButton)
                     return;
-                var idx = rowIndexAt(mouse.y);
+                var idx = rowIndexAt(mouse.y + root.viewportY);
                 if (idx < 0)
                     return;
                 var pos = hoverArea.mapToItem(root, mouse.x, mouse.y);
@@ -102,8 +96,14 @@ Item {
         // ---------- Canvas (draws the entire DAG) ----------
         Canvas {
             id: graphCanvas
-            width: flick.contentWidth
-            height: commits.length * (commitItemHeight + commitItemSpacing*2)
+            anchors.fill: parent
+
+            property int lastHoveredIndex: -1
+            property int scrollRepaintRequest: -1
+
+            canvasSize: Qt.size(width, root.graphContentHeight)
+            tileSize: Qt.size(Math.max(1, Math.ceil(width)), 1024)
+            canvasWindow: Qt.rect(0, root.viewportY, width, height)
 
             property var svgImage: Image {
                 source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
@@ -114,50 +114,67 @@ Item {
             // Trigger repaint when data changes
             Connections {
                 target: root
-                function onCommitsChanged() { graphCanvas.requestPaint() }
-                function onSelectedHashesChanged() { graphCanvas.requestPaint() }
-                function onHoveredIndexChanged() { graphCanvas.requestPaint() }
+                function onSelectedHashesChanged() { graphCanvas.invalidateAll() }
+                function onHoveredIndexChanged() {
+                    graphCanvas.invalidateRow(graphCanvas.lastHoveredIndex)
+                    graphCanvas.invalidateRow(root.hoveredIndex)
+                    graphCanvas.lastHoveredIndex = root.hoveredIndex
+                }
             }
 
-            onPaint: {
+            function invalidateRow(index) {
+                if (index < 0 || index >= root.commits.length)
+                    return
+                markDirty(Qt.rect(0, index * root.rowHeight, canvasSize.width, root.rowHeight))
+            }
+
+            function invalidateAll() {
+                if (!available)
+                    return
+
+                markDirty(Qt.rect(0, 0, canvasSize.width, canvasSize.height))
+            }
+
+            function scheduleVisibleRepaint() {
+                if (!available || scrollRepaintRequest !== -1)
+                    return
+
+                scrollRepaintRequest = requestAnimationFrame(function() {
+                    scrollRepaintRequest = -1
+                    markDirty(graphCanvas.canvasWindow)
+                })
+            }
+
+            onCanvasWindowChanged: scheduleVisibleRepaint()
+
+            onAvailableChanged: {
+                if (available) {
+                    invalidateAll()
+                    scheduleVisibleRepaint()
+                }
+            }
+
+            Component.onCompleted: {
+                lastHoveredIndex = root.hoveredIndex
+                invalidateAll()
+            }
+
+            onPaint: (region) => {
                 var ctx = getContext("2d");
-                ctx.clearRect(0, 0, width, height);
+                ctx.clearRect(region.x, region.y, region.width, region.height);
 
                 if (!root.commits || root.commits.length === 0) return;
 
-                // Also handles continuation lines: when a node is not present in the viewport,
-                // a straight line is rendered to preserve visual continuity in the graph.
-                let commitsHash = []
-                var maxCols = 0;
-                for (var i = 0; i < root.commits.length; i++) {
-                    let hash = root.commits[i].hash
-                    commitsHash.push(hash)
-                    var p = root.commitPositions[hash];
-                    if (p && p.column > maxCols) maxCols = p.column;
-                }
+                var commitsHash = root.renderCache.commitsHash;
+                var paintTop = region.y;
+                var paintBottom = region.y + region.height;
 
                 // ---- Start of original drawing logic (adapted) ----
 
                 var centerOffset = root.columnSpacing / 2;
 
-                // Build quick lookup
-                var commitByHash = {};
-                for (var bi0 = 0; bi0 < root.commits.length; bi0++) {
-                    var c0m = root.commits[bi0];
-                    if (c0m && c0m.hash) commitByHash[c0m.hash] = c0m;
-                }
-
-                // Branch HEAD mapping
-                var branchLatestCommit = {};
-                for (var bi = 0; bi < root.commits.length; bi++) {
-                    var bc = root.commits[bi];
-                    if (bc && bc.branchNames && bc.branchNames.length) {
-                        for (var bni = 0; bni < bc.branchNames.length; bni++) {
-                            var bn = bc.branchNames[bni];
-                            if (bn && !branchLatestCommit[bn]) branchLatestCommit[bn] = bc.hash;
-                        }
-                    }
-                }
+                var commitByHash = root.renderCache.commitByHash;
+                var branchLatestCommit = root.renderCache.branchLatestCommit;
 
                 // Helper functions (local for convenience)
                 function edgeColor(edge, commitByHash) {
@@ -173,30 +190,8 @@ Item {
                 }
 
                 // --- Build edge routing data ---
-                var parentInSameLane = {};
-                var crossLaneEdges = [];
-                for (var j = 0; j < root.commits.length; j++) {
-                    var c0 = root.commits[j];
-                    var pos0 = root.commitPositions[c0.hash];
-                    if (!pos0 || !c0.parentHashes) continue;
-                    for (var p2 = 0; p2 < c0.parentHashes.length; p2++) {
-                        var parentHash = c0.parentHashes[p2];
-                        var parentPos = root.commitPositions[parentHash];
-                        if (!parentPos) continue;
-                        if (parentPos.column === pos0.column) {
-                            if (!parentInSameLane[c0.hash]) parentInSameLane[c0.hash] = parentHash;
-                        } else {
-                            var isMerge = c0.commitType === "merge";
-                            crossLaneEdges.push({
-                                from: isMerge ? parentHash : c0.hash,
-                                to: isMerge ? c0.hash : parentHash,
-                                fromPos: isMerge ? parentPos : pos0,
-                                toPos: isMerge ? pos0 : parentPos,
-                                isMerge: isMerge
-                            });
-                        }
-                    }
-                }
+                var parentInSameLane = root.renderCache.parentInSameLane;
+                var crossLaneEdges = root.renderCache.crossLaneEdges;
 
                 // Phase 1: Same-lane straight lines
                 for (var j2 = 0; j2 < root.commits.length; j2++) {
@@ -213,20 +208,23 @@ Item {
                         if (pp) {
                             var parentX = centerOffset + pp.column * root.columnSpacing + root.columnSpacing / 2;
                             var parentY = pp.y + root.commitItemHeight / 2 + root.commitItemSpacing;
-                            var branchColor2 = root.commitColor(commit2);
+                            if (Math.max(centerY, parentY) >= paintTop
+                                    && Math.min(centerY, parentY) <= paintBottom) {
+                                var branchColor2 = root.commitColor(commit2);
 
-                            ctx.save();
-                            ctx.strokeStyle = branchColor2;
-                            ctx.globalAlpha = 0.9;
-                            ctx.lineWidth = 2.5;
-                            if (commit2.isUncommitted) ctx.setLineDash([4, 4]);
-                            else ctx.setLineDash([]);
-                            ctx.beginPath();
-                            ctx.moveTo(centerX, centerY);
-                            ctx.lineTo(parentX, parentY);
-                            ctx.stroke();
-                            ctx.setLineDash([]);
-                            ctx.restore();
+                                ctx.save();
+                                ctx.strokeStyle = branchColor2;
+                                ctx.globalAlpha = 0.9;
+                                ctx.lineWidth = 2.5;
+                                if (commit2.isUncommitted) ctx.setLineDash([4, 4]);
+                                else ctx.setLineDash([]);
+                                ctx.beginPath();
+                                ctx.moveTo(centerX, centerY);
+                                ctx.lineTo(parentX, parentY);
+                                ctx.stroke();
+                                ctx.setLineDash([]);
+                                ctx.restore();
+                            }
                         }
                     }
 
@@ -238,13 +236,14 @@ Item {
                     // parent sitting on a page we haven't scrolled to yet must still get
                     // a visible "continues off-page" marker instead of silently vanishing.
                     var canDraw = false;
-                    for (var i2 = 0; i2 < commit2.parentHashes.length; i2++) {
-                        if (commitsHash.indexOf(commit2.parentHashes[i2]) === -1) {
+                    var parentHashes = commit2.parentHashes || [];
+                    for (var i2 = 0; i2 < parentHashes.length; i2++) {
+                        if (!commitsHash[parentHashes[i2]]) {
                             canDraw = true;
                             break;
                         }
                     }
-                    if (canDraw) {
+                    if (canDraw && centerY <= paintBottom && root.graphContentHeight >= paintTop) {
                         // The real parent isn't loaded yet (further down, on a page we
                         // haven't scrolled to), so draw the tail down to the bottom of the
                         // currently loaded content - it leads toward where that parent will
@@ -252,7 +251,7 @@ Item {
                         // for good in this case (never reassigns it to an unrelated
                         // commit), so extending the full height is safe: nothing else will
                         // ever render in this column to be falsely read as connected.
-                        var stubEndY = graphCanvas.height;
+                        var stubEndY = root.graphContentHeight;
                         var branchColor2b = root.commitColor(commit2);
                         ctx.save();
                         ctx.strokeStyle = branchColor2b;
@@ -278,6 +277,10 @@ Item {
                     var fromCenterY = fromPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
                     var toCenterX = centerOffset + toPos.column * root.columnSpacing + root.columnSpacing / 2;
                     var toCenterY = toPos.y + root.commitItemHeight / 2 + root.commitItemSpacing;
+
+                    if (Math.max(fromCenterY, toCenterY) < paintTop
+                            || Math.min(fromCenterY, toCenterY) > paintBottom)
+                        continue;
 
                     var startX = edge.isMerge ? fromCenterX : toCenterX;
                     var startY = edge.isMerge ? fromCenterY : toCenterY;
@@ -331,6 +334,10 @@ Item {
                     var posForLine = root.commitPositions[commitForLine.hash];
                     if (!posForLine) continue;
 
+                    var centerYForLine = posForLine.y + root.commitItemHeight / 2 + root.commitItemSpacing;
+                    if (centerYForLine + 12 < paintTop || centerYForLine - 12 > paintBottom)
+                        continue;
+
                     var isHeadCommitForLabels = false;
                     var headBranchesForThisCommit = [];
                     for (var branchKey in branchLatestCommit) {
@@ -343,7 +350,6 @@ Item {
                         continue;
 
                     var centerXForLine = centerOffset + posForLine.column * root.columnSpacing + root.columnSpacing / 2;
-                    var centerYForLine = posForLine.y + root.commitItemHeight / 2 + root.commitItemSpacing;
                     var laneLabelColor = root.commitColor(commitForLine);
 
                     var allLabels = [];
@@ -429,6 +435,8 @@ Item {
                     var commit3 = root.commits[k];
                     var pos3 = root.commitPositions[commit3.hash];
                     if (!pos3) continue;
+                    if (pos3.y + root.rowHeight < paintTop || pos3.y > paintBottom)
+                        continue;
 
                     var centerX2 = centerOffset + pos3.column * root.columnSpacing + root.columnSpacing / 2;
                     var centerY2 = pos3.y + root.commitItemHeight / 2 + root.commitItemSpacing;
@@ -505,24 +513,92 @@ Item {
         return GraphUtils.getCategoryColor(commitObj.colorKey)
     }
 
-    function rowIndexAt(y) {
+    function rebuildRenderCache() {
+        var commitsHash = {}
+        var commitByHash = {}
+        var branchLatestCommit = {}
+        var parentInSameLane = {}
+        var crossLaneEdges = []
+
         for (var i = 0; i < root.commits.length; i++) {
-            var commit = root.commits[i];
-            var pos = root.commitPositions[commit.hash];
-            if (pos) {
-                var rowTop = pos.y;
-                var rowBottom = pos.y + root.commitItemHeight + root.commitItemSpacing * 2;
-                if (y >= rowTop && y < rowBottom)
-                    return i;
+            var commit = root.commits[i]
+            if (!commit || !commit.hash)
+                continue
+
+            commitsHash[commit.hash] = true
+            commitByHash[commit.hash] = commit
+
+            if (commit.branchNames) {
+                for (var branchIndex = 0; branchIndex < commit.branchNames.length; branchIndex++) {
+                    var branchName = commit.branchNames[branchIndex]
+                    if (branchName && !branchLatestCommit[branchName])
+                        branchLatestCommit[branchName] = commit.hash
+                }
             }
         }
-        return -1;
+
+        for (var commitIndex = 0; commitIndex < root.commits.length; commitIndex++) {
+            var child = root.commits[commitIndex]
+            if (!child || !child.parentHashes)
+                continue
+
+            var childPos = root.commitPositions[child.hash]
+            if (!childPos)
+                continue
+
+            for (var parentIndex = 0; parentIndex < child.parentHashes.length; parentIndex++) {
+                var parentHash = child.parentHashes[parentIndex]
+                var parentPos = root.commitPositions[parentHash]
+                if (!parentPos)
+                    continue
+
+                if (parentPos.column === childPos.column) {
+                    if (!parentInSameLane[child.hash])
+                        parentInSameLane[child.hash] = parentHash
+                } else {
+                    var isMerge = child.commitType === "merge"
+                    crossLaneEdges.push({
+                        from: isMerge ? parentHash : child.hash,
+                        to: isMerge ? child.hash : parentHash,
+                        fromPos: isMerge ? parentPos : childPos,
+                        toPos: isMerge ? childPos : parentPos,
+                        isMerge: isMerge
+                    })
+                }
+            }
+        }
+
+        root.renderCache = {
+            commitsHash: commitsHash,
+            commitByHash: commitByHash,
+            branchLatestCommit: branchLatestCommit,
+            parentInSameLane: parentInSameLane,
+            crossLaneEdges: crossLaneEdges
+        }
+
+        Qt.callLater(root.requestPaint)
+    }
+
+    function rowIndexAt(y) {
+        var index = Math.floor(y / root.rowHeight)
+        if (index < 0 || index >= root.commits.length)
+            return -1
+
+        var commit = root.commits[index]
+        var pos = commit ? root.commitPositions[commit.hash] : null
+        if (pos && y >= pos.y && y < pos.y + root.rowHeight)
+            return index
+
+        return -1
     }
 
     function requestPaint() {
-        graphCanvas.requestPaint()
+        graphCanvas.invalidateAll()
     }
 
-    onWidthChanged  :  graphCanvas.requestPaint()
-    onHeightChanged : graphCanvas.requestPaint()
+    onWidthChanged  :  graphCanvas.invalidateAll()
+    onHeightChanged : graphCanvas.invalidateAll()
+    onGraphContentHeightChanged: graphCanvas.invalidateAll()
+
+    Component.onCompleted: rebuildRenderCache()
 }
