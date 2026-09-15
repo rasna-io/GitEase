@@ -14,16 +14,48 @@ import GitEase_Style_Impl
 IPopup {
     id: root
 
+    /* Property Declarations
+     * ****************************************************************************************/
     property string sourceBranch: ""
     property string targetBranch: ""
 
-    signal accepted(bool noFF)
+    readonly property var mergeMethods: [
+        {
+            id: 0,
+            title: "Merge commit",
+            description: "Creates a merge commit preserving full history. Fast-forward if possible.",
+            command: "git merge " + root.sourceBranch
+        },
+        {
+            id: 1,
+            title: "Merge commit (no fast-forward)",
+            description: "Always creates a merge commit even if fast-forward is possible.",
+            command: "git merge --no-ff " + root.sourceBranch
+        }
+    ]
 
-    width: 340
-    height: 280
+    property int selectedMethod: 0
+    property bool deleteBranchAfterMerge: false
+    property bool pushToRemoteAfterMerge: false
+
+    /* signals
+     * ****************************************************************************************/
+    signal accepted(bool noFF, bool deleteBranch, bool pushRemote)
+
+    /* Object Properties
+     * ****************************************************************************************/
+    width: 480
+    height: contentRoot.implicitHeight
     padding: 0
 
+    /* Children
+     * ****************************************************************************************/
     contentItem: Rectangle {
+        id: contentRoot
+
+        implicitWidth: root.width
+        implicitHeight: contentCol.implicitHeight + 2
+
         color: Style.colors.primaryBackground
         radius: 10
         clip: true
@@ -31,116 +63,334 @@ IPopup {
         border.width: 1
 
         ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 20
-            spacing: 16
+            id: contentCol
 
-            ScrollingText {
-                text: root.sourceBranch + "  →  " + root.targetBranch
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.inter
-                font.pixelSize: Style.appFont.largePt
-                font.bold: true
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 1
+
+            spacing: 0
+
+            // ── Header ───────────────────────────────────────────────────────────────
+            Rectangle {
                 Layout.fillWidth: true
-            }
+                implicitHeight: headerRow.implicitHeight + 24
+                color: "transparent"
 
-            Rectangle{
-                Layout.fillHeight: true
-                Layout.fillWidth: true
+                RowLayout {
+                    id: headerRow
 
-                color: Style.colors.surfaceMuted
-                border.color: Style.colors.primaryBorder
-                border.width: 1
-                radius: 8
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: 20
+                    anchors.rightMargin: 12
 
-                ColumnLayout{
-                    anchors.fill: parent
-                    anchors.margins: 12
                     spacing: 8
 
-                    RadioButton {
-                        id: ffRadio
-                        text: "Fast-forward"
-                        checked: true
+                    Text {
                         Layout.fillWidth: true
+                        text: "Merge Branch"
+                        color: Style.colors.titleText
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.h3Pt
-                        Material.accent: Style.colors.accent
-                        Material.foreground: Style.colors.foreground
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            acceptedButtons: Qt.NoButton
-                        }
-
-
-                        hoverEnabled: true
-                        font.bold: hovered
+                        font.weight: 700
+                        elide: Text.ElideRight
                     }
 
-                    RadioButton {
-                        id: noFFRadio
-                        text: "No fast-forward  (--no-ff)"
-                        checked: false
-                        Layout.fillWidth: true
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.h3Pt
-                        Material.accent: Style.colors.accent
-                        Material.foreground: Style.colors.foreground
-                        MouseArea {
-                            anchors.fill: parent
+                    // Close button (same idiom as RebasePlanHeader)
+                    Rectangle {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredWidth: Style.dp(26)
+                        Layout.preferredHeight: Style.dp(26)
+
+                        radius: 4
+                        color: closeHover.hovered ? Style.colors.cardBackground : "transparent"
+
+                        HoverHandler {
+                            id: closeHover
                             cursorShape: Qt.PointingHandCursor
-                            acceptedButtons: Qt.NoButton
                         }
 
-                        hoverEnabled: true
-                        font.bold: hovered
+                        TapHandler {
+                            gesturePolicy: TapHandler.ReleaseWithinBounds
+                            onTapped: root.close()
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: Style.icons.close
+                            color: closeHover.hovered ? Style.colors.foreground : Style.colors.mutedText
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
+                            font.pixelSize: Style.appFont.mediumPt
+                        }
                     }
+                }
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    height: 1
+                    color: Style.colors.secondaryBorder
                 }
             }
 
-            RowLayout {
+            // ── Body ─────────────────────────────────────────────────────────────────
+            ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                Layout.margins: 20
+                Layout.topMargin: 14
 
-                Item { Layout.fillWidth: true }
+                spacing: 14
 
-                Button {
-                    text: "Cancel"
-                    flat: true
-                    Layout.preferredWidth: 100
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.mediumPt
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                    background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
+                // Caption: "Merging source → target"
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    spacing: 4
+
+                    Text {
+                        text: "Merging"
+                        color: Style.colors.mutedText
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
                     }
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.close()
+
+                    Text {
+                        Layout.maximumWidth: 180
+                        text: root.sourceBranch
+                        color: Style.colors.accent
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
+                        font.weight: 600
+                        elide: Text.ElideRight
+                    }
+
+                    Text {
+                        text: Style.icons.arrowRight
+                        color: Style.colors.mutedText
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: Style.appFont.mediumPt
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.targetBranch
+                        color: Style.colors.foreground
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
+                        font.weight: 600
+                        elide: Text.ElideRight
                     }
                 }
 
-                Button {
-                    id: mergeBtn
-                    text: "Merge"
-                    Layout.preferredWidth: 100
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.mediumPt
-                    Material.foreground: Style.colors.textButton
-                    background: Rectangle {
-                        implicitHeight: 32
-                        color: mergeBtn.hovered ? Style.colors.accentHover : Style.colors.accent
-                        radius: 5
+                // ── Method cards ─────────────────────────────────────────────────────
+                Repeater {
+                    model: root.mergeMethods
+
+                    delegate: Rectangle {
+                        id: methodCard
+
+                        required property var modelData
+
+                        readonly property bool isSelected: root.selectedMethod === modelData.id
+
+                        Layout.fillWidth: true
+                        implicitHeight: cardCol.implicitHeight + 24
+
+                        radius: 8
+                        color: isSelected ? Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.08)
+                                          : methodCardMouse.containsMouse ? Style.colors.controlBackgroundHover
+                                                                          : Style.colors.controlBackground
+                        border.width: 1
+                        border.color: isSelected ? Style.colors.accent : methodCardMouse.containsMouse ? Style.colors.controlBorderHover
+                                                                                                       : Style.colors.controlBorder
+
+                        Behavior on border.color {
+                            ColorAnimation { duration: 120 }
+                        }
+
+                        MouseArea {
+                            id: methodCardMouse
+
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.selectedMethod = methodCard.modelData.id
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12
+
+                            spacing: 12
+
+                            // Radio indicator
+                            Rectangle {
+                                Layout.alignment: Qt.AlignTop
+                                Layout.topMargin: 2
+
+                                width: 16
+                                height: 16
+                                radius: 8
+
+                                color: methodCard.isSelected ? Style.colors.accent : "transparent"
+                                border.width: methodCard.isSelected ? 0 : 2
+                                border.color: methodCardMouse.containsMouse ? Style.colors.controlBorderHover : Style.colors.mutedText
+
+                                Behavior on color {
+                                    ColorAnimation { duration: 120 }
+                                }
+                            }
+
+                            ColumnLayout {
+                                id: cardCol
+
+                                Layout.fillWidth: true
+
+                                spacing: 4
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: methodCard.modelData.title
+                                    color: Style.colors.foreground
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.mediumPt
+                                    font.weight: 600
+                                    elide: Text.ElideRight
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: methodCard.modelData.description
+                                    color: Style.colors.mutedText
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.smallPt
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                // Git command preview inside a card — hugs the command text
+                                Rectangle {
+                                    Layout.topMargin: 4
+                                    Layout.maximumWidth: parent.width
+                                    implicitWidth: commandText.implicitWidth + 12
+                                    implicitHeight: commandText.implicitHeight + 12
+
+                                    radius: 6
+                                    color: Style.colors.controlBackground
+                                    border.width: 1
+                                    border.color: Style.colors.controlBorder
+
+                                    Text {
+                                        id: commandText
+
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        anchors.margins: 6
+
+                                        text: methodCard.modelData.command
+                                        color: Style.colors.slateMuted
+                                        font.family: Style.fontTypes.jetBrainsMono
+                                        font.pixelSize: Style.appFont.smallPt
+                                        elide: Text.ElideMiddle
+                                    }
+                                }
+                            }
+                        }
                     }
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
+                }
+
+                // ── Post-merge options ───────────────────────────────────────────────
+                ColumnLayout {
+                    Layout.fillWidth: true
+
+                    spacing: 10
+
+                    Repeater {
+                        model: [
+                            { key: "delete", label: "Delete branch after merge" },
+                            { key: "push",   label: "Push to remote after merge" }
+                        ]
+
+                        delegate: CheckBox {
+                            id: optionRow
+
+                            required property var modelData
+
+                            readonly property bool isChecked: modelData.key === "delete"
+                                                              ? root.deleteBranchAfterMerge
+                                                              : root.pushToRemoteAfterMerge
+
+                            Layout.fillWidth: true
+
+                            text: modelData.label
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.smallPt
+
+                            checkable: false
+                            checked: isChecked
+                            hoverEnabled: true
+
+                            onClicked: {
+                                if (optionRow.modelData.key === "delete")
+                                    root.deleteBranchAfterMerge = !root.deleteBranchAfterMerge
+                                else
+                                    root.pushToRemoteAfterMerge = !root.pushToRemoteAfterMerge
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            // ── Footer ───────────────────────────────────────────────────────────────
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: footerRow.implicitHeight + 20
+                color: Style.colors.secondaryBackground
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    height: 1
+                    color: Style.colors.secondaryBorder
+                }
+
+                RowLayout {
+                    id: footerRow
+
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: 20
+                    anchors.rightMargin: 20
+
+                    spacing: 8
+
+                    Item { Layout.fillWidth: true }
+
+                    ConflictPillButton {
+                        Layout.preferredHeight: Style.dp(25)
+                        text: "Cancel"
+                        accentColor: Style.colors.mutedText
+                        onClicked: root.close()
+                    }
+
+                    ConflictPillButton {
+                        Layout.preferredHeight: Style.dp(25)
+                        text: "Merge " + root.sourceBranch
+                        trailingText: Style.icons.arrowRight
+                        accentColor: Style.colors.accent
+                        prominent: true
                         onClicked: {
-                            root.accepted(noFFRadio.checked)
+                            root.accepted(root.selectedMethod === 1,
+                                          root.deleteBranchAfterMerge,
+                                          root.pushToRemoteAfterMerge)
                             root.close()
                         }
                     }
@@ -149,5 +399,11 @@ IPopup {
         }
     }
 
-    onAboutToHide: ffRadio.checked = true
+    /* Functions
+     * ****************************************************************************************/
+    onAboutToHide: {
+        selectedMethod = 0
+        deleteBranchAfterMerge = false
+        pushToRemoteAfterMerge = false
+    }
 }
