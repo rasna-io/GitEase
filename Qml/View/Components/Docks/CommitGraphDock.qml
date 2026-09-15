@@ -242,9 +242,13 @@ DetachablePanel {
             }
 
             RowLayout {
+                id: commitViewsLayout
+
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 0
+
+                readonly property bool canScroll: commitsListView.contentHeight > commitsListView.height + 0.5
 
                 Item {
                     Layout.preferredWidth: root.commitsColGraphWidth + root.commitsColBranchTagWidth
@@ -259,7 +263,7 @@ DetachablePanel {
 
                         clip: true
 
-                        interactive: true
+                        interactive: commitViewsLayout.canScroll
                         flickableDirection: Flickable.VerticalFlick
 
                         property bool syncScroll: false
@@ -272,12 +276,22 @@ DetachablePanel {
                             }
                         }
 
+                        onInteractiveChanged: {
+                            if (!interactive) {
+                                cancelFlick()
+                                contentY = originY
+                            }
+                        }
+
                         CommitGraphCanvas {
                             id: graphCanvas
                             width: root.commitsColGraphWidth + root.commitsColBranchTagWidth
-                            height: Math.max(commitsListView.contentHeight, graphFlickable.height)
+                            height: graphFlickable.height
+                            y: Math.floor(graphFlickable.contentY)
                             commits: root.commits
                             commitPositions: root.commitPositions
+                            viewportY: Math.floor(graphFlickable.contentY)
+                            graphContentHeight: Math.max(commitsListView.contentHeight, graphFlickable.height)
                             columnSpacing: root.columnSpacing
                             commitItemHeight: root.commitItemHeight
                             commitItemSpacing: root.commitItemSpacing
@@ -318,12 +332,20 @@ DetachablePanel {
 
                     model   : root.commits
                     clip    : true
+                    interactive: commitViewsLayout.canScroll
 
                     cacheBuffer: 400
 
                     property bool syncScroll: false
 
                     onMovementStarted: commitFocusAnimation.stop()
+
+                    onInteractiveChanged: {
+                        if (!interactive) {
+                            cancelFlick()
+                            contentY = originY
+                        }
+                    }
 
                     // Sync scroll position with graph
                     onContentYChanged: {
@@ -834,6 +856,12 @@ DetachablePanel {
         if (commitsListView) commitsListView.contentY = currentContentY
 
         isLoadingMore = false
+
+        if (root.hasAnyFilter
+                && (root.commits ? root.commits.length : 0) < root.pageSize
+                && root.hasMoreCommits) {
+            Qt.callLater(root.ensureMinimumResults)
+        }
     }
 
     function compilePage(page) {
