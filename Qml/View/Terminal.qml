@@ -117,10 +117,7 @@ DetachablePanel {
                 background: Rectangle { color: "transparent" }
             }
 
-            onContentHeightChanged: {
-                if (contentHeight > height)
-                    contentY = contentHeight - height
-            }
+            onContentHeightChanged: contentY = Math.max(0, contentHeight - height)
 
             Column {
                 id: contentColumn
