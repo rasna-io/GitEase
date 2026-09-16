@@ -135,7 +135,7 @@ DetachablePanel {
 
                 // Output rows
                 Repeater {
-                    model: outputModel
+                    model: root.activeSession ? root.activeSession.output : null
                     delegate: Row {
                         width: contentColumn.width
                         spacing: 0
