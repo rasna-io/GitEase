@@ -38,6 +38,28 @@ DetachablePanel {
     title: qsTr("Terminal")
     icon: Style.icons.terminal
 
+    onTerminalControllerChanged: root.showSession(root.terminalController?.workingDirectory ?? "")
+    Component.onCompleted:       root.showSession(root.terminalController?.workingDirectory ?? "")
+
+    /* Functions
+     * ****************************************************************************************/
+    function showSession(key) {
+        let session = root.sessions[key]
+        if (!session) {
+            session = sessionComponent.createObject(root)
+            root.sessions[key] = session
+        }
+
+        if (session === root.activeSession)
+            return
+
+        if (root.activeSession)
+            root.activeSession.draft = cmdTextInput.text
+
+        root.activeSession = session
+        cmdTextInput.text = session.draft
+    }
+
     /* Children
      * ****************************************************************************************/
     Component {
@@ -51,8 +73,9 @@ DetachablePanel {
             outputModel.append({ segments: JSON.parse(segmentsJson)})
         }
 
-        function onCommandStarted() { root.commandRunning = true }
-        function onCommandFinished() { root.commandRunning = false }
+        function onWorkingDirectoryChanged() {
+            root.showSession(root.terminalController.workingDirectory)
+        }
     }
 
     Connections {
