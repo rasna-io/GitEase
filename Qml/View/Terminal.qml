@@ -70,7 +70,9 @@ DetachablePanel {
     Connections {
         target: root.terminalController
         function onLineReceived(segmentsJson) {
-            outputModel.append({ segments: JSON.parse(segmentsJson)})
+            const session = root.commandSession ?? root.activeSession
+            session.output.append({ segments: JSON.parse(segmentsJson)})
+        }
         }
 
         function onWorkingDirectoryChanged() {
@@ -85,9 +87,6 @@ DetachablePanel {
                 cmdTextInput.forceActiveFocus()
         }
     }
-
-    ListModel { id: historyModel }
-    ListModel { id: outputModel }
 
     Rectangle {
         anchors.fill: parent
@@ -256,13 +255,15 @@ DetachablePanel {
                         Keys.onReturnPressed: {
                             if (text.trim() === "") return
 
+                            const session = root.activeSession
+
                             if (text.trim() === "clear") {
-                                outputModel.clear()
+                                session.output.clear()
                                 cmdTextInput.text = ""
                                 return
                             }
 
-                            outputModel.append({
+                            session.output.append({
                                 segments: [],
                                 text: cmdTextInput.text
                             })
