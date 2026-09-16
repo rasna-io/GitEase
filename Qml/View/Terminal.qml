@@ -12,9 +12,20 @@ import GitEase_Style
 DetachablePanel {
     id: root
 
+    /* Inline Components
+     * ****************************************************************************************/
+    component TerminalSession: QtObject {
+        property ListModel output:        ListModel {}
+        property ListModel history:       ListModel {}
+        property int       historyCursor: -1
+        property string    draft:         ""
+    }
+
     /* Property Declarations
      * ****************************************************************************************/
-    property int                historyCursor: -1
+    property var                sessions: ({})
+    property TerminalSession    activeSession: null
+    property TerminalSession    commandSession: null
     property int                fontSize: 13
     property TerminalController terminalController: null
     property string             currentPath: terminalController.workingDirectory + "$ "
@@ -29,6 +40,11 @@ DetachablePanel {
 
     /* Children
      * ****************************************************************************************/
+    Component {
+        id: sessionComponent
+        TerminalSession {}
+    }
+
     Connections {
         target: root.terminalController
         function onLineReceived(segmentsJson) {
