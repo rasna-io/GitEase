@@ -270,9 +270,9 @@ DetachablePanel {
 
                             root.terminalController.sendCommand(text)
 
-                            historyModel.append({ text: cmdTextInput.text })
+                            session.history.append({ text: cmdTextInput.text })
                             cmdTextInput.text = ""
-                            historyCursor = -1
+                            session.historyCursor = -1
                         }
 
                         Keys.onTabPressed: {
@@ -281,20 +281,22 @@ DetachablePanel {
                         }
 
                         Keys.onUpPressed: {
-                            if (historyModel.count === 0) return
-                            if (historyCursor < historyModel.count - 1)
-                                historyCursor++
-                            cmdTextInput.text = historyModel.get(historyModel.count - 1 - historyCursor).text
+                            const session = root.activeSession
+                            if (session.history.count === 0) return
+                            if (session.historyCursor < session.history.count - 1)
+                                session.historyCursor++
+                            cmdTextInput.text = session.history.get(session.history.count - 1 - session.historyCursor).text
                         }
 
                         Keys.onDownPressed: {
-                            if (historyCursor <= 0) {
-                                historyCursor = -1
+                            const session = root.activeSession
+                            if (session.historyCursor <= 0) {
+                                session.historyCursor = -1
                                 cmdTextInput.text = ""
                                 return
                             }
-                            historyCursor--
-                            cmdTextInput.text = historyModel.get(historyModel.count - 1 - historyCursor).text
+                            session.historyCursor--
+                            cmdTextInput.text = session.history.get(session.history.count - 1 - session.historyCursor).text
                         }
                     }
                 }
