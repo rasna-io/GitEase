@@ -73,6 +73,15 @@ DetachablePanel {
             const session = root.commandSession ?? root.activeSession
             session.output.append({ segments: JSON.parse(segmentsJson)})
         }
+
+        function onCommandStarted() {
+            root.commandSession = root.activeSession
+            root.commandRunning = true
+        }
+
+        function onCommandFinished() {
+            root.commandSession = null
+            root.commandRunning = false
         }
 
         function onWorkingDirectoryChanged() {
