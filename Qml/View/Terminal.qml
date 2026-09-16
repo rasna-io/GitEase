@@ -8,6 +8,7 @@ import GitEase_Style
 /*! ***********************************************************************************************
  * Terminal
  * Embedded shell panel, built on DetachablePanel for its shared header/minimize/detach behavior.
+ * Each repository working directory keeps its own session, restored when switching back to it.
  * ************************************************************************************************/
 DetachablePanel {
     id: root
