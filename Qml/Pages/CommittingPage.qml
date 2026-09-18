@@ -221,7 +221,7 @@ Page {
                             parent: commitPanel
                             menuModel: [
                                 {
-                                    text: "Push Force",
+                                    text: "Force Push",
                                     icon: Style.icons.arrowUp,
                                     action: function() {
                                         root.pushAndUpdate(true)
