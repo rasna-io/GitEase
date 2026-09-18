@@ -113,7 +113,7 @@ Page {
 
         commitController        : root.commitController
         notificationController  : root.notificationController
-        changeCommitMessage     : !committingButton.commitEnabled
+        changeCommitMessage     : changesFileLists.stagedModel.length == 0
 
         onAmendSuccessful: {
             changesFileLists.updateStatus()
