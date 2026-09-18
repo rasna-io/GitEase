@@ -64,7 +64,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return root },
                         icon: Style.icons.archive,
-                        title: "Stash Manager Dock",
+                        title: "Stashes Dock",
                         description: "Shelve and manage your stashed changes. Click the header to expand this dock if it's collapsed.",
                         isInPopup: false,
                         activationDelay: 300,
@@ -79,7 +79,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return actionBtn },
                         icon: Style.icons.plus,
-                        title: "Create a Stash",
+                        title: "Create Stash",
                         description: "Shelve your current uncommitted changes so you can switch branches or pull cleanly, then bring them back later.",
                         commands: [{ command: "git stash" }]
                     },
