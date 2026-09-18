@@ -112,7 +112,7 @@ IPopup {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "Amend"
+                        text: root.changeCommitMessage ? "Save" : "Amend Commit"
                         color: Style.colors.secondaryForeground
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.mediumPt
