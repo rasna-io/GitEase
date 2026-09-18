@@ -161,7 +161,7 @@ UtilitiesCard {
             enabled: root.stashes.length > 0
 
             iconText: Style.icons.trash
-            text: "Drop all stashes"
+            text: "Drop All Stashes"
 
             textColor: dropAllBtn.hovered && dropAllBtn.enabled ? Style.colors.dashedButtonTextDanger
                                                                 : Style.colors.dashedButtonText
