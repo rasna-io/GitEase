@@ -1409,7 +1409,7 @@ DetachablePanel {
         if (gitResult && gitResult.success) {
             let data = gitResult.data
             let isForce = data && data.force === true
-            root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
+            root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Force Push" : "Push", 3000)
         } else {
             root.notificationController.error((gitResult && gitResult.errorMessage) || "Push error", "Push Error", 5000)
         }
