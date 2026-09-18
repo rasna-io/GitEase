@@ -258,6 +258,7 @@ AccentCard {
                         {
                             text: "Delete Profile",
                             icon: Style.icons.trash,
+                            color: Style.colors.contextMenuDanger,
                             action: function() { root.deleteUser(root.username, root.email) }
                         }
                     ]
