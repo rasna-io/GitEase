@@ -161,7 +161,7 @@ UtilitiesCard {
             Layout.topMargin: Style.dp(2)
             visible: content.currentIndex === 0
 
-            text: "Add Branch"
+            text: "Create Branch"
 
             onClicked: {
                 openAddBranchPopup()
