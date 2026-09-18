@@ -56,7 +56,7 @@ UtilitiesCard {
         GuideHoverTrigger {
             guideController: root.guideController
             guideId: "stash_manager_tutorial"
-            guideName: "Stash Manager"
+            guideName: "Stashes"
             guideIcon: Style.icons.archive
             guidePage: "utilities"
             stepsFactory: function() {
