@@ -55,7 +55,7 @@ IPopup {
         Label {
             width: parent.width
             color: Style.colors.descriptionText
-            text: "Amend Commit Message"
+            text: root.changeCommitMessage ? "Change Commit Message" : "Amend Commit"
             font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.largePt
             horizontalAlignment: Text.AlignHCenter
