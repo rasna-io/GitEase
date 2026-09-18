@@ -219,7 +219,7 @@ ListView {
             if (branch.name !== root.currentBranch) {
                 menu.push({
                     text: "Checkout",
-                    icon: Style.icons.branchPlus,
+                    icon: Style.icons.gitBranch,
                     action: function() { root.doCheckout(branch) }
                 })
 
