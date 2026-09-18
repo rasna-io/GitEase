@@ -292,13 +292,13 @@ UtilitiesCard {
             }
         }
 
-        // Add Tag Button
+        // Create Tag Button
         DashedButton {
             id: addTagBtn
             Layout.fillWidth: true
             Layout.topMargin: Style.dp(2)
 
-            text: "Add Tag"
+            text: "Create Tag"
 
             onClicked: {
                 if (root.addTagPopup) {
