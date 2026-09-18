@@ -91,7 +91,7 @@ Item {
         let urlRes = remoteController.getRemoteUrl("origin")
         if (!urlRes.success) {
             if (notificationController)
-                notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${force ? "Force" : ""} Push Error`, 5000)
+                notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${force ? "Force Push" : "Push"} Error`, 5000)
             return
         }
         let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
