@@ -1385,7 +1385,7 @@ DetachablePanel {
             root.openPopup(userAuthenticationPopup)
             break
         default:
-            root.notificationController.error("Unsupported protocol", `${isForcePush ? "Force" : ""} Push Error`, 5000)
+            root.notificationController.error("Unsupported protocol", `${isForcePush ? "Force Push" : "Push"} Error`, 5000)
         }
     }
 
