@@ -101,7 +101,7 @@ function buildMenu(state, pluginItems) {
     // Rebase
     if (state.canRebase) {
         model.push({
-            text: "Rebase onto " + state.shortHash,
+            text: "Rebase onto " + state.shortHash + "...",
             icon: "clockRotateLeft",
             action: "rebase",
             shortcut: "Ctrl+R",
