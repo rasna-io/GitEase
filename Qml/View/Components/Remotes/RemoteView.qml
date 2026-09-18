@@ -107,7 +107,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return addRemoteBtn },
                         icon: Style.icons.plus,
-                        title: "Add a Remote",
+                        title: "Add Remote",
                         description: "Connect this repository to another remote — a fork, a backup, or a second host — by giving it a name and URL.",
                         commands: [{ command: "git remote add <name> <url>" }]
                     }
