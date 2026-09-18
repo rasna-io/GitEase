@@ -205,7 +205,8 @@ Rectangle {
                 }
 
                 RemoteView {
-                    visible: dockFlow.matchesFilter("Remotes")
+                    id: remoteView
+                    visible: dockFlow.matchesFilter(remoteView.title)
                     remoteController: root.remoteController
                     repositoryController: root.repositoryController
                     userAuthenticationPopup: root.userAuthenticationPopup
@@ -219,7 +220,7 @@ Rectangle {
 
                 BranchManagementView {
                     id: branchManagementView
-                    visible: dockFlow.matchesFilter("Branch Management")
+                    visible: dockFlow.matchesFilter(branchManagementView.title)
                     branchController: root.branchController
                     addBranchPopup: root.uiSessionPopups ? root.uiSessionPopups.addBranchPopup : null
                     notificationController: root.notificationController
@@ -230,7 +231,7 @@ Rectangle {
 
                 StashManagerDock {
                     id: stashManagerDock
-                    visible: dockFlow.matchesFilter("Stash Manager")
+                    visible: dockFlow.matchesFilter(stashManagerDock.title)
                     stashController: root.stashController
                     commitController: root.commitController
                     statusController: root.statusController
@@ -245,7 +246,7 @@ Rectangle {
 
                 TagManagementView {
                     id: tagManagementView
-                    visible: dockFlow.matchesFilter("Tag Management")
+                    visible: dockFlow.matchesFilter(tagManagementView.title)
                     tagController: root.tagController
                     addTagPopup: root.uiSessionPopups ? root.uiSessionPopups.addTagPopup : null
                     guideController: root.guideController
