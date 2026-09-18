@@ -40,7 +40,7 @@ UtilitiesCard {
 
     /* Object Properties
      * ****************************************************************************************/
-    title: "Stash Manager"
+    title: "Stashes"
     icon: Style.icons.archive
     badgeCount: root.stashes.length
 
