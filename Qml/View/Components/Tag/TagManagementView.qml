@@ -156,7 +156,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return root },
                         icon: Style.icons.tag,
-                        title: "Tag Management Dock",
+                        title: "Tags Dock",
                         description: "Create and manage git tags. Click the header to expand this dock if it's collapsed.",
                         isInPopup: false,
                         activationDelay: 300,
@@ -171,7 +171,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return addTagBtn },
                         icon: Style.icons.plus,
-                        title: "Create a Tag",
+                        title: "Create Tag",
                         description: "Mark the current commit with a version label like v1.0.0 — handy for marking releases.",
                         commands: [{ command: "git tag <name>" }]
                     }
