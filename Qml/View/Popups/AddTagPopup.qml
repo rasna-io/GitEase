@@ -182,7 +182,7 @@ IPopup {
                     Layout.bottomMargin: root.sectionSpacing
 
                     Text {
-                        text: "Type"
+                        text: "TYPE"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.captionPt
@@ -258,7 +258,7 @@ IPopup {
                     Layout.bottomMargin: root.sectionSpacing
 
                     Text {
-                        text: "Message"
+                        text: "MESSAGE"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.captionPt
@@ -294,7 +294,7 @@ IPopup {
                     //       a future dialog could let the user browse commits and set it.
 
                     Text {
-                        text: "Tag Commit"
+                        text: "TARGET COMMIT"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.captionPt
