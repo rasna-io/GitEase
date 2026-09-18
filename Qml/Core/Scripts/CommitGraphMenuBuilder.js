@@ -134,7 +134,7 @@ function buildMenu(state, pluginItems) {
 
     // Reset
     model.push({
-        text: "Reset " + state.currentBranch + " into this commit",
+        text: "Reset '" + state.currentBranch + "' to This Commit",
         icon: "reset",
         action: "reset",
         subItems: [
