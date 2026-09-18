@@ -282,7 +282,7 @@ ListView {
 
             // Reset
             menu.push({
-                text: "Reset current to here...",
+                text: "Reset Current Branch to Here...",
                 icon: Style.icons.reset,
                 visible: false,
                 action: function() {
