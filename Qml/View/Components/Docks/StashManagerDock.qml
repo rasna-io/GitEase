@@ -297,10 +297,11 @@ UtilitiesCard {
 
     function buildStashMenu(stashEntry) {
         return [
-            { text: "View diff", icon: Style.icons.file,  action: function() { root.openPreview(stashEntry) } },
-            { text: "Pop",       icon: Style.icons.undo,  action: function() { root.popStash(stashEntry) } },
-            { text: "Apply",     icon: Style.icons.check, action: function() { root.applyStash(stashEntry) } },
-            { text: "Drop",      icon: Style.icons.trash, action: function() { root.dropStash(stashEntry) } }
+            { text: "View Diff...", icon: Style.icons.file,  action: function() { root.openPreview(stashEntry) } },
+            { text: "Pop",          icon: Style.icons.undo,  action: function() { root.popStash(stashEntry) } },
+            { text: "Apply",        icon: Style.icons.check, action: function() { root.applyStash(stashEntry) } },
+            { separator: true },
+            { text: "Drop Stash",   icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { root.dropStash(stashEntry) } }
         ]
     }
 
