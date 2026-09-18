@@ -59,9 +59,9 @@ function buildMenu(state, pluginItems) {
         payload: { branch: state.currentBranch }
     });
 
-    // New Branch / Tag
+    // Create Branch / Tag
     model.push({
-        text: "New Branch from here",
+        text: "Create Branch Here...",
         icon: "branchPlus",
         action: "newBranch",
         payload: { hash: state.fullHash }
