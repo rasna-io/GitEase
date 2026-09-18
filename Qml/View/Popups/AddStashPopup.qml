@@ -226,7 +226,7 @@ IWindow {
 
                 ConflictPillButton {
                     Layout.preferredHeight: Style.dp(30)
-                    text: "Create stash"
+                    text: "Create Stash"
                     trailingText: Style.icons.arrowRight
                     accentColor: Style.colors.accent
                     prominent: root.canAccept
