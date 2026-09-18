@@ -251,12 +251,12 @@ AccentCard {
                     implicitWidth: 150
                     menuModel: [
                         {
-                            text: "Edit",
+                            text: "Edit Profile",
                             icon: Style.icons.penToSquare,
                             action: function() { root.editUser(root.username, root.email) }
                         },
                         {
-                            text: "Delete",
+                            text: "Delete Profile",
                             icon: Style.icons.trash,
                             action: function() { root.deleteUser(root.username, root.email) }
                         }
