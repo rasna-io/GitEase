@@ -80,7 +80,7 @@ function buildMenu(state, pluginItems) {
 
     // Browse files
     model.push({
-        text: "Browse files at this commit",
+        text: "Browse Files at This Commit...",
         icon: "folder",
         action: "browseFiles",
         payload: { hash: state.fullHash, message: state.commitMessage, date: state.commitDate }
