@@ -350,7 +350,7 @@ ListView {
             menu.push({ separator: true })
 
             menu.push({
-                text: "Copy URL",
+                text: "Copy Remote URL",
                 icon: Style.icons.copy,
                 action: function() {
                     // TODO
