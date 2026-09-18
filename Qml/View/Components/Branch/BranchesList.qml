@@ -250,7 +250,7 @@ ListView {
 
             // Merge
             menu.push({
-                text: "Merge into current",
+                text: "Merge into Current Branch",
                 icon: Style.icons.arowLeftRight,
                 visible: false,
                 action: function() {
