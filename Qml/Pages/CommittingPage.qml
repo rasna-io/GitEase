@@ -192,7 +192,7 @@ Page {
                                     targetProvider: function() { return caretBtn },
                                     icon: Style.icons.caretDown,
                                     title: "Commit Extras  ·  ▾ dropdown",
-                                    description: "Commit & Push runs git commit then git push in one step. Commit Amend runs git commit --amend — rewrites the most recent local commit (message or content) instead of creating a new one."
+                                    description: "Commit & Push runs git commit then git push in one step. Amend Commit runs git commit --amend — rewrites the most recent local commit (message or content) instead of creating a new one."
                                 },
                                 {
                                     targetProvider: function() { return moreOptionsBtn },
