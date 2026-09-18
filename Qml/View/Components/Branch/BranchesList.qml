@@ -299,7 +299,7 @@ ListView {
                 })
 
             menu.push({
-                text: "Copy Full SHA",
+                text: "Copy Commit Hash",
                 icon: Style.icons.copy,
                 action: function() { root.copyBranchHash(branch) }
                 })
