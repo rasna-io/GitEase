@@ -129,7 +129,7 @@ IPopup {
 
                 Button {
                     id: actionBtn
-                    text: root.isEdit ? "Update" : "Add"
+                    text: root.isEdit ? "Save" : "Add Remote"
                     Layout.fillWidth: true
                     enabled: root.canAccept
 
