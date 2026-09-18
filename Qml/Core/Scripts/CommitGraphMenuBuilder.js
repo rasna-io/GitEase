@@ -68,7 +68,7 @@ function buildMenu(state, pluginItems) {
     });
 
     model.push({
-        text: "Create Tag here",
+        text: "Create Tag Here...",
         icon: "tag",
         action: "newTag",
         payload: { hash: state.fullHash }
