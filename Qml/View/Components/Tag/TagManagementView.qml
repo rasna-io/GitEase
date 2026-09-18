@@ -148,7 +148,7 @@ UtilitiesCard {
         GuideHoverTrigger {
             guideController: root.guideController
             guideId: "tag_management_tutorial"
-            guideName: "Tag Management"
+            guideName: "Tags"
             guideIcon: Style.icons.tag
             guidePage: "utilities"
             stepsFactory: function() {
