@@ -185,7 +185,7 @@ IPopup {
                         text: "TYPE"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.captionPt
+                        font.pixelSize: Style.appFont.defaultPt
                     }
 
                     ColumnLayout {
@@ -261,7 +261,7 @@ IPopup {
                         text: "MESSAGE"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.captionPt
+                        font.pixelSize: Style.appFont.defaultPt
                     }
 
                     TextField {
@@ -297,7 +297,7 @@ IPopup {
                         text: "TARGET COMMIT"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.captionPt
+                        font.pixelSize: Style.appFont.defaultPt
                     }
 
                     Rectangle {
