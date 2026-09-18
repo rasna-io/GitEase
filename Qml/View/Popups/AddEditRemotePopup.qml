@@ -70,7 +70,7 @@ IPopup {
                 // Name Input
                 TextField {
                     id: nameInput
-                    placeholderText: "Remote Name (e.g. origin)"
+                    placeholderText: "Remote name (e.g. origin)"
                     Layout.fillWidth: true
                     selectByMouse: true
 
