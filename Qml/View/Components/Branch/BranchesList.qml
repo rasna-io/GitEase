@@ -270,7 +270,7 @@ ListView {
 
             // Cherry-pick
             menu.push({
-                text: "Cherry-pick range...",
+                text: "Cherry-Pick Range...",
                 icon: Style.icons.copy,
                 visible: false,
                 action: function() {
