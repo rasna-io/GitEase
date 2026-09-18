@@ -44,7 +44,7 @@ UtilitiesCard {
         GuideHoverTrigger {
             guideController: root.guideController
             guideId: "branch_management_tutorial"
-            guideName: "Branch Management"
+            guideName: "Branches"
             guideIcon: Style.icons.branch
             guidePage: "utilities"
             stepsFactory: function() {
