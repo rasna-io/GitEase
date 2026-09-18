@@ -134,8 +134,8 @@ UtilitiesCard {
                     //       comparing. Part of the same task as the inline push/delete button logic.
             { separator: true },
 
-            { text: "Copy Name", icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
-            { text: "Copy Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } }
+            { text: "Copy Tag Name",    icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
+            { text: "Copy Commit Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } }
         ]
     }
 
