@@ -90,7 +90,7 @@ function buildMenu(state, pluginItems) {
     if (state.hasMergeableBranches) {
         state.mergeableBranches.forEach(function(bName) {
             model.push({
-                text: "Merge '" + bName + "' into '" + state.currentBranch + "'",
+                text: "Merge '" + bName + "' into '" + state.currentBranch + "'...",
                 icon: "arowLeftRight",
                 action: "mergeBranch",
                 payload: { source: bName, target: state.currentBranch }
