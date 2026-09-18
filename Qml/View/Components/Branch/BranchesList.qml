@@ -260,7 +260,7 @@ ListView {
 
             // Rebase
             menu.push({
-                text: "Rebase onto current",
+                text: "Rebase onto Current Branch",
                 icon: Style.icons.clockRotateLeft,
                 visible: false,
                 action: function() {
