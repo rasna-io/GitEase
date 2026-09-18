@@ -278,7 +278,7 @@ IPopup {
                     useAccentIndicator: true
                     model: [
                         {pageId: 0, title: "General", icon: Style.icons.slider},
-                        {pageId: 1, title: "Appearence", icon: Style.icons.palette},
+                        {pageId: 1, title: "Appearance", icon: Style.icons.palette},
                         {pageId: 2, title: "SSH", icon: Style.icons.terminal, groupStart: true},
                         {pageId: 3, title: "Notifications", icon: Style.icons.bell, groupStart: true},
                         {pageId: 4, title: "Updates", icon: Style.icons.refresh, groupStart: true},
