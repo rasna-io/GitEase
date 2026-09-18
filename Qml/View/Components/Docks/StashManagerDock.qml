@@ -74,7 +74,7 @@ UtilitiesCard {
                         targetProvider: function() { return stashListView },
                         icon: Style.icons.archive,
                         title: "Your Stashes",
-                        description: "Shelved changes appear here, one card per stash with the branch, base commit and file count. Apply keeps the stash in the list, Pop applies it and removes it, Drop deletes it permanently, and View diff previews its files."
+                        description: "Shelved changes appear here, one card per stash with the branch, base commit and file count. Apply keeps the stash in the list, Pop applies it and removes it, Drop deletes it permanently, and View Diff previews its files."
                     },
                     {
                         targetProvider: function() { return actionBtn },
