@@ -226,7 +226,7 @@ Rectangle {
             }
 
             StashActionButton {
-                text: qsTr("View diff")
+                text: qsTr("View Diff")
                 trailingIcon: Style.icons.arrowRight
 
                 textColor: Style.colors.stashDiffLink
