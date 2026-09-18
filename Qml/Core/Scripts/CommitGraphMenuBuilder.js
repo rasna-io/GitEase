@@ -138,9 +138,9 @@ function buildMenu(state, pluginItems) {
         icon: "reset",
         action: "reset",
         subItems: [
-           {text: "--Soft (Keep all changes)",  icon: "resetSoft",  action: "resetSoft",  payload: { hash: state.fullHash }},
-           {text: "--Mixed (Reset index to commit)", icon: "resetMixed", action: "resetMixed", payload: { hash: state.fullHash }},
-           {text: "--Hard (Discard all changes)", icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
+           {text: "Soft (keep changes staged)",   icon: "resetSoft",  action: "resetSoft",  payload: { hash: state.fullHash }},
+           {text: "Mixed (keep changes unstaged)", icon: "resetMixed", action: "resetMixed", payload: { hash: state.fullHash }},
+           {text: "Hard (discard all changes)",   icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
         ]
     });
 
