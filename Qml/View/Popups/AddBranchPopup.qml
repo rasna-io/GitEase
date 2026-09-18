@@ -186,7 +186,7 @@ IPopup {
                         text: "BASED ON"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.captionPt
+                        font.pixelSize: Style.appFont.defaultPt
                     }
 
                     Rectangle {
