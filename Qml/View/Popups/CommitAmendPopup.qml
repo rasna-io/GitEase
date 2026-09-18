@@ -63,7 +63,8 @@ IPopup {
 
         Label {
             color: Style.colors.descriptionText
-            text: "Edit the message for your amended commit (Optional):"
+            text: root.changeCommitMessage ? "Edit the message of your last commit:"
+                                           : "Edit the message for your amended commit:"
             font.pixelSize: Style.appFont.mediumPt
         }
 
