@@ -239,7 +239,7 @@ ListView {
             // Delete
             if (branch.name !== root.currentBranch) {
                 menu.push({
-                    text: "Delete",
+                    text: "Delete Branch",
                     icon: Style.icons.trash,
                     color: Style.colors.contextMenuDanger,
                     action: function() { root.doDeleteBranch(branch) }
