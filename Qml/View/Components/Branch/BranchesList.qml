@@ -339,7 +339,7 @@ ListView {
             })
 
             menu.push({
-                text: "Delete Remote",
+                text: "Remove Remote",
                 icon: Style.icons.trash,
                 color: Style.colors.contextMenuDanger,
                 action: function() {
