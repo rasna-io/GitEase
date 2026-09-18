@@ -331,7 +331,7 @@ IPopup {
                         }
                     }
 
-                    // Push to remote immediately
+                    // Push to origin after creating
                     RowLayout {
                         id: pushCheckbox
                         property bool checked: false
@@ -360,7 +360,7 @@ IPopup {
                         }
 
                         Text {
-                            text: "Push to remote immediately"
+                            text: "Push to origin after creating"
                             color: Style.colors.popupCheckboxLabelText
                             font.family: Style.fontTypes.inter
                             font.pixelSize: Style.appFont.defaultPt
