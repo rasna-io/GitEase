@@ -149,7 +149,7 @@ UtilitiesCard {
 
             enabled: root.canStash
 
-            text: "Add Stash"
+            text: "Create Stash"
 
             onClicked: root.openAddEditPopup()
         }
