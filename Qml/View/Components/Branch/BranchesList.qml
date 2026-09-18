@@ -207,7 +207,7 @@ ListView {
         clipboardHelper.selectAll()
         clipboardHelper.copy()
         if (root.notificationController)
-            root.notificationController.success("Commit SHA copied to clipboard", "Branch", 2000)
+            root.notificationController.success("Commit hash copied to clipboard", "Branch", 2000)
     }
 
     function buildBranchMenu(branch) {
