@@ -114,7 +114,7 @@ Item {
             break
         default:
             if (notificationController)
-                notificationController.error("Unsupported protocol", `${force ? "Force" : ""} Push Error`, 5000)
+                notificationController.error("Unsupported protocol", `${force ? "Force Push" : "Push"} Error`, 5000)
         }
     }
 
