@@ -225,13 +225,13 @@ UtilitiesCard {
                             }
                             ActionIconButton {
                                 iconText: Style.icons.edit
-                                tooltip: "Edit"
+                                tooltip: "Edit Remote"
                                 textColor: Style.colors.utilitiesActionIcon
                                 onClicked: content.editRemote(currentRemote)
                             }
                             ActionIconButton {
                                 iconText: Style.icons.trash
-                                tooltip: "Remove"
+                                tooltip: "Remove Remote"
                                 textColor: Style.colors.utilitiesActionIconDanger
                                 onClicked: content.removeRemoteItem(currentRemote)
                             }
