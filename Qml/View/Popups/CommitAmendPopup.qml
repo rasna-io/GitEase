@@ -122,12 +122,12 @@ IPopup {
                         let res = commitController.commit(textArea.text.trim(), true, false)
 
                         if(res.success){
-                            notificationController.success(root.changeCommitMessage ? "Commit Message Changes successfully" : "Commit amended successfully", "Commit Amend", 3000)
+                            notificationController.success(root.changeCommitMessage ? "Commit message changed successfully" : "Commit amended successfully", "Amend Commit", 3000)
                             root.amendSuccessful()
                             root.close()
                         }
                         else
-                            notificationController.error(res.errorMessage || "Amend failed", "Commit Amend Error", 5000)
+                            notificationController.error(res.errorMessage || "Amend failed", "Amend Commit Error", 5000)
                     }
                 }
             }
