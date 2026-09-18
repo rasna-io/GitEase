@@ -276,7 +276,7 @@ Page {
 
                                 if (commitEnabled) {
                                     items.push({
-                                        text: "Commit && Push",
+                                        text: "Commit & Push",
                                         icon: Style.icons.arrowUp,
                                         action: function() {
                                             if (!root.commitAndUpdate()) return
