@@ -269,7 +269,7 @@ Page {
                                 let items = []
 
                                 items.push({
-                                    text: commitEnabled ? "Commit Amend" : "Change commit message",
+                                    text: commitEnabled ? "Amend Commit..." : "Change Commit Message...",
                                     icon: Style.icons.penToSquare,
                                     action: function() { amendPopup.open() }
                                 })
