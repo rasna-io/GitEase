@@ -377,7 +377,7 @@ IPopup {
                     }
 
                     Text {
-                        text: "Push to remote (origin)"
+                        text: "Push to origin after creating"
                         color: Style.colors.popupCheckboxLabelText
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
