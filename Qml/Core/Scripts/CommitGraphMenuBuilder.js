@@ -37,7 +37,7 @@ function buildMenu(state, pluginItems) {
 
     else {
         model.push({
-            text: "Checkout Commit " + state.shortHash,
+            text: "Checkout " + state.shortHash + " (Detached)",
             icon: "hash",
             enabled: !state.isHead,
             action: "checkoutCommit",
