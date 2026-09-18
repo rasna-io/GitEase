@@ -197,7 +197,7 @@ Page {
                                 {
                                     targetProvider: function() { return moreOptionsBtn },
                                     icon: Style.icons.arrowRight,
-                                    title: "Remote Operations  ·  ⋮ menu",
+                                    title: "Remote Operations  ·  ⋯ menu",
                                     description: "Push uploads your local commits. Force Push rewrites the remote branch with your local history, but safely aborts if someone else pushed first. Fetch downloads remote changes without merging. Pull fetches and merges in one step.",
                                     commands: [
                                         { label: "Push",       command: "git push" },
