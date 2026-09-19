@@ -47,48 +47,11 @@ IPopup {
         clip: true
         border.color: Style.colors.popupBorder
         border.width: 1
-        border.color: Style.colors.primaryBorder
-    }
 
-    contentItem: Column {
-        width: parent.width
-        spacing: 10
-
-        Label {
-            width: parent.width
-            color: Style.colors.descriptionText
-            text: root.changeCommitMessage ? "Change Commit Message" : "Amend Commit"
-            font.family: Style.fontTypes.inter
-            font.pixelSize: Style.appFont.largePt
-            horizontalAlignment: Text.AlignHCenter
-        }
-
-        Label {
-            color: Style.colors.descriptionText
-            text: root.changeCommitMessage ? "Edit the message of your last commit:"
-                                           : "Edit the message for your amended commit:"
-            font.pixelSize: Style.appFont.mediumPt
-        }
-
-        ScrollView {
-            width: parent.width
-            height: 150
-            anchors.margins: 5
-            TextArea {
-                id: textArea
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.inter
-                wrapMode: TextArea.Wrap
-                font.pixelSize: Style.appFont.mediumPt
-                Material.accent: Style.colors.accent
-            }
-        }
-
-        RowLayout  {
-            id: buttonsRow
-            width: parent.width
-            spacing: 10
-
+        ColumnLayout {
+            id: layout
+            anchors.fill: parent
+            spacing: 0
             Rectangle {
                 id: amendBtn
                 Layout.fillWidth: true
