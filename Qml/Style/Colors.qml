@@ -459,7 +459,7 @@ QtObject{
     property color popupBaseBranchBackground:        controlBackground
     property color popupBaseBranchBorder:            controlBorder
     property color popupBaseBranchText:              secondaryText
-    property color popupRadioBorder:                 mutedText
+    property color popupRadioBorder:                 secondaryText
     property color popupRadioBorderChecked:          accent
     property color popupRadioDot:                    "#FFFFFF"
     property color popupCheckboxBackgroundChecked:   accent
