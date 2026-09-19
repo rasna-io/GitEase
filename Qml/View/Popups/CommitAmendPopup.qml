@@ -116,8 +116,14 @@ IPopup {
                     placeholder: "Commit message (required)"
                 }
             }
+
+            // Footer separator
             Rectangle {
-                id: cancelBtn
+                Layout.fillWidth: true
+                implicitHeight: 1
+                color: Style.colors.popupHeaderSeparator
+            }
+
                 Layout.fillWidth: true
                 Layout.preferredHeight: 30
                 radius: 4
