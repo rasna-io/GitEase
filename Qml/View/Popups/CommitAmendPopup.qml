@@ -29,8 +29,7 @@ IPopup {
     height: contentItem.implicitHeight
     padding: 0
 
-    modal           : true
-    closePolicy     : Popup.NoAutoClose
+    closePolicy: Popup.CloseOnEscape
 
     onOpened:{
         textArea.text = commitController.getLastCommitMessage()
