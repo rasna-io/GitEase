@@ -199,7 +199,9 @@ IPopup {
                             ]
 
                             RowLayout {
+                                id: typeOption
                                 required property var modelData
+                                readonly property bool checked: root.isAnnotated === modelData.value
                                 Layout.fillWidth: true
                                 spacing: 8
 
