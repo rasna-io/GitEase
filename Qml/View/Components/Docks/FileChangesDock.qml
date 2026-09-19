@@ -269,7 +269,8 @@ DetachablePanel {
 
                         property var fileData: modelData
                         property bool isHovered: false
-                        property bool isSelected: root.selectedFile && root.selectedFile.filePath === fileData.path
+                        property bool isSelected: root.selectedFile !== null
+                                                  && root.selectedFile.path === fileData.path
 
                         color: {
                             if (isSelected) {
@@ -423,10 +424,9 @@ DetachablePanel {
 
         let res = statusController.getCommitFileChanges(root.commitHash)
 
-        if (res.success)
-            root.files = res.data
-
-        root.fileSelected(root.files.length > 0 ? root.files[0].path : "")
+        root.files = res.success ? res.data : []
+        root.selectedFile = root.files.length > 0 ? root.files[0] : null
+        root.fileSelected(root.selectedFile ? root.selectedFile.path : "")
     }
 
     /* Functions
