@@ -155,13 +155,17 @@ IPopup {
                         anchors.centerIn: parent
                         text: "Cancel"
                         color: Style.colors.secondaryForeground
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.mediumPt
-                    }
+    /* Functions
+     * ****************************************************************************************/
+    function amend() {
+        let res = commitController.commit(messageInput.text.trim(), true, false)
 
-                    onClicked: root.close();
-                }
-            }
+        if (res.success) {
+            notificationController.success(root.changeCommitMessage ? "Commit message changed successfully" : "Commit amended successfully", "Amend Commit", 3000)
+            root.amendSuccessful()
+            root.close()
+        } else {
+            notificationController.error(res.errorMessage || "Amend failed", "Amend Commit Error", 5000)
         }
     }
 }
