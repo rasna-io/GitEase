@@ -199,7 +199,9 @@ IPopup {
                             ]
 
                             RowLayout {
+                                id: typeOption
                                 required property var modelData
+                                readonly property bool checked: root.isAnnotated === modelData.value
                                 Layout.fillWidth: true
                                 spacing: 8
 
@@ -207,11 +209,10 @@ IPopup {
                                     width: 16
                                     height: 16
                                     radius: 8
-                                    color: "transparent"
+                                    color: typeOption.checked ? Style.colors.popupRadioBorderChecked : "transparent"
                                     border.width: 1
-                                    border.color: root.isAnnotated === modelData.value
-                                                  ? Style.colors.popupRadioBorderChecked
-                                                  : Style.colors.popupRadioBorder
+                                    border.color: typeOption.checked ? Style.colors.popupRadioBorderChecked
+                                                                     : Style.colors.popupRadioBorder
                                     Layout.alignment: Qt.AlignVCenter
 
                                     Rectangle {
@@ -220,7 +221,7 @@ IPopup {
                                         height: 8
                                         radius: 4
                                         color: Style.colors.popupRadioDot
-                                        visible: root.isAnnotated === modelData.value
+                                        visible: typeOption.checked
                                     }
                                 }
 

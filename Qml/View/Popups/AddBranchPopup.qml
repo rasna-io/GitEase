@@ -239,6 +239,8 @@ IPopup {
                             ]
 
                             RowLayout {
+                                id: baseTypeOption
+                                readonly property bool checked: root.baseBranchType === modelData.value
                                 spacing: 6
                                 Layout.fillWidth: true
 
@@ -246,8 +248,10 @@ IPopup {
                                     width: 16
                                     height: 16
                                     radius: 8
-                                    color: Style.colors.popupRadioDot
+                                    color: baseTypeOption.checked ? Style.colors.popupRadioBorderChecked : "transparent"
                                     border.width: 1
+                                    border.color: baseTypeOption.checked ? Style.colors.popupRadioBorderChecked
+                                                                         : Style.colors.popupRadioBorder
                                     Layout.alignment: Qt.AlignVCenter
 
                                     Rectangle {
@@ -255,8 +259,8 @@ IPopup {
                                         width: 8
                                         height: 8
                                         radius: 4
-                                        color: Style.colors.popupRadioBorderChecked
-                                        visible: root.baseBranchType === modelData.value
+                                        color: Style.colors.popupRadioDot
+                                        visible: baseTypeOption.checked
                                     }
                                 }
 
