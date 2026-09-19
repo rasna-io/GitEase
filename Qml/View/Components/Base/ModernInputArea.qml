@@ -139,4 +139,11 @@ Rectangle {
             }
         }
     }
+
+    /* Functions
+     * ****************************************************************************************/
+    function focusAtEnd() {
+        commitTextArea.forceActiveFocus()
+        commitTextArea.cursorPosition = commitTextArea.length
+    }
 }
