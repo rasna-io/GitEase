@@ -625,13 +625,13 @@ DetachablePanel {
     Connections {
         target: mergeMethodPopup
 
-        function onAccepted(noFF) {
+        function onAccepted(noFF, deleteBranch, pushRemote) {
             if (root.pendingMergeSource === "")
                 return
 
             let source = root.pendingMergeSource
             root.pendingMergeSource = ""
-            root.performMerge(source, noFF)
+            root.performMerge(source, noFF, deleteBranch, pushRemote)
         }
 
         function onClosed() {
@@ -1482,16 +1482,29 @@ DetachablePanel {
         mergeMethodPopup.open()
     }
 
-    function performMerge(source, noFF) {
+    function performMerge(source, noFF, deleteBranch = false, pushRemote = false) {
         var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
 
         if (root.mergeController.isMergeInProgress() && root.mergeController.hasMergeConflicts()) {
             root.showConflictWindow(mergeConflictPopup)
             root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
             root.reloadAll()
-        } else {
-            handleGitControllerResult(res, "Merge completed", mergeConflictPopup, "Merge")
+            return
         }
+
+        let mergeSucceeded = res && res.success
+        handleGitControllerResult(res, "Merge completed", mergeConflictPopup, "Merge")
+
+        if (mergeSucceeded && deleteBranch && source !== root.branchController.getCurrentBranchName()) {
+            let delRes = root.branchController.deleteBranch(source)
+            if (delRes && delRes.success)
+                root.notificationController.success("Branch '" + source + "' deleted", "Merge", 3000)
+            else
+                root.notificationController.error(delRes?.errorMessage || "Failed to delete branch", "Merge", 5000)
+        }
+
+        if (mergeSucceeded && pushRemote)
+            root.executePush(root.branchController.getCurrentBranchName(), false)
     }
 
     function executeRebase(commitHash) {
