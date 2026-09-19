@@ -93,29 +93,29 @@ IPopup {
                 color: Style.colors.popupHeaderSeparator
             }
 
+            // Body
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                Layout.topMargin: 16
+                Layout.bottomMargin: 12
+                spacing: 6
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: root.changeCommitMessage ? "Save" : "Amend Commit"
-                        color: Style.colors.secondaryForeground
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.mediumPt
-                    }
+                Text {
+                    text: "COMMIT MESSAGE"
+                    color: Style.colors.popupSectionLabel
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.defaultPt
+                }
 
-                    onClicked: {
-                        let res = commitController.commit(textArea.text.trim(), true, false)
-
-                        if(res.success){
-                            notificationController.success(root.changeCommitMessage ? "Commit message changed successfully" : "Commit amended successfully", "Amend Commit", 3000)
-                            root.amendSuccessful()
-                            root.close()
-                        }
-                        else
-                            notificationController.error(res.errorMessage || "Amend failed", "Amend Commit Error", 5000)
-                    }
+                // Same box as the commit message on the Committing page
+                ModernInputArea {
+                    id: messageInput
+                    Layout.fillWidth: true
+                    placeholder: "Commit message (required)"
                 }
             }
-
             Rectangle {
                 id: cancelBtn
                 Layout.fillWidth: true
