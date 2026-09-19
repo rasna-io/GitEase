@@ -52,28 +52,39 @@ IPopup {
             id: layout
             anchors.fill: parent
             spacing: 0
-            Rectangle {
-                id: amendBtn
+
+            // Header
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 30
+                Layout.preferredHeight: 48
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                spacing: 8
 
-                radius: 4
+                Text {
+                    text: root.changeCommitMessage ? "Change Commit Message" : "Amend Commit"
+                    color: Style.colors.popupTitleText
+                    font.family: Style.fontTypes.inter
+                    font.weight: Font.DemiBold
+                    font.pixelSize: Style.appFont.mediumPt
+                    Layout.fillWidth: true
+                }
 
-                readonly property bool canAmend: textArea.text.trim().length > 0
-                color: canAmend ? Style.colors.accent : Style.colors.disabledButton
-
-                MouseArea {
-                    id: amendBtnMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: parent.canAmend ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    enabled: parent.canAmend
-
-                    Rectangle {
+                Text {
+                    text: "\u00d7"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.mediumPt
+                    color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
+                                                    : Style.colors.popupCloseButton
+                    MouseArea {
+                        id: closeMouse
                         anchors.fill: parent
-                        radius: 4
-                        color: amendBtnMouse.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.close()
                     }
+                }
+            }
 
                     Text {
                         anchors.centerIn: parent
