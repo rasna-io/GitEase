@@ -259,8 +259,8 @@ IPopup {
                                         width: 8
                                         height: 8
                                         radius: 4
-                                        color: Style.colors.popupRadioBorderChecked
-                                        visible: root.baseBranchType === modelData.value
+                                        color: Style.colors.popupRadioDot
+                                        visible: baseTypeOption.checked
                                     }
                                 }
 
