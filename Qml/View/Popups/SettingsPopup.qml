@@ -476,14 +476,6 @@ IPopup {
                                     color: Style.colors.primaryBorder
                                 }
 
-                                CheckboxItem {
-                                    id: reducedMotion
-                                    Layout.fillWidth: true
-                                    title: "Reduce Motion"
-                                    description: "Use instant transitions and minimal movement"
-                                    checked: root.appSettings?.appearanceSettings?.reducedMotion ?? false
-                                }
-
                                 Item {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
@@ -527,6 +519,21 @@ IPopup {
                                     title: "Theme"
                                     description: "Select theme"
                                     cmb.model: ["Modern Light", "Modern Dark"]
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Style.colors.primaryBorder
+                                }
+
+                                CheckboxItem {
+                                    id: reducedMotion
+                                    Layout.fillWidth: true
+                                    title: "Reduce Motion"
+                                    description: "Use instant transitions and minimal movement"
+                                    checked: root.appSettings?.appearanceSettings?.reducedMotion ?? false
                                 }
 
                                 Rectangle {
