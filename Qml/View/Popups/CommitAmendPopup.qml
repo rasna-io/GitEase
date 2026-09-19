@@ -124,27 +124,88 @@ IPopup {
                 color: Style.colors.popupHeaderSeparator
             }
 
+            // Footer
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 30
-                radius: 4
-                color: "transparent"
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                Layout.topMargin: 12
+                Layout.bottomMargin: 12
+                spacing: 8
 
-                MouseArea {
-                    id: cancelBtnMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                Item {
+                    Layout.fillWidth: true
+                }
 
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 4
-                        color: cancelBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.05) : Qt.rgba(255, 255, 255, 0.12)
+                Button {
+                    text: "Cancel"
+                    Layout.preferredWidth: 100
+                    Layout.alignment: Qt.AlignVCenter
+                    topPadding: 6
+                    bottomPadding: 6
+                    leftPadding: 14
+                    rightPadding: 14
+
+                    background: Rectangle {
+                        implicitHeight: 32
+                        color: "transparent"
+                        border.color: Style.colors.popupCancelButtonBorder
+                        border.width: 1
+                        radius: 5
+                        opacity: parent.hovered ? 1.0 : 0.7
                     }
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Cancel"
+                    contentItem: Text {
+                        text: parent.text
+                        color: Style.colors.popupCancelButtonText
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.close()
+                    }
+                }
+
+                Button {
+                    id: actionBtn
+                    text: root.changeCommitMessage ? "Save" : "Amend Commit"
+                    Layout.preferredWidth: 130
+                    Layout.alignment: Qt.AlignVCenter
+                    enabled: root.canAccept
+                    topPadding: 6
+                    bottomPadding: 6
+                    leftPadding: 16
+                    rightPadding: 16
+
+                    background: Rectangle {
+                        implicitHeight: 32
+                        color: parent.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
+                                              : Style.colors.disabledButton
+                        radius: 5
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
                         color: Style.colors.secondaryForeground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.amend()
+                    }
+                }
+            }
+        }
+    }
+
     /* Functions
      * ****************************************************************************************/
     function amend() {
