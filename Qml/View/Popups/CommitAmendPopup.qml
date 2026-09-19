@@ -32,11 +32,9 @@ IPopup {
 
     closePolicy: Popup.CloseOnEscape
 
-    onOpened:{
-        textArea.text = commitController.getLastCommitMessage()
-
-        textArea.forceActiveFocus()
-        textArea.cursorPosition = textArea.length
+    onOpened: {
+        messageInput.text = commitController.getLastCommitMessage().replace(/\s+$/, "")
+        messageInput.focusAtEnd()
     }
 
     /* Children
