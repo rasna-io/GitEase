@@ -53,8 +53,6 @@ Rectangle {
         return hoverHandler.hovered ? Style.colors.cardBackground : "transparent"
     }
 
-    Behavior on color { ColorAnimation { duration: 120 } }
-
     /* Children
      * ****************************************************************************************/
     HoverHandler {
