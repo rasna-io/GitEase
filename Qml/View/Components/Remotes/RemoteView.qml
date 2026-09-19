@@ -107,7 +107,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return addRemoteBtn },
                         icon: Style.icons.plus,
-                        title: "Add a Remote",
+                        title: "Add Remote",
                         description: "Connect this repository to another remote — a fork, a backup, or a second host — by giving it a name and URL.",
                         commands: [{ command: "git remote add <name> <url>" }]
                     }
@@ -225,13 +225,13 @@ UtilitiesCard {
                             }
                             ActionIconButton {
                                 iconText: Style.icons.edit
-                                tooltip: "Edit"
+                                tooltip: "Edit Remote"
                                 textColor: Style.colors.utilitiesActionIcon
                                 onClicked: content.editRemote(currentRemote)
                             }
                             ActionIconButton {
                                 iconText: Style.icons.trash
-                                tooltip: "Remove"
+                                tooltip: "Remove Remote"
                                 textColor: Style.colors.utilitiesActionIconDanger
                                 onClicked: content.removeRemoteItem(currentRemote)
                             }
@@ -377,10 +377,10 @@ UtilitiesCard {
                 { text: "Fetch",  icon: Style.icons.download,  enabled: !root.isFetching, action: function() { content.fetchRemote(remoteItem) } },
                 { text: "Pull",   icon: Style.icons.arrowDown, enabled: !root.isFetching, action: function() { content.pullRemote(remoteItem) } },
                 { separator: true },
-                { text: "Edit",   icon: Style.icons.edit,      action: function() { content.editRemote(remoteItem) } },
-                { text: "Remove", icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { content.removeRemoteItem(remoteItem) } },
+                { text: "Edit Remote...",  icon: Style.icons.edit,      action: function() { content.editRemote(remoteItem) } },
+                { text: "Remove Remote",   icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { content.removeRemoteItem(remoteItem) } },
                 { separator: true },
-                { text: "Copy URL", icon: Style.icons.copy, action: function() { content.copyRemoteUrl(remoteItem) } },
+                { text: "Copy Remote URL", icon: Style.icons.copy, action: function() { content.copyRemoteUrl(remoteItem) } },
             ]
         }
     }

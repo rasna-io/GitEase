@@ -91,7 +91,7 @@ Item {
         let urlRes = remoteController.getRemoteUrl("origin")
         if (!urlRes.success) {
             if (notificationController)
-                notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${force ? "Force" : ""} Push Error`, 5000)
+                notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${force ? "Force Push" : "Push"} Error`, 5000)
             return
         }
         let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
@@ -114,7 +114,7 @@ Item {
             break
         default:
             if (notificationController)
-                notificationController.error("Unsupported protocol", `${force ? "Force" : ""} Push Error`, 5000)
+                notificationController.error("Unsupported protocol", `${force ? "Force Push" : "Push"} Error`, 5000)
         }
     }
 
@@ -231,7 +231,7 @@ Item {
         if (success) {
             let data = gitResult.data
             let isForce = data && data.force === true
-                root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
+                root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Force Push" : "Push", 3000)
             } else {
             root.notificationController.error((gitResult && gitResult.errorMessage) || "Push error", "Push Error", 5000)
             }

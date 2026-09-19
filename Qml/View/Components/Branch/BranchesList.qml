@@ -207,7 +207,7 @@ ListView {
         clipboardHelper.selectAll()
         clipboardHelper.copy()
         if (root.notificationController)
-            root.notificationController.success("Commit SHA copied to clipboard", "Branch", 2000)
+            root.notificationController.success("Commit hash copied to clipboard", "Branch", 2000)
     }
 
     function buildBranchMenu(branch) {
@@ -219,7 +219,7 @@ ListView {
             if (branch.name !== root.currentBranch) {
                 menu.push({
                     text: "Checkout",
-                    icon: Style.icons.branchPlus,
+                    icon: Style.icons.gitBranch,
                     action: function() { root.doCheckout(branch) }
                 })
 
@@ -239,7 +239,7 @@ ListView {
             // Delete
             if (branch.name !== root.currentBranch) {
                 menu.push({
-                    text: "Delete",
+                    text: "Delete Branch",
                     icon: Style.icons.trash,
                     color: Style.colors.contextMenuDanger,
                     action: function() { root.doDeleteBranch(branch) }
@@ -250,7 +250,7 @@ ListView {
 
             // Merge
             menu.push({
-                text: "Merge into current",
+                text: "Merge into Current Branch",
                 icon: Style.icons.arowLeftRight,
                 visible: false,
                 action: function() {
@@ -260,7 +260,7 @@ ListView {
 
             // Rebase
             menu.push({
-                text: "Rebase onto current",
+                text: "Rebase onto Current Branch",
                 icon: Style.icons.clockRotateLeft,
                 visible: false,
                 action: function() {
@@ -270,7 +270,7 @@ ListView {
 
             // Cherry-pick
             menu.push({
-                text: "Cherry-pick range...",
+                text: "Cherry-Pick Range...",
                 icon: Style.icons.copy,
                 visible: false,
                 action: function() {
@@ -282,7 +282,7 @@ ListView {
 
             // Reset
             menu.push({
-                text: "Reset current to here...",
+                text: "Reset Current Branch to Here...",
                 icon: Style.icons.reset,
                 visible: false,
                 action: function() {
@@ -299,7 +299,7 @@ ListView {
                 })
 
             menu.push({
-                text: "Copy Full SHA",
+                text: "Copy Commit Hash",
                 icon: Style.icons.copy,
                 action: function() { root.copyBranchHash(branch) }
                 })
@@ -339,7 +339,7 @@ ListView {
             })
 
             menu.push({
-                text: "Delete Remote",
+                text: "Remove Remote",
                 icon: Style.icons.trash,
                 color: Style.colors.contextMenuDanger,
                 action: function() {
@@ -350,7 +350,7 @@ ListView {
             menu.push({ separator: true })
 
             menu.push({
-                text: "Copy URL",
+                text: "Copy Remote URL",
                 icon: Style.icons.copy,
                 action: function() {
                     // TODO

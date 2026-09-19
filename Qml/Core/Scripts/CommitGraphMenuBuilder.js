@@ -37,7 +37,7 @@ function buildMenu(state, pluginItems) {
 
     else {
         model.push({
-            text: "Checkout Commit " + state.shortHash,
+            text: "Checkout " + state.shortHash + " (Detached)",
             icon: "hash",
             enabled: !state.isHead,
             action: "checkoutCommit",
@@ -59,16 +59,16 @@ function buildMenu(state, pluginItems) {
         payload: { branch: state.currentBranch }
     });
 
-    // New Branch / Tag
+    // Create Branch / Tag
     model.push({
-        text: "New Branch from here",
+        text: "Create Branch Here...",
         icon: "branchPlus",
         action: "newBranch",
         payload: { hash: state.fullHash }
     });
 
     model.push({
-        text: "Create Tag here",
+        text: "Create Tag Here...",
         icon: "tag",
         action: "newTag",
         payload: { hash: state.fullHash }
@@ -80,7 +80,7 @@ function buildMenu(state, pluginItems) {
 
     // Browse files
     model.push({
-        text: "Browse files at this commit",
+        text: "Browse Files at This Commit...",
         icon: "folder",
         action: "browseFiles",
         payload: { hash: state.fullHash, message: state.commitMessage, date: state.commitDate }
@@ -90,7 +90,7 @@ function buildMenu(state, pluginItems) {
     if (state.hasMergeableBranches) {
         state.mergeableBranches.forEach(function(bName) {
             model.push({
-                text: "Merge '" + bName + "' into '" + state.currentBranch + "'",
+                text: "Merge '" + bName + "' into '" + state.currentBranch + "'...",
                 icon: "arowLeftRight",
                 action: "mergeBranch",
                 payload: { source: bName, target: state.currentBranch }
@@ -101,7 +101,7 @@ function buildMenu(state, pluginItems) {
     // Rebase
     if (state.canRebase) {
         model.push({
-            text: "Rebase onto " + state.shortHash,
+            text: "Rebase onto " + state.shortHash + "...",
             icon: "clockRotateLeft",
             action: "rebase",
             shortcut: "Ctrl+R",
@@ -134,13 +134,13 @@ function buildMenu(state, pluginItems) {
 
     // Reset
     model.push({
-        text: "Reset " + state.currentBranch + " into this commit",
+        text: "Reset '" + state.currentBranch + "' to This Commit",
         icon: "reset",
         action: "reset",
         subItems: [
-           {text: "--Soft (Keep all changes)",  icon: "resetSoft",  action: "resetSoft",  payload: { hash: state.fullHash }},
-           {text: "--Mixed (Reset index to commit)", icon: "resetMixed", action: "resetMixed", payload: { hash: state.fullHash }},
-           {text: "--Hard (Discard all changes)", icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
+           {text: "Soft (keep changes staged)",   icon: "resetSoft",  action: "resetSoft",  payload: { hash: state.fullHash }},
+           {text: "Mixed (keep changes unstaged)", icon: "resetMixed", action: "resetMixed", payload: { hash: state.fullHash }},
+           {text: "Hard (discard all changes)",   icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
         ]
     });
 

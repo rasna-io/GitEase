@@ -55,7 +55,7 @@ IPopup {
         Label {
             width: parent.width
             color: Style.colors.descriptionText
-            text: "Amend Commit Message"
+            text: root.changeCommitMessage ? "Change Commit Message" : "Amend Commit"
             font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.largePt
             horizontalAlignment: Text.AlignHCenter
@@ -63,7 +63,8 @@ IPopup {
 
         Label {
             color: Style.colors.descriptionText
-            text: "Edit the message for your amended commit (Optional):"
+            text: root.changeCommitMessage ? "Edit the message of your last commit:"
+                                           : "Edit the message for your amended commit:"
             font.pixelSize: Style.appFont.mediumPt
         }
 
@@ -111,7 +112,7 @@ IPopup {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "Amend"
+                        text: root.changeCommitMessage ? "Save" : "Amend Commit"
                         color: Style.colors.secondaryForeground
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.mediumPt
@@ -121,12 +122,12 @@ IPopup {
                         let res = commitController.commit(textArea.text.trim(), true, false)
 
                         if(res.success){
-                            notificationController.success(root.changeCommitMessage ? "Commit Message Changes successfully" : "Commit amended successfully", "Commit Amend", 3000)
+                            notificationController.success(root.changeCommitMessage ? "Commit message changed successfully" : "Commit amended successfully", "Amend Commit", 3000)
                             root.amendSuccessful()
                             root.close()
                         }
                         else
-                            notificationController.error(res.errorMessage || "Amend failed", "Commit Amend Error", 5000)
+                            notificationController.error(res.errorMessage || "Amend failed", "Amend Commit Error", 5000)
                     }
                 }
             }

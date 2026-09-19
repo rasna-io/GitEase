@@ -252,7 +252,7 @@ IWindow {
 
                 ConflictPillButton {
                     Layout.preferredHeight: Style.dp(30)
-                    text: "Drop stash"
+                    text: "Drop Stash"
                     leadingText: Style.icons.trash
                     accentColor: Style.colors.conflictDestructive
                     actionEnabled: root.canPerformAction

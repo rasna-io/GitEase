@@ -267,7 +267,7 @@ RowLayout {
 
         property bool isBusy: remoteController?.pushInProgress && remoteController?.forcePush
 
-        text    : !isBusy ? "Push Force" : ""
+        text    : !isBusy ? "Force Push" : ""
         tooltip : !isBusy ? "Force push to origin" : "Force Pushing..."
         display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
         enabled : !remoteController?.pushInProgress

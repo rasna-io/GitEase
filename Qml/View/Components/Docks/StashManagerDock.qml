@@ -40,7 +40,7 @@ UtilitiesCard {
 
     /* Object Properties
      * ****************************************************************************************/
-    title: "Stash Manager"
+    title: "Stashes"
     icon: Style.icons.archive
     badgeCount: root.stashes.length
 
@@ -56,7 +56,7 @@ UtilitiesCard {
         GuideHoverTrigger {
             guideController: root.guideController
             guideId: "stash_manager_tutorial"
-            guideName: "Stash Manager"
+            guideName: "Stashes"
             guideIcon: Style.icons.archive
             guidePage: "utilities"
             stepsFactory: function() {
@@ -64,7 +64,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return root },
                         icon: Style.icons.archive,
-                        title: "Stash Manager Dock",
+                        title: "Stashes Dock",
                         description: "Shelve and manage your stashed changes. Click the header to expand this dock if it's collapsed.",
                         isInPopup: false,
                         activationDelay: 300,
@@ -74,12 +74,12 @@ UtilitiesCard {
                         targetProvider: function() { return stashListView },
                         icon: Style.icons.archive,
                         title: "Your Stashes",
-                        description: "Shelved changes appear here, one card per stash with the branch, base commit and file count. Apply keeps the stash in the list, Pop applies it and removes it, Drop deletes it permanently, and View diff previews its files."
+                        description: "Shelved changes appear here, one card per stash with the branch, base commit and file count. Apply keeps the stash in the list, Pop applies it and removes it, Drop deletes it permanently, and View Diff previews its files."
                     },
                     {
                         targetProvider: function() { return actionBtn },
                         icon: Style.icons.plus,
-                        title: "Create a Stash",
+                        title: "Create Stash",
                         description: "Shelve your current uncommitted changes so you can switch branches or pull cleanly, then bring them back later.",
                         commands: [{ command: "git stash" }]
                     },
@@ -149,7 +149,7 @@ UtilitiesCard {
 
             enabled: root.canStash
 
-            text: "Add Stash"
+            text: "Create Stash"
 
             onClicked: root.openAddEditPopup()
         }
@@ -161,7 +161,7 @@ UtilitiesCard {
             enabled: root.stashes.length > 0
 
             iconText: Style.icons.trash
-            text: "Drop all stashes"
+            text: "Drop All Stashes"
 
             textColor: dropAllBtn.hovered && dropAllBtn.enabled ? Style.colors.dashedButtonTextDanger
                                                                 : Style.colors.dashedButtonText
@@ -297,10 +297,11 @@ UtilitiesCard {
 
     function buildStashMenu(stashEntry) {
         return [
-            { text: "View diff", icon: Style.icons.file,  action: function() { root.openPreview(stashEntry) } },
-            { text: "Pop",       icon: Style.icons.undo,  action: function() { root.popStash(stashEntry) } },
-            { text: "Apply",     icon: Style.icons.check, action: function() { root.applyStash(stashEntry) } },
-            { text: "Drop",      icon: Style.icons.trash, action: function() { root.dropStash(stashEntry) } }
+            { text: "View Diff...", icon: Style.icons.file,  action: function() { root.openPreview(stashEntry) } },
+            { text: "Pop",          icon: Style.icons.undo,  action: function() { root.popStash(stashEntry) } },
+            { text: "Apply",        icon: Style.icons.check, action: function() { root.applyStash(stashEntry) } },
+            { separator: true },
+            { text: "Drop Stash",   icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { root.dropStash(stashEntry) } }
         ]
     }
 

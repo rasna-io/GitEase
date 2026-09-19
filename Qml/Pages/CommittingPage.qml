@@ -113,7 +113,7 @@ Page {
 
         commitController        : root.commitController
         notificationController  : root.notificationController
-        changeCommitMessage     : !committingButton.commitEnabled
+        changeCommitMessage     : changesFileLists.stagedModel.length == 0
 
         onAmendSuccessful: {
             changesFileLists.updateStatus()
@@ -192,12 +192,12 @@ Page {
                                     targetProvider: function() { return caretBtn },
                                     icon: Style.icons.caretDown,
                                     title: "Commit Extras  ·  ▾ dropdown",
-                                    description: "Commit & Push runs git commit then git push in one step. Commit Amend runs git commit --amend — rewrites the most recent local commit (message or content) instead of creating a new one."
+                                    description: "Commit & Push runs git commit then git push in one step. Amend Commit runs git commit --amend — rewrites the most recent local commit (message or content) instead of creating a new one."
                                 },
                                 {
                                     targetProvider: function() { return moreOptionsBtn },
                                     icon: Style.icons.arrowRight,
-                                    title: "Remote Operations  ·  ⋮ menu",
+                                    title: "Remote Operations  ·  ⋯ menu",
                                     description: "Push uploads your local commits. Force Push rewrites the remote branch with your local history, but safely aborts if someone else pushed first. Fetch downloads remote changes without merging. Pull fetches and merges in one step.",
                                     commands: [
                                         { label: "Push",       command: "git push" },
@@ -221,7 +221,7 @@ Page {
                             parent: commitPanel
                             menuModel: [
                                 {
-                                    text: "Push Force",
+                                    text: "Force Push",
                                     icon: Style.icons.arrowUp,
                                     action: function() {
                                         root.pushAndUpdate(true)
@@ -269,14 +269,14 @@ Page {
                                 let items = []
 
                                 items.push({
-                                    text: commitEnabled ? "Commit Amend" : "Change commit message",
+                                    text: commitEnabled ? "Amend Commit..." : "Change Commit Message...",
                                     icon: Style.icons.penToSquare,
                                     action: function() { amendPopup.open() }
                                 })
 
                                 if (commitEnabled) {
                                     items.push({
-                                        text: "Commit && Push",
+                                        text: "Commit & Push",
                                         icon: Style.icons.arrowUp,
                                         action: function() {
                                             if (!root.commitAndUpdate()) return

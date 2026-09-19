@@ -21,7 +21,7 @@ UtilitiesCard {
     property var                    tagListModel:           []
     property GuideController        guideController:        null
 
-    title: "Tag Management"
+    title: "Tags"
     icon:  Style.icons.tag
     badgeCount: root.tagListModel.length
 
@@ -134,8 +134,8 @@ UtilitiesCard {
                     //       comparing. Part of the same task as the inline push/delete button logic.
             { separator: true },
 
-            { text: "Copy Name", icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
-            { text: "Copy Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } }
+            { text: "Copy Tag Name",    icon: Style.icons.copy, action: function() { root.copyTagName(tag) } },
+            { text: "Copy Commit Hash", icon: Style.icons.copy, action: function() { root.copyTagHash(tag) } }
         ]
     }
 
@@ -148,7 +148,7 @@ UtilitiesCard {
         GuideHoverTrigger {
             guideController: root.guideController
             guideId: "tag_management_tutorial"
-            guideName: "Tag Management"
+            guideName: "Tags"
             guideIcon: Style.icons.tag
             guidePage: "utilities"
             stepsFactory: function() {
@@ -156,7 +156,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return root },
                         icon: Style.icons.tag,
-                        title: "Tag Management Dock",
+                        title: "Tags Dock",
                         description: "Create and manage git tags. Click the header to expand this dock if it's collapsed.",
                         isInPopup: false,
                         activationDelay: 300,
@@ -171,7 +171,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return addTagBtn },
                         icon: Style.icons.plus,
-                        title: "Create a Tag",
+                        title: "Create Tag",
                         description: "Mark the current commit with a version label like v1.0.0 — handy for marking releases.",
                         commands: [{ command: "git tag <name>" }]
                     }
@@ -292,13 +292,13 @@ UtilitiesCard {
             }
         }
 
-        // Add Tag Button
+        // Create Tag Button
         DashedButton {
             id: addTagBtn
             Layout.fillWidth: true
             Layout.topMargin: Style.dp(2)
 
-            text: "Add Tag"
+            text: "Create Tag"
 
             onClicked: {
                 if (root.addTagPopup) {
