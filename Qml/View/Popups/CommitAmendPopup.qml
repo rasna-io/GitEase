@@ -40,9 +40,12 @@ IPopup {
 
     /* Children
      * ****************************************************************************************/
-    background: Rectangle {
-        radius: 4
-        color: Style.colors.primaryBackground
+    contentItem: Rectangle {
+        implicitHeight: layout.implicitHeight
+        color: Style.colors.popupBackground
+        radius: 8
+        clip: true
+        border.color: Style.colors.popupBorder
         border.width: 1
         border.color: Style.colors.primaryBorder
     }
