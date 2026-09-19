@@ -8,13 +8,25 @@ import GitEase_Style
 /*! ***********************************************************************************************
  * Terminal
  * Embedded shell panel, built on DetachablePanel for its shared header/minimize/detach behavior.
+ * Each repository working directory keeps its own session, restored when switching back to it.
  * ************************************************************************************************/
 DetachablePanel {
     id: root
 
+    /* Inline Components
+     * ****************************************************************************************/
+    component TerminalSession: QtObject {
+        property ListModel output:        ListModel {}
+        property ListModel history:       ListModel {}
+        property int       historyCursor: -1
+        property string    draft:         ""
+    }
+
     /* Property Declarations
      * ****************************************************************************************/
-    property int                historyCursor: -1
+    property var                sessions: ({})
+    property TerminalSession    activeSession: null
+    property TerminalSession    commandSession: null
     property int                fontSize: 13
     property TerminalController terminalController: null
     property string             currentPath: terminalController.workingDirectory + "$ "
@@ -27,16 +39,55 @@ DetachablePanel {
     title: qsTr("Terminal")
     icon: Style.icons.terminal
 
+    onTerminalControllerChanged: root.showSession(root.terminalController?.workingDirectory ?? "")
+    Component.onCompleted:       root.showSession(root.terminalController?.workingDirectory ?? "")
+
+    /* Functions
+     * ****************************************************************************************/
+    function showSession(key) {
+        let session = root.sessions[key]
+        if (!session) {
+            session = sessionComponent.createObject(root)
+            root.sessions[key] = session
+        }
+
+        if (session === root.activeSession)
+            return
+
+        if (root.activeSession)
+            root.activeSession.draft = cmdTextInput.text
+
+        root.activeSession = session
+        cmdTextInput.text = session.draft
+    }
+
     /* Children
      * ****************************************************************************************/
+    Component {
+        id: sessionComponent
+        TerminalSession {}
+    }
+
     Connections {
         target: root.terminalController
         function onLineReceived(segmentsJson) {
-            outputModel.append({ segments: JSON.parse(segmentsJson)})
+            const session = root.commandSession ?? root.activeSession
+            session.output.append({ segments: JSON.parse(segmentsJson)})
         }
 
-        function onCommandStarted() { root.commandRunning = true }
-        function onCommandFinished() { root.commandRunning = false }
+        function onCommandStarted() {
+            root.commandSession = root.activeSession
+            root.commandRunning = true
+        }
+
+        function onCommandFinished() {
+            root.commandSession = null
+            root.commandRunning = false
+        }
+
+        function onWorkingDirectoryChanged() {
+            root.showSession(root.terminalController.workingDirectory)
+        }
     }
 
     Connections {
@@ -46,9 +97,6 @@ DetachablePanel {
                 cmdTextInput.forceActiveFocus()
         }
     }
-
-    ListModel { id: historyModel }
-    ListModel { id: outputModel }
 
     Rectangle {
         anchors.fill: parent
@@ -79,10 +127,7 @@ DetachablePanel {
                 background: Rectangle { color: "transparent" }
             }
 
-            onContentHeightChanged: {
-                if (contentHeight > height)
-                    contentY = contentHeight - height
-            }
+            onContentHeightChanged: contentY = Math.max(0, contentHeight - height)
 
             Column {
                 id: contentColumn
@@ -91,7 +136,7 @@ DetachablePanel {
 
                 // Output rows
                 Repeater {
-                    model: outputModel
+                    model: root.activeSession ? root.activeSession.output : null
                     delegate: Row {
                         width: contentColumn.width
                         spacing: 0
@@ -217,22 +262,24 @@ DetachablePanel {
                         Keys.onReturnPressed: {
                             if (text.trim() === "") return
 
+                            const session = root.activeSession
+
                             if (text.trim() === "clear") {
-                                outputModel.clear()
+                                session.output.clear()
                                 cmdTextInput.text = ""
                                 return
                             }
 
-                            outputModel.append({
+                            session.output.append({
                                 segments: [],
                                 text: cmdTextInput.text
                             })
 
                             root.terminalController.sendCommand(text)
 
-                            historyModel.append({ text: cmdTextInput.text })
+                            session.history.append({ text: cmdTextInput.text })
                             cmdTextInput.text = ""
-                            historyCursor = -1
+                            session.historyCursor = -1
                         }
 
                         Keys.onTabPressed: {
@@ -241,20 +288,22 @@ DetachablePanel {
                         }
 
                         Keys.onUpPressed: {
-                            if (historyModel.count === 0) return
-                            if (historyCursor < historyModel.count - 1)
-                                historyCursor++
-                            cmdTextInput.text = historyModel.get(historyModel.count - 1 - historyCursor).text
+                            const session = root.activeSession
+                            if (session.history.count === 0) return
+                            if (session.historyCursor < session.history.count - 1)
+                                session.historyCursor++
+                            cmdTextInput.text = session.history.get(session.history.count - 1 - session.historyCursor).text
                         }
 
                         Keys.onDownPressed: {
-                            if (historyCursor <= 0) {
-                                historyCursor = -1
+                            const session = root.activeSession
+                            if (session.historyCursor <= 0) {
+                                session.historyCursor = -1
                                 cmdTextInput.text = ""
                                 return
                             }
-                            historyCursor--
-                            cmdTextInput.text = historyModel.get(historyModel.count - 1 - historyCursor).text
+                            session.historyCursor--
+                            cmdTextInput.text = session.history.get(session.history.count - 1 - session.historyCursor).text
                         }
                     }
                 }
