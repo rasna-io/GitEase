@@ -239,6 +239,8 @@ IPopup {
                             ]
 
                             RowLayout {
+                                id: baseTypeOption
+                                readonly property bool checked: root.baseBranchType === modelData.value
                                 spacing: 6
                                 Layout.fillWidth: true
 
