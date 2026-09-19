@@ -250,6 +250,8 @@ IPopup {
                                     radius: 8
                                     color: baseTypeOption.checked ? Style.colors.popupRadioBorderChecked : "transparent"
                                     border.width: 1
+                                    border.color: baseTypeOption.checked ? Style.colors.popupRadioBorderChecked
+                                                                         : Style.colors.popupRadioBorder
                                     Layout.alignment: Qt.AlignVCenter
 
                                     Rectangle {
