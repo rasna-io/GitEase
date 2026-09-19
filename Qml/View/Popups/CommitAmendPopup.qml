@@ -86,6 +86,14 @@ IPopup {
                 }
             }
 
+            // Header separator
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 1
+                color: Style.colors.popupHeaderSeparator
+            }
+
+
                     Text {
                         anchors.centerIn: parent
                         text: root.changeCommitMessage ? "Save" : "Amend Commit"
