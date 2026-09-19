@@ -362,6 +362,7 @@ Page {
                                 ContextMenu {
                                     id: commitDropMenu
                                     parent: commitPanel
+                                    implicitWidth: 240
                                 }
                             }
 
