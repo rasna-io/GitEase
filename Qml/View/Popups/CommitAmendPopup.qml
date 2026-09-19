@@ -25,9 +25,9 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: parent.width / 2
-    height: 300
-    padding: 20
+    width: 480
+    height: contentItem.implicitHeight
+    padding: 0
 
     modal           : true
     closePolicy     : Popup.NoAutoClose
