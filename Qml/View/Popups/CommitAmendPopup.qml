@@ -18,6 +18,7 @@ IPopup {
     property CommitController       commitController        : null
     property bool                   changeCommitMessage     : false
 
+    readonly property bool          canAccept               : messageInput.text.trim().length > 0
 
     /* signals
      * ****************************************************************************************/
