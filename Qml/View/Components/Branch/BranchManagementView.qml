@@ -44,7 +44,7 @@ UtilitiesCard {
         GuideHoverTrigger {
             guideController: root.guideController
             guideId: "branch_management_tutorial"
-            guideName: "Branch Management"
+            guideName: "Branches"
             guideIcon: Style.icons.branch
             guidePage: "utilities"
             stepsFactory: function() {
@@ -52,7 +52,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return root },
                         icon: Style.icons.branch,
-                        title: "Branch Management Dock",
+                        title: "Branches Dock",
                         description: "View and manage all local and remote branches. Click the header to expand this dock if it's collapsed.",
                         isInPopup: false,
                         activationDelay: 300,
@@ -73,7 +73,7 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return addBranchBtn },
                         icon: Style.icons.branchPlus,
-                        title: "Create a Branch",
+                        title: "Create Branch",
                         description: "Start a new branch from your current commit — useful for isolating a feature or fix from the branch you're on.",
                         commands: [{ command: "git branch <name>" }]
                     }
@@ -161,7 +161,7 @@ UtilitiesCard {
             Layout.topMargin: Style.dp(2)
             visible: content.currentIndex === 0
 
-            text: "Add Branch"
+            text: "Create Branch"
 
             onClicked: {
                 openAddBranchPopup()

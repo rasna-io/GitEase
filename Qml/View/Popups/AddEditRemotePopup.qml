@@ -70,7 +70,7 @@ IPopup {
                 // Name Input
                 TextField {
                     id: nameInput
-                    placeholderText: "Remote Name (e.g. origin)"
+                    placeholderText: "Remote name (e.g. origin)"
                     Layout.fillWidth: true
                     selectByMouse: true
 
@@ -129,7 +129,7 @@ IPopup {
 
                 Button {
                     id: actionBtn
-                    text: root.isEdit ? "Update" : "Add"
+                    text: root.isEdit ? "Save" : "Add Remote"
                     Layout.fillWidth: true
                     enabled: root.canAccept
 

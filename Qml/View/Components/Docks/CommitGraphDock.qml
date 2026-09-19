@@ -1366,7 +1366,7 @@ DetachablePanel {
         isForcePush = force
         let urlRes = remoteController.getRemoteUrl("origin")
         if (!urlRes.success) {
-            root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${isForcePush ? "Force" : ""} Push Error`, 5000)
+            root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${isForcePush ? "Force Push" : "Push"} Error`, 5000)
             return
         }
         let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
@@ -1385,7 +1385,7 @@ DetachablePanel {
             root.openPopup(userAuthenticationPopup)
             break
         default:
-            root.notificationController.error("Unsupported protocol", `${isForcePush ? "Force" : ""} Push Error`, 5000)
+            root.notificationController.error("Unsupported protocol", `${isForcePush ? "Force Push" : "Push"} Error`, 5000)
         }
     }
 
@@ -1409,7 +1409,7 @@ DetachablePanel {
         if (gitResult && gitResult.success) {
             let data = gitResult.data
             let isForce = data && data.force === true
-            root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
+            root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Force Push" : "Push", 3000)
         } else {
             root.notificationController.error((gitResult && gitResult.errorMessage) || "Push error", "Push Error", 5000)
         }

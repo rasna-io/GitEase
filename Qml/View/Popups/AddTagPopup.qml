@@ -182,10 +182,10 @@ IPopup {
                     Layout.bottomMargin: root.sectionSpacing
 
                     Text {
-                        text: "Type"
+                        text: "TYPE"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.captionPt
+                        font.pixelSize: Style.appFont.defaultPt
                     }
 
                     ColumnLayout {
@@ -258,10 +258,10 @@ IPopup {
                     Layout.bottomMargin: root.sectionSpacing
 
                     Text {
-                        text: "Message"
+                        text: "MESSAGE"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.captionPt
+                        font.pixelSize: Style.appFont.defaultPt
                     }
 
                     TextField {
@@ -294,10 +294,10 @@ IPopup {
                     //       a future dialog could let the user browse commits and set it.
 
                     Text {
-                        text: "Tag Commit"
+                        text: "TARGET COMMIT"
                         color: Style.colors.popupSectionLabel
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.captionPt
+                        font.pixelSize: Style.appFont.defaultPt
                     }
 
                     Rectangle {
@@ -377,7 +377,7 @@ IPopup {
                     }
 
                     Text {
-                        text: "Push to remote (origin)"
+                        text: "Push to origin after creating"
                         color: Style.colors.popupCheckboxLabelText
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
