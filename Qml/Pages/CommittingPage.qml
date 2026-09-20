@@ -259,17 +259,20 @@ Page {
                             Layout.fillWidth: true
                             spacing: 6
 
+                            readonly property int stagedCount: changesFileLists.stagedModel.length
                             readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
 
                             Component.onCompleted: buildCommitMenu()
-
+                            onStagedCountChanged: buildCommitMenu()
                             onCommitEnabledChanged: buildCommitMenu()
 
                             function buildCommitMenu() {
                                 let items = []
 
                                 items.push({
-                                    text: commitEnabled ? "Amend Commit..." : "Change Commit Message...",
+                                    text: changesFileLists.stagedModel.length == 0
+                                         ? "Change Commit Message..."
+                                         : "Amend Commit...",
                                     icon: Style.icons.penToSquare,
                                     action: function() { amendPopup.open() }
                                 })
@@ -362,6 +365,7 @@ Page {
                                 ContextMenu {
                                     id: commitDropMenu
                                     parent: commitPanel
+                                    implicitWidth: 240
                                 }
                             }
 

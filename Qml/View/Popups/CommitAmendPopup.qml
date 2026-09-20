@@ -18,6 +18,7 @@ IPopup {
     property CommitController       commitController        : null
     property bool                   changeCommitMessage     : false
 
+    readonly property bool          canAccept               : messageInput.text.trim().length > 0
 
     /* signals
      * ****************************************************************************************/
@@ -25,143 +26,196 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: parent.width / 2
-    height: 300
-    padding: 20
+    width: 480
+    height: contentItem.implicitHeight
+    padding: 0
 
-    modal           : true
-    closePolicy     : Popup.NoAutoClose
+    closePolicy: Popup.CloseOnEscape
 
-    onOpened:{
-        textArea.text = commitController.getLastCommitMessage()
-
-        textArea.forceActiveFocus()
-        textArea.cursorPosition = textArea.length
+    onOpened: {
+        messageInput.text = commitController.getLastCommitMessage().replace(/\s+$/, "")
+        messageInput.focusAtEnd()
     }
 
     /* Children
      * ****************************************************************************************/
-    background: Rectangle {
-        radius: 4
-        color: Style.colors.primaryBackground
+    contentItem: Rectangle {
+        implicitHeight: layout.implicitHeight
+        color: Style.colors.popupBackground
+        radius: 8
+        clip: true
+        border.color: Style.colors.popupBorder
         border.width: 1
-        border.color: Style.colors.primaryBorder
+
+        ColumnLayout {
+            id: layout
+            anchors.fill: parent
+            spacing: 0
+
+            // Header
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 48
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                spacing: 8
+
+                Text {
+                    text: root.changeCommitMessage ? "Change Commit Message" : "Amend Commit"
+                    color: Style.colors.popupTitleText
+                    font.family: Style.fontTypes.inter
+                    font.weight: Font.DemiBold
+                    font.pixelSize: Style.appFont.mediumPt
+                    Layout.fillWidth: true
+                }
+
+                Text {
+                    text: "\u00d7"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.mediumPt
+                    color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
+                                                    : Style.colors.popupCloseButton
+                    MouseArea {
+                        id: closeMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.close()
+                    }
+                }
+            }
+
+            // Header separator
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 1
+                color: Style.colors.popupHeaderSeparator
+            }
+
+            // Body
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                Layout.topMargin: 16
+                Layout.bottomMargin: 12
+                spacing: 6
+
+                Text {
+                    text: "COMMIT MESSAGE"
+                    color: Style.colors.popupSectionLabel
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.defaultPt
+                }
+
+                // Same box as the commit message on the Committing page
+                ModernInputArea {
+                    id: messageInput
+                    Layout.fillWidth: true
+                    placeholder: "Commit message (required)"
+                }
+            }
+
+            // Footer separator
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 1
+                color: Style.colors.popupHeaderSeparator
+            }
+
+            // Footer
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                Layout.topMargin: 12
+                Layout.bottomMargin: 12
+                spacing: 8
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Button {
+                    text: "Cancel"
+                    Layout.preferredWidth: 100
+                    Layout.alignment: Qt.AlignVCenter
+                    topPadding: 6
+                    bottomPadding: 6
+                    leftPadding: 14
+                    rightPadding: 14
+
+                    background: Rectangle {
+                        implicitHeight: 32
+                        color: "transparent"
+                        border.color: Style.colors.popupCancelButtonBorder
+                        border.width: 1
+                        radius: 5
+                        opacity: parent.hovered ? 1.0 : 0.7
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: Style.colors.popupCancelButtonText
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.close()
+                    }
+                }
+
+                Button {
+                    id: actionBtn
+                    text: root.changeCommitMessage ? "Save" : "Amend Commit"
+                    Layout.preferredWidth: 130
+                    Layout.alignment: Qt.AlignVCenter
+                    enabled: root.canAccept
+                    topPadding: 6
+                    bottomPadding: 6
+                    leftPadding: 16
+                    rightPadding: 16
+
+                    background: Rectangle {
+                        implicitHeight: 32
+                        color: parent.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
+                                              : Style.colors.disabledButton
+                        radius: 5
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: Style.colors.secondaryForeground
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.amend()
+                    }
+                }
+            }
+        }
     }
 
-    contentItem: Column {
-        width: parent.width
-        spacing: 10
+    /* Functions
+     * ****************************************************************************************/
+    function amend() {
+        let res = commitController.commit(messageInput.text.trim(), true, false)
 
-        Label {
-            width: parent.width
-            color: Style.colors.descriptionText
-            text: root.changeCommitMessage ? "Change Commit Message" : "Amend Commit"
-            font.family: Style.fontTypes.inter
-            font.pixelSize: Style.appFont.largePt
-            horizontalAlignment: Text.AlignHCenter
-        }
-
-        Label {
-            color: Style.colors.descriptionText
-            text: root.changeCommitMessage ? "Edit the message of your last commit:"
-                                           : "Edit the message for your amended commit:"
-            font.pixelSize: Style.appFont.mediumPt
-        }
-
-        ScrollView {
-            width: parent.width
-            height: 150
-            anchors.margins: 5
-            TextArea {
-                id: textArea
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.inter
-                wrapMode: TextArea.Wrap
-                font.pixelSize: Style.appFont.mediumPt
-                Material.accent: Style.colors.accent
-            }
-        }
-
-        RowLayout  {
-            id: buttonsRow
-            width: parent.width
-            spacing: 10
-
-            Rectangle {
-                id: amendBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 30
-
-                radius: 4
-
-                readonly property bool canAmend: textArea.text.trim().length > 0
-                color: canAmend ? Style.colors.accent : Style.colors.disabledButton
-
-                MouseArea {
-                    id: amendBtnMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: parent.canAmend ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    enabled: parent.canAmend
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 4
-                        color: amendBtnMouse.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
-                    }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: root.changeCommitMessage ? "Save" : "Amend Commit"
-                        color: Style.colors.secondaryForeground
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.mediumPt
-                    }
-
-                    onClicked: {
-                        let res = commitController.commit(textArea.text.trim(), true, false)
-
-                        if(res.success){
-                            notificationController.success(root.changeCommitMessage ? "Commit message changed successfully" : "Commit amended successfully", "Amend Commit", 3000)
-                            root.amendSuccessful()
-                            root.close()
-                        }
-                        else
-                            notificationController.error(res.errorMessage || "Amend failed", "Amend Commit Error", 5000)
-                    }
-                }
-            }
-
-            Rectangle {
-                id: cancelBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 30
-                radius: 4
-                color: "transparent"
-
-                MouseArea {
-                    id: cancelBtnMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 4
-                        color: cancelBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.05) : Qt.rgba(255, 255, 255, 0.12)
-                    }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Cancel"
-                        color: Style.colors.secondaryForeground
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.mediumPt
-                    }
-
-                    onClicked: root.close();
-                }
-            }
+        if (res.success) {
+            notificationController.success(root.changeCommitMessage ? "Commit message changed successfully" : "Commit amended successfully", "Amend Commit", 3000)
+            root.amendSuccessful()
+            root.close()
+        } else {
+            notificationController.error(res.errorMessage || "Amend failed", "Amend Commit Error", 5000)
         }
     }
 }
