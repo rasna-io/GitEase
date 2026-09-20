@@ -259,10 +259,11 @@ Page {
                             Layout.fillWidth: true
                             spacing: 6
 
+                            readonly property int stagedCount: changesFileLists.stagedModel.length
                             readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
 
                             Component.onCompleted: buildCommitMenu()
-
+                            onStagedCountChanged: buildCommitMenu()
                             onCommitEnabledChanged: buildCommitMenu()
 
                             function buildCommitMenu() {
