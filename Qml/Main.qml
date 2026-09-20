@@ -221,6 +221,8 @@ ApplicationWindow {
 
         Component.onCompleted: {
             uiSession.windowController.window = window
+            uiSession.proxyController.applyToQtNetwork()
+
             Qt.callLater(function() {
                 uiSession.updateController.checkForUpdatesOnStartup()
             })
@@ -251,6 +253,7 @@ ApplicationWindow {
             textDirectionController: uiSession.textDirectionController
             userProfileController: uiSession.userProfileController
             identityGuard: uiSession.identityGuard
+            proxyController: uiSession.proxyController
         }
     }
 
