@@ -1,5 +1,7 @@
 import QtQuick
 
+import GitEase
+
 /*! ***********************************************************************************************
  * AppSettings
  * Simple flag holder for application state
@@ -25,6 +27,8 @@ QtObject {
 
     property NotificationSettings notificationSettings: NotificationSettings {}
 
+    property ProxySettings proxySettings: ProxySettings {}
+
     /* Functions
      * ****************************************************************************************/
     function serialize() {
@@ -34,7 +38,8 @@ QtObject {
             shownGuides: root.shownGuides,
             general: root.generalSettings.serialize(),
             appearance: root.appearanceSettings.serialize(),
-            notifications: root.notificationSettings.serialize()
+            notifications: root.notificationSettings.serialize(),
+            proxy: root.proxySettings.serialize()
         }
 
         return data;
@@ -48,6 +53,7 @@ QtObject {
         root.generalSettings.deserialize(data?.general ?? {})
         root.appearanceSettings.deserialize(data?.appearance ?? {})
         root.notificationSettings.deserialize(data?.notifications ?? {})
+        root.proxySettings.deserialize(data?.proxy ?? {})
     }
 
 }
