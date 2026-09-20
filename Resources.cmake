@@ -12,6 +12,7 @@ set(RESOURCES_CORE
     Qml/Core/Models/Page.qml
     Qml/Core/Models/UserProfile.qml           # user profile model
     Qml/Core/Models/NotificationSettings.qml
+    Qml/Core/Models/ProxySettings.qml
     Qml/Core/Models/Plugin.qml
 
     # Controllers
@@ -41,6 +42,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/PluginController.qml
     Qml/Core/Controllers/ResetController.qml
     Qml/Core/Controllers/NetworkController.qml      # Network Controller
+    Qml/Core/Controllers/ProxyController.qml        # Proxy Controller
     Qml/Core/Controllers/UpdateController.qml       # Application Update Controller
     Qml/Core/Controllers/TerminalController.qml
     Qml/Core/Controllers/TextDirectionController.qml # Keeps code in the diff editors left to right
@@ -173,6 +175,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Settings/SshSection.qml
     Qml/View/Components/Settings/SshKeyCard.qml
     Qml/View/Components/Settings/UpdateCard.qml
+    Qml/View/Components/Settings/ProxyCard.qml
 
     # Import Export Bundle Components
     Qml/View/Components/ImportExport/ImportExportBundle.qml
