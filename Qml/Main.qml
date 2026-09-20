@@ -136,6 +136,8 @@ ApplicationWindow {
 
         Component.onCompleted: {
             uiSession.windowController.window = window
+            uiSession.proxyController.applyToQtNetwork()
+
             Qt.callLater(function() {
                 uiSession.updateController.checkForUpdatesOnStartup()
             })
@@ -149,6 +151,7 @@ ApplicationWindow {
         appModel: uiSession.appModel
         notificationController: uiSession.notificationController
         guideController: uiSession.guideController
+        proxyController: uiSession.proxyController
     }
 
     // Main content loader - switches between welcome flow and main application
