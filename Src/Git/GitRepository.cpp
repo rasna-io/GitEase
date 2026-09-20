@@ -1,8 +1,10 @@
 #include "GitRepository.h"
 #include "GitCommandText.h"
 #include "GitResult.h"
+#include "Utilities/GitProxyOptions.h"
 
 #include <QDir>
+#include <QUrl>
 
 #include <git2.h>
 
@@ -186,6 +188,9 @@ GitResult GitRepository::cloneInternal(const QString& url,
 
     git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
     opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
+
+    GitProxyOptions proxyCfg(QUrl(url).host());
+    proxyCfg.apply(opts.fetch_opts.proxy_opts);
 
     opts.fetch_opts.callbacks.transfer_progress = progressCallback;
     opts.fetch_opts.callbacks.sideband_progress = [](const char *, int, void *p) -> int {
