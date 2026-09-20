@@ -205,7 +205,13 @@ QtObject {
         mergeController:        root.mergeController
     }
 
-    property NetworkController networkController: NetworkController {}
+    property ProxyController proxyController: ProxyController {
+        appModel: root.appModel
+    }
+
+    property NetworkController networkController: NetworkController {
+        proxyManager: root.proxyController
+    }
 
     property SshKeyController sshKeyController: SshKeyController {}
 
