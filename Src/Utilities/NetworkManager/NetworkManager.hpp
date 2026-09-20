@@ -8,10 +8,14 @@
 #include <QTimer>
 #include <QVariantMap>
 
+#include "ProxyManager.h"
+
 class NetworkManager : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
+
+    Q_PROPERTY(ProxyManager* proxyManager READ proxyManager WRITE setProxyManager NOTIFY proxyManagerChanged)
 
 public:
     explicit NetworkManager(QObject *parent = nullptr);
@@ -36,15 +40,21 @@ public:
         const QVariantMap &headers = QVariantMap()
     );
 
+    ProxyManager *proxyManager() const;
+    void setProxyManager(ProxyManager *proxyManager);
+
 signals:
     void requestFinished(QString requestKey, QJsonObject response);
     void requestError(QString requestKey, int code, QString message);
     void timeout(QString requestKey);
     void downloadProgress(QString requestKey, qint64 bytesReceived, qint64 bytesTotal);
+    void proxyManagerChanged();
 
 private:
     void setHeaders(QNetworkRequest &request, const QVariantMap &headers);
+    void applyProxyForUrl(const QString &url);
 
 private:
     QNetworkAccessManager m_manager;
+    ProxyManager *m_proxyManager = nullptr;
 };

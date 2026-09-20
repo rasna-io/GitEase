@@ -4,9 +4,11 @@
 #include "GitResult.h"
 #include "Remote.h"
 #include "Utilities/GitProtocolDetector.h"
+#include "Utilities/GitProxyOptions.h"
 
 #include <git2.h>
 #include <QDebug>
+#include <QUrl>
 #include <QVariant>
 #include <QVariantList>
 #include <qdatetime.h>
@@ -215,6 +217,9 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
 
     git_push_options opts;
     git_push_options_init(&opts, GIT_PUSH_OPTIONS_VERSION);
+
+    GitProxyOptions proxyCfg(QUrl(QString::fromUtf8(git_remote_url(remote))).host());
+    proxyCfg.apply(opts.proxy_opts);
 
     GitRepository::GitPayload payload {
         this,
@@ -920,6 +925,9 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
     }
 
     git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
+
+    GitProxyOptions proxyCfg(QUrl(QString::fromUtf8(git_remote_url(remote))).host());
+    proxyCfg.apply(opts.proxy_opts);
 
     GitRepository::GitPayload payload {
         this,

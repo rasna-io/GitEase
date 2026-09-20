@@ -15,11 +15,14 @@ RowLayout {
 
     /* Property Declarations
     * ****************************************************************************************/
-    property     string            title:       ""
-
-    property     string            description: ""
-
-    property     alias             text:        txf.text
+    property    string title:            ""
+    property    string description:      ""
+    property    alias  text:             txf.text
+    property    alias  validator:        txf.validator
+    property    alias  inputMethodHints: txf.inputMethodHints
+    property    alias  echoMode:         txf.echoMode
+    property    alias  placeholderText:  txf.placeholderText
+    property    alias  field:            txf
 
     /* Children
      * ****************************************************************************************/
@@ -43,6 +46,13 @@ RowLayout {
 
     TextField {
         id: txf
-        Layout.preferredWidth: parent.width * 0.4
+        Layout.preferredWidth: 280
+        Layout.minimumWidth: 160
+        minHeight: 30
+        borderRadius: 6
+        baseFontSize: 12
+        backgroundColor: Style.colors.controlBackground
+        borderColor: Style.colors.controlBorder
+        focusBorderColor: Style.colors.accent
     }
 }

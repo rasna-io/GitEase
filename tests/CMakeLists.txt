@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Core Test Qml)
+find_package(Qt6 REQUIRED COMPONENTS Core Test Qml Network)
 
 add_library(gitease_test_support STATIC
     ${CMAKE_SOURCE_DIR}/Src/Git/Utilities/GitProtocolDetector.cpp
@@ -59,6 +59,7 @@ add_library(gitease_git_backend_test_support STATIC
     ${CMAKE_SOURCE_DIR}/Src/Git/Auth/GitHttpsAuth.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/Auth/GitSshAuth.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/Utilities/GitProtocolDetector.cpp
+    ${CMAKE_SOURCE_DIR}/Src/Git/Utilities/GitProxyOptions.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/Models/Repository.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/Models/Remote.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/Models/Commit.cpp
@@ -66,6 +67,7 @@ add_library(gitease_git_backend_test_support STATIC
     ${CMAKE_SOURCE_DIR}/Src/Git/Models/GitDiff.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/Models/GitFileStatus.cpp
     ${CMAKE_SOURCE_DIR}/Src/Utilities/SshKeyManager/SshKeyManager.cpp
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/ProxyManager/ProxyManager.cpp
 )
 
 target_include_directories(gitease_git_backend_test_support PUBLIC
@@ -76,12 +78,14 @@ target_include_directories(gitease_git_backend_test_support PUBLIC
     ${CMAKE_SOURCE_DIR}/Src/Git/Utilities
     ${CMAKE_SOURCE_DIR}/Src/Utilities
     ${CMAKE_SOURCE_DIR}/Src/Utilities/SshKeyManager
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/ProxyManager
 )
 
 target_link_libraries(gitease_git_backend_test_support PUBLIC
     Qt6::Core
     Qt6::Qml
     Qt6::Concurrent
+    Qt6::Network
     libgit2
 )
 

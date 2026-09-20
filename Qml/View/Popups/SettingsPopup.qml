@@ -30,6 +30,8 @@ IPopup {
 
     property GuideController        guideController:        null
 
+    property ProxyController        proxyController:        null
+
     property var                    switchToPageById:       function() {}
     property var                    openUtilityPanel:       function() {}
 
@@ -51,6 +53,7 @@ IPopup {
         "settings_appearance_tutorial",
         "settings_ssh_tutorial",
         "settings_notifications_tutorial",
+        "settings_proxy_tutorial",
         "settings_help_tutorial"
     ]
 
@@ -61,7 +64,8 @@ IPopup {
         "settings_appearance_tutorial": 1,
         "settings_ssh_tutorial": 2,
         "settings_notifications_tutorial": 3,
-        "settings_help_tutorial": 5
+        "settings_proxy_tutorial": 5,
+        "settings_help_tutorial": 6
     }
 
     // Tracks a guide waiting for SwipeView to reach its target page
@@ -282,7 +286,8 @@ IPopup {
                         {pageId: 2, title: "SSH", icon: Style.icons.terminal, groupStart: true},
                         {pageId: 3, title: "Notifications", icon: Style.icons.bell, groupStart: true},
                         {pageId: 4, title: "Updates", icon: Style.icons.refresh, groupStart: true},
-                        {pageId: 5, title: "Help",        icon: Style.icons.info},
+                        {pageId: 5, title: "Proxy", icon: Style.icons.globe, groupStart: true},
+                        {pageId: 6, title: "Help",        icon: Style.icons.info},
                     ]
                     onClicked: (modelData) => {
                         root.currentPage = modelData.pageId
@@ -714,6 +719,44 @@ IPopup {
                         Item {
                             GuideHoverTrigger {
                                 guideController: root.guideController
+                                guideId: "settings_proxy_tutorial"
+                                guideName: "Proxy"
+                                guideIcon: Style.icons.globe
+                                stepsFactory: function() {
+                                    return [
+                                        {
+                                            targetProvider: function() { return proxyCard },
+                                            icon: Style.icons.globe,
+                                            title: "Proxy",
+                                            description: "Configure an HTTP, SOCKS5, or VMess/VLess proxy for GitEase's Git and network traffic, including bypass rules for internal hosts.",
+                                            isInPopup: true,
+                                            activationDelay: 300,
+                                            onActivate: function() { root.currentPage = 5 }
+                                        }
+                                    ]
+                                }
+                            }
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.topMargin: 10
+                                anchors.leftMargin: 20
+                                anchors.rightMargin: 20
+                                spacing: 10
+
+                                ProxyCard {
+                                    id: proxyCard
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    proxyManager: root.proxyController
+                                    notificationController: root.notificationController
+                                }
+                            }
+                        }
+
+                        Item {
+                            GuideHoverTrigger {
+                                guideController: root.guideController
                                 guideId: "settings_help_tutorial"
                                 guideName: "Help & Guides"
                                 guideIcon: Style.icons.info
@@ -726,7 +769,7 @@ IPopup {
                                             description: "Turn contextual tutorials on or off — when enabled, each one pops up automatically the first time you encounter it.",
                                             isInPopup: true,
                                             activationDelay: 700,
-                                            onActivate: function() { root.currentPage = 5 }
+                                            onActivate: function() { root.currentPage = 6 }
                                         },
                                         {
                                             targetProvider: function() { return resetGuidesButton },

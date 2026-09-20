@@ -17,6 +17,8 @@ Item {
 
     property NotificationController notificationController: null
 
+    property ProxyController        proxyController:        null
+
     SshKeyController {
         id: sshKeyCtrl
     }
@@ -30,6 +32,7 @@ Item {
         notificationController: root.notificationController
         sshKeyController:       sshKeyCtrl
         guideController:        root.guideController
+        proxyController:        root.proxyController
     }
 
     property UserAuthenticationPopup    userAuthenticationPopup:    UserAuthenticationPopup {}
