@@ -21,7 +21,7 @@ include(libarchive.cmake)
 # Flatten generation of all sub-dependent libraries
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Qml)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Quick Gui Concurrent Svg)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick Gui Concurrent Svg Network)
 
 # Dependencies
 add_subdirectory(Res/)
@@ -100,6 +100,7 @@ target_link_libraries(${MAIN_TARGET_NAME} PRIVATE
     Qt6::Gui
     Qt6::Concurrent
     Qt6::Svg
+    Qt6::Network
     libarchive
     ${MAIN_TARGET_NAME}_Styleplugin
     ${MAIN_TARGET_NAME}_Style_Implplugin
