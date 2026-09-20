@@ -10,10 +10,14 @@
 #include <QTimer>
 #include <QVariantMap>
 
+#include "ProxyManager.h"
+
 class NetworkManager : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
+
+    Q_PROPERTY(ProxyManager* proxyManager READ proxyManager WRITE setProxyManager NOTIFY proxyManagerChanged)
 
 public:
     explicit NetworkManager(QObject *parent = nullptr);
@@ -38,6 +42,9 @@ public:
         const QVariantMap &headers = QVariantMap()
     );
 
+    ProxyManager *proxyManager() const;
+    void setProxyManager(ProxyManager *proxyManager);
+
     /**
      * @brief Stream a download straight to disk instead of buffering it in memory.
      *
@@ -61,14 +68,17 @@ signals:
     void requestError(QString requestKey, int code, QString message);
     void timeout(QString requestKey);
     void downloadProgress(QString requestKey, qint64 bytesReceived, qint64 bytesTotal);
+    void proxyManagerChanged();
 
 private:
     void setHeaders(QNetworkRequest &request, const QVariantMap &headers);
     QTimer *trackReply(const QString &requestKey, QNetworkReply *reply, int timeoutMs,
                        bool isDownload);
     void releaseReply(const QString &requestKey, QNetworkReply *reply);
+    void applyProxyForUrl(const QString &url);
 
 private:
     QNetworkAccessManager m_manager;
     QHash<QString, QPointer<QNetworkReply>> m_activeReplies;
+    ProxyManager *m_proxyManager = nullptr;
 };

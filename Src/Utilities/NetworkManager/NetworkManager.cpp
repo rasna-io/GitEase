@@ -11,6 +11,7 @@
 #include <QSaveFile>
 #include <QStringConverter>
 #include <QTimer>
+#include <QUrl>
 
 #define REQUEST_TIMEOUT 5000
 // Downloads can legitimately take minutes; only give up when no bytes arrive for this long.
@@ -19,6 +20,30 @@
 NetworkManager::NetworkManager(QObject *parent)
     : QObject(parent)
 {
+}
+
+ProxyManager *NetworkManager::proxyManager() const
+{
+    return m_proxyManager;
+}
+
+void NetworkManager::setProxyManager(ProxyManager *proxyManager)
+{
+    if (m_proxyManager == proxyManager)
+        return;
+
+    if (m_proxyManager)
+        disconnect(m_proxyManager, nullptr, this, nullptr);
+
+    m_proxyManager = proxyManager;
+
+    if (m_proxyManager) {
+        connect(m_proxyManager, &QObject::destroyed, this, [this]() {
+            m_proxyManager = nullptr;
+        });
+    }
+
+    emit proxyManagerChanged();
 }
 
 void NetworkManager::sendRequest(
@@ -33,6 +58,8 @@ void NetworkManager::sendRequest(
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     setHeaders(request, headers);
+
+    applyProxyForUrl(url);
 
     QNetworkReply *reply = nullptr;
 
@@ -90,6 +117,8 @@ void NetworkManager::downloadRequest(
     QNetworkRequest request((QUrl(url)));
     setHeaders(request, headers);
 
+    applyProxyForUrl(url);
+
     QNetworkReply *reply = m_manager.get(request);
 
     QTimer *timer = trackReply(requestKey, reply, DOWNLOAD_STALL_TIMEOUT, true);
@@ -123,6 +152,8 @@ void NetworkManager::downloadToFile(
 {
     QNetworkRequest request((QUrl(url)));
     setHeaders(request, headers);
+
+    applyProxyForUrl(url);
 
     QNetworkReply *reply = m_manager.get(request);
 
@@ -225,6 +256,20 @@ void NetworkManager::releaseReply(const QString &requestKey, QNetworkReply *repl
         m_activeReplies.erase(it);
 
     reply->deleteLater();
+}
+
+void NetworkManager::applyProxyForUrl(const QString &url)
+{
+    if (!m_proxyManager)
+        return;
+
+    const QString host = QUrl(url).host();
+    if (!host.isEmpty() && ProxyManager::isHostBypassed(host, m_proxyManager->noProxyList())) {
+        m_manager.setProxy(QNetworkProxy(QNetworkProxy::NoProxy));
+        return;
+    }
+
+    m_manager.setProxy(m_proxyManager->buildQNetworkProxy());
 }
 
 void NetworkManager::setHeaders(QNetworkRequest &request, const QVariantMap &headers)
