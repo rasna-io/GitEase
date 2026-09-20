@@ -194,7 +194,13 @@ QtObject {
         commitController:       root.commitController
     }
 
-    property NetworkController networkController: NetworkController {}
+    property ProxyController proxyController: ProxyController {
+        appModel: root.appModel
+    }
+
+    property NetworkController networkController: NetworkController {
+        proxyManager: root.proxyController
+    }
 
     property UpdateController updateController: UpdateController {
         networkController: root.networkController
