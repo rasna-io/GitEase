@@ -142,6 +142,8 @@ ApplicationWindow {
 
         Component.onCompleted: {
             uiSession.windowController.window = window
+            uiSession.proxyController.applyToQtNetwork()
+
             Qt.callLater(function() {
                 uiSession.updateController.checkForUpdatesOnStartup()
             })
@@ -157,6 +159,7 @@ ApplicationWindow {
         guideController: uiSession.guideController
         sshKeyController: uiSession.sshKeyController
         textDirectionController: uiSession.textDirectionController
+        proxyController: uiSession.proxyController
     }
 
     // Main content loader - switches between welcome flow and main application
