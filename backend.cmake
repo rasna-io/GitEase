@@ -39,7 +39,9 @@ set(SOURCES_BACKEND
     Src/Git/Auth/GitHttpsAuth.cpp
     Src/Git/Utilities/GitProtocolDetector.cpp
     Src/Git/Utilities/GitIgnoreMatcher.cpp
+    Src/Git/Utilities/GitProxyOptions.cpp
     Src/Utilities/SshKeyManager/SshKeyManager.cpp
+    Src/Utilities/ProxyManager/ProxyManager.cpp
 
     Src/Plugins/PluginContext.cpp
     Src/Plugins/PluginManager.cpp
@@ -92,7 +94,9 @@ set(HEADERS_BACKEND
 
     Src/Git/Utilities/GitProtocolDetector.h
     Src/Git/Utilities/GitIgnoreMatcher.h
+    Src/Git/Utilities/GitProxyOptions.h
     Src/Utilities/SshKeyManager/SshKeyManager.h
+    Src/Utilities/ProxyManager/ProxyManager.h
 
     Src/Plugins/IPluginContext.h
     Src/Plugins/IPlugin.h
@@ -117,6 +121,7 @@ set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Utilities/FileManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/SshKeyManager/
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/ProxyManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/GitScanner/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/NetworkManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/UpdateManager/
