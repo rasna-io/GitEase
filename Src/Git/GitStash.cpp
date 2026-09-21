@@ -508,11 +508,7 @@ GitResult GitStash::pop(int index, bool reinstateIndex)
         return GitResult(false, QVariant(), QString("Failed to pop stash: %1").arg(git_error_last()->message));
     }
 
-    QString command = QString("git stash pop stash@{%1}").arg(index);
-    if (reinstateIndex) {
-        command += " --index";
-    }
-    emitGitCommand(command);
+    emitGitCommand(GitCommandText::stashPop(index, reinstateIndex));
 
     return GitResult(true, QVariant(), "Stash popped successfully.");
 }
