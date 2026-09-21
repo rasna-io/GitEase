@@ -1,4 +1,5 @@
 #include "GitStash.h"
+#include "GitCommandText.h"
 #include <git2/strarray.h>
 #include <git2/blob.h>
 #include <git2/index.h>
