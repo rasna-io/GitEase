@@ -484,7 +484,7 @@ GitResult GitStash::remove(int index)
         return GitResult(false, QVariant(), QString("Failed to remove stash: %1").arg(git_error_last()->message));
     }
 
-    emitGitCommand(QString("git stash drop stash@{%1}").arg(index));
+    emitGitCommand(GitCommandText::stashDrop(index));
 
     return GitResult(true, QVariant(), "Stash removed successfully.");
 }
