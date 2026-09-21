@@ -1,4 +1,5 @@
 #include "GitRemote.h"
+#include "GitCommandText.h"
 #include "Auth/GitHttpsAuth.h"
 #include "Auth/GitSshAuth.h"
 #include "GitResult.h"
