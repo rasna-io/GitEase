@@ -196,24 +196,10 @@ IWindow {
                 Layout.bottomMargin: 10
                 spacing: 10
 
-                //! The command this window is about to run, kept in sync with GitStash::save()
-                Text {
+                //! The command this window is about to run, built by the same code GitStash::save() reports with
+                CommandPreview {
                     Layout.fillWidth: true
-                    text: {
-                        let command = "git stash push"
-                        if (keepIndexCheckBox.checked)
-                            command += " --keep-index"
-
-                        let message = stashMessageField.text.trim()
-                        if (message.length > 0)
-                            command += ` -m "${message}"`
-
-                        return command
-                    }
-                    color: Style.colors.conflictSectionLabel
-                    elide: Text.ElideRight
-                    font.family: Style.fontTypes.jetBrainsMono
-                    font.pixelSize: Style.appFont.captionPt
+                    command: GitCommandText.stashPush(stashMessageField.text, keepIndexCheckBox.checked)
                 }
 
                 ConflictPillButton {
