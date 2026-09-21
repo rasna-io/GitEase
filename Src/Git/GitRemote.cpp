@@ -269,10 +269,7 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
     pushResult["force"] = force;
     pushResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    emitGitCommand(QString("git push %1%2 %3")
-                       .arg(force ? "--force " : "",
-                            quoteCommandArg(remoteName),
-                            quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::push(remoteName, branchName, force));
 
     return GitResult(true, pushResult);
 }
