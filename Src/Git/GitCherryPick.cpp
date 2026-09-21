@@ -106,7 +106,7 @@ GitResult GitCherryPick::continueOp()
 
     m_currentIndex++;
 
-    emitGitCommand("git cherry-pick --continue");
+    emitGitCommand(GitCommandText::cherryPickContinue());
 
     return processCommits();
 }
