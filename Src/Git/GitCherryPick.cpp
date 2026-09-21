@@ -155,7 +155,7 @@ GitResult GitCherryPick::abortOp()
         return resetResult;
 
     clearState();
-    emitGitCommand("git cherry-pick --abort");
+    emitGitCommand(GitCommandText::cherryPickAbort());
 
     return GitResult(true, QVariant(), "Cherry-pick aborted.");
 }
