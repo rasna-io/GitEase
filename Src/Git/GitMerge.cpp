@@ -441,7 +441,7 @@ GitResult GitMerge::abortOp()
     }
 
     resetMergeState();
-    emitGitCommand("git merge --abort");
+    emitGitCommand(GitCommandText::mergeAbort());
 
     return GitResult(true, QVariant(), "Merge aborted.");
 }
