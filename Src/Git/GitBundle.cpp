@@ -481,7 +481,7 @@ GitResult GitBundle::unbundle(const QString &bundlePath)
     }
     git_object_free(commit_obj);
 
-    emitGitCommand(QString("git bundle unbundle %1").arg(quoteCommandArg(bundlePath)));
+    emitGitCommand(GitCommandText::bundleUnbundle(bundlePath));
 
     QVariantMap data;
     data["SHA"] = commitSha;
