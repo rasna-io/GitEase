@@ -51,3 +51,33 @@ QString GitCommandText::checkoutCommit(const QString &commitHash)
     return QString("git checkout --detach %1").arg(quote(commitHash));
 }
 
+QString GitCommandText::createTag(const QString &name, const QString &message, bool force)
+{
+    QString command = "git tag";
+
+    if (force)
+        command += " -f";
+
+    if (!message.isEmpty())
+        command += " -a -m " + quote(message);
+
+    command += " " + quote(name);
+
+    return command;
+}
+
+QString GitCommandText::deleteTag(const QString &name)
+{
+    return QString("git tag -d %1").arg(quote(name));
+}
+
+QString GitCommandText::pushTag(const QString &name)
+{
+    return QString("git push origin %1").arg(quote(name));
+}
+
+QString GitCommandText::pushDeleteTag(const QString &name)
+{
+    return QString("git push origin --delete %1").arg(quote(name));
+}
+
