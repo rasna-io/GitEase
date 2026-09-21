@@ -231,7 +231,7 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
     git_object_free(targetCommit);
     git_reference_free(targetRef);
 
-    emitGitCommand(QString("git checkout %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::checkoutBranch(branchName));
 
     return GitResult(true, QVariant(), QString("Successfully checked out branch '%1'.").arg(branchName));
 }
