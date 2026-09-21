@@ -76,4 +76,9 @@ public:
     //! \a mode matches ResetController.ResetMode: 0 soft, 1 mixed, 2 hard.
     Q_INVOKABLE static QString reset(const QString &commitHash, int mode);
 
+    /* Repository
+     * ****************************************************************************************/
+    Q_INVOKABLE static QString init(const QString &path);
+    Q_INVOKABLE static QString clone(const QString &url, const QString &localPath);
+
 };
