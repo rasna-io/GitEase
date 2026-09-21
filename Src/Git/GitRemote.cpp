@@ -392,8 +392,7 @@ GitResult GitRemote::addRemote(const QString &name, const QString &url)
 
     git_remote_free(remote);
 
-    emitGitCommand(QString("git remote add %1 %2")
-                       .arg(quoteCommandArg(name), quoteCommandArg(url)));
+    emitGitCommand(GitCommandText::addRemote(name, url));
 
     return GitResult(true, QVariant::fromValue(remoteInfo));
 }
