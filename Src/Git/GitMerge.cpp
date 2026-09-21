@@ -314,7 +314,7 @@ GitResult GitMerge::continueOp(const QString& commitMessage)
 
     if (result.success()) {
         resetMergeState();
-        emitGitCommand("git merge --continue");
+        emitGitCommand(GitCommandText::mergeContinue());
     }
 
     return result;
