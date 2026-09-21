@@ -81,13 +81,7 @@ GitResult GitTag::create(const QString &name, const QString &targetId, const QSt
     if (error < 0)
         return GitResult(false);
 
-    QString command = "git tag";
-    if (force)
-        command += " -f";
-    if (!message.isEmpty())
-        command += " -a -m " + quoteCommandArg(message);
-    command += " " + quoteCommandArg(name);
-    emitGitCommand(command);
+    emitGitCommand(GitCommandText::createTag(name, message, force));
 
     emit tagsChanged();
     return GitResult(true);
