@@ -165,7 +165,7 @@ GitResult GitTag::pushDeleteTag(const QString &name)
     GitResult result = pushDeleteTagInternal(name);
 
     if (result.success())
-        emitGitCommand(QString("git push origin --delete %1").arg(quoteCommandArg(name)));
+        emitGitCommand(GitCommandText::pushDeleteTag(name));
 
     return result;
 }
