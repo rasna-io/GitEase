@@ -413,7 +413,7 @@ GitResult GitRebase::skipOp()
     git_rebase_free(rebase);
 
     if (skipResult.success()) {
-        emitGitCommand("git rebase --skip");
+        emitGitCommand(GitCommandText::rebaseSkip());
     }
 
     return skipResult;
