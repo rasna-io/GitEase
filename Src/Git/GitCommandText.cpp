@@ -271,3 +271,12 @@ QString GitCommandText::bundleUnbundle(const QString &bundlePath)
     return QString("git bundle unbundle %1").arg(quote(bundlePath));
 }
 
+QString GitCommandText::setUserIdentity(const QString &name, const QString &email, const QString &levelFlag)
+{
+    if (levelFlag.isEmpty())
+        return QString("git config user.name %1 && git config user.email %2")
+            .arg(quote(name), quote(email));
+
+    return QString("git config %1 user.name %2 && git config %1 user.email %3")
+        .arg(levelFlag, quote(name), quote(email));
+}
