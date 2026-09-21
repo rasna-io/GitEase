@@ -47,4 +47,11 @@ public:
     Q_INVOKABLE static QString setRemoteUrl(const QString &name, const QString &url);
     Q_INVOKABLE static QString push(const QString &remoteName, const QString &branchName, bool force = false);
 
+    /* Stash
+     * ****************************************************************************************/
+    Q_INVOKABLE static QString stashPush(const QString &message, bool keepIndex);
+    Q_INVOKABLE static QString stashApply(int index, bool reinstateIndex);
+    Q_INVOKABLE static QString stashPop(int index, bool reinstateIndex);
+    Q_INVOKABLE static QString stashDrop(int index);
+
 };
