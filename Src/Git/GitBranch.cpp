@@ -271,7 +271,7 @@ GitResult GitBranch::checkoutCommit(const QString &commitHash)
         return GitResult(false, QVariant(), "Failed to detach HEAD to commit.");
     }
 
-    emitGitCommand(QString("git checkout --detach %1").arg(quoteCommandArg(commitHash)));
+    emitGitCommand(GitCommandText::checkoutCommit(commitHash));
 
     return GitResult(true, QVariant(), QString("Checked out commit %1").arg(commitHash.left(8)));
 }
