@@ -161,3 +161,87 @@ QString GitCommandText::commit(const QString &message, bool amend, bool allowEmp
     return command;
 }
 
+QString GitCommandText::merge(const QString &sourceBranch, bool noFF)
+{
+    return noFF ? QString("git merge --no-ff %1").arg(quote(sourceBranch))
+                : QString("git merge %1").arg(quote(sourceBranch));
+}
+
+QString GitCommandText::mergeContinue()
+{
+    return "git merge --continue";
+}
+
+QString GitCommandText::mergeAbort()
+{
+    return "git merge --abort";
+}
+
+QString GitCommandText::rebaseOnto(const QString &upstream)
+{
+    return QString("git rebase %1").arg(quote(upstream));
+}
+
+QString GitCommandText::rebase(const QString &onto, const QString &upstream, const QString &branch,
+                               bool interactive, int skippedCount)
+{
+    QString command = interactive ? "git rebase -i" : "git rebase";
+
+    if (!onto.trimmed().isEmpty())
+        command += " --onto " + quote(onto);
+
+    command += " " + quote(upstream);
+
+    if (!branch.isEmpty())
+        command += " " + quote(branch);
+
+    if (skippedCount > 0)
+        command += QString("  # skipped %1 commit(s)").arg(skippedCount);
+
+    return command;
+}
+
+QString GitCommandText::rebaseContinue()
+{
+    return "git rebase --continue";
+}
+
+QString GitCommandText::rebaseSkip()
+{
+    return "git rebase --skip";
+}
+
+QString GitCommandText::rebaseAbort()
+{
+    return "git rebase --abort";
+}
+
+QString GitCommandText::cherryPickContinue()
+{
+    return "git cherry-pick --continue";
+}
+
+QString GitCommandText::cherryPickSkip()
+{
+    return "git cherry-pick --skip";
+}
+
+QString GitCommandText::cherryPickAbort()
+{
+    return "git cherry-pick --abort";
+}
+
+QString GitCommandText::reset(const QString &commitHash, int mode)
+{
+    QString command = "git reset";
+
+    switch (mode) {
+    case 0:  command += " --soft";  break;
+    case 1:  command += " --mixed"; break;
+    case 2:  command += " --hard";  break;
+    default: break;
+    }
+
+    // Refs and hashes never need quoting, and the unquoted form is what git users type
+    return command + " " + commitHash;
+}
