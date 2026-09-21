@@ -1,4 +1,5 @@
 #include "GitRepository.h"
+#include "GitCommandText.h"
 #include "GitResult.h"
 
 #include <QDir>
