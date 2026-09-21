@@ -81,4 +81,10 @@ public:
     Q_INVOKABLE static QString init(const QString &path);
     Q_INVOKABLE static QString clone(const QString &url, const QString &localPath);
 
+    /* Bundle
+     * ****************************************************************************************/
+    Q_INVOKABLE static QString bundleCreate(const QString &bundlePath, const QString &targetRef,
+                                            const QString &baseRef = QString());
+    Q_INVOKABLE static QString bundleUnbundle(const QString &bundlePath);
+
 };
