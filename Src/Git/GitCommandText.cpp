@@ -256,3 +256,18 @@ QString GitCommandText::clone(const QString &url, const QString &localPath)
     return QString("git clone %1 %2").arg(quote(url), quote(localPath));
 }
 
+QString GitCommandText::bundleCreate(const QString &bundlePath, const QString &targetRef, const QString &baseRef)
+{
+    if (baseRef.isEmpty())
+        return QString("git bundle create %1 %2").arg(quote(bundlePath), quote(targetRef));
+
+    return QString("git bundle create %1 %2 ^%3").arg(quote(bundlePath),
+                                                      quote(targetRef),
+                                                      quote(baseRef));
+}
+
+QString GitCommandText::bundleUnbundle(const QString &bundlePath)
+{
+    return QString("git bundle unbundle %1").arg(quote(bundlePath));
+}
+
