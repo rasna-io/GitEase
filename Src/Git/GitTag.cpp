@@ -123,7 +123,7 @@ GitResult GitTag::pushTag(const QString &name)
     GitResult result = pushTagInternal(name);
 
     if (result.success())
-        emitGitCommand(QString("git push origin %1").arg(quoteCommandArg(name)));
+        emitGitCommand(GitCommandText::pushTag(name));
 
     return result;
 }
