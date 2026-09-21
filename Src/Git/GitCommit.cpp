@@ -1,4 +1,5 @@
 #include "GitCommit.h"
+#include "GitCommandText.h"
 
 #include <git2/branch.h>
 #include <git2/commit.h>
