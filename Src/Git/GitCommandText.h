@@ -19,4 +19,8 @@ class GitCommandText : public QObject
 
 public:
     explicit GitCommandText(QObject *parent = nullptr);
+
+    //! Quotes an argument the way the command strings expect. Empty arguments stay empty.
+    Q_INVOKABLE static QString quote(const QString &argument);
+
 };
