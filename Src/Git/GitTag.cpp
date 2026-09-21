@@ -1,4 +1,5 @@
 #include "GitTag.h"
+#include "GitCommandText.h"
 
 #include <algorithm>
 
