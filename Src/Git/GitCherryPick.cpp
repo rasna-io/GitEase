@@ -461,7 +461,7 @@ GitResult GitCherryPick::skipOp()
     m_hasConflicts = false;
     emit cherryPickStateChanged();
 
-    emitGitCommand("git cherry-pick --skip");
+    emitGitCommand(GitCommandText::cherryPickSkip());
 
     m_currentIndex++;
 
