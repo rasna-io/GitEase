@@ -1,4 +1,5 @@
 #include "GitReset.h"
+#include "GitCommandText.h"
 #include <git2/reset.h>
 
 GitReset::GitReset(QObject *parent)
