@@ -1,4 +1,5 @@
 #include "GitBundle.h"
+#include "GitCommandText.h"
 
 #include "GitResult.h"
 #include "GitBranch.h"
