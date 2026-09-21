@@ -245,3 +245,14 @@ QString GitCommandText::reset(const QString &commitHash, int mode)
     // Refs and hashes never need quoting, and the unquoted form is what git users type
     return command + " " + commitHash;
 }
+
+QString GitCommandText::init(const QString &path)
+{
+    return QString("git init %1").arg(quote(path));
+}
+
+QString GitCommandText::clone(const QString &url, const QString &localPath)
+{
+    return QString("git clone %1 %2").arg(quote(url), quote(localPath));
+}
+
