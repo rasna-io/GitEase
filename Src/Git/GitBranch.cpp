@@ -303,8 +303,7 @@ GitResult GitBranch::renameBranch(const QString &oldName, const QString &newName
     git_reference_free(newRef);
     git_reference_free(branchRef);
 
-    emitGitCommand(QString("git branch -m %1 %2")
-                       .arg(quoteCommandArg(oldName), quoteCommandArg(newName)));
+    emitGitCommand(GitCommandText::renameBranch(oldName, newName));
 
     return GitResult(true, QVariant(), QString("Successfully renamed branch '%1' to '%2'.").arg(oldName).arg(newName));
 }
