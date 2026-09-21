@@ -146,3 +146,18 @@ QString GitCommandText::stashDrop(int index)
     return QString("git stash drop stash@{%1}").arg(index);
 }
 
+QString GitCommandText::commit(const QString &message, bool amend, bool allowEmpty)
+{
+    QString command = "git commit";
+
+    if (amend)
+        command += " --amend";
+
+    if (allowEmpty)
+        command += " --allow-empty";
+
+    command += " -m " + quote(message.trimmed());
+
+    return command;
+}
+
