@@ -501,6 +501,19 @@ IPopup {
         baseBranchType  = "remote"
     }
 
+    function previewCommand() {
+        let branchName = nameInput.text.trim()
+        if (branchName === "")
+            return ""
+
+        let command = GitCommandText.createBranch(branchName, root.targetHash)
+
+        if (checkoutCheckbox.checked)
+            command += " && " + GitCommandText.checkoutBranch(branchName)
+
+        return command
+    }
+
     function createBranch(){
 
         let branchName  = nameInput.text.trim()
