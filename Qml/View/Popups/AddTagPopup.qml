@@ -387,8 +387,12 @@ IPopup {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: pushCheckBox.checked = !pushCheckBox.checked
-                    }
+                CommandPreview {
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: root.sectionSpacing
+
+                    placeholder: qsTr("Name the tag to see the command")
+                    command: root.previewCommand()
                 }
 
                 // Footer separator
