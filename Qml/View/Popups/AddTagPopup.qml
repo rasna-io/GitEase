@@ -353,7 +353,7 @@ IPopup {
                 // Push checkbox
                 RowLayout {
                     id: pushCheckBox
-                    property bool checked: true
+                    readonly property bool checked: root.pushAfterCreate
                     Layout.bottomMargin: root.sectionSpacing
 
                     spacing: 8
@@ -387,6 +387,10 @@ IPopup {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
+                        onClicked: root.pushAfterCreate = !root.pushAfterCreate
+                    }
+                }
+
                 CommandPreview {
                     Layout.fillWidth: true
                     Layout.bottomMargin: root.sectionSpacing
