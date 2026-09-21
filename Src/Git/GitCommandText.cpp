@@ -107,3 +107,42 @@ QString GitCommandText::push(const QString &remoteName, const QString &branchNam
                                            quote(remoteName),
                                            quote(branchName));
 }
+
+QString GitCommandText::stashPush(const QString &message, bool keepIndex)
+{
+    QString command = "git stash push";
+
+    if (keepIndex)
+        command += " --keep-index";
+
+    if (!message.trimmed().isEmpty())
+        command += " -m " + quote(message.trimmed());
+
+    return command;
+}
+
+QString GitCommandText::stashApply(int index, bool reinstateIndex)
+{
+    QString command = QString("git stash apply stash@{%1}").arg(index);
+
+    if (reinstateIndex)
+        command += " --index";
+
+    return command;
+}
+
+QString GitCommandText::stashPop(int index, bool reinstateIndex)
+{
+    QString command = QString("git stash pop stash@{%1}").arg(index);
+
+    if (reinstateIndex)
+        command += " --index";
+
+    return command;
+}
+
+QString GitCommandText::stashDrop(int index)
+{
+    return QString("git stash drop stash@{%1}").arg(index);
+}
+
