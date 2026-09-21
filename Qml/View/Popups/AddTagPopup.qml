@@ -490,6 +490,19 @@ IPopup {
     // Auto-focus logic when popup opens
     onOpened: nameInput.forceActiveFocus()
 
+    function previewCommand() {
+        let tagName = nameInput.text.trim()
+        if (tagName === "")
+            return ""
+
+        let command = GitCommandText.createTag(tagName, root.isAnnotated ? messageInput.text.trim() : "")
+
+        if (root.pushAfterCreate)
+            command += " && " + GitCommandText.pushTag(tagName)
+
+        return command
+    }
+
     function createTag(){
         let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
         let notif = root.notificationController || (typeof uiSession !== "undefined" ? uiSession.notifications : null);
