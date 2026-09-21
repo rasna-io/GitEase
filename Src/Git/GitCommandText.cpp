@@ -81,3 +81,29 @@ QString GitCommandText::pushDeleteTag(const QString &name)
     return QString("git push origin --delete %1").arg(quote(name));
 }
 
+QString GitCommandText::addRemote(const QString &name, const QString &url)
+{
+    return QString("git remote add %1 %2").arg(quote(name), quote(url));
+}
+
+QString GitCommandText::removeRemote(const QString &name)
+{
+    return QString("git remote remove %1").arg(quote(name));
+}
+
+QString GitCommandText::renameRemote(const QString &oldName, const QString &newName)
+{
+    return QString("git remote rename %1 %2").arg(quote(oldName), quote(newName));
+}
+
+QString GitCommandText::setRemoteUrl(const QString &name, const QString &url)
+{
+    return QString("git remote set-url %1 %2").arg(quote(name), quote(url));
+}
+
+QString GitCommandText::push(const QString &remoteName, const QString &branchName, bool force)
+{
+    return QString("git push %1%2 %3").arg(force ? "--force " : "",
+                                           quote(remoteName),
+                                           quote(branchName));
+}
