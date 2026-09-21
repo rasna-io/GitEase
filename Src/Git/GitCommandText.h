@@ -54,4 +54,8 @@ public:
     Q_INVOKABLE static QString stashPop(int index, bool reinstateIndex);
     Q_INVOKABLE static QString stashDrop(int index);
 
+    /* Commit
+     * ****************************************************************************************/
+    Q_INVOKABLE static QString commit(const QString &message, bool amend = false, bool allowEmpty = false);
+
 };
