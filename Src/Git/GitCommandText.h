@@ -87,4 +87,8 @@ public:
                                             const QString &baseRef = QString());
     Q_INVOKABLE static QString bundleUnbundle(const QString &bundlePath);
 
+    /* Config
+     * ****************************************************************************************/
+    //! \a levelFlag is "--global", "--local", "--system" or empty for the default level.
+    Q_INVOKABLE static QString setUserIdentity(const QString &name, const QString &email, const QString &levelFlag);
 };
