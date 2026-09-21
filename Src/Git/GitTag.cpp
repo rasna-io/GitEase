@@ -97,7 +97,7 @@ GitResult GitTag::remove(const QString &name)
     if (error < 0)
         return GitResult(false);
 
-    emitGitCommand(QString("git tag -d %1").arg(quoteCommandArg(name)));
+    emitGitCommand(GitCommandText::deleteTag(name));
 
     emit tagsChanged();
     return GitResult(true);
