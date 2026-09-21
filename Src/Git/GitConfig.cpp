@@ -167,11 +167,7 @@ GitResult GitConfig::setConfig(int level, const QString &name, const QString &em
     git_config_free(cfg);
 
     const QString levelFlag = configLevelFlag(configLevel);
-    emitGitCommand(levelFlag.isEmpty()
-                       ? QString("git config user.name %1 && git config user.email %2")
-                             .arg(quoteCommandArg(name), quoteCommandArg(email))
-                       : QString("git config %1 user.name %2 && git config %1 user.email %3")
-                             .arg(levelFlag, quoteCommandArg(name), quoteCommandArg(email)));
+    emitGitCommand(GitCommandText::setUserIdentity(name, email, levelFlag));
 
     return GitResult(true, QVariant(), "Config set successfully");
 }
