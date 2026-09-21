@@ -285,7 +285,7 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
     git_object_free(targetCommit);
     git_reference_free(targetRef);
 
-    emitGitCommand(QString("git checkout %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::checkoutBranch(branchName));
 
     ActionContext postCheckout;
     postCheckout.type = ActionType::PostCheckout;
