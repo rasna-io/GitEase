@@ -39,4 +39,12 @@ public:
     Q_INVOKABLE static QString pushTag(const QString &name);
     Q_INVOKABLE static QString pushDeleteTag(const QString &name);
 
+    /* Remote
+     * ****************************************************************************************/
+    Q_INVOKABLE static QString addRemote(const QString &name, const QString &url);
+    Q_INVOKABLE static QString removeRemote(const QString &name);
+    Q_INVOKABLE static QString renameRemote(const QString &oldName, const QString &newName);
+    Q_INVOKABLE static QString setRemoteUrl(const QString &name, const QString &url);
+    Q_INVOKABLE static QString push(const QString &remoteName, const QString &branchName, bool force = false);
+
 };
