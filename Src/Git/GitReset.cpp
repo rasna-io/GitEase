@@ -25,22 +25,18 @@ GitResult GitReset::resetHead(const QString &commit, ResetMode mode)
     }
 
     git_reset_t resetType;
-    QString gitCmd = "git reset";
 
     switch (mode) {
     case ResetMode::Soft:
         resetType = GIT_RESET_SOFT;
-        gitCmd += " --soft";
         break;
 
     case ResetMode::Mixed:
         resetType = GIT_RESET_MIXED;
-        gitCmd += " --mixed";
         break;
 
     case ResetMode::Hard:
         resetType = GIT_RESET_HARD;
-        gitCmd += " --hard";
         break;
 
     default:
@@ -48,7 +44,7 @@ GitResult GitReset::resetHead(const QString &commit, ResetMode mode)
         return GitResult(false, QVariant(), "Invalid reset mode.");
     }
 
-    gitCmd += " " + commit;
+    const QString gitCmd = GitCommandText::reset(commit, static_cast<int>(mode));
 
     result = git_reset(activeRepo(), target, resetType, nullptr);
 
