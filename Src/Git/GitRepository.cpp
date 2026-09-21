@@ -47,7 +47,7 @@ GitResult GitRepository::init(const QString &path)
 
     // Store path and emit signal
     m_currentRepoPath = path;
-    emitGitCommand(QString("git init %1").arg(quoteCommandArg(path)));
+    emitGitCommand(GitCommandText::init(path));
 
     return GitResult(true, path);
 }
