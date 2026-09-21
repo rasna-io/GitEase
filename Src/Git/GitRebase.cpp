@@ -1,4 +1,5 @@
 #include "GitRebase.h"
+#include "GitCommandText.h"
 
 #include "GitUtils.h"
 
