@@ -23,4 +23,13 @@ public:
     //! Quotes an argument the way the command strings expect. Empty arguments stay empty.
     Q_INVOKABLE static QString quote(const QString &argument);
 
+    /* Branch
+     * ****************************************************************************************/
+    Q_INVOKABLE static QString createBranch(const QString &branchName, const QString &startPoint = QString());
+    Q_INVOKABLE static QString createBranchAndCheckout(const QString &branchName, const QString &startPoint = QString());
+    Q_INVOKABLE static QString deleteBranch(const QString &branchName);
+    Q_INVOKABLE static QString renameBranch(const QString &oldName, const QString &newName);
+    Q_INVOKABLE static QString checkoutBranch(const QString &branchName);
+    Q_INVOKABLE static QString checkoutCommit(const QString &commitHash);
+
 };
