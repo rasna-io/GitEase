@@ -56,10 +56,7 @@ GitResult GitMerge::mergeBranchIntoCurrent(const QString& sourceBranch, bool noF
     git_reference_free(sourceRef);
 
     if (result.success()) {
-        QString cmd = noFF
-            ? QString("git merge --no-ff %1").arg(quoteCommandArg(sourceBranch))
-            : QString("git merge %1").arg(quoteCommandArg(sourceBranch));
-        emitGitCommand(cmd);
+        emitGitCommand(GitCommandText::merge(sourceBranch, noFF));
     }
 
     return result;
