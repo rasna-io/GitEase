@@ -418,7 +418,7 @@ GitResult GitBundle::unbundleWithCli(const QString &bundlePath)
         QVariantMap data;
         data["SHA"] =outputSplited[0];
 
-        emitGitCommand(QString("git bundle unbundle %1").arg(quoteCommandArg(bundlePath)));
+        emitGitCommand(GitCommandText::bundleUnbundle(bundlePath));
 
         return GitResult(true, data);
     }
