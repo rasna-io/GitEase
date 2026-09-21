@@ -47,14 +47,7 @@ GitResult GitStash::save(const QString &message, bool keepIndex)
     if (result != GIT_OK)
         return GitResult(false, {}, git_error_last()->message);
 
-    QString command = "git stash push";
-    if (keepIndex) {
-        command += " --keep-index";
-    }
-    if (!message.trimmed().isEmpty()) {
-        command += " -m " + quoteCommandArg(message.trimmed());
-    }
-    emitGitCommand(command);
+    emitGitCommand(GitCommandText::stashPush(message, keepIndex));
 
     return GitResult(true, {}, "Stash saved successfully.");
 }
