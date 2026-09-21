@@ -1,4 +1,5 @@
 #include "GitBranch.h"
+#include "GitCommandText.h"
 #include "GitResult.h"
 
 #include <QDebug>
