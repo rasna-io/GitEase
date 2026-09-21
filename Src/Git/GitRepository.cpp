@@ -195,8 +195,7 @@ GitResult GitRepository::cloneInternal(const QString& url,
         &opts
         );
 
-    emitGitCommand(QString("git clone %1 %2")
-                       .arg(quoteCommandArg(url), quoteCommandArg(localPath)));
+    emitGitCommand(GitCommandText::clone(url, localPath));
 
     if (result != 0) {
         const git_error *err = git_error_last();
