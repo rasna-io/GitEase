@@ -154,8 +154,7 @@ GitResult GitBranch::createBranch(const QString &commitSha, const QString &branc
                          QString("Failed to create branch '%1'").arg(branchName));
     }
 
-    emitGitCommand(QString("git branch %1 %2")
-                       .arg(quoteCommandArg(branchName), quoteCommandArg(commitSha)));
+    emitGitCommand(GitCommandText::createBranch(branchName, commitSha));
 
     return GitResult(true);
 }
