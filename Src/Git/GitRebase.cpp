@@ -350,18 +350,11 @@ GitResult GitRebase::startRebase(const QString& onto,
     git_rebase_free(rebase);
 
     if (rebaseResult.success()) {
-        QString command = skippedCommits.isEmpty() ? "git rebase" : "git rebase -i";
-        if (!onto.trimmed().isEmpty()) {
-            command += " --onto " + quoteCommandArg(onto);
-        }
-        command += " " + quoteCommandArg(upstream);
-        if (hasBranch) {
-            command += " " + quoteCommandArg(originalBranch);
-        }
-        if (!skippedCommits.isEmpty()) {
-            command += QString("  # skipped %1 commit(s)").arg(skippedCommits.count());
-        }
-        emitGitCommand(command);
+        emitGitCommand(GitCommandText::rebase(onto,
+                                             upstream,
+                                             hasBranch ? originalBranch : QString(),
+                                             !skippedCommits.isEmpty(),
+                                             skippedCommits.count()));
     }
 
     return rebaseResult;
