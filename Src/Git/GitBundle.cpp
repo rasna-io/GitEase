@@ -141,8 +141,7 @@ GitResult GitBundle::buildCompleteBundle(const QString &resolvedBranchName,
 
     cleanupBundleResources(nullptr, nullptr, walker, packbuilder);
 
-    emitGitCommand(QString("git bundle create %1 %2")
-                       .arg(quoteCommandArg(context.bundlePath), quoteCommandArg(resolvedBranchName)));
+    emitGitCommand(GitCommandText::bundleCreate(context.bundlePath, resolvedBranchName));
 
     return GitResult(result.success());
 }
