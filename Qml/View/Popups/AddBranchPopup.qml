@@ -379,32 +379,12 @@ IPopup {
                 }
 
                 // Git command preview
-                Rectangle {
+                CommandPreview {
                     Layout.fillWidth: true
-                    implicitHeight: 25
-                    radius: 5
-                    color: Style.colors.popupCommandPreviewBackground
                     Layout.bottomMargin: root.sectionSpacing
 
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 10
-                        textFormat: Text.RichText
-
-                        text:
-                            "git checkout -b " +
-                            "<span style=\"color:" + Style.colors.accent + "\">" +
-                            (nameInput.text || "feature/new-work") +
-                            "</span> " +
-                            root.baseBranch
-
-                        font.family: Style.fontTypes.mono
-                        font.pixelSize: Style.appFont.defaultPt
-                        color: Style.colors.popupCommandPreviewText
-                    }
+                    placeholder: qsTr("Name the branch to see the command")
+                    command: root.previewCommand()
                 }
 
                 // Footer separator
