@@ -1,4 +1,5 @@
 #include "GitMerge.h"
+#include "GitCommandText.h"
 #include <git2.h>
 #include <QDebug>
 
