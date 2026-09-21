@@ -467,11 +467,7 @@ GitResult GitStash::apply(int index, bool reinstateIndex)
         return GitResult(false, QVariant(), QString("Failed to apply stash: %1").arg(git_error_last()->message));
     }
 
-    QString command = QString("git stash apply stash@{%1}").arg(index);
-    if (reinstateIndex) {
-        command += " --index";
-    }
-    emitGitCommand(command);
+    emitGitCommand(GitCommandText::stashApply(index, reinstateIndex));
 
     return GitResult(true, QVariant(), "Stash applied successfully.");
 }
