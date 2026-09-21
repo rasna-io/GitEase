@@ -443,7 +443,7 @@ GitResult GitRebase::abortOp()
                          QString("Failed to abort rebase: %1").arg(GitUtils::getLastError()));
     }
 
-    emitGitCommand("git rebase --abort");
+    emitGitCommand(GitCommandText::rebaseAbort());
     return GitResult(true, QVariant(), "Rebase aborted.");
 }
 
