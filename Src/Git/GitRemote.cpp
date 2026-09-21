@@ -420,7 +420,7 @@ GitResult GitRemote::removeRemote(const QString &name)
                          QString("Failed to remove remote '%1'").arg(name));
     }
 
-    emitGitCommand(QString("git remote remove %1").arg(quoteCommandArg(name)));
+    emitGitCommand(GitCommandText::removeRemote(name));
 
     return GitResult(true, name);
 }
