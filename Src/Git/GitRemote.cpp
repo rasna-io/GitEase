@@ -476,8 +476,7 @@ GitResult GitRemote::editRemote(const QString &oldName, const QString &newName, 
 
     const QString effectiveName = (!newName.isEmpty() && newName != oldName) ? newName : oldName;
     if (!newUrl.isEmpty()) {
-        emitGitCommand(QString("git remote set-url %1 %2")
-                           .arg(quoteCommandArg(effectiveName), quoteCommandArg(newUrl)));
+        emitGitCommand(GitCommandText::setRemoteUrl(effectiveName, newUrl));
     }
     
     return GitResult(true, activeRemoteName, "Remote configuration updated successfully.");
