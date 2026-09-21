@@ -204,10 +204,7 @@ GitResult GitBundle::buildDiffBundle(const QString &baseRef, const QString &targ
 
     cleanupBundleResources(nullptr, nullptr, walker, packbuilder);
 
-    emitGitCommand(QString("git bundle create %1 %2 ^%3")
-                       .arg(quoteCommandArg(context.bundlePath),
-                            quoteCommandArg(targetRef),
-                            quoteCommandArg(baseRef)));
+    emitGitCommand(GitCommandText::bundleCreate(context.bundlePath, targetRef, baseRef));
 
     return result;
 }
