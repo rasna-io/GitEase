@@ -1,4 +1,5 @@
 #include "GitCherryPick.h"
+#include "GitCommandText.h"
 
 GitCherryPick::GitCherryPick(QObject* parent)
     : IGitController(parent)
