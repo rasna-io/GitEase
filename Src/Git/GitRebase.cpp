@@ -380,7 +380,7 @@ GitResult GitRebase::continueOp()
     git_rebase_free(rebase);
 
     if (continueResult.success()) {
-        emitGitCommand("git rebase --continue");
+        emitGitCommand(GitCommandText::rebaseContinue());
     }
 
     return continueResult;
