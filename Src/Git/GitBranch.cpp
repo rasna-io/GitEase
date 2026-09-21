@@ -106,7 +106,7 @@ GitResult GitBranch::createBranch(const QString &branchName)
         git_reference_free(new_branch_ref);
     }
 
-    emitGitCommand(QString("git branch %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::createBranch(branchName));
 
     return GitResult(true, QVariant(), QString("Branch created successfully: %1").arg(branchName));
 }
