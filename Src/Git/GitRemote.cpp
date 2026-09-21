@@ -471,8 +471,7 @@ GitResult GitRemote::editRemote(const QString &oldName, const QString &newName, 
     }
 
     if (!newName.isEmpty() && newName != oldName) {
-        emitGitCommand(QString("git remote rename %1 %2")
-                           .arg(quoteCommandArg(oldName), quoteCommandArg(newName)));
+        emitGitCommand(GitCommandText::renameRemote(oldName, newName));
     }
 
     const QString effectiveName = (!newName.isEmpty() && newName != oldName) ? newName : oldName;
