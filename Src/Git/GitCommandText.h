@@ -58,4 +58,22 @@ public:
      * ****************************************************************************************/
     Q_INVOKABLE static QString commit(const QString &message, bool amend = false, bool allowEmpty = false);
 
+    /* Merge / rebase / reset
+     * ****************************************************************************************/
+    Q_INVOKABLE static QString merge(const QString &sourceBranch, bool noFF);
+    Q_INVOKABLE static QString mergeContinue();
+    Q_INVOKABLE static QString mergeAbort();
+    Q_INVOKABLE static QString rebaseOnto(const QString &upstream);
+    Q_INVOKABLE static QString rebase(const QString &onto, const QString &upstream, const QString &branch,
+                                      bool interactive, int skippedCount = 0);
+    Q_INVOKABLE static QString rebaseContinue();
+    Q_INVOKABLE static QString rebaseSkip();
+    Q_INVOKABLE static QString rebaseAbort();
+    Q_INVOKABLE static QString cherryPickContinue();
+    Q_INVOKABLE static QString cherryPickSkip();
+    Q_INVOKABLE static QString cherryPickAbort();
+
+    //! \a mode matches ResetController.ResetMode: 0 soft, 1 mixed, 2 hard.
+    Q_INVOKABLE static QString reset(const QString &commitHash, int mode);
+
 };
