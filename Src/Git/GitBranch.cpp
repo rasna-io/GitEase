@@ -181,7 +181,7 @@ GitResult GitBranch::deleteBranch(const QString &branchName)
         git_reference_free(branchRef);
     }
 
-    emitGitCommand(QString("git branch -d %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::deleteBranch(branchName));
 
     return GitResult(true, QVariant(), QString("Successfully deleted branch: %1").arg(branchName));
 }
