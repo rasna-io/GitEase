@@ -24,13 +24,13 @@ IPopup {
             id: 0,
             title: "Merge commit",
             description: "Creates a merge commit preserving full history. Fast-forward if possible.",
-            command: "git merge " + root.sourceBranch
+            command: GitCommandText.merge(root.sourceBranch, false)
         },
         {
             id: 1,
             title: "Merge commit (no fast-forward)",
             description: "Always creates a merge commit even if fast-forward is possible.",
-            command: "git merge --no-ff " + root.sourceBranch
+            command: GitCommandText.merge(root.sourceBranch, true)
         }
     ]
 
