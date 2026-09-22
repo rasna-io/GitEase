@@ -19,6 +19,8 @@ RowLayout {
     property bool   showCancel:     true
     property string startText:      "Start Rebase"
 
+    property string command:        ""
+
     /* Signals
      * ****************************************************************************************/
     signal undoRequested()
