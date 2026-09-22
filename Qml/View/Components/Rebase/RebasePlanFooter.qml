@@ -53,13 +53,20 @@ RowLayout {
     }
 
     Text {
-        Layout.fillWidth: true
         Layout.leftMargin: 6
         text: "Alt+↑↓ reorder · P/R/S/F/E/D action"
         color: Style.colors.mutedText
         font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.captionPt
         elide: Text.ElideRight
+    }
+
+    CommandPreview {
+        Layout.fillWidth: true
+        Layout.leftMargin: 6
+        Layout.alignment: Qt.AlignVCenter
+
+        command: root.command
     }
 
     ConflictPillButton {
