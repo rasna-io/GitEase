@@ -114,6 +114,16 @@ IPopup {
                     Layout.fillWidth: true
                     placeholder: "Commit message (required)"
                 }
+
+                CommandPreview {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 4
+
+                    placeholder: qsTr("Write a message to see the command")
+                    command: messageInput.text.trim() === ""
+                             ? ""
+                             : GitCommandText.commit(messageInput.text, true)
+                }
             }
 
             // Footer separator
