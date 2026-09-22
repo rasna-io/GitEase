@@ -272,32 +272,13 @@ IPopup {
                                     wrapMode: Text.WordWrap
                                 }
 
-                                // Git command preview inside a card — hugs the command text
-                                Rectangle {
+                                // Git command preview inside a card
+                                CommandPreview {
                                     Layout.topMargin: 4
-                                    Layout.maximumWidth: parent.width
-                                    implicitWidth: commandText.implicitWidth + 12
-                                    implicitHeight: commandText.implicitHeight + 12
+                                    Layout.fillWidth: true
 
-                                    radius: 6
-                                    color: Style.colors.controlBackground
-                                    border.width: 1
-                                    border.color: Style.colors.controlBorder
-
-                                    Text {
-                                        id: commandText
-
-                                        anchors.left: parent.left
-                                        anchors.right: parent.right
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        anchors.margins: 6
-
-                                        text: methodCard.modelData.command
-                                        color: Style.colors.slateMuted
-                                        font.family: Style.fontTypes.jetBrainsMono
-                                        font.pixelSize: Style.appFont.smallPt
-                                        elide: Text.ElideMiddle
-                                    }
+                                    command: methodCard.modelData.command
+                                    copyable: false
                                 }
                             }
                         }
