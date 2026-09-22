@@ -251,6 +251,7 @@ IWindow {
                 spacing: 10
 
                 ConflictPillButton {
+                    id: dropButton
                     Layout.preferredHeight: Style.dp(30)
                     text: "Drop Stash"
                     leadingText: Style.icons.trash
@@ -280,6 +281,7 @@ IWindow {
                 }
 
                 ConflictPillButton {
+                    id: popButton
                     Layout.preferredHeight: Style.dp(30)
                     text: "Pop"
                     trailingText: Style.icons.arrowRight
