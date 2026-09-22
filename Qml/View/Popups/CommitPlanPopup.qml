@@ -91,6 +91,15 @@ IWindow {
         return counts
     }
 
+    readonly property bool planHasEdits: {
+        let counts = root.actionCounts
+        for (let action in counts) {
+            if (action !== "pick" && counts[action] > 0)
+                return true
+        }
+        return false
+    }
+
     property var planHistory: []
     property int planCursor:  -1
 
