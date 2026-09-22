@@ -372,6 +372,11 @@ IWindow {
                 Layout.topMargin: Style.dp(10)
                 Layout.bottomMargin: Style.dp(12)
 
+                command: GitCommandText.rebase(root.planData.onto || "",
+                                               root.planData.upstream || "",
+                                               root.planData.branch || "",
+                                               root.planHasEdits)
+
                 canUndo: root.canUndo
                 canRedo: root.canRedo
                 canStart: commitModel.count > 0 && root.currentRebaseState !== rebaseState.running
