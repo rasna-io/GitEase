@@ -250,6 +250,25 @@ IWindow {
                 Layout.bottomMargin: 10
                 spacing: 10
 
+                CommandPreview {
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: 320
+                    Layout.alignment: Qt.AlignVCenter
+
+                    command: {
+                        if (!root.canPerformAction)
+                            return ""
+
+                        let index = root.stashEntry.index
+                        if (dropButton.hovered)
+                            return GitCommandText.stashDrop(index)
+                        if (popButton.hovered)
+                            return GitCommandText.stashPop(index, reinstateIndexCheck.checked)
+
+                        return GitCommandText.stashApply(index, reinstateIndexCheck.checked)
+                    }
+                }
+
                 ConflictPillButton {
                     id: dropButton
                     Layout.preferredHeight: Style.dp(30)
