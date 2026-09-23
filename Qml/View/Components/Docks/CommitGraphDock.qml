@@ -1566,6 +1566,14 @@ DetachablePanel {
     }
 
     function executeResetHead(commitHash, mode) {
+        let branch = root.branchController.getCurrentBranchName()
+
+        confirmCommandDialog.ask("Reset " + root.resetModeName(mode),
+                                 root.resetWarning(mode, branch, commitHash),
+                                 GitCommandText.reset(commitHash, mode),
+                                 "Reset " + root.resetModeName(mode),
+                                 { commitHash: commitHash, mode: mode })
+    }
 
     function resetModeName(mode) {
         switch (mode) {
