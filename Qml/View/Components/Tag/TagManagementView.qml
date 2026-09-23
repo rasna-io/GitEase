@@ -77,6 +77,11 @@ UtilitiesCard {
         if (!root.tagController)
             return
 
+        confirmTagDialog.ask("Delete Tag From Remote",
+                             "Delete the tag '" + tag.name + "' from the remote and from this repository?",
+                             GitCommandText.pushDeleteTag(tag.name) + " && " + GitCommandText.deleteTag(tag.name),
+                             "Delete Tag",
+                             { action: "remote"})
     }
 
     function performDeleteTagRemote(tag) {
