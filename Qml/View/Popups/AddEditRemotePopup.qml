@@ -170,6 +170,24 @@ IPopup {
         }
     }
 
+    function previewCommand() {
+        let name = nameInput.text.trim()
+        let url  = urlInput.text.trim()
+
+        if (!root.isEdit)
+            return (name === "" || url === "") ? "" : GitCommandText.addRemote(name, url)
+
+        let steps = []
+
+        if (name !== "" && name !== root.oldRemote.name)
+            steps.push(GitCommandText.renameRemote(root.oldRemote.name, name))
+
+        if (url !== "" && url !== root.oldRemote.url)
+            steps.push(GitCommandText.setRemoteUrl(name !== "" ? name : root.oldRemote.name, url))
+
+        return steps.join(" && ")
+    }
+
     onAboutToHide: {
         nameInput.text = "";
         urlInput.text = "";
