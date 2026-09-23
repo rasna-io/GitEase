@@ -172,6 +172,17 @@ UtilitiesCard {
         }
     }
 
+    ConfirmCommandDialog {
+        id: confirmStashDialog
+
+        onConfirmed: (context) => {
+            if (context.action === "dropAll")
+                root.performDropAllStashes()
+            else
+                root.performDropStash(context.stash)
+        }
+    }
+
     /* Functions
      * ****************************************************************************************/
     function updateCanStash() {
