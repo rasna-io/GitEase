@@ -65,6 +65,7 @@ ColumnLayout {
         spacing: 10
 
         ConflictPillButton {
+            id: abortButton
             Layout.preferredHeight: Style.dp(30)
             text: `Abort ${root.operationName}`
             accentColor: Style.colors.conflictDestructive
@@ -72,9 +73,23 @@ ColumnLayout {
             onClicked: root.abortRequested()
         }
 
-        Item { Layout.fillWidth: true }
+        CommandPreview {
+            Layout.fillWidth: true
+            Layout.maximumWidth: 300
+            Layout.alignment: Qt.AlignVCenter
+
+            command: {
+                if (abortButton.hovered)
+                    return root.commandFor("abort")
+                if (skipButton.hovered)
+                    return root.commandFor("skip")
+
+                return root.commandFor("continue")
+            }
+        }
 
         ConflictPillButton {
+            id: skipButton
             Layout.preferredHeight: Style.dp(30)
             visible: root.canSkip
             text: "Skip commit"
