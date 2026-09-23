@@ -55,6 +55,11 @@ UtilitiesCard {
         if (!root.tagController)
             return
 
+        confirmTagDialog.ask("Delete Tag",
+                             "Delete the tag '" + tag.name + "' from this repository?",
+                             GitCommandText.deleteTag(tag.name),
+                             "Delete Tag",
+                             { action: "local"})
     }
 
     function performDeleteTagLocal(tag) {
