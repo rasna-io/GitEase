@@ -1363,6 +1363,10 @@ DetachablePanel {
     }
 
     function executePush(branchName, force) {
+            root.performPush(branchName, false)
+    }
+
+    function performPush(branchName, force) {
         isForcePush = force
         let urlRes = remoteController.getRemoteUrl("origin")
         if (!urlRes.success) {
