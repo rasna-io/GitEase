@@ -295,6 +295,25 @@ UtilitiesCard {
 
         let total = root.stashes.length
 
+        confirmStashDialog.ask("Drop All Stashes",
+                               total === 1 ? "Drop the only stash? The changes it holds are lost."
+                                           : "Drop all " + total + " stashes? The changes they hold are lost.",
+                               root.dropAllCommand(),
+                               "Drop All",
+                               { action: "dropAll" })
+    }
+
+    function dropAllCommand() {
+        let parts = []
+
+        for (let i = root.stashes.length - 1; i >= 0; --i)
+            parts.push(GitCommandText.stashDrop(i))
+
+        return parts.join(" && ")
+    }
+
+        let total = root.stashes.length
+
         for (let i = total - 1; i >= 0; --i) {
             let result = root.stashController.remove(i)
             if (!result.success) {
