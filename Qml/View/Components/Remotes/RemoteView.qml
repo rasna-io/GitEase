@@ -367,6 +367,13 @@ UtilitiesCard {
         }
 
         function removeRemoteItem(remoteItem) {
+            confirmRemoveRemoteDialog.ask("Remove Remote",
+                                          "Remove the remote '" + remoteItem.name + "'? Its remote-tracking branches go with it.",
+                                          GitCommandText.removeRemote(remoteItem.name),
+                                          "Remove Remote",
+                                          remoteItem)
+        }
+
         function performRemoveRemote(remoteItem) {
             root.remoteController.removeRemote(remoteItem.name)
         }
