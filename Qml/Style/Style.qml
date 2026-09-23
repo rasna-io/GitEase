@@ -410,6 +410,7 @@ QtObject {
         popupCheckboxCheckmark:           "#FFFFFF"
         popupCheckboxLabelText:           "#B0B8C8"
         popupCommandPreviewBackground:    "#101016"
+        popupCommandPreviewBorder:        "#26262F"
         popupCommandPreviewText:          "#A6AEBE"
         popupFooterBackground:            "#111116"
         popupCreateButtonBackground:      accent
