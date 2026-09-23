@@ -463,6 +463,28 @@ Item {
                     }
                 }
 
+                CommandPreview {
+                    Layout.fillWidth: true
+
+                    placeholder: root.selectedScope === Config.App
+                                 ? qsTr("Stored in GitEase only — git config is not touched")
+                                 : qsTr("Fill in the name and email to see the command")
+                    command: {
+                        if (root.selectedScope === Config.App)
+                            return ""
+
+                        let name  = fullNameField.field.text.trim()
+                        let email = emailField.field.text.trim()
+
+                        if (name === "" || email === "")
+                            return ""
+
+                        return GitCommandText.setUserIdentity(name, email,
+                                                              root.selectedScope === Config.Global ? "--global"
+                                                                                                   : "--local")
+                    }
+                }
+
                 // Error Message
                 Rectangle {
                     id: errorRectangle
