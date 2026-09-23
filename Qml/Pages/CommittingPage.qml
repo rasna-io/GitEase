@@ -108,6 +108,12 @@ Page {
         }
     }
 
+    ConfirmCommandDialog {
+        id: confirmForcePushDialog
+
+        onConfirmed: root.performPushAndUpdate(true)
+    }
+
     CommitAmendPopup {
         id: amendPopup
         anchors.centerIn: parent
