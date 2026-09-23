@@ -631,6 +631,19 @@ Page {
     }
 
     function pushAndUpdate(force) {
+        if (!force) {
+            root.performPushAndUpdate(false)
+            return
+        }
+
+        let branch = root.branchController?.getCurrentBranchName() ?? ""
+
+        confirmForcePushDialog.ask("Force Push",
+                                   "Overwrite '" + branch + "' on origin with your local history? " +
+                                   "Commits on the remote that you do not have are lost.",
+                                   GitCommandText.push("origin", branch, true),
+                                   "Force Push",
+                                   null)
     }
 
     function performPushAndUpdate(force) {
