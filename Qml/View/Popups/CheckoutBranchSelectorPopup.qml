@@ -194,6 +194,19 @@ IPopup {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 56
 
+                CommandPreview {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 30
+                    anchors.right: parent.right
+                    anchors.rightMargin: 140
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    placeholder: qsTr("Point at a branch to see the command")
+                    command: root.hoveredBranch === ""
+                             ? ""
+                             : GitCommandText.checkoutBranch(root.hoveredBranch)
+                }
+
                 Button {
                     anchors.right: parent.right
                     anchors.rightMargin: 30
