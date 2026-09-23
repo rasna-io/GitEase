@@ -181,6 +181,9 @@ ListView {
     }
 
     function doDeleteBranch(branch) {
+    }
+
+    function performDeleteBranch(branch) {
         let res = root.branchController.deleteBranch(branch.name)
 
         if (res.success) {
