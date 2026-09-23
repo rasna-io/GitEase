@@ -92,6 +92,15 @@ Item {
             color: Style.colors.mutedText
         }
 
+        CommandPreview {
+            Layout.fillWidth: true
+
+            placeholder: qsTr("Choose a location and name to see the command")
+            command: (root.location === "" || root.name === "")
+                     ? ""
+                     : GitCommandText.init(root.location.replace(/[\/\\]+$/, "") + "/" + root.name)
+        }
+
         RowLayout {
             Layout.fillWidth: true
             Layout.topMargin: 6
