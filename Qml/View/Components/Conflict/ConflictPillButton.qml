@@ -25,6 +25,8 @@ Rectangle {
 
     property bool   actionEnabled:  true
 
+    readonly property alias hovered: hoverHandler.hovered
+
     readonly property color _accentWash: Qt.rgba(root.accentColor.r, root.accentColor.g,
                                                  root.accentColor.b, 0.18)
     readonly property color _accentEdge: Qt.rgba(root.accentColor.r, root.accentColor.g,
