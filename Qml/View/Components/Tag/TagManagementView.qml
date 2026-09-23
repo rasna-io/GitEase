@@ -44,6 +44,12 @@ UtilitiesCard {
         if (!root.tagController)
             return
 
+    }
+
+    function performDeleteTagLocal(tag) {
+        if (!root.tagController)
+            return
+
         let res = root.tagController.remove(tag.name);
         if (res.success) {
             if (root.notificationController)
@@ -52,6 +58,12 @@ UtilitiesCard {
     }
 
     function deleteTagRemote(tag) {
+        if (!root.tagController)
+            return
+
+    }
+
+    function performDeleteTagRemote(tag) {
         if (!root.tagController)
             return
 
