@@ -107,6 +107,15 @@ IPopup {
                     visible: urlInput.text.length > 0 && !root.isUrlValid
                     Layout.leftMargin: 5
                 }
+
+                CommandPreview {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 4
+
+                    placeholder: root.isEdit ? qsTr("Change the name or URL to see the command")
+                                             : qsTr("Fill in the name and URL to see the command")
+                    command: root.previewCommand()
+                }
             }
 
             RowLayout {
