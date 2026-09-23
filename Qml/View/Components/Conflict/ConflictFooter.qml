@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 
 /*! ***********************************************************************************************
@@ -23,6 +24,8 @@ ColumnLayout {
     //! Across every conflicted file, not just the one open in the editor.
     property int    resolvedConflicts:  0
     property int    totalConflicts:     0
+
+    readonly property string _operationKey: root.operationName.toLowerCase()
 
     /* Signals
      * ****************************************************************************************/
@@ -91,5 +94,23 @@ ColumnLayout {
                                       : "Resolve every file to continue"
             onClicked: root.continueRequested()
         }
+    }
+
+    
+    /* Functions
+     * ****************************************************************************************/
+    function commandFor(step) {
+        if (root._operationKey === "merge")
+            return step === "abort" ? GitCommandText.mergeAbort() : GitCommandText.mergeContinue()
+
+        if (root._operationKey === "cherry-pick") {
+            if (step === "abort") return GitCommandText.cherryPickAbort()
+            if (step === "skip")  return GitCommandText.cherryPickSkip()
+            return GitCommandText.cherryPickContinue()
+        }
+
+        if (step === "abort") return GitCommandText.rebaseAbort()
+        if (step === "skip")  return GitCommandText.rebaseSkip()
+        return GitCommandText.rebaseContinue()
     }
 }
