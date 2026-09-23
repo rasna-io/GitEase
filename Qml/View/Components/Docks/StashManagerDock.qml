@@ -274,6 +274,7 @@ UtilitiesCard {
                                { action: "drop"})
     }
 
+    function performDropStash(stashEntry) {
         let result = root.stashController.remove(stashEntry.index)
         if (result.success) {
             if (root.notificationController) {
@@ -309,6 +310,10 @@ UtilitiesCard {
 
         return parts.join(" && ")
     }
+
+    function performDropAllStashes() {
+        if (!root.stashController || root.stashes.length === 0)
+            return
 
         let total = root.stashes.length
 
