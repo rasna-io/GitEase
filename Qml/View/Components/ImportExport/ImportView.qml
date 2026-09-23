@@ -163,6 +163,17 @@ Item {
             }
         }
 
+        CommandPreview {
+            Layout.fillWidth: true
+            Layout.topMargin: Style.dp(5)
+
+            placeholder: qsTr("Pick a bundle and name the branch to see the command")
+            command: (root.selectedFile === "" || branchTXF.text.trim() === "")
+                     ? ""
+                     : GitCommandText.bundleUnbundle(root.selectedFile)
+                       + " && " + GitCommandText.createBranch(branchTXF.text.trim(), "FETCH_HEAD")
+        }
+
         DashedButton {
             id: importButton
             Layout.fillWidth: true
