@@ -254,6 +254,15 @@ Page {
                             placeholder: "Commit message (required)"
                         }
 
+                        CommandPreview {
+                            Layout.fillWidth: true
+
+                            placeholder: qsTr("Write a message to see the command")
+                            command: commitTextArea.text.trim() === ""
+                                     ? ""
+                                     : GitCommandText.commit(commitTextArea.text)
+                        }
+
                         RowLayout {
                             id: committingButton
                             Layout.fillWidth: true
