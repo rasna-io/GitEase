@@ -625,6 +625,9 @@ Page {
     }
 
     function pushAndUpdate(force) {
+    }
+
+    function performPushAndUpdate(force) {
         root.remoteOperationsSession?.pushAndUpdate(force)
     }
 
