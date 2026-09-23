@@ -1545,6 +1545,29 @@ DetachablePanel {
     }
 
     function executeResetHead(commitHash, mode) {
+
+    function resetModeName(mode) {
+        switch (mode) {
+        case ResetController.ResetMode.Soft:  return "Soft"
+        case ResetController.ResetMode.Mixed: return "Mixed"
+        default:                              return "Hard"
+        }
+    }
+
+    function resetWarning(mode, branch, commitHash) {
+        let target = "'" + branch + "' to " + commitHash.substring(0, 7)
+
+        switch (mode) {
+        case ResetController.ResetMode.Soft:
+            return "Move " + target + " and keep every change staged."
+        case ResetController.ResetMode.Mixed:
+            return "Move " + target + " and keep your changes, unstaged."
+        default:
+            return "Move " + target + " and discard every change in the working tree. This cannot be undone."
+        }
+    }
+
+    function performResetHead(commitHash, mode) {
         let res = root.resetController.resetHead(commitHash, mode)
 
         if (res.success) {
