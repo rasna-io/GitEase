@@ -189,6 +189,11 @@ ListView {
     }
 
     function doDeleteBranch(branch) {
+        confirmDeleteDialog.ask("Delete Branch",
+                                "Delete the branch '" + branch.name + "'? Any commits only this branch points at become unreachable.",
+                                GitCommandText.deleteBranch(branch.name),
+                                "Delete Branch",
+                                branch)
     }
 
     function performDeleteBranch(branch) {
