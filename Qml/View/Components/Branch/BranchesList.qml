@@ -44,6 +44,14 @@ ListView {
         visible: false
     }
 
+    ConfirmCommandDialog {
+        id: confirmDeleteDialog
+
+        hostItem: root
+
+        onConfirmed: (context) => root.performDeleteBranch(context)
+    }
+
     delegate: Rectangle {
         id: branchDelegate
 
