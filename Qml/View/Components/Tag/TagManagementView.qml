@@ -30,6 +30,17 @@ UtilitiesCard {
         visible: false
     }
 
+    ConfirmCommandDialog {
+        id: confirmTagDialog
+
+        onConfirmed: (context) => {
+            if (context.action === "remote")
+                root.performDeleteTagRemote(context.tag)
+            else
+                root.performDeleteTagLocal(context.tag)
+        }
+    }
+
     /* Logic */
     function reload() {
         if (!root.tagController)
