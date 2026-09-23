@@ -269,6 +269,13 @@ UtilitiesCard {
     }
 
     function dropStash(stashEntry) {
+        confirmStashDialog.ask("Drop Stash",
+                               "Drop stash@{%1}? The changes it holds are lost.".arg(stashEntry.index),
+                               GitCommandText.stashDrop(stashEntry.index),
+                               "Drop Stash",
+                               { action: "drop"})
+    }
+
         let result = root.stashController.remove(stashEntry.index)
         if (result.success) {
             if (root.notificationController) {
