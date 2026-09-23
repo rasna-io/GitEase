@@ -128,6 +128,12 @@ UtilitiesCard {
             width: 200
         }
 
+        ConfirmCommandDialog {
+            id: confirmRemoveRemoteDialog
+
+            onConfirmed: (context) => content.performRemoveRemote(context)
+        }
+
         TextEdit {
             id: clipboardHelper
             visible: false
@@ -361,6 +367,7 @@ UtilitiesCard {
         }
 
         function removeRemoteItem(remoteItem) {
+        function performRemoveRemote(remoteItem) {
             root.remoteController.removeRemote(remoteItem.name)
         }
 
