@@ -1374,7 +1374,17 @@ DetachablePanel {
     }
 
     function executePush(branchName, force) {
+        if (!force) {
             root.performPush(branchName, false)
+            return
+        }
+
+        confirmCommandDialog.ask("Force Push",
+                                 "Overwrite '" + branchName + "' on origin with your local history? " +
+                                 "Commits on the remote that you do not have are lost.",
+                                 GitCommandText.push("origin", branchName, true),
+                                 "Force Push",
+                                 { branchName: branchName })
     }
 
     function performPush(branchName, force) {
