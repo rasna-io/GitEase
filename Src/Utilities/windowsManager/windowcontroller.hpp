@@ -46,7 +46,9 @@ public:
     }
 
     Q_INVOKABLE void minimize() {
-        if (m_window)
+        if (!m_window)
+            return;
+        if (!m_helper || !m_helper->minimizePreservingState())
             m_window->showMinimized();
     }
     Q_INVOKABLE void toggleMaxRestore() {
@@ -77,6 +79,13 @@ public:
     Q_INVOKABLE void setMinimumSize(double w, double h) {
         if (m_helper)
             m_helper->setMinimumSize(QSize(w,h));
+    }
+
+    // Re-assert the native frameless/resizable state after the window is (re)shown;
+    // Windows can recreate the platform window across a show/hide cycle.
+    Q_INVOKABLE void refreshBorderless() {
+        if (m_helper)
+            m_helper->refreshBorderless();
     }
 
 signals:

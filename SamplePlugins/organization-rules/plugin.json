@@ -1,0 +1,10 @@
+{
+  "id": "com.gitease.organization-rules",
+  "name": "Organization rules",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["page"],
+  "author": "GitEase",
+  "description": "Organization rules",
+  "cppEntry": "lib/organization-rules-plugin"
+}

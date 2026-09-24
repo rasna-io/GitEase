@@ -28,8 +28,8 @@ IPopup {
     height: 260
     padding: 8
 
-    x: Math.min(fieldOrigin.x, window.width - width - 10)
-    y: fieldOrigin.y
+    x: root.parent ? Math.max(0, Math.min(fieldOrigin.x, root.parent.width  - width  - 10)) : 0
+    y: root.parent ? Math.max(0, Math.min(fieldOrigin.y, root.parent.height - height - 10)) : 0
 
     /* Children
      * ****************************************************************************************/
@@ -64,6 +64,7 @@ IPopup {
             cal.selectedDate = new Date();
         }
 
+        root.hostItem    = field;
         root.fieldOrigin = field.mapToItem(null, 0, field.height);
         root.open();
     }

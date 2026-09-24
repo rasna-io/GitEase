@@ -40,7 +40,7 @@ Rectangle {
             Label {
                 text:             "Repo Notes"
                 color:            Style.colors.foreground
-                font.family:      Style.fontTypes.roboto
+                font.family:      Style.fontTypes.inter
                 font.pixelSize:   13
                 font.bold:        true
                 Layout.fillWidth: true
@@ -72,7 +72,7 @@ Rectangle {
                     id:              noteArea
                     wrapMode:        TextArea.Wrap
                     color:           Style.colors.foreground
-                    font.family:     Style.fontTypes.roboto
+                    font.family:     Style.fontTypes.inter
                     font.pixelSize:  12
                     placeholderText: "Write notes for this repository…"
                     background:      null

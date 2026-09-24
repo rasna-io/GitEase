@@ -9,12 +9,12 @@ GitStatus::GitStatus(QObject *parent)
     : IGitController{parent}
 {}
 
-GitResult GitStatus::stageFile(const QString &filePath)
+GitResult GitStatus::stageFile(const QString &filePath, bool isDeleted)
 {
     if (filePath.isEmpty())
         return GitResult(false, QVariant(), "File path cannot be empty");
 
-    GitResult result = addToIndex(filePath);  // Stage the file
+    GitResult result = addToIndex(filePath, isDeleted);  // Stage the file
     if (result.success()) {
         emitGitCommand(QString("git add -- %1").arg(quoteCommandArg(filePath)));
     }
@@ -28,12 +28,12 @@ GitResult GitStatus::unstageFile(const QString &filePath)
     if (filePath.isEmpty())
         return GitResult(false, QVariant(), "File path cannot be empty");
 
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available.");
 
     // Get the HEAD commit to use as the reset source
     git_object *head_obj = nullptr;
-    int error = git_revparse_single(&head_obj, m_currentRepo->repo, "HEAD");
+    int error = git_revparse_single(&head_obj, activeRepo(), "HEAD");
     if (error != GIT_OK) {
         // If there is no HEAD (empty repo), we just remove the path from the index
         GitResult removeResult = addToIndex(filePath, true);
@@ -48,7 +48,7 @@ GitResult GitStatus::unstageFile(const QString &filePath)
     git_strarray array = { paths, 1 };
 
     // Reset the Index entry for this path to match the HEAD version
-    error = git_reset_default(m_currentRepo->repo, head_obj, &array);
+    error = git_reset_default(activeRepo(), head_obj, &array);
     git_object_free(head_obj);
 
     if (error != GIT_OK) {
@@ -75,7 +75,7 @@ GitResult GitStatus::stageAll(bool includeUntrackedFiles)
     // Stage all unstaged files
     for (const GitFileStatus& file : files) {
         if (file.isUnstaged()) {
-            GitResult result = addToIndex(file.path());  // Stage the unstaged file
+            GitResult result = addToIndex(file.path(), file.status() == GitFileStatus::Deleted);  // Stage the unstaged file
             if (result.success()) {
                 stagedCount++;
                 stagedFiles.append(file.path());
@@ -108,25 +108,25 @@ GitResult GitStatus::stageAll(bool includeUntrackedFiles)
 
 GitResult GitStatus::status()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
 
     QList<GitFileStatus> fileInfos;
 
     git_status_options opts = GIT_STATUS_OPTIONS_INIT;
     opts.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
-    opts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED;
+    opts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED | GIT_STATUS_OPT_RECURSE_UNTRACKED_DIRS | GIT_STATUS_OPT_UPDATE_INDEX;
 
     git_status_list *status_list = nullptr;
     git_diff *diff = nullptr;
 
-    if (git_status_list_new(&status_list, m_currentRepo->repo, &opts) != 0 || !status_list)
+    if (git_status_list_new(&status_list, activeRepo(), &opts) != 0 || !status_list)
         return GitResult(true, QVariant::fromValue(fileInfos));
 
     git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
     diffOpts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
 
-    git_diff_index_to_workdir(&diff, m_currentRepo->repo, nullptr, &diffOpts);
+    git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &diffOpts);
 
     size_t numDeltas = diff ? git_diff_num_deltas(diff) : 0;
 
@@ -188,12 +188,12 @@ GitResult GitStatus::status()
 
 QString GitStatus::getHeadHash()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return QString();
 
     git_reference *head_ref = nullptr;
     // Get the HEAD reference (points to a branch or a specific commit)
-    int error = git_repository_head(&head_ref, m_currentRepo->repo);
+    int error = git_repository_head(&head_ref, activeRepo());
 
     if (error != GIT_OK) {
         return QString();
@@ -240,11 +240,11 @@ GitResult GitStatus::getStagedFiles()
 
 GitResult GitStatus::addToIndex(const QString& filePath, bool isRemove)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository found");
 
     git_index *index = nullptr;
-    int result = git_repository_index(&index,  m_currentRepo->repo);
+    int result = git_repository_index(&index,  activeRepo());
     if (result != GIT_OK)
         return GitResult(false, QVariant(), "Failed to get repository index");
 
@@ -270,7 +270,7 @@ GitResult GitStatus::getDiff(const QString &filePath)
 {
     QList<GitDiff> result;
 
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
 
 
@@ -289,7 +289,7 @@ GitResult GitStatus::getDiff(const QString &filePath)
     opts.pathspec.count = 1;
 
     // This compares the Staging Area (Index) to the Local File (Workdir)
-    int error = git_diff_index_to_workdir(&diff, m_currentRepo->repo, nullptr, &opts);
+    int error = git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &opts);
 
     if (error == 0) {
         struct RawLine { char origin; int old_no; int new_no; QString content; };
@@ -343,7 +343,7 @@ GitResult GitStatus::getDiff(const QString &filePath)
 GitResult GitStatus::getDiff(const QString &oldCommitHash, const QString &newCommitHash, const QString &filePath)
 {
     QList<GitDiff> result;
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
 
     // Retrieve the commit objects for old and new commits
@@ -357,13 +357,13 @@ GitResult GitStatus::getDiff(const QString &oldCommitHash, const QString &newCom
 
     int resultCode = 0;
     if (!isInitialCommit) {
-        resultCode = git_revparse_single(&oldCommitObj,  m_currentRepo->repo, oldCommitHash.toUtf8().constData());
+        resultCode = git_revparse_single(&oldCommitObj,  activeRepo(), oldCommitHash.toUtf8().constData());
         if (resultCode != 0)
             return GitResult(false, QVariant(), "Failed to retrieve the old commit.");
     }
 
     // Parse the new commit object using the commit hash
-    resultCode = git_revparse_single(&newCommitObj,  m_currentRepo->repo, newCommitHash.toUtf8().constData());
+    resultCode = git_revparse_single(&newCommitObj,  activeRepo(), newCommitHash.toUtf8().constData());
     if (resultCode != 0) {
         git_object_free(oldCommitObj);
         return GitResult(false, QVariant(), "Failed to retrieve the new commit.");
@@ -398,7 +398,7 @@ GitResult GitStatus::getDiff(const QString &oldCommitHash, const QString &newCom
     opts.pathspec.count = 1;
 
     // Create the diff between the two trees
-    resultCode = git_diff_tree_to_tree(&diff,  m_currentRepo->repo, oldTree, newTree, &opts);
+    resultCode = git_diff_tree_to_tree(&diff,  activeRepo(), oldTree, newTree, &opts);
     if (resultCode != 0) {
         git_tree_free(oldTree);
         git_tree_free(newTree);
@@ -457,14 +457,14 @@ GitResult GitStatus::getWorkingDirectoryDiff(const QString &headCommitHash, cons
 {
     QList<GitDiff> result;
 
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
 
     git_object *headObj = nullptr;
     git_tree *headTree = nullptr;
     git_diff *diff = nullptr;
 
-    int rc = git_revparse_single(&headObj, m_currentRepo->repo, headCommitHash.toUtf8().constData());
+    int rc = git_revparse_single(&headObj, activeRepo(), headCommitHash.toUtf8().constData());
     if (rc != GIT_OK)
         return GitResult(false, QVariant(), "Failed to retrieve HEAD commit.");
 
@@ -487,7 +487,7 @@ GitResult GitStatus::getWorkingDirectoryDiff(const QString &headCommitHash, cons
 
     rc = git_diff_tree_to_workdir_with_index(
         &diff,
-        m_currentRepo->repo,
+        activeRepo(),
         headTree,
         &opts
         );
@@ -545,7 +545,7 @@ GitResult GitStatus::getWorkingDirectoryDiff(const QString &headCommitHash, cons
 
 GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "repository not open.");
 
     if (commitHash.isEmpty())
@@ -554,7 +554,7 @@ GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
     // Retrieve commit object for the specified commit hash
     git_commit *commit = nullptr;
     git_object *commitObj = nullptr;
-    int result = git_revparse_single(&commitObj,  m_currentRepo->repo, commitHash.toUtf8().constData());
+    int result = git_revparse_single(&commitObj,  activeRepo(), commitHash.toUtf8().constData());
     if (result != GIT_OK || !commitObj) {
         return GitResult(false, QVariant(), "Failed to retrieve commit.");
     }
@@ -611,7 +611,7 @@ GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
 
 GitResult GitStatus::getDiffView(const QString &filePath, bool staged)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available.");
 
     if (staged) {
@@ -625,10 +625,10 @@ GitResult GitStatus::getDiffView(const QString &filePath, bool staged)
 
 GitResult GitStatus::saveFile(const QString& filePath, const QStringList& rows)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available.");
 
-    const char* workdir = git_repository_workdir(m_currentRepo->repo);
+    const char* workdir = git_repository_workdir(activeRepo());
     if (!workdir)
         return GitResult(false, QVariant(), "No working directory");
 
@@ -655,7 +655,7 @@ GitResult GitStatus::getUnstagedDiffView(const QString &filePath)
 {
     // old/index text
     uint32_t mode = 0;
-    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &mode);
+    auto indexBlob = getIndexBlob(activeRepo(), filePath, &mode);
     QString oldText;
     if (indexBlob) {
         oldText = joinLines(readBlobLines(indexBlob.get()));
@@ -664,7 +664,7 @@ GitResult GitStatus::getUnstagedDiffView(const QString &filePath)
     }
 
     // new/workdir text
-    QString newText = joinLines(readWorkdirLines(m_currentRepo->repo, filePath));
+    QString newText = joinLines(readWorkdirLines(activeRepo(), filePath));
 
     // diff lines (existing)
     GitResult diffRes = getDiff(filePath);
@@ -687,7 +687,7 @@ GitResult GitStatus::getStagedDiffView(const QString &filePath)
     git_tree *headTree = nullptr;
 
 
-    int error = git_revparse_single(&headObj, m_currentRepo->repo, "HEAD");
+    int error = git_revparse_single(&headObj, activeRepo(), "HEAD");
     if (error == GIT_OK && headObj) {
         // Got HEAD Commit
 
@@ -704,7 +704,7 @@ GitResult GitStatus::getStagedDiffView(const QString &filePath)
                 // Found the filePath in commit snapshot
 
                 git_object *blobObj = nullptr;
-                error = git_tree_entry_to_object(&blobObj, m_currentRepo->repo, entry);
+                error = git_tree_entry_to_object(&blobObj, activeRepo(), entry);
                 if (error == GIT_OK && blobObj && git_object_type(blobObj) == GIT_OBJECT_BLOB) {
                     // Ensured it is a file (blob)
 
@@ -723,7 +723,7 @@ GitResult GitStatus::getStagedDiffView(const QString &filePath)
 
     // new/index text
     uint32_t mode = 0;
-    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &mode);
+    auto indexBlob = getIndexBlob(activeRepo(), filePath, &mode);
     QString newText;
     if (indexBlob) {
         newText = joinLines(readBlobLines(indexBlob.get()));
@@ -748,7 +748,7 @@ GitResult GitStatus::getStagedDiff(const QString &filePath)
 {
     QList<GitDiff> result;
 
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
 
     git_object *headObj = nullptr;
@@ -756,7 +756,7 @@ GitResult GitStatus::getStagedDiff(const QString &filePath)
     git_diff *diff = nullptr;
 
     // Get HEAD commit and tree
-    int error = git_revparse_single(&headObj, m_currentRepo->repo, "HEAD");
+    int error = git_revparse_single(&headObj, activeRepo(), "HEAD");
     if (error != GIT_OK) {
         return GitResult(false, QVariant(), "Failed to get HEAD commit");
     }
@@ -782,7 +782,7 @@ GitResult GitStatus::getStagedDiff(const QString &filePath)
     opts.context_lines = 100000;
     opts.interhunk_lines = 100000;
 
-    error = git_diff_tree_to_index(&diff, m_currentRepo->repo, headTree, nullptr, &opts);
+    error = git_diff_tree_to_index(&diff, activeRepo(), headTree, nullptr, &opts);
     if (error != GIT_OK) {
         git_tree_free(headTree);
         git_object_free(headObj);
@@ -925,7 +925,7 @@ bool GitStatus::isContextLine(const QVariantMap &line) const
 
 GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, int endLine, int mode)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available.");
 
     QString stagedText = buildSelectedLinesContent(filePath, startLine, endLine, mode);
@@ -933,9 +933,28 @@ GitResult GitStatus::stageSelectedLines(const QString &filePath, int startLine, 
         return GitResult(false, QVariant(), "Failed to build selected lines.");
 
     uint32_t baseMode = 0;
-    getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
+    getIndexBlob(activeRepo(), filePath, &baseMode);
 
-    GitResult writeResult = writeIndexFromBuffer(m_currentRepo->repo, filePath, stagedText.toUtf8(), baseMode);
+    // Convert the staged (LF) content to worktree representation (CRLF if needed)
+    QByteArray smudged = smudgeText(activeRepo(), filePath, stagedText);
+
+    const char* workdir = git_repository_workdir(activeRepo());
+    QString absPath = QDir(QString::fromUtf8(workdir)).filePath(filePath);
+    QFile wf(absPath);
+    if (!wf.open(QIODevice::ReadOnly)) {
+        return writeIndexFromBuffer(activeRepo(), filePath, stagedText.toUtf8(), baseMode);
+    }
+    QByteArray worktreeBytes = wf.readAll();
+    wf.close();
+
+    GitResult writeResult;
+    if (smudged == worktreeBytes) {
+        writeResult = addToIndex(filePath, false);  // Stage via real file
+    } else {
+        // Partial stage: still need to update the index with our reconstructed (LF) text
+        writeResult = writeIndexFromBuffer(activeRepo(), filePath, stagedText.toUtf8(), baseMode);
+    }
+
     if (writeResult.success()) {
         emitGitCommand(QString("git add -p -- %1").arg(quoteCommandArg(filePath)));
     }
@@ -947,7 +966,7 @@ QString GitStatus::buildSelectedLinesContent(const QString &filePath, int startL
 {
     const git_delta_t type = static_cast<git_delta_t>(mode);
     uint32_t baseMode = 0;
-    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
+    auto indexBlob = getIndexBlob(activeRepo(), filePath, &baseMode);
     if (!indexBlob)
         return {};
 
@@ -957,15 +976,11 @@ QString GitStatus::buildSelectedLinesContent(const QString &filePath, int startL
     git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
     diffOpts.flags |= (GIT_DIFF_PATIENCE | GIT_DIFF_MINIMAL);
 
-    if (type == GIT_DELTA_DELETED) {
-        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
-    } else {
-        QByteArray pathUtf8 = filePath.toUtf8();
-        char *path = const_cast<char *>(pathUtf8.constData());
-        diffOpts.pathspec.strings = &path;
-        diffOpts.pathspec.count = 1;
-        git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
-    }
+    QByteArray pathUtf8 = filePath.toUtf8();
+    char *path = const_cast<char *>(pathUtf8.constData());
+    diffOpts.pathspec.strings = &path;
+    diffOpts.pathspec.count = 1;
+    git_diff_index_to_workdir(&diffRaw, activeRepo(), nullptr, &diffOpts);
 
     UniqueDiff diff(diffRaw);
     git_patch *patchRaw = nullptr;
@@ -979,8 +994,25 @@ QString GitStatus::buildSelectedLinesContent(const QString &filePath, int startL
     const char *rawContent = static_cast<const char *>(git_blob_rawcontent(indexBlob.get()));
     git_object_size_t rawSize = git_blob_rawsize(indexBlob.get());
     QByteArray originalData = QByteArray::fromRawData(rawContent, static_cast<int>(rawSize));
-    if (originalData.contains("\r\n"))
-        selectedText.replace("\n", "\r\n");
+
+    git_filter_list *filters = nullptr;
+    if (git_filter_list_load(&filters, activeRepo(), nullptr,
+                             filePath.toUtf8().constData(),
+                             GIT_FILTER_TO_ODB, GIT_FILTER_DEFAULT) == 0) {
+        git_buf src = GIT_BUF_INIT;
+        git_buf filtered = GIT_BUF_INIT;
+
+        QByteArray utf8 = selectedText.toUtf8();
+        git_buf_set(&src, utf8.constData(), utf8.size());
+
+        if (git_filter_list_apply_to_data(&filtered, filters, &src) == 0) {
+            selectedText = QString::fromUtf8(filtered.ptr, filtered.size);
+        }
+
+        git_buf_dispose(&src);
+        git_buf_dispose(&filtered);
+        git_filter_list_free(filters);
+    }
 
     return selectedText;
 }
@@ -1167,7 +1199,7 @@ GitResult GitStatus::getDiffBetweenTrees(git_tree* oldTree, git_tree* newTree, g
     git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
     opts.flags |= GIT_DIFF_PATIENCE | GIT_DIFF_INDENT_HEURISTIC | GIT_DIFF_MINIMAL;
 
-    int result = git_diff_tree_to_tree(&diff, m_currentRepo->repo, oldTree, newTree, &opts);
+    int result = git_diff_tree_to_tree(&diff, activeRepo(), oldTree, newTree, &opts);
     if (result != GIT_OK || !diff) {
         return GitResult(false, QVariant(), "Failed to create diff between trees.");
     }
@@ -1204,7 +1236,7 @@ QList<GitFileStatus> GitStatus::processDiff(git_diff* diff)
 
 GitResult GitStatus::revertFile(const QString &filePath)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available.");
 
     // Configure checkout options
@@ -1222,7 +1254,7 @@ GitResult GitStatus::revertFile(const QString &filePath)
     opts.paths.count = 1;
 
     // Perform checkout from the index to the working directory
-    int error = git_checkout_index(m_currentRepo->repo, nullptr, &opts);
+    int error = git_checkout_index(activeRepo(), nullptr, &opts);
 
     if (error != GIT_OK) {
         const git_error *e = git_error_last();
@@ -1237,12 +1269,12 @@ GitResult GitStatus::revertFile(const QString &filePath)
 
 GitResult GitStatus::revertSelectedLines(const QString &filePath, int startLine, int endLine, int mode)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available.");
 
     // Get the "Source of Truth" (The Index/Staged version)
     uint32_t baseMode = 0;
-    auto indexBlob = getIndexBlob(m_currentRepo->repo, filePath, &baseMode);
+    auto indexBlob = getIndexBlob(activeRepo(), filePath, &baseMode);
     if (!indexBlob)
         return GitResult(false, QVariant(), "File not found in index.");
 
@@ -1257,7 +1289,7 @@ GitResult GitStatus::revertSelectedLines(const QString &filePath, int startLine,
     diffOpts.pathspec.count = 1;
     diffOpts.flags |= (GIT_DIFF_PATIENCE | GIT_DIFF_MINIMAL);
 
-    git_diff_index_to_workdir(&diffRaw, m_currentRepo->repo, nullptr, &diffOpts);
+    git_diff_index_to_workdir(&diffRaw, activeRepo(), nullptr, &diffOpts);
     UniqueDiff diff(diffRaw);
 
     git_patch* patchRaw = nullptr;
@@ -1330,7 +1362,7 @@ GitResult GitStatus::revertSelectedLines(const QString &filePath, int startLine,
     }
 
     // WRITE TO DISK (Physical File)
-    const char* wd = git_repository_workdir(m_currentRepo->repo);
+    const char* wd = git_repository_workdir(activeRepo());
     QString absPath = QDir(QString::fromUtf8(wd)).filePath(filePath);
     QFile f(absPath);
     if (f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
@@ -1345,7 +1377,7 @@ GitResult GitStatus::revertSelectedLines(const QString &filePath, int startLine,
 
 GitResult GitStatus::revertAll()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available.");
 
     git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
@@ -1359,7 +1391,7 @@ GitResult GitStatus::revertAll()
                              GIT_CHECKOUT_DONT_UPDATE_INDEX;
 
     // Passing NULL to the second parameter tells libgit2 to use HEAD
-    int error = git_checkout_head(m_currentRepo->repo, &opts);
+    int error = git_checkout_head(activeRepo(), &opts);
 
     if (error != GIT_OK) {
         const git_error *e = git_error_last();
@@ -1371,3 +1403,30 @@ GitResult GitStatus::revertAll()
 
     return GitResult(true, QVariant(), "All changes discarded.");
 }
+
+QByteArray GitStatus::smudgeText(git_repository* repo, const QString& path, const QString& lfContent)
+{
+    git_filter_list *filters = nullptr;
+    if (git_filter_list_load(&filters, repo, nullptr,
+                             path.toUtf8().constData(),
+                             GIT_FILTER_TO_WORKTREE, GIT_FILTER_DEFAULT) != 0)
+        return lfContent.toUtf8();
+
+    git_buf src = GIT_BUF_INIT;
+    git_buf dest = GIT_BUF_INIT;
+    QByteArray utf8 = lfContent.toUtf8();
+    git_buf_set(&src, utf8.constData(), utf8.size());
+
+    int rc = git_filter_list_apply_to_data(&dest, filters, &src);
+    git_filter_list_free(filters);
+    git_buf_dispose(&src);
+
+    if (rc == 0) {
+        QByteArray result = QByteArray(dest.ptr, dest.size);
+        git_buf_dispose(&dest);
+        return result;
+    }
+    git_buf_dispose(&dest);
+    return lfContent.toUtf8();
+}
+

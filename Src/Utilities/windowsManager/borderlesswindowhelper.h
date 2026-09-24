@@ -24,6 +24,10 @@ public:
     QSize minimumSize() const;
     void setMinimumSize(const QSize &newSize);
 
+    void refreshBorderless();
+
+    bool minimizePreservingState();
+
 private:
 #ifdef Q_OS_WIN
     void attach();

@@ -75,7 +75,8 @@ QtObject {
                     profiles[i].username,
                     profiles[i].password,
                     profiles[i].email,
-                    profiles[i].levels
+                    profiles[i].levels,
+                    profiles[i].avatarColor ?? ""
                 )
             }
         }
@@ -109,13 +110,15 @@ QtObject {
         root.appModel.userProfiles = root.appModel.userProfiles.slice(0)
     }
 
-    function createUserProfile(username : string, password : string, email : string, level){
+    function createUserProfile(username : string, password : string, email : string, level, avatarColor){
         let levelsArray = []
         if (typeof level === 'number') {
             levelsArray = [level]
         } else if (Array.isArray(level)) {
             levelsArray = level
         }
+
+        let color = avatarColor ?? ""
 
         const existing = findProfileByKey(username, email)
         if (existing) {
@@ -131,6 +134,9 @@ QtObject {
             }
             existing.levels = existing.levels.slice(0)
             
+            if (color !== "" && existing.avatarColor === "")
+                existing.avatarColor = color
+
             if(levelsArray.includes(Config.App))
                 root.appModel.save()
                 
@@ -153,7 +159,8 @@ QtObject {
             username: username,
             password: password,
             email: email,
-            levels: levelsArray
+            levels: levelsArray,
+            avatarColor: color
         })
 
         root.appModel.userProfiles.push(userProfile)
@@ -200,7 +207,7 @@ QtObject {
         }
     }
 
-    function edit(oldUsername, oldEmail, newUsername, newEmail) {
+    function edit(oldUsername, oldEmail, newUsername, newEmail, avatarColor) {
         if(oldUsername === "" || oldEmail === "")
             return
 
@@ -210,6 +217,9 @@ QtObject {
 
         const profile = root.appModel.userProfiles[idx]
         
+        if (avatarColor !== undefined && avatarColor !== "")
+            profile.avatarColor = avatarColor
+
         if (oldUsername !== newUsername || oldEmail !== newEmail) {
             const existingProfile = findProfileByKey(newUsername, newEmail)
             if (existingProfile && existingProfile !== profile) {
@@ -246,7 +256,9 @@ QtObject {
         }
     }
 
-    function applyUserToRepository(username, email){
+    function applyUserToRepository(username, email, level){
+        const targetLevel = (level === undefined || level === null) ? Config.Local : level
+
         const profile = findProfileByKey(username, email)
         
         if (!profile) {
@@ -254,12 +266,13 @@ QtObject {
             return
         }
 
-        var result = configController.setConfig(Config.Local, profile.username, profile.email)
-        
+        var result = configController.setConfig(targetLevel, profile.username, profile.email)
+
         if (result.success) {
             loadAllProfiles()
             if (notificationController) {
-                notificationController.success("User profile '" + username + "' applied to repository", "Profile", 3000)
+                let scopeLabel = targetLevel === Config.Global ? "applied globally" : "applied to repository"
+                notificationController.success("User profile '" + username + "' " + scopeLabel, "Profile", 3000)
             }
         } else {
             console.error("[UserProfileController] Failed to apply user to repository:", result.errorMessage)

@@ -56,8 +56,8 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style_Impl
 
     QML_FILES
     impl/RTextIcon.qml
-    impl/RButton.qml
         impl/Button.qml
+        impl/IconButton.qml
         impl/ComboBox.qml
         impl/TabButton.qml
         impl/TabBar.qml
@@ -72,6 +72,8 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style_Impl
         impl/SpinBox.qml
         impl/Switch.qml
         impl/Calendar.qml
+        impl/TextArea.qml
+        impl/CheckBox.qml
 )
 
 target_link_libraries(${MAIN_TARGET_NAME}_Style PRIVATE

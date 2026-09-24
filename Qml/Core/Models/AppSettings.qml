@@ -16,6 +16,9 @@ QtObject {
     // You can manually set this flag as needed
     property bool hasCompletedWelcome: false
 
+    property bool guidesEnabled: true
+    property var shownGuides: []
+
     property GeneralSettings generalSettings: GeneralSettings {}
 
     property AppearanceSettings appearanceSettings: AppearanceSettings {}
@@ -27,6 +30,8 @@ QtObject {
     function serialize() {
         let data = {
             hasCompletedWelcome: root.hasCompletedWelcome,
+            guidesEnabled: root.guidesEnabled,
+            shownGuides: root.shownGuides,
             general: root.generalSettings.serialize(),
             appearance: root.appearanceSettings.serialize(),
             notifications: root.notificationSettings.serialize()
@@ -37,6 +42,8 @@ QtObject {
 
     function deserialize(data : var) {
         root.hasCompletedWelcome = data?.hasCompletedWelcome ?? false
+        root.guidesEnabled = data?.guidesEnabled ?? true
+        root.shownGuides = data?.shownGuides ?? []
 
         root.generalSettings.deserialize(data?.general ?? {})
         root.appearanceSettings.deserialize(data?.appearance ?? {})

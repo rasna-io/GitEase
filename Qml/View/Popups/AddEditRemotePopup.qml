@@ -57,9 +57,9 @@ IPopup {
             Text {
                 text: root.isEdit ? "Edit Remote" : "Add Remote"
                 color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
+                font.family: Style.fontTypes.inter
                 font.bold: true
-                font.pixelSize: 16
+                font.pixelSize: Style.appFont.h2Pt
                 Layout.alignment: Qt.AlignHCenter
             }
 
@@ -70,7 +70,7 @@ IPopup {
                 // Name Input
                 TextField {
                     id: nameInput
-                    placeholderText: "Remote Name (e.g. origin)"
+                    placeholderText: "Remote name (e.g. origin)"
                     Layout.fillWidth: true
                     selectByMouse: true
 
@@ -103,9 +103,18 @@ IPopup {
                 Text {
                     text: "Invalid URL format"
                     color: Style.colors.error
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     visible: urlInput.text.length > 0 && !root.isUrlValid
                     Layout.leftMargin: 5
+                }
+
+                CommandPreview {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 4
+
+                    placeholder: root.isEdit ? qsTr("Change the name or URL to see the command")
+                                             : qsTr("Fill in the name and URL to see the command")
+                    command: root.previewCommand()
                 }
             }
 
@@ -129,7 +138,7 @@ IPopup {
 
                 Button {
                     id: actionBtn
-                    text: root.isEdit ? "Update" : "Add"
+                    text: root.isEdit ? "Save" : "Add Remote"
                     Layout.fillWidth: true
                     enabled: root.canAccept
 
@@ -168,6 +177,24 @@ IPopup {
                 }
             }
         }
+    }
+
+    function previewCommand() {
+        let name = nameInput.text.trim()
+        let url  = urlInput.text.trim()
+
+        if (!root.isEdit)
+            return (name === "" || url === "") ? "" : GitCommandText.addRemote(name, url)
+
+        let steps = []
+
+        if (name !== "" && name !== root.oldRemote.name)
+            steps.push(GitCommandText.renameRemote(root.oldRemote.name, name))
+
+        if (url !== "" && url !== root.oldRemote.url)
+            steps.push(GitCommandText.setRemoteUrl(name !== "" ? name : root.oldRemote.name, url))
+
+        return steps.join(" && ")
     }
 
     onAboutToHide: {

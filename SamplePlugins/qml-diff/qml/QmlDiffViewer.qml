@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import GitEase_Style
+
 Rectangle {
     id: root
 
@@ -237,7 +239,7 @@ Rectangle {
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 text:  model.leftNum
                 color: "#606060"
-                font { family: "Consolas, monospace"; pixelSize: 12 }
+                font { family: Style.fontTypes.jetBrainsMono; pixelSize: 12 }
                 horizontalAlignment: Text.AlignRight
                 rightPadding: 4
             }
@@ -250,7 +252,7 @@ Rectangle {
                 text:  model.indicator
                 color: model.kind === "added"   ? "#4EC9B0" :
                        model.kind === "deleted" ? "#F14C4C" : "#606060"
-                font { family: "Consolas, monospace"; pixelSize: 12 }
+                font { family: Style.fontTypes.jetBrainsMono; pixelSize: 12 }
                 horizontalAlignment: Text.AlignHCenter
             }
 
@@ -261,7 +263,7 @@ Rectangle {
                 anchors { left: indicator.right; verticalCenter: parent.verticalCenter }
                 text:  model.rightNum
                 color: "#606060"
-                font { family: "Consolas, monospace"; pixelSize: 12 }
+                font { family: Style.fontTypes.jetBrainsMono; pixelSize: 12 }
                 rightPadding: 6
             }
 
@@ -272,7 +274,7 @@ Rectangle {
                 text:       model.htmlText !== "" ? model.htmlText : model.rawText
                 textFormat: model.htmlText !== "" ? Text.RichText  : Text.PlainText
                 color:      model.kind === "hidden" ? "#858585" : "#D4D4D4"
-                font { family: "Consolas, monospace"; pixelSize: 12 }
+                font { family: Style.fontTypes.jetBrainsMono; pixelSize: 12 }
                 elide:      Text.ElideRight
             }
         }
@@ -283,7 +285,7 @@ Rectangle {
             visible: lineModel.count === 0
             text:    "No changes"
             color:   "#555555"
-            font { family: "Consolas, monospace"; pixelSize: 13 }
+            font { family: Style.fontTypes.jetBrainsMono; pixelSize: 13 }
         }
     }
 }

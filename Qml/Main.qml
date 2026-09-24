@@ -21,6 +21,8 @@ ApplicationWindow {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property bool closeAnimationPlayed: false
+    property bool hasActivatedBefore: false
 
 
     /* Object Properties
@@ -33,7 +35,24 @@ ApplicationWindow {
     
     /* Event Handlers
      * ****************************************************************************************/
+    onActiveChanged: {
+        if (!window.active)
+            return
+
+        if (window.hasActivatedBefore)
+            uiSession?.gitStateNotifier?.notifyChanged()
+
+        window.hasActivatedBefore = true
+    }
+
     onClosing: function(close) {
+        if (Style.motionEnabled && !window.closeAnimationPlayed) {
+            close.accepted = false
+            window.closeAnimationPlayed = true
+            windowCloseAnimation.restart()
+            return
+        }
+
         close.accepted = true
 
         try {
@@ -47,6 +66,28 @@ ApplicationWindow {
         })
     }
 
+    ParallelAnimation {
+        id: windowCloseAnimation
+
+        NumberAnimation {
+            target: window
+            property: "opacity"
+            to: 0
+            duration: Style.motionMedium
+            easing.type: Easing.InCubic
+        }
+
+        NumberAnimation {
+            target: window.contentItem
+            property: "scale"
+            to: 0.985
+            duration: Style.motionMedium
+            easing.type: Easing.InCubic
+        }
+
+        onStopped: window.close()
+    }
+
 
     /* Fonts
      * ****************************************************************************************/
@@ -55,6 +96,37 @@ ApplicationWindow {
     FontLoader { source: "qrc:/GitEase/Resources/Fonts/Font Awesome 6 Pro-Regular-400.otf" }
     FontLoader { source: "qrc:/GitEase/Resources/Fonts/Font Awesome 6 Pro-Light-300.otf" }
 
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-Regular.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-Medium.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-SemiBold.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-Bold.ttf" }
+
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-Regular.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-Medium.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-SemiBold.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-Bold.ttf" }
+
+    /* Shortcuts
+     * ****************************************************************************************/
+    Action {
+        text: qsTr("Increments font size")
+        shortcut: qsTr("Ctrl+=")
+        onTriggered: {
+            let appearance = uiSession.appModel.appSettings.appearanceSettings
+            appearance.fontSizePt = Math.min(Style.appFont.maxAppFontPt, appearance.fontSizePt + 1)
+            uiSession.appModel.save()
+        }
+    }
+
+    Action {
+        text: qsTr("Decrements  font size")
+        shortcut: qsTr("Ctrl+-")
+        onTriggered: {
+            let appearance = uiSession.appModel.appSettings.appearanceSettings
+            appearance.fontSizePt = Math.max(Style.appFont.minAppFontPt, appearance.fontSizePt - 1)
+            uiSession.appModel.save()
+        }
+    }
 
     /* Children
      * ****************************************************************************************/
@@ -62,7 +134,12 @@ ApplicationWindow {
         id: uiSession
         popups: uiSessionPopups
 
-        Component.onCompleted: uiSession.windowController.window = window
+        Component.onCompleted: {
+            uiSession.windowController.window = window
+            Qt.callLater(function() {
+                uiSession.updateController.checkForUpdatesOnStartup()
+            })
+        }
     }
 
     UiSessionPopups {
@@ -71,6 +148,7 @@ ApplicationWindow {
         height: window.height
         appModel: uiSession.appModel
         notificationController: uiSession.notificationController
+        guideController: uiSession.guideController
     }
 
     // Main content loader - switches between welcome flow and main application
@@ -78,9 +156,23 @@ ApplicationWindow {
     Loader {
         id: mainContentLoader
         anchors.fill: parent
+        opacity: 0
 
         sourceComponent: uiSession?.shellController.commandExecuted
                          ? mainApplicationComponent : welcomeFlowComponent
+
+        onLoaded: mainContentFadeIn.restart()
+
+        NumberAnimation {
+            id: mainContentFadeIn
+
+            target: mainContentLoader
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: Style.motionPage
+            easing.type: Easing.OutCubic
+        }
     }
 
     // Welcome Flow Component

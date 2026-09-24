@@ -1,4 +1,5 @@
 #include "GitRemote.h"
+#include "GitCommandText.h"
 #include "Auth/GitHttpsAuth.h"
 #include "Auth/GitSshAuth.h"
 #include "GitResult.h"
@@ -7,13 +8,9 @@
 
 #include <git2.h>
 #include <QDebug>
-#include <QtConcurrent>
-#include <QFutureWatcher>
 #include <QVariant>
 #include <QVariantList>
 #include <qdatetime.h>
-#include <QFutureWatcher>
-#include <QtConcurrent>
 
 namespace {
 QString lastGitErrorMessage()
@@ -119,8 +116,31 @@ GitResult GitRemote::push(const QString& remote,
                           const QString& branch,
                           bool force)
 {
-    return pushStartAsyncInternal(remote, branch,
-                        std::make_unique<GitSshAuth>(), force);
+    if (remote.isEmpty()) {
+        return GitResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
+    if (!m_currentRepo || !activeRepo()) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (branch.isEmpty()) {
+        return GitResult(false, QVariant(),
+                         "No branch specified and repository is in detached HEAD state");
+    }
+
+    m_forcePush = force;
+    emit forcePushChanged();
+
+    m_pushInProgress = true;
+    emit pushInProgressChanged();
+
+    GitResult result = pushInternal(remote, branch, std::make_unique<GitSshAuth>(), force);
+
+    m_pushInProgress = false;
+    emit pushInProgressChanged();
+
+    return result;
 }
 
 GitResult GitRemote::push(const QString& remote,
@@ -128,8 +148,31 @@ GitResult GitRemote::push(const QString& remote,
                           const QString& token,
                           bool force)
 {
-    return pushStartAsyncInternal(remote, branch,
-                        std::make_unique<GitHttpsAuth>(token), force);
+    if (remote.isEmpty()) {
+        return GitResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
+    if (!m_currentRepo || !activeRepo()) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (branch.isEmpty()) {
+        return GitResult(false, QVariant(),
+                         "No branch specified and repository is in detached HEAD state");
+    }
+
+    m_forcePush = force;
+    emit forcePushChanged();
+
+    m_pushInProgress = true;
+    emit pushInProgressChanged();
+
+    GitResult result = pushInternal(remote, branch, std::make_unique<GitHttpsAuth>(token), force);
+
+    m_pushInProgress = false;
+    emit pushInProgressChanged();
+
+    return result;
 }
 
 bool GitRemote::isPushInProgress() const
@@ -151,7 +194,7 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -162,7 +205,7 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
 
     git_remote* remote = nullptr;
     int result = git_remote_lookup(&remote,
-                                   m_currentRepo->repo,
+                                   activeRepo(),
                                    remoteName.toUtf8().constData());
 
     if (result != GIT_OK) {
@@ -226,63 +269,14 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
     pushResult["force"] = force;
     pushResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    emitGitCommand(QString("git push %1%2 %3")
-                       .arg(force ? "--force " : "",
-                            quoteCommandArg(remoteName),
-                            quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::push(remoteName, branchName, force));
 
     return GitResult(true, pushResult);
 }
 
-GitResult GitRemote::pushStartAsyncInternal(const QString& remoteName,
-                                 const QString& branchName,
-                                 std::unique_ptr<IGitAuth> auth,
-                                 bool force)
-{
-    if (m_pushInProgress) {
-        return GitResult(false, QVariant(), "Push already in progress");
-    }
-
-    m_pushInProgress = true;
-    emit pushInProgressChanged();
-
-    m_forcePush = force;
-    emit forcePushChanged();
-
-    const QString safeRemote = remoteName;
-    const QString safeBranch = branchName;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeRemote,
-         safeBranch,
-         force,
-         auth = std::move(auth)]() mutable -> QVariantMap {
-            GitResult res = pushInternal(safeRemote, safeBranch, std::move(auth), force);
-            QVariantMap out;
-            out["success"] = res.success();
-            out["errorMessage"] = res.errorMessage();
-            out["data"] = res.data();
-            out["remote"] = safeRemote;
-            out["branch"] = safeBranch;
-            return out;
-        });
-
-    auto* watcher = new QFutureWatcher<QVariantMap>(this);
-    connect(watcher, &QFutureWatcher<QVariantMap>::finished, this, [this, watcher]() {
-        m_pushInProgress = false;
-        emit pushInProgressChanged();
-        emit pushFinished(watcher->result());
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
-
-    return GitResult(true, QVariant(), "Push started");
-}
-
 GitResult GitRemote::getRemoteUrl(const QString& remoteName)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -292,7 +286,7 @@ GitResult GitRemote::getRemoteUrl(const QString& remoteName)
 
     git_remote* remote = nullptr;
     int result = git_remote_lookup(&remote,
-                                   m_currentRepo->repo,
+                                   activeRepo(),
                                    remoteName.toUtf8().constData());
 
     if (result != GIT_OK || !remote) {
@@ -330,17 +324,17 @@ GitResult GitRemote::getRemotes()
 {
     QList<Remote> remotes;
 
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
     git_strarray remote_list = {0};
-    int result = git_remote_list(&remote_list, m_currentRepo->repo);
+    int result = git_remote_list(&remote_list, activeRepo());
 
     if (result == GIT_OK) {
         for (size_t i = 0; i < remote_list.count; i++) {
             git_remote* remote = nullptr;
-            result = git_remote_lookup(&remote, m_currentRepo->repo, remote_list.strings[i]);
+            result = git_remote_lookup(&remote, activeRepo(), remote_list.strings[i]);
 
             if (result == 0 && remote) {
                 Remote remoteInfo;
@@ -368,7 +362,7 @@ GitResult GitRemote::getRemotes()
 
 GitResult GitRemote::addRemote(const QString &name, const QString &url)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -378,14 +372,14 @@ GitResult GitRemote::addRemote(const QString &name, const QString &url)
 
     // Check if remote already exists
     git_remote* existing = nullptr;
-    if (git_remote_lookup(&existing, m_currentRepo->repo, name.toUtf8().constData()) == 0) {
+    if (git_remote_lookup(&existing, activeRepo(), name.toUtf8().constData()) == 0) {
         git_remote_free(existing);
         return GitResult(false, QVariant(),
                          QString("Remote '%1' already exists").arg(name));
     }
 
     git_remote* remote = nullptr;
-    int result = git_remote_create(&remote, m_currentRepo->repo, name.toUtf8().constData(), url.toUtf8().constData());
+    int result = git_remote_create(&remote, activeRepo(), name.toUtf8().constData(), url.toUtf8().constData());
 
     if (result != GIT_OK) {
         return GitResult(false, QVariant(),
@@ -398,15 +392,14 @@ GitResult GitRemote::addRemote(const QString &name, const QString &url)
 
     git_remote_free(remote);
 
-    emitGitCommand(QString("git remote add %1 %2")
-                       .arg(quoteCommandArg(name), quoteCommandArg(url)));
+    emitGitCommand(GitCommandText::addRemote(name, url));
 
     return GitResult(true, QVariant::fromValue(remoteInfo));
 }
 
 GitResult GitRemote::removeRemote(const QString &name)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -414,7 +407,7 @@ GitResult GitRemote::removeRemote(const QString &name)
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    int result = git_remote_delete(m_currentRepo->repo, name.toUtf8().constData());
+    int result = git_remote_delete(activeRepo(), name.toUtf8().constData());
 
     if (result != GIT_OK) {
 
@@ -427,14 +420,14 @@ GitResult GitRemote::removeRemote(const QString &name)
                          QString("Failed to remove remote '%1'").arg(name));
     }
 
-    emitGitCommand(QString("git remote remove %1").arg(quoteCommandArg(name)));
+    emitGitCommand(GitCommandText::removeRemote(name));
 
     return GitResult(true, name);
 }
 
 GitResult GitRemote::editRemote(const QString &oldName, const QString &newName, const QString &newUrl)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository context is invalid or not initialized.");
     }
 
@@ -448,7 +441,7 @@ GitResult GitRemote::editRemote(const QString &oldName, const QString &newName, 
     // Handle Remote Renaming
     if (!newName.isEmpty() && newName != oldName) {
         git_strarray problems = {0};
-        result = git_remote_rename(&problems, m_currentRepo->repo,
+        result = git_remote_rename(&problems, activeRepo(),
                                    oldName.toUtf8().constData(),
                                    newName.toUtf8().constData());
 
@@ -466,7 +459,7 @@ GitResult GitRemote::editRemote(const QString &oldName, const QString &newName, 
 
     // Handle URL Update
     if (!newUrl.isEmpty()) {
-        result = git_remote_set_url(m_currentRepo->repo,
+        result = git_remote_set_url(activeRepo(),
                                     activeRemoteName.toUtf8().constData(),
                                     newUrl.toUtf8().constData());
 
@@ -478,14 +471,12 @@ GitResult GitRemote::editRemote(const QString &oldName, const QString &newName, 
     }
 
     if (!newName.isEmpty() && newName != oldName) {
-        emitGitCommand(QString("git remote rename %1 %2")
-                           .arg(quoteCommandArg(oldName), quoteCommandArg(newName)));
+        emitGitCommand(GitCommandText::renameRemote(oldName, newName));
     }
 
     const QString effectiveName = (!newName.isEmpty() && newName != oldName) ? newName : oldName;
     if (!newUrl.isEmpty()) {
-        emitGitCommand(QString("git remote set-url %1 %2")
-                           .arg(quoteCommandArg(effectiveName), quoteCommandArg(newUrl)));
+        emitGitCommand(GitCommandText::setRemoteUrl(effectiveName, newUrl));
     }
     
     return GitResult(true, activeRemoteName, "Remote configuration updated successfully.");
@@ -493,7 +484,7 @@ GitResult GitRemote::editRemote(const QString &oldName, const QString &newName, 
 
 GitResult GitRemote::getUpstreamName(const QString &localBranchName)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -501,7 +492,7 @@ GitResult GitRemote::getUpstreamName(const QString &localBranchName)
     git_reference* upstreamRef = nullptr;
     QString result = "";
 
-    int error = git_branch_lookup(&localRef, m_currentRepo->repo, localBranchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+    int error = git_branch_lookup(&localRef, activeRepo(), localBranchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
 
     if (error == 0) {
         if (git_branch_upstream(&upstreamRef, localRef) == 0) {
@@ -525,7 +516,7 @@ GitResult GitRemote::getUpstreamName(const QString &localBranchName)
 
 GitResult GitRemote::fetch(const QString& remote)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -571,12 +562,14 @@ GitResult GitRemote::fetch(const QString& remote)
         }
     }
 
-    return startAsyncFetch(remote, std::move(auth));
+    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remote)));
+
+    return fetchInternal(remote, std::move(auth));
 }
 
 GitResult GitRemote::fetchWithToken(const QString& remote, const QString& token)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -584,47 +577,14 @@ GitResult GitRemote::fetchWithToken(const QString& remote, const QString& token)
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    return startAsyncFetch(remote, std::make_unique<GitHttpsAuth>(token));
-}
+    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remote)));
 
-GitResult GitRemote::startAsyncFetch(const QString& remoteName,
-                                     std::unique_ptr<IGitAuth> auth)
-{
-    const QString safeRemote = remoteName;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeRemote,
-         auth = std::move(auth)]() mutable -> GitResult {
-            return fetchInternal(safeRemote, std::move(auth));
-        });
-
-    auto* watcher = new QFutureWatcher<GitResult>(this);
-
-    connect(watcher, &QFutureWatcher<GitResult>::finished,
-            this, [=]() {
-                const GitResult result = watcher->result();
-
-                QVariantMap payload;
-                payload["remote"] = safeRemote;
-                payload["success"] = result.success();
-                payload["errorMessage"] = result.errorMessage();
-                payload["data"] = result.data();
-
-                emit fetchFinished(payload);
-                watcher->deleteLater();
-            });
-
-    watcher->setFuture(future);
-
-    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remoteName)));
-
-    return GitResult(true, QVariant(), "Fetch started");
+    return fetchInternal(remote, std::make_unique<GitHttpsAuth>(token));
 }
 
 GitResult GitRemote::pull(const QString& remote, const QString& branch)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -666,14 +626,14 @@ GitResult GitRemote::pull(const QString& remote, const QString& branch)
         }
     }
 
-    return pullStartAsyncInternal(remote, branch, std::move(auth));
+    return pullInternal(remote, branch, std::move(auth));
 }
 
 GitResult GitRemote::pull(const QString& remote,
                           const QString& branch,
                           const QString& token)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -681,53 +641,14 @@ GitResult GitRemote::pull(const QString& remote,
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    return pullStartAsyncInternal(remote, branch, std::make_unique<GitHttpsAuth>(token));
-}
-
-GitResult GitRemote::pullStartAsyncInternal(const QString& remoteName,
-                                            const QString& branchName,
-                                            std::unique_ptr<IGitAuth> auth)
-{
-    if (m_pullInProgress) {
-        return GitResult(false, QVariant(), "Pull already in progress");
-    }
-
-    m_pullInProgress = true;
-
-    const QString safeRemote = remoteName;
-    const QString safeBranch = branchName;
-
-    auto future = QtConcurrent::run(
-        [this,
-         safeRemote,
-         safeBranch,
-         auth = std::move(auth)]() mutable -> QVariantMap {
-            GitResult res = pullInternal(safeRemote, safeBranch, std::move(auth));
-            QVariantMap out;
-            out["success"] = res.success();
-            out["errorMessage"] = res.errorMessage();
-            out["data"] = res.data();
-            out["remote"] = safeRemote;
-            out["branch"] = safeBranch;
-            return out;
-        });
-
-    auto* watcher = new QFutureWatcher<QVariantMap>(this);
-    connect(watcher, &QFutureWatcher<QVariantMap>::finished, this, [this, watcher]() {
-        m_pullInProgress = false;
-        emit pullFinished(watcher->result());
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
-
-    return GitResult(true, QVariant(), "Pull started");
+    return pullInternal(remote, branch, std::make_unique<GitHttpsAuth>(token));
 }
 
 GitResult GitRemote::pullInternal(const QString& remoteName,
                                   const QString& branchName,
                                   std::unique_ptr<IGitAuth> auth)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
@@ -738,12 +659,12 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
     qDebug().noquote() << QString("[GitRemote][PullTrace] START remote=%1 requestedBranch=%2 headRef=%3 headOid=%4 wt=%5")
                               .arg(remoteName,
                                    branchName,
-                                   currentHeadRefName(m_currentRepo->repo),
-                                   currentHeadOid(m_currentRepo->repo),
-                                   workingTreeSummary(m_currentRepo->repo));
+                                   currentHeadRefName(activeRepo()),
+                                   currentHeadOid(activeRepo()),
+                                   workingTreeSummary(activeRepo()));
 
     git_reference* headRef = nullptr;
-    int headResult = git_repository_head(&headRef, m_currentRepo->repo);
+    int headResult = git_repository_head(&headRef, activeRepo());
     if (headResult != GIT_OK) {
         qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL git_repository_head rc=%1 err=%2")
                                   .arg(headResult)
@@ -791,7 +712,7 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
 
     git_reference* localRef = nullptr;
     int result = git_branch_lookup(&localRef,
-                                   m_currentRepo->repo,
+                                   activeRepo(),
                                    targetBranch.toUtf8().constData(),
                                    GIT_BRANCH_LOCAL);
     if (result != GIT_OK || !localRef) {
@@ -806,7 +727,7 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
     QString remoteTrackingBranch = remoteName + "/" + targetBranch;
     git_reference* remoteRef = nullptr;
     result = git_branch_lookup(&remoteRef,
-                               m_currentRepo->repo,
+                               activeRepo(),
                                remoteTrackingBranch.toUtf8().constData(),
                                GIT_BRANCH_REMOTE);
     if (result != GIT_OK || !remoteRef) {
@@ -820,7 +741,7 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
     }
 
     git_annotated_commit* remoteHead = nullptr;
-    result = git_annotated_commit_from_ref(&remoteHead, m_currentRepo->repo, remoteRef);
+    result = git_annotated_commit_from_ref(&remoteHead, activeRepo(), remoteRef);
     if (result != GIT_OK || !remoteHead) {
         qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL annotated commit from remote ref rc=%1 err=%2")
                                   .arg(result)
@@ -834,7 +755,7 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
     git_merge_analysis_t analysis = GIT_MERGE_ANALYSIS_NONE;
     git_merge_preference_t preference = GIT_MERGE_PREFERENCE_NONE;
     result = git_merge_analysis(&analysis, &preference,
-                                m_currentRepo->repo, annotatedHeads, 1);
+                                activeRepo(), annotatedHeads, 1);
 
     if (result != GIT_OK) {
         qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL merge analysis rc=%1 err=%2")
@@ -859,9 +780,9 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
     if (analysis & GIT_MERGE_ANALYSIS_UP_TO_DATE) {
         pullResult["status"] = "Already up to date";
         qDebug().noquote() << QString("[GitRemote][PullTrace] UP_TO_DATE headRef=%1 headOid=%2 wt=%3")
-                                  .arg(currentHeadRefName(m_currentRepo->repo),
-                                       currentHeadOid(m_currentRepo->repo),
-                                       workingTreeSummary(m_currentRepo->repo));
+                                  .arg(currentHeadRefName(activeRepo()),
+                                       currentHeadOid(activeRepo()),
+                                       workingTreeSummary(activeRepo()));
         emitGitCommand(QString("git pull %1 %2")
                            .arg(quoteCommandArg(remoteName), quoteCommandArg(targetBranch)));
         git_annotated_commit_free(remoteHead);
@@ -899,7 +820,7 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
             return GitResult(false, QVariant(), "Failed to update local branch reference");
         }
 
-        result = git_repository_set_head(m_currentRepo->repo, git_reference_name(updatedLocalRef));
+        result = git_repository_set_head(activeRepo(), git_reference_name(updatedLocalRef));
         if (result != GIT_OK) {
             qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL set head rc=%1 err=%2")
                                       .arg(result)
@@ -912,7 +833,7 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
         }
 
         git_object* targetCommit = nullptr;
-        result = git_object_lookup(&targetCommit, m_currentRepo->repo, targetOid, GIT_OBJECT_COMMIT);
+        result = git_object_lookup(&targetCommit, activeRepo(), targetOid, GIT_OBJECT_COMMIT);
         if (result != GIT_OK || !targetCommit) {
             qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL lookup target commit rc=%1 err=%2")
                                       .arg(result)
@@ -927,7 +848,7 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
         git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
         checkoutOpts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
         // Ensure HEAD/index/worktree are all synchronized to the pulled commit.
-        result = git_reset(m_currentRepo->repo, targetCommit, GIT_RESET_HARD, &checkoutOpts);
+        result = git_reset(activeRepo(), targetCommit, GIT_RESET_HARD, &checkoutOpts);
         git_object_free(targetCommit);
         git_reference_free(updatedLocalRef);
         git_annotated_commit_free(remoteHead);
@@ -938,18 +859,18 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
             qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL checkout head rc=%1 err=%2 headRef=%3 headOid=%4 wt=%5")
                                       .arg(result)
                                       .arg(lastGitErrorMessage())
-                                      .arg(currentHeadRefName(m_currentRepo->repo))
-                                      .arg(currentHeadOid(m_currentRepo->repo))
-                                      .arg(workingTreeSummary(m_currentRepo->repo));
+                                      .arg(currentHeadRefName(activeRepo()))
+                                      .arg(currentHeadOid(activeRepo()))
+                                      .arg(workingTreeSummary(activeRepo()));
             return GitResult(false, QVariant(),
                              "Pull failed while updating working tree (local changes may conflict)");
         }
 
         pullResult["status"] = "Fast-forward";
         qDebug().noquote() << QString("[GitRemote][PullTrace] FAST_FORWARD_DONE headRef=%1 headOid=%2 wt=%3")
-                                  .arg(currentHeadRefName(m_currentRepo->repo),
-                                       currentHeadOid(m_currentRepo->repo),
-                                       workingTreeSummary(m_currentRepo->repo));
+                                  .arg(currentHeadRefName(activeRepo()),
+                                       currentHeadOid(activeRepo()),
+                                       workingTreeSummary(activeRepo()));
         emitGitCommand(QString("git pull %1 %2")
                            .arg(quoteCommandArg(remoteName), quoteCommandArg(targetBranch)));
         return GitResult(true, pullResult);
@@ -961,30 +882,30 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
 
     if (analysis & GIT_MERGE_ANALYSIS_NORMAL) {
         qDebug().noquote() << QString("[GitRemote][PullTrace] NORMAL_MERGE_REQUIRED headRef=%1 headOid=%2 wt=%3")
-                                  .arg(currentHeadRefName(m_currentRepo->repo),
-                                       currentHeadOid(m_currentRepo->repo),
-                                       workingTreeSummary(m_currentRepo->repo));
+                                  .arg(currentHeadRefName(activeRepo()),
+                                       currentHeadOid(activeRepo()),
+                                       workingTreeSummary(activeRepo()));
         return GitResult(false, QVariant(),
                          "Non-fast-forward pull detected. Merge/rebase is required and is not automated here.");
     }
 
     qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL unsupported analysis=%1 headRef=%2 headOid=%3 wt=%4")
                               .arg(static_cast<int>(analysis))
-                              .arg(currentHeadRefName(m_currentRepo->repo))
-                              .arg(currentHeadOid(m_currentRepo->repo))
-                              .arg(workingTreeSummary(m_currentRepo->repo));
+                              .arg(currentHeadRefName(activeRepo()))
+                              .arg(currentHeadOid(activeRepo()))
+                              .arg(workingTreeSummary(activeRepo()));
     return GitResult(false, QVariant(), "Pull failed: unsupported merge analysis result");
 }
 
 GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IGitAuth> auth)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
     }
 
     git_remote* remote = nullptr;
     int result = git_remote_lookup(&remote,
-                                   m_currentRepo->repo,
+                                   activeRepo(),
                                    remoteName.toUtf8().constData());
 
     if (result != GIT_OK) {
@@ -1131,7 +1052,7 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
         return 0;
     };
 
-    git_repository_fetchhead_foreach(m_currentRepo->repo, fetchHeadCb, &headPayload);
+    git_repository_fetchhead_foreach(activeRepo(), fetchHeadCb, &headPayload);
     fetchResult["heads"] = fetchedHeads;
     if (!logLines.isEmpty())
         fetchResult["log"] = logLines;
@@ -1144,12 +1065,13 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
 QHash<QString, QString> GitRemote::getRemoteTrackingTipsSnapshot(const QString& remoteName)
 {
     QHash<QString, QString> tips;
-    if (!m_currentRepo || !m_currentRepo->repo) {
+
+    if (!activeRepo()) {
         return tips;
     }
 
     git_branch_iterator* it = nullptr;
-    if (git_branch_iterator_new(&it, m_currentRepo->repo, GIT_BRANCH_REMOTE) == GIT_OK && it) {
+    if (git_branch_iterator_new(&it, activeRepo(), GIT_BRANCH_REMOTE) == GIT_OK && it) {
         git_reference* ref = nullptr;
         git_branch_t branchType = GIT_BRANCH_REMOTE;
         while (git_branch_next(&ref, &branchType, it) == GIT_OK) {

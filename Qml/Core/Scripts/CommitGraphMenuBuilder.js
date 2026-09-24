@@ -5,7 +5,8 @@
 // for a commit.
 // ====================================================================
 
-function buildMenu(state) {
+// pluginItems: optional array of {pluginId, id, label, icon, separator, order} from IContextMenuPlugin
+function buildMenu(state, pluginItems) {
     var model = [];
 
     // Checkout section
@@ -36,13 +37,17 @@ function buildMenu(state) {
 
     else {
         model.push({
-            text: "Checkout Commit " + state.shortHash,
+            text: "Checkout " + state.shortHash + " (Detached)",
             icon: "hash",
             enabled: !state.isHead,
             action: "checkoutCommit",
             payload: { hash: state.fullHash }
         });
     }
+
+    model.push({
+        separator: true
+    });
 
     model.push({
         text: "Push",
@@ -54,30 +59,38 @@ function buildMenu(state) {
         payload: { branch: state.currentBranch }
     });
 
-    // New Branch / Tag
+    // Create Branch / Tag
     model.push({
-        text: "New Branch from here",
+        text: "Create Branch Here...",
         icon: "branchPlus",
         action: "newBranch",
         payload: { hash: state.fullHash }
     });
 
     model.push({
-        text: "Create Tag here",
+        text: "Create Tag Here...",
         icon: "tag",
         action: "newTag",
         payload: { hash: state.fullHash }
     });
 
+    model.push({
+        separator: true
+    });
+
+    // Browse files
+    model.push({
+        text: "Browse Files at This Commit...",
+        icon: "folder",
+        action: "browseFiles",
+        payload: { hash: state.fullHash, message: state.commitMessage, date: state.commitDate }
+    });
+
     // Merge
     if (state.hasMergeableBranches) {
-        model.push({
-                separator: true
-        });
-
         state.mergeableBranches.forEach(function(bName) {
             model.push({
-                text: "Merge '" + bName + "' into '" + state.currentBranch + "'",
+                text: "Merge '" + bName + "' into '" + state.currentBranch + "'...",
                 icon: "arowLeftRight",
                 action: "mergeBranch",
                 payload: { source: bName, target: state.currentBranch }
@@ -88,9 +101,10 @@ function buildMenu(state) {
     // Rebase
     if (state.canRebase) {
         model.push({
-            text: "Rebase onto " + state.shortHash,
+            text: "Rebase onto " + state.shortHash + "...",
             icon: "clockRotateLeft",
             action: "rebase",
+            shortcut: "Ctrl+R",
             payload: { hash: state.fullHash }
         });
     }
@@ -111,6 +125,39 @@ function buildMenu(state) {
             enabled: state.canCherryPick,
             action: "cherryPickSingle",
             payload: { hash: state.fullHash }
+        });
+    }
+
+    model.push({
+        separator: true
+    });
+
+    // Reset
+    model.push({
+        text: "Reset '" + state.currentBranch + "' to This Commit",
+        icon: "reset",
+        action: "reset",
+        subItems: [
+           {text: "Soft (keep changes staged)",   icon: "resetSoft",  action: "resetSoft",  payload: { hash: state.fullHash }},
+           {text: "Mixed (keep changes unstaged)", icon: "resetMixed", action: "resetMixed", payload: { hash: state.fullHash }},
+           {text: "Hard (discard all changes)",   icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
+        ]
+    });
+
+    // Plugin context menu items (appended after a separator when non-empty)
+    if (pluginItems && pluginItems.length > 0) {
+        model.push({ separator: true });
+        pluginItems.forEach(function(pi) {
+            if (pi.separator) {
+                model.push({ separator: true });
+                return;
+            }
+            model.push({
+                text:    pi.label,
+                icon:    pi.icon || "",
+                action:  "pluginAction",
+                payload: { pluginId: pi.pluginId, itemId: pi.id, hash: state.fullHash }
+            });
         });
     }
 

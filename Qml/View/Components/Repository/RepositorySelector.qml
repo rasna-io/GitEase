@@ -25,7 +25,7 @@ Item {
 
     property var recentRepositories
 
-    property alias currentTabIndex: tabbedView.currentIndex
+    property alias currentTabIndex: stackLayout.currentIndex
 
     property bool showDescription: true
 
@@ -33,7 +33,7 @@ Item {
 
     property string selectedPath: ""
 
-    property string selectedUrl: repositoryUrlField.field.text
+    property string selectedUrl: ""
 
     property bool busy: false
 
@@ -62,178 +62,179 @@ Item {
         Text {
             visible: root.showDescription
             Layout.fillWidth: true
-            Layout.bottomMargin: 24
+            Layout.bottomMargin: 14
+            Layout.topMargin: 4
             Layout.alignment: Qt.AlignHCenter
             text: root.descriptionText
             wrapMode: Text.WordWrap
-            font.pixelSize: 16
+            font.pixelSize: Style.appFont.defaultPt
             color: Style.colors.mutedText
             horizontalAlignment: Text.AlignHCenter
-            font.family: Style.fontTypes.roboto
-            font.weight: 300
-            font.italic: true
-            font.letterSpacing: 0
+            font.family: Style.fontTypes.inter
+            font.weight: 400
+            font.letterSpacing: 0.1
             Layout.maximumWidth: 450
         }
 
-        // TabBar and StackLayout
-        TabbedView {
-            id: tabbedView
+        // Segmented tab bar
+        Rectangle {
             Layout.fillWidth: true
-            Layout.maximumWidth: 465
+            Layout.maximumWidth: 500
             Layout.alignment: Qt.AlignHCenter
+            Layout.preferredHeight: 42
+            color: "transparent"
 
-            tabs: [
-                { title: "Recents", icon: Style.icons.clock},
-                { title: "Open", icon: Style.icons.folder },
-                { title: "Clone", icon: Style.icons.download}
-            ]
+            Row {
+                anchors.left: parent.left
+                anchors.leftMargin: 20
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 22
 
-            stackLayout.Layout.preferredHeight: 200
+                Repeater {
+                    model: [
+                        { title: "Recents",  icon: Style.icons.clock,    index: 0, shown: true },
+                        { title: "Open",     icon: Style.icons.laptop,   index: 1, shown: true },
+                        { title: "Clone",    icon: Style.icons.download, index: 2, shown: true }
+                    ]
 
-            // Recents tab content
-            Item {
-                RecentRepositoriesList {
-                    id: recentRepositoriesList
-                    anchors.fill: parent
-                    model: recentRepositories
-                    fileIO: root.fileIO
-                    onRepositoryClicked: function(name, path) {
-                        root.selectedPath = path
-                    }
-                }
-            }
+                    Item {
+                        id: tabDelegate
+                        width: tabContent.width
+                        height: 42
+                        visible: modelData.shown
 
-            // Open tab content
-            Item {
-                ColumnLayout {
-                    anchors.fill: parent
-                    spacing: 0
+                        readonly property bool active: root.currentTabIndex === modelData.index
 
-                    // Description
-                    Text {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 30
-                        Layout.bottomMargin: 10
-                        text: "Browse and open a Git repository that already exists on your computer"
-                        wrapMode: Text.WordWrap
-                        font.pixelSize: 13
-                        font.family: Style.fontTypes.roboto
-                        font.weight: 300
-                        font.letterSpacing: 0
-                        font.italic: true
-                        color: Style.colors.mutedText
-                        horizontalAlignment: Text.AlignHCenter
-                    }
+                        Row {
+                            id: tabContent
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 6
 
-                    // Repository Location Section
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 2
-
-                        FormInputField {
-                            id: repositoryLocationField
-                            label: "Repository Location"
-                            placeholderText: "C:/Users/Username/Documents/MyRepository"
-                            button: "Browse"
-                            helperText: "Select a folder containing a Git repository"
-                            field.text : selectedPath
-
-                            onTextChanged: {
-                                selectedPath = repositoryLocationField.text
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: modelData.icon
+                                font.family: Style.fontTypes.font6Pro
+                                font.pixelSize: 11
+                                color: tabDelegate.active ? Style.colors.accent
+                                                          : (tabMouse.containsMouse ? Style.colors.foreground : Style.colors.mutedText)
                             }
 
-                            onButtonClicked: {
-                                folderDialog.open()
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: modelData.title
+                                font.family: Style.fontTypes.inter
+                                font.weight: tabDelegate.active ? Font.DemiBold : Font.Normal
+                                font.pixelSize: 12
+                                color: tabDelegate.active ? Style.colors.accent
+                                                          : (tabMouse.containsMouse ? Style.colors.foreground : Style.colors.mutedText)
                             }
                         }
-                    }
-                }
 
-                // Folder Dialog for selecting repository folder
-                FolderDialog {
-                    id: folderDialog
-                    title: "Select Repository Folder"
-                    currentFolder: root.defaultPath
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 2
+                            radius: 1
+                            color: Style.colors.accent
+                            visible: tabDelegate.active
+                        }
 
-                    onAccepted: {
-                        var selectedFolder = folderDialog.selectedFolder
-                        if (selectedFolder) {
-                            var folderPath = selectedFolder.toString()
-                            let path = repositoryController.appModel.fileIO.pathNormalizer(folderPath);
-                            repositoryLocationField.field.text = path
-                            cloneLocationField.field.text = path
+                        MouseArea {
+                            id: tabMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.currentTabIndex = modelData.index
                         }
                     }
                 }
             }
+        }
 
-            // Clone tab content
-            Item {
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            Layout.maximumWidth: 500
+            Layout.alignment: Qt.AlignHCenter
+            color: Style.colors.primaryBorder
+        }
+
+        // Tab content
+        StackLayout {
+            id: stackLayout
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.maximumWidth: 500
+            Layout.alignment: Qt.AlignHCenter
+            currentIndex: 0
+
+            onCurrentIndexChanged: root.currentTabIndexChanged()
+
+            // Recents tab
+            RecentsTab {
+                id: recentsTab
+                repositoryController: root.repositoryController
+                recentRepositories: root.recentRepositories
+                onAccepted: root.selectedPath = Qt.binding(function() {
+                    return recentsTab.selectedPath
+                })
+            }
+
+            // Open local tab
+            OpenLocalTab {
+                id: openLocalTab
+                appModel: root.repositoryController ? root.repositoryController.appModel : null
+            }
+
+            // Clone tab
+            CloneTab {
                 id: cloneTab
+                appModel: root.repositoryController ? root.repositoryController.appModel : null
+            }
+        }
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    spacing: 0
+        Connections {
+            target: recentsTab
+            function onSelectedPathChanged() {
+                root.selectedPath = Qt.binding(function() {
+                    return recentsTab.selectedPath
+                })
 
-                    // Description
-                    Text {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 10
-                        Layout.bottomMargin: 10
-                        text: "Initialize a new Git repository on your local machine"
-                        wrapMode: Text.WordWrap
-                        font.pixelSize: 13
-                        font.family: Style.fontTypes.roboto
-                        font.weight: 300
-                        font.letterSpacing: 0
-                        font.italic: true
-                        color: Style.colors.mutedText
-                        horizontalAlignment: Text.AlignHCenter
-                    }
+                root.selectedUrl = ""
+            }
+        }
 
-                    // Input sections wrapper
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 20
+        Connections {
+            target: openLocalTab
+            function onSelectedPathChanged() {
+                root.selectedPath = Qt.binding(function() {
+                    return openLocalTab.selectedPath
+                })
 
-                        // Repository URL Section
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
+                root.selectedUrl = ""
+            }
+        }
 
-                            FormInputField {
-                                id: repositoryUrlField
-                                label: "Repository URL"
-                                placeholderText: "https://github.com/username/repository.git"
+        Connections {
+            target: cloneTab
+            function onUrlChanged() {
+                if (cloneTab.url !== "") {
+                    root.selectedUrl = Qt.binding(function() {
+                        return cloneTab.url
+                    })
 
-                                onTextChanged: {
-                                    selectedUrl = repositoryUrlField.text
-                                }
-                            }
-                        }
+                    root.selectedPath = Qt.binding(function() {
+                        return cloneTab.toPath
+                    })
+                }
+            }
 
-                        // Clone to Location Section
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
-
-                            FormInputField {
-                                id: cloneLocationField
-                                label: "Clone to Location"
-                                placeholderText: "C:/Users/Username/Documents/Projects"
-                                button: "Browse"
-
-                                onTextChanged: {
-                                    selectedPath = cloneLocationField.text
-                                }
-
-                                onButtonClicked: {
-                                    folderDialog.open()
-                                }
-                            }
-                        }
-                    }
+            function onToPathChanged() {
+                if (cloneTab.url !== "") {
+                    root.selectedPath = Qt.binding(function() {
+                        return cloneTab.toPath
+                    })
                 }
             }
         }
@@ -243,9 +244,11 @@ Item {
     Connections {
         target: root.repositoryController
 
-        function onCloneFinished(res) {
-            if(!res.success)
-                notificationController.error(`can't clone ${root.selectedUrl}, ${res.error}`, ` Repository clone failed`, 5000)
+        function onCloneCompleted(res) {
+            if (res && res.stale === true)
+                notificationController.info("Clone finished while you were switching repository", "Clone", 4000)
+            else if(!res.success)
+                notificationController.error(`can't clone ${root.selectedUrl}, ${res.errorMessage}`, ` Repository clone failed`, 5000)
 
             root.busy = false
             root.progress = 0
@@ -288,11 +291,11 @@ Item {
     function reset() {
         root.busy = false
         root.progress = 0
-        repositoryLocationField.field.text = ""
-        cloneLocationField.field.text = ""
-        repositoryUrlField.field.text = ""
         root.selectedPath = ""
-        recentRepositoriesList.selectedIndex = -1
+        root.selectedUrl = ""
+        recentsTab.reset()
+        openLocalTab.reset()
+        cloneTab.reset()
     }
 }
 

@@ -28,7 +28,7 @@ Rectangle {
         leftPadding: 5
         text: root.label
         color: Style.colors.foreground
-        font.pixelSize: 11
+        font.pixelSize: Style.appFont.defaultPt
         font.bold: true
         elide: Text.ElideRight
     }

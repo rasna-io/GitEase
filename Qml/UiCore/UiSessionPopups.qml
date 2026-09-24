@@ -13,6 +13,7 @@ Item {
     id: root
 
     property AppModel               appModel:               null
+    property GuideController        guideController:        null
 
     property NotificationController notificationController: null
 
@@ -28,6 +29,7 @@ Item {
     property SettingsPopup              settingsPopup:              SettingsPopup {
         notificationController: root.notificationController
         sshKeyController:       sshKeyCtrl
+        guideController:        root.guideController
     }
 
     property UserAuthenticationPopup    userAuthenticationPopup:    UserAuthenticationPopup {}
@@ -55,10 +57,6 @@ Item {
     property ManageStashPopup           manageStashPopup:           ManageStashPopup {}
 
     property FetchSummaryPopup          fetchSummaryPopup:          FetchSummaryPopup {}
-
-    property RepoForestPopup            repoForestPopup:            RepoForestPopup {
-        userAuthenticationPopup: root.userAuthenticationPopup
-    }
 
     property CommitAmendPopup commitAmendPopup: CommitAmendPopup{}
 

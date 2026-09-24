@@ -122,3 +122,13 @@ GitFileStatus::DeltaStatus GitFileStatus::deltaStatus() const
 {
     return m_deltaStatus;
 }
+
+QString GitFileStatus::indexStatus() const
+{
+    if (m_status & GIT_STATUS_INDEX_NEW)        return "A";
+    if (m_status & GIT_STATUS_INDEX_MODIFIED)   return "M";
+    if (m_status & GIT_STATUS_INDEX_DELETED)    return "D";
+    if (m_status & GIT_STATUS_INDEX_RENAMED)    return "R";
+    if (m_status & GIT_STATUS_INDEX_TYPECHANGE) return "T";
+    return "";
+}
