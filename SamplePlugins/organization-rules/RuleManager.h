@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include <QQmlEngine>
+#include <QUrl>
 #include "GitResult.h"
 #include "CommitMessageValidator.h"
 
@@ -16,7 +16,6 @@
 class RuleManager : public QObject
 {
     Q_OBJECT
-    QML_ELEMENT
 
 public:
     explicit RuleManager(QObject *parent = nullptr);

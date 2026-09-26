@@ -4,11 +4,14 @@
 #include "IPagePlugin.h"
 #include "IRulePlugin.h"
 #include "IRepositoryAwarePlugin.h"
-#include "PluginContext.h"
+#include "IPluginContext.h"
 
 class RuleManager;
 
-class OrganizationRulesPlugin : public QObject, public IPagePlugin, public IRepositoryAwarePlugin, public IRulePlugin
+class OrganizationRulesPlugin : public QObject,
+                                public IPagePlugin,
+                                public IRepositoryAwarePlugin,
+                                public IRulePlugin
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.gitease.IPagePlugin/1.0" FILE "plugin.json")

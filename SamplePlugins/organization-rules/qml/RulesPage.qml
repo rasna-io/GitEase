@@ -100,11 +100,8 @@ Rectangle {
         onAccepted: {
             var jsonText = JSON.stringify(root.buildRulesJson(), null, 2)
             var res = RuleController.exportRules(selectedFile, jsonText)
-            if (res.success) {
-                root.notificationController.success("Rules exported successfully", "Export", 3000)
-            } else {
-                root.notificationController.error(res.errorMessage || "Failed to export rules", "Export Error", 5000)
-            }
+            root.notifyResult(res, "Rules exported successfully", "Export",
+                              "Failed to export rules", "Export Error")
         }
     }
 
@@ -164,18 +161,14 @@ Rectangle {
 
             onDeleteRequested: {
                 root.selectedRule = -1
-                if(root.saveRulesToDisk()) {
-                    root.notificationController.success("Rule deleted successfully", "Delete", 3000)
-                } else {
-                    root.notificationController.error(res.errorMessage || "Failed to delete rule", "Delete Error", 5000)
-                }
+                root.notifyResult(root.saveRulesToDisk(),
+                                  "Rule deleted successfully", "Delete",
+                                  "Failed to delete rule", "Delete Error")
             }
             onSavedChanges: {
-                if(root.saveRulesToDisk()) {
-                    root.notificationController.success("Rule saved successfully", "Save", 3000)
-                } else {
-                    root.notificationController.error(res.errorMessage || "Failed to save rule", "Save Error", 5000)
-                }
+                root.notifyResult(root.saveRulesToDisk(),
+                                  "Rule saved successfully", "Save",
+                                  "Failed to save rule", "Save Error")
             }
         }
     }
@@ -225,8 +218,17 @@ Rectangle {
 
     function saveRulesToDisk() {
         var data = buildRulesJson()
-        var res = RuleController.saveRules(JSON.stringify(data, null, 2))
-        return res.success
+        return RuleController.saveRules(JSON.stringify(data, null, 2))
+    }
+
+    function notifyResult(res, successMsg, successTitle, failMsg, failTitle) {
+        if (!root.notificationController)
+            return res && res.success
+        if (res && res.success)
+            root.notificationController.success(successMsg, successTitle, 3000)
+        else
+            root.notificationController.error((res && res.errorMessage) || failMsg, failTitle, 5000)
+        return res && res.success
     }
 
     function loadArrayInto(listModel, arr) {
@@ -265,7 +267,7 @@ Rectangle {
     function importFile(fileUrl) {
         var res = RuleController.importRules(fileUrl)
         if (!res.success) {
-            root.notificationController.error(res.errorMessage, "Import Error", 5000)
+            root.notifyResult(res, "", "", res.errorMessage || "Import failed", "Import Error")
             return
         }
         var data = JSON.parse(res.data)

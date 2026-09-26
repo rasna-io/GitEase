@@ -6,7 +6,6 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 import GitEaseOrganizationRulesPlugin
-import "qrc:/GitEase/Qml/View/Popups"
 
 /*! ***********************************************************************************************
  * AddRulePopup

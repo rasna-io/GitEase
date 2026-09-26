@@ -1,7 +1,6 @@
 #include "CommitMessageValidator.h"
 #include "GitResult.h"
 
-#include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -9,8 +8,6 @@
 
 GitResult CommitMessageValidator::validateCommitMessage(const QString &message)
 {
-    qDebug() << m_rules;
-
     for (const QJsonValue &value : m_rules) {
         QJsonObject rule = value.toObject();
 

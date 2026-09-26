@@ -1,5 +1,8 @@
 #include "OrganizationRulesPlugin.h"
 #include "RuleManager.h"
+#include "IPluginContext.h"
+
+#include <QQmlEngine>
 
 void OrganizationRulesPlugin::initialize(IPluginContext *ctx)
 {
@@ -21,12 +24,11 @@ void OrganizationRulesPlugin::repositoryChanged(const QString &repoPath)
 
 GitResult OrganizationRulesPlugin::check(ActionContext *context)
 {
-    qDebug() << Q_FUNC_INFO <<  "messaeg" << context->commitMessage;
+    if (!context || !m_ruleManager)
+        return GitResult(true);
 
-    if(context->type == ActionType::Commit_msg)
-    {
-       return m_ruleManager->commitMessageValidator().validateCommitMessage(context->commitMessage);
-    }
+    if (context->type == ActionType::Commit_msg)
+        return m_ruleManager->commitMessageValidator().validateCommitMessage(context->commitMessage);
 
     return GitResult(true);
 }
