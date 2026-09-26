@@ -39,15 +39,8 @@ qt_add_resources(repo-forest-plugin "repo_forest_qml"
         qml/RepoItem.qml
 )
 
-set(_GITEASE_SRC "${GITEASE_SDK_DIR}/..")
-
 target_include_directories(repo-forest-plugin PRIVATE
     ${GITEASE_SDK_DIR}
-    ${_GITEASE_SRC}
-    ${_GITEASE_SRC}/Git/
-    ${_GITEASE_SRC}/Git/Auth/
-    ${_GITEASE_SRC}/Git/Models/
-    ${_GITEASE_SRC}/Git/Utilities/
 )
 
 target_link_libraries(repo-forest-plugin PRIVATE
@@ -91,3 +84,6 @@ if(GITEASE_PLUGINS_DIR)
         VERBATIM
     )
 endif()
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/../PackageGep.cmake")
+gitease_package_gep(repo-forest-plugin)

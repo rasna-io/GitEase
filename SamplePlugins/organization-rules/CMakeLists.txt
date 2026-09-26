@@ -27,11 +27,15 @@ add_library(organization-rules-plugin SHARED
     OrganizationRulesPlugin.cpp
     RuleManager.h
     RuleManager.cpp
-    ${_GITEASE_SRC}/Git/GitResult.h
-    CommitMessageValidator.h CommitMessageValidator.cpp
+    CommitMessageValidator.h
+    CommitMessageValidator.cpp
 )
 
 set_target_properties(organization-rules-plugin PROPERTIES PREFIX "")
+
+# GitResult is a Q_GADGET; moc it in the plugin without QML_ELEMENT (host registers it).
+target_compile_definitions(organization-rules-plugin PRIVATE GITEASE_SKIP_QML_ELEMENT)
+target_sources(organization-rules-plugin PRIVATE ${_GITEASE_SRC}/Git/GitResult.h)
 
 qt_add_resources(organization-rules-plugin "organization_rules_qml"
     PREFIX "/com.gitease.organization-rules"
@@ -71,16 +75,8 @@ target_link_libraries(organization-rules-plugin PRIVATE
     Qt6::Quick
 )
 
-set(_SOURCE_PLUGIN_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-
-add_custom_command(TARGET organization-rules-plugin POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${_SOURCE_PLUGIN_DIR}/lib"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$<TARGET_FILE:organization-rules-plugin>"
-        "${_SOURCE_PLUGIN_DIR}/lib/"
-    COMMENT "Copying organization-rules DLL into SamplePlugins/organization-rules/lib"
-    VERBATIM
-)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../PackageGep.cmake")
+gitease_package_gep(organization-rules-plugin)
 
 if(NOT GITEASE_PLUGINS_DIR)
     if(WIN32)

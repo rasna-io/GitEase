@@ -36,11 +36,8 @@ qt_add_resources(qml-diff-plugin "plugin_qml"
         qml/QmlColorizer.qml
 )
 
-set(_GITEASE_SRC "${GITEASE_SDK_DIR}/..")
-
 target_include_directories(qml-diff-plugin PRIVATE
     ${GITEASE_SDK_DIR}
-    ${_GITEASE_SRC}
 )
 
 target_link_libraries(qml-diff-plugin PRIVATE
@@ -78,3 +75,6 @@ if(GITEASE_PLUGINS_DIR)
 else()
     message(WARNING "GitEase.exe not found — plugin won't auto-deploy.")
 endif()
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/../PackageGep.cmake")
+gitease_package_gep(qml-diff-plugin)
