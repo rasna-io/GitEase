@@ -70,7 +70,7 @@ Item {
 
                 Label {
                     text: "\uf080"
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
                     font.pixelSize: 20
                     color: Style.colors.accent
                 }

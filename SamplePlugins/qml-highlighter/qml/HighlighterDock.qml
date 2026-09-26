@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 
+import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 import GitEase.Plugins.QmlHighlighter 1.0

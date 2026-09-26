@@ -13,8 +13,8 @@ import GitEase
  * PluginDockHost sets `pluginManager` and `pluginId` after loading.
  *
  * To install for testing, copy the repo-notes/ folder into:
- *   Windows : %APPDATA%\GitEase\GitEase\plugins\
- *   Linux   : ~/.local/share/GitEase/GitEase/plugins/
+ *   Windows : %APPDATA%\GitEase\plugins\
+ *   Linux   : ~/.local/share/GitEase/plugins/
  * or place it in <app binary dir>/plugins/
  */
 Rectangle {
@@ -48,13 +48,13 @@ Rectangle {
             guideController: root.guideController
             guideId: "repo_notes_tutorial"
             guideName: "Repo Notes"
-            guideIcon: Style.icons.note
+            guideIcon: Style.icons.edit
             guidePage: "utilities"
             stepsFactory: function() {
                 return [
                     {
                         targetProvider: function() { return root },
-                        icon: Style.icons.note,
+                        icon: Style.icons.edit,
                         title: "Repo Notes Dock",
                         description: "Write and save free-form notes for this repository. Click the header to expand this dock if it's collapsed.",
                         isInPopup: false,
@@ -83,7 +83,7 @@ Rectangle {
             spacing: 10
 
             Label {
-                text:            Style.icons.note ?? "✎"
+                text:            Style.icons.edit
                 color:           Style.colors.accent
                 font.family:     Style.fontTypes.font6Pro
                 font.pixelSize:  15
