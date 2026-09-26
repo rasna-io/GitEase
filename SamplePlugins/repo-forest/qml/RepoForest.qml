@@ -714,7 +714,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: Style.icons.download
                     font.pixelSize: 15
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
                     color: fetchButton.enabled ? Style.colors.foreground : Style.colors.mutedText
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -768,7 +768,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: Style.icons.arrowDown
                     font.pixelSize: 15
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
                     color: pullButton.enabled ? Style.colors.foreground : Style.colors.mutedText
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -824,7 +824,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: pauseResumeButton.isQueuePaused ? Style.icons.play : Style.icons.pause
                     font.pixelSize: 15
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
                     color: Style.colors.foreground
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -882,7 +882,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: Style.icons.stop
                     font.pixelSize: 15
-                    font.family: Style.fontTypes.font6ProSolid
+                    font.family: Style.fontTypes.font6Pro
                     color: Style.colors.foreground
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter

@@ -48,7 +48,7 @@ ColumnLayout {
                 anchors.centerIn: parent
                 text: root.showOperationLogs ? Style.icons.caretDown : Style.icons.caretUp
                 font.pixelSize: 14
-                font.family: Style.fontTypes.font6ProSolid
+                font.family: Style.fontTypes.font6Pro
                 color: Style.colors.foreground
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
@@ -68,7 +68,7 @@ ColumnLayout {
                 anchors.centerIn: parent
                 text: Style.icons.trash
                 font.pixelSize: 12
-                font.family: Style.fontTypes.font6ProSolid
+                font.family: Style.fontTypes.font6Pro
                 color: Style.colors.windowsClose
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter

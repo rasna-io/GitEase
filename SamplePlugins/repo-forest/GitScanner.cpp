@@ -2,13 +2,8 @@
 
 #include <QDir>
 #include <QFileInfo>
-#include <QFuture>
-#include <QList>
-#include <QMutex>
-#include <QMutexLocker>
 #include <QQueue>
 #include <QStringList>
-#include <QThread>
 #include <QtConcurrent>
 
 GitScanner::GitScanner(QObject* parent)
@@ -51,48 +46,25 @@ void GitScanner::scan(const QString& rootPath)
 
     auto future = QtConcurrent::run([this, rootPath]() {
         QStringList repos;
-
         QQueue<QString> queue;
-        QMutex mutex;
-
         queue.enqueue(rootPath);
 
-        const int workers = QThread::idealThreadCount();
-        QList<QFuture<void>> tasks;
+        while (!queue.isEmpty() && !m_stopRequested.load()) {
+            const QString dirPath = queue.dequeue();
+            QDir dir(dirPath);
+            if (!dir.exists())
+                continue;
 
-        for (int i = 0; i < workers; ++i) {
-            tasks.append(QtConcurrent::run([&, this]() {
-                while (!m_stopRequested) {
-                    QString dirPath;
-                    {
-                        QMutexLocker lock(&mutex);
+            if (dir.exists(QStringLiteral(".git"))) {
+                repos.append(dirPath);
+                emit pathFound(dirPath);
+                continue; // do not walk inside a discovered repository
+            }
 
-                        if (queue.isEmpty())
-                            return;
-
-                        dirPath = queue.dequeue();
-                    }
-
-                    QDir dir(dirPath);
-
-                    if (dir.exists(".git")) {
-                        QMutexLocker lock(&mutex);
-                        repos.append(dirPath);
-                        emit pathFound(dirPath);
-                    }
-
-                    const QFileInfoList subdirs = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
-
-                    for (const QFileInfo& info : subdirs) {
-                        QMutexLocker lock(&mutex);
-                        queue.enqueue(info.absoluteFilePath());
-                    }
-                }
-            }));
+            const QFileInfoList subdirs = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+            for (const QFileInfo& info : subdirs)
+                queue.enqueue(info.absoluteFilePath());
         }
-
-        for (auto& task : tasks)
-            task.waitForFinished();
 
         return repos;
     });

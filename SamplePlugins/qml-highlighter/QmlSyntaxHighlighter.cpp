@@ -1,4 +1,5 @@
 #include "QmlSyntaxHighlighter.h"
+#include <QColor>
 #include <QFont>
 
 // ── VSCode dark+ colour palette ───────────────────────────────────────────────

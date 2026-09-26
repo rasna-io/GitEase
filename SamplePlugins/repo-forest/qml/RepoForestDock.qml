@@ -7,7 +7,6 @@ import GitEase_Style_Impl
 import GitEase_Style
 import GitEase
 import GitEaseRepoForest
-import "qrc:/GitEase/Qml/View/Popups"
 
 /*! ***********************************************************************************************
  * RepoForestDock
