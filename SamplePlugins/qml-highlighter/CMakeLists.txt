@@ -39,14 +39,8 @@ qt_add_resources(qml-highlighter-plugin "plugin_qml"
         qml/HighlighterDock.qml
 )
 
-set(_GITEASE_SRC "${GITEASE_SDK_DIR}/..")
-
 target_include_directories(qml-highlighter-plugin PRIVATE
     ${GITEASE_SDK_DIR}
-    ${_GITEASE_SRC}
-    ${_GITEASE_SRC}/Git/
-    ${_GITEASE_SRC}/Git/Auth/
-    ${_GITEASE_SRC}/Git/Models/
 )
 
 target_link_libraries(qml-highlighter-plugin PRIVATE
@@ -88,3 +82,6 @@ else()
         "GitEase.exe not found — plugin won't auto-deploy.\n"
         "Pass -DGITEASE_PLUGINS_DIR=<path/to/build/plugins> to CMake.")
 endif()
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/../PackageGep.cmake")
+gitease_package_gep(qml-highlighter-plugin)
