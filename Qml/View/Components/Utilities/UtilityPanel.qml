@@ -291,8 +291,8 @@ Rectangle {
                         width:  root.contentWidth
                         height: 390
                         visible: dockFlow.matchesFilter(modelData.title ?? "")
-
-                        source: modelData.url
+                        active: !!modelData?.url
+                        source: modelData?.url ?? ""
 
                         onLoaded: {
                             if (!item)

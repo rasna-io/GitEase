@@ -74,7 +74,8 @@ Page {
     }
 
     onStatusControllerChanged: {
-        branchController.getCurrentBranchName()
+        if (root.branchController)
+            root.branchController.getCurrentBranchName()
     }
 
     Component.onCompleted: {
@@ -578,6 +579,16 @@ Page {
     }
 
     property bool _pendingCommitAmend: false
+
+    Connections {
+        target: root.pluginController?.pluginManager ?? null
+        function onPluginAboutToUnload(id) {
+            colorizerLoader.source = ""
+        }
+        function onPluginRemoved(id) {
+            colorizerLoader.source = ""
+        }
+    }
 
     Connections {
         id: workflowConnections

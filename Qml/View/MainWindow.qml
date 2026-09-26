@@ -30,6 +30,11 @@ Rectangle {
             Loader {
                 anchors.fill: parent
                 source: parent.pluginUrl
+                onLoaded: root.injectPluginHostProperties(item)
+                onStatusChanged: {
+                    if (status === Loader.Error)
+                        console.error("[MainWindow] Failed to load plugin page:", source)
+                }
             }
         }
     }
@@ -38,7 +43,10 @@ Rectangle {
      * ****************************************************************************************/
     onUiSessionChanged: {
         if (!uiSession) return
-        uiSession.pageController = { createPage: root.addPluginPage }
+        uiSession.pageController = {
+            createPage: root.addPluginPage,
+            removePage: root.removePluginPage
+        }
         let early = uiSession.pluginController.registeredPages
         for (let p of early)
             addPluginPage(p.id, p.title, p.qmlUrl, p.icon)
@@ -47,10 +55,66 @@ Rectangle {
     /* Functions
      * ****************************************************************************************/
     function addPluginPage(id, title, qmlUrl, icon) {
+        let pages = pageSwipeView.contentChildren
+        for (let i = 0; i < pages.length; i++) {
+            if (pages[i].pageId === id)
+                return
+        }
         let page = pluginPageComponent.createObject(pageSwipeView, {
             pageId: id, title: title, icon: icon, pluginUrl: qmlUrl
         })
         pageSwipeView.addItem(page)
+    }
+
+    function removePluginPage(pageId) {
+        let pages = pageSwipeView.contentChildren
+        for (let i = 0; i < pages.length; i++) {
+            if (!pages[i].isPlugin || pages[i].pageId !== pageId)
+                continue
+
+            let page = pages[i]
+            if (pageSwipeView.currentIndex === i)
+                pageSwipeView.setCurrentIndex(0)
+
+            // Clear the loader source before teardown so the plugin QML unloads cleanly.
+            if (page.hasOwnProperty("pluginUrl"))
+                page.pluginUrl = ""
+
+            pageSwipeView.removeItem(page)
+            if (page)
+                page.destroy()
+            return
+        }
+    }
+
+    function injectPluginHostProperties(item) {
+        if (!item || !root.uiSession)
+            return
+
+        const session = root.uiSession
+        const pluginManager = session.pluginController?.pluginManager ?? null
+
+        function bindIf(name, getter) {
+            if (item.hasOwnProperty(name))
+                item[name] = Qt.binding(getter)
+        }
+
+        bindIf("pluginManager",            function() { return pluginManager })
+        bindIf("eventBus",                 function() { return pluginManager })
+        bindIf("pluginController",         function() { return session.pluginController })
+        bindIf("repositoryController",     function() { return session.repositoryController })
+        bindIf("branchController",         function() { return session.branchController })
+        bindIf("remoteController",         function() { return session.remoteController })
+        bindIf("commitController",         function() { return session.commitController })
+        bindIf("statusController",         function() { return session.statusController })
+        bindIf("notificationController",   function() { return session.notificationController })
+        bindIf("guideController",          function() { return session.guideController })
+        bindIf("userAuthenticationPopup",  function() { return session.popups?.userAuthenticationPopup })
+        bindIf("uiSessionPopups",          function() { return session.popups })
+        bindIf("appModel",                 function() { return session.appModel })
+
+        if (item.hasOwnProperty("pluginId") && item.pluginId === "")
+            item.pluginId = item.pageId || ""
     }
 
     function switchToPageById(pageId) {
