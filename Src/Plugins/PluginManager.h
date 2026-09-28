@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QVariantList>
 #include <QMap>
+#include <QSet>
 #include <QQmlEngine>
 #include <QJSValue>
 #include <functional>
@@ -180,6 +181,7 @@ private:
     QMap<QString, QPluginLoader*> m_loaders;
     QMap<QString, IPlugin*>       m_plugins;
     QList<PluginInfo>             m_infos;
+    QSet<QString>                 m_installingIds; // .gep installs still being placed on disk
 
     QVariantList                  m_docks;        // accumulated dock registrations
     QVariantList                  m_pages;        // accumulated page registrations
