@@ -18,14 +18,18 @@ Flickable {
     property bool isDirty: false
     property bool suppressDirty: false
 
+    //! Space kept free on the right for the scrollbar plus breathing room.
+    readonly property int scrollGutter: 20
+    readonly property real contentAvailableWidth: width - scrollGutter
+
     /* Object Properties
      * ****************************************************************************************/
     contentWidth: width
     clip: true
+    boundsBehavior: Flickable.StopAtBounds
+    bottomMargin: 16
 
-    ScrollBar.vertical: ScrollBar {
-        policy: ScrollBar.AsNeeded
-    }
+    ScrollBar.vertical: RuleScrollBar {}
 
     /* Functions
      * ****************************************************************************************/

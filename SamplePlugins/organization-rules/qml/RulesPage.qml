@@ -16,7 +16,7 @@ import GitEaseOrganizationRulesPlugin
 Rectangle {
     id: root
 
-    color: Style.colors.primaryBackground
+    color: Style.colors.pluginPageBackground
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -26,12 +26,12 @@ Rectangle {
     property NotificationController  notificationController:  null
 
     property var categoriesInfo: [
-        { name: "COMMIT MESSAGE", color: "#58a6ff", description: "Enforce message format, prefixes & length" },
-        { name: "BRANCH NAMING",  color: "#3fb950", description: "Naming patterns, forbidden chars & protection" },
-        { name: "FILE & CODE",    color: "#f0883e", description: "Extensions, secrets & file size limits" },
-        { name: "PUSH RULES",     color: "#f85149", description: "Force-push, deletion & GPG requirements" },
-        { name: "NOTIFICATION",   color: "#770180", description: "Slack, email & audit log routing" },
-        { name: "CUSTOM HOOKS",   color: "#bc8cff", description: "Custom pre-commit/push scripts" }
+        { name: "Commit Message", color: Style.colors.cornflowerBlue, icon: Style.icons.edit,    description: "Enforce message format, prefixes & length" },
+        { name: "Branch Naming",  color: Style.colors.stageGreen,     icon: Style.icons.branch,  description: "Naming patterns, forbidden chars & protection" },
+        { name: "File & Code",    color: Style.colors.amber,          icon: Style.icons.file,    description: "Extensions, secrets & file size limits" },
+        { name: "Push Rules",     color: Style.colors.softCoralMist,  icon: Style.icons.upload,  description: "Force-push, deletion & GPG requirements" },
+        { name: "Notification",   color: Style.colors.purple,         icon: Style.icons.bell,    description: "Webhook & audit log routing" },
+        { name: "Custom Hooks",   color: Style.colors.marigold,       icon: Style.icons.terminal, description: "Custom pre-commit/push scripts" }
     ]
 
     property var categoryModels: [commitRules, branchRules, fileRules, pushRules, notificationRules, hookRules]

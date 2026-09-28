@@ -13,5 +13,5 @@ import GitEaseOrganizationRulesPlugin
 Rectangle {
     Layout.fillWidth: true
     Layout.preferredHeight: 1
-    color: Style.colors.secondaryBackground
+    color: Style.colors.pluginDivider
 }

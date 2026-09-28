@@ -47,9 +47,9 @@ UtilitiesCard {
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
             text: "Open the Rules page in the navigation rail to add, import, or export organization rules for this repository."
-            font.pixelSize: 12
+            font.pixelSize: Style.appFont.defaultPt
             font.family: Style.fontTypes.inter
-            color: Style.colors.mutedText
+            color: Style.colors.utilitiesHintText
         }
     }
 }

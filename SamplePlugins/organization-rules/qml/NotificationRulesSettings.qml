@@ -28,8 +28,8 @@ RuleSettingsBase {
      * ****************************************************************************************/
     ColumnLayout {
         id: contentColumn
-        width: root.width
-        spacing: 5
+        width: root.contentAvailableWidth
+        spacing: 16
 
         BasicInfoRect {
             id: basicInfo
@@ -46,23 +46,18 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Notify channel"
-                    subtitle: "Slack webhook or email"
+                    subtitle: "Slack, Teams or Discord webhook URL"
 
-                    control: TextField {
+                    control: RuleTextField {
                         id: notifyChannelField
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
                         placeholderText: "https://hooks.slack.com/"
-                        selectByMouse: true
-
-                        background: Rectangle {
-                            implicitHeight: 40
-                            color: Style.colors.secondaryBackground
-                            radius: 5
-                        }
 
                         onTextChanged: root.markDirty()
                     }
@@ -89,7 +84,7 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Log violations to file"
@@ -107,17 +102,13 @@ RuleSettingsBase {
                 OptionRow {
                     title: "Log file path"
 
-                    control: TextField {
+                    control: RuleTextField {
                         id: logFilePath
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
                         placeholderText: "/var/log/gitease/violations.log"
-                        selectByMouse: true
-
-                        background: Rectangle {
-                            implicitHeight: 40
-                            color: Style.colors.secondaryBackground
-                            radius: 5
-                        }
+                        font.family: Style.fontTypes.jetBrainsMono
 
                         onTextChanged: root.markDirty()
                     }

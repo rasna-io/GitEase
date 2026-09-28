@@ -28,8 +28,8 @@ RuleSettingsBase {
      * ****************************************************************************************/
     ColumnLayout {
         id: contentColumn
-        width: root.width
-        spacing: 5
+        width: root.contentAvailableWidth
+        spacing: 16
 
         BasicInfoRect {
             id: basicInfo
@@ -46,7 +46,7 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Forbidden extensions"
@@ -54,7 +54,9 @@ RuleSettingsBase {
 
                     control: HorizontalTagInput {
                         id: forbiddenExtensionsInput
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
 
                         onWordsChanged: root.markDirty()
                     }
@@ -107,7 +109,7 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Secret patterns"
@@ -131,7 +133,9 @@ RuleSettingsBase {
 
                     control: HorizontalTagInput {
                         id: lockedFilesInput
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
 
                         onWordsChanged: root.markDirty()
                     }

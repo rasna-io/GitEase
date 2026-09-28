@@ -29,25 +29,34 @@ RowLayout {
      * ****************************************************************************************/
     Layout.fillWidth: true
     Layout.preferredHeight: root.rowHeight
+    spacing: 20
 
 
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
         Layout.preferredWidth: 200
+        Layout.maximumWidth: 200
+        Layout.alignment: Qt.AlignVCenter
+        spacing: 2
 
         Text {
+            Layout.fillWidth: true
             text: root.title
             font.family: Style.fontTypes.inter
-            color: Style.colors.placeholderText
-            font.pixelSize: 12
+            font.pixelSize: Style.appFont.defaultPt
+            font.weight: Font.Medium
+            color: Style.colors.pluginCardTitle
+            elide: Text.ElideRight
         }
 
         Text {
+            Layout.fillWidth: true
             text: root.subtitle
             font.family: Style.fontTypes.inter
-            color: Style.colors.mutedText
-            font.pixelSize: 11
+            font.pixelSize: Style.appFont.captionPt
+            color: Style.colors.pluginCardMetaText
+            elide: Text.ElideRight
             visible: root.subtitle !== ""
         }
     }

@@ -32,189 +32,123 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    color: Style.colors.primaryBackground
-    border.width: 1
-    border.color: Style.colors.secondaryBackground
-    radius: 5
+    color: Style.colors.pluginPanelBackground
+
+    // Right border of the sidebar
+    Rectangle {
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        width: 1
+        color: Style.colors.pluginPanelBorder
+        z: 1
+    }
 
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 15
+        anchors.rightMargin: 1
+        spacing: 0
 
-        RowLayout {
+        // ── Header ─────────────────────────────────────────────────
+        ColumnLayout {
             Layout.fillWidth: true
-
-            Text {
-                text: "Rules"
-                Layout.fillWidth: true
-                font.family: Style.fontTypes.inter
-                font.pixelSize: 13
-                color: Style.colors.placeholderText
-            }
-
-            Button {
-                Layout.preferredWidth: 90
-                implicitHeight: 40
-
-                background: Rectangle {
-                    radius: 8
-                    color: Style.colors.accent
-                }
-
-                contentItem: Item {
-                    anchors.fill: parent
-
-                    Row {
-                        spacing: 10
-                        anchors.centerIn: parent
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: Style.icons.plus
-                            font.family: Style.fontTypes.font6Pro
-                            font.pixelSize: 12
-                            color: Style.colors.textButton
-                            font.bold: true
-                        }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Add Rule"
-                            color: Style.colors.textButton
-                            font.pixelSize: 13
-                            font.bold: true
-                        }
-                    }
-                }
-
-                onClicked: root.addRuleRequested()
-            }
-        }
-
-        TextField {
-            Layout.fillWidth: true
-            placeholderText: "Search rules..."
-            selectByMouse: true
-
-            background: Rectangle {
-                color: Style.colors.secondaryBackground
-                radius: 5
-            }
-
-            onTextChanged: root.searchText = text
-        }
-
-        DividerLine {}
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 50
-            color: Style.colors.secondaryBackground
-            radius: 5
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+            Layout.topMargin: 18
+            Layout.bottomMargin: 16
+            spacing: 12
 
             RowLayout {
-                anchors.fill: parent
-                spacing: 5
+                Layout.fillWidth: true
+                spacing: 8
 
-                Button {
-                    Layout.preferredWidth: 90
-                    implicitHeight: 40
-                    Layout.alignment: Qt.AlignCenter
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 1
 
-                    background: Rectangle {
-                        radius: 5
-                        color: "transparent"
-                        border.width: 1
-                        border.color: "#888"
+                    Text {
+                        text: "Rules"
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.largePt
+                        font.weight: Font.DemiBold
+                        color: Style.colors.pluginCardTitle
                     }
 
-                    contentItem: Item {
-                        anchors.fill: parent
-
-                        Row {
-                            spacing: 10
-                            anchors.centerIn: parent
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: Style.icons.upload
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 10
-                                color: Style.colors.textButton
-                                font.bold: true
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Import"
-                                color: Style.colors.textButton
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-                        }
+                    Text {
+                        text: root.totalRuleCount() + (root.totalRuleCount() === 1 ? " rule" : " rules")
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.pluginSectionMetaText
                     }
+                }
 
+                RuleButton {
+                    variant: "primary"
+                    text: "Add Rule"
+                    iconText: Style.icons.plus
+                    onClicked: root.addRuleRequested()
+                }
+            }
+
+            RuleTextField {
+                Layout.fillWidth: true
+                placeholderText: "Search rules..."
+                icon: Style.icons.search
+                onTextChanged: root.searchText = text
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                RuleButton {
+                    Layout.fillWidth: true
+                    text: "Import"
+                    iconText: Style.icons.upload
                     onClicked: root.importRequested()
                 }
 
-                Button {
-                    Layout.preferredWidth: 90
-                    implicitHeight: 40
-                    Layout.alignment: Qt.AlignCenter
+                RuleButton {
+                    Layout.fillWidth: true
+                    text: "Export"
+                    iconText: Style.icons.download
                     enabled: root.exportEnabled
-
-                    background: Rectangle {
-                        radius: 5
-                        color: enabled ? "transparent" : Style.colors.disabledButton
-                        border.width: 1
-                        border.color: "#888"
-                    }
-
-                    contentItem: Item {
-                        anchors.fill: parent
-
-                        Row {
-                            spacing: 10
-                            anchors.centerIn: parent
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: Style.icons.download
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: 10
-                                color: Style.colors.textButton
-                                font.bold: true
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Export"
-                                color: Style.colors.textButton
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-                        }
-                    }
-
                     onClicked: root.exportRequested()
                 }
             }
         }
 
-        DividerLine {}
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            color: Style.colors.pluginDivider
+        }
 
-        ScrollView {
+        // ── Categories ─────────────────────────────────────────────
+        Flickable {
+            id: categoriesScroll
+
+            //! Space kept free on the right for the scrollbar plus breathing room.
+            readonly property int scrollGutter: contentHeight > height ? 18 : 10
+
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            contentWidth: width
+            contentHeight: categoriesColumn.implicitHeight
+
+            ScrollBar.vertical: RuleScrollBar {}
 
             ColumnLayout {
-                width: parent.width
-                spacing: 8
+                id: categoriesColumn
+                width: categoriesScroll.width - categoriesScroll.scrollGutter
+                spacing: 6
 
-                // Categories repeater
+                Item { Layout.preferredHeight: 8 }
+
                 Repeater {
                     model: root.categoriesInfo
 
@@ -226,99 +160,137 @@ Rectangle {
                         property var categoryRulesModel: root.categoryModels[categoryIndex]
 
                         Layout.fillWidth: true
-                        spacing: 0
+                        Layout.leftMargin: 10
+                        spacing: 2
 
-                        Rectangle {
+                        // Category header
+                        RowLayout {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 25
-                            color: "transparent"
+                            Layout.preferredHeight: 28
+                            Layout.leftMargin: 4
+                            Layout.rightMargin: 4
+                            spacing: 8
 
-                            RowLayout {
-                                anchors.fill: parent
-                                spacing: 10
+                            Rectangle {
+                                Layout.preferredWidth: 3
+                                Layout.preferredHeight: 12
+                                Layout.alignment: Qt.AlignVCenter
+                                color: modelData.color
+                                radius: 2
+                            }
 
-                                Rectangle {
-                                    Layout.preferredWidth: 3
-                                    Layout.preferredHeight: 15
-                                    color: modelData.color
-                                    radius: 5
-                                }
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.name
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: Style.appFont.captionPt
+                                font.weight: Font.DemiBold
+                                font.letterSpacing: 0.7
+                                font.capitalization: Font.AllUppercase
+                                color: Style.colors.pluginSidebarLabel
+                                elide: Text.ElideRight
+                            }
 
-                                Text {
-                                    text: modelData.name
-                                    font.family: Style.fontTypes.inter
-                                    color: Style.colors.placeholderText
-                                    font.pixelSize: 11
-                                }
+                            Rectangle {
+                                radius: 8
+                                color: Style.colors.pluginCountPillBackground
+                                implicitHeight: countLabel.implicitHeight + 3
+                                implicitWidth: countLabel.implicitWidth + 12
 
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 1
-                                    color: Style.colors.secondaryBackground
-                                }
-
-                                Text {
-                                    text: categoryBlock.categoryRulesModel.count
-                                    font.family: Style.fontTypes.inter
-                                    color: Style.colors.placeholderText
-                                    font.pixelSize: 11
+                                Label {
+                                    id: countLabel
+                                    anchors.centerIn: parent
+                                    text: categoryBlock.categoryRulesModel ? categoryBlock.categoryRulesModel.count : 0
+                                    color: Style.colors.pluginCountPillText
+                                    font.pixelSize: Style.appFont.smallPt
+                                    font.family: Style.fontTypes.jetBrainsMono
                                 }
                             }
                         }
 
-                        // Rules repeater
+                        // Rules
                         Repeater {
                             model: categoryBlock.categoryRulesModel
 
                             delegate: Rectangle {
-                                Layout.fillWidth: true
-                                height: matchesSearch ? 30 : 0
-                                visible: matchesSearch
-                                radius: 5
+                                id: ruleRow
 
                                 property bool matchesSearch: root.searchText.length === 0 ||
                                                               ruleName.toLowerCase().includes(root.searchText.toLowerCase())
+                                property bool isSelected: root.selectedCategory === categoryBlock.categoryIndex
+                                                          && root.selectedRule === index
 
-                                color: (root.selectedCategory === categoryBlock.categoryIndex
-                                        && root.selectedRule === index)
-                                       ? Style.colors.accent
-                                       : "transparent"
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: matchesSearch ? 32 : 0
+                                visible: matchesSearch
+                                radius: 6
+                                color: isSelected ? Style.colors.pluginSidebarRowActiveBg
+                                     : (ruleHover.containsMouse ? Style.colors.pluginSidebarRowHoverBg
+                                                                : "transparent")
+
+                                Behavior on color { ColorAnimation { duration: Style.motionFast } }
 
                                 RowLayout {
                                     anchors.fill: parent
-                                    anchors.leftMargin: 10
-                                    spacing: 5
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 10
+                                    spacing: 9
 
                                     Rectangle {
-                                        width: 10
-                                        height: 10
-                                        radius: 5
+                                        Layout.preferredWidth: 7
+                                        Layout.preferredHeight: 7
                                         Layout.alignment: Qt.AlignVCenter
+                                        radius: 3.5
                                         color: categoryBlock.categoryColor
+                                        opacity: model.enabled === false ? 0.35 : 1.0
                                     }
 
                                     ScrollingText {
                                         text: ruleName
                                         font.family: Style.fontTypes.inter
-                                        font.pixelSize: 11
-                                        color: Style.colors.textButton
+                                        font.pixelSize: Style.appFont.mediumPt
+                                        font.weight: ruleRow.isSelected ? Font.Medium : Font.Normal
+                                        color: ruleRow.isSelected ? Style.colors.pluginSidebarRowActiveText
+                                                                  : Style.colors.pluginSidebarRowText
                                         Layout.alignment: Qt.AlignVCenter
                                         Layout.fillWidth: true
                                     }
                                 }
 
                                 MouseArea {
+                                    id: ruleHover
                                     anchors.fill: parent
-                                    cursorShape: "PointingHandCursor"
-                                    onClicked: {
-                                        root.ruleSelected(categoryBlock.categoryIndex, index)
-                                    }
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.ruleSelected(categoryBlock.categoryIndex, index)
                                 }
                             }
                         }
+
+                        Text {
+                            visible: !!categoryBlock.categoryRulesModel && categoryBlock.categoryRulesModel.count === 0
+                            Layout.leftMargin: 16
+                            Layout.bottomMargin: 2
+                            text: "No rules yet"
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.captionPt
+                            font.italic: true
+                            color: Style.colors.emptyStateSubText
+                        }
+
+                        Item { Layout.preferredHeight: 6 }
                     }
                 }
             }
         }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function totalRuleCount() {
+        var total = 0
+        for (var i = 0; i < root.categoryModels.length; i++)
+            if (root.categoryModels[i]) total += root.categoryModels[i].count
+        return total
     }
 }
