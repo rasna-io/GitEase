@@ -221,10 +221,9 @@ GitResult GitCommit::commit(const QString& message,
     ActionContext context;
     context.type = ActionType::Commit_msg;
     context.commitMessage = message;
-    emit beforeAction(&context);
-
-    if(!context.result.success())
-        return context.result;
+    GitResult rulesResult = runRuleCheck(context);
+    if (!rulesResult.success())
+        return rulesResult;
 
     git_signature* author = getAuthorSignature(activeRepo());
     if (!author) {
