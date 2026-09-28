@@ -898,8 +898,12 @@ QtObject {
         root.localPluginMap = localMap
 
         if (root.appModel.plugins.length > 0) {
-            root.appModel.plugins = root.appModel.plugins
+            let listedIds = {}
+            let searchLower = root.lastFetchedSearch.toLowerCase()
+
+            let updated = root.appModel.plugins
                 .map(function(p) {
+                    listedIds[p.pluginId] = true
                     let local = localMap[p.pluginId]
                     if (!local)
                         return Object.assign({}, p, {
@@ -920,6 +924,24 @@ QtObject {
                 .filter(function(p) {
                     return root.serverPluginIds[p.pluginId] || p.isInstalled
                 })
+
+            // Add newly installed plugins that aren't listed yet (e.g. imported .gep files
+            // or plugins that aren't published on the server).
+            for (let j = 0; j < infos.length; j++) {
+                let info = infos[j]
+                if (listedIds[info.id])
+                    continue
+
+                if (searchLower !== "") {
+                    let nameMatch = (info.name || "").toLowerCase().indexOf(searchLower) !== -1
+                    let descMatch = (info.description || "").toLowerCase().indexOf(searchLower) !== -1
+                    if (!nameMatch && !descMatch)
+                        continue
+                }
+                updated.push(buildLocalEntry(info))
+            }
+
+            root.appModel.plugins = updated
             return
         }
 
