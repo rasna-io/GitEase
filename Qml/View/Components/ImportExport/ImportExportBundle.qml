@@ -37,8 +37,7 @@ UtilitiesCard {
     content: ColumnLayout {
         id: content
         anchors.fill: parent
-        anchors.leftMargin: Style.dp(10)
-        anchors.rightMargin: Style.dp(10)
+        spacing: 8
 
         GuideHoverTrigger {
             guideController: root.guideController
