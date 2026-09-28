@@ -5,7 +5,7 @@ project(OrganizationRulesPlugin VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Quick)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick Network)
 
 if(NOT DEFINED GITEASE_SDK_DIR OR GITEASE_SDK_DIR STREQUAL "")
     get_filename_component(GITEASE_SDK_DIR
@@ -29,6 +29,18 @@ add_library(organization-rules-plugin SHARED
     RuleManager.cpp
     CommitMessageValidator.h
     CommitMessageValidator.cpp
+    BranchNameValidator.h
+    BranchNameValidator.cpp
+    FileRuleValidator.h
+    FileRuleValidator.cpp
+    PushRuleValidator.h
+    PushRuleValidator.cpp
+    HookRunner.h
+    HookRunner.cpp
+    ViolationReporter.h
+    ViolationReporter.cpp
+    RuleSupport.h
+    RuleSupport.cpp
 )
 
 set_target_properties(organization-rules-plugin PROPERTIES PREFIX "")
@@ -47,6 +59,10 @@ qt_add_resources(organization-rules-plugin "organization_rules_qml"
         qml/OptionRow.qml
         qml/BasicInfoRect.qml
         qml/ModernSwitch.qml
+        qml/RuleButton.qml
+        qml/RuleScrollBar.qml
+        qml/RuleTextField.qml
+        qml/SegmentedSelector.qml
         qml/RuleSettingsBase.qml
         qml/CommitMessageSettings.qml
         qml/BranchNamingSettings.qml
@@ -73,6 +89,7 @@ target_include_directories(organization-rules-plugin PRIVATE
 target_link_libraries(organization-rules-plugin PRIVATE
     Qt6::Core
     Qt6::Quick
+    Qt6::Network
 )
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/../PackageGep.cmake")

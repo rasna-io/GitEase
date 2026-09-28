@@ -30,6 +30,10 @@ GitResult RuleManager::saveRules(const QString &jsonText)
     if (written < 0)
         return GitResult(false, QVariant(), "Failed to write rules file");
 
+    QJsonDocument doc = QJsonDocument::fromJson(jsonText.toUtf8());
+    if (doc.isObject())
+        applyRules(doc.object()["rules"].toObject());
+
     return GitResult(true);
 }
 
@@ -40,8 +44,10 @@ GitResult RuleManager::loadRules()
         return GitResult(false, QVariant(), "No repository is currently open");
 
     QFile file(path);
-    if (!file.exists())
+    if (!file.exists()) {
+        applyRules(QJsonObject());
         return GitResult(true, QString(""));
+    }
 
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return GitResult(false, QVariant(), "Failed to open rules file for reading: " + path);
@@ -53,11 +59,19 @@ GitResult RuleManager::loadRules()
     if (!doc.isObject())
         return GitResult(false, {}, "Invalid rules file.");
 
-    QJsonObject root = doc.object();
-    QJsonObject rules = root["rules"].toObject();
-    m_commitMessageValidator.setRules(rules["commitMessage"].toArray());
+    applyRules(doc.object()["rules"].toObject());
 
     return GitResult(true, content);
+}
+
+void RuleManager::applyRules(const QJsonObject &rules)
+{
+    m_commitMessageValidator.setRules(rules["commitMessage"].toArray());
+    m_branchNameValidator.setRules(rules["branchNaming"].toArray());
+    m_fileRuleValidator.setRules(rules["fileCode"].toArray());
+    m_pushRuleValidator.setRules(rules["pushRules"].toArray());
+    m_hookRunner.setRules(rules["customHooks"].toArray());
+    m_notificationRules = rules["notification"].toArray();
 }
 
 GitResult RuleManager::exportRules(const QUrl &fileUrl, const QString &jsonText)
@@ -98,11 +112,6 @@ QString RuleManager::rulesFilePath()
         return QString();
 
     return m_currentRepoPath + "/.gitease/rules.json";
-}
-
-CommitMessageValidator RuleManager::commitMessageValidator() const
-{
-    return m_commitMessageValidator;
 }
 
 void RuleManager::setCurrentRepoPath(const QString &newCurrentRepoPath)

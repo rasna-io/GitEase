@@ -5,6 +5,7 @@
 #include "IRulePlugin.h"
 #include "IRepositoryAwarePlugin.h"
 #include "IPluginContext.h"
+#include "ViolationReporter.h"
 
 class RuleManager;
 
@@ -40,5 +41,11 @@ public:
     RuleManager* ruleManager() const { return m_ruleManager; }
 
 private:
-    RuleManager* m_ruleManager = nullptr;
+    GitResult checkCommit(const ActionContext& context);
+    GitResult checkPush(const ActionContext& context);
+    GitResult afterMerge(const ActionContext& context);
+    GitResult report(const QString& action, const RuleViolations& violations);
+
+    RuleManager*      m_ruleManager = nullptr;
+    ViolationReporter m_reporter{ this };
 };
