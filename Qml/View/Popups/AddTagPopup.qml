@@ -353,7 +353,7 @@ IPopup {
                 // Push checkbox
                 RowLayout {
                     id: pushCheckBox
-                    property bool checked: true
+                    readonly property bool checked: root.pushAfterCreate
                     Layout.bottomMargin: root.sectionSpacing
 
                     spacing: 8
@@ -387,8 +387,16 @@ IPopup {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: pushCheckBox.checked = !pushCheckBox.checked
+                        onClicked: root.pushAfterCreate = !root.pushAfterCreate
                     }
+                }
+
+                CommandPreview {
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: root.sectionSpacing
+
+                    placeholder: qsTr("Name the tag to see the command")
+                    command: root.previewCommand()
                 }
 
                 // Footer separator
@@ -489,6 +497,19 @@ IPopup {
 
     // Auto-focus logic when popup opens
     onOpened: nameInput.forceActiveFocus()
+
+    function previewCommand() {
+        let tagName = nameInput.text.trim()
+        if (tagName === "")
+            return ""
+
+        let command = GitCommandText.createTag(tagName, root.isAnnotated ? messageInput.text.trim() : "")
+
+        if (root.pushAfterCreate)
+            command += " && " + GitCommandText.pushTag(tagName)
+
+        return command
+    }
 
     function createTag(){
         let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 
 /*! ***********************************************************************************************
@@ -23,6 +24,8 @@ ColumnLayout {
     //! Across every conflicted file, not just the one open in the editor.
     property int    resolvedConflicts:  0
     property int    totalConflicts:     0
+
+    readonly property string _operationKey: root.operationName.toLowerCase()
 
     /* Signals
      * ****************************************************************************************/
@@ -62,6 +65,7 @@ ColumnLayout {
         spacing: 10
 
         ConflictPillButton {
+            id: abortButton
             Layout.preferredHeight: Style.dp(30)
             text: `Abort ${root.operationName}`
             accentColor: Style.colors.conflictDestructive
@@ -69,9 +73,23 @@ ColumnLayout {
             onClicked: root.abortRequested()
         }
 
-        Item { Layout.fillWidth: true }
+        CommandPreview {
+            Layout.fillWidth: true
+            Layout.maximumWidth: 300
+            Layout.alignment: Qt.AlignVCenter
+
+            command: {
+                if (abortButton.hovered)
+                    return root.commandFor("abort")
+                if (skipButton.hovered)
+                    return root.commandFor("skip")
+
+                return root.commandFor("continue")
+            }
+        }
 
         ConflictPillButton {
+            id: skipButton
             Layout.preferredHeight: Style.dp(30)
             visible: root.canSkip
             text: "Skip commit"
@@ -91,5 +109,23 @@ ColumnLayout {
                                       : "Resolve every file to continue"
             onClicked: root.continueRequested()
         }
+    }
+
+    
+    /* Functions
+     * ****************************************************************************************/
+    function commandFor(step) {
+        if (root._operationKey === "merge")
+            return step === "abort" ? GitCommandText.mergeAbort() : GitCommandText.mergeContinue()
+
+        if (root._operationKey === "cherry-pick") {
+            if (step === "abort") return GitCommandText.cherryPickAbort()
+            if (step === "skip")  return GitCommandText.cherryPickSkip()
+            return GitCommandText.cherryPickContinue()
+        }
+
+        if (step === "abort") return GitCommandText.rebaseAbort()
+        if (step === "skip")  return GitCommandText.rebaseSkip()
+        return GitCommandText.rebaseContinue()
     }
 }

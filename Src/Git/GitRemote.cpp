@@ -1,4 +1,5 @@
 #include "GitRemote.h"
+#include "GitCommandText.h"
 #include "Auth/GitHttpsAuth.h"
 #include "Auth/GitSshAuth.h"
 #include "GitResult.h"
@@ -280,10 +281,7 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
     pushResult["force"] = force;
     pushResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    emitGitCommand(QString("git push %1%2 %3")
-                       .arg(force ? "--force " : "",
-                            quoteCommandArg(remoteName),
-                            quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::push(remoteName, branchName, force));
 
     return GitResult(true, pushResult);
 }
@@ -406,8 +404,7 @@ GitResult GitRemote::addRemote(const QString &name, const QString &url)
 
     git_remote_free(remote);
 
-    emitGitCommand(QString("git remote add %1 %2")
-                       .arg(quoteCommandArg(name), quoteCommandArg(url)));
+    emitGitCommand(GitCommandText::addRemote(name, url));
 
     return GitResult(true, QVariant::fromValue(remoteInfo));
 }
@@ -435,7 +432,7 @@ GitResult GitRemote::removeRemote(const QString &name)
                          QString("Failed to remove remote '%1'").arg(name));
     }
 
-    emitGitCommand(QString("git remote remove %1").arg(quoteCommandArg(name)));
+    emitGitCommand(GitCommandText::removeRemote(name));
 
     return GitResult(true, name);
 }
@@ -486,14 +483,12 @@ GitResult GitRemote::editRemote(const QString &oldName, const QString &newName, 
     }
 
     if (!newName.isEmpty() && newName != oldName) {
-        emitGitCommand(QString("git remote rename %1 %2")
-                           .arg(quoteCommandArg(oldName), quoteCommandArg(newName)));
+        emitGitCommand(GitCommandText::renameRemote(oldName, newName));
     }
 
     const QString effectiveName = (!newName.isEmpty() && newName != oldName) ? newName : oldName;
     if (!newUrl.isEmpty()) {
-        emitGitCommand(QString("git remote set-url %1 %2")
-                           .arg(quoteCommandArg(effectiveName), quoteCommandArg(newUrl)));
+        emitGitCommand(GitCommandText::setRemoteUrl(effectiveName, newUrl));
     }
     
     return GitResult(true, activeRemoteName, "Remote configuration updated successfully.");

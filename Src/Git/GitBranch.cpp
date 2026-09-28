@@ -1,4 +1,5 @@
 #include "GitBranch.h"
+#include "GitCommandText.h"
 #include "GitResult.h"
 
 #include <QDebug>
@@ -110,7 +111,7 @@ GitResult GitBranch::createBranch(const QString &branchName)
         git_reference_free(new_branch_ref);
     }
 
-    emitGitCommand(QString("git branch %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::createBranch(branchName));
 
     return GitResult(true, QVariant(), QString("Branch created successfully: %1").arg(branchName));
 }
@@ -165,8 +166,7 @@ GitResult GitBranch::createBranch(const QString &commitSha, const QString &branc
                          QString("Failed to create branch '%1'").arg(branchName));
     }
 
-    emitGitCommand(QString("git branch %1 %2")
-                       .arg(quoteCommandArg(branchName), quoteCommandArg(commitSha)));
+    emitGitCommand(GitCommandText::createBranch(branchName, commitSha));
 
     return GitResult(true);
 }
@@ -236,7 +236,7 @@ GitResult GitBranch::deleteBranch(const QString &branchName)
         git_reference_free(branchRef);
     }
 
-    emitGitCommand(QString("git branch -d %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::deleteBranch(branchName));
 
     return GitResult(true, QVariant(), QString("Successfully deleted branch: %1").arg(branchName));
 }
@@ -286,7 +286,7 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
     git_object_free(targetCommit);
     git_reference_free(targetRef);
 
-    emitGitCommand(QString("git checkout %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::checkoutBranch(branchName));
 
     ActionContext postCheckout;
     postCheckout.type = ActionType::PostCheckout;
@@ -331,7 +331,7 @@ GitResult GitBranch::checkoutCommit(const QString &commitHash)
         return GitResult(false, QVariant(), "Failed to detach HEAD to commit.");
     }
 
-    emitGitCommand(QString("git checkout --detach %1").arg(quoteCommandArg(commitHash)));
+    emitGitCommand(GitCommandText::checkoutCommit(commitHash));
 
     return GitResult(true, QVariant(), QString("Checked out commit %1").arg(commitHash.left(8)));
 }
@@ -367,8 +367,7 @@ GitResult GitBranch::renameBranch(const QString &oldName, const QString &newName
     git_reference_free(newRef);
     git_reference_free(branchRef);
 
-    emitGitCommand(QString("git branch -m %1 %2")
-                       .arg(quoteCommandArg(oldName), quoteCommandArg(newName)));
+    emitGitCommand(GitCommandText::renameBranch(oldName, newName));
 
     return GitResult(true, QVariant(), QString("Successfully renamed branch '%1' to '%2'.").arg(oldName).arg(newName));
 }

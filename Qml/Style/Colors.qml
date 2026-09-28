@@ -467,6 +467,7 @@ QtObject{
     property color popupCheckboxCheckmark:           "#FFFFFF"
     property color popupCheckboxLabelText:           secondaryText
     property color popupCommandPreviewBackground:    controlBackground
+    property color popupCommandPreviewBorder:        controlBorder
     property color popupCommandPreviewText:          secondaryText
     property color popupFooterBackground:            controlBackground
     property color popupCreateButtonBackground:      accent

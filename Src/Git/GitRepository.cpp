@@ -1,4 +1,5 @@
 #include "GitRepository.h"
+#include "GitCommandText.h"
 #include "GitResult.h"
 
 #include <QDir>
@@ -46,7 +47,7 @@ GitResult GitRepository::init(const QString &path)
 
     // Store path and emit signal
     m_currentRepoPath = path;
-    emitGitCommand(QString("git init %1").arg(quoteCommandArg(path)));
+    emitGitCommand(GitCommandText::init(path));
 
     return GitResult(true, path);
 }
@@ -194,8 +195,7 @@ GitResult GitRepository::cloneInternal(const QString& url,
         &opts
         );
 
-    emitGitCommand(QString("git clone %1 %2")
-                       .arg(quoteCommandArg(url), quoteCommandArg(localPath)));
+    emitGitCommand(GitCommandText::clone(url, localPath));
 
     if (result != 0) {
         const git_error *err = git_error_last();

@@ -44,6 +44,14 @@ ListView {
         visible: false
     }
 
+    ConfirmCommandDialog {
+        id: confirmDeleteDialog
+
+        hostItem: root
+
+        onConfirmed: (context) => root.performDeleteBranch(context)
+    }
+
     delegate: Rectangle {
         id: branchDelegate
 
@@ -181,6 +189,14 @@ ListView {
     }
 
     function doDeleteBranch(branch) {
+        confirmDeleteDialog.ask("Delete Branch",
+                                "Delete the branch '" + branch.name + "'? Any commits only this branch points at become unreachable.",
+                                GitCommandText.deleteBranch(branch.name),
+                                "Delete Branch",
+                                branch)
+    }
+
+    function performDeleteBranch(branch) {
         let res = root.branchController.deleteBranch(branch.name)
 
         if (res.success) {

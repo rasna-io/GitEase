@@ -108,6 +108,12 @@ Page {
         }
     }
 
+    ConfirmCommandDialog {
+        id: confirmForcePushDialog
+
+        onConfirmed: root.performPushAndUpdate(true)
+    }
+
     CommitAmendPopup {
         id: amendPopup
         anchors.centerIn: parent
@@ -253,6 +259,15 @@ Page {
                             Layout.fillWidth: true
 
                             placeholder: "Commit message (required)"
+                        }
+
+                        CommandPreview {
+                            Layout.fillWidth: true
+
+                            placeholder: qsTr("Write a message to see the command")
+                            command: commitTextArea.text.trim() === ""
+                                     ? ""
+                                     : GitCommandText.commit(commitTextArea.text)
                         }
 
                         RowLayout {
@@ -606,6 +621,22 @@ Page {
     }
 
     function pushAndUpdate(force) {
+        if (!force) {
+            root.performPushAndUpdate(false)
+            return
+        }
+
+        let branch = root.branchController?.getCurrentBranchName() ?? ""
+
+        confirmForcePushDialog.ask("Force Push",
+                                   "Overwrite '" + branch + "' on origin with your local history? " +
+                                   "Commits on the remote that you do not have are lost.",
+                                   GitCommandText.push("origin", branch, true),
+                                   "Force Push",
+                                   null)
+    }
+
+    function performPushAndUpdate(force) {
         root.remoteOperationsSession?.pushAndUpdate(force)
     }
 

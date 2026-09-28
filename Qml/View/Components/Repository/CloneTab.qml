@@ -155,6 +155,16 @@ Item {
                 }
             }
 
+            CommandPreview {
+                Layout.fillWidth: true
+                Layout.topMargin: 8
+
+                placeholder: qsTr("Fill in the URL and destination to see the command")
+                command: (root.url === "" || root.toPath === "")
+                         ? ""
+                         : GitCommandText.clone(root.url, root.toPath)
+            }
+
             // TODO: hidden until shallow clone depth is supported by the backend.
             RepoSectionLabel {
                 text: "Clone depth"

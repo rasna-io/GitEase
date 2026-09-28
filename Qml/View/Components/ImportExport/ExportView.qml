@@ -190,6 +190,24 @@ Item {
             }
         }
 
+        CommandPreview {
+            Layout.fillWidth: true
+            Layout.topMargin: Style.dp(5)
+
+            placeholder: qsTr("Pick the branches and a folder to see the command")
+            command: {
+                if (root.selectedFolder === "" || branchesCombo.currentIndex === -1 || baseBranchCombo.currentIndex === -1)
+                    return ""
+
+                let base   = baseBranchCombo.model[baseBranchCombo.currentIndex]
+                let target = branchesCombo.model[branchesCombo.currentIndex].name
+
+                return GitCommandText.bundleCreate(`${root.selectedFolder}/${root.buildBundleName(base, target)}`,
+                                                   target,
+                                                   base)
+            }
+        }
+
         DashedButton {
             id: exportButton
             Layout.fillWidth: true

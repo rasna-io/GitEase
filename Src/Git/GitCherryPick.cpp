@@ -1,4 +1,5 @@
 #include "GitCherryPick.h"
+#include "GitCommandText.h"
 
 GitCherryPick::GitCherryPick(QObject* parent)
     : IGitController(parent)
@@ -105,7 +106,7 @@ GitResult GitCherryPick::continueOp()
 
     m_currentIndex++;
 
-    emitGitCommand("git cherry-pick --continue");
+    emitGitCommand(GitCommandText::cherryPickContinue());
 
     return processCommits();
 }
@@ -154,7 +155,7 @@ GitResult GitCherryPick::abortOp()
         return resetResult;
 
     clearState();
-    emitGitCommand("git cherry-pick --abort");
+    emitGitCommand(GitCommandText::cherryPickAbort());
 
     return GitResult(true, QVariant(), "Cherry-pick aborted.");
 }
@@ -460,7 +461,7 @@ GitResult GitCherryPick::skipOp()
     m_hasConflicts = false;
     emit cherryPickStateChanged();
 
-    emitGitCommand("git cherry-pick --skip");
+    emitGitCommand(GitCommandText::cherryPickSkip());
 
     m_currentIndex++;
 

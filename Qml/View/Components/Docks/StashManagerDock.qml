@@ -170,6 +170,17 @@ UtilitiesCard {
         }
     }
 
+    ConfirmCommandDialog {
+        id: confirmStashDialog
+
+        onConfirmed: (context) => {
+            if (context.action === "dropAll")
+                root.performDropAllStashes()
+            else
+                root.performDropStash(context.stash)
+        }
+    }
+
     /* Functions
      * ****************************************************************************************/
     function updateCanStash() {
@@ -256,6 +267,14 @@ UtilitiesCard {
     }
 
     function dropStash(stashEntry) {
+        confirmStashDialog.ask("Drop Stash",
+                               "Drop stash@{%1}? The changes it holds are lost.".arg(stashEntry.index),
+                               GitCommandText.stashDrop(stashEntry.index),
+                               "Drop Stash",
+                               { action: "drop"})
+    }
+
+    function performDropStash(stashEntry) {
         let result = root.stashController.remove(stashEntry.index)
         if (result.success) {
             if (root.notificationController) {
@@ -270,6 +289,29 @@ UtilitiesCard {
 
     //! Drops every stash, highest index first so the remaining indices stay valid
     function dropAllStashes() {
+        if (!root.stashController || root.stashes.length === 0)
+            return
+
+        let total = root.stashes.length
+
+        confirmStashDialog.ask("Drop All Stashes",
+                               total === 1 ? "Drop the only stash? The changes it holds are lost."
+                                           : "Drop all " + total + " stashes? The changes they hold are lost.",
+                               root.dropAllCommand(),
+                               "Drop All",
+                               { action: "dropAll" })
+    }
+
+    function dropAllCommand() {
+        let parts = []
+
+        for (let i = root.stashes.length - 1; i >= 0; --i)
+            parts.push(GitCommandText.stashDrop(i))
+
+        return parts.join(" && ")
+    }
+
+    function performDropAllStashes() {
         if (!root.stashController || root.stashes.length === 0)
             return
 

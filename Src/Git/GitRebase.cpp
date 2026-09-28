@@ -1,4 +1,5 @@
 #include "GitRebase.h"
+#include "GitCommandText.h"
 
 #include "GitUtils.h"
 
@@ -349,18 +350,11 @@ GitResult GitRebase::startRebase(const QString& onto,
     git_rebase_free(rebase);
 
     if (rebaseResult.success()) {
-        QString command = skippedCommits.isEmpty() ? "git rebase" : "git rebase -i";
-        if (!onto.trimmed().isEmpty()) {
-            command += " --onto " + quoteCommandArg(onto);
-        }
-        command += " " + quoteCommandArg(upstream);
-        if (hasBranch) {
-            command += " " + quoteCommandArg(originalBranch);
-        }
-        if (!skippedCommits.isEmpty()) {
-            command += QString("  # skipped %1 commit(s)").arg(skippedCommits.count());
-        }
-        emitGitCommand(command);
+        emitGitCommand(GitCommandText::rebase(onto,
+                                             upstream,
+                                             hasBranch ? originalBranch : QString(),
+                                             !skippedCommits.isEmpty(),
+                                             skippedCommits.count()));
     }
 
     return rebaseResult;
@@ -386,7 +380,7 @@ GitResult GitRebase::continueOp()
     git_rebase_free(rebase);
 
     if (continueResult.success()) {
-        emitGitCommand("git rebase --continue");
+        emitGitCommand(GitCommandText::rebaseContinue());
     }
 
     return continueResult;
@@ -419,7 +413,7 @@ GitResult GitRebase::skipOp()
     git_rebase_free(rebase);
 
     if (skipResult.success()) {
-        emitGitCommand("git rebase --skip");
+        emitGitCommand(GitCommandText::rebaseSkip());
     }
 
     return skipResult;
@@ -449,7 +443,7 @@ GitResult GitRebase::abortOp()
                          QString("Failed to abort rebase: %1").arg(GitUtils::getLastError()));
     }
 
-    emitGitCommand("git rebase --abort");
+    emitGitCommand(GitCommandText::rebaseAbort());
     return GitResult(true, QVariant(), "Rebase aborted.");
 }
 
@@ -815,7 +809,7 @@ GitResult GitRebase::checkoutBranch(const QString& branchName)
     git_object_free(targetCommit);
     git_reference_free(targetRef);
 
-    emitGitCommand(QString("git checkout %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::checkoutBranch(branchName));
 
     return GitResult(true, QVariant(),
                      QString("Checked out branch '%1'.").arg(branchName));
