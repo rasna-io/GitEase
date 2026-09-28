@@ -86,12 +86,28 @@ Item {
             }
 
             delegate: Rectangle {
+                id: keyCard
                 width: ListView.view.width - 16
                 implicitHeight: keyItemCol.implicitHeight + 16
-                radius: 6
-                color: Style.colors.surfaceLight
-                border.color: Style.colors.primaryBorder
+                radius: 8
+                color: keyHover.hovered ? Style.colors.controlBackgroundHover
+                                        : Style.colors.controlBackground
+                border.color: keyHover.hovered ? Style.colors.controlBorderHover
+                                               : Style.colors.controlBorder
                 border.width: 1
+
+                Behavior on color        {
+                    ColorAnimation {
+                        duration: 150
+                    }
+                }
+                Behavior on border.color {
+                    ColorAnimation {
+                        duration: 150
+                    }
+                }
+
+                HoverHandler { id: keyHover }
 
                 ColumnLayout {
                     id: keyItemCol
@@ -120,7 +136,7 @@ Item {
                             id: copyKeyBtn
                             iconText: copyKeyBtn._copied ? "✓" : Style.icons.copy
                             tooltip: copyKeyBtn._copied ? "Copied!" : "Copy Public Key"
-                            textColor: copyKeyBtn._copied ? "#4caf50" : Style.colors.accent
+                            textColor: copyKeyBtn._copied ? Style.colors.notificationSuccessIcon : Style.colors.accent
                             width: 24
                             height: 24
 
@@ -174,7 +190,7 @@ Item {
                         Text {
                             text: modelData.fingerprint
                             font.pointSize: Style.appFont.secondaryPt
-                            font.family: "Courier New"
+                            font.family: Style.fontTypes.jetBrainsMono
                             color: Style.colors.foreground
                             elide: Text.ElideMiddle
                             Layout.fillWidth: true
@@ -195,7 +211,7 @@ Item {
                         Text {
                             text: modelData.privateKeyPath
                             font.pointSize: Style.appFont.secondaryPt
-                            font.family: "Courier New"
+                            font.family: Style.fontTypes.jetBrainsMono
                             color: Style.colors.secondaryText
                             elide: Text.ElideMiddle
                             Layout.fillWidth: true
@@ -214,10 +230,6 @@ Item {
 
         width: 380
         height: 240
-
-        parent: Overlay.overlay
-        x: Overlay.overlay ? Math.round((Overlay.overlay.width - width) / 2) : 0
-        y: Overlay.overlay ? Math.round((Overlay.overlay.height - height) / 2) : 0
 
         padding: 0
 
@@ -267,12 +279,12 @@ Item {
 
                     Button {
                         text: "Cancel"
-                        Layout.preferredWidth: parent.width * 0.45
+                        Layout.fillWidth: true
                         flat: true
 
                         background: Rectangle {
                             implicitHeight: 38
-                            color: parent.hovered ? "#33ffffff" : "transparent"
+                            color: parent.hovered ? Style.colors.controlBackgroundHover : "transparent"
                             border.color: Style.colors.accent
                             border.width: 1
                             radius: 5
@@ -283,8 +295,8 @@ Item {
                             color: Style.colors.foreground
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.mediumPt
                         }
 
                         onClicked: deleteKeyDialog.close()
@@ -309,8 +321,8 @@ Item {
                             color: deleteConfirmBtn.hovered ? "#ffffff" : Style.colors.deletededFile
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 12
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.mediumPt
                             font.bold: true
                         }
 

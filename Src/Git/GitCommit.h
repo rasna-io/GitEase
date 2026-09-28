@@ -6,7 +6,7 @@
 #include "GitResult.h"
 #include "IGitController.h"
 #include "Repository.h"
-
+#include "ActionContext.h"
 
 /**
  * \brief Structure to hold parent commit information

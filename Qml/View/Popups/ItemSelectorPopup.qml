@@ -19,6 +19,7 @@ Popup {
     property var selectedItems: []
     property bool anySelected: false
     property bool allSelected: false
+    property bool multiSelection: true
 
     /* Signals
      * ****************************************************************************************/
@@ -83,8 +84,9 @@ Popup {
                             anchors.centerIn: parent
                             visible: optionRow.isChecked
                             text: "\uf00c" // fa-check
-                            font.family: Style.fontTypes.font6ProSolid
-                            font.pixelSize: 9
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
+                            font.pixelSize: Style.appFont.captionPt
                             color: "white"
                         }
                     }
@@ -97,9 +99,9 @@ Popup {
                         anchors.verticalCenter: parent.verticalCenter
 
                         text: optionRow.optionText
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.weight: 400
-                        font.pixelSize: 11
+                        font.pixelSize: Style.appFont.defaultPt
                         color: Style.colors.foreground
                         elide: Text.ElideRight
                     }
@@ -110,7 +112,17 @@ Popup {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            itemsRepeater.model.setProperty(index, "checked", !optionRow.isChecked)
+                            if (root.multiSelection) {
+                                itemsRepeater.model.setProperty(index, "checked", !optionRow.isChecked)
+                            } else {
+                                if (optionRow.isChecked) {
+                                    itemsRepeater.model.setProperty(index, "checked", false)
+                                } else {
+                                    for (var i = 0; i < itemsRepeater.model.count; ++i)
+                                        itemsRepeater.model.setProperty(i, "checked", i === index)
+                                }
+                            }
+
                             root.updateSelection()
                         }
                     }
@@ -120,13 +132,15 @@ Popup {
 
         // Divider between fields and actions
         Rectangle {
+            visible: root.multiSelection
             width: parent.width
-            height: 1
+            height: visible ? 1 : 0
             color: Style.colors.primaryBorder
         }
 
         // Bottom actions: Select all / Clear all
         Row {
+            visible: root.multiSelection
             width: parent.width
             spacing: 8
 
@@ -149,8 +163,8 @@ Popup {
                 Text {
                     anchors.centerIn: parent
                     text: "Select all"
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 11
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.defaultPt
                     color: Style.colors.foreground
                     opacity: selectAllBtn.isEnabled ? 1.0 : 0.55
                 }
@@ -184,8 +198,8 @@ Popup {
                 Text {
                     anchors.centerIn: parent
                     text: "Clear all"
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 11
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.defaultPt
                     color: Style.colors.foreground
                     opacity: clearAllBtn.isEnabled ? 1.0 : 0.55
                 }
@@ -205,6 +219,8 @@ Popup {
     /* Functions
      * ****************************************************************************************/
     function setAllChecked(value) {
+        if (!root.multiSelection)
+            return
         if (!itemsRepeater.model || itemsRepeater.model.count === undefined)
             return
         for (var i = 0; i < itemsRepeater.model.count; ++i)

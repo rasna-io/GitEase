@@ -37,9 +37,10 @@ public:
     /**
      * \brief Stage a file for commit
      * \param filePath Path to the file to stage
+     * \param isDeleted Flag indicating whether the file is deleted
      * \return GitResult with operation result
      */
-    Q_INVOKABLE GitResult stageFile(const QString &filePath);
+    Q_INVOKABLE GitResult stageFile(const QString &filePath, bool isDeleted = false);
 
     /**
      * \brief Unstage a file
@@ -195,12 +196,13 @@ public:
     /// Returns a QVariantList of chunk objects ready for QML
     Q_INVOKABLE GitResult getChunkedDiffView(const QString &filePath, bool staged);
 
-private:
     /**
      * @brief Get unstaged diff view (index to workdir).
      * @param filePath Path to the file to inspect.
      */
-    GitResult getUnstagedDiffView(const QString &filePath);
+    Q_INVOKABLE GitResult getUnstagedDiffView(const QString &filePath);
+
+private:
 
     /**
      * @brief Get staged diff view (HEAD to index).
@@ -300,4 +302,6 @@ private:
 
     QVariantMap gitDiffToMap(const GitDiff &d);
     bool isContextLine(const QVariantMap &line) const;
+
+    QByteArray smudgeText(git_repository* repo, const QString& path, const QString& lfContent);
 };

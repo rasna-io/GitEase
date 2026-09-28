@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
@@ -15,6 +16,8 @@ IPopup {
     /* Property Declarations
      * ****************************************************************************************/
     property var branches: []
+
+    property string hoveredBranch: ""
 
     /* Signals
      * ****************************************************************************************/
@@ -54,17 +57,18 @@ IPopup {
 
                     Text {
                         text: Style.icons.gitBranch
-                        font.family: Style.fontTypes.font6ProSolid
-                        font.pixelSize: 16
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
+                        font.pixelSize: Style.appFont.h2Pt
                         color: Style.colors.accent
                     }
 
                     Text {
                         text: "Select Branch"
                         color: Style.colors.foreground
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.bold: true
-                        font.pixelSize: 15
+                        font.pixelSize: Style.appFont.largerPt
                         Layout.fillWidth: true
                     }
                 }
@@ -77,8 +81,8 @@ IPopup {
                 Layout.bottomMargin: 12
                 text: "Multiple branches point to this commit. Choose which one to check out."
                 color: Style.colors.mutedText
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.mediumPt
                 wrapMode: Text.WordWrap
             }
 
@@ -125,8 +129,9 @@ IPopup {
 
                             Text {
                                 text: Style.icons.gitBranch
-                                font.family: Style.fontTypes.font6ProSolid
-                                font.pixelSize: 12
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.appFont.mediumPt
                                 color: Style.colors.accent
                                 Layout.preferredWidth: 16
                                 horizontalAlignment: Text.AlignHCenter
@@ -135,16 +140,17 @@ IPopup {
                             Text {
                                 Layout.fillWidth: true
                                 text: modelData
-                                font.family: Style.fontTypes.roboto
-                                font.pixelSize: 13
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: Style.appFont.h3Pt
                                 color: Style.colors.foreground
                                 elide: Text.ElideMiddle
                             }
 
                             Text {
                                 text: Style.icons.arrowRight
-                                font.family: Style.fontTypes.font6ProSolid
-                                font.pixelSize: 11
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.appFont.defaultPt
                                 color: Style.colors.accent
                                 opacity: isHovered ? 1.0 : 0.0
                                 Behavior on opacity {
@@ -165,6 +171,13 @@ IPopup {
                             root.branchSelected(modelData)
                             root.close()
                         }
+
+                        onContainsMouseChanged: {
+                            if (containsMouse)
+                                root.hoveredBranch = modelData
+                            else if (root.hoveredBranch === modelData)
+                                root.hoveredBranch = ""
+                        }
                     }
                 }
             }
@@ -180,6 +193,19 @@ IPopup {
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 56
+
+                CommandPreview {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 30
+                    anchors.right: parent.right
+                    anchors.rightMargin: 140
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    placeholder: qsTr("Point at a branch to see the command")
+                    command: root.hoveredBranch === ""
+                             ? ""
+                             : GitCommandText.checkoutBranch(root.hoveredBranch)
+                }
 
                 Button {
                     anchors.right: parent.right
@@ -203,6 +229,7 @@ IPopup {
     }
 
     onAboutToHide: {
+        root.hoveredBranch = ""
         root.branches = []
     }
 }

@@ -11,11 +11,11 @@ GitConflict::GitConflict(QObject* parent)
 
 GitResult GitConflict::getConflicts()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository is not open.");
 
     git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK)
+    if (git_repository_index(&index, activeRepo()) != GIT_OK)
         return GitResult(false, QVariant(), "Failed to read repository index.");
 
     QVariantList conflicts;
@@ -68,7 +68,7 @@ GitResult GitConflict::writeWorkingFile(const QString& filePath, const QString& 
 
 QStringList GitConflict::readWorkdirLines(const QString& filePath) const
 {
-    const char* workdir = git_repository_workdir(m_currentRepo->repo);
+    const char* workdir = git_repository_workdir(activeRepo());
     if (!workdir)
         return QStringList();
 
@@ -182,7 +182,7 @@ GitResult GitConflict::acceptBlockBoth(const QString& filePath, int blockIndex)
 GitResult GitConflict::replaceBlock(const QString& filePath, int blockIndex,
                                     bool useOurs, bool useTheirs, bool useBoth)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not open.");
 
     // Read current file
@@ -241,7 +241,7 @@ GitResult GitConflict::replaceBlock(const QString& filePath, int blockIndex,
 
 bool GitConflict::writeFile(const QString& filePath, const QString& content) const
 {
-    const char* workdir = git_repository_workdir(m_currentRepo->repo);
+    const char* workdir = git_repository_workdir(activeRepo());
     if (!workdir)
         return false;
 

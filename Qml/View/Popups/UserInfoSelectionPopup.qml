@@ -14,6 +14,10 @@ IPopup {
 
     property UserProfileController              userProfileController
 
+    /* Guide target aliases — resolved after popup content is instantiated */
+    readonly property alias guideAddButton:    selectorItem.guideAddButton
+    readonly property alias guideProfilesList: selectorItem.guideProfilesList
+
     /* Property Declarations
      * ****************************************************************************************/
 
@@ -22,20 +26,26 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: 400
-    height: parent.height / 2
-    padding: 20
+    width: 450
+    height: Math.min((parent ? parent.height - 60 : 720), selectorItem.implicitHeight)
+    padding: 0
 
     /* Children
      * ****************************************************************************************/
     background: Rectangle {
-        radius: 4
+        radius: 12
         color: Style.colors.primaryBackground
         border.width: 1
         border.color: Style.colors.primaryBorder
     }
 
     contentItem: UserInfoSelector {
+        id: selectorItem
         userProfileController: root.userProfileController
+
+        onCloseRequested: root.close()
     }
+
+    onClosed: selectorItem.closeForm()
+    onOpened: selectorItem.closeForm()
 }

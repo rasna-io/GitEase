@@ -32,15 +32,37 @@ Item {
 
         function updateLayout() {
             const visibleChildren = children.filter(child => {
-                if (child.hasOwnProperty('detached')) {
+                const hasDetached = child.hasOwnProperty('detached')
+                const hasMinimized = child.hasOwnProperty('isMinimized')
+                const hasLayoutVisible = child.hasOwnProperty('layoutVisible')
+
+                if (hasDetached || hasMinimized || hasLayoutVisible) {
                     try {
                         child.detachedChanged.disconnect(updateLayout)
                     } catch(e) {}
+                    try {
+                        child.isMinimizedChanged.disconnect(updateLayout)
+                    } catch(e) {}
+                    try {
+                        child.layoutVisibleChanged.disconnect(updateLayout)
+                    } catch(e) {}
 
-                    child.visible = Qt.binding(() => !child.detached)
-                    child.detachedChanged.connect(updateLayout)
+                    child.visible = Qt.binding(() => hasLayoutVisible
+                                                ? child.layoutVisible
+                                                : (!hasDetached || !child.detached)
+                                                  && (!hasMinimized || !child.isMinimized))
 
-                    return !child.detached
+                    if (hasDetached)
+                        child.detachedChanged.connect(updateLayout)
+                    if (hasMinimized)
+                        child.isMinimizedChanged.connect(updateLayout)
+                    if (hasLayoutVisible)
+                        child.layoutVisibleChanged.connect(updateLayout)
+
+                    return hasLayoutVisible
+                            ? child.layoutVisible
+                            : (!hasDetached || !child.detached)
+                              && (!hasMinimized || !child.isMinimized)
                 }
                 child.visible = true
                 return true

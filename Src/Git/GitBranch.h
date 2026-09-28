@@ -68,6 +68,8 @@ public:
      */
     Q_INVOKABLE QString getCurrentBranchName();
 
+    Q_INVOKABLE QString getDisplayBranchName();
+
     Q_INVOKABLE QString formatRefName(const QString &branchName);
 
     QString resolveBranchName(const QString &branchName);
@@ -75,5 +77,9 @@ public:
     static git_object * getHead(git_repository *repo, const QString &branchName);
     
     static git_reference * getRef(git_repository *, const QString &branchName);
+
+private:
+    GitResult checkBranchRules(const QString &branchName);
+    bool remoteBranchExists(const QString &branchName);
 };
 

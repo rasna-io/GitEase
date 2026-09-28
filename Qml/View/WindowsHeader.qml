@@ -10,6 +10,7 @@ import GitEase
  * WindowsHeader
  * ************************************************************************************************/
 Rectangle {
+    id: root
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -21,6 +22,12 @@ Rectangle {
     
     /* Children
      * ****************************************************************************************/
+    WindowMotion {
+        id: windowMotion
+        window: root.Window.window
+        windowController: root.windowController
+    }
+
     RowLayout {
         anchors.centerIn: parent
         spacing: 4
@@ -28,7 +35,7 @@ Rectangle {
         // Minimize Button
         WindowsButton {
             id: minimizeButton
-            onClicked: windowController.minimize()
+            onClicked: windowMotion.minimize()
             Material.accent: Style.colors.windowsMinimize
             content: Rectangle {
                 anchors.centerIn: parent

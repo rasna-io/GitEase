@@ -126,8 +126,10 @@ HICON TaskbarHelper::createTintedIcon(const QColor &tintColor) const
     QPixmap pixmap(SIZE, SIZE);
     pixmap.fill(Qt::transparent);
 
-    QPainter svgPainter(&pixmap);
-    renderer.render(&svgPainter);
+    {
+        QPainter svgPainter(&pixmap);
+        renderer.render(&svgPainter);
+    }
 
     QPainter tintPainter(&pixmap);
     tintPainter.setCompositionMode(QPainter::CompositionMode_SourceAtop);

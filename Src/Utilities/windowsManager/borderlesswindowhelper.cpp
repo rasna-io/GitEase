@@ -171,6 +171,50 @@ void BorderlessWindowHelper::setMinimumSize(const QSize &newSize)
     m_minimumSize = newSize;
 }
 
+void BorderlessWindowHelper::refreshBorderless()
+{
+#ifdef Q_OS_WIN
+    if (!m_window)
+        return;
+
+    HWND hwnd = reinterpret_cast<HWND>(m_window->winId());
+    if (!hwnd)
+        return;
+
+    if (hwnd != m_hwnd)
+        m_hwnd = hwnd;
+
+    applyBorderlessNow();
+
+    ::EnableWindow(m_hwnd, TRUE);
+#endif
+}
+
+#ifdef Q_OS_WIN
+bool BorderlessWindowHelper::minimizePreservingState()
+{
+    if (!m_hwnd)
+        return false;
+
+    WINDOWPLACEMENT wp{ sizeof(WINDOWPLACEMENT) };
+    if (!::GetWindowPlacement(m_hwnd, &wp))
+        return false;
+
+    if (::IsZoomed(m_hwnd))
+        wp.flags |= WPF_RESTORETOMAXIMIZED;
+    else
+        wp.flags &= ~WPF_RESTORETOMAXIMIZED;
+    wp.showCmd = SW_SHOWMINIMIZED;
+
+    return ::SetWindowPlacement(m_hwnd, &wp);
+}
+#else
+bool BorderlessWindowHelper::minimizePreservingState()
+{
+    return false;
+}
+#endif
+
 
 bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result)
 {
@@ -227,6 +271,13 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
     case WM_SHOWWINDOW:
     {
         if (msg->wParam) { // becoming visible
+            HWND currentHwnd = m_window ? reinterpret_cast<HWND>(m_window->winId()) : nullptr;
+            if (currentHwnd && currentHwnd != m_hwnd)
+                m_hwnd = currentHwnd;
+
+            if (reinterpret_cast<HWND>(msg->hwnd) != m_hwnd)
+                return false; // not our window
+
             // Reassert styles and framecalc
             ensureWindowStyles();
             ::SetWindowPos(m_hwnd, nullptr, 0,0,0,0,

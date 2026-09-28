@@ -1,0 +1,10 @@
+{
+  "id": "com.gitease.commit-guard",
+  "name": "Commit Guard",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["workflow"],
+  "author": "GitEase",
+  "description": "Blocks commits with messages shorter than 10 characters.",
+  "cppEntry": "lib/commit-guard-plugin"
+}

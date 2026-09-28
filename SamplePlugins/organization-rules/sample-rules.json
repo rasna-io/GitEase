@@ -1,0 +1,67 @@
+{
+  "rules": {
+    "commitMessage": [
+      {
+        "ruleName": "Conventional Commits",
+        "description": "Enforce feat|fix|chore prefix and 72-char subject limit",
+        "severity": 2,
+        "enabled": true,
+        "minLength": "10",
+        "maxLength": "72",
+        "requirePrefix": true,
+        "allowedPrefixes": "feat,fix,chore,docs,style,refactor,perf,test,build,ci,revert",
+        "noTrailingPeriod": true,
+        "imperativeVerb": false,
+        "forbiddenWords": "wip,WIP,temp,TODO",
+        "requireTicketRef": false,
+        "ticketRefPattern": "",
+        "requireBodySeparator": true,
+        "bodyMinLength": "0",
+        "requireSignedOffBy": false,
+        "customRegex": "",
+        "customErrorMessage": ""
+      },
+      {
+        "ruleName": "Jira Ticket Reference",
+        "description": "Subject must contain a Jira ticket number",
+        "severity": 1,
+        "enabled": true,
+        "minLength": 0,
+        "maxLength": 100,
+        "requirePrefix": false,
+        "allowedPrefixes": "",
+        "noTrailingPeriod": false,
+        "imperativeVerb": false,
+        "forbiddenWords": "",
+        "requireTicketRef": true,
+        "ticketRefPattern": "[A-Z]+-\\d+",
+        "requireBodySeparator": false,
+        "bodyMinLength": 0,
+        "requireSignedOffBy": false,
+        "customRegex": "",
+        "customErrorMessage": "Commit message must reference a Jira ticket, e.g. PROJ-123"
+      }
+    ],
+    "branchNaming": [
+      {
+        "ruleName": "Feature Branch Convention",
+        "description": "Branches must use feature/|bugfix/|hotfix/ prefix",
+        "severity": 1,
+        "isActive": true,
+        "allowedPrefixes": "feature/,bugfix/,hotfix/,release/,chore/",
+        "maxLength": "60",
+        "forbidSpaces": true,
+        "forbidUppercase": true,
+        "forbidSpecialChars": true,
+        "requireTicketRef": false,
+        "ticketRefPattern": "",
+        "protectedBranches": "main,develop,master",
+        "autoDeleteAfterMerge": true
+      }
+    ],
+    "fileCode": [],
+    "pushRules": [],
+    "notification": [],
+    "customHooks": []
+  }
+}

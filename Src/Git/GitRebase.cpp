@@ -1,4 +1,5 @@
 #include "GitRebase.h"
+#include "GitCommandText.h"
 
 #include "GitUtils.h"
 
@@ -39,17 +40,24 @@ GitResult GitRebase::rebaseOnto(const QString& onto,
     return startRebase(onto, upstream, branch, {});
 }
 
-GitResult GitRebase::previewRebasePlan(const QString& onto,
-                                       const QString& upstream,
-                                       const QString& branch)
+GitResult GitRebase::startPreviewRebasePlan(const QString& onto,
+                                            const QString& upstream,
+                                            const QString& branch)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not found.");
 
     if (upstream.trimmed().isEmpty())
         return GitResult(false, QVariant(), "Upstream reference is required.");
 
-    git_repository* repo = m_currentRepo->repo;
+    return previewRebasePlan(onto, upstream, branch);
+}
+
+GitResult GitRebase::previewRebasePlan(const QString& onto,
+                                       const QString& upstream,
+                                       const QString& branch)
+{
+    git_repository* repo = activeRepo();
 
     git_object* upstreamObject  = nullptr;
     git_object* ontoObject      = nullptr;
@@ -91,6 +99,9 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
                          QString("Invalid branch '%1'.").arg(branchSpec));
     }
 
+    git_diff_options diff_opts = GIT_DIFF_OPTIONS_INIT;
+    diff_opts.flags = GIT_DIFF_SKIP_BINARY_CHECK | GIT_DIFF_DISABLE_PATHSPEC_MATCH;
+
     // STEP 1: Collect patch-ids from ONTO history
     QSet<QByteArray> upstreamPatchIds;
 
@@ -98,6 +109,11 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
     git_revwalk_new(&upstreamWalk, repo);
     git_revwalk_sorting(upstreamWalk, GIT_SORT_TOPOLOGICAL);
     git_revwalk_push(upstreamWalk, git_object_id(ontoObject));
+
+    git_oid mergeBase;
+    if (git_merge_base(&mergeBase, repo, git_object_id(branchObject), git_object_id(ontoObject)) == GIT_OK) {
+        git_revwalk_hide(upstreamWalk, &mergeBase);
+    }
 
     git_oid upstreamOid;
     while (git_revwalk_next(&upstreamOid, upstreamWalk) == GIT_OK)
@@ -118,7 +134,7 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
             git_commit_tree(&parentTree, parent);
 
             git_diff* diff = nullptr;
-            git_diff_tree_to_tree(&diff, repo, parentTree, tree, nullptr);
+            git_diff_tree_to_tree(&diff, repo, parentTree, tree, &diff_opts);
 
             git_oid patchId;
             if (git_diff_patchid(&patchId, diff, nullptr) == GIT_OK)
@@ -153,11 +169,8 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
 
     git_revwalk_sorting(walk, GIT_SORT_TOPOLOGICAL | GIT_SORT_TIME);
 
-    QString range = QString("%1..%2")
-                        .arg(upstream.trimmed())
-                        .arg(branchSpec);
-
-    git_revwalk_push_range(walk, range.toUtf8().constData());
+    git_revwalk_push(walk, git_object_id(branchObject));
+    git_revwalk_hide(walk, git_object_id(upstreamObject));
 
     QVariantList commits;
     git_oid oid;
@@ -188,7 +201,7 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
             git_commit_tree(&parentTree, parent);
 
             git_diff* diff = nullptr;
-            git_diff_tree_to_tree(&diff, repo, parentTree, tree, nullptr);
+            git_diff_tree_to_tree(&diff, repo, parentTree, tree, &diff_opts);
 
             git_oid patchId;
             if (git_diff_patchid(&patchId, diff, nullptr) == GIT_OK)
@@ -251,7 +264,7 @@ GitResult GitRebase::startRebase(const QString& onto,
                                  QString branch,
                                  const QSet<QString>& skippedCommits)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -287,7 +300,7 @@ GitResult GitRebase::startRebase(const QString& onto,
     git_annotated_commit* upstreamCommit= nullptr;
 
     int result = git_annotated_commit_from_revspec(
-        &upstreamCommit, m_currentRepo->repo, upstream.trimmed().toUtf8().constData());
+        &upstreamCommit, activeRepo(), upstream.trimmed().toUtf8().constData());
     if (result != GIT_OK) {
         return GitResult(false, QVariant(),
                          QString("Invalid upstream '%1'.").arg(upstream));
@@ -295,7 +308,7 @@ GitResult GitRebase::startRebase(const QString& onto,
 
     if (!branch.trimmed().isEmpty()) {
         result = git_annotated_commit_from_revspec(
-            &branchCommit, m_currentRepo->repo, branch.trimmed().toUtf8().constData());
+            &branchCommit, activeRepo(), branch.trimmed().toUtf8().constData());
         if (result != GIT_OK) {
             git_annotated_commit_free(upstreamCommit);
             return GitResult(false, QVariant(),
@@ -305,7 +318,7 @@ GitResult GitRebase::startRebase(const QString& onto,
 
     if (!onto.trimmed().isEmpty()) {
         result = git_annotated_commit_from_revspec(
-            &ontoCommit, m_currentRepo->repo, onto.trimmed().toUtf8().constData());
+            &ontoCommit, activeRepo(), onto.trimmed().toUtf8().constData());
         if (result != GIT_OK) {
             git_annotated_commit_free(branchCommit);
             git_annotated_commit_free(upstreamCommit);
@@ -318,7 +331,7 @@ GitResult GitRebase::startRebase(const QString& onto,
     rebaseOpts.checkout_options.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
 
     result = git_rebase_init(&rebase,
-                             m_currentRepo->repo,
+                             activeRepo(),
                              branchCommit,
                              upstreamCommit,
                              ontoCommit,
@@ -337,18 +350,11 @@ GitResult GitRebase::startRebase(const QString& onto,
     git_rebase_free(rebase);
 
     if (rebaseResult.success()) {
-        QString command = skippedCommits.isEmpty() ? "git rebase" : "git rebase -i";
-        if (!onto.trimmed().isEmpty()) {
-            command += " --onto " + quoteCommandArg(onto);
-        }
-        command += " " + quoteCommandArg(upstream);
-        if (hasBranch) {
-            command += " " + quoteCommandArg(originalBranch);
-        }
-        if (!skippedCommits.isEmpty()) {
-            command += QString("  # skipped %1 commit(s)").arg(skippedCommits.count());
-        }
-        emitGitCommand(command);
+        emitGitCommand(GitCommandText::rebase(onto,
+                                             upstream,
+                                             hasBranch ? originalBranch : QString(),
+                                             !skippedCommits.isEmpty(),
+                                             skippedCommits.count()));
     }
 
     return rebaseResult;
@@ -356,7 +362,7 @@ GitResult GitRebase::startRebase(const QString& onto,
 
 GitResult GitRebase::continueOp()
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -374,7 +380,7 @@ GitResult GitRebase::continueOp()
     git_rebase_free(rebase);
 
     if (continueResult.success()) {
-        emitGitCommand("git rebase --continue");
+        emitGitCommand(GitCommandText::rebaseContinue());
     }
 
     return continueResult;
@@ -382,7 +388,7 @@ GitResult GitRebase::continueOp()
 
 GitResult GitRebase::skipOp()
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -407,7 +413,7 @@ GitResult GitRebase::skipOp()
     git_rebase_free(rebase);
 
     if (skipResult.success()) {
-        emitGitCommand("git rebase --skip");
+        emitGitCommand(GitCommandText::rebaseSkip());
     }
 
     return skipResult;
@@ -415,7 +421,7 @@ GitResult GitRebase::skipOp()
 
 GitResult GitRebase::abortOp()
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -437,13 +443,13 @@ GitResult GitRebase::abortOp()
                          QString("Failed to abort rebase: %1").arg(GitUtils::getLastError()));
     }
 
-    emitGitCommand("git rebase --abort");
+    emitGitCommand(GitCommandText::rebaseAbort());
     return GitResult(true, QVariant(), "Rebase aborted.");
 }
 
 GitResult GitRebase::quitOp()
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -451,7 +457,7 @@ GitResult GitRebase::quitOp()
         return GitResult(false, QVariant(), "No rebase is in progress.");
     }
 
-    const int result = git_repository_state_cleanup(m_currentRepo->repo);
+    const int result = git_repository_state_cleanup(activeRepo());
     if (result != GIT_OK) {
         return GitResult(false, QVariant(),
                          QString("Failed to quit rebase: %1").arg(GitUtils::getLastError()));
@@ -463,7 +469,7 @@ GitResult GitRebase::quitOp()
 
 GitResult GitRebase::rebaseStatus()
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
@@ -502,7 +508,7 @@ GitResult GitRebase::runRebase(git_rebase* rebase,
     }
 
     git_signature* signature = nullptr;
-    int result = git_signature_default(&signature, m_currentRepo->repo);
+    int result = git_signature_default(&signature, activeRepo());
     if (result != GIT_OK || !signature) {
         return GitResult(false, QVariant(),
                          "Failed to load Git user identity (user.name / user.email).");
@@ -652,7 +658,7 @@ GitResult GitRebase::openRebase(git_rebase** rebase) const
 
     *rebase = nullptr;
     git_rebase_options rebaseOpts = GIT_REBASE_OPTIONS_INIT;
-    const int result = git_rebase_open(rebase, m_currentRepo->repo, &rebaseOpts);
+    const int result = git_rebase_open(rebase, activeRepo(), &rebaseOpts);
     if (result != GIT_OK) {
         return GitResult(false, QVariant(),
                          QString("Failed to open rebase state: %1").arg(GitUtils::getLastError()));
@@ -696,13 +702,13 @@ QVariantMap GitRebase::rebaseProgressData(git_rebase* rebase) const
 
 GitResult GitRebase::resetWorktreeToHead() const
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
     git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
     checkoutOpts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_RECREATE_MISSING;
-    int result = git_checkout_head(m_currentRepo->repo, &checkoutOpts);
+    int result = git_checkout_head(activeRepo(), &checkoutOpts);
     if (result != GIT_OK) {
         return GitResult(false, QVariant(),
                          QString("Failed to reset worktree before skipping: %1")
@@ -710,7 +716,7 @@ GitResult GitRebase::resetWorktreeToHead() const
     }
 
     git_index* index = nullptr;
-    result = git_repository_index(&index, m_currentRepo->repo);
+    result = git_repository_index(&index, activeRepo());
     if (result != GIT_OK || !index) {
         return GitResult(false, QVariant(),
                          QString("Failed to open index: %1").arg(GitUtils::getLastError()));
@@ -731,12 +737,12 @@ GitResult GitRebase::resetWorktreeToHead() const
 
 bool GitRebase::repositoryHasConflicts() const
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return false;
     }
 
     git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK || !index) {
+    if (git_repository_index(&index, activeRepo()) != GIT_OK || !index) {
         return false;
     }
 
@@ -747,11 +753,11 @@ bool GitRebase::repositoryHasConflicts() const
 
 bool GitRebase::isRebaseInProgress() const
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return false;
     }
 
-    const int state = git_repository_state(m_currentRepo->repo);
+    const int state = git_repository_state(activeRepo());
     return state == GIT_REPOSITORY_STATE_REBASE ||
            state == GIT_REPOSITORY_STATE_REBASE_INTERACTIVE ||
            state == GIT_REPOSITORY_STATE_REBASE_MERGE;
@@ -759,13 +765,13 @@ bool GitRebase::isRebaseInProgress() const
 
 GitResult GitRebase::checkoutBranch(const QString& branchName)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not open.");
 
     git_reference* targetRef = nullptr;
     git_object* targetCommit = nullptr;
 
-    int error = git_branch_lookup(&targetRef, m_currentRepo->repo,
+    int error = git_branch_lookup(&targetRef, activeRepo(),
                                   branchName.toUtf8().constData(),
                                   GIT_BRANCH_LOCAL);
     if (error != GIT_OK) {
@@ -783,7 +789,7 @@ GitResult GitRebase::checkoutBranch(const QString& branchName)
     git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
     opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
 
-    error = git_checkout_tree(m_currentRepo->repo, targetCommit, &opts);
+    error = git_checkout_tree(activeRepo(), targetCommit, &opts);
     if (error != GIT_OK) {
         git_object_free(targetCommit);
         git_reference_free(targetRef);
@@ -791,7 +797,7 @@ GitResult GitRebase::checkoutBranch(const QString& branchName)
                          QString("Failed to checkout branch '%1'.").arg(branchName));
     }
 
-    error = git_repository_set_head(m_currentRepo->repo,
+    error = git_repository_set_head(activeRepo(),
                                     git_reference_name(targetRef));
     if (error != GIT_OK) {
         git_object_free(targetCommit);
@@ -803,7 +809,7 @@ GitResult GitRebase::checkoutBranch(const QString& branchName)
     git_object_free(targetCommit);
     git_reference_free(targetRef);
 
-    emitGitCommand(QString("git checkout %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::checkoutBranch(branchName));
 
     return GitResult(true, QVariant(),
                      QString("Checked out branch '%1'.").arg(branchName));
@@ -811,13 +817,13 @@ GitResult GitRebase::checkoutBranch(const QString& branchName)
 
 QString GitRebase::getCurrentBranchName()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return "";
 
     QString branchName;  // Empty string to start
     git_reference* head = nullptr;  // libgit2 HEAD reference
 
-    int error = git_repository_head(&head, m_currentRepo->repo);
+    int error = git_repository_head(&head, activeRepo());
 
     // Get HEAD reference (points to current branch)
     if (error == GIT_OK)
@@ -855,7 +861,7 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
         return GitResult(false, {}, "An interactive rebase is already in progress.");
     }
 
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         emit rebaseFinished(false);
         return GitResult(false, {}, "Repository not found.");
     }
@@ -869,7 +875,7 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
     git_status_list* statusList = nullptr;
     git_status_options statusOpts = GIT_STATUS_OPTIONS_INIT;
     statusOpts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED;
-    if (git_status_list_new(&statusList, m_currentRepo->repo, &statusOpts) == GIT_OK) {
+    if (git_status_list_new(&statusList, activeRepo(), &statusOpts) == GIT_OK) {
         size_t count = git_status_list_entrycount(statusList);
         git_status_list_free(statusList);
         if (count > 0) {
@@ -888,7 +894,7 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
 
     // Save original HEAD reference
     git_reference* headRef = nullptr;
-    if (git_repository_head(&headRef, m_currentRepo->repo) == GIT_OK) {
+    if (git_repository_head(&headRef, activeRepo()) == GIT_OK) {
         m_originalHeadRef = headRef;
     } else {
         m_originalHeadRef = nullptr;
@@ -897,7 +903,7 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
     if (m_originalHeadRef == nullptr) {
         // Detached HEAD – save the commit OID
         git_oid headOid;
-        if (git_reference_name_to_id(&headOid, m_currentRepo->repo, "HEAD") == GIT_OK) {
+        if (git_reference_name_to_id(&headOid, activeRepo(), "HEAD") == GIT_OK) {
             m_originalHeadOid = headOid;
             m_originalHeadDetached = true;
         } else {
@@ -935,7 +941,7 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
     }
 
     git_object* baseObj = nullptr;
-    int result = git_revparse_single(&baseObj, m_currentRepo->repo, baseRef.toUtf8().constData());
+    int result = git_revparse_single(&baseObj, activeRepo(), baseRef.toUtf8().constData());
     if (result != GIT_OK || !baseObj) {
         cleanupInteractiveState();
         emit rebaseFinished(false);
@@ -955,7 +961,7 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
     // Checkout the new base (detach HEAD)
     git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
     checkoutOpts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
-    result = git_checkout_tree(m_currentRepo->repo, reinterpret_cast<git_object*>(m_newBaseCommit), &checkoutOpts);
+    result = git_checkout_tree(activeRepo(), reinterpret_cast<git_object*>(m_newBaseCommit), &checkoutOpts);
     if (result != GIT_OK) {
         cleanupInteractiveState();
         emit rebaseFinished(false);
@@ -963,7 +969,7 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
     }
 
     // Set HEAD to the new base commit (detached)
-    result = git_repository_set_head_detached(m_currentRepo->repo, git_commit_id(m_newBaseCommit));
+    result = git_repository_set_head_detached(activeRepo(), git_commit_id(m_newBaseCommit));
     if (result != GIT_OK) {
         cleanupInteractiveState();
         emit rebaseFinished(false);
@@ -972,7 +978,7 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
 
     // Create default committer signature
     git_signature* sig = nullptr;
-    if (git_signature_default(&sig, m_currentRepo->repo) != GIT_OK) {
+    if (git_signature_default(&sig, activeRepo()) != GIT_OK) {
         cleanupInteractiveState();
         emit rebaseFinished(false);
         return GitResult(false, {}, "Could not read Git user identity (user.name / user.email).");
@@ -997,7 +1003,7 @@ void GitRebase::processNextOperation()
         // If we started on a branch, move it to the new HEAD
         if (m_originalHeadRef) {
             git_oid headOid;
-            if (git_reference_name_to_id(&headOid, m_currentRepo->repo, "HEAD") == GIT_OK) {
+            if (git_reference_name_to_id(&headOid, activeRepo(), "HEAD") == GIT_OK) {
                 git_reference* newRef = nullptr;
                 int err = git_reference_set_target(&newRef, m_originalHeadRef, &headOid, "rebase completed");
                 if (err == GIT_OK) {
@@ -1005,7 +1011,7 @@ void GitRebase::processNextOperation()
                     m_originalHeadRef = newRef;
                 }
             }
-            git_repository_set_head(m_currentRepo->repo, git_reference_name(m_originalHeadRef));
+            git_repository_set_head(activeRepo(), git_reference_name(m_originalHeadRef));
         }
         cleanupInteractiveState();
         emit rebaseFinished(true);
@@ -1042,7 +1048,7 @@ void GitRebase::processNextOperation()
             bool hasConflicts = false;
 
             git_index* index = nullptr;
-            if (git_repository_index(&index, m_currentRepo->repo) == GIT_OK) {
+            if (git_repository_index(&index, activeRepo()) == GIT_OK) {
                 hasConflicts = git_index_has_conflicts(index);
                 git_index_free(index);
             }
@@ -1059,13 +1065,13 @@ void GitRebase::processNextOperation()
             if (!commitCherryPick(commit)) {
                 git_commit_free(commit);
                 abortCherryPick();
-                git_repository_state_cleanup(m_currentRepo->repo);
+                git_repository_state_cleanup(activeRepo());
                 cleanupInteractiveState();
                 emit rebaseFinished(false);
                 return;
             }
 
-            git_repository_state_cleanup(m_currentRepo->repo);
+            git_repository_state_cleanup(activeRepo());
             git_commit_free(commit);
             emit rebaseOperationCompleted(hash);
             m_currentPlanIndex++;
@@ -1078,7 +1084,7 @@ void GitRebase::processNextOperation()
         } else {
             git_commit_free(commit);
             abortCherryPick();
-            git_repository_state_cleanup(m_currentRepo->repo);
+            git_repository_state_cleanup(activeRepo());
             cleanupInteractiveState();
             emit rebaseFinished(false);
         }
@@ -1109,7 +1115,7 @@ void GitRebase::interactiveContinue()
         return;
     }
 
-    git_repository_state_cleanup(m_currentRepo->repo);
+    git_repository_state_cleanup(activeRepo());
 
     git_commit_free(originalCommit);
     emit rebaseOperationCompleted(m_currentOpHash);
@@ -1133,13 +1139,13 @@ void GitRebase::interactiveSkip()
 
 void GitRebase::interactiveAbort()
 {
-    if (!m_interactiveInProgress || !m_currentRepo || !m_currentRepo->repo)
+    if (!m_interactiveInProgress || !m_currentRepo || !activeRepo())
         return;
 
     if (m_isCherryPickActive) {
         abortCherryPick();
     } else {
-        git_repository_state_cleanup(m_currentRepo->repo);
+        git_repository_state_cleanup(activeRepo());
     }
 
     git_object* targetObj = nullptr;
@@ -1147,23 +1153,23 @@ void GitRebase::interactiveAbort()
     if (m_originalHeadRef) {
         git_reference_peel(&targetObj, m_originalHeadRef, GIT_OBJ_COMMIT);
     } else if (m_originalHeadDetached) {
-        git_commit_lookup((git_commit**)&targetObj, m_currentRepo->repo, &m_originalHeadOid);
+        git_commit_lookup((git_commit**)&targetObj, activeRepo(), &m_originalHeadOid);
     }
 
     if (targetObj) {
         git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
         opts.checkout_strategy = GIT_CHECKOUT_FORCE; // Ensure all rebase remnants are wiped
 
-        git_reset(m_currentRepo->repo, targetObj, GIT_RESET_HARD, &opts);
+        git_reset(activeRepo(), targetObj, GIT_RESET_HARD, &opts);
 
         if (m_originalHeadRef) {
-            git_repository_set_head(m_currentRepo->repo, git_reference_name(m_originalHeadRef));
+            git_repository_set_head(activeRepo(), git_reference_name(m_originalHeadRef));
         }
 
         git_object_free(targetObj);
     }
 
-    git_repository_state_cleanup(m_currentRepo->repo);
+    git_repository_state_cleanup(activeRepo());
     cleanupInteractiveState();
     emit rebaseAborted();
 }
@@ -1176,7 +1182,7 @@ git_commit* GitRebase::lookupCommit(const QString& hash) const
         return nullptr;
 
     git_commit* commit = nullptr;
-    if (git_commit_lookup(&commit, m_currentRepo->repo, &oid) != GIT_OK)
+    if (git_commit_lookup(&commit, activeRepo(), &oid) != GIT_OK)
         return nullptr;
 
     return commit;
@@ -1186,19 +1192,19 @@ int GitRebase::cherryPickCommit(git_commit* commit)
 {
     git_cherrypick_options opts = GIT_CHERRYPICK_OPTIONS_INIT;
     opts.checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
-    return git_cherrypick(m_currentRepo->repo, commit, &opts);
+    return git_cherrypick(activeRepo(), commit, &opts);
 }
 
 bool GitRebase::commitCherryPick(git_commit* originalCommit)
 {
     git_oid headOid;
-    if (git_reference_name_to_id(&headOid, m_currentRepo->repo, "HEAD") != GIT_OK) {
+    if (git_reference_name_to_id(&headOid, activeRepo(), "HEAD") != GIT_OK) {
         qWarning() << "commitCherryPick: failed to get HEAD OID";
         return false;
     }
 
     git_commit* parent = nullptr;
-    if (git_commit_lookup(&parent, m_currentRepo->repo, &headOid) != GIT_OK) {
+    if (git_commit_lookup(&parent, activeRepo(), &headOid) != GIT_OK) {
         qWarning() << "commitCherryPick: failed to lookup parent commit";
         return false;
     }
@@ -1207,7 +1213,7 @@ bool GitRebase::commitCherryPick(git_commit* originalCommit)
     const char* message = git_commit_message(originalCommit);
 
     git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK) {
+    if (git_repository_index(&index, activeRepo()) != GIT_OK) {
         qWarning() << "commitCherryPick: failed to get repository index";
         git_commit_free(parent);
         return false;
@@ -1229,7 +1235,7 @@ bool GitRebase::commitCherryPick(git_commit* originalCommit)
     }
 
     git_tree* tree = nullptr;
-    if (git_tree_lookup(&tree, m_currentRepo->repo, &treeOid) != GIT_OK) {
+    if (git_tree_lookup(&tree, activeRepo(), &treeOid) != GIT_OK) {
         qWarning() << "commitCherryPick: failed to lookup tree";
         git_index_free(index);
         git_commit_free(parent);
@@ -1241,7 +1247,7 @@ bool GitRebase::commitCherryPick(git_commit* originalCommit)
     git_oid newCommitOid;
     int result = git_commit_create(
         &newCommitOid,
-        m_currentRepo->repo,
+        activeRepo(),
         "HEAD",
         author,
         m_defaultSignature,
@@ -1267,10 +1273,10 @@ bool GitRebase::commitCherryPick(git_commit* originalCommit)
 
 void GitRebase::abortCherryPick()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return;
 
-    git_repository* repo = m_currentRepo->repo;
+    git_repository* repo = activeRepo();
 
     git_object* headObj = nullptr;
     if (git_revparse_single(&headObj, repo, "HEAD") == GIT_OK) {
@@ -1297,10 +1303,10 @@ bool GitRebase::resetToCommit(git_commit* target)
 {
     git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
     opts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_RECREATE_MISSING;
-    int result = git_checkout_tree(m_currentRepo->repo, reinterpret_cast<git_object*>(target), &opts);
+    int result = git_checkout_tree(activeRepo(), reinterpret_cast<git_object*>(target), &opts);
     if (result != GIT_OK)
         return false;
-    return git_repository_set_head_detached(m_currentRepo->repo, git_commit_id(target)) == GIT_OK;
+    return git_repository_set_head_detached(activeRepo(), git_commit_id(target)) == GIT_OK;
 }
 
 void GitRebase::cleanupInteractiveState()

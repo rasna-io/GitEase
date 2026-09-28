@@ -1,12 +1,13 @@
 import QtQuick
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 
 /*! ***********************************************************************************************
  * StagedFileListSection
  * Specialization of FileListSection for staged files.
- * Shows: Unstage (-), Open
+ * Header actions: Unstage all (-), Stash all
  * ************************************************************************************************/
 
 FileListSection {
@@ -14,8 +15,10 @@ FileListSection {
 
     /* Property Declarations
      * ****************************************************************************************/
-    title: "Staged Changes"
-    emptyText: "No staged changes"
+    title           : "Staged"
+    emptyText       : "No staged changes"
+    emptySubText    : "Stage files below to commit"
+    fillWhenEmpty   : true
 
     /* Signals
      * ****************************************************************************************/
@@ -28,26 +31,29 @@ FileListSection {
      * ****************************************************************************************/
     headerActions: Component {
         RowLayout {
-            spacing: 4
-
-            ActionIconButton {
-                iconText: Style.icons.minus
-                tooltip: "Unstage all"
-                textColor: Style.colors.deletededFile
-                enabled: root.count > 0
-                opacity: enabled ? 1 : 0.35
-
-                onClicked: root.unstageAllRequested()
-            }
+            spacing: 2
 
             ActionIconButton {
                 iconText: Style.icons.archive
                 tooltip: "Stash all"
-                textColor: Style.colors.mutedText
+                textColor: Style.colors.actionIconIdle
+                hoverTextColor: Style.colors.stashAmber
                 enabled: root.count > 0
                 opacity: enabled ? 1 : 0.35
 
                 onClicked: root.stashAllRequested()
+            }
+
+            ActionIconButton {
+                iconText: Style.icons.minus
+                tooltip: "Unstage all"
+                textColor: Style.colors.discardRed
+                hoverTextColor: Style.colors.discardRed
+                hoverBackgroundColor: Qt.rgba(Style.colors.discardRed.r, Style.colors.discardRed.g, Style.colors.discardRed.b, 0.1)
+                enabled: root.count > 0
+                opacity: enabled ? 1 : 0.35
+
+                onClicked: root.unstageAllRequested()
             }
         }
     }

@@ -8,6 +8,22 @@
 // pages. Needed for pagination. Entries are removed once processed.
 let branchAssignmentByHash = new Map();
 
+// Returns a stable color key from a set of branch names pointing to the same commit.
+// Prefers local branch names over remote tracking ones; if only remote names exist,
+// strips the remote prefix (e.g. "origin/main" → "main") so the color never changes
+// just because a local tracking branch was added or removed.
+function pickColorKey(branchNames, localBranchNameSet) {
+    if (!branchNames || branchNames.length === 0)
+        return "main";
+    for (var i = 0; i < branchNames.length; i++) {
+        if (localBranchNameSet.has(branchNames[i]))
+            return branchNames[i];
+    }
+    var first = branchNames[0];
+    var slash = first.indexOf("/");
+    return slash !== -1 ? first.substring(slash + 1) : first;
+}
+
 /**
  * Compiles graph‑ready commits from raw controller data.
  * @param {Array} rawCommits  – page from commitController.getCommits()
@@ -35,6 +51,7 @@ function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSe
     }
 
     var tipHashToBranches = {};
+    var localBranchNameSet = new Set();
     if (rawBranches) {
         for (var i = 0; i < rawBranches.length; i++) {
             var b = rawBranches[i];
@@ -45,6 +62,9 @@ function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSe
                 tipHashToBranches[b.targetHash] = [];
 
             tipHashToBranches[b.targetHash].push(b.name);
+
+            if (b.isLocal)
+                localBranchNameSet.add(b.name);
         }
     }
 
@@ -140,7 +160,8 @@ function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSe
             commitType      : (commit.parentHashes && commit.parentHashes.length > 1) ? "merge" : "normal",
             branchNames     : branchNames,
             tagNames        : hashToTags[commit.hash] || [],
-            colorKey        : branchNames[0] || "main",
+            colorKey        : pickColorKey(branchNames, localBranchNameSet),
+            isHead          : haveBranchName,
             isStash         : false,
             stashIndex      : -1,
             stashLabel      : "",

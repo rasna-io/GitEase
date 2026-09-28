@@ -29,7 +29,9 @@ Rectangle {
     property bool   isHead          : false
     property bool   isStash         : false
 
-    property bool   isHovered       : mouseArea.containsMouse
+    property int    hoveredIndex    : -1
+
+    property bool   isHovered       : mouseArea.containsMouse || (hoveredIndex >= 0 && index === hoveredIndex)
 
     property Item   parentRoot      : null
 
@@ -37,13 +39,14 @@ Rectangle {
      * ****************************************************************************************/
     signal itemClicked(int mouseButton, int mouseModifiers, int _index, real mouseX, real mouseY)
     signal itemDoubleClicked(int mouseButton, int mouseModifiers, var _index)
+    signal resetHeadOne()
+    signal hoverEntered(int _index)
+    signal hoverExited(int _index)
 
     /* Object Properties
      * ****************************************************************************************/
     width   : ListView.view ? ListView.view.width : parent.width
     height  : 24 + 4*2
-
-    radius  : (isSelected || isHovered) ? 4 : 0
 
     color: {
         if (!commitData)
@@ -53,12 +56,12 @@ Rectangle {
             return "#6088B2DF";
 
         if (commitData.isUncommitted) {
-            return isHovered ? Qt.darker(Style.colors.hoverTitle, 1.03)
-                             : (Style.colors.secondaryBackground || Style.colors.primaryBackground);
+            return isHovered ? Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.35)
+                             : Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.22);
         }
 
         if (isHovered)
-            return Style.colors.hoverTitle;
+            return Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.15);
 
         if (isHead)
             return "#40FFA500";
@@ -68,6 +71,25 @@ Rectangle {
 
     /* Children
      * ****************************************************************************************/
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+        onEntered: commitItem.hoverEntered(index)
+        onExited: commitItem.hoverExited(index)
+
+        onClicked: (mouse) => {
+            var pos = parentRoot ? commitItem.mapToItem(parentRoot, mouse.x, mouse.y) : Qt.point(mouse.x, mouse.y)
+            commitItem.itemClicked(mouse.button, mouse.modifiers, index, pos.x, pos.y)
+        }
+
+        onDoubleClicked: (mouse) => {
+            commitItem.itemDoubleClicked(mouse.button, mouse.modifiers, index)
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
@@ -83,13 +105,6 @@ Rectangle {
 
             RowLayout {
                 Layout.fillWidth: true
-
-                // separator
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.fillHeight: true
-                    color: Style.colors.hoverTitle
-                }
 
                 // Lane colour bar
                 Rectangle {
@@ -115,15 +130,16 @@ Rectangle {
                         spacing: 3
                         Text {
                             text: Style.icons.archive
-                            font.family: Style.fontTypes.font6ProSolid
-                            font.pixelSize: 9
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
+                            font.pixelSize: Style.appFont.captionPt
                             color: GraphUtils.getContrastColor(indicatorColor.toString())
                             verticalAlignment: Text.AlignVCenter
                         }
                         Text {
                             text: commitData ? (commitData.stashLabel || "stash") : ""
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 9
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.captionPt
                             color: GraphUtils.getContrastColor(indicatorColor.toString())
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -132,17 +148,48 @@ Rectangle {
 
                 // Summary text
                 Label {
-                    text: commitData ? (commitData.summary || "") : ""
+                    text: (commitData && commitData.summary) ? commitData.summary : ""
                     color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 10
-                    font.family: Style.fontTypes.roboto
+                    font.pixelSize: Style.appFont.smallPt
+                    font.family: Style.fontTypes.inter
                     font.weight: commitData && commitData.isUncommitted ? 700 :
                                   (isHead ? 900 : 400)
                     font.letterSpacing: 0.2
                     Layout.fillWidth: true
                     Layout.leftMargin: 6
                     elide: Text.ElideRight
+                }
+
+                // Reset HEAD~1 button — only on HEAD commit
+                Rectangle {
+                    visible: commitItem.isHead
+                    Layout.preferredWidth: 22
+                    Layout.preferredHeight: 18
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.rightMargin: 6
+                    Layout.leftMargin: 4
+                    radius: 3
+                    color: resetBtnArea.containsMouse ? Qt.rgba(1,1,1,0.12) : Qt.rgba(1,1,1,0.06)
+                    border.color: Qt.rgba(1,1,1,0.15)
+                    z: 1
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "~"
+                        color: resetBtnArea.containsMouse ? Style.colors.foreground : Qt.rgba(1,1,1,0.55)
+                        font.pixelSize: Style.appFont.defaultPt
+                        font.family: Style.fontTypes.inter
+                        font.weight: Font.Medium
+                    }
+
+                    MouseArea {
+                        id: resetBtnArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: commitItem.resetHeadOne()
+                    }
                 }
             }
         }
@@ -156,16 +203,12 @@ Rectangle {
 
             RowLayout {
                 Layout.fillWidth: true
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.fillHeight: true
-                    color: Style.colors.hoverTitle
-                }
+
                 Label {
                     text: commitData ? (commitData.author || "") : ""
                     color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 12
+                    font.pixelSize: Style.appFont.mediumPt
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignLeft
                     elide: Text.ElideRight
@@ -182,11 +225,6 @@ Rectangle {
 
             RowLayout {
                 Layout.fillWidth: true
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.fillHeight: true
-                    color: Style.colors.hoverTitle
-                }
                 Label {
                     text: commitData ? (
                         GraphUtils.formatDate(commitData.authorDate) + " " +
@@ -194,7 +232,7 @@ Rectangle {
                     ) : ""
                     color: Style.colors.foreground
                     verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 10
+                    font.pixelSize: Style.appFont.smallPt
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignLeft
                     wrapMode: Text.NoWrap
@@ -203,19 +241,4 @@ Rectangle {
         }
     }
 
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-        onClicked: (mouse) => {
-            var pos = parentRoot ? commitItem.mapToItem(parentRoot, mouse.x, mouse.y) : Qt.point(mouse.x, mouse.y)
-            commitItem.itemClicked(mouse.button, mouse.modifiers, index, pos.x, pos.y)
-        }
-
-        onDoubleClicked: (mouse) => {
-            commitItem.itemDoubleClicked(mouse.button, mouse.modifiers, index)
-        }
-    }
 }

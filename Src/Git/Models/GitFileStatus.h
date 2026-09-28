@@ -19,6 +19,8 @@ class GitFileStatus
     Q_PROPERTY(int additionsCount READ additionsCount CONSTANT FINAL)
     Q_PROPERTY(DeltaStatus deltaStatus READ deltaStatus CONSTANT FINAL)
 
+    Q_PROPERTY(QString indexStatus READ indexStatus CONSTANT)
+
 public:
     enum Status {
         Untracked = GIT_STATUS_WT_NEW,
@@ -74,6 +76,8 @@ public:
     int additionsCount() const;
 
     DeltaStatus deltaStatus() const;
+
+    QString indexStatus() const;
 
 private:
     QString m_path;

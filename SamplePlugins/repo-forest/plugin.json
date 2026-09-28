@@ -1,0 +1,10 @@
+{
+  "id": "com.gitease.repo-forest",
+  "name": "Repo Forest",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["dock"],
+  "author": "GitEase",
+  "description": "Discover repositories under a root folder and fetch or pull them in batches.",
+  "cppEntry": "lib/repo-forest-plugin"
+}
