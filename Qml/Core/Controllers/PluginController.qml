@@ -541,6 +541,12 @@ QtObject {
         )
     }
 
+    // Picks up plugin folders copied into the plugin directories while the app is running.
+    function rescanLocalPlugins() {
+        pluginManager.scanDefaultDirectory()
+        pluginManager.scanApplicationPluginsDirectory()
+    }
+
     function installGepFile(gepPath) {
         if (!gepPath)
             return

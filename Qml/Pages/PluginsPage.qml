@@ -417,6 +417,7 @@ Page {
             root.browseLeftPanel.selectedCategory = -1
             root.browseLeftPanel.selectedInstalledMode = -1
         }
+        root.pluginController.rescanLocalPlugins()
         root.pluginController.fetchPluginsCategories()
         root.pluginController.fetchAvailablePlugins(1, "")
     }

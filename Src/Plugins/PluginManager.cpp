@@ -529,6 +529,12 @@ void PluginManager::scanDirectory(const QString& path)
         const PluginInfo info = parseManifest(dirPath);
         if (!info.isValid() || info.id.isEmpty() || info.version.isEmpty())
             continue;
+        const bool alreadyKnown = std::any_of(m_infos.cbegin(), m_infos.cend(),
+                                              [&info](const PluginInfo& known) {
+                                                  return known.id == info.id;
+                                              });
+        if (alreadyKnown || m_installingIds.contains(info.id))
+            continue; // loaded plugin's files may be in use; never touch or reload them here
         candidates.append({ dirPath, info.id, info.version });
     }
 
@@ -1067,6 +1073,7 @@ void PluginManager::startGepInstall(const QString& gepPath, const QString& tempT
 
     emit pluginInstallStarted(id, name);
 
+    m_installingIds.insert(id);
     tearDownPlugin(id);
 
     const QString targetDir = uniquePluginDir(pluginRoot, id, version);
@@ -1096,6 +1103,7 @@ void PluginManager::finishGepInstall(int resultCode, const QString& id,
                                      const QString& name, const QString& targetDir)
 {
     Q_UNUSED(name)
+    m_installingIds.remove(id);
     switch (static_cast<GepWorkResult>(resultCode)) {
     case GepWorkResult::Ok: {
         const bool ok = loadPlugin(targetDir);
