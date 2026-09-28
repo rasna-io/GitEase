@@ -21,6 +21,7 @@ IWindow {
     property RepositoryController   repositoryController    : null
     property NotificationController notificationController  : null
     property StatusController       statusController        : null
+    property var                    pluginManager           : null
 
     property string commitSha       : ""
     property string commitMessage   : ""
@@ -43,6 +44,10 @@ IWindow {
     readonly property int   minTreeColumnWidth  : 160
 
     property int maxLinePixels: 0
+
+    readonly property var fileLines: root.gitTreeController ? root.gitTreeController.currentFileContent.split('\n') : []
+    //! Rich text per line from a syntax colorizer plugin; empty when no plugin colours the file.
+    readonly property var coloredLines: fileColorizer.colorize ? fileColorizer.colorizeLines(root.fileLines) : []
 
     // File icon colours by depth (cycling)
     readonly property var fileDepthColors: [
@@ -106,6 +111,13 @@ IWindow {
 
     ListModel {
         id: treeModel
+    }
+
+    PluginColorizer {
+        id: fileColorizer
+        pluginManager: root.pluginManager
+        filePath: root.gitTreeController && !root.gitTreeController.currentFileIsBinary
+                  ? root.gitTreeController.currentFilePath : ""
     }
 
     TextMetrics {
@@ -691,7 +703,7 @@ IWindow {
 
                                 property real horizontalScrollOffset: 0
 
-                                model: root.gitTreeController ? root.gitTreeController.currentFileContent.split('\n') : []
+                                model: root.fileLines
 
                                 delegate: Rectangle  {
                                     width: codeView.width
@@ -735,9 +747,12 @@ IWindow {
 
                                             // Code line
                                             Label {
+                                                readonly property bool colored: index < root.coloredLines.length
+
                                                 Layout.fillWidth: true
                                                 Layout.fillHeight: true
-                                                text: modelData
+                                                text: colored ? root.coloredLines[index] : modelData
+                                                textFormat: colored ? Text.RichText : Text.PlainText
                                                 color: Style.colors.foreground
                                                 font.family: Style.fontTypes.monospace
                                                 font.pixelSize: Style.appFont.mediumPt

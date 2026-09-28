@@ -679,6 +679,7 @@ DetachablePanel {
         repositoryController    : root.repositoryController
         notificationController  : root.notificationController
         statusController        : root.statusController
+        pluginManager           : root.pluginController?.pluginManager ?? null
     }
 
     /* Functions
