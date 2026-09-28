@@ -91,7 +91,6 @@ Rectangle {
 
     /* Children
      * ****************************************************************************************/
-
     MouseArea {
         id: cardClickArea
         anchors.fill: parent
