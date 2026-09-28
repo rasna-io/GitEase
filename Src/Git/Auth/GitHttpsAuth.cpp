@@ -31,6 +31,11 @@ int GitHttpsAuth::credentialsCallback(git_cred** out,
 
     GitHttpsAuth* httpsAuth  = static_cast<GitHttpsAuth*>(paylaod->auth);
 
+    // Without a token, offering empty credentials only makes libgit2 replay the request until
+    // it gives up; declining fails straight away with an authentication error instead.
+    if (httpsAuth->m_token.isEmpty())
+        return GIT_PASSTHROUGH;
+
     if (allowed_types & GIT_CREDTYPE_USERPASS_PLAINTEXT)
     {
         const char* user =

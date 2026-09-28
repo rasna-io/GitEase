@@ -278,6 +278,9 @@ GitResult GitStatus::getDiff(const QString &filePath)
     git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 
     opts.flags |= GIT_DIFF_PATIENCE | GIT_DIFF_INDENT_HEURISTIC | GIT_DIFF_MINIMAL;
+    // Untracked files are skipped by index-to-workdir diffs unless explicitly requested
+    opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED | GIT_DIFF_RECURSE_UNTRACKED_DIRS
+                | GIT_DIFF_SHOW_UNTRACKED_CONTENT | GIT_DIFF_DISABLE_PATHSPEC_MATCH;
 
     // every single line of the file that isn't changed as a 'Context' line.
     opts.context_lines = 100000;

@@ -87,6 +87,10 @@ GitResult GitBranch::createBranch(const QString &branchName)
     if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not found");
 
+    GitResult rulesResult = checkBranchRules(branchName);
+    if (!rulesResult.success())
+        return rulesResult;
+
     git_reference* new_branch_ref = nullptr;
     git_object* target_object = nullptr;
 
@@ -113,6 +117,13 @@ GitResult GitBranch::createBranch(const QString &branchName)
 
 GitResult GitBranch::createBranch(const QString &commitSha, const QString &branchName)
 {
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, QVariant(), "Repository not found");
+
+    GitResult rulesResult = checkBranchRules(branchName);
+    if (!rulesResult.success())
+        return rulesResult;
+
     // Convert SHA to git_oid
     git_oid commitOid;
     if (git_oid_fromstr(&commitOid, commitSha.toUtf8().constData()) != 0) {
@@ -160,10 +171,53 @@ GitResult GitBranch::createBranch(const QString &commitSha, const QString &branc
     return GitResult(true);
 }
 
+GitResult GitBranch::checkBranchRules(const QString &branchName)
+{
+    // Local copies of existing remote branches keep the remote's name; rules only govern new names.
+    if (remoteBranchExists(branchName))
+        return GitResult(true);
+
+    ActionContext context;
+    context.type = ActionType::BranchCreate;
+    context.branchName = branchName;
+    return runRuleCheck(context);
+}
+
+bool GitBranch::remoteBranchExists(const QString &branchName)
+{
+    git_branch_iterator *iter = nullptr;
+    if (git_branch_iterator_new(&iter, activeRepo(), GIT_BRANCH_REMOTE) != 0)
+        return false;
+
+    bool found = false;
+    git_reference *ref = nullptr;
+    git_branch_t type;
+
+    while (!found && git_branch_next(&ref, &type, iter) == 0) {
+        const char *name = nullptr;
+        if (git_branch_name(&name, ref) == GIT_OK && name) {
+            const QString remoteBranch = QString::fromUtf8(name);
+            const int slash = remoteBranch.indexOf('/');
+            found = slash > 0 && remoteBranch.mid(slash + 1) == branchName;
+        }
+        git_reference_free(ref);
+    }
+
+    git_branch_iterator_free(iter);
+    return found;
+}
+
 GitResult GitBranch::deleteBranch(const QString &branchName)
 {
     if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not found for creating branch");
+
+    ActionContext context;
+    context.type = ActionType::BranchDelete;
+    context.branchName = branchName;
+    GitResult rulesResult = runRuleCheck(context);
+    if (!rulesResult.success())
+        return rulesResult;
 
     git_reference* branchRef = nullptr;
 
@@ -234,6 +288,11 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
 
     emitGitCommand(QString("git checkout %1").arg(quoteCommandArg(branchName)));
 
+    ActionContext postCheckout;
+    postCheckout.type = ActionType::PostCheckout;
+    postCheckout.branchName = branchName;
+    runRuleCheck(postCheckout);
+
     return GitResult(true, QVariant(), QString("Successfully checked out branch '%1'.").arg(branchName));
 }
 
@@ -282,6 +341,10 @@ GitResult GitBranch::renameBranch(const QString &oldName, const QString &newName
     if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository is not open.");
     }
+
+    GitResult rulesResult = checkBranchRules(newName);
+    if (!rulesResult.success())
+        return rulesResult;
 
     git_reference* branchRef = nullptr;
     git_reference* newRef = nullptr;

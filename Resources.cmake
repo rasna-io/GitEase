@@ -118,6 +118,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Repository/InitNewTab.qml               # Init new tab
 
     Qml/View/Components/Diff/DiffView.qml
+    Qml/View/Components/Diff/PluginColorizer.qml                # Syntax colours from diff plugins
     Qml/View/Components/Diff/StackedDiff.qml
     Qml/View/Components/Diff/StripedBackground.qml
     Qml/View/Components/Diff/DiffScrollBar.qml                  # Shared diff/conflict editor scrollbar
@@ -221,6 +222,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/CommittingPage/UnsavedChangesDialog.qml
     Qml/View/Components/Pages/PluginsPage/PluginsPageHeader.qml
     Qml/View/Components/Pages/PluginsPage/PluginsLeftPanel.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetailView.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
     Qml/View/Components/GraphView/GraphFilterPopup.qml

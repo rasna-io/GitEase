@@ -29,7 +29,10 @@ Rectangle {
 
     property real               headerHeight:       Style.dp(30)
 
-    property real               contentBottomInset: Style.dp(10)
+    //! Side padding shared by the header and the content so both line up.
+    property real               horizontalPadding:  Style.dp(15)
+    property real               contentTopInset:    Style.dp(8)
+    property real               contentBottomInset: Style.dp(14)
 
     readonly property Item contentItem: contentLoader.item
 
@@ -83,8 +86,8 @@ Rectangle {
             RowLayout {
                 id: headerRow
                 anchors.fill: parent
-                anchors.leftMargin: 15
-                anchors.rightMargin: 15
+                anchors.leftMargin: root.horizontalPadding
+                anchors.rightMargin: root.horizontalPadding
                 spacing: 10
 
                 Label {
@@ -170,7 +173,9 @@ Rectangle {
             visible: !root.collapsed
             sourceComponent: root.content
             Layout.fillWidth: true
-            Layout.topMargin: 5
+            Layout.leftMargin: root.horizontalPadding
+            Layout.rightMargin: root.horizontalPadding
+            Layout.topMargin: root.contentTopInset
             Layout.preferredHeight: item ? item.implicitHeight : 0
 
             HoverHandler {

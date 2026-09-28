@@ -57,3 +57,6 @@ if(GITEASE_PLUGINS_DIR)
         VERBATIM
     )
 endif()
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/../PackageGep.cmake")
+gitease_package_gep(stats-page-plugin)

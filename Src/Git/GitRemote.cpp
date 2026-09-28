@@ -174,6 +174,18 @@ GitResult GitRemote::push(const QString& remote,
     return result;
 }
 
+GitResult GitRemote::checkPushRules(const QString& remote,
+                                    const QString& branch,
+                                    bool force)
+{
+    ActionContext context;
+    context.type = ActionType::Push;
+    context.remoteName = remote;
+    context.branchName = branch;
+    context.forcePush = force;
+    return runRuleCheck(context);
+}
+
 bool GitRemote::isPushInProgress() const
 {
     return m_pushInProgress;
@@ -810,66 +822,58 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
         git_oid_tostr(ffHash, sizeof(ffHash), targetOid);
         qDebug().noquote() << QString("[GitRemote][PullTrace] FAST_FORWARD targetOid=%1").arg(QString::fromUtf8(ffHash));
 
-        git_reference* updatedLocalRef = nullptr;
-        result = git_reference_set_target(&updatedLocalRef,
-                                          localRef,
-                                          targetOid,
-                                          "pull: Fast-forward");
-        if (result != GIT_OK || !updatedLocalRef) {
-            qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL set target rc=%1 err=%2")
-                                      .arg(result)
-                                      .arg(lastGitErrorMessage());
-            git_annotated_commit_free(remoteHead);
-            git_reference_free(remoteRef);
-            git_reference_free(localRef);
-            return GitResult(false, QVariant(), "Failed to update local branch reference");
-        }
-
-        result = git_repository_set_head(activeRepo(), git_reference_name(updatedLocalRef));
-        if (result != GIT_OK) {
-            qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL set head rc=%1 err=%2")
-                                      .arg(result)
-                                      .arg(lastGitErrorMessage());
-            git_reference_free(updatedLocalRef);
-            git_annotated_commit_free(remoteHead);
-            git_reference_free(remoteRef);
-            git_reference_free(localRef);
-            return GitResult(false, QVariant(), "Failed to set HEAD after fast-forward");
-        }
-
         git_object* targetCommit = nullptr;
         result = git_object_lookup(&targetCommit, activeRepo(), targetOid, GIT_OBJECT_COMMIT);
         if (result != GIT_OK || !targetCommit) {
             qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL lookup target commit rc=%1 err=%2")
                                       .arg(result)
                                       .arg(lastGitErrorMessage());
-            git_reference_free(updatedLocalRef);
             git_annotated_commit_free(remoteHead);
             git_reference_free(remoteRef);
             git_reference_free(localRef);
             return GitResult(false, QVariant(), "Failed to resolve pulled commit");
         }
 
+        // Update the working tree before moving the branch, like `git merge --ff-only`: a safe
+        // checkout keeps unrelated local changes and refuses to overwrite conflicting ones, and
+        // the branch stays untouched if it does. A hard reset would silently discard them.
         git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
-        checkoutOpts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
-        // Ensure HEAD/index/worktree are all synchronized to the pulled commit.
-        result = git_reset(activeRepo(), targetCommit, GIT_RESET_HARD, &checkoutOpts);
+        checkoutOpts.checkout_strategy = GIT_CHECKOUT_SAFE;
+        result = git_checkout_tree(activeRepo(), targetCommit, &checkoutOpts);
         git_object_free(targetCommit);
-        git_reference_free(updatedLocalRef);
+
+        if (result != GIT_OK) {
+            qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL checkout tree rc=%1 err=%2 wt=%3")
+                                      .arg(result)
+                                      .arg(lastGitErrorMessage())
+                                      .arg(workingTreeSummary(activeRepo()));
+            git_annotated_commit_free(remoteHead);
+            git_reference_free(remoteRef);
+            git_reference_free(localRef);
+            if (result == GIT_ECONFLICT) {
+                return GitResult(false, QVariant(),
+                                 "Pull aborted: your local changes would be overwritten. "
+                                 "Commit or stash them, then pull again.");
+            }
+            return GitResult(false, QVariant(), "Pull failed while updating the working tree");
+        }
+
+        git_reference* updatedLocalRef = nullptr;
+        result = git_reference_set_target(&updatedLocalRef,
+                                          localRef,
+                                          targetOid,
+                                          "pull: Fast-forward");
         git_annotated_commit_free(remoteHead);
         git_reference_free(remoteRef);
         git_reference_free(localRef);
 
-        if (result != GIT_OK) {
-            qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL checkout head rc=%1 err=%2 headRef=%3 headOid=%4 wt=%5")
+        if (result != GIT_OK || !updatedLocalRef) {
+            qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL set target rc=%1 err=%2")
                                       .arg(result)
-                                      .arg(lastGitErrorMessage())
-                                      .arg(currentHeadRefName(activeRepo()))
-                                      .arg(currentHeadOid(activeRepo()))
-                                      .arg(workingTreeSummary(activeRepo()));
-            return GitResult(false, QVariant(),
-                             "Pull failed while updating working tree (local changes may conflict)");
+                                      .arg(lastGitErrorMessage());
+            return GitResult(false, QVariant(), "Failed to update local branch reference");
         }
+        git_reference_free(updatedLocalRef);
 
         pullResult["status"] = "Fast-forward";
         qDebug().noquote() << QString("[GitRemote][PullTrace] FAST_FORWARD_DONE headRef=%1 headOid=%2 wt=%3")

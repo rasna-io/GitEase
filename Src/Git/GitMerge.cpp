@@ -59,6 +59,19 @@ GitResult GitMerge::mergeBranchIntoCurrent(const QString& sourceBranch, bool noF
             ? QString("git merge --no-ff %1").arg(quoteCommandArg(sourceBranch))
             : QString("git merge %1").arg(quoteCommandArg(sourceBranch));
         emitGitCommand(cmd);
+
+        // Rule plugins may ask for the merged branch to be cleaned up (auto-delete after merge).
+        ActionContext postMerge;
+        postMerge.type = ActionType::PostMerge;
+        postMerge.branchName = sourceBranch;
+        GitResult rulesResult = runRuleCheck(postMerge);
+
+        const QVariantMap ruleData = rulesResult.data().toMap();
+        if (ruleData.value("autoDeleteSourceBranch").toBool()) {
+            QVariantMap data = result.data().toMap();
+            data["autoDeleteSourceBranch"] = true;
+            return GitResult(true, data, result.errorMessage());
+        }
     }
 
     return result;
