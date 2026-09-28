@@ -285,7 +285,7 @@ UtilitiesCard {
                 root.isFetching = true
                 root.authPurpose = "fetch"
                 userAuthenticationPopupConnection.enabled = true
-                userAuthenticationPopup.open()
+                userAuthenticationPopup.request("fetch", remoteItem.name, url)
                 break;
             }
         }
@@ -309,7 +309,7 @@ UtilitiesCard {
             case RepositoryController.GitProtocol.HTTP:
                 root.authPurpose = "pull"
                 userAuthenticationPopupConnection.enabled = true
-                userAuthenticationPopup.open()
+                userAuthenticationPopup.request("pull", remoteItem.name, url)
                 break
             }
         }

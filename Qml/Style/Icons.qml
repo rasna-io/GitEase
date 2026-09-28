@@ -99,6 +99,12 @@ QtObject{
     property string detach:            "\uf35d" // external-link-alt
     property string rules:             "\uf0ae" // rules
 
+    property string lock:              "\uf023" // lock
+    property string key:               "\uf084" // key
+    property string eye:               "\uf06e" // eye
+    property string eyeSlash:          "\uf070" // eye-slash
+    property string shield:            "\uf3ed" // shield-halved
+
     property string togglePanel:       "qrc:/GitEase/Resources/Icons/togglePanel.svg"
 
     // Feature card icons
