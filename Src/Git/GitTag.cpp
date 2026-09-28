@@ -1,4 +1,5 @@
 #include "GitTag.h"
+#include "GitCommandText.h"
 
 #include <algorithm>
 
@@ -80,13 +81,7 @@ GitResult GitTag::create(const QString &name, const QString &targetId, const QSt
     if (error < 0)
         return GitResult(false);
 
-    QString command = "git tag";
-    if (force)
-        command += " -f";
-    if (!message.isEmpty())
-        command += " -a -m " + quoteCommandArg(message);
-    command += " " + quoteCommandArg(name);
-    emitGitCommand(command);
+    emitGitCommand(GitCommandText::createTag(name, message, force));
 
     emit tagsChanged();
     return GitResult(true);
@@ -102,7 +97,7 @@ GitResult GitTag::remove(const QString &name)
     if (error < 0)
         return GitResult(false);
 
-    emitGitCommand(QString("git tag -d %1").arg(quoteCommandArg(name)));
+    emitGitCommand(GitCommandText::deleteTag(name));
 
     emit tagsChanged();
     return GitResult(true);
@@ -128,7 +123,7 @@ GitResult GitTag::pushTag(const QString &name)
     GitResult result = pushTagInternal(name);
 
     if (result.success())
-        emitGitCommand(QString("git push origin %1").arg(quoteCommandArg(name)));
+        emitGitCommand(GitCommandText::pushTag(name));
 
     return result;
 }
@@ -170,7 +165,7 @@ GitResult GitTag::pushDeleteTag(const QString &name)
     GitResult result = pushDeleteTagInternal(name);
 
     if (result.success())
-        emitGitCommand(QString("git push origin --delete %1").arg(quoteCommandArg(name)));
+        emitGitCommand(GitCommandText::pushDeleteTag(name));
 
     return result;
 }

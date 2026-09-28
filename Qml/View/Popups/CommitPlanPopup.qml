@@ -91,6 +91,15 @@ IWindow {
         return counts
     }
 
+    readonly property bool planHasEdits: {
+        let counts = root.actionCounts
+        for (let action in counts) {
+            if (action !== "pick" && counts[action] > 0)
+                return true
+        }
+        return false
+    }
+
     property var planHistory: []
     property int planCursor:  -1
 
@@ -362,6 +371,11 @@ IWindow {
                 Layout.rightMargin: root.contentInset
                 Layout.topMargin: Style.dp(10)
                 Layout.bottomMargin: Style.dp(12)
+
+                command: GitCommandText.rebase(root.planData.onto || "",
+                                               root.planData.upstream || "",
+                                               root.planData.branch || "",
+                                               root.planHasEdits)
 
                 canUndo: root.canUndo
                 canRedo: root.canRedo

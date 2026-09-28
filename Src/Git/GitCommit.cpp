@@ -1,4 +1,5 @@
 #include "GitCommit.h"
+#include "GitCommandText.h"
 
 #include <git2/branch.h>
 #include <git2/commit.h>
@@ -305,15 +306,7 @@ GitResult GitCommit::commit(const QString& message,
 
     cleanupCommitResources(author, tree, parents);
 
-    QString command = "git commit";
-    if (amend) {
-        command += " --amend";
-    }
-    if (allowEmpty) {
-        command += " --allow-empty";
-    }
-    command += " -m " + quoteCommandArg(message.trimmed());
-    emitGitCommand(command);
+    emitGitCommand(GitCommandText::commit(message, amend, allowEmpty));
 
     return GitResult(true, QVariant::fromValue(data));
 }

@@ -1,4 +1,5 @@
 #include "GitMerge.h"
+#include "GitCommandText.h"
 #include <git2.h>
 #include <QDebug>
 
@@ -313,7 +314,7 @@ GitResult GitMerge::continueOp(const QString& commitMessage)
 
     if (result.success()) {
         resetMergeState();
-        emitGitCommand("git merge --continue");
+        emitGitCommand(GitCommandText::mergeContinue());
     }
 
     return result;
@@ -456,7 +457,7 @@ GitResult GitMerge::abortOp()
     }
 
     resetMergeState();
-    emitGitCommand("git merge --abort");
+    emitGitCommand(GitCommandText::mergeAbort());
 
     return GitResult(true, QVariant(), "Merge aborted.");
 }

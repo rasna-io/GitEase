@@ -7,35 +7,34 @@ import GitEase_Style
 import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
- * CommitAmendPopup
+ * ConfirmCommandDialog
+ * Asks before an action that cannot be undone from inside the app, and shows the exact command it
+ * is about to run. Open it with ask(); the caller handles confirmed().
  * ************************************************************************************************/
 IPopup {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-    property NotificationController notificationController  : null
-    property CommitController       commitController        : null
-    property bool                   changeCommitMessage     : false
+    property string title:       ""
+    property string message:     ""
+    property string command:     ""
+    property string confirmText: qsTr("Delete")
 
-    readonly property bool          canAccept               : messageInput.text.trim().length > 0
+    //! Anything the caller needs back in confirmed(), e.g. which stash index was being dropped.
+    property var context: null
 
-    /* signals
+    /* Signals
      * ****************************************************************************************/
-    signal amendSuccessful()
+    signal confirmed(var context)
 
     /* Object Properties
      * ****************************************************************************************/
-    width: 480
+    width: 460
     height: contentItem.implicitHeight
     padding: 0
 
     closePolicy: Popup.CloseOnEscape
-
-    onOpened: {
-        messageInput.text = commitController.getLastCommitMessage().replace(/\s+$/, "")
-        messageInput.focusAtEnd()
-    }
 
     /* Children
      * ****************************************************************************************/
@@ -61,16 +60,25 @@ IPopup {
                 spacing: 8
 
                 Text {
-                    text: root.changeCommitMessage ? "Change Commit Message" : "Amend Commit"
+                    text: Style.icons.warning
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
+                    font.pixelSize: Style.appFont.mediumPt
+                    color: Style.colors.error
+                }
+
+                Text {
+                    text: root.title
                     color: Style.colors.popupTitleText
                     font.family: Style.fontTypes.inter
                     font.weight: Font.DemiBold
                     font.pixelSize: Style.appFont.mediumPt
                     Layout.fillWidth: true
+                    elide: Text.ElideRight
                 }
 
                 Text {
-                    text: "\u00d7"
+                    text: "×"
                     font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.mediumPt
                     color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
@@ -85,7 +93,6 @@ IPopup {
                 }
             }
 
-            // Header separator
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
@@ -99,34 +106,23 @@ IPopup {
                 Layout.rightMargin: 18
                 Layout.topMargin: 16
                 Layout.bottomMargin: 12
-                spacing: 6
+                spacing: 10
 
                 Text {
-                    text: "COMMIT MESSAGE"
-                    color: Style.colors.popupSectionLabel
+                    Layout.fillWidth: true
+                    text: root.message
+                    color: Style.colors.popupCheckboxLabelText
                     font.family: Style.fontTypes.inter
                     font.pixelSize: Style.appFont.defaultPt
-                }
-
-                // Same box as the commit message on the Committing page
-                ModernInputArea {
-                    id: messageInput
-                    Layout.fillWidth: true
-                    placeholder: "Commit message (required)"
+                    wrapMode: Text.WordWrap
                 }
 
                 CommandPreview {
                     Layout.fillWidth: true
-                    Layout.topMargin: 4
-
-                    placeholder: qsTr("Write a message to see the command")
-                    command: messageInput.text.trim() === ""
-                             ? ""
-                             : GitCommandText.commit(messageInput.text, true)
+                    command: root.command
                 }
             }
 
-            // Footer separator
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
@@ -147,7 +143,7 @@ IPopup {
                 }
 
                 Button {
-                    text: "Cancel"
+                    text: qsTr("Cancel")
                     Layout.preferredWidth: 100
                     Layout.alignment: Qt.AlignVCenter
                     topPadding: 6
@@ -180,11 +176,10 @@ IPopup {
                 }
 
                 Button {
-                    id: actionBtn
-                    text: root.changeCommitMessage ? "Save" : "Amend Commit"
+                    id: confirmButton
+                    text: root.confirmText
                     Layout.preferredWidth: 130
                     Layout.alignment: Qt.AlignVCenter
-                    enabled: root.canAccept
                     topPadding: 6
                     bottomPadding: 6
                     leftPadding: 16
@@ -192,14 +187,14 @@ IPopup {
 
                     background: Rectangle {
                         implicitHeight: 32
-                        color: parent.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
-                                              : Style.colors.disabledButton
+                        color: confirmButton.hovered ? Qt.darker(Style.colors.error, 1.15)
+                                                     : Style.colors.error
                         radius: 5
                     }
 
                     contentItem: Text {
                         text: parent.text
-                        color: Style.colors.secondaryForeground
+                        color: "#FFFFFF"
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         elide: Text.ElideRight
@@ -208,7 +203,11 @@ IPopup {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: root.amend()
+                        onClicked: {
+                            let callerContext = root.context
+                            root.close()
+                            root.confirmed(callerContext)
+                        }
                     }
                 }
             }
@@ -217,15 +216,12 @@ IPopup {
 
     /* Functions
      * ****************************************************************************************/
-    function amend() {
-        let res = commitController.commit(messageInput.text.trim(), true, false)
-
-        if (res.success) {
-            notificationController.success(root.changeCommitMessage ? "Commit message changed successfully" : "Commit amended successfully", "Amend Commit", 3000)
-            root.amendSuccessful()
-            root.close()
-        } else {
-            notificationController.error(res.errorMessage || "Amend failed", "Amend Commit Error", 5000)
-        }
+    function ask(dialogTitle, dialogMessage, dialogCommand, buttonText, callerContext) {
+        root.title       = dialogTitle
+        root.message     = dialogMessage
+        root.command     = dialogCommand
+        root.confirmText = buttonText
+        root.context     = callerContext ?? null
+        root.open()
     }
 }

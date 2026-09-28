@@ -622,6 +622,17 @@ DetachablePanel {
 
     MergeMethodPopup { id: mergeMethodPopup }
 
+    ConfirmCommandDialog {
+        id: confirmCommandDialog
+
+        onConfirmed: (context) => {
+            if (context.branchName !== undefined)
+                root.performPush(context.branchName, true)
+            else
+                root.performResetHead(context.commitHash, context.mode)
+        }
+    }
+
     Connections {
         target: mergeMethodPopup
 
@@ -1364,6 +1375,20 @@ DetachablePanel {
     }
 
     function executePush(branchName, force) {
+        if (!force) {
+            root.performPush(branchName, false)
+            return
+        }
+
+        confirmCommandDialog.ask("Force Push",
+                                 "Overwrite '" + branchName + "' on origin with your local history? " +
+                                 "Commits on the remote that you do not have are lost.",
+                                 GitCommandText.push("origin", branchName, true),
+                                 "Force Push",
+                                 { branchName: branchName })
+    }
+
+    function performPush(branchName, force) {
         isForcePush = force
         let urlRes = remoteController.getRemoteUrl("origin")
         if (!urlRes.success) {
@@ -1551,6 +1576,37 @@ DetachablePanel {
     }
 
     function executeResetHead(commitHash, mode) {
+        let branch = root.branchController.getCurrentBranchName()
+
+        confirmCommandDialog.ask("Reset " + root.resetModeName(mode),
+                                 root.resetWarning(mode, branch, commitHash),
+                                 GitCommandText.reset(commitHash, mode),
+                                 "Reset " + root.resetModeName(mode),
+                                 { commitHash: commitHash, mode: mode })
+    }
+
+    function resetModeName(mode) {
+        switch (mode) {
+        case ResetController.ResetMode.Soft:  return "Soft"
+        case ResetController.ResetMode.Mixed: return "Mixed"
+        default:                              return "Hard"
+        }
+    }
+
+    function resetWarning(mode, branch, commitHash) {
+        let target = "'" + branch + "' to " + commitHash.substring(0, 7)
+
+        switch (mode) {
+        case ResetController.ResetMode.Soft:
+            return "Move " + target + " and keep every change staged."
+        case ResetController.ResetMode.Mixed:
+            return "Move " + target + " and keep your changes, unstaged."
+        default:
+            return "Move " + target + " and discard every change in the working tree. This cannot be undone."
+        }
+    }
+
+    function performResetHead(commitHash, mode) {
         let res = root.resetController.resetHead(commitHash, mode)
 
         if (res.success) {

@@ -107,6 +107,15 @@ IPopup {
                     visible: urlInput.text.length > 0 && !root.isUrlValid
                     Layout.leftMargin: 5
                 }
+
+                CommandPreview {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 4
+
+                    placeholder: root.isEdit ? qsTr("Change the name or URL to see the command")
+                                             : qsTr("Fill in the name and URL to see the command")
+                    command: root.previewCommand()
+                }
             }
 
             RowLayout {
@@ -168,6 +177,24 @@ IPopup {
                 }
             }
         }
+    }
+
+    function previewCommand() {
+        let name = nameInput.text.trim()
+        let url  = urlInput.text.trim()
+
+        if (!root.isEdit)
+            return (name === "" || url === "") ? "" : GitCommandText.addRemote(name, url)
+
+        let steps = []
+
+        if (name !== "" && name !== root.oldRemote.name)
+            steps.push(GitCommandText.renameRemote(root.oldRemote.name, name))
+
+        if (url !== "" && url !== root.oldRemote.url)
+            steps.push(GitCommandText.setRemoteUrl(name !== "" ? name : root.oldRemote.name, url))
+
+        return steps.join(" && ")
     }
 
     onAboutToHide: {

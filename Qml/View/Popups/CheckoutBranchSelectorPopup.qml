@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
@@ -15,6 +16,8 @@ IPopup {
     /* Property Declarations
      * ****************************************************************************************/
     property var branches: []
+
+    property string hoveredBranch: ""
 
     /* Signals
      * ****************************************************************************************/
@@ -168,6 +171,13 @@ IPopup {
                             root.branchSelected(modelData)
                             root.close()
                         }
+
+                        onContainsMouseChanged: {
+                            if (containsMouse)
+                                root.hoveredBranch = modelData
+                            else if (root.hoveredBranch === modelData)
+                                root.hoveredBranch = ""
+                        }
                     }
                 }
             }
@@ -183,6 +193,19 @@ IPopup {
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 56
+
+                CommandPreview {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 30
+                    anchors.right: parent.right
+                    anchors.rightMargin: 140
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    placeholder: qsTr("Point at a branch to see the command")
+                    command: root.hoveredBranch === ""
+                             ? ""
+                             : GitCommandText.checkoutBranch(root.hoveredBranch)
+                }
 
                 Button {
                     anchors.right: parent.right
@@ -206,6 +229,7 @@ IPopup {
     }
 
     onAboutToHide: {
+        root.hoveredBranch = ""
         root.branches = []
     }
 }
