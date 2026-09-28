@@ -27,7 +27,13 @@ Rectangle {
         Page {
             property url pluginUrl: ""
             isPlugin: true
+
+            function onPageActivated() {
+                pluginLoader.item?.onPageActivated?.()
+            }
+
             Loader {
+                id: pluginLoader
                 anchors.fill: parent
                 source: parent.pluginUrl
                 onLoaded: root.injectPluginHostProperties(item)
@@ -107,6 +113,8 @@ Rectangle {
         bindIf("remoteController",         function() { return session.remoteController })
         bindIf("commitController",         function() { return session.commitController })
         bindIf("statusController",         function() { return session.statusController })
+        bindIf("tagController",            function() { return session.tagController })
+        bindIf("gitStateNotifier",         function() { return session.gitStateNotifier })
         bindIf("notificationController",   function() { return session.notificationController })
         bindIf("guideController",          function() { return session.guideController })
         bindIf("userAuthenticationPopup",  function() { return session.popups?.userAuthenticationPopup })
