@@ -33,9 +33,10 @@ function init(deps) {
  * @brief Clears the currently selected commit and file, and resets the diff view.
  */
 function clearSelection() {
-    selectedCommit      = "";
-    selectedFilePath    = "";
-    diffView.diffData   = null;
+    selectedCommit          = "";
+    selectedFilePath        = "";
+    diffView.selectedFile   = "";
+    diffView.diffData       = null;
 }
 
 /**
@@ -74,6 +75,9 @@ function handleFileSelected(filePath) {
     var commitId = selectedCommit;
     if (!commitId)
         return;
+
+    // Also picks the syntax colorizer for the file.
+    diffView.selectedFile = filePath;
 
     var node = commitGraph.commits ? commitGraph.commits.find(function(c) { return c.hash === commitId; }) : null;
 

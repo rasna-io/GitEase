@@ -146,7 +146,6 @@ Page {
         target: repositoryController
         function onRepositorySelected() {
             Presenter.clearSelection()
-            diffView.diffData = null
         }
     }
 
@@ -244,6 +243,7 @@ Page {
 
                     guideController: root.guideController
                     currentRepositoryName: root.appModel.currentRepository.name || ""
+                    pluginManager: root.pluginController?.pluginManager ?? null
                     readOnly: true
                 }
             }

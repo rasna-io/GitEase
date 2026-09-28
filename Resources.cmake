@@ -118,6 +118,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Repository/InitNewTab.qml               # Init new tab
 
     Qml/View/Components/Diff/DiffView.qml
+    Qml/View/Components/Diff/PluginColorizer.qml                # Syntax colours from diff plugins
     Qml/View/Components/Diff/StackedDiff.qml
     Qml/View/Components/Diff/StripedBackground.qml
     Qml/View/Components/Diff/DiffScrollBar.qml                  # Shared diff/conflict editor scrollbar
