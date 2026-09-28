@@ -44,6 +44,7 @@ Item {
         }
         root.fetchBatchResults = []
         let httpsRemotes = []
+        let httpsUrl = ""
         let sshFailed = []
         root.activeFetchRemotes = []
         root.isFetching = true
@@ -66,6 +67,8 @@ Item {
             case RepositoryController.GitProtocol.HTTPS:
             case RepositoryController.GitProtocol.HTTP:
                 httpsRemotes.push(remote.name)
+                if (httpsUrl.length === 0)
+                    httpsUrl = url
                 break
             default:
                 sshFailed.push({ name: remote.name, message: "Unsupported protocol" })
@@ -79,7 +82,7 @@ Item {
             root.pendingFetchRemoteNames = httpsRemotes
             root.authPurpose = "fetch"
             authConnection.enabled = true
-            userAuthenticationPopup.open()
+            userAuthenticationPopup.request("fetch", httpsRemotes.join(", "), httpsUrl)
         }
         if (httpsRemotes.length === 0 && root.activeFetchRemotes.length === 0)
             root.isFetching = false
@@ -110,7 +113,7 @@ Item {
         case RepositoryController.GitProtocol.HTTP:
             root.authPurpose = force ? "pushForce" : "push"
             authConnection.enabled = true
-            userAuthenticationPopup.open()
+            userAuthenticationPopup.request(root.authPurpose, "origin", urlRes.data.url)
             break
         default:
             if (notificationController)
@@ -143,7 +146,7 @@ Item {
             } else {
                 root.authPurpose = "pull"
                 authConnection.enabled = true
-                userAuthenticationPopup.open()
+                userAuthenticationPopup.request("pull", "origin", url)
             }
             break
         default:
