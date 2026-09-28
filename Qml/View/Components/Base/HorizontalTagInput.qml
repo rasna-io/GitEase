@@ -18,7 +18,7 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string tagBackColor: "#1f1f1f"
+    property color tagBackColor: Style.colors.popupChipBackground
 
     /* Signals
      * ****************************************************************************************/
@@ -26,8 +26,19 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    color: Style.colors.secondaryBackground
-    radius: 5
+    implicitHeight: 34
+    color: tagHover.hovered && !textField.activeFocus ? Style.colors.controlBackgroundHover
+                                                      : Style.colors.controlBackground
+    radius: 7
+    border.width: 1
+    border.color: textField.activeFocus ? Style.colors.accent
+                : tagHover.hovered      ? Style.colors.controlBorderHover
+                                        : Style.colors.controlBorder
+
+    Behavior on color { ColorAnimation { duration: Style.motionFast } }
+    Behavior on border.color { ColorAnimation { duration: Style.motionFast } }
+
+    HoverHandler { id: tagHover }
 
     /* Children
      * ****************************************************************************************/
@@ -37,50 +48,60 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
+        spacing: 4
 
         ListView {
-            Layout.preferredWidth: listModel.count === 0 ? 0 : contentWidth
-            Layout.preferredHeight: 30
-            Layout.leftMargin: 8
+            Layout.preferredWidth: listModel.count === 0 ? 0 : Math.min(contentWidth, root.width * 0.7)
+            Layout.preferredHeight: 24
+            Layout.leftMargin: 5
+            Layout.alignment: Qt.AlignVCenter
             model: listModel
             orientation: ListView.Horizontal
-            spacing: 5
+            spacing: 4
             clip: true
             visible: listModel.count !== 0
 
             delegate: Rectangle {
-                width: contentRow.implicitWidth + 15
-                height: 30
-                radius: 5
+                width: contentRow.implicitWidth + 16
+                height: 24
+                radius: 6
                 color: root.tagBackColor
+                border.width: 1
+                border.color: Style.colors.popupChipBorder
 
                 RowLayout {
                     id: contentRow
                     anchors.fill: parent
-                    anchors.margins: 5
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 6
+                    spacing: 6
 
                     Text {
-                        id: wordText
                         text: word
-                        color: Style.colors.placeholderText
+                        font.family: Style.fontTypes.jetBrainsMono
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.popupChipText
                         verticalAlignment: Text.AlignVCenter
                         Layout.fillWidth: true
                     }
 
-                    ToolButton {
+                    Text {
+                        text: "\u00d7"
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
+                        color: removeMouse.containsMouse ? Style.colors.error : Style.colors.placeholderText
                         Layout.alignment: Qt.AlignVCenter
-                        Layout.fillHeight: true
-                        Layout.preferredWidth: 5
-                        padding: 0
-                        contentItem: Text {
-                            text: "x"
-                            color: Style.colors.placeholderText
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        onClicked: {
-                            listModel.remove(index)
-                            root.wordsChanged()
+
+                        MouseArea {
+                            id: removeMouse
+                            anchors.fill: parent
+                            anchors.margins: -3
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                listModel.remove(index)
+                                root.wordsChanged()
+                            }
                         }
                     }
                 }
@@ -90,14 +111,14 @@ Rectangle {
         TextField {
             id: textField
             Layout.fillWidth: true
-            placeholderText: "Add word..."
+            Layout.fillHeight: true
+            placeholderText: "Type and press Enter..."
             selectByMouse: true
-
-            background: Rectangle {
-                implicitHeight: 40
-                color: "transparent"
-                radius: 5
-            }
+            borderWidth: 0
+            focusBorderWidth: 0
+            backgroundColor: "transparent"
+            baseFontSize: Style.appFont.defaultPt
+            minHeight: 30
 
             onAccepted: {
                 var w = textField.text.trim()
@@ -128,4 +149,3 @@ Rectangle {
             if(words[i].length > 0) listModel.append({ word: words[i] })
     }
 }
-
