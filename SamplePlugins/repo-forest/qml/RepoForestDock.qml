@@ -7,10 +7,10 @@ import GitEase_Style_Impl
 import GitEase_Style
 import GitEase
 import GitEaseRepoForest
-import "qrc:/GitEase/Qml/View/Popups"
 
 /*! ***********************************************************************************************
  * RepoForestDock
+ * Utility card that opens Repo Forest on a chosen root folder and remembers recent roots.
  * ************************************************************************************************/
 
 UtilitiesCard {
@@ -26,10 +26,53 @@ UtilitiesCard {
     property string               pluginId:             "com.gitease.repo-forest"
     property GuideController      guideController:      null
 
+    property var                  recentRoots:          []
+
+    readonly property int         maxRecentRoots:       5
+
     /* Object Properties
      * ****************************************************************************************/
     title: "Repo Forest"
     icon: Style.icons.tree
+    badgeCount: recentRoots.length
+
+    onPluginManagerChanged: loadRecentRoots()
+    Component.onCompleted: loadRecentRoots()
+
+    /* Functions
+     * ****************************************************************************************/
+    function loadRecentRoots() {
+        if (!root.pluginManager)
+            return
+        try {
+            const saved = JSON.parse(root.pluginManager.pluginSetting(root.pluginId, "recentRoots", "[]") || "[]")
+            root.recentRoots = Array.isArray(saved) ? saved.filter(p => typeof p === "string" && p.length > 0) : []
+        } catch (e) {
+            root.recentRoots = []
+        }
+    }
+
+    function saveRecentRoots(list) {
+        root.recentRoots = list
+        if (root.pluginManager)
+            root.pluginManager.setPluginSetting(root.pluginId, "recentRoots", JSON.stringify(list))
+    }
+
+    function removeRecentRoot(path) {
+        root.saveRecentRoots(root.recentRoots.filter(p => p !== path))
+    }
+
+    function openRoot(path) {
+        if (!path)
+            return
+        root.saveRecentRoots([path].concat(root.recentRoots.filter(p => p !== path)).slice(0, root.maxRecentRoots))
+        repoForestPopup.rootPath = path
+        repoForestPopup.open()
+    }
+
+    function pathExists(path) {
+        return root.repositoryController ? root.repositoryController.appModel.fileIO.isFileExist(path) : true
+    }
 
     /* Children
      * ****************************************************************************************/
@@ -58,96 +101,218 @@ UtilitiesCard {
                     {
                         targetProvider: function() { return actionBtn },
                         icon: Style.icons.folder,
-                        title: "Browse a Root Folder",
-                        description: "Pick a parent directory and GitEase discovers every git repository inside it, so you can fetch or pull across all of them at once."
+                        title: "Choose a Root Folder",
+                        description: "Pick a parent directory and GitEase discovers every git repository inside it, so you can fetch or pull across all of them at once. Recently used folders stay listed here for one-click access."
                     }
                 ]
             }
         }
 
+        // ── Intro ──────────────────────────────────────────────────────
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: infoRow.implicitHeight + 20
-            radius: 6
-            color: Style.colors.secondaryBackground
+            Layout.preferredHeight: introRow.implicitHeight + Style.dp(20)
+            radius: 8
+            color: Style.colors.utilitiesSurfaceBackground
             border.width: 1
-            border.color: Style.colors.secondaryBorder
+            border.color: Style.colors.utilitiesSurfaceBorder
 
             RowLayout {
-                id: infoRow
+                id: introRow
                 anchors.fill: parent
-                anchors.margins: 10
-                spacing: 12
+                anchors.margins: Style.dp(10)
+                spacing: Style.dp(10)
 
-                Text {
-                    text: Style.icons.info
-                    font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: 16
-                    color: Style.colors.mutedText
-                    Layout.alignment: Qt.AlignVCenter
+                Rectangle {
+                    Layout.alignment: Qt.AlignTop
+                    Layout.preferredWidth: Style.dp(30)
+                    Layout.preferredHeight: Style.dp(30)
+                    radius: 7
+                    color: Style.colors.accentWash
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: Style.icons.tree
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: Style.appFont.defaultPt
+                        color: Style.colors.accent
+                    }
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 10
+                    spacing: Style.dp(4)
 
                     Text {
                         Layout.fillWidth: true
-                        text: "This tool helps you manage multiple repositories from a single root directory."
-                        font.pixelSize: 13
-                        color: Style.colors.mutedText
-                        font.family: Style.fontTypes.inter
+                        text: "Fetch & pull many repositories at once"
                         wrapMode: Text.WordWrap
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.smallPt
+                        font.weight: Font.DemiBold
+                        color: Style.colors.utilitiesRowText
                     }
 
-                    // features
                     Text {
-                        text:
-                            "• Automatically discover all repositories\n" +
-                            "• Fetch updates for all or selected repositorie\n" +
-                            "• Pull changes for all or selected repositories"
-                        font.pixelSize: 10
-                        color: Style.colors.mutedText
+                        Layout.fillWidth: true
+                        text: "Choose a parent folder. Every Git repository inside it is discovered and can be fetched or fast-forwarded in one go."
+                        wrapMode: Text.WordWrap
+                        lineHeight: 1.15
                         font.family: Style.fontTypes.inter
-                        lineHeight: 1.1
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.utilitiesRowMetaText
+                    }
+
+                    Flow {
+                        Layout.fillWidth: true
+                        Layout.topMargin: Style.dp(2)
+                        spacing: Style.dp(6)
+
+                        Repeater {
+                            model: [
+                                { icon: Style.icons.search,    label: "Discover" },
+                                { icon: Style.icons.download,  label: "Fetch" },
+                                { icon: Style.icons.arrowDown, label: "Pull" }
+                            ]
+
+                            delegate: Rectangle {
+                                required property var modelData
+
+                                height: Style.dp(20)
+                                width: chipRow.implicitWidth + Style.dp(14)
+                                radius: height / 2
+                                color: Style.colors.utilitiesRowBackground
+                                border.width: 1
+                                border.color: Style.colors.utilitiesRowBorder
+
+                                Row {
+                                    id: chipRow
+                                    anchors.centerIn: parent
+                                    spacing: Style.dp(5)
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.icon
+                                        font.family: Style.fontTypes.font6Pro
+                                        font.pixelSize: Style.appFont.microPt
+                                        color: Style.colors.utilitiesRowIconAccent
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.label
+                                        font.family: Style.fontTypes.inter
+                                        font.pixelSize: Style.appFont.microPt
+                                        font.weight: Font.Medium
+                                        color: Style.colors.utilitiesRowMetaText
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
-        Button {
-            id: actionBtn
+        // ── Recent folders ─────────────────────────────────────────────
+        RowLayout {
             Layout.fillWidth: true
-            implicitHeight: 44
+            Layout.topMargin: Style.dp(2)
+            visible: root.recentRoots.length > 0
+            spacing: Style.dp(6)
 
-            background: Rectangle {
-                radius: 8
-                color: actionBtn.enabled ? (actionBtn.hovered) ? Style.colors.accentHover : Style.colors.accent
-                                            : (Style.colors.disabledButton)
+            Text {
+                Layout.fillWidth: true
+                text: "RECENT FOLDERS"
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.microPt
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.8
+                color: Style.colors.utilitiesRowMetaText
             }
 
-            contentItem: Item {
-                anchors.fill: parent
-                Row {
-                    spacing: 10
-                    anchors.centerIn: parent
+            Text {
+                text: "Clear"
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.microPt
+                font.underline: clearHover.hovered
+                color: clearHover.hovered ? Style.colors.error : Style.colors.utilitiesRowSubText
 
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Style.icons.folder
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
-                        color: Style.colors.textButton
-                    }
+                HoverHandler {
+                    id: clearHover
+                    cursorShape: Qt.PointingHandCursor
+                }
 
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Browse"
-                        color: Style.colors.textButton
-                        font.pixelSize: 13
-                    }
+                TapHandler {
+                    onTapped: root.saveRecentRoots([])
                 }
             }
+        }
+
+        ListView {
+            id: recentList
+            Layout.fillWidth: true
+            Layout.preferredHeight: contentHeight
+            visible: root.recentRoots.length > 0
+            interactive: false
+            spacing: Style.dp(4)
+            model: root.recentRoots
+
+            delegate: Item {
+                id: recentRow
+
+                required property int    index
+                required property string modelData
+
+                readonly property bool exists: root.pathExists(modelData)
+
+                width: ListView.view.width
+                height: Style.dp(38)
+
+                RepositoryListItem {
+                    anchors.fill: parent
+                    index: recentRow.index
+                    modelData: ({ name: "", path: "" })
+                    radius: 6
+                    border.width: 1
+                    border.color: Style.colors.utilitiesRowBorder
+
+                    backgroundColor:      Style.colors.utilitiesRowBackground
+                    hoverBackgroundColor: Style.colors.utilitiesRowHoverBackground
+                    nameColor:            Style.colors.utilitiesRowText
+                    pathColor:            Style.colors.utilitiesRowSubText
+                    missingPathColor:     Style.colors.utilitiesRowMissingText
+
+                    name: recentRow.modelData.split('/').pop() || recentRow.modelData
+                    path: recentRow.modelData
+                    isExists: recentRow.exists
+
+                    onClicked: root.openRoot(recentRow.modelData)
+                }
+
+                ActionIconButton {
+                    anchors.right: parent.right
+                    anchors.rightMargin: Style.dp(6)
+                    anchors.verticalCenter: parent.verticalCenter
+                    iconText: Style.icons.close
+                    tooltip: "Remove from recent folders"
+                    backgroundColor: Style.colors.utilitiesRowBackground
+                    textColor: Style.colors.utilitiesRowIcon
+                    onClicked: root.removeRecentRoot(recentRow.modelData)
+                }
+            }
+        }
+
+        DashedButton {
+            id: actionBtn
+            Layout.fillWidth: true
+            Layout.topMargin: Style.dp(2)
+
+            iconText: Style.icons.folder
+            text: root.recentRoots.length > 0 ? "Choose another folder" : "Choose root folder"
+
+            textColor: actionBtn.hovered ? Style.colors.accent : Style.colors.dashedButtonText
+            borderColor: actionBtn.hovered ? Style.colors.accent : Style.colors.dashedButtonBorder
 
             onClicked: folderDialog.open()
         }
@@ -157,14 +322,8 @@ UtilitiesCard {
             title: "Select Root Directory"
 
             onAccepted: {
-                var selectedFolder = folderDialog.selectedFolder
-                if (selectedFolder) {
-                    var folderPath = selectedFolder.toString()
-                    let path = root.repositoryController.appModel.fileIO.pathNormalizer(folderPath);
-
-                    repoForestPopup.rootPath = path
-                    repoForestPopup.open()
-                }
+                if (folderDialog.selectedFolder)
+                    root.openRoot(root.repositoryController.appModel.fileIO.pathNormalizer(folderDialog.selectedFolder.toString()))
             }
         }
     }
@@ -175,8 +334,8 @@ UtilitiesCard {
         property string rootPath
         property GitScanner gitScanner: GitScanner {}
 
-        width: 800
-        height: 650
+        width: 820
+        height: 660
         padding: 12
 
         contentItem: RepoForest {
@@ -192,21 +351,9 @@ UtilitiesCard {
             onCloseRequested: repoForestPopup.close()
         }
 
-        onAboutToHide: resetRepoForest()
-        onClosed: resetRepoForest()
-
-        function resetRepoForest() {
-            repoForest.reposModel = []
-            repoForest.pat = ""
-            repoForest.pendingOperation = ""
-            repoForest.selectedIndexes = []
-            repoForest.isRunning = false
-            repoForest.operationQueue = []
-            repoForest.queueState = RepoForest.QueueState.Ready
+        onClosed: {
             repoForestPopup.gitScanner.stop()
+            repoForest.reset()
         }
     }
-
-    /* Functions
-     * ****************************************************************************************/
 }

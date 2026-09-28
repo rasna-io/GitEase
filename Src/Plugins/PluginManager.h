@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QVariantList>
 #include <QMap>
+#include <QSet>
 #include <QQmlEngine>
 #include <QJSValue>
 #include <functional>
@@ -129,6 +130,7 @@ signals:
     void pluginError      (const QString& id, const QString& error);
     void pluginInstalled  (const QString& id);
     void pluginRemoved    (const QString& id);
+    void pluginAboutToUnload(const QString& id);
     void pluginInstallStarted(const QString& id, const QString& name);
     void pluginInstallFailed(const QString& id, const QString& error);
 
@@ -142,7 +144,8 @@ signals:
 
     // Emitted when a plugin registers a page (consumed by PluginController.qml)
     void pageRegistered   (const QString& id, const QUrl& qmlUrl,
-                           const QString& title, const QString& icon, int order);
+                           const QString& title, const QString& icon, int order,
+                           const QString& pluginId);
 
     // Emitted after all workflow plugins resolve for the given event
     void workflowEventResolved(const QString& event, const QVariantMap& ctx, bool allowed);
@@ -153,7 +156,7 @@ signals:
 
 private:
     bool       loadPlugin   (const QString& pluginDir);
-    PluginInfo parseManifest(const QString& pluginDir);
+    PluginInfo parseManifest(const QString& pluginDir) const;
     void startGepInstall(const QString& gepPath, const QString& tempFileToRemove);
     void finishGepInstall(int resultCode, const QString& id, const QString& name,
                           const QString& targetDir);
@@ -162,6 +165,11 @@ private:
     bool       activatePlugin(PluginInfo& info);
     void       deactivatePlugin(const QString& id);
     void       tearDownPlugin(const QString& id);
+    QStringList directoriesForPlugin(const QString& id) const;
+    bool       unloadLibrary(QPluginLoader* loader);
+    QString    hotLoadLibraryPath(const QString& pluginDir, const QString& entry) const;
+    QString    uniquePluginDir(const QString& pluginRoot, const QString& id,
+                               const QString& version) const;
 
     void runWorkflowChain(const QString& event,
                           const QVariantMap& ctx,
@@ -173,6 +181,7 @@ private:
     QMap<QString, QPluginLoader*> m_loaders;
     QMap<QString, IPlugin*>       m_plugins;
     QList<PluginInfo>             m_infos;
+    QSet<QString>                 m_installingIds; // .gep installs still being placed on disk
 
     QVariantList                  m_docks;        // accumulated dock registrations
     QVariantList                  m_pages;        // accumulated page registrations

@@ -51,6 +51,18 @@ public:
                                bool force = false);
 
     /**
+     * @brief Runs push rules for a pending push.
+     *
+     * push() runs on the Git worker thread where rules cannot veto it, so callers invoke this
+     * on the GUI thread right before queueing the push.
+     *
+     * @return GitResult that fails with the rule's message when the push must not happen
+     */
+    Q_INVOKABLE GitResult checkPushRules(const QString& remote,
+                                         const QString& branch,
+                                         bool force = false);
+
+    /**
      * @brief Checks if a push operation is currently in progress
      * @return true if a push operation is actively running, false otherwise
      */

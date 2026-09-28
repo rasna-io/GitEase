@@ -1,16 +1,21 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt.labs.folderlistmodel
 
 import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 import GitEaseRepoForest
 
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+
 /*! ***********************************************************************************************
  * RepoForest
- * RepoForest : find all repositories and can pull, fetch all (or selected) items.
+ * Finds every repository under rootPath and fetches / pulls all (or the selected) ones.
+ *
+ * Operations run one at a time through AsyncGit on the Git worker threads, so the UI stays
+ * responsive. HTTPS remotes are tried without a token first; a token is only requested when a
+ * remote actually rejects the anonymous request.
  * ************************************************************************************************/
 
 Rectangle {
@@ -33,96 +38,38 @@ Rectangle {
     property   string                       rootPath
     property   GitScanner                   gitScanner
     property   GuideController              guideController:          null
-    property   var                          reposModel:               []
+
     property   var                          selectedIndexes:          []
-    property   bool                         isRunning:                false
     property   var                          operationQueue:           []
     property   int                          queueState:               RepoForest.QueueState.Ready
-    property   var                          scannedRepositories:      []
-
-    property   string                       pat:                      ""
-    property   string                       pendingOperation:         ""
-
-    property   bool                         fetchFlowActive:          false
-    property   int                          fetchFlowItemIndex:       -1
-    property   var                          fetchFlowRemotes:         []
-    property   int                          fetchFlowRemoteIndex:     0
-    property   string                       fetchFlowCurrentRemote:   ""
-
+    property   bool                         isOpening:                false
     property   var                          operationLogs:            []
 
+    //! "" = not asked yet, "skip" = declined, anything else = the token.
+    property   string                       pat:                      ""
 
-    readonly property bool allSelected:     reposModel.length > 0 && selectedIndexes.length === reposModel.length
+    readonly property int  repoCount:       reposModel.count
+    readonly property bool allSelected:     repoCount > 0 && selectedIndexes.length === repoCount
     readonly property bool noneSelected:    selectedIndexes.length === 0
     readonly property bool someSelected:    !allSelected && !noneSelected
+    readonly property int  selectedCount:   selectedIndexes.length
+    readonly property bool isIdle:          queueState === RepoForest.QueueState.Ready
 
-    readonly property int selectedCount:    root.selectedIndexes.length
-
-    readonly property int completedCount: {
-        let count = 0
-        root.selectedIndexes.forEach(idx => {
-            let status = root.reposModel[idx] ? root.reposModel[idx].status : ""
-            if (status === "Done" || status === "Canceled") {
-                count++
-            }
-        })
-        return count
-    }
-
-    readonly property int progressPercent: root.selectedCount > 0 ? Math.round((root.completedCount / root.selectedCount) * 100) : 0
-
-    readonly property int pendingFetchCount: {
-        let count = 0
-        root.operationQueue.forEach(op => {
-            if (op.operation === "fetch")
-                count++
-        })
-
-        if (root.fetchFlowActive)
-            count++
-
-        return count
-    }
-
-    readonly property int pendingPullCount: {
-        let count = 0
-        root.operationQueue.forEach(op => {
-            if (op.operation === "pull")
-                count++
-        })
-        root.selectedIndexes.forEach(idx => {
-            if (root.reposModel[idx] && root.reposModel[idx].status === "Pulling")
-                count++
-        })
-        return count
-    }
+    //! Counters over the repositories touched in this session.
+    property int touchedCount:  0
+    property int finishedCount: 0
+    property int failedCount:   0
+    readonly property int progressPercent: touchedCount > 0 ? Math.round(finishedCount / touchedCount * 100) : 0
 
     /* Private Properties
      * ****************************************************************************************/
-    property string _currentOperation: ""
-    property var    _patWaitingIndexs: []
-    property bool   _showUserAuthenticationPopup: false
-    property real   _savedScrollY: 0
-    property bool   _suppressScrollReset: false
-
-    on_ShowUserAuthenticationPopupChanged: {
-        if (root._showUserAuthenticationPopup && root.pat === "") {
-            root.userAuthenticationPopup.open()
-        }
-    }
-
-    onFetchFlowItemIndexChanged: {
-        if (autoScrollingCheckBox.checked)
-            repoListView.focusOnIndex()
-    }
-
-    onVisibleChanged: {
-        if (visible) {
-            root.reposModel = []
-            root.selectedIndexes = []
-            gitScanner.scan(root.rootPath)
-        }
-    }
+    //! The operation currently running: { operation, index, remotes, remoteIndex, failures }.
+    property var    _job:           null
+    //! Operations parked until the user provides a token: [{ operation, index }].
+    property var    _authWaiting:   []
+    property bool   _awaitingAuth:  false
+    property var    _repoHandles:   []
+    property var    _repoRemotes:   []
 
     /* Signals
     * ****************************************************************************************/
@@ -131,16 +78,106 @@ Rectangle {
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
-    radius: 16
+    radius: 12
     clip: true
-    border.color: Style.colors.accent
+    border.color: Style.colors.primaryBorder
     border.width: 1
+
+    onVisibleChanged: {
+        if (visible) {
+            root.reset()
+            gitScanner.scan(root.rootPath)
+        }
+    }
 
     /* Functions
     * ****************************************************************************************/
+    function reset() {
+        reposModel.clear()
+        root._repoHandles = []
+        root._repoRemotes = []
+        root.selectedIndexes = []
+        root.operationQueue = []
+        root.queueState = RepoForest.QueueState.Ready
+        root.operationLogs = []
+        root.pat = ""
+        root._job = null
+        root._authWaiting = []
+        root._awaitingAuth = false
+        root.touchedCount = 0
+        root.finishedCount = 0
+        root.failedCount = 0
+    }
+
+    //! Visual family of a status, used for its color.
+    function kindOf(status) {
+        switch (status) {
+        case "Queued":       return "queued"
+        case "Fetching":     return "fetching"
+        case "Pulling":      return "pulling"
+        case "Fetched":
+        case "Up to date":
+        case "Updated":      return "done"
+        case "Local changes":
+        case "Diverged":
+        case "No upstream":  return "warning"
+        case "Needs token":  return "auth"
+        case "Failed":       return "error"
+        case "Skipped":
+        case "Stopped":      return "muted"
+        default:             return "idle"
+        }
+    }
+
+    function isFinishedKind(kind) {
+        return kind === "done" || kind === "warning" || kind === "error" || kind === "muted"
+    }
+
+    function recountProgress() {
+        let touched = 0, finished = 0, failed = 0
+        for (let i = 0; i < reposModel.count; i++) {
+            const kind = root.kindOf(reposModel.get(i).status)
+            if (kind === "idle")
+                continue
+            touched++
+            if (root.isFinishedKind(kind))
+                finished++
+            if (kind === "error" || kind === "warning")
+                failed++
+        }
+        root.touchedCount = touched
+        root.finishedCount = finished
+        root.failedCount = failed
+    }
+
+    function setStatus(index, status, detail) {
+        if (index < 0 || index >= reposModel.count)
+            return
+        reposModel.setProperty(index, "status", status)
+        reposModel.setProperty(index, "detail", detail || "")
+        if (status !== "Fetching" && status !== "Pulling")
+            reposModel.setProperty(index, "progress", -1)
+        root.recountProgress()
+
+        if (autoScrollCheckBox.checked && (status === "Fetching" || status === "Pulling"))
+            repoListView.positionViewAtIndex(index, ListView.Contain)
+    }
+
+    function logOperation(index, remoteName, operation, status, message) {
+        const entry = {
+            repoName:   index >= 0 && index < reposModel.count ? reposModel.get(index).name : "",
+            remoteName: remoteName || "",
+            operation:  operation,
+            status:     status,
+            message:    message,
+            timestamp:  new Date().toLocaleTimeString(Qt.locale(), "hh:mm:ss")
+        }
+        root.operationLogs = root.operationLogs.concat([entry])
+    }
+
     function toggleSelection(index) {
         let arr = root.selectedIndexes.slice()
-        let pos = arr.indexOf(index)
+        const pos = arr.indexOf(index)
         if (pos === -1)
             arr.push(index)
         else
@@ -149,46 +186,35 @@ Rectangle {
     }
 
     function toggleSelectAll() {
-        if (root.allSelected)
-            root.selectedIndexes = []
-        else
-            root.selectedIndexes = Array.from({ length: root.reposModel.length }, (_, i) => i)
+        root.selectedIndexes = root.allSelected ? []
+                                                : Array.from({ length: reposModel.count }, (_, i) => i)
     }
 
-    function updateStatus(itemIndex: int, status: string) {
-        root.reposModel[itemIndex].status = status
-        if (!autoScrollingCheckBox.checked)
-            root._suppressScrollReset = true
-        root.reposModel = root.reposModel.slice()
-        if (!autoScrollingCheckBox.checked)
-            Qt.callLater(() => { root._suppressScrollReset = false })
+    function isQueuedOrRunning(index) {
+        if (root._job && root._job.index === index)
+            return true
+        return root.operationQueue.some(op => op.index === index)
     }
 
-    function logOperation(repoName, remoteName, operation, status, message) {
-        let entry = {
-            repoName: repoName,
-            remoteName: remoteName,
-            operation: operation,
-            status: status,
-            message: message,
-            timestamp: new Date().toLocaleTimeString(Qt.locale(), "hh:mm:ss")
-        }
-        root.operationLogs.push(entry)
-        root.operationLogs = root.operationLogs.slice()
+    function enqueue(operation, index) {
+        if (root.isQueuedOrRunning(index))
+            return
+
+        root.operationQueue = root.operationQueue.concat([{ operation: operation, index: index }])
+        root.setStatus(index, "Queued")
+
+        if (root.queueState === RepoForest.QueueState.Ready)
+            root.processNext()
     }
 
-    function enqueueOperation(operation, itemIndex) {
-        root.operationQueue.push({ operation: operation, index: itemIndex})
-        root.operationQueue = root.operationQueue.slice()
-        root.updateStatus(itemIndex, "Pending")
-
-        if (root.queueState === RepoForest.QueueState.Ready) {
-            processNextOperation()
-        }
+    function enqueueSelected(operation) {
+        root.selectedIndexes.slice().sort((a, b) => a - b).forEach(index => root.enqueue(operation, index))
     }
 
-    function processNextOperation() {
-        if (root.operationQueue.length === 0) {
+    function processNext() {
+        root._job = null
+
+        if (root.queueState === RepoForest.QueueState.Stop) {
             root.queueState = RepoForest.QueueState.Ready
             return
         }
@@ -198,416 +224,394 @@ Rectangle {
             return
         }
 
-        if (root.queueState === RepoForest.QueueState.Pause) {
+        if (root.queueState === RepoForest.QueueState.Pause)
             return
-        }
 
-        if (root.queueState === RepoForest.QueueState.Stop) {
-            let queue = root.operationQueue.slice()
-
-            root.logOperation("","", "Stop", "Info", "Queue Stop")
-
-            root.operationQueue = []
-            root.operationQueue = root.operationQueue.slice()
-            for (let i = 0; i < queue.length; i++) {
-                root.updateStatus(queue[i].index, "Stoped")
-            }
-
+        if (root.operationQueue.length === 0) {
             root.queueState = RepoForest.QueueState.Ready
-            root.fetchFlowActive = false
-            root.fetchFlowItemIndex = -1
-            root.fetchFlowRemotes = []
-            root.fetchFlowRemoteIndex = 0
-            root.fetchFlowCurrentRemote = ""
-            root._currentOperation = ""
-            root._patWaitingIndexs = []
             return
         }
 
         root.queueState = RepoForest.QueueState.Running
-        let item = root.operationQueue.shift()
-        root.operationQueue = root.operationQueue.slice()
+        const next = root.operationQueue[0]
+        root.operationQueue = root.operationQueue.slice(1)
 
-        if (item.operation === "fetch") {
-            root._currentOperation = item.operation
-            executeFetch(item.index)
-        } else if (item.operation === "pull") {
-            root._currentOperation = item.operation
-            executePull(item.index)
-        }
+        if (next.operation === "fetch")
+            root.startFetch(next.index)
+        else
+            root.startPull(next.index)
     }
 
     function pauseQueue() {
-        root.queueState = RepoForest.QueueState.PauseRequested
-        root.logOperation("","", "pause", "Info", "Queue paused")
+        root.queueState = root._job ? RepoForest.QueueState.PauseRequested : RepoForest.QueueState.Pause
+        root.logOperation(-1, "", "queue", "Info", "Queue paused")
     }
 
     function resumeQueue() {
-        if (root.queueState === RepoForest.QueueState.Pause) {
-            root.logOperation("","", "resume", "Info", "Queue resumed")
-            root.queueState = RepoForest.QueueState.Ready
-            if (root.operationQueue.length > 0) {
-                processNextOperation()
-            }
-        }
+        if (root.queueState !== RepoForest.QueueState.Pause && root.queueState !== RepoForest.QueueState.PauseRequested)
+            return
+        root.logOperation(-1, "", "queue", "Info", "Queue resumed")
+        const wasRunning = root._job !== null
+        root.queueState = wasRunning ? RepoForest.QueueState.Running : RepoForest.QueueState.Ready
+        if (!wasRunning)
+            root.processNext()
     }
 
-    function executeFetch(itemIndex: int) {
-        root.updateStatus(itemIndex, "Fetching")
-
-        let repoItem = root.reposModel[itemIndex]
-
-        if(!repoItem.repo) {
-            root.updateStatus(itemIndex, "Canceled")
-            root.logOperation(repoItem.name, "", "fetch", "Canceled", "Repository not available")
-            processNextOperation()
-            return
-        }
-
-        scanRemoteController.currentRepo = repoItem.repo
-
-        let remotesRes = scanRemoteController.getRemotes()
-
-        if(!remotesRes.success) {
-            root.updateStatus(itemIndex, "Canceled")
-            root.logOperation(repoItem.name, "", "fetch", "Canceled", "Failed to get remotes")
-            processNextOperation()
-            return
-        }
-
-        if (remotesRes.data.length === 0) {
-            root.updateStatus(itemIndex, "Done")
-            root.logOperation(repoItem.name, "", "fetch", "Done", "No remotes to fetch")
-            processNextOperation()
-            return
-        }
-
-        root.fetchFlowActive        = true
-        root.fetchFlowItemIndex     = itemIndex
-        root.fetchFlowRemotes       = remotesRes.data
-        root.fetchFlowRemoteIndex   = 0
-        root.fetchFlowCurrentRemote = ""
-
-        fetchStartNextRemote()
+    //! Drops everything still queued. The operation in flight cannot be interrupted and finishes normally.
+    function stopQueue() {
+        root.operationQueue.forEach(op => root.setStatus(op.index, "Stopped", "Removed from the queue"))
+        root.operationQueue = []
+        root.logOperation(-1, "", "queue", "Info", "Queue stopped")
+        root.queueState = root._job ? RepoForest.QueueState.Stop : RepoForest.QueueState.Ready
     }
 
-    function fetchStartNextRemote() {
-        if (!root.fetchFlowActive)
-            return
-
-        if (root.fetchFlowRemoteIndex >= root.fetchFlowRemotes.length) {
-            finishFetchFlow("Done")
-            return
-        }
-
-        let remote = root.fetchFlowRemotes[root.fetchFlowRemoteIndex]
-        let repoName = root.reposModel[root.fetchFlowItemIndex].name
-        root.fetchFlowRemoteIndex += 1
-        root.fetchFlowCurrentRemote = remote.name
-
-        root.logOperation(repoName, remote.name, "fetch", "Fetching", "Starting fetch...")
-
-        let remoteUrlRes = scanRemoteController.getRemoteUrl(remote.name)
-        if(!remoteUrlRes.success) {
-            root.logOperation(repoName, remote.name, "fetch", "Canceled", "Failed to get remote URL")
-            finishFetchFlow("Canceled")
-            return
-        }
-
-        let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
-
-        if (protocol !== RepositoryController.GitProtocol.SSH) {
-            if (root.pat === "") {
-                root._patWaitingIndexs.push(root.fetchFlowItemIndex)
-
-                root._showUserAuthenticationPopup = true
-                root.finishFetchFlow("PAT waiting")
-                return
-            } else if (root.pat === "skip") {
-                root.logOperation(repoName, remote.name, "fetch", "Canceled", "HTTPS Skipped")
-                root.finishFetchFlow("Skipped")
-                return
-            }
-        }
-
-        if (protocol === RepositoryController.GitProtocol.SSH) {
-            scanRemoteController.fetch(remote.name)
-        } else {
-            scanRemoteController.fetchWithToken(remote.name, root.pat)
-        }
+    function isSsh(url) {
+        return root.repositoryController.detectGitProtocol(url) === RepositoryController.GitProtocol.SSH
     }
 
-    function finishFetchFlow(status: string) {
-        let idx = root.fetchFlowItemIndex
-        let repoName = root.reposModel[idx].name
-        if (status === "Done") {
-            root.logOperation(repoName, "", "fetch", "Done", "All remotes fetched successfully")
-        } else if (status === "Canceled") {
-            root.logOperation(repoName, root.fetchFlowCurrentRemote, "fetch", "Canceled", "Fetch canceled or failed")
-        } else if (status === "PAT waiting") {
-            root.logOperation(repoName, root.fetchFlowCurrentRemote, "fetch", "Canceled", "Waiting for PAT")
-        }
-
-        root.fetchFlowActive        = false
-        root.fetchFlowItemIndex     = -1
-        root.fetchFlowRemotes       = []
-        root.fetchFlowRemoteIndex   = 0
-        root.fetchFlowCurrentRemote = ""
-
-        root.updateStatus(idx, status)
-        processNextOperation()
+    function isAuthError(message) {
+        return /auth|credential|401|403|replays|no callback set/i.test(message || "")
     }
 
-    function executePull(itemIndex: int, pat: string) {
-        root.updateStatus(itemIndex, "Pulling")
+    function tokenFor(url) {
+        return root.isSsh(url) || root.pat === "skip" ? "" : root.pat
+    }
 
-        let repoItem = root.reposModel[itemIndex]
+    //! Parks an operation until a token is available. Returns true when it was parked.
+    function parkForToken(operation, index, url) {
+        if (root.isSsh(url) || root.pat !== "")
+            return false
 
-        if(!repoItem || !repoItem.repo) {
-            root.updateStatus(itemIndex, "Canceled")
-            root.logOperation("Unknown", "", "pull", "Canceled", "Repository not available")
-            processNextOperation()
+        root._authWaiting = root._authWaiting.concat([{ operation: operation, index: index }])
+        root.setStatus(index, "Needs token", "This remote requires a personal access token")
+
+        if (!root._awaitingAuth && root.userAuthenticationPopup) {
+            root._awaitingAuth = true
+            if (typeof root.userAuthenticationPopup.request === "function")
+                root.userAuthenticationPopup.request(operation, reposModel.get(index).name, url)
+            else
+                root.userAuthenticationPopup.open()
+        }
+        return true
+    }
+
+    // ── Fetch ────────────────────────────────────────────────────────────────────────────────
+    function startFetch(index) {
+        const remotes = root._repoRemotes[index] || []
+        if (!root._repoHandles[index]) {
+            root.setStatus(index, "Failed", "Repository could not be opened")
+            root.processNext()
+            return
+        }
+        if (remotes.length === 0) {
+            root.setStatus(index, "Skipped", "No remotes configured")
+            root.logOperation(index, "", "fetch", "Skipped", "No remotes configured")
+            root.processNext()
             return
         }
 
-        scanRemoteController.currentRepo = repoItem.repo
-        let remotesRes = scanRemoteController.getRemotes()
+        root._job = { operation: "fetch", index: index, remotes: remotes, remoteIndex: 0, failures: [] }
+        root.setStatus(index, "Fetching")
+        root.fetchNextRemote()
+    }
 
-        if(!remotesRes.success) {
-            root.updateStatus(itemIndex, "Canceled")
-            root.logOperation(repoItem.name, "", "pull", "Canceled", "Failed to get remotes")
-            processNextOperation()
+    function fetchNextRemote() {
+        const job = root._job
+        if (job.remoteIndex >= job.remotes.length) {
+            root.finishFetch()
             return
         }
 
-        if (remotesRes.data.length === 0) {
-            root.updateStatus(itemIndex, "Done")
-            root.logOperation(repoItem.name, "", "pull", "Done", "No remotes to pull")
-            processNextOperation()
+        const remote = job.remotes[job.remoteIndex++]
+        job.currentRemote = remote
+        worker.currentRepo = root._repoHandles[job.index]
+
+        const ssh = root.isSsh(remote.url)
+        const method = ssh ? "fetch" : "fetchWithToken"
+        const args = ssh ? [remote.name] : [remote.name, root.tokenFor(remote.url)]
+
+        AsyncGit.call(worker, method, args,
+            result => root.onFetchResult(job, remote, result),
+            error => root.onFetchResult(job, remote, { success: false, errorMessage: error }))
+    }
+
+    function onFetchResult(job, remote, result) {
+        if (root._job !== job)
+            return
+
+        if (result && result.success) {
+            root.logOperation(job.index, remote.name, "fetch", "Success", "Fetched")
+            root.fetchNextRemote()
             return
         }
 
-        remotesRes.data.forEach(remote => {
-            let remoteUrlRes = scanRemoteController.getRemoteUrl(remote.name)
+        const message = (result && result.errorMessage) || "Fetch failed"
+        if (root.isAuthError(message) && root.parkForToken("fetch", job.index, remote.url)) {
+            root.logOperation(job.index, remote.name, "fetch", "Info", "Waiting for a token")
+            root.processNext()
+            return
+        }
 
-            if(!remoteUrlRes.success) {
-                root.updateStatus(itemIndex, "Canceled")
-                root.logOperation(repoItem.name, remote.name, "pull", "Canceled", "Failed to get remote URL")
-                processNextOperation()
-                return
-            }
-
-            let protocol = root.repositoryController.detectGitProtocol(remoteUrlRes.data.url)
-
-            if (protocol !== RepositoryController.GitProtocol.SSH && pat === "") {
-                root.reposModel[itemIndex].pendingOperation = "pull"
-                root.reposModel = root.reposModel.slice()
-                root.updateStatus(itemIndex, "PAT waiting")
-                processNextOperation()
-                return
-            }
-
-            if (protocol === RepositoryController.GitProtocol.SSH) {
-                let onPullFinished = (result) => {
-                    if (result.success) {
-                        root.updateStatus(itemIndex, "Done")
-                        root.logOperation(repoItem.name, remote.name, "pull", "Success", "Pull completed successfully")
-                    } else {
-                        root.updateStatus(itemIndex, "Canceled")
-                        root.logOperation(repoItem.name, remote.name, "pull", "Failed", result.error || "Pull failed")
-                    }
-                    scanRemoteController.pullFinished.disconnect(onPullFinished)
-                    processNextOperation()
-                }
-
-                scanRemoteController.pullFinished.connect(onPullFinished)
-
-                let pullRes = scanRemoteController.pull(remote.name)
-                if(!pullRes.success) {
-                    root.updateStatus(itemIndex, "Canceled")
-                    root.logOperation(repoItem.name, remote.name, "pull", "Canceled", "Failed to start pull")
-                    scanRemoteController.pullFinished.disconnect(onPullFinished)
-                    processNextOperation()
-                }
-            } else {
-                let onPullFinished = (result) => {
-                    if (result.success) {
-                        root.updateStatus(itemIndex, "Done")
-                        root.logOperation(repoItem.name, remote.name, "pull", "Success", "Pull completed successfully")
-                    } else {
-                        root.updateStatus(itemIndex, "Canceled")
-                        root.logOperation(repoItem.name, remote.name, "pull", "Failed", result.error || "Pull failed")
-                    }
-                    scanRemoteController.pullFinished.disconnect(onPullFinished)
-                    processNextOperation()
-                }
-                scanRemoteController.pullFinished.connect(onPullFinished)
-                let pullRes = scanRemoteController.pull(remote.name, "", pat)
-                if(!pullRes.success) {
-                    root.updateStatus(itemIndex, "Canceled")
-                    root.logOperation(repoItem.name, remote.name, "pull", "Canceled", "Failed to start pull")
-                    scanRemoteController.pullFinished.disconnect(onPullFinished)
-                    processNextOperation()
-                }
-            }
-        })
+        job.failures.push(remote.name + ": " + message)
+        root.logOperation(job.index, remote.name, "fetch", "Failed", message)
+        root.fetchNextRemote()
     }
 
-    function fetch(itemIndex: int) {
-        enqueueOperation("fetch", itemIndex)
+    function finishFetch() {
+        const job = root._job
+        if (job.failures.length === 0)
+            root.setStatus(job.index, "Fetched",
+                           job.remotes.length === 1 ? "From " + job.remotes[0].name
+                                                    : job.remotes.length + " remotes fetched")
+        else
+            root.setStatus(job.index, "Failed", job.failures.join(" · "))
+        root.processNext()
     }
 
-    function pull(itemIndex: int) {
-        enqueueOperation("pull", itemIndex)
+    // ── Pull ─────────────────────────────────────────────────────────────────────────────────
+    //! The remote the current branch tracks, falling back to origin or the only remote.
+    function pullRemoteFor(index) {
+        const remotes = root._repoRemotes[index] || []
+        const branch = reposModel.get(index).branchName
+
+        worker.currentRepo = root._repoHandles[index]
+        const upstream = worker.getUpstreamName(branch)
+        if (upstream.success && upstream.data) {
+            const upstreamRemote = remotes.find(r => upstream.data.startsWith(r.name + "/"))
+            if (upstreamRemote)
+                return upstreamRemote
+        }
+        return remotes.find(r => r.name === "origin") || (remotes.length === 1 ? remotes[0] : null)
     }
 
-    function fetchSelectedIndexes() {
-        root.selectedIndexes.forEach(index => {
-            root.fetch(index)
-        })
+    function startPull(index) {
+        if (!root._repoHandles[index]) {
+            root.setStatus(index, "Failed", "Repository could not be opened")
+            root.processNext()
+            return
+        }
+        if ((root._repoRemotes[index] || []).length === 0) {
+            root.setStatus(index, "Skipped", "No remotes configured")
+            root.processNext()
+            return
+        }
+
+        const remote = root.pullRemoteFor(index)
+        if (!remote) {
+            root.setStatus(index, "No upstream", "Set an upstream branch to choose which remote to pull from")
+            root.logOperation(index, "", "pull", "Skipped", "No upstream remote")
+            root.processNext()
+            return
+        }
+
+        const job = { operation: "pull", index: index, currentRemote: remote }
+        root._job = job
+        root.setStatus(index, "Pulling", "From " + remote.name)
+
+        const ssh = root.isSsh(remote.url)
+        const args = ssh ? [remote.name, ""] : [remote.name, "", root.tokenFor(remote.url)]
+
+        AsyncGit.call(worker, "pull", args,
+            result => root.onPullResult(job, remote, result),
+            error => root.onPullResult(job, remote, { success: false, errorMessage: error }))
     }
 
-    function pullSelectedIndexes() {
-        root.selectedIndexes.forEach(index => {
-            root.pull(index)
-        })
+    function onPullResult(job, remote, result) {
+        if (root._job !== job)
+            return
+
+        if (result && result.success) {
+            const upToDate = result.data && result.data.status === "Already up to date"
+            root.setStatus(job.index, upToDate ? "Up to date" : "Updated", "From " + remote.name)
+            root.logOperation(job.index, remote.name, "pull", "Success", upToDate ? "Already up to date" : "Fast-forwarded")
+            root.processNext()
+            return
+        }
+
+        const message = (result && result.errorMessage) || "Pull failed"
+
+        if (root.isAuthError(message) && root.parkForToken("pull", job.index, remote.url)) {
+            root.logOperation(job.index, remote.name, "pull", "Info", "Waiting for a token")
+            root.processNext()
+            return
+        }
+
+        let status = "Failed"
+        let detail = message
+        if (/local changes/i.test(message)) {
+            status = "Local changes"
+            detail = "Commit or stash local changes, then pull again"
+        } else if (/non-fast-forward/i.test(message)) {
+            status = "Diverged"
+            detail = "Local and remote history diverged; merge or rebase manually"
+        } else if (/detached HEAD/i.test(message)) {
+            status = "Skipped"
+            detail = "Detached HEAD"
+        } else if (/no commits yet/i.test(message)) {
+            status = "Skipped"
+            detail = "Repository has no commits yet"
+        } else if (/not found after fetch/i.test(message)) {
+            status = "No upstream"
+            detail = "The branch does not exist on " + remote.name
+        } else if (root.isAuthError(message)) {
+            detail = root.pat === "skip" ? "No token provided" : "Authentication failed"
+        }
+
+        root.setStatus(job.index, status, detail)
+        root.logOperation(job.index, remote.name, "pull", status === "Failed" ? "Failed" : "Info", message)
+        root.processNext()
     }
 
     /* Children
     * ****************************************************************************************/
-    BranchController {
-        id: scanBranchController
-    }
+    ListModel { id: reposModel }
 
-    RemoteController {
-        id: scanRemoteController
-    }
+    RemoteController { id: worker }
+    BranchController { id: branchReader }
 
     Connections {
-        target: scanRemoteController
-
-        function onFetchFinished(result) {
-            if (!root.fetchFlowActive || !result || !result.remote)
-                return
-
-            if (result.remote !== root.fetchFlowCurrentRemote)
-                return
-
-            let repoName = root.reposModel[root.fetchFlowItemIndex].name
-            if (result.success) {
-                root.logOperation(repoName, result.remote, "fetch", "Success", "Fetch completed successfully")
-                fetchStartNextRemote()
-            } else {
-                root.logOperation(repoName, result.remote, "fetch", "Failed", result.error || "Fetch failed")
-                finishFetchFlow("Canceled")
-            }
-        }
+        target: worker
 
         function onFetchProgress(progress) {
-            let idx = root.fetchFlowItemIndex
-
-            root.reposModel[idx].progress = progress
-            if (!autoScrollingCheckBox.checked)
-                root._suppressScrollReset = true
-            root.reposModel = root.reposModel.slice()
-            if (!autoScrollingCheckBox.checked)
-                Qt.callLater(() => { root._suppressScrollReset = false })
+            if (root._job && progress >= 0)
+                reposModel.setProperty(root._job.index, "progress", progress)
         }
     }
 
     Connections {
-        target: gitScanner
+        target: root.gitScanner
 
         function onPathFound(path) {
-            busyWaiter.message = "Find " + path
+            scanWaiter.message = "Found " + path
         }
 
         function onScanFinished(paths) {
-            root.isRunning = true
-            root.scannedRepositories = []
+            root.isOpening = true
+            let handles = []
+            let remotesList = []
 
             try {
                 paths.forEach(path => {
-                    let repoName = path.split('/').pop() || path.split('\\').pop() || "Repository"
-                    let brancName = "none"
-                    let remote = ""
+                    const name = path.split('/').pop() || path.split('\\').pop() || "Repository"
+                    let branch = ""
+                    let remotes = []
 
-                    busyWaiter.message = "open " + path
+                    const handle = root.repositoryController.openDetached(path)
+                    if (handle) {
+                        branchReader.currentRepo = handle
+                        worker.currentRepo = handle
+                        branch = branchReader.getCurrentBranchName()
 
-                    let repoHandle = repositoryController.openDetached(path)
-
-                    if(repoHandle) {
-                        root.scannedRepositories.push(repoHandle)
-                        scanBranchController.currentRepo = repoHandle
-                        scanRemoteController.currentRepo = repoHandle
-
-                        busyWaiter.message = "get " + path
-                        brancName = scanBranchController.getCurrentBranchName()
-
-                        let remoteRes = scanRemoteController.getRemotes()
-                        if(remoteRes.success){
-                            remote = remoteRes.data
-                                .map(remoteItem => remoteItem.url)
-                                .filter(url => url && url.length > 0)
-                                .join(", ")
-                        }
+                        const res = worker.getRemotes()
+                        if (res.success)
+                            remotes = res.data.map(r => ({ name: r.name, url: r.url || "" }))
                     }
 
-                    busyWaiter.message = "Done " + path
-
-                    root.reposModel.push({ repo: repoHandle, name: repoName, path: path, branchName: brancName, remote: remote, status: "Pending"})
+                    handles.push(handle)
+                    remotesList.push(remotes)
+                    reposModel.append({
+                        name:        name,
+                        path:        path,
+                        branchName:  branch || "detached",
+                        remotesText: remotes.map(r => r.name).join(", "),
+                        status:      "Ready",
+                        detail:      "",
+                        progress:    -1
+                    })
                 })
             } finally {
-                scanBranchController.currentRepo = null
-                scanRemoteController.currentRepo = null
-
-
-                root.scannedRepositories = []
-                root.reposModel = root.reposModel.slice()
-                root.isRunning = false
+                branchReader.currentRepo = null
+                worker.currentRepo = null
+                root._repoHandles = handles
+                root._repoRemotes = remotesList
+                root.selectedIndexes = Array.from({ length: reposModel.count }, (_, i) => i)
+                root.isOpening = false
             }
         }
     }
 
     Connections {
         target: root.userAuthenticationPopup
+        enabled: root._awaitingAuth
 
-        function onPasswordConfirm(password){
+        function onPasswordConfirm(password) {
+            root._awaitingAuth = false
             root.pat = password
-
-            root._patWaitingIndexs.forEach(index => {
-                if (root._currentOperation === "fetch") {
-                    root.fetch(index)
-                } else if (root._currentOperation === "pull"){
-                    root.pull(index)
-                }
-            })
-
-            root._patWaitingIndexs = []
+            const waiting = root._authWaiting
+            root._authWaiting = []
+            root.logOperation(-1, "", "auth", "Info", "Token provided, retrying " + waiting.length + " repositories")
+            waiting.forEach(op => root.enqueue(op.operation, op.index))
         }
 
         function onRejected() {
+            root._awaitingAuth = false
             root.pat = "skip"
-
-            root._patWaitingIndexs.forEach(index => {
-                root.updateStatus(index, "Skipped")
-                let repoName = root.reposModel[index].name || ""
-                if (repoName !== "")
-                    root.logOperation(repoName, "", "fetch", "Canceled", "HTTPS Skipped")
+            root._authWaiting.forEach(op => {
+                root.setStatus(op.index, "Skipped", "No token provided")
+                root.logOperation(op.index, "", op.operation, "Skipped", "No token provided")
             })
-
-            root._patWaitingIndexs = []
-        }
-
-        function onClosed() {
-            root._showUserAuthenticationPopup = false
+            root._authWaiting = []
         }
     }
 
+    component ToolbarButton: AbstractButton {
+        id: toolbarButton
+
+        property string iconText: ""
+        property bool   primary:  false
+        property bool   danger:   false
+
+        implicitHeight: 30
+        implicitWidth: buttonRow.implicitWidth + (text.length > 0 ? 22 : 16)
+        hoverEnabled: true
+        opacity: enabled ? 1.0 : 0.45
+
+        background: Rectangle {
+            radius: 6
+            color: toolbarButton.primary
+                   ? (toolbarButton.hovered ? Style.colors.accentHover : Style.colors.accent)
+                   : (toolbarButton.hovered ? Style.colors.controlBackgroundHover : Style.colors.controlBackground)
+            border.width: toolbarButton.primary ? 0 : 1
+            border.color: toolbarButton.danger && toolbarButton.hovered ? Style.colors.error : Style.colors.controlBorder
+
+            Behavior on color { ColorAnimation { duration: Style.motionFast } }
+        }
+
+        contentItem: Item {
+            Row {
+                id: buttonRow
+                anchors.centerIn: parent
+                spacing: 6
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: toolbarButton.iconText.length > 0
+                    text: toolbarButton.iconText
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: Style.appFont.captionPt
+                    color: toolbarButton.primary ? Style.colors.onAccentText
+                         : toolbarButton.danger ? Style.colors.error : Style.colors.foreground
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: toolbarButton.text.length > 0
+                    text: toolbarButton.text
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.captionPt
+                    font.weight: Font.Medium
+                    color: toolbarButton.primary ? Style.colors.onAccentText : Style.colors.foreground
+                }
+            }
+        }
+
+        HoverHandler { cursorShape: toolbarButton.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor }
+    }
+
     ColumnLayout {
-        spacing: 4
         anchors.fill: parent
         anchors.margins: 20
+        spacing: 14
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -620,318 +624,73 @@ Rectangle {
                         targetProvider: function() { return repoListView },
                         icon: Style.icons.tree,
                         title: "Discovered Repositories",
-                        description: "Every git repository found under the selected root folder is listed here. Check the ones you want to include in a bulk operation, or use Select All.",
+                        description: "Every git repository found under the selected folder is listed here. Click a row to include or exclude it from bulk operations.",
                         isInPopup: true
                     },
                     {
                         targetProvider: function() { return fetchButton },
                         icon: Style.icons.download,
-                        title: "Fetch All",
-                        description: "Fetches updates for every selected repository in one go.",
+                        title: "Fetch",
+                        description: "Fetches every remote of each selected repository, one repository at a time.",
                         commands: [{ command: "git fetch --all" }],
                         isInPopup: true
                     },
                     {
                         targetProvider: function() { return pullButton },
                         icon: Style.icons.arrowDown,
-                        title: "Pull All",
-                        description: "Pulls changes into every selected repository at once.",
-                        commands: [{ command: "git pull" }],
+                        title: "Pull",
+                        description: "Fast-forwards each selected repository from the remote its branch tracks. Repositories with conflicting local changes or diverged history are left untouched and flagged.",
+                        commands: [{ command: "git pull --ff-only" }],
                         isInPopup: true
                     }
                 ]
             }
         }
 
+        // ── Header ─────────────────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 12
 
-            FormInputField {
+            Rectangle {
+                Layout.preferredWidth: 36
+                Layout.preferredHeight: 36
+                radius: 8
+                color: Style.colors.accentWash
+
+                Text {
+                    anchors.centerIn: parent
+                    text: Style.icons.tree
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: Style.appFont.largePt
+                    color: Style.colors.accent
+                }
+            }
+
+            ColumnLayout {
                 Layout.fillWidth: true
-                field.readOnly: true
-                field.text: root.rootPath
-                icon: Style.icons.folder
-            }
+                spacing: 2
 
-            CheckBox {
-                id: selectAllCheckBox
-                Layout.fillWidth: false
-                text: "Select All"
-
-                visible: root.queueState === RepoForest.QueueState.Ready
-
-                font.family: Style.fontTypes.inter
-                font.pixelSize: 12
-
-                Material.accent: Style.colors.accent
-                Material.foreground: Style.colors.foreground
-
-                palette {
-                    text: Style.colors.foreground
-                }
-
-                checkState: root.allSelected ? Qt.Checked : root.someSelected ? Qt.PartiallyChecked : Qt.Unchecked
-
-                tristate: true
-
-                onClicked: {
-                    root.toggleSelectAll()
-                }
-            }
-
-            CheckBox {
-                id: autoScrollingCheckBox
-                Layout.fillWidth: false
-                text: "Auto Scroll"
-
-                font.family: Style.fontTypes.inter
-                font.pixelSize: 12
-
-                Material.accent: Style.colors.accent
-                Material.foreground: Style.colors.foreground
-
-                palette {
-                    text: Style.colors.foreground
-                }
-
-                onCheckStateChanged: {
-                    if (!autoScrollingCheckBox.checked)
-                        root._savedScrollY = repoListView.contentY
-                }
-            }
-
-            ToolButton {
-                id: fetchButton
-                Layout.preferredWidth: 26
-                Layout.preferredHeight: 26
-
-                enabled: !root.noneSelected && root.queueState === RepoForest.QueueState.Ready
-                visible: root.queueState === RepoForest.QueueState.Ready
-                hoverEnabled: true
-
-                contentItem: Text {
-                    anchors.centerIn: parent
-                    text: Style.icons.download
-                    font.pixelSize: 15
-                    font.family: Style.fontTypes.font6ProSolid
-                    color: fetchButton.enabled ? Style.colors.foreground : Style.colors.mutedText
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                background: Rectangle {
-                    radius: 5
-                    color: !fetchButton.enabled ? Style.colors.primaryBackground :
-                           fetchButton.down ? Style.colors.surfaceMuted :
-                           fetchButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                }
-
-                ToolTip {
-                    visible: fetchButton.hovered
-                    delay: 100
-                    timeout: 2000
-
-                    x: (parent.width - width) / 2
-                    y: -height - 6
-
-                    padding: 6
-
-                    contentItem: Text {
-                        text: "Fetch"
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: "#ffffff"
-                    }
-
-                    background: Rectangle {
-                        radius: 6
-                        color: Qt.rgba(0, 0, 0, 0.85)
-                        border.color: Qt.rgba(1, 1, 1, 0.12)
-                        border.width: 1
-                    }
-                }
-
-                onClicked: root.fetchSelectedIndexes()
-            }
-
-            ToolButton {
-                id: pullButton
-                Layout.preferredWidth: 26
-                Layout.preferredHeight: 26
-
-                enabled: !root.noneSelected && root.queueState === RepoForest.QueueState.Ready
-                visible: root.queueState === RepoForest.QueueState.Ready
-                hoverEnabled: true
-
-                contentItem: Text {
-                    anchors.centerIn: parent
-                    text: Style.icons.arrowDown
-                    font.pixelSize: 15
-                    font.family: Style.fontTypes.font6ProSolid
-                    color: pullButton.enabled ? Style.colors.foreground : Style.colors.mutedText
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                background: Rectangle {
-                    radius: 5
-                    color: !pullButton.enabled ? Style.colors.primaryBackground :
-                           pullButton.down ? Style.colors.surfaceMuted :
-                           pullButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                }
-
-                ToolTip {
-                    visible: pullButton.hovered
-                    delay: 100
-                    timeout: 2000
-
-                    x: (parent.width - width) / 2
-                    y: -height - 6
-
-                    padding: 6
-
-                    contentItem: Text {
-                        text: "Pull"
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: "#ffffff"
-                    }
-
-                    background: Rectangle {
-                        radius: 6
-                        color: Qt.rgba(0, 0, 0, 0.85)
-                        border.color: Qt.rgba(1, 1, 1, 0.12)
-                        border.width: 1
-                    }
-                }
-
-                onClicked: root.pullSelectedIndexes()
-            }
-
-            ToolButton {
-                id: pauseResumeButton
-
-                property bool isQueuePaused: root.queueState === RepoForest.QueueState.Pause
-
-                Layout.preferredWidth: 26
-                Layout.preferredHeight: 26
-                visible: root.queueState === RepoForest.QueueState.Running || root.queueState === RepoForest.QueueState.Pause
-                enabled: (root.queueState === RepoForest.QueueState.Running || root.queueState === RepoForest.QueueState.Pause) && root.queueState !== RepoForest.QueueState.PauseRequested
-                hoverEnabled: true
-
-                contentItem: Text {
-                    anchors.centerIn: parent
-                    text: pauseResumeButton.isQueuePaused ? Style.icons.play : Style.icons.pause
-                    font.pixelSize: 15
-                    font.family: Style.fontTypes.font6ProSolid
+                Text {
+                    text: "Repo Forest"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.h4Pt
+                    font.weight: Font.DemiBold
                     color: Style.colors.foreground
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
                 }
 
-                background: Rectangle {
-                    radius: 5
-                    color: pauseResumeButton.down ? Style.colors.surfaceMuted :
-                           pauseResumeButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                }
-
-                ToolTip {
-                    visible: pauseResumeButton.hovered
-                    delay: 100
-                    timeout: 2000
-
-                    x: (parent.width - width) / 2
-                    y: -height - 6
-
-                    padding: 6
-
-                    contentItem: Text {
-                        text: pauseResumeButton.isQueuePaused ? "Resume" : "Pause"
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: "#ffffff"
-                    }
-
-                    background: Rectangle {
-                        radius: 6
-                        color: Qt.rgba(0, 0, 0, 0.85)
-                        border.color: Qt.rgba(1, 1, 1, 0.12)
-                        border.width: 1
-                    }
-                }
-
-                onClicked: {
-                    if (pauseResumeButton.isQueuePaused) {
-                        root.resumeQueue()
-                    } else {
-                        root.pauseQueue()
-                    }
-                }
-            }
-
-            ToolButton {
-                id: stopButton
-                Layout.preferredWidth: 26
-                Layout.preferredHeight: 26
-                visible: root.queueState === RepoForest.QueueState.Running || root.queueState === RepoForest.QueueState.Pause
-                enabled: (root.queueState === RepoForest.QueueState.Running || root.queueState === RepoForest.QueueState.Pause) && root.queueState !== RepoForest.QueueState.PauseRequested
-                hoverEnabled: true
-
-                contentItem: Text {
-                    anchors.centerIn: parent
-                    text: Style.icons.stop
-                    font.pixelSize: 15
-                    font.family: Style.fontTypes.font6ProSolid
-                    color: Style.colors.foreground
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                background: Rectangle {
-                    radius: 5
-                    color: stopButton.down ? Style.colors.surfaceMuted :
-                           stopButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                }
-
-                ToolTip {
-                    visible: stopButton.hovered
-                    delay: 100
-                    timeout: 2000
-
-                    x: (parent.width - width) / 2
-                    y: -height - 6
-
-                    padding: 6
-
-                    contentItem: Text {
-                        text: "Stop All"
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: "#ffffff"
-                    }
-
-                    background: Rectangle {
-                        radius: 6
-                        color: Qt.rgba(0, 0, 0, 0.85)
-                        border.color: Qt.rgba(1, 1, 1, 0.12)
-                        border.width: 1
-                    }
-                }
-
-                onClicked: {
-                    let lastState = root.queueState
-                    root.queueState = RepoForest.QueueState.Stop
-                    if (lastState === RepoForest.QueueState.Pause) {
-                        processNextOperation()
-                    }
+                Text {
+                    Layout.fillWidth: true
+                    text: root.rootPath
+                    elide: Text.ElideMiddle
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.captionPt
+                    color: Style.colors.secondaryText
                 }
             }
 
             WindowsButton {
                 id: closeButton
-
-                Layout.leftMargin: 40
 
                 Material.accent: Style.colors.windowsClose
                 content: Item {
@@ -961,60 +720,137 @@ Rectangle {
             }
         }
 
+        // ── Toolbar ────────────────────────────────────────────────────
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            CheckBox {
+                id: selectAllCheckBox
+                enabled: root.repoCount > 0
+                tristate: true
+                checkState: root.allSelected ? Qt.Checked : root.someSelected ? Qt.PartiallyChecked : Qt.Unchecked
+                text: root.repoCount === 0 ? "No repositories"
+                                           : root.selectedCount + " of " + root.repoCount + " selected"
+
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.captionPt
+
+                Material.accent: Style.colors.accent
+                Material.foreground: Style.colors.foreground
+
+                onClicked: root.toggleSelectAll()
+            }
+
+            CheckBox {
+                id: autoScrollCheckBox
+                text: "Follow progress"
+                checked: true
+
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.captionPt
+
+                Material.accent: Style.colors.accent
+                Material.foreground: Style.colors.foreground
+            }
+
+            Item { Layout.fillWidth: true }
+
+            ToolbarButton {
+                id: fetchButton
+                visible: root.isIdle
+                enabled: !root.noneSelected
+                iconText: Style.icons.download
+                text: "Fetch"
+                onClicked: root.enqueueSelected("fetch")
+            }
+
+            ToolbarButton {
+                id: pullButton
+                visible: root.isIdle
+                enabled: !root.noneSelected
+                primary: true
+                iconText: Style.icons.arrowDown
+                text: "Pull"
+                onClicked: root.enqueueSelected("pull")
+            }
+
+            ToolbarButton {
+                readonly property bool paused: root.queueState === RepoForest.QueueState.Pause
+                                               || root.queueState === RepoForest.QueueState.PauseRequested
+                visible: !root.isIdle
+                enabled: root.queueState !== RepoForest.QueueState.Stop
+                iconText: paused ? Style.icons.play : Style.icons.pause
+                text: paused ? "Resume" : "Pause"
+                onClicked: paused ? root.resumeQueue() : root.pauseQueue()
+            }
+
+            ToolbarButton {
+                visible: !root.isIdle
+                enabled: root.queueState !== RepoForest.QueueState.Stop
+                danger: true
+                iconText: Style.icons.stop
+                text: "Stop"
+                onClicked: root.stopQueue()
+            }
+        }
+
+        // ── Progress summary ───────────────────────────────────────────
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 50
-            color: Style.colors.secondaryBackground
-            radius: 6
-            visible: root.selectedCount > 0
+            Layout.preferredHeight: 52
+            visible: root.touchedCount > 0
+            radius: 8
+            color: Style.colors.utilitiesSurfaceBackground
+            border.width: 1
+            border.color: Style.colors.utilitiesSurfaceBorder
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 8
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                spacing: 6
+                anchors.leftMargin: 14
+                anchors.rightMargin: 14
+                anchors.topMargin: 10
+                anchors.bottomMargin: 10
+                spacing: 8
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 12
-
-                    Text {
-                        text: "Selected: " + root.selectedCount
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: Style.colors.foreground
-                    }
-                    Text {
-                        text: "Pending Fetch: " + root.pendingFetchCount
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: Style.colors.repoItemStatusFetchingText
-                    }
-                    Text {
-                        text: "Pending Pull: " + root.pendingPullCount
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: Style.colors.repoItemStatusPullingText
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
+                    spacing: 10
 
                     BusyIndicator {
-                        id: queueSpinner
-                        Layout.preferredWidth: 24
-                        Layout.preferredHeight: 24
-                        running: root.queueState !== RepoForest.QueueState.Ready && root.queueState !== RepoForest.QueueState.Pause
-                        visible: queueSpinner.running
+                        Layout.preferredWidth: 16
+                        Layout.preferredHeight: 16
+                        running: root.queueState === RepoForest.QueueState.Running
+                        visible: running
                         Material.accent: Style.colors.accent
                     }
 
                     Text {
-                        text: root.progressPercent + "%"
+                        Layout.fillWidth: true
+                        text: {
+                            let state = ""
+                            switch (root.queueState) {
+                            case RepoForest.QueueState.Running:        state = "Working"; break
+                            case RepoForest.QueueState.PauseRequested: state = "Pausing after the current repository"; break
+                            case RepoForest.QueueState.Pause:          state = "Paused"; break
+                            case RepoForest.QueueState.Stop:           state = "Stopping after the current repository"; break
+                            default:                                   state = "Finished"; break
+                            }
+                            let text = state + " · " + root.finishedCount + " of " + root.touchedCount + " done"
+                            if (root.failedCount > 0)
+                                text += " · " + root.failedCount + " need attention"
+                            return text
+                        }
+                        elide: Text.ElideRight
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.foreground
+                    }
+
+                    Text {
+                        text: root.progressPercent + "%"
+                        font.family: Style.fontTypes.jetBrainsMono
+                        font.pixelSize: Style.appFont.captionPt
                         font.weight: Font.Bold
                         color: Style.colors.accent
                     }
@@ -1030,102 +866,55 @@ Rectangle {
                         height: parent.height
                         width: parent.width * (root.progressPercent / 100)
                         radius: 2
-                        color: Style.colors.accent
+                        color: root.failedCount > 0 && root.isIdle ? Style.colors.warning : Style.colors.accent
                         Behavior on width { NumberAnimation { duration: 200 } }
                     }
                 }
             }
         }
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            Layout.leftMargin: 5
-            Layout.rightMargin: 5
-            radius: 10
-            color: Style.colors.primaryBorder
-
-            Behavior on Layout.preferredHeight {
-                NumberAnimation { duration: 300 }
-            }
-        }
-
+        // ── Content ────────────────────────────────────────────────────
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: !root.reposModel || root.reposModel.length === 0 && !root.gitScanner.busy && !root.isRunning
-
-            EmptyStateView {
-                title: "Repository not found"
-                details: "Path : " + root.rootPath
-            }
-        }
-
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            visible: root.gitScanner.busy
 
             BusyWaiter {
-                id: busyWaiter
-                running: root.gitScanner.busy || root.isRunning
-            }
-        }
-
-        ListView {
-            id: repoListView
-
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-            spacing: 4
-
-            visible: root.reposModel && root.reposModel.length > 0 && !root.gitScanner.busy && !root.isRunning
-
-            cacheBuffer: 800
-            reuseItems: true
-
-            model: root.reposModel
-
-            highlightMoveDuration: 500
-            preferredHighlightBegin: height / 2
-            preferredHighlightEnd: height / 2
-            highlightRangeMode: ListView.ApplyRange
-
-            delegate: RepoItem {
-                width: ListView.view.width
-                height: 70
-
-                isSelected: root.selectedIndexes.indexOf(index) !== -1
-                isProcessing: root.queueState !== RepoForest.QueueState.Ready
-
-                onClicked: (i) => root.toggleSelection(i)
-                onFetchRequested: (i) => root.fetch(i)
-                onPullRequested: (i) => root.pull(i)
+                id: scanWaiter
+                anchors.centerIn: parent
+                running: root.gitScanner.busy || root.isOpening
+                visible: running
             }
 
-            onContentYChanged: {
-                if (root._suppressScrollReset)
-                    contentY = root._savedScrollY
+            EmptyStateView {
+                anchors.fill: parent
+                visible: root.repoCount === 0 && !root.gitScanner.busy && !root.isOpening
+                title: "No repositories found"
+                details: "No Git repository was found under " + root.rootPath
             }
 
-            onMovementEnded: {
-                if (!autoScrollingCheckBox.checked)
-                    root._savedScrollY = contentY
-            }
+            ListView {
+                id: repoListView
+                anchors.fill: parent
+                visible: root.repoCount > 0 && !root.gitScanner.busy && !root.isOpening
+                clip: true
+                spacing: 6
+                boundsBehavior: Flickable.StopAtBounds
+                model: reposModel
 
-            onCountChanged: {
-                if (autoScrollingCheckBox.checked)
-                    repoListView.focusOnIndex()
-            }
+                ScrollBar.vertical: ScrollBar {}
 
-            function focusOnIndex() {
-                if (root.fetchFlowItemIndex < 0 || root.fetchFlowItemIndex >= count)
-                    return
+                delegate: RepoItem {
+                    id: repoDelegate
 
-                Qt.callLater(() => {
-                    positionViewAtIndex(root.fetchFlowItemIndex, ListView.Beginning)
-                })
+                    width: ListView.view.width - 12
+                    statusKind: root.kindOf(repoDelegate.status)
+                    isSelected: root.selectedIndexes.indexOf(repoDelegate.index) !== -1
+                    isBusy: root.isQueuedOrRunning(repoDelegate.index)
+
+                    onClicked: root.toggleSelection(repoDelegate.index)
+                    onFetchRequested: root.enqueue("fetch", repoDelegate.index)
+                    onPullRequested: root.enqueue("pull", repoDelegate.index)
+                }
             }
         }
 
@@ -1134,9 +923,7 @@ Rectangle {
             visible: root.operationLogs.length > 0
             operationLogs: root.operationLogs
 
-            onClearLogsRequested: {
-                root.operationLogs = []
-            }
+            onClearLogsRequested: root.operationLogs = []
         }
     }
 }

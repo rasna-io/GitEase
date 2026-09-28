@@ -24,11 +24,11 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    radius: 5
-    color: "transparent"
+    radius: 10
+    color: Style.colors.pluginCardBackground
     border.width: 1
-    border.color: Style.colors.secondaryBackground
-    Layout.preferredHeight: mainColumn.implicitHeight + 5
+    border.color: Style.colors.pluginCardBorder
+    Layout.preferredHeight: mainColumn.implicitHeight
 
     onContentChanged: {
         if (content) {
@@ -43,52 +43,58 @@ Rectangle {
      * ****************************************************************************************/
     ColumnLayout {
         id: mainColumn
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        spacing: 0
 
-        // Header rect
-        Rectangle {
+        // Header
+        Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: 35
-            radius: 5
-            color: Style.colors.secondaryBackground
+            Layout.preferredHeight: 44
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 20
+                anchors.leftMargin: 18
+                anchors.rightMargin: 18
                 spacing: 10
 
                 Rectangle {
                     Layout.preferredWidth: 3
-                    Layout.preferredHeight: 15
+                    Layout.preferredHeight: 14
+                    Layout.alignment: Qt.AlignVCenter
                     color: root.ruleColor
-                    radius: 5
+                    radius: 2
                 }
 
                 Text {
                     text: root.headerText
-                    Layout.alignment: Qt.AlignLeft
                     Layout.fillWidth: true
-                    font.pixelSize: 13
-                    color: Style.colors.placeholderText
+                    Layout.alignment: Qt.AlignVCenter
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.mediumPt
+                    font.weight: Font.DemiBold
+                    color: Style.colors.pluginCardTitle
+                    elide: Text.ElideRight
                 }
             }
         }
 
-        Item {
-            Layout.fillHeight: true
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            color: Style.colors.pluginCardFooterBorder
         }
 
         // Content
         Item {
             id: contentContainer
             Layout.fillWidth: true
-            Layout.leftMargin: 20
-            Layout.rightMargin: 20
-            Layout.preferredHeight: content ? content.implicitHeight : 0
-        }
-
-        Item {
-            Layout.fillHeight: true
+            Layout.leftMargin: 18
+            Layout.rightMargin: 18
+            Layout.topMargin: 14
+            Layout.bottomMargin: 16
+            Layout.preferredHeight: root.content ? root.content.implicitHeight : 0
         }
     }
 }

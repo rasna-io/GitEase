@@ -1,6 +1,8 @@
 #include "IGitController.h"
 #include "Async/GitAsyncRunner.h"
 
+#include <QThread>
+
 namespace
 {
     thread_local git_repository *t_activeRepo = nullptr;
@@ -64,6 +66,15 @@ QString IGitController::gitOidToString(const git_oid *oid)
     oidStr[GIT_OID_HEXSZ] = '\0';
 
     return QString::fromUtf8(oidStr, GIT_OID_HEXSZ);
+}
+
+GitResult IGitController::runRuleCheck(ActionContext &context)
+{
+    if (QThread::currentThread() != thread())
+        return GitResult(true);
+
+    emit beforeAction(&context);
+    return context.result;
 }
 
 void IGitController::emitGitCommand(const QString &command)

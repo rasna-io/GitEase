@@ -11,9 +11,11 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var  plugin:     null
-    property bool hovered:    false
-    property bool pluginBusy: root.plugin?.busy ?? false
+    property var    plugin:          null
+    property bool   hovered:         false
+    property bool   pluginBusy:      root.plugin?.busy ?? false
+    property string installPhase:    ""
+    property real   installProgress: -1
 
     // Colors derived from the plugin's category color
     readonly property color categoryColor: root.plugin?.mainColor ?? Style.colors.accent
@@ -32,23 +34,54 @@ Rectangle {
                                           : (root.plugin?.updateAvailable ? "Needs update"
                                                                           : "Compatible")
 
+    readonly property string busyLabel: {
+        switch (root.installPhase) {
+        case "Preparing":    return "Preparing"
+        case "Downloading":  return "Downloading"
+        case "Installing":   return "Installing"
+        case "Updating":     return "Updating"
+        case "Uninstalling": return "Uninstalling"
+        default:             return root.pluginBusy ? "Working" : ""
+        }
+    }
+
+    readonly property bool isDestructiveBusy: root.installPhase === "Uninstalling"
+    readonly property color busyAccent: root.isDestructiveBusy
+                                        ? Style.colors.softCoralMist
+                                        : Style.colors.accent
+    readonly property color busyAccentMuted: Qt.rgba(root.busyAccent.r,
+                                                     root.busyAccent.g,
+                                                     root.busyAccent.b, 0.14)
+
+    readonly property bool hasDeterminateProgress: root.installProgress >= 0
+                                                   && (root.installPhase === "Downloading"
+                                                       || root.installPhase === "Updating")
+
     /* Signals
      * ****************************************************************************************/
     signal installClicked  (string pluginId)
     signal uninstallClicked(string pluginId)
     signal updateClicked   (string pluginId)
     signal enableToggled   (string pluginId, bool enabled)
+    signal detailsClicked  (string pluginId)
 
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.pluginCardBackground
     radius: 7
+    clip: true
     border {
         width: 1
-        color: Style.colors.pluginCardBorder
+        color: root.pluginBusy
+               ? Qt.rgba(root.busyAccent.r, root.busyAccent.g, root.busyAccent.b, 0.35)
+               : Style.colors.pluginCardBorder
     }
 
-    scale: root.hovered ? 1.01 : 1.0
+    Behavior on border.color {
+        ColorAnimation { duration: 220; easing.type: Easing.OutCubic }
+    }
+
+    scale: root.pluginBusy ? 1.0 : (root.hovered ? 1.01 : 1.0)
     Behavior on scale {
         NumberAnimation {
             duration: 200
@@ -58,18 +91,38 @@ Rectangle {
 
     /* Children
      * ****************************************************************************************/
-
-    // Mouse area handling the hovered property
     MouseArea {
+        id: cardClickArea
         anchors.fill: parent
         hoverEnabled: true
+        cursorShape: root.pluginBusy ? Qt.ArrowCursor : Qt.PointingHandCursor
+        enabled: !root.pluginBusy
         onEntered: root.hovered = true
         onExited: root.hovered = false
+        onClicked: {
+            let id = ""
+            if (root.plugin) {
+                if (root.plugin.pluginId !== undefined && root.plugin.pluginId !== null)
+                    id = root.plugin.pluginId
+                else if (root.plugin.id !== undefined && root.plugin.id !== null)
+                    id = root.plugin.id
+            }
+
+            if (id !== "")
+                root.detailsClicked(id)
+        }
     }
 
+
     ColumnLayout {
+        id: cardContent
         anchors.fill: parent
         spacing: 0
+        opacity: root.pluginBusy ? 0.28 : 1.0
+
+        Behavior on opacity {
+            NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+        }
 
         // Header: icon tile (top) + name/version/author/description
         RowLayout {
@@ -78,24 +131,31 @@ Rectangle {
             Layout.leftMargin: Style.dp(14)
             Layout.rightMargin: Style.dp(14)
             Layout.bottomMargin: Style.dp(10)
-            spacing: Style.dp(10)
+            spacing: Style.dp(12)
 
-            // Icon tile — 38x38, never stretched vertically (design: align-items:flex-start)
+            // Icon tile — never stretched vertically (design: align-items:flex-start)
             Rectangle {
-                Layout.preferredWidth: 38
-                Layout.preferredHeight: 38
+                Layout.preferredWidth: Style.dp(52)
+                Layout.preferredHeight: Style.dp(52)
                 Layout.alignment: Qt.AlignTop
                 Layout.fillHeight: false
-                radius: 8
+                radius: Style.dp(12)
                 color: root.categoryIconBg
+                border.width: 1
+                border.color: Qt.rgba(root.categoryColor.r, root.categoryColor.g, root.categoryColor.b, 0.18)
 
                 Image {
                     id: pluginIconImage
                     anchors.centerIn: parent
-                    width: 16
-                    height: 16
+                    width: parent.width - Style.dp(10)
+                    height: width
                     source: root.plugin?.iconUrl ?? ""
+                    sourceSize.width: width * 2
+                    sourceSize.height: height * 2
                     fillMode: Image.PreserveAspectFit
+                    asynchronous: true
+                    smooth: true
+                    mipmap: true
                     visible: status === Image.Ready
                 }
 
@@ -105,7 +165,7 @@ Rectangle {
                     text: Style.icons.plugins
                     font.family: Style.fontTypes.font6Pro
                     font.styleName: "Solid"
-                    font.pixelSize: 16
+                    font.pixelSize: Style.dp(22)
                     color: root.categoryColor
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -175,6 +235,7 @@ Rectangle {
 
         // Footer: category badge, downloads count, actions
         Rectangle {
+            id: footerBar
             Layout.fillWidth: true
             implicitHeight: footerRow.implicitHeight + Style.dp(18)
             color: "transparent"
@@ -220,7 +281,7 @@ Rectangle {
 
                 // Downloads count (available plugins only, design: 10.5px)
                 Row {
-                    visible: root.plugin && !root.plugin.isInstalled
+                    visible: root.plugin && !root.plugin.isInstalled && !root.pluginBusy
                     spacing: 4
 
                     Text {
@@ -241,19 +302,10 @@ Rectangle {
                     }
                 }
 
-                // Busy indicator
-                BusyIndicator {
-                    visible: root.pluginBusy
-                    running: root.pluginBusy
-                    Layout.preferredWidth: 24
-                    Layout.preferredHeight: 24
-                    Material.accent: Style.colors.accent
-                }
-
                 // Uninstall (installed plugins) — design: padding 3px 9px, 11px text
                 Button {
                     id: uninstallButton
-                    visible: root.plugin?.isInstalled ?? false
+                    visible: (root.plugin?.isInstalled ?? false) && !root.pluginBusy
                     enabled: !root.pluginBusy
                     topInset: 0
                     bottomInset: 0
@@ -289,7 +341,7 @@ Rectangle {
 
                 // Update (installed plugins with pending update)
                 Button {
-                    visible: root.plugin?.updateAvailable ?? false
+                    visible: (root.plugin?.updateAvailable ?? false) && !root.pluginBusy
                     enabled: !root.pluginBusy
                     topInset: 0
                     bottomInset: 0
@@ -320,7 +372,7 @@ Rectangle {
 
                 // Install (available plugins) — design: padding 4px 12px, 12px medium text
                 Button {
-                    visible: !(root.plugin?.isInstalled ?? false)
+                    visible: !(root.plugin?.isInstalled ?? false) && !root.pluginBusy
                     enabled: !root.pluginBusy
                              && (root.plugin?.isCompatible ?? true)
                     topInset: 0
@@ -355,7 +407,7 @@ Rectangle {
                 Switch {
                     id: enableToggle
                     Layout.alignment: Qt.AlignVCenter
-                    visible: root.plugin?.isInstalled ?? false
+                    visible: (root.plugin?.isInstalled ?? false) && !root.pluginBusy
                     enabled: !root.pluginBusy
                     checked: root.plugin?.isEnabled ?? false
                     padding: 0
@@ -405,6 +457,183 @@ Rectangle {
         }
     }
 
+    // Professional busy overlay — dims card content and shows a calm status strip
+    Item {
+        id: busyOverlay
+        anchors.fill: parent
+        visible: opacity > 0.01
+        opacity: root.pluginBusy ? 1 : 0
+        z: 20
+
+        Behavior on opacity {
+            NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+        }
+
+        // Soft frosted veil
+        Rectangle {
+            anchors.fill: parent
+            radius: root.radius
+            color: Qt.rgba(Style.colors.pluginCardBackground.r,
+                           Style.colors.pluginCardBackground.g,
+                           Style.colors.pluginCardBackground.b, 0.55)
+        }
+
+        // Block interaction with the dimmed card while busy
+        MouseArea {
+            anchors.fill: parent
+            enabled: root.pluginBusy
+            hoverEnabled: true
+            preventStealing: true
+        }
+
+        ColumnLayout {
+            anchors.centerIn: parent
+            anchors.margins: Style.dp(18)
+            width: Math.min(parent.width - Style.dp(36), Style.dp(200))
+            spacing: Style.dp(12)
+
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: Style.dp(8)
+
+                Item {
+                    Layout.preferredWidth: 16
+                    Layout.preferredHeight: 16
+
+                    Canvas {
+                        id: spinnerCanvas
+                        anchors.fill: parent
+                        property real sweep: 0
+
+                        onPaint: {
+                            var ctx = getContext("2d")
+                            ctx.clearRect(0, 0, width, height)
+                            var cx = width / 2
+                            var cy = height / 2
+                            var r = Math.min(cx, cy) - 1.25
+
+                            ctx.globalAlpha = 0.2
+                            ctx.beginPath()
+                            ctx.arc(cx, cy, r, 0, Math.PI * 2)
+                            ctx.strokeStyle = root.busyAccent
+                            ctx.lineWidth = 2
+                            ctx.stroke()
+
+                            ctx.globalAlpha = 1.0
+                            ctx.beginPath()
+                            ctx.arc(cx, cy, r, sweep, sweep + Math.PI * 1.25)
+                            ctx.strokeStyle = root.busyAccent
+                            ctx.lineWidth = 2
+                            ctx.lineCap = "round"
+                            ctx.stroke()
+                        }
+
+                        onSweepChanged: requestPaint()
+                        Component.onCompleted: requestPaint()
+
+                        Connections {
+                            target: root
+                            function onBusyAccentChanged() { spinnerCanvas.requestPaint() }
+                            function onPluginBusyChanged() {
+                                if (root.pluginBusy)
+                                    spinnerCanvas.requestPaint()
+                            }
+                        }
+
+                        NumberAnimation on sweep {
+                            from: 0
+                            to: Math.PI * 2
+                            duration: 1000
+                            loops: Animation.Infinite
+                            running: root.pluginBusy
+                            easing.type: Easing.Linear
+                        }
+                    }
+                }
+
+                Label {
+                    text: root.busyLabel
+                    color: Style.colors.pluginCardTitle
+                    font.pixelSize: Style.appFont.mediumPt
+                    font.weight: Font.Medium
+                    font.family: Style.fontTypes.inter
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                Label {
+                    visible: root.hasDeterminateProgress
+                    text: Math.round(root.installProgress) + "%"
+                    color: Style.colors.pluginCardMetaText
+                    font.pixelSize: Style.appFont.smallPt
+                    font.family: Style.fontTypes.jetBrainsMono
+                }
+            }
+
+            // Slim progress track
+            Item {
+                id: progressTrack
+                Layout.fillWidth: true
+                Layout.preferredHeight: 3
+                clip: true
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 1.5
+                    color: root.busyAccentMuted
+                }
+
+                // Determinate fill
+                Rectangle {
+                    visible: root.hasDeterminateProgress
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    width: parent.width * Math.max(0.02, root.installProgress / 100.0)
+                    radius: 1.5
+                    color: root.busyAccent
+
+                    Behavior on width {
+                        NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                    }
+                }
+
+                // Indeterminate shimmer
+                Rectangle {
+                    id: shimmer
+                    visible: root.pluginBusy && !root.hasDeterminateProgress
+                    width: progressTrack.width * 0.34
+                    height: parent.height
+                    radius: 1.5
+                    color: root.busyAccent
+                    opacity: 0.85
+                    x: -width
+
+                    SequentialAnimation on x {
+                        running: root.pluginBusy && !root.hasDeterminateProgress
+                        loops: Animation.Infinite
+                        NumberAnimation {
+                            from: -progressTrack.width * 0.34
+                            to: progressTrack.width
+                            duration: 1100
+                            easing.type: Easing.InOutCubic
+                        }
+                        PauseAnimation { duration: 160 }
+                    }
+                }
+            }
+        }
+
+        // Bottom accent hairline
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: 2
+            color: root.busyAccent
+            opacity: 0.85
+        }
+    }
+
     // Compatibility dot (top-right corner) — design: 8px, top 10px right 10px
     Rectangle {
         id: compatDot
@@ -416,6 +645,8 @@ Rectangle {
         height: 8
         radius: 4
         color: root.compatDotColor
+        visible: !root.pluginBusy
+        z: 21
 
         HoverHandler {
             id: compatDotHover

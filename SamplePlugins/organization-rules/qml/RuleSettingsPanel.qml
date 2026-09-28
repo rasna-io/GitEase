@@ -22,6 +22,8 @@ Rectangle {
     property int selectedCategory: 0
     property int selectedRule: -1
 
+    readonly property bool hasUnsavedChanges: settingsLoader.item ? settingsLoader.item.isDirty === true : false
+
     /* Signals
      * ****************************************************************************************/
     signal deleteRequested()
@@ -29,24 +31,29 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    color: Style.colors.primaryBackground
+    color: Style.colors.pluginPageBackground
 
     /* Children
      * ****************************************************************************************/
     EmptyStateView {
-        title: "No rule to show"
-        details: "Select a rule to edit its setting"
+        title: "No rule selected"
+        details: "Pick a rule from the list, or add a new one to start editing its settings."
+        color: Style.colors.pluginPageBackground
         visible: root.selectedRule < 0
     }
 
     ColumnLayout {
         anchors.fill: parent
+        spacing: 0
 
         Loader {
             id: settingsLoader
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.margins: 20
+            Layout.leftMargin: 24
+            Layout.rightMargin: 10
+            Layout.topMargin: 20
+            Layout.bottomMargin: 12
             active: root.selectedRule >= 0
 
             sourceComponent: {
@@ -75,43 +82,33 @@ Rectangle {
         Connections {
             target: root
             function onSelectedRuleChanged() { settingsLoader.refreshItem() }
-            //function onSelectedCategoryChanged() { settingsLoader.refreshItem() }
         }
 
+        // ── Action bar ─────────────────────────────────────────────
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 50
-            color: Style.colors.secondaryBackground
+            Layout.preferredHeight: 56
+            color: Style.colors.pluginPanelBackground
             visible: root.selectedRule >= 0
+
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: Style.colors.pluginPanelBorder
+            }
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 10
-                spacing: 5
+                anchors.leftMargin: 24
+                anchors.rightMargin: 24
+                spacing: 10
 
-                Item { Layout.fillWidth: true }
-
-                Button {
-                    Layout.preferredWidth: 90
-                    Layout.preferredHeight: 35
-
-                    background: Rectangle {
-                        anchors.fill: parent
-                        radius: 5
-                        color: "red"
-                    }
-
-                    contentItem: Text {
-                        anchors.centerIn: parent
-                        text: "Delete"
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        font.bold: true
-                        color: Style.colors.textButton
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
+                RuleButton {
+                    variant: "danger"
+                    text: "Delete"
+                    iconText: Style.icons.trash
                     onClicked: {
                         var list = root.categoryModels[root.selectedCategory]
                         list.remove(root.selectedRule)
@@ -119,55 +116,45 @@ Rectangle {
                     }
                 }
 
-                Button {
-                    Layout.preferredWidth: 90
-                    Layout.preferredHeight: 35
+                Item { Layout.fillWidth: true }
 
-                    background: Rectangle {
-                        anchors.fill: parent
-                        color: "transparent"
-                        border.width: 1
-                        border.color: "#888"
-                        radius: 5
+                Row {
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: 6
+                    opacity: root.hasUnsavedChanges ? 1.0 : 0.0
+                    visible: opacity > 0
+
+                    Behavior on opacity { NumberAnimation { duration: Style.motionFast } }
+
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 7
+                        height: 7
+                        radius: 3.5
+                        color: Style.colors.marigold
                     }
 
-                    contentItem: Text {
-                        anchors.centerIn: parent
-                        text: "Discard"
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Unsaved changes"
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        font.bold: true
-                        color: "#ccc"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.pluginSectionMetaText
                     }
+                }
 
+                RuleButton {
+                    text: "Discard"
+                    enabled: root.hasUnsavedChanges
                     onClicked: {
                         if (settingsLoader.item) settingsLoader.item.loadFromModel()
                     }
                 }
 
-                Button {
-                    Layout.preferredWidth: 100
-                    Layout.preferredHeight: 35
-
-                    background: Rectangle {
-                        anchors.fill: parent
-                        radius: 5
-                        color: "#238636"
-                    }
-
-                    contentItem: Text {
-                        anchors.centerIn: parent
-                        text: "Save Changes"
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        font.bold: true
-                        color: Style.colors.textButton
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
+                RuleButton {
+                    variant: "primary"
+                    text: "Save Changes"
+                    iconText: Style.icons.check
                     onClicked: {
                         if (settingsLoader.item) settingsLoader.item.saveChanges()
                         root.savedChanges()

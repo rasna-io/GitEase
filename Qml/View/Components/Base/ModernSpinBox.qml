@@ -25,19 +25,30 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    implicitHeight: 40
-    implicitWidth: 80
-    color: Style.colors.secondaryBackground
-    radius: 5
+    implicitHeight: 34
+    implicitWidth: 96
+    color: spinHover.hovered && !valueField.activeFocus ? Style.colors.controlBackgroundHover
+                                                        : Style.colors.controlBackground
+    radius: 7
+    border.width: 1
+    border.color: valueField.activeFocus ? Style.colors.accent
+                : spinHover.hovered      ? Style.colors.controlBorderHover
+                                         : Style.colors.controlBorder
+
+    Behavior on color { ColorAnimation { duration: Style.motionFast } }
+    Behavior on border.color { ColorAnimation { duration: Style.motionFast } }
+
+    HoverHandler { id: spinHover }
 
     /* Children
      * ****************************************************************************************/
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 8
-        anchors.rightMargin: 8
-        anchors.topMargin: 4
-        anchors.bottomMargin: 4
+        anchors.leftMargin: 10
+        anchors.rightMargin: 3
+        anchors.topMargin: 3
+        anchors.bottomMargin: 3
+        spacing: 4
 
         TextField {
             id: valueField
@@ -45,20 +56,24 @@ Rectangle {
             Layout.fillWidth: true
 
             selectByMouse: true
-            font.family: Style.fontTypes.inter
-            color: Style.colors.mutedText
+            font.family: Style.fontTypes.jetBrainsMono
+            font.pixelSize: Style.appFont.defaultPt
+            color: Style.colors.foreground
+            selectionColor: Style.colors.accent
+            selectedTextColor: Style.colors.onAccentText
             Material.accent: Style.colors.accent
             leftPadding: 0
             rightPadding: 0
+            topPadding: 0
+            bottomPadding: 0
+            verticalAlignment: TextInput.AlignVCenter
 
             validator: IntValidator {
                 bottom: root.from
                 top: root.to
             }
 
-            background: Rectangle {
-                color: "transparent"
-            }
+            background: Item {}
 
             onTextChanged: {
                 const parsed = parseInt(text)
@@ -68,49 +83,38 @@ Rectangle {
         }
 
         Column {
-            Layout.preferredWidth: 22
+            Layout.preferredWidth: 20
             Layout.fillHeight: true
-            spacing: 2
+            spacing: 1
 
-            Rectangle {
-                width: parent.width
-                height: (parent.height - parent.spacing) / 2
-                radius: 3
-                color: Style.colors.foreground
+            Repeater {
+                model: [
+                    { glyph: "\u25B2", step: 1 },
+                    { glyph: "\u25BC", step: -1 }
+                ]
 
-                Text {
-                    anchors.centerIn: parent
-                    text: "▲"
-                    font.pixelSize: 8
-                    color: Style.colors.placeholderText
-                }
+                delegate: Rectangle {
+                    width: parent.width
+                    height: (parent.height - parent.spacing) / 2
+                    radius: 4
+                    color: stepArea.pressed      ? Style.colors.controlBorder
+                         : stepArea.containsMouse ? Style.colors.controlBackgroundHover
+                                                  : "transparent"
 
-                MouseArea {
-                    id: upArea
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.increment()
-                }
-            }
+                    Text {
+                        anchors.centerIn: parent
+                        text: modelData.glyph
+                        font.pixelSize: Style.appFont.microPt
+                        color: stepArea.containsMouse ? Style.colors.accent : Style.colors.placeholderText
+                    }
 
-            Rectangle {
-                width: parent.width
-                height: (parent.height - parent.spacing) / 2
-                radius: 3
-                color: Style.colors.foreground
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "▼"
-                    font.pixelSize: 8
-                    color: Style.colors.placeholderText
-                }
-
-                MouseArea {
-                    id: downArea
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.decrement()
+                    MouseArea {
+                        id: stepArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: modelData.step > 0 ? root.increment() : root.decrement()
+                    }
                 }
             }
         }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Repository.h"
+#include "ActionContext.h"
 #include <QObject>
 #include <QQmlEngine>
 #include <QVariant>
@@ -107,7 +108,19 @@ signals:
     //! underneath it, otherwise a resolution or invocation failure.
     void asyncFailed(qint64 requestId, const QString &method, const QString &error, bool isRepoChanged);
 
+    //! Rule plugins listen to this and veto an action by setting context->result.
+    void beforeAction(ActionContext* context);
+
 protected:
+    /**
+     * @brief Lets rule plugins inspect or veto \a context and returns their verdict.
+     *
+     * Only consulted on the controller's own (GUI) thread: that is where the QML connection
+     * delivering beforeAction is direct, so the context can still be read back synchronously.
+     * Calls from the Git worker thread are allowed through unchecked.
+     */
+    GitResult runRuleCheck(ActionContext &context);
+
     void emitGitCommand(const QString &command);
     static QString quoteCommandArg(const QString &argument);
 

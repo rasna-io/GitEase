@@ -28,8 +28,8 @@ RuleSettingsBase {
      * ****************************************************************************************/
     ColumnLayout {
         id: contentColumn
-        width: root.width
-        spacing: 5
+        width: root.contentAvailableWidth
+        spacing: 16
 
         BasicInfoRect {
             id: basicInfo
@@ -46,7 +46,7 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Hook trigger"
@@ -54,11 +54,12 @@ RuleSettingsBase {
                     control: ComboBox {
                         id: triggerCombo
                         width: 200
-                        minHeight: 40
+                        anchors.verticalCenter: parent.verticalCenter
+                        minHeight: 34
                         focusBorderWidth: 1
-                        font.family: Style.fontTypes.inter
+                        font.family: Style.fontTypes.jetBrainsMono
                         font.weight: 400
-                        font.pixelSize: 12
+                        font.pixelSize: Style.appFont.defaultPt
                         model: ListModel {
                                  id: model
                                  ListElement { text: "pre-commit" }
@@ -69,13 +70,21 @@ RuleSettingsBase {
                         }
                         currentIndex: 0
 
-                        Material.background: Style.colors.primaryBackground
-                        Material.foreground: Style.colors.secondaryText
+                        Material.background: Style.colors.popupBackground
+                        Material.foreground: Style.colors.foreground
+                        Material.accent: Style.colors.accent
 
                         background: Rectangle {
-                            radius: 5
-                            color: triggerCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                            border.color: triggerCombo.activeFocus ? Style.colors.accent : "transparent"
+                            implicitHeight: 34
+                            radius: 7
+                            color: triggerCombo.hovered ? Style.colors.controlBackgroundHover : Style.colors.controlBackground
+                            border.width: 1
+                            border.color: triggerCombo.activeFocus || triggerCombo.popup.visible ? Style.colors.accent
+                                        : triggerCombo.hovered ? Style.colors.controlBorderHover
+                                                               : Style.colors.controlBorder
+
+                            Behavior on color { ColorAnimation { duration: Style.motionFast } }
+                            Behavior on border.color { ColorAnimation { duration: Style.motionFast } }
                         }
 
                         onCurrentIndexChanged: root.markDirty()
@@ -117,23 +126,19 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Script path"
                     subtitle: "Relative to repo root"
 
-                    control: TextField {
+                    control: RuleTextField {
                         id: scriptPathField
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
                         placeholderText: "./scripts/lint.sh"
-                        selectByMouse: true
-
-                        background: Rectangle {
-                            implicitHeight: 40
-                            color: Style.colors.secondaryBackground
-                            radius: 5
-                        }
+                        font.family: Style.fontTypes.jetBrainsMono
 
                         onTextChanged: root.markDirty()
                     }
@@ -150,11 +155,11 @@ RuleSettingsBase {
                         id: inlinescriptInput
 
                         width: parent.width
-                        height: 100
+                        height: 110
 
-                        color: Style.colors.secondaryBackground
-                        border.width: 0
-                        fontSize: 11
+                        color: Style.colors.controlBackground
+                        radius: 7
+                        fontSize: Style.appFont.defaultPt
 
                         onTextChanged: root.markDirty()
                     }
@@ -168,7 +173,7 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Environment vars"
@@ -188,7 +193,7 @@ RuleSettingsBase {
                             id: variablesColumn
 
                             anchors.fill: parent
-                            spacing: 0
+                            spacing: 8
 
                             ListView {
                                 id: listView
@@ -197,28 +202,25 @@ RuleSettingsBase {
                                 Layout.preferredHeight: contentHeight
 
                                 model: listModel
-                                spacing: 5
+                                spacing: 6
                                 clip: true
+                                interactive: false
 
                                 visible: count !== 0
 
                                 delegate: RowLayout {
                                     width: listView.width
-                                    height: 30
+                                    height: 34
+                                    spacing: 8
 
-                                    TextField {
+                                    RuleTextField {
                                         text: key
 
-                                        Layout.preferredWidth: 80
-                                        Layout.preferredHeight: 30
+                                        Layout.preferredWidth: 130
+                                        Layout.preferredHeight: 34
 
                                         placeholderText: "KEY"
-                                        selectByMouse: true
-
-                                        background: Rectangle {
-                                            color: Style.colors.secondaryBackground
-                                            radius: 5
-                                        }
+                                        font.family: Style.fontTypes.jetBrainsMono
 
                                         onTextChanged: {
                                             listModel.setProperty(index, "key", text)
@@ -228,27 +230,22 @@ RuleSettingsBase {
 
                                     Text {
                                         text: "="
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.family: Style.fontTypes.inter
-                                        font.pixelSize: 12
-                                        color: Style.colors.placeholderText
+                                        Layout.alignment: Qt.AlignVCenter
+                                        font.family: Style.fontTypes.jetBrainsMono
+                                        font.pixelSize: Style.appFont.defaultPt
+                                        color: Style.colors.pluginCardMetaText
                                     }
 
-                                    TextField {
+                                    RuleTextField {
                                         id: valueTextField
 
                                         Layout.fillWidth: true
-                                        Layout.preferredHeight: 30
+                                        Layout.preferredHeight: 34
 
                                         text: value
 
                                         placeholderText: "value"
-                                        selectByMouse: true
-
-                                        background: Rectangle {
-                                            color: Style.colors.secondaryBackground
-                                            radius: 5
-                                        }
+                                        font.family: Style.fontTypes.jetBrainsMono
 
                                         onTextChanged: {
                                             listModel.setProperty(index, "value", text)
@@ -256,65 +253,44 @@ RuleSettingsBase {
                                         }
                                     }
 
-                                    ToolButton {
+                                    Rectangle {
                                         Layout.alignment: Qt.AlignVCenter
-                                        Layout.preferredWidth: 20
-                                        Layout.preferredHeight: 20
+                                        Layout.preferredWidth: 28
+                                        Layout.preferredHeight: 28
+                                        radius: 7
+                                        color: removeVarMouse.containsMouse ? Style.colors.stashActionDangerHoverBackground
+                                                                            : "transparent"
 
-                                        padding: 0
+                                        Behavior on color { ColorAnimation { duration: Style.motionFast } }
 
-                                        contentItem: Text {
-                                            text: "×"
-                                            color: Style.colors.placeholderText
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: Style.icons.trash
+                                            font.family: Style.fontTypes.font6Pro
+                                            font.styleName: "Solid"
+                                            font.pixelSize: Style.appFont.captionPt
+                                            color: removeVarMouse.containsMouse ? Style.colors.error
+                                                                                : Style.colors.pluginCardMetaText
                                         }
 
-                                        onClicked: {
-                                            listModel.remove(index)
-                                            root.markDirty()
+                                        MouseArea {
+                                            id: removeVarMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                listModel.remove(index)
+                                                root.markDirty()
+                                            }
                                         }
                                     }
                                 }
                             }
 
-                            Button {
-                                Layout.preferredWidth: 120
-                                Layout.alignment: Qt.AlignVCenter
-                                implicitHeight: 40
-
-                                background: Rectangle {
-                                    radius: 5
-                                    color: Style.colors.accent
-                                }
-
-                                contentItem: Item {
-                                    anchors.fill: parent
-
-                                    Row {
-                                        spacing: 10
-                                        anchors.centerIn: parent
-
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: Style.icons.plus
-                                            font.family: Style.fontTypes.font6Pro
-                                            font.pixelSize: 12
-                                            color: Style.colors.textButton
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: "Add variable"
-                                            color: Style.colors.textButton
-                                            font.pixelSize: 13
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                        }
-                                    }
-                                }
+                            RuleButton {
+                                Layout.alignment: Qt.AlignLeft
+                                text: "Add variable"
+                                iconText: Style.icons.plus
 
                                 onClicked: {
                                     listModel.append({
@@ -335,53 +311,17 @@ RuleSettingsBase {
                 OptionRow {
                     title: "On failure"
 
-                    control: Row {
+                    control: SegmentedSelector {
                         id: row
+                        anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 0
-
-                        property int currentIndex: 0
+                        model: [
+                            { text: "Block",  color: Style.colors.error },
+                            { text: "Warn",   color: Style.colors.warning },
+                            { text: "Ignore", color: Style.colors.secondaryText }
+                        ]
 
                         onCurrentIndexChanged: root.markDirty()
-
-                        Repeater {
-                            model: [
-                                { text: "Block", color: "#E53935" },
-                                { text: "Warn", color: "#FB8C00" },
-                                { text: "Ignore", color: "#152741" }
-                            ]
-
-                            delegate: Rectangle {
-                                width: 60
-                                height: 30
-
-                                color: row.currentIndex === index
-                                       ? modelData.color
-                                       : "transparent"
-
-                                border.width: 1
-                                border.color: row.currentIndex === index
-                                              ? modelData.color
-                                              : Style.colors.mutedText
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: modelData.text
-                                    color: row.currentIndex === index
-                                           ? "white"
-                                           : "#DDD"
-                                    font.bold: row.currentIndex === index
-                                    font.family: Style.fontTypes.inter
-                                    font.pixelSize: 11
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: row.currentIndex = index
-                                }
-                            }
-                        }
                     }
                 }
             }

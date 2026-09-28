@@ -1,0 +1,10 @@
+{
+  "id": "com.gitease.syntax-colors",
+  "name": "Syntax Colors",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["diff"],
+  "author": "GitEase",
+  "description": "Colourful syntax highlighting for 50 languages in the diff view and in Browse Files at This Commit.",
+  "cppEntry": "lib/syntax-colors-plugin"
+}

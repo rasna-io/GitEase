@@ -333,17 +333,18 @@ Item {
                         opacity: 0.8
                     }
 
-                    // Colorized read-only view (shown when plugin active + readOnly)
+                    // Colorized view; editable rows fall back to plain text while being edited
                     Text {
-                        visible: !!delegateRoot.textColorizer && delegateRoot.readOnly
-                        x: -delegateRoot.horizontalOffset + 8
-                        y: 2
-                        text: (delegateRoot.textColorizer && delegateRoot.readOnly)
-                              ? delegateRoot.textColorizer(rightContent) : ""
+                        id: rightColored
+                        visible: !!delegateRoot.textColorizer && (delegateRoot.readOnly || !rightTextEdit.activeFocus)
+                        x: -delegateRoot.horizontalOffset
+                        text: visible ? delegateRoot.textColorizer(rightContent) : ""
                         textFormat: Text.RichText
                         color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
-                        font.family: Style.fontTypes.jetBrainsMono
-                        font.pixelSize: Style.appFont.h3Pt
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
+                        topPadding: 2
+                        leftPadding: 8
                     }
 
                     TextArea {
@@ -352,7 +353,8 @@ Item {
                         x: -delegateRoot.horizontalOffset
                         width: 2000
                         text: rightContent
-                        color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
+                        color: rightColored.visible ? "transparent"
+                             : (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         padding: 0

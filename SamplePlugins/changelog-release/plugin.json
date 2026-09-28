@@ -1,0 +1,10 @@
+{
+  "id": "com.gitease.changelog-release",
+  "name": "Changelog & Release",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["page"],
+  "author": "GitEase",
+  "description": "Turn conventional commits into release notes, update CHANGELOG.md, bump the version and tag the release.",
+  "cppEntry": "lib/changelog-release-plugin"
+}

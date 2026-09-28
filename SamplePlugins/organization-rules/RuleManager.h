@@ -1,9 +1,15 @@
 #pragma once
 
 #include <QObject>
-#include <QQmlEngine>
+#include <QUrl>
 #include "GitResult.h"
 #include "CommitMessageValidator.h"
+#include "BranchNameValidator.h"
+#include "FileRuleValidator.h"
+#include "PushRuleValidator.h"
+#include "HookRunner.h"
+
+class QJsonObject;
 
 /*!
  * @brief Reads and writes a repository's git workflow rules (commit message,
@@ -16,7 +22,6 @@
 class RuleManager : public QObject
 {
     Q_OBJECT
-    QML_ELEMENT
 
 public:
     explicit RuleManager(QObject *parent = nullptr);
@@ -65,10 +70,19 @@ public:
 
 
     void setCurrentRepoPath(const QString &newCurrentRepoPath);
+    QString currentRepoPath() const { return m_currentRepoPath; }
 
-    CommitMessageValidator commitMessageValidator() const;
+    const CommitMessageValidator &commitMessageValidator() const { return m_commitMessageValidator; }
+    const BranchNameValidator &branchNameValidator() const { return m_branchNameValidator; }
+    const FileRuleValidator &fileRuleValidator() const { return m_fileRuleValidator; }
+    const PushRuleValidator &pushRuleValidator() const { return m_pushRuleValidator; }
+    const HookRunner &hookRunner() const { return m_hookRunner; }
+    QJsonArray notificationRules() const { return m_notificationRules; }
 
 private:
+    //! Pushes a parsed "rules" object into the in-memory validators.
+    void applyRules(const QJsonObject &rules);
+
     /**
      * @brief Builds the absolute path to the active repository's rules file
      * (inside its working directory). Returns an empty string if no
@@ -78,6 +92,11 @@ private:
     QString m_currentRepoPath;
 
     CommitMessageValidator m_commitMessageValidator;
+    BranchNameValidator m_branchNameValidator;
+    FileRuleValidator m_fileRuleValidator;
+    PushRuleValidator m_pushRuleValidator;
+    HookRunner m_hookRunner;
+    QJsonArray m_notificationRules;
 
 signals:
     void currentRepoChanged();

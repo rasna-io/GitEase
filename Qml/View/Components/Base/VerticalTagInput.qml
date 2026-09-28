@@ -18,8 +18,8 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string tagBackColor: "#1f1f1f"
-    property string placeHolderText: "Add word..."
+    property color tagBackColor: Style.colors.popupChipBackground
+    property string placeHolderText: "Type and press Enter..."
 
     /* Signals
      * ****************************************************************************************/
@@ -27,9 +27,19 @@ Rectangle {
 
     /* Object Properties
      * ****************************************************************************************/
-    implicitHeight: column.implicitHeight + 16
-    color: Style.colors.secondaryBackground
-    radius: 5
+    implicitHeight: column.implicitHeight + 10
+    color: tagHover.hovered && !textField.activeFocus ? Style.colors.controlBackgroundHover
+                                                      : Style.colors.controlBackground
+    radius: 7
+    border.width: 1
+    border.color: textField.activeFocus ? Style.colors.accent
+                : tagHover.hovered      ? Style.colors.controlBorderHover
+                                        : Style.colors.controlBorder
+
+    Behavior on color { ColorAnimation { duration: Style.motionFast } }
+    Behavior on border.color { ColorAnimation { duration: Style.motionFast } }
+
+    HoverHandler { id: tagHover }
 
     /* Children
      * ****************************************************************************************/
@@ -41,58 +51,68 @@ Rectangle {
         id: column
 
         anchors.fill: parent
-        spacing: 0
+        anchors.topMargin: 5
+        anchors.bottomMargin: 5
+        spacing: 4
 
         ListView {
             id: listView
 
             Layout.fillWidth: true
             Layout.preferredHeight: contentHeight
-            Layout.leftMargin: 8
-            Layout.rightMargin: 8
+            Layout.leftMargin: 5
+            Layout.rightMargin: 5
 
             model: listModel
-            spacing: 5
+            spacing: 4
             clip: true
+            interactive: false
 
             visible: count !== 0
 
             delegate: Rectangle {
                 width: listView.width
-                height: 30
+                height: 28
 
-                radius: 5
+                radius: 6
                 color: root.tagBackColor
+                border.width: 1
+                border.color: Style.colors.popupChipBorder
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 5
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 8
+                    spacing: 6
 
                     Text {
                         text: word
-                        color: Style.colors.placeholderText
+                        font.family: Style.fontTypes.jetBrainsMono
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.popupChipText
                         verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
 
                         Layout.fillWidth: true
                     }
 
-                    ToolButton {
+                    Text {
+                        text: "\u00d7"
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
+                        color: removeMouse.containsMouse ? Style.colors.error : Style.colors.placeholderText
                         Layout.alignment: Qt.AlignVCenter
-                        Layout.preferredWidth: 20
-                        Layout.preferredHeight: 20
 
-                        padding: 0
-
-                        contentItem: Text {
-                            text: "×"
-                            color: Style.colors.placeholderText
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-
-                        onClicked: {
-                            listModel.remove(index)
-                            root.wordsChanged()
+                        MouseArea {
+                            id: removeMouse
+                            anchors.fill: parent
+                            anchors.margins: -3
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                listModel.remove(index)
+                                root.wordsChanged()
+                            }
                         }
                     }
                 }
@@ -103,15 +123,15 @@ Rectangle {
             id: textField
 
             Layout.fillWidth: true
-            Layout.preferredHeight: 30
+            Layout.preferredHeight: 28
 
             placeholderText: root.placeHolderText
             selectByMouse: true
-
-            background: Rectangle {
-                color: "transparent"
-                radius: 5
-            }
+            borderWidth: 0
+            focusBorderWidth: 0
+            backgroundColor: "transparent"
+            baseFontSize: Style.appFont.defaultPt
+            minHeight: 28
 
             onAccepted: {
                 var w = textField.text.trim()

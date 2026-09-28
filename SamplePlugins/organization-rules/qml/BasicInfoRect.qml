@@ -18,31 +18,26 @@ RuleChip {
      * ****************************************************************************************/
     property alias ruleName:      nameTextField.text
     property alias description:   descriptionInputArea.text
-    property alias severityIndex: severitySelector.severityCurrentIndex
+    property alias severityIndex: severitySelector.currentIndex
     property alias isActive:      enabledSwitch.checked
 
     /* Object Properties
      * ****************************************************************************************/
     headerText: "Basic"
     Layout.fillWidth: true
-    ruleColor: root.ruleColor
 
     content: ColumnLayout {
-        spacing: 7
+        spacing: 12
 
         OptionRow {
             title: "Rule Name"
 
-            control: TextField {
+            control: RuleTextField {
                 id: nameTextField
-                anchors.fill: parent
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
                 placeholderText: "Type a name for the rule..."
-                selectByMouse: true
-
-                background: Rectangle {
-                    color: Style.colors.secondaryBackground
-                    radius: 5
-                }
             }
         }
 
@@ -50,87 +45,45 @@ RuleChip {
 
         OptionRow {
             title: "Description"
-            rowHeight: 80
+            rowHeight: 96
 
             control: ModernInputArea {
                 id: descriptionInputArea
                 anchors.fill: parent
-                placeholder: "Write some descriptions about your commmitiing style"
-                color: Style.colors.secondaryBackground
-                border.width: 0
-                fontSize: 11
+                placeholder: "Describe what this rule enforces..."
+                color: Style.colors.controlBackground
+                radius: 7
+                fontSize: Style.appFont.defaultPt
             }
         }
 
         DividerLine {}
 
         OptionRow {
-            id: severity
             title: "Severity"
+            subtitle: "How violations are reported"
 
-            control: RowLayout {
-                anchors.fill: parent
-
-                Row {
-                    id: severitySelector
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: 0
-
-                    property int severityCurrentIndex: 0
-
-                    Repeater {
-                        model: [
-                            { text: "Error", color: "#E53935" },
-                            { text: "Warning", color: "#FB8C00" },
-                        ]
-
-                        delegate: Rectangle {
-                            width: 60
-                            height: 30
-
-                            color: severitySelector.severityCurrentIndex === index
-                                   ? modelData.color
-                                   : "transparent"
-
-                            border.width: 1
-                            border.color: severitySelector.severityCurrentIndex === index
-                                          ? modelData.color
-                                          : Style.colors.mutedText
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: modelData.text
-                                color: severitySelector.severityCurrentIndex === index
-                                       ? "white"
-                                       : "#DDD"
-                                font.bold: severitySelector.severityCurrentIndex === index
-                                font.family: Style.fontTypes.inter
-                                font.pixelSize: 11
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: severitySelector.severityCurrentIndex = index
-                            }
-                        }
-                    }
-                }
+            control: SegmentedSelector {
+                id: severitySelector
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                model: [
+                    { text: "Error",   color: Style.colors.error },
+                    { text: "Warning", color: Style.colors.warning }
+                ]
             }
-
         }
 
         DividerLine {}
 
         OptionRow {
             title: "Enabled"
+            subtitle: "Turn this rule on or off"
 
             control: ModernSwitch {
                 id: enabledSwitch
-                height: parent.height
+                anchors.verticalCenter: parent.verticalCenter
             }
         }
     }
 }
-
-

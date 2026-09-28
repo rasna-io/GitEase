@@ -4,11 +4,15 @@
 #include "IPagePlugin.h"
 #include "IRulePlugin.h"
 #include "IRepositoryAwarePlugin.h"
-#include "PluginContext.h"
+#include "IPluginContext.h"
+#include "ViolationReporter.h"
 
 class RuleManager;
 
-class OrganizationRulesPlugin : public QObject, public IPagePlugin, public IRepositoryAwarePlugin, public IRulePlugin
+class OrganizationRulesPlugin : public QObject,
+                                public IPagePlugin,
+                                public IRepositoryAwarePlugin,
+                                public IRulePlugin
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.gitease.IPagePlugin/1.0" FILE "plugin.json")
@@ -37,5 +41,11 @@ public:
     RuleManager* ruleManager() const { return m_ruleManager; }
 
 private:
-    RuleManager* m_ruleManager = nullptr;
+    GitResult checkCommit(const ActionContext& context);
+    GitResult checkPush(const ActionContext& context);
+    GitResult afterMerge(const ActionContext& context);
+    GitResult report(const QString& action, const RuleViolations& violations);
+
+    RuleManager*      m_ruleManager = nullptr;
+    ViolationReporter m_reporter{ this };
 };

@@ -29,6 +29,8 @@ DetachablePanel {
 
     property bool readOnly: false
     property var  textColorizer: null   // JS function (text) => richHtml, set by host
+    //! Looks up a diff plugin colorizer for selectedFile when textColorizer is not set.
+    property var  pluginManager: null
     property int currentIndex: -1
     property bool fileIsEdited: false
     property string selectedFile: ""
@@ -69,6 +71,12 @@ DetachablePanel {
      * ****************************************************************************************/
     ListModel {
         id: fileModel
+    }
+
+    PluginColorizer {
+        id: pluginColorizer
+        pluginManager: root.pluginManager
+        filePath: root.selectedFile.replace(/ ●$/, "")
     }
 
     ListModel {
@@ -404,7 +412,7 @@ DetachablePanel {
                     anchors.fill: parent
                     visible: model.rowType !== "hidden"
                     horizontalOffset: diffListView.horizontalScrollOffset
-                    textColorizer: root.textColorizer
+                    textColorizer: root.textColorizer ?? pluginColorizer.colorize
                     readOnly: root.readOnly || root.chunkMode
                     diffModel: diffListView.model
                     diffType: (model.diffType !== undefined) ? model.diffType : GitDiff.Context

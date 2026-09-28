@@ -6,7 +6,6 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 import GitEaseOrganizationRulesPlugin
-import "qrc:/GitEase/Qml/View/Popups"
 
 /*! ***********************************************************************************************
  * RuleImportPopup
@@ -26,129 +25,147 @@ IPopup {
     /* Object Properties
      * ****************************************************************************************/
     width: 420
-    height: 230
-    padding: 20
+    height: 236
+    padding: 0
 
     contentItem: Rectangle {
-        color: Style.colors.primaryBackground
-        radius: 16
+        color: Style.colors.popupBackground
+        radius: 10
         clip: true
-        border.color: Style.colors.accent
+        border.color: Style.colors.popupBorder
         border.width: 1
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 15
-            spacing: 15
+            spacing: 0
 
+            // Header
             RowLayout {
                 Layout.fillWidth: true
+                Layout.preferredHeight: 48
+                Layout.leftMargin: 20
+                Layout.rightMargin: 16
+                spacing: 8
 
                 Text {
                     text: "Import Rules"
                     Layout.fillWidth: true
+                    color: Style.colors.popupTitleText
                     font.family: Style.fontTypes.inter
-                    font.pixelSize: 13
-                    color: "white"
-                    font.bold: true
+                    font.weight: Font.DemiBold
+                    font.pixelSize: Style.appFont.mediumPt
                 }
 
-                Button {
-                    implicitHeight: 30
-                    Layout.preferredWidth: 20
+                Text {
+                    text: "\u00d7"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.h2Pt
+                    color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
+                                                    : Style.colors.popupCloseButton
 
-                    background: Rectangle {
-                        radius: 8
-                        color: "transparent"
-                    }
-
-                    contentItem: Item {
+                    MouseArea {
+                        id: closeMouse
                         anchors.fill: parent
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "X"
-                            color: Style.colors.textButton
-                            font.pixelSize: 13
-                            font.bold: true
-                        }
+                        anchors.margins: -6
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.close()
                     }
-
-                    onClicked: root.close()
                 }
             }
 
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
-                color: Style.colors.secondaryBackground
+                color: Style.colors.popupHeaderSeparator
             }
 
-            Text {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                text: "This will replace all existing rules for this repository with the ones from the imported file. This cannot be undone."
-                font.family: Style.fontTypes.inter
-                font.pixelSize: 12
-                color: Style.colors.mutedText
-                wrapMode: Text.WordWrap
-                verticalAlignment: Text.AlignTop
-            }
-
+            // Body
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 10
+                Layout.fillHeight: true
+                Layout.margins: 20
+                spacing: 14
 
-                Item { Layout.fillWidth: true }
+                Rectangle {
+                    Layout.preferredWidth: 36
+                    Layout.preferredHeight: 36
+                    Layout.alignment: Qt.AlignTop
+                    radius: 18
+                    color: Style.colors.notificationWarning
+                    border.width: 1
+                    border.color: Style.colors.notificationWarningBorder
 
-                Button {
-                    Layout.preferredWidth: 90
-                    implicitHeight: 38
-
-                    background: Rectangle {
-                        anchors.fill: parent
-                        radius: 5
-                        color: "transparent"
-                        border.width: 1
-                        border.color: "#888"
-                    }
-
-                    contentItem: Text {
+                    Text {
                         anchors.centerIn: parent
-                        text: "Cancel"
-                        color: Style.colors.textButton
-                        font.pixelSize: 12
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                        text: Style.icons.warning
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
+                        font.pixelSize: Style.appFont.mediumPt
+                        color: Style.colors.notificationWarningIcon
                     }
-
-                    onClicked: root.close()
                 }
 
-                Button {
-                    Layout.preferredWidth: 90
-                    implicitHeight: 38
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignTop
+                    spacing: 4
 
-                    background: Rectangle {
-                        anchors.fill: parent
-                        radius: 5
-                        color: "#f85149"
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Replace existing rules?"
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
+                        font.weight: Font.DemiBold
+                        color: Style.colors.pluginCardTitle
                     }
 
-                    contentItem: Text {
-                        anchors.centerIn: parent
-                        text: "Continue"
-                        color: Style.colors.textButton
-                        font.pixelSize: 12
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                    Text {
+                        Layout.fillWidth: true
+                        text: "All rules for this repository will be replaced with the ones from the imported file. This cannot be undone."
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
+                        color: Style.colors.pluginCardDescription
+                        wrapMode: Text.WordWrap
+                        lineHeight: 1.2
+                    }
+                }
+            }
+
+            // Footer
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 56
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: Style.colors.popupHeaderSeparator
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 20
+                    anchors.rightMargin: 20
+                    spacing: 8
+
+                    Item { Layout.fillWidth: true }
+
+                    RuleButton {
+                        text: "Cancel"
+                        onClicked: root.close()
                     }
 
-                    onClicked: {
-                        root.confirmed(root.pendingFile)
-                        root.close()
+                    RuleButton {
+                        variant: "danger"
+                        text: "Replace rules"
+                        iconText: Style.icons.upload
+                        onClicked: {
+                            root.confirmed(root.pendingFile)
+                            root.close()
+                        }
                     }
                 }
             }

@@ -3,7 +3,7 @@
   "name": "Organization rules",
   "version": "1.0.0",
   "apiVersion": "1",
-  "capabilities": ["page"],
+  "capabilities": ["page", "rule"],
   "author": "GitEase",
   "description": "Organization rules",
   "cppEntry": "lib/organization-rules-plugin"

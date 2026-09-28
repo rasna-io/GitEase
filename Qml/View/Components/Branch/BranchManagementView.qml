@@ -39,7 +39,7 @@ UtilitiesCard {
         onCurrentIndexChanged: content.updateModel()
 
         anchors.fill: parent
-        spacing: 6
+        spacing: 8
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -97,7 +97,6 @@ UtilitiesCard {
         Rectangle {
             id: viewControl
             Layout.fillWidth: true
-            Layout.margins: Style.dp(10)
             implicitHeight: Style.dp(28)
             radius: Style.dp(5)
             color: Style.colors.secondaryBackground
@@ -156,8 +155,6 @@ UtilitiesCard {
         DashedButton {
             id: addBranchBtn
             Layout.fillWidth: true
-            Layout.leftMargin: Style.dp(10)
-            Layout.rightMargin: Style.dp(10)
             Layout.topMargin: Style.dp(2)
             visible: content.currentIndex === 0
 

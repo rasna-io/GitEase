@@ -28,8 +28,8 @@ RuleSettingsBase {
      * ****************************************************************************************/
     ColumnLayout {
         id: contentColumn
-        width: root.width
-        spacing: 5
+        width: root.contentAvailableWidth
+        spacing: 16
 
         BasicInfoRect {
             id: basicInfo
@@ -46,14 +46,16 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Allowed prefixes"
 
                     control: HorizontalTagInput {
                         id: allowedPrefixesInput
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
 
                         onWordsChanged: root.markDirty()
                     }
@@ -75,16 +77,11 @@ RuleSettingsBase {
                             onCheckedChanged: root.markDirty()
                         }
 
-                        TextField {
+                        RuleTextField {
                             id: ticketReferenceField
                             Layout.fillWidth: true
                             placeholderText: "[A-Z]+-\d+"
-                            selectByMouse: true
-
-                            background: Rectangle {
-                                color: Style.colors.secondaryBackground
-                                radius: 5
-                            }
+                            font.family: Style.fontTypes.jetBrainsMono
 
                             onTextChanged: root.markDirty()
                         }
@@ -150,7 +147,7 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Block branch deletion"
@@ -158,7 +155,9 @@ RuleSettingsBase {
 
                     control: HorizontalTagInput {
                         id: blockBranchDeletionInput
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
 
                         onWordsChanged: root.markDirty()
                     }
@@ -188,7 +187,7 @@ RuleSettingsBase {
         basicInfo.ruleName = ruleData.ruleName ?? ""
         basicInfo.description = ruleData.description ?? ""
         basicInfo.severityIndex = ruleData.severity ?? 0
-        basicInfo.isActive = ruleData.isActive ?? true
+        basicInfo.isActive = ruleData.enabled ?? ruleData.isActive ?? true
 
         allowedPrefixesInput.setWords(ruleData.allowedPrefixes ? ruleData.allowedPrefixes.split(",") : [])
         maxLengthSpin.value = ruleData.maxLength === "" || ruleData.maxLength === undefined ? 0 : ruleData.maxLength

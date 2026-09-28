@@ -74,7 +74,8 @@ Page {
     }
 
     onStatusControllerChanged: {
-        branchController.getCurrentBranchName()
+        if (root.branchController)
+            root.branchController.getCurrentBranchName()
     }
 
     Component.onCompleted: {
@@ -475,6 +476,7 @@ Page {
             hasHeaderMiddleComponent: true
             selectEnabled: false
             appModel: root.appModel
+            pluginManager: root.pluginController?.pluginManager ?? null
             contextLines: 0
             expandLines: 10
             selectedFileStatus: changesFileLists.currentFileStatus
@@ -522,18 +524,6 @@ Page {
                     root.notificationController.error(res.errorMessage || "Failed to stash selected lines", "Stash Error", 5000)
                 }
                 changesFileLists.updateStatus()
-            }
-        }
-
-        // Non-visual loader: fetches the plugin's colorizer QtObject
-        Loader {
-            id: colorizerLoader
-            visible: false
-            onLoaded: {
-                diffView.textColorizer = item ? function(text) { return item.colorize(text) } : null
-            }
-            onSourceChanged: {
-                if (source === "") diffView.textColorizer = null
             }
         }
     }
@@ -629,12 +619,6 @@ Page {
     }
 
     function updateDiff(isStaged) {
-        // Load colorizer plugin for this file extension (or clear if none)
-        const ext         = root.selectedFilePath.split('.').pop().toLowerCase()
-        const colorizerUrl = root.pluginController?.pluginManager?.colorizerUrlFor(ext) ?? ""
-        if (colorizerLoader.source !== colorizerUrl)
-            colorizerLoader.source = colorizerUrl
-
         let oldY = diffView.scrollPosition
 
         let res = root.statusController.getChunkedDiffView(root.selectedFilePath, isStaged)

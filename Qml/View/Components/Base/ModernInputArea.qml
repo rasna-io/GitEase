@@ -17,6 +17,7 @@ Rectangle {
      * ****************************************************************************************/
     property alias  text:        commitTextArea.text
     property string placeholder: ""
+    property int    fontSize:    Style.appFont.mediumPt
 
     property int    minLines            : 3
     property int    maxLines            : 10
@@ -83,7 +84,7 @@ Rectangle {
                     color: Style.colors.foreground
 
                     font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.mediumPt
+                    font.pixelSize: root.fontSize
                     font.weight: Font.Normal
 
                     wrapMode: TextEdit.Wrap

@@ -6,7 +6,6 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 import GitEaseOrganizationRulesPlugin
-import "qrc:/GitEase/Qml/View/Popups"
 
 /*! ***********************************************************************************************
  * AddRulePopup
@@ -24,131 +23,183 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: 700
-    height: 350
-    padding: 20
+    width: 640
+    height: 360
+    padding: 0
 
     contentItem: Rectangle {
-        color: Style.colors.primaryBackground
-        radius: 16
+        color: Style.colors.popupBackground
+        radius: 10
         clip: true
-        border.color: Style.colors.accent
+        border.color: Style.colors.popupBorder
         border.width: 1
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 15
+            spacing: 0
 
+            // Header
             RowLayout {
                 Layout.fillWidth: true
+                Layout.preferredHeight: 56
+                Layout.leftMargin: 20
+                Layout.rightMargin: 16
+                spacing: 8
 
-                Text {
-                    text: "Choose rule type"
+                ColumnLayout {
                     Layout.fillWidth: true
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: 13
-                    color: "white"
-                    font.bold: true
+                    spacing: 2
+
+                    Text {
+                        text: "Add a rule"
+                        color: Style.colors.popupTitleText
+                        font.family: Style.fontTypes.inter
+                        font.weight: Font.DemiBold
+                        font.pixelSize: Style.appFont.mediumPt
+                    }
+
+                    Text {
+                        text: "Choose what kind of rule you want to enforce in this repository."
+                        color: Style.colors.popupSectionLabel
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                    }
                 }
 
-                Button {
-                    implicitHeight: 30
-                    Layout.preferredWidth: 20
+                Text {
+                    text: "\u00d7"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.h2Pt
+                    color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
+                                                    : Style.colors.popupCloseButton
 
-                    background: Rectangle {
-                        radius: 8
-                        color: "transparent"
-                    }
-
-                    contentItem: Item {
+                    MouseArea {
+                        id: closeMouse
                         anchors.fill: parent
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "X"
-                            color: Style.colors.textButton
-                            font.pixelSize: 13
-                            font.bold: true
-                        }
-                    }
-
-                    onClicked: {
-                        root.close()
+                        anchors.margins: -6
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.close()
                     }
                 }
             }
-
 
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
-                color: Style.colors.secondaryBackground
+                color: Style.colors.popupHeaderSeparator
             }
 
             GridView {
                 id: gridView
+
+                //! Space kept free on the right for the scrollbar plus breathing room.
+                readonly property int scrollGutter: contentHeight > height ? 18 : 8
+
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.leftMargin: 14
+                Layout.rightMargin: 6
+                Layout.topMargin: 14
+                Layout.bottomMargin: 14
                 clip: true
+                boundsBehavior: Flickable.StopAtBounds
 
-                model: categoriesModel
+                model: root.categoriesModel
 
-                ScrollBar.vertical: ScrollBar {
-                    policy: ScrollBar.AsNeeded
-                }
+                ScrollBar.vertical: RuleScrollBar {}
 
-                cellWidth: width / 2
-                cellHeight: 80
+                cellWidth: (width - scrollGutter) / 2
+                cellHeight: 76
 
                 delegate: Item {
                     width: gridView.cellWidth
                     height: gridView.cellHeight
 
                     Rectangle {
-                        width: gridView.cellWidth - 10
-                        height: gridView.cellHeight - 10
-                        color: Style.colors.secondaryBackground
-                        radius: 5
+                        id: categoryCard
 
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: "PointingHandCursor"
+                        readonly property color tone: modelData.color
 
-                            onClicked: {
-                                root.categoryClicked(index)
-                                close()
-                            }
-                        }
+                        anchors.fill: parent
+                        anchors.margins: 5
+                        radius: 10
+                        color: cardMouse.containsMouse ? Style.colors.controlBackgroundHover
+                                                       : Style.colors.pluginCardBackground
+                        border.width: 1
+                        border.color: cardMouse.containsMouse ? Qt.rgba(tone.r, tone.g, tone.b, 0.6)
+                                                              : Style.colors.pluginCardBorder
+
+                        Behavior on color { ColorAnimation { duration: Style.motionFast } }
+                        Behavior on border.color { ColorAnimation { duration: Style.motionFast } }
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.left: parent.left
-                            anchors.leftMargin: 8
-                            spacing: 10
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 12
 
                             Rectangle {
-                                width: 30
-                                height: 30
-                                radius: 5
-                                color: modelData.color
+                                Layout.preferredWidth: 36
+                                Layout.preferredHeight: 36
+                                Layout.alignment: Qt.AlignVCenter
+                                radius: 9
+                                color: Qt.rgba(categoryCard.tone.r, categoryCard.tone.g, categoryCard.tone.b, 0.14)
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData.icon || Style.icons.rules
+                                    font.family: Style.fontTypes.font6Pro
+                                    font.styleName: "Solid"
+                                    font.pixelSize: Style.appFont.mediumPt
+                                    color: categoryCard.tone
+                                }
                             }
 
                             ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 3
+
                                 Text {
+                                    Layout.fillWidth: true
                                     text: modelData.name
                                     font.family: Style.fontTypes.inter
-                                    font.pixelSize: 12
-                                    color: "white"
-                                    font.bold: true
+                                    font.pixelSize: Style.appFont.defaultPt
+                                    font.weight: Font.DemiBold
+                                    color: Style.colors.pluginCardTitle
+                                    elide: Text.ElideRight
                                 }
 
-                                ScrollingText {
+                                Text {
+                                    Layout.fillWidth: true
                                     text: modelData.description
                                     font.family: Style.fontTypes.inter
-                                    font.pixelSize: 10
-                                    color: Style.colors.mutedText
-                                    Layout.fillWidth: true
+                                    font.pixelSize: Style.appFont.captionPt
+                                    color: Style.colors.pluginCardDescription
+                                    elide: Text.ElideRight
                                 }
+                            }
+
+                            Text {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: Style.icons.plus
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.appFont.captionPt
+                                color: cardMouse.containsMouse ? categoryCard.tone : Style.colors.pluginCardMetaText
+                            }
+                        }
+
+                        MouseArea {
+                            id: cardMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+
+                            onClicked: {
+                                root.categoryClicked(index)
+                                root.close()
                             }
                         }
                     }

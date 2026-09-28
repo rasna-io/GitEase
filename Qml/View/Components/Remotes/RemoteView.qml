@@ -77,9 +77,7 @@ UtilitiesCard {
     content: ColumnLayout {
         id: content
         anchors.fill: parent
-        anchors.leftMargin: Style.dp(10)
-        anchors.rightMargin: Style.dp(10)
-        spacing: 6
+        spacing: 8
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -287,7 +285,7 @@ UtilitiesCard {
                 root.isFetching = true
                 root.authPurpose = "fetch"
                 userAuthenticationPopupConnection.enabled = true
-                userAuthenticationPopup.open()
+                userAuthenticationPopup.request("fetch", remoteItem.name, url)
                 break;
             }
         }
@@ -311,7 +309,7 @@ UtilitiesCard {
             case RepositoryController.GitProtocol.HTTP:
                 root.authPurpose = "pull"
                 userAuthenticationPopupConnection.enabled = true
-                userAuthenticationPopup.open()
+                userAuthenticationPopup.request("pull", remoteItem.name, url)
                 break
             }
         }

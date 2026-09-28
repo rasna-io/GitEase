@@ -28,8 +28,8 @@ RuleSettingsBase {
      * ****************************************************************************************/
     ColumnLayout {
         id: contentColumn
-        width: root.width
-        spacing: 5
+        width: root.contentAvailableWidth
+        spacing: 16
 
         BasicInfoRect {
             id: basicInfo
@@ -46,7 +46,7 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Min Length"
@@ -89,7 +89,6 @@ RuleSettingsBase {
                         HorizontalTagInput {
                             id: allowedPrefixesInput
                             Layout.fillWidth: true
-                            Layout.fillHeight: true
 
                             onWordsChanged: root.markDirty()
                         }
@@ -131,7 +130,7 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Forbidden words"
@@ -139,7 +138,9 @@ RuleSettingsBase {
 
                     control: HorizontalTagInput {
                         id: forbiddenWordsInput
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
 
                         onWordsChanged: root.markDirty()
                     }
@@ -161,16 +162,11 @@ RuleSettingsBase {
                             onCheckedChanged: root.markDirty()
                         }
 
-                        TextField {
+                        RuleTextField {
                             id: ticketRefInput
                             Layout.fillWidth: true
                             placeholderText: "JIRA-\d+"
-                            selectByMouse: true
-
-                            background: Rectangle {
-                                color: Style.colors.secondaryBackground
-                                radius: 5
-                            }
+                            font.family: Style.fontTypes.jetBrainsMono
 
                             onTextChanged: root.markDirty()
                         }
@@ -195,8 +191,8 @@ RuleSettingsBase {
                         Text {
                             text: "Blank line required between subject and body"
                             font.family: Style.fontTypes.inter
-                            color: Style.colors.mutedText
-                            font.pixelSize: 12
+                            color: Style.colors.pluginCardDescription
+                            font.pixelSize: Style.appFont.defaultPt
                         }
 
                         Item {
@@ -238,22 +234,19 @@ RuleSettingsBase {
             ruleColor: root.ruleColor
 
             content: ColumnLayout {
-                spacing: 7
+                spacing: 12
 
                 OptionRow {
                     title: "Regex pattern"
                     subtitle: "Tested against full message"
 
-                    control: TextField {
+                    control: RuleTextField {
                         id: customRegexField
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
                         placeholderText: "^(feat|fix)\(.+\):.+"
-                        selectByMouse: true
-
-                        background: Rectangle {
-                            color: Style.colors.secondaryBackground
-                            radius: 5
-                        }
+                        font.family: Style.fontTypes.jetBrainsMono
 
                         onTextChanged: root.markDirty()
                     }
@@ -264,16 +257,12 @@ RuleSettingsBase {
                 OptionRow {
                     title: "Error message"
 
-                    control: TextField {
+                    control: RuleTextField {
                         id: customErrorField
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
                         placeholderText: "Commit message must match ..."
-                        selectByMouse: true
-
-                        background: Rectangle {
-                            color: Style.colors.secondaryBackground
-                            radius: 5
-                        }
 
                         onTextChanged: root.markDirty()
                     }

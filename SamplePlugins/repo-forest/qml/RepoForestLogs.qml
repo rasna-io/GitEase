@@ -8,8 +8,9 @@ import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * RepoForestLogs
+ * Collapsible activity log of Repo Forest operations.
  * ************************************************************************************************/
-ColumnLayout {
+Rectangle {
     id: root
 
     /* Property Declarations
@@ -17,159 +18,173 @@ ColumnLayout {
     property var  operationLogs:        []
     property bool showOperationLogs:    false
 
-    /* Object Properties
-     * ****************************************************************************************/
-    spacing: 8
+    readonly property int failedCount:  operationLogs.filter(l => l.status === "Failed").length
 
     /* Signals
     * ****************************************************************************************/
     signal clearLogsRequested()
 
-    /* Children
+    /* Object Properties
+     * ****************************************************************************************/
+    implicitHeight: layout.implicitHeight + 16
+    radius: 8
+    color: Style.colors.utilitiesSurfaceBackground
+    border.width: 1
+    border.color: Style.colors.utilitiesSurfaceBorder
+
+    /* Functions
     * ****************************************************************************************/
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 8
-
-        Text {
-            Layout.fillWidth: true
-            text: "Operation Log"
-            font.family: Style.fontTypes.inter
-            font.pixelSize: 12
-            font.bold: true
-            color: Style.colors.foreground
-        }
-
-        ToolButton {
-            Layout.preferredWidth: 22
-            Layout.preferredHeight: 22
-            hoverEnabled: true
-            contentItem: Text {
-                anchors.centerIn: parent
-                text: root.showOperationLogs ? Style.icons.caretDown : Style.icons.caretUp
-                font.pixelSize: 14
-                font.family: Style.fontTypes.font6ProSolid
-                color: Style.colors.foreground
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-            background: Rectangle {
-                radius: 5
-                color: parent.hovered ? Style.colors.cardBackground : "transparent"
-            }
-            onClicked: root.showOperationLogs = !root.showOperationLogs
-        }
-
-        ToolButton {
-            Layout.preferredWidth: 22
-            Layout.preferredHeight: 22
-            hoverEnabled: true
-            contentItem: Text {
-                anchors.centerIn: parent
-                text: Style.icons.trash
-                font.pixelSize: 12
-                font.family: Style.fontTypes.font6ProSolid
-                color: Style.colors.windowsClose
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-            background: Rectangle {
-                radius: 5
-                color: parent.hovered ? Style.colors.cardBackground : "transparent"
-            }
-            onClicked: {
-                root.clearLogsRequested()
-                root.showOperationLogs = false
-            }
+    function statusColor(status) {
+        switch (status) {
+        case "Success": return Style.colors.repoItemStatusDoneText
+        case "Failed":  return Style.colors.repoItemStatusConflictText
+        case "Skipped": return Style.colors.repoItemStatusDirtyText
+        default:        return Style.colors.secondaryText
         }
     }
 
-    Rectangle {
-        Layout.fillWidth: true
-        Layout.preferredHeight: root.showOperationLogs ? 150 : 0
-        radius: 3
-        color: Style.colors.secondaryBackground
-        border.color: Style.colors.primaryBorder
-        clip: true
+    /* Children
+    * ****************************************************************************************/
+    ColumnLayout {
+        id: layout
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: 8
+        anchors.leftMargin: 12
+        spacing: 6
 
-        Behavior on Layout.preferredHeight {
-            NumberAnimation { duration: 300 }
-        }
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
 
-        ScrollView {
-            anchors.fill: parent
-            anchors.margins: 4
-            clip: true
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 24
 
-            ListView {
-                width: parent.width
-                model: root.operationLogs
-                spacing: 4
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
+                TapHandler { onTapped: root.showOperationLogs = !root.showOperationLogs }
 
-                highlightMoveDuration: 150
-
-                delegate: RowLayout {
-                    width: ListView.width
-                    spacing: 6
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
 
                     Text {
-                        Layout.preferredWidth: 60
-                        text: modelData.timestamp
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: Style.colors.mutedText
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.showOperationLogs ? Style.icons.caretDown : Style.icons.caretUp
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: Style.appFont.microPt
+                        color: Style.colors.secondaryText
                     }
 
                     Text {
-                        Layout.preferredWidth: 120
-                        text: modelData.repoName
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Activity log"
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        font.bold: true
+                        font.pixelSize: Style.appFont.captionPt
+                        font.weight: Font.DemiBold
                         color: Style.colors.foreground
-                        elide: Text.ElideRight
                     }
 
-                    Text {
-                        Layout.preferredWidth: 80
-                        text: "[" + modelData.operation.toUpperCase() + "]"
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: modelData.operation === "fetch" ? Style.colors.repoItemStatusFetchingText : Style.colors.repoItemStatusPullingText
-                    }
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 16
+                        width: Math.max(16, countText.implicitWidth + 10)
+                        radius: 8
+                        color: root.failedCount > 0 ? Style.colors.repoItemStatusConflictBg : Style.colors.controlBackground
+                        border.width: 1
+                        border.color: Style.colors.controlBorder
 
-                    Text {
-                        Layout.preferredWidth: 80
-                        text: modelData.remoteName ? ("@" + modelData.remoteName) : ""
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: Style.colors.mutedText
-                    }
-
-                    Text {
-                        Layout.fillWidth: true
-                        text: modelData.message
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: 11
-                        color: {
-                            if (modelData.status === "Success" || modelData.status === "Done")
-                                return Style.colors.repoItemStatusDoneText
-
-                            if (modelData.status === "Failed" || modelData.status === "Canceled")
-                                return Style.colors.repoItemStatusCanceledText
-
-                            return Style.colors.foreground
+                        Text {
+                            id: countText
+                            anchors.centerIn: parent
+                            text: root.failedCount > 0 ? root.failedCount + " failed" : root.operationLogs.length
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.microPt
+                            color: root.failedCount > 0 ? Style.colors.repoItemStatusConflictText : Style.colors.secondaryText
                         }
-                        elide: Text.ElideRight
-                    }
-                }
-
-                onCountChanged: {
-                    if (count > 0) {
-                        positionViewAtIndex(count - 1, ListView.End)
                     }
                 }
             }
+
+            ActionIconButton {
+                iconText: Style.icons.trash
+                tooltip: "Clear log"
+                backgroundColor: "transparent"
+                textColor: Style.colors.secondaryText
+                onClicked: {
+                    root.clearLogsRequested()
+                    root.showOperationLogs = false
+                }
+            }
+        }
+
+        ListView {
+            id: logList
+            Layout.fillWidth: true
+            Layout.preferredHeight: root.showOperationLogs ? 140 : 0
+            visible: Layout.preferredHeight > 0
+            clip: true
+            spacing: 3
+            boundsBehavior: Flickable.StopAtBounds
+            model: root.operationLogs
+
+            Behavior on Layout.preferredHeight { NumberAnimation { duration: Style.motionMedium; easing.type: Easing.OutCubic } }
+
+            ScrollBar.vertical: ScrollBar {}
+
+            delegate: RowLayout {
+                required property var modelData
+
+                width: ListView.view.width - 12
+                spacing: 8
+
+                Rectangle {
+                    Layout.preferredWidth: 6
+                    Layout.preferredHeight: 6
+                    radius: 3
+                    color: root.statusColor(modelData.status)
+                }
+
+                Text {
+                    text: modelData.timestamp
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.microPt
+                    color: Style.colors.mutedText
+                }
+
+                Text {
+                    Layout.preferredWidth: 120
+                    visible: modelData.repoName.length > 0
+                    text: modelData.repoName + (modelData.remoteName ? " @" + modelData.remoteName : "")
+                    elide: Text.ElideRight
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.microPt
+                    font.weight: Font.DemiBold
+                    color: Style.colors.foreground
+                }
+
+                Text {
+                    text: modelData.operation.toUpperCase()
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.microPt
+                    font.weight: Font.Medium
+                    color: modelData.operation === "fetch" ? Style.colors.repoItemStatusFetchingText
+                         : modelData.operation === "pull" ? Style.colors.repoItemStatusPullingText
+                                                          : Style.colors.secondaryText
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: modelData.message
+                    elide: Text.ElideRight
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.microPt
+                    color: modelData.status === "Failed" ? root.statusColor("Failed") : Style.colors.foreground
+                }
+            }
+
+            onCountChanged: if (count > 0) positionViewAtEnd()
         }
     }
 }

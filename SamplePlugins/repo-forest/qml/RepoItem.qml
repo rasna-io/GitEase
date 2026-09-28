@@ -8,6 +8,7 @@ import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * RepoItem
+ * One discovered repository: selection, branch, remotes, operation status and the outcome detail.
  * ************************************************************************************************/
 
 Rectangle {
@@ -15,271 +16,305 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property       int     index
-    required property       var     modelData
-    property                bool    isSelected: false
-    property                bool    isProcessing: false
+    required property int       index
+    required property string    name
+    required property string    path
+    required property string    branchName
+    required property string    remotesText
+    required property string    status
+    required property string    detail
+    required property int       progress
+
+    //! One of: idle, queued, fetching, pulling, done, warning, auth, error, muted.
+    property string statusKind: "idle"
+    property bool   isSelected: false
+    property bool   isBusy:     false
+
+    readonly property bool isActive: statusKind === "fetching" || statusKind === "pulling"
+
+    readonly property color statusBg: {
+        switch (statusKind) {
+        case "queued":   return Style.colors.repoItemStatusPendingBg
+        case "fetching": return Style.colors.repoItemStatusFetchingBg
+        case "pulling":  return Style.colors.repoItemStatusPullingBg
+        case "done":     return Style.colors.repoItemStatusDoneBg
+        case "warning":  return Style.colors.repoItemStatusDirtyBg
+        case "auth":     return Style.colors.repoItemStatusPATBg
+        case "error":    return Style.colors.repoItemStatusConflictBg
+        default:         return Style.colors.controlBackground
+        }
+    }
+
+    readonly property color statusFg: {
+        switch (statusKind) {
+        case "queued":   return Style.colors.repoItemStatusPendingText
+        case "fetching": return Style.colors.repoItemStatusFetchingText
+        case "pulling":  return Style.colors.repoItemStatusPullingText
+        case "done":     return Style.colors.repoItemStatusDoneText
+        case "warning":  return Style.colors.repoItemStatusDirtyText
+        case "auth":     return Style.colors.repoItemStatusPATText
+        case "error":    return Style.colors.repoItemStatusConflictText
+        default:         return Style.colors.secondaryText
+        }
+    }
+
+    readonly property string statusIcon: {
+        switch (statusKind) {
+        case "queued":   return Style.icons.clock
+        case "fetching": return Style.icons.download
+        case "pulling":  return Style.icons.arrowDown
+        case "done":     return Style.icons.check
+        case "warning":  return Style.icons.warning
+        case "auth":     return Style.icons.info
+        case "error":    return Style.icons.circleExclamation
+        case "muted":    return Style.icons.minus
+        default:         return ""
+        }
+    }
 
     /* Signals
      * ****************************************************************************************/
-    signal clicked(index: int)
-    signal fetchRequested(index: int)
-    signal pullRequested(index: int)
+    signal clicked()
+    signal fetchRequested()
+    signal pullRequested()
 
     /* Object Properties
      * ****************************************************************************************/
-    color: {
-        if (msa.hovered) {
-                return Qt.darker(Style.colors.surfaceLight, 1.05)
-        } else {
-            if (isSelected)
-                return Style.colors.repoSelectectedItem
-            else
-                return Style.colors.secondaryBackground
-        }
-    }
-    radius: 3
+    implicitHeight: content.implicitHeight + 22
+    radius: 8
+    color: hover.hovered ? Style.colors.utilitiesRowHoverBackground
+         : isSelected ? Style.colors.utilitiesRowSelectedBackground
+                      : Style.colors.utilitiesRowBackground
+    border.width: 1
+    border.color: isActive ? statusFg : Style.colors.utilitiesRowBorder
+
+    Behavior on color { ColorAnimation { duration: Style.motionFast } }
 
     /* Children
      * ****************************************************************************************/
-    RowLayout {
-        anchors.fill: parent
-        spacing: 5
-
-        Rectangle {
-            Layout.preferredWidth: 3
-            Layout.fillHeight: true
-            Layout.margins: 7
-            radius: 100
-            color: root.isSelected ? Style.colors.accent : Style.colors.disabledButton
-        }
-
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.leftMargin: 15
-            Layout.topMargin: 5
-            Layout.rightMargin: 15
-            Layout.bottomMargin: 5
-            spacing: 5
-
-            // Name row
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 6
-
-                ScrollingText {
-                    Layout.fillWidth: true
-                    text: root.modelData.name
-                    font.pixelSize: 12
-                    font.family: Style.fontTypes.inter
-                    font.weight: 400
-                    font.letterSpacing: 0
-                    color: Style.colors.foreground
-                }
-
-                Rectangle {
-                    id: status
-
-                    property int progress: root.modelData.progress || -1
-
-                    property color statusTextColor: {
-                        switch(root.modelData.status) {
-                            case "Canceled":
-                                return Style.colors.repoItemStatusCanceledText
-                            case "Pending":
-                                return Style.colors.repoItemStatusPendingText
-                            case "Fetching":
-                                return Style.colors.repoItemStatusFetchingText
-                            case "Pulling":
-                                return Style.colors.repoItemStatusPullingText
-                            case "Done":
-                                return Style.colors.repoItemStatusDoneText
-                            case "Dirty":
-                                return Style.colors.repoItemStatusDirtyText
-                            case "Conflict":
-                                return Style.colors.repoItemStatusConflictText
-                            default:
-                                return Style.colors.repoItemStatusCanceledText
-                        }
-                    }
-
-                    property color statusBgColor: {
-                        switch(root.modelData.status) {
-                            case "Canceled":
-                                return Style.colors.repoItemStatusCanceledBg
-                            case "Pending":
-                                return Style.colors.repoItemStatusPendingBg
-                            case "Fetching":
-                                return Style.colors.repoItemStatusFetchingBg
-                            case "Pulling":
-                                return Style.colors.repoItemStatusPullingBg
-                            case "Done":
-                                return Style.colors.repoItemStatusDoneBg
-                            case "Dirty":
-                                return Style.colors.repoItemStatusDirtyBg
-                            case "Conflict":
-                                return Style.colors.repoItemStatusConflictBg
-                            default:
-                                return Style.colors.repoItemStatusCanceledBg
-                        }
-                    }
-
-                    property color progressFillColor: Qt.darker(statusBgColor, 2.5)
-
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.preferredWidth: statusText.contentWidth + 30
-                    Layout.preferredHeight: 20
-                    radius: 5
-                    color: status.statusBgColor
-
-                    Rectangle {
-                        id: progressFill
-                        anchors.left: status.left
-                        anchors.top: status.top
-                        anchors.bottom: status.bottom
-                        implicitWidth: status.width * (status.progress / 100)
-                        color: status.progressFillColor
-                        radius: status.radius
-                        opacity: 0.25
-                        visible: !(status.progress === 100)
-
-                        Behavior on width {
-                            NumberAnimation {
-                                duration: 250
-                                easing.type: Easing.InOutQuad
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        anchors.centerIn: parent
-                        spacing: 6
-
-                        Rectangle {
-                            Layout.alignment: Qt.AlignVCenter
-                            Layout.preferredWidth: 4
-                            Layout.preferredHeight: 4
-                            radius: 4
-                            color: status.statusTextColor
-                        }
-
-                        Text {
-                            id: statusText
-                            Layout.alignment: Qt.AlignVCenter
-                            text: (status.progress > 0 && status.progress <= 99) ?
-                                      `${root.modelData.status} ${status.progress} %` : root.modelData.status
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: 12
-                            font.weight: 300
-                            color: status.statusTextColor
-                        }
-                    }
-                }
-
-                ActionIconButton {
-                    enabled: !root.isProcessing
-                    iconText: Style.icons.arrowDown
-                    tooltip: "Pull"
-                    backgroundColor: Qt.darker(Style.colors.surfaceLight, 1.4)
-                    textColor: Style.colors.foreground
-                    onClicked: root.pullRequested(root.index)
-                }
-
-                ActionIconButton {
-                    enabled: !root.isProcessing
-                    Layout.rightMargin: 10
-                    iconText: Style.icons.download
-                    tooltip: "Fetch"
-                    backgroundColor: Qt.darker(Style.colors.surfaceLight, 1.4)
-                    textColor: Style.colors.foreground
-                    onClicked: root.fetchRequested(root.index)
-                }
-            }
-
-            // Path + Branch row
-            RowLayout {
-                id: mainRow
-                Layout.fillWidth: true
-                spacing: 15
-
-                RowLayout {
-                    Layout.preferredWidth: (mainRow.width - mainRow.spacing) / 2
-                    spacing: 5
-
-                    Text {
-                        text: Style.icons.folder
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
-                        color: Style.colors.foreground
-                    }
-
-                    ScrollingText {
-                        Layout.fillWidth: true
-                        text: root.modelData.path
-                        font.pixelSize: 12
-                        font.family: Style.fontTypes.inter
-                        color: Style.colors.mutedText
-                        font.weight: 400
-                        font.letterSpacing: 0
-                    }
-                }
-
-                RowLayout {
-                    Layout.preferredWidth: (mainRow.width - mainRow.spacing) / 2
-                    spacing: 5
-
-                    Text {
-                        text: Style.icons.branch
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: 12
-                        color: Style.colors.foreground
-                    }
-
-                    ScrollingText {
-                        Layout.fillWidth: true
-                        text: root.modelData.branchName
-                        font.pixelSize: 12
-                        font.family: Style.fontTypes.inter
-                        color: Style.colors.mutedText
-                        font.weight: 400
-                        font.letterSpacing: 0
-                    }
-                }
-            }
-
-            // Remotes
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 5
-
-                Text {
-                    text: Style.icons.cloud
-                    font.family: Style.fontTypes.font6Pro
-                    font.pixelSize: 12
-                    color: Style.colors.foreground
-                }
-
-                ScrollingText {
-                    Layout.fillWidth: true
-                    text: root.modelData.remote
-                    font.pixelSize: 12
-                    font.family: Style.fontTypes.inter
-                    color: Style.colors.mutedText
-                    font.weight: 400
-                    font.letterSpacing: 0
-                }
-            }
-        }
-    }
-
     HoverHandler {
-        id: msa
+        id: hover
         cursorShape: Qt.PointingHandCursor
     }
 
     TapHandler {
-        enabled: !root.isProcessing
-        onTapped: root.clicked(root.index)
+        onTapped: root.clicked()
+    }
+
+    RowLayout {
+        id: content
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.leftMargin: 12
+        anchors.rightMargin: 10
+        spacing: 12
+
+        // Selection box
+        Rectangle {
+            Layout.alignment: Qt.AlignTop
+            Layout.topMargin: 2
+            Layout.preferredWidth: 16
+            Layout.preferredHeight: 16
+            radius: 4
+            color: root.isSelected ? Style.colors.accent : "transparent"
+            border.width: root.isSelected ? 0 : 1
+            border.color: Style.colors.controlBorder
+
+            Text {
+                anchors.centerIn: parent
+                visible: root.isSelected
+                text: Style.icons.check
+                font.family: Style.fontTypes.font6Pro
+                font.pixelSize: Style.appFont.microPt
+                color: Style.colors.onAccentText
+            }
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 5
+
+            // Name, branch and status
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                Text {
+                    Layout.maximumWidth: implicitWidth
+                    Layout.fillWidth: true
+                    text: root.name
+                    elide: Text.ElideRight
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
+                    font.weight: Font.DemiBold
+                    color: root.isSelected ? Style.colors.utilitiesRowSelectedText : Style.colors.utilitiesRowText
+                }
+
+                Rectangle {
+                    Layout.preferredHeight: 18
+                    Layout.preferredWidth: Math.min(branchRow.implicitWidth + 12, 180)
+                    radius: 9
+                    color: Style.colors.controlBackground
+                    border.width: 1
+                    border.color: Style.colors.controlBorder
+
+                    Row {
+                        id: branchRow
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: 6
+                        anchors.rightMargin: 6
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 4
+                        clip: true
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: Style.icons.branch
+                            font.family: Style.fontTypes.font6Pro
+                            font.pixelSize: Style.appFont.microPt
+                            color: Style.colors.utilitiesRowIcon
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.branchName
+                            font.family: Style.fontTypes.jetBrainsMono
+                            font.pixelSize: Style.appFont.microPt
+                            color: Style.colors.utilitiesRowMetaText
+                        }
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                // Status pill
+                Rectangle {
+                    visible: root.statusKind !== "idle"
+                    Layout.preferredHeight: 20
+                    Layout.preferredWidth: statusRow.implicitWidth + 16
+                    radius: 10
+                    color: root.statusBg
+                    clip: true
+
+                    Rectangle {
+                        visible: root.isActive && root.progress > 0 && root.progress < 100
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: parent.width * root.progress / 100
+                        color: root.statusFg
+                        opacity: 0.15
+
+                        Behavior on width { NumberAnimation { duration: 200 } }
+                    }
+
+                    Row {
+                        id: statusRow
+                        anchors.centerIn: parent
+                        spacing: 5
+
+                        BusyIndicator {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: root.isActive
+                            running: visible
+                            width: 12
+                            height: 12
+                            padding: 0
+                            Material.accent: root.statusFg
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: !root.isActive && root.statusIcon.length > 0
+                            text: root.statusIcon
+                            font.family: Style.fontTypes.font6Pro
+                            font.pixelSize: Style.appFont.microPt
+                            color: root.statusFg
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.isActive && root.progress > 0 && root.progress < 100
+                                  ? root.status + " " + root.progress + "%" : root.status
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.microPt
+                            font.weight: Font.DemiBold
+                            color: root.statusFg
+                        }
+                    }
+                }
+            }
+
+            // Path and remotes
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+
+                Text {
+                    Layout.fillWidth: true
+                    text: root.path
+                    elide: Text.ElideMiddle
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.microPt
+                    color: Style.colors.utilitiesRowSubText
+                }
+
+                Row {
+                    spacing: 4
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Style.icons.cloud
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: Style.appFont.microPt
+                        color: root.remotesText.length > 0 ? Style.colors.utilitiesRowIcon : Style.colors.warning
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.remotesText.length > 0 ? root.remotesText : "no remotes"
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.microPt
+                        color: root.remotesText.length > 0 ? Style.colors.utilitiesRowMetaText : Style.colors.warning
+                    }
+                }
+            }
+
+            // Outcome detail
+            Text {
+                Layout.fillWidth: true
+                visible: root.detail.length > 0
+                text: root.detail
+                elide: Text.ElideRight
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.microPt
+                color: root.statusKind === "error" || root.statusKind === "warning" || root.statusKind === "auth"
+                       ? root.statusFg : Style.colors.utilitiesRowMetaText
+            }
+        }
+
+        ActionIconButton {
+            Layout.alignment: Qt.AlignVCenter
+            enabled: !root.isBusy
+            opacity: enabled ? 1.0 : 0.4
+            iconText: Style.icons.download
+            tooltip: "Fetch this repository"
+            backgroundColor: Style.colors.controlBackground
+            textColor: Style.colors.foreground
+            onClicked: root.fetchRequested()
+        }
+
+        ActionIconButton {
+            Layout.alignment: Qt.AlignVCenter
+            enabled: !root.isBusy
+            opacity: enabled ? 1.0 : 0.4
+            iconText: Style.icons.arrowDown
+            tooltip: "Pull this repository"
+            backgroundColor: Style.colors.controlBackground
+            textColor: Style.colors.foreground
+            onClicked: root.pullRequested()
+        }
     }
 }

@@ -5,7 +5,7 @@ project(OrganizationRulesPlugin VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Quick)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick Network)
 
 if(NOT DEFINED GITEASE_SDK_DIR OR GITEASE_SDK_DIR STREQUAL "")
     get_filename_component(GITEASE_SDK_DIR
@@ -27,11 +27,27 @@ add_library(organization-rules-plugin SHARED
     OrganizationRulesPlugin.cpp
     RuleManager.h
     RuleManager.cpp
-    ${_GITEASE_SRC}/Git/GitResult.h
-    CommitMessageValidator.h CommitMessageValidator.cpp
+    CommitMessageValidator.h
+    CommitMessageValidator.cpp
+    BranchNameValidator.h
+    BranchNameValidator.cpp
+    FileRuleValidator.h
+    FileRuleValidator.cpp
+    PushRuleValidator.h
+    PushRuleValidator.cpp
+    HookRunner.h
+    HookRunner.cpp
+    ViolationReporter.h
+    ViolationReporter.cpp
+    RuleSupport.h
+    RuleSupport.cpp
 )
 
 set_target_properties(organization-rules-plugin PROPERTIES PREFIX "")
+
+# GitResult is a Q_GADGET; moc it in the plugin without QML_ELEMENT (host registers it).
+target_compile_definitions(organization-rules-plugin PRIVATE GITEASE_SKIP_QML_ELEMENT)
+target_sources(organization-rules-plugin PRIVATE ${_GITEASE_SRC}/Git/GitResult.h)
 
 qt_add_resources(organization-rules-plugin "organization_rules_qml"
     PREFIX "/com.gitease.organization-rules"
@@ -43,6 +59,10 @@ qt_add_resources(organization-rules-plugin "organization_rules_qml"
         qml/OptionRow.qml
         qml/BasicInfoRect.qml
         qml/ModernSwitch.qml
+        qml/RuleButton.qml
+        qml/RuleScrollBar.qml
+        qml/RuleTextField.qml
+        qml/SegmentedSelector.qml
         qml/RuleSettingsBase.qml
         qml/CommitMessageSettings.qml
         qml/BranchNamingSettings.qml
@@ -69,18 +89,11 @@ target_include_directories(organization-rules-plugin PRIVATE
 target_link_libraries(organization-rules-plugin PRIVATE
     Qt6::Core
     Qt6::Quick
+    Qt6::Network
 )
 
-set(_SOURCE_PLUGIN_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-
-add_custom_command(TARGET organization-rules-plugin POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${_SOURCE_PLUGIN_DIR}/lib"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$<TARGET_FILE:organization-rules-plugin>"
-        "${_SOURCE_PLUGIN_DIR}/lib/"
-    COMMENT "Copying organization-rules DLL into SamplePlugins/organization-rules/lib"
-    VERBATIM
-)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../PackageGep.cmake")
+gitease_package_gep(organization-rules-plugin)
 
 if(NOT GITEASE_PLUGINS_DIR)
     if(WIN32)
