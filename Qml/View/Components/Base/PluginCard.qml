@@ -131,24 +131,31 @@ Rectangle {
             Layout.leftMargin: Style.dp(14)
             Layout.rightMargin: Style.dp(14)
             Layout.bottomMargin: Style.dp(10)
-            spacing: Style.dp(10)
+            spacing: Style.dp(12)
 
-            // Icon tile — 38x38, never stretched vertically (design: align-items:flex-start)
+            // Icon tile — never stretched vertically (design: align-items:flex-start)
             Rectangle {
-                Layout.preferredWidth: 38
-                Layout.preferredHeight: 38
+                Layout.preferredWidth: Style.dp(52)
+                Layout.preferredHeight: Style.dp(52)
                 Layout.alignment: Qt.AlignTop
                 Layout.fillHeight: false
-                radius: 8
+                radius: Style.dp(12)
                 color: root.categoryIconBg
+                border.width: 1
+                border.color: Qt.rgba(root.categoryColor.r, root.categoryColor.g, root.categoryColor.b, 0.18)
 
                 Image {
                     id: pluginIconImage
                     anchors.centerIn: parent
-                    width: 16
-                    height: 16
+                    width: parent.width - Style.dp(10)
+                    height: width
                     source: root.plugin?.iconUrl ?? ""
+                    sourceSize.width: width * 2
+                    sourceSize.height: height * 2
                     fillMode: Image.PreserveAspectFit
+                    asynchronous: true
+                    smooth: true
+                    mipmap: true
                     visible: status === Image.Ready
                 }
 
@@ -158,7 +165,7 @@ Rectangle {
                     text: Style.icons.plugins
                     font.family: Style.fontTypes.font6Pro
                     font.styleName: "Solid"
-                    font.pixelSize: 16
+                    font.pixelSize: Style.dp(22)
                     color: root.categoryColor
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
