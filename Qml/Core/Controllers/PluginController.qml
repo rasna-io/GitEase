@@ -808,7 +808,7 @@ QtObject {
             minAppVersion:    sp.min_app_version  || "",
             size:             sizeKb ? (sizeKb + " KB") : "",
             sizeKb:           sizeKb,
-            iconUrl:          root.resolveApiUrl(sp.icon_url || ""),
+            iconUrl:          sp.icon_url ? root.resolveApiUrl(sp.icon_url) : root.localIconUrl(local),
             releaseDate:      sp.release_date     || "",
             category:         sp.category || "",
             mainColor:        getCategoryColor(sp.category),
@@ -858,6 +858,18 @@ QtObject {
         return out
     }
 
+    function localIconUrl(local) {
+        if (!local)
+            return ""
+        if (local.iconUrl)
+            return local.iconUrl
+        if (!local.icon || !local.pluginDir)
+            return ""
+
+        let dir = String(local.pluginDir).replace(/\\/g, "/").replace(/^\/+/, "").replace(/\/+$/, "")
+        return "file:///" + dir + "/" + local.icon
+    }
+
     // Builds a display object from a locally-installed plugin only.
     function buildLocalEntry(local) {
         return {
@@ -878,7 +890,7 @@ QtObject {
             mainColor:        getCategoryColor(local.category),
             size:             local.size       || "",
             sizeKb:           0,
-            iconUrl:          local.iconUrl     ? local.iconUrl : (local.icon ? ("file://" + local.pluginDir + "/" + local.icon) : ""),
+            iconUrl:          root.localIconUrl(local),
             releaseDate:      local.releaseDate || "",
             donwloadsCount:   0,
             downloadsCount:   0,
@@ -922,7 +934,8 @@ QtObject {
                     return Object.assign({}, p, {
                         isInstalled: true,
                         isEnabled: local.enabled,
-                        isCompatible: local.loaded
+                        isCompatible: local.loaded,
+                        iconUrl: p.iconUrl || root.localIconUrl(local)
                     })
                 })
 
