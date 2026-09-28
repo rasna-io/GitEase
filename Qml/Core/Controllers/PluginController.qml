@@ -17,6 +17,9 @@ QtObject {
     required property var networkController
     property var          pageController:  null  // set by MainWindow after SwipeView is ready
     property CommitController          commitController: null
+    property BranchController          branchController: null
+    property RemoteController          remoteController: null
+    property MergeController           mergeController:  null
 
     // All pages that have been registered so far (populated before pageController exists).
     // MainWindow reads this list after setting pageController to drain any early registrations.
@@ -172,6 +175,30 @@ QtObject {
 
         function onBeforeAction(ccc) {
             pluginManager.runBeforeAction(ccc)
+        }
+    }
+
+    property Connections branchConnections: Connections {
+        target: root.branchController
+
+        function onBeforeAction(context) {
+            pluginManager.runBeforeAction(context)
+        }
+    }
+
+    property Connections remoteConnections: Connections {
+        target: root.remoteController
+
+        function onBeforeAction(context) {
+            pluginManager.runBeforeAction(context)
+        }
+    }
+
+    property Connections mergeConnections: Connections {
+        target: root.mergeController
+
+        function onBeforeAction(context) {
+            pluginManager.runBeforeAction(context)
         }
     }
 

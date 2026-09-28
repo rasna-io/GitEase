@@ -1390,6 +1390,12 @@ DetachablePanel {
     }
 
     function startPush(branchName, force, token) {
+        let rulesRes = remoteController.checkPushRules("origin", branchName, force)
+        if (rulesRes && !rulesRes.success) {
+            root.handlePushResult(rulesRes)
+            return
+        }
+
         let args = token !== undefined ? ["origin", branchName, token, force] : ["origin", branchName, force]
         AsyncGit.call(remoteController, "push", args,
             function(result) { root.handlePushResult(result) },
@@ -1494,6 +1500,9 @@ DetachablePanel {
 
         let mergeSucceeded = res && res.success
         handleGitControllerResult(res, "Merge completed", mergeConflictPopup, "Merge")
+
+        if (mergeSucceeded && res.data && res.data.autoDeleteSourceBranch === true)
+            deleteBranch = true
 
         if (mergeSucceeded && deleteBranch && source !== root.branchController.getCurrentBranchName()) {
             let delRes = root.branchController.deleteBranch(source)

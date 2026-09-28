@@ -208,6 +208,12 @@ Item {
         }
 
     function startPush(branchName, force, token) {
+        let rulesRes = root.remoteController.checkPushRules("origin", branchName, force)
+        if (rulesRes && !rulesRes.success) {
+            root.handlePushResult(rulesRes)
+            return
+        }
+
         let args = token !== undefined ? ["origin", branchName, token, force] : ["origin", branchName, force]
         AsyncGit.call(root.remoteController, "push", args,
             function(result) { root.handlePushResult(result) },

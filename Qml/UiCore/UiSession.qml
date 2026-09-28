@@ -192,6 +192,9 @@ QtObject {
         networkController:      root.networkController
         pageController:         root.pageController
         commitController:       root.commitController
+        branchController:       root.branchController
+        remoteController:       root.remoteController
+        mergeController:        root.mergeController
     }
 
     property NetworkController networkController: NetworkController {}

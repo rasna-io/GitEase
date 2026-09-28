@@ -882,14 +882,18 @@ void PluginManager::runBeforeAction(ActionContext* context)
 {
     if (!context)
         return;
+
+    // Successful checks may still hand data back to the host (e.g. post-merge branch cleanup).
+    QVariantMap data;
     for (IRulePlugin* rule : std::as_const(m_rulePlugins)) {
         GitResult result = rule->check(context);
         if (!result.success()) {
             context->result = result;
             return;
         }
+        data.insert(result.data().toMap());
     }
-    context->result = GitResult(true);
+    context->result = GitResult(true, data);
 }
 
 QVariantList PluginManager::pluginInfos() const

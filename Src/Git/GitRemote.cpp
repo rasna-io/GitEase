@@ -174,6 +174,18 @@ GitResult GitRemote::push(const QString& remote,
     return result;
 }
 
+GitResult GitRemote::checkPushRules(const QString& remote,
+                                    const QString& branch,
+                                    bool force)
+{
+    ActionContext context;
+    context.type = ActionType::Push;
+    context.remoteName = remote;
+    context.branchName = branch;
+    context.forcePush = force;
+    return runRuleCheck(context);
+}
+
 bool GitRemote::isPushInProgress() const
 {
     return m_pushInProgress;
