@@ -100,12 +100,7 @@ function buildCommitMenu(state) {
     });
 
     // Browse files
-    model.push({
-        text: "Browse Files at This Commit...",
-        icon: "folder",
-        action: "browseFiles",
-        payload: { hash: state.fullHash, message: state.commitMessage, date: state.commitDate }
-    });
+    model.push(browseFilesItem(state));
 
     // Merge
     if (state.hasMergeableBranches) {
