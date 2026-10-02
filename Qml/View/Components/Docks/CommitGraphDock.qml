@@ -104,9 +104,9 @@ DetachablePanel {
 
     readonly property bool hasAnyFilter         : Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter)
 
-    readonly property bool canRebaseSelected    : !!root.selectedCommit && !root.selectedCommit.isUncommitted &&
-                                                   root.selectedCommit.hash !== root.headHash &&
-                                                   !!root.branchController.getCurrentBranchName()
+    readonly property bool canRebaseSelected    : root.selectedCommitHashes.length === 1 && !!root.selectedCommit &&
+                                                  root.isCommitSelected(root.selectedCommit.hash) &&
+                                                  root.canRebaseOnto(root.selectedCommit, root.branchController.getCurrentBranchName())
 
     /* Signals
      * ****************************************************************************************/
