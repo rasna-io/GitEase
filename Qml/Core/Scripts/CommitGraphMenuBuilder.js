@@ -169,6 +169,15 @@ function buildCommitMenu(state) {
     return model;
 }
 
+function browseFilesItem(state) {
+    return {
+        text: "Browse Files at This Commit...",
+        icon: "folder",
+        action: "browseFiles",
+        payload: { hash: state.fullHash, message: state.commitMessage, date: state.commitDate }
+    };
+}
+
     // Plugin context menu items (appended after a separator when non-empty)
     if (pluginItems && pluginItems.length > 0) {
         model.push({ separator: true });
