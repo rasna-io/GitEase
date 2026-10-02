@@ -1242,7 +1242,7 @@ DetachablePanel {
             pushEnabled         : !remoteController.pushInProgress && isHead,
             branchNames         : branches,
             isStash             : commitData.isStash || false,
-            canCherryPick       : !commitData.isStash && !isHead,
+            canCherryPick       : root.canCherryPick(commitData),
             canRebase           : !!currentBranch && !isHead,
             numSelected         : selectedCommitHashesInOrder().length,
             cherryPickEnabled   : !selectionHasStash() && !selectionHasHead(),
@@ -1258,10 +1258,9 @@ DetachablePanel {
         return hashes
     }
 
-    function selectionHasStash() {
-        var selected = selectedCommitsInOrder()
-        for (var i = 0; i < selected.length; i++) if (selected[i].isStash) return true
-        return false
+    function canCherryPick(commitData) {
+        return !!commitData && !commitData.isStash && !commitData.isUncommitted
+               && commitData.hash !== root.headHash
     }
 
     function selectionHasHead() {
