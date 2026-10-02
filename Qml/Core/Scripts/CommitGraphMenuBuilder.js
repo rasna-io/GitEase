@@ -154,8 +154,9 @@ function buildCommitMenu(state) {
     });
 
     // Reset
+    var resetTarget = state.currentBranch ? "'" + state.currentBranch + "'" : "HEAD";
     model.push({
-        text: "Reset '" + state.currentBranch + "' to This Commit",
+        text: "Reset " + resetTarget + " to This Commit",
         icon: "reset",
         action: "reset",
         subItems: [
@@ -164,6 +165,7 @@ function buildCommitMenu(state) {
            {text: "Hard (discard all changes)",   icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
         ]
     });
+
     return model;
 }
 
