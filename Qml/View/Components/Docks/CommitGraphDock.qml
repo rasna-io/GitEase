@@ -1243,7 +1243,7 @@ DetachablePanel {
             branchNames         : branches,
             isStash             : commitData.isStash || false,
             canCherryPick       : root.canCherryPick(commitData),
-            canRebase           : !!currentBranch && !isHead,
+            canRebase           : root.canRebaseOnto(commitData, currentBranch),
             numSelected         : selectedCommitHashesInOrder().length,
             cherryPickEnabled   : !selectionHasStash() && !selectionHasHead(),
             hasMergeableBranches: mergeable.length > 0,
@@ -1263,10 +1263,9 @@ DetachablePanel {
                && commitData.hash !== root.headHash
     }
 
-    function selectionHasHead() {
-        var selected = selectedCommitsInOrder()
-        for (var i = 0; i < selected.length; i++) if (selected[i].hash === root.headHash) return true
-        return false
+    function canRebaseOnto(commitData, currentBranch) {
+        return !!currentBranch && !!commitData && !commitData.isStash && !commitData.isUncommitted
+               && commitData.hash !== root.headHash
     }
 
     function buildContextMenuModel(raw) {
