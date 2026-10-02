@@ -178,22 +178,21 @@ function browseFilesItem(state) {
     };
 }
 
-    // Plugin context menu items (appended after a separator when non-empty)
-    if (pluginItems && pluginItems.length > 0) {
-        model.push({ separator: true });
-        pluginItems.forEach(function(pi) {
-            if (pi.separator) {
-                model.push({ separator: true });
-                return;
-            }
-            model.push({
-                text:    pi.label,
-                icon:    pi.icon || "",
-                action:  "pluginAction",
-                payload: { pluginId: pi.pluginId, itemId: pi.id, hash: state.fullHash }
-            });
-        });
-    }
+function appendPluginItems(model, state, pluginItems) {
+    if (!pluginItems || pluginItems.length === 0)
+        return;
 
-    return model;
+    model.push({ separator: true });
+    pluginItems.forEach(function(pi) {
+        if (pi.separator) {
+            model.push({ separator: true });
+            return;
+        }
+        model.push({
+            text:    pi.label,
+            icon:    pi.icon || "",
+            action:  "pluginAction",
+            payload: { pluginId: pi.pluginId, itemId: pi.id, hash: state.fullHash }
+        });
+    });
 }
