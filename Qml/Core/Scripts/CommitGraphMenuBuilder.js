@@ -33,39 +33,37 @@ function buildCommitMenu(state) {
     var model = [];
 
     // Checkout section
-    if (state.branchNames.length > 0) {
-        var checkoutSubMenu = state.branchNames.map(function(bName) {
+    var checkoutDetached = {
+        text: "Checkout " + state.shortHash + " (Detached)",
+        icon: "hash",
+        enabled: !state.isHead,
+        action: "checkoutCommit",
+        payload: { hash: state.fullHash }
+    };
+
+    if (state.localBranches.length > 0) {
+        var checkoutSubMenu = state.localBranches.map(function(bName) {
             return {
                 text: bName,
                 icon: "gitBranch",
+                enabled: bName !== state.currentBranch,
                 action: "checkoutBranch",
                 payload: { branch: bName }
             };
         });
 
-        checkoutSubMenu.push({
-            text: "Checkout " + state.shortHash + " (Detached)",
-            icon: "hash",
-            action: "checkoutCommit",
-            payload: { hash: state.fullHash }
-        });
+        checkoutSubMenu.push(checkoutDetached);
 
         model.push({
             text: "Checkout",
             icon: "gitBranch",
-            enabled: !state.isHead,
+            enabled: checkoutSubMenu.some(function(item) { return item.enabled; }),
             subItems: checkoutSubMenu
         });
     }
 
     else {
-        model.push({
-            text: "Checkout " + state.shortHash + " (Detached)",
-            icon: "hash",
-            enabled: !state.isHead,
-            action: "checkoutCommit",
-            payload: { hash: state.fullHash }
-        });
+        model.push(checkoutDetached);
     }
 
     model.push({
