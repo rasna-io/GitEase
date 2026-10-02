@@ -181,6 +181,12 @@ GitResult GitRebase::previewRebasePlan(const QString& onto,
         if (git_commit_lookup(&commit, repo, &oid) != GIT_OK)
             continue;
 
+        if (git_commit_parentcount(commit) > 1)
+        {
+            git_commit_free(commit);
+            continue;
+        }
+
         char hash[GIT_OID_HEXSZ + 1] = {0};
         git_oid_tostr(hash, sizeof(hash), &oid);
 
