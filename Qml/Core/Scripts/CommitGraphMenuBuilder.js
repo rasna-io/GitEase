@@ -126,23 +126,13 @@ function buildCommitMenu(state) {
     }
 
     // Cherry‑Pick
-    if (state.numSelected > 1) {
-        model.push({
-            text: "Cherry-Pick Selected (" + state.numSelected + ")",
-            icon: "copy",
-            enabled: state.cherryPickEnabled,
-            action: "cherryPickSelected"
-        });
-    }
-    else {
-        model.push({
-            text: "Cherry-Pick " + state.shortHash,
-            icon: "copy",
-            enabled: state.canCherryPick,
-            action: "cherryPickSingle",
-            payload: { hash: state.fullHash }
-        });
-    }
+    model.push({
+        text: "Cherry-Pick " + state.shortHash,
+        icon: "copy",
+        enabled: state.canCherryPick,
+        action: "cherryPickSingle",
+        payload: { hash: state.fullHash }
+    });
 
     model.push({
         separator: true
