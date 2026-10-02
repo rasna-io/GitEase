@@ -7,6 +7,29 @@
 
 // pluginItems: optional array of {pluginId, id, label, icon, separator, order} from IContextMenuPlugin
 function buildMenu(state, pluginItems) {
+    if (state.numSelected > 1)
+        return buildSelectionMenu(state);
+
+    var model = state.isStash ? buildStashMenu(state) : buildCommitMenu(state);
+    appendPluginItems(model, state, pluginItems);
+
+    return model;
+}
+
+function buildSelectionMenu(state) {
+    return [{
+        text: "Cherry-Pick Selected (" + state.numSelected + ")",
+        icon: "copy",
+        enabled: state.cherryPickEnabled,
+        action: "cherryPickSelected"
+    }];
+}
+
+function buildStashMenu(state) {
+    return [browseFilesItem(state)];
+}
+
+function buildCommitMenu(state) {
     var model = [];
 
     // Checkout section
@@ -143,6 +166,8 @@ function buildMenu(state, pluginItems) {
            {text: "Hard (discard all changes)",   icon: "resetHard",  action: "resetHard",  payload: { hash: state.fullHash }},
         ]
     });
+    return model;
+}
 
     // Plugin context menu items (appended after a separator when non-empty)
     if (pluginItems && pluginItems.length > 0) {
