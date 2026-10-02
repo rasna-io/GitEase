@@ -3,6 +3,11 @@
 // ====================================================================
 // CommitGraphMenuBuilder – builds the context‑menu data model
 // for a commit.
+//
+// The menu only offers actions that are valid for what was
+// right-clicked: a multi-selection, a stash node or a single commit.
+// Actions that never apply to that target are left out; actions that
+// apply but can't run right now are disabled.
 // ====================================================================
 
 // pluginItems: optional array of {pluginId, id, label, icon, separator, order} from IContextMenuPlugin
