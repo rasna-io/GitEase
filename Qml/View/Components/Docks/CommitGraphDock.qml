@@ -1226,11 +1226,19 @@ DetachablePanel {
     }
 
     function getMenuState(commitData) {
-        var branches        = commitData.branchNames || []
         var shortHash       = commitData.shortHash || commitData.hash.substring(0, 7)
         var isHead          = commitData.hash === root.headHash
         var currentBranch   = root.branchController.getCurrentBranchName()
-        var mergeable       = branches.filter(function(b) { return b !== currentBranch && !b.startsWith("origin/") })
+        var selected        = selectedCommitsInOrder()
+
+        var localBranches   = root.branchController.getBranches()
+                                  .filter(function(b) { return b.isLocal && b.targetHash === commitData.hash })
+                                  .map(function(b) { return b.name })
+
+        //! A branch pointing at HEAD is already merged, and a detached HEAD has no branch to merge into.
+        var mergeable       = (currentBranch && !isHead)
+                                  ? localBranches.filter(function(b) { return b !== currentBranch })
+                                  : []
 
         return {
             currentBranch       : currentBranch,
@@ -1239,13 +1247,13 @@ DetachablePanel {
             fullHash            : commitData.hash,
             commitMessage       : commitData.message || "",
             commitDate          : commitData.authorDate || "",
-            pushEnabled         : !remoteController.pushInProgress && isHead,
-            branchNames         : branches,
+            pushEnabled         : !remoteController.pushInProgress && isHead && !!currentBranch,
+            localBranches       : localBranches,
             isStash             : commitData.isStash || false,
             canCherryPick       : root.canCherryPick(commitData),
             canRebase           : root.canRebaseOnto(commitData, currentBranch),
-            numSelected         : selectedCommitHashesInOrder().length,
-            cherryPickEnabled   : !selectionHasStash() && !selectionHasHead(),
+            numSelected         : selected.length,
+            cherryPickEnabled   : selected.every(function(c) { return root.canCherryPick(c) }),
             hasMergeableBranches: mergeable.length > 0,
             mergeableBranches   : mergeable
         }
