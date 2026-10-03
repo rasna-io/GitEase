@@ -42,7 +42,7 @@ IPopup {
     modal: true
     focus: true
     width: 580
-    height: 280
+    height: Math.max(280, dialogColumn.implicitHeight + 2 * dialogColumn.anchors.margins)
     closePolicy: Popup.NoAutoClose
 
     onClosed: destroy()
@@ -56,6 +56,7 @@ IPopup {
         border.width: 1
 
         ColumnLayout {
+            id: dialogColumn
             anchors.fill: parent
             anchors.margins: 20
             spacing: 8
