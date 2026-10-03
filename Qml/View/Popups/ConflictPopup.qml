@@ -798,7 +798,8 @@ Window {
         let res = currentController.quitOp()
 
         if (res.success) {
-            notificationController.success(`${currentOperationName} quitted`, currentOperationName, 2500)
+            notificationController.warning(`${currentOperationName} quit. HEAD is left detached and unresolved files keep their conflict markers.`,
+                                           currentOperationName, 10000)
 
             root.clearFileCaches()
             conflictRows.clear()
