@@ -751,6 +751,35 @@ bool GitRebase::repositoryHasConflicts() const
     return hasConflicts;
 }
 
+QStringList GitRebase::conflictedPaths() const
+{
+    QStringList paths;
+
+    git_index* index = nullptr;
+    if (git_repository_index(&index, activeRepo()) != GIT_OK || !index) {
+        return paths;
+    }
+
+    git_index_conflict_iterator* iterator = nullptr;
+    if (git_index_conflict_iterator_new(&iterator, index) == GIT_OK) {
+        const git_index_entry* ancestor = nullptr;
+        const git_index_entry* ours     = nullptr;
+        const git_index_entry* theirs   = nullptr;
+
+        while (git_index_conflict_next(&ancestor, &ours, &theirs, iterator) == GIT_OK) {
+            const git_index_entry* entry = ours ? ours : (theirs ? theirs : ancestor);
+            if (entry && entry->path) {
+                paths.append(QString::fromUtf8(entry->path));
+            }
+        }
+
+        git_index_conflict_iterator_free(iterator);
+    }
+
+    git_index_free(index);
+    return paths;
+}
+
 bool GitRebase::isRebaseInProgress() const
 {
     if (!m_currentRepo || !activeRepo()) {
