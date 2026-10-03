@@ -103,6 +103,23 @@ ColumnLayout {
             }
         }
 
+        CommandPreview {
+            Layout.fillWidth: true
+            Layout.maximumWidth: 300
+            Layout.alignment: Qt.AlignVCenter
+
+            command: {
+                if (abortButton.hovered)
+                    return root.commandFor("abort")
+                if (root.canQuit && (advancedButton.hovered || advancedMenu.opened))
+                    return root.commandFor("quit")
+                if (skipButton.hovered)
+                    return root.commandFor("skip")
+
+                return root.commandFor("continue")
+            }
+        }
+
         Item { Layout.fillWidth: true }
 
         ConflictPillButton {
@@ -142,6 +159,7 @@ ColumnLayout {
         }
 
         if (step === "abort") return GitCommandText.rebaseAbort()
+        if (step === "quit")  return GitCommandText.rebaseQuit()
         if (step === "skip")  return GitCommandText.rebaseSkip()
         return GitCommandText.rebaseContinue()
     }
