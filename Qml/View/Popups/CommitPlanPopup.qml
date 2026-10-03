@@ -50,6 +50,7 @@ IWindow {
         readonly property string running   : "Rebasing..."
         readonly property string completed : "Close"
         readonly property string failed    : "Start Rebase"
+        readonly property string stopped   : "Close"
     }
 
     /* Property Declarations
@@ -381,6 +382,7 @@ IWindow {
                 canRedo: root.canRedo
                 canStart: commitModel.count > 0 && root.currentRebaseState !== rebaseState.running
                 showCancel: root.currentRebaseState !== rebaseState.completed
+                            && root.currentRebaseState !== rebaseState.stopped
                 startText: root.currentRebaseState
 
                 onUndoRequested: root.undoPlanEdit()
@@ -692,7 +694,8 @@ IWindow {
     }
 
     function handleStartPressed() {
-        if (root.currentRebaseState === rebaseState.completed) {
+        if (root.currentRebaseState === rebaseState.completed
+                || root.currentRebaseState === rebaseState.stopped) {
             root.close()
             return
         }
