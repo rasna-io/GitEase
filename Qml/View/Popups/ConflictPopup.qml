@@ -363,11 +363,13 @@ Window {
                 operationName: root.currentOperationName
                 canContinue: root.canContinue
                 canSkip: root.currentOperation !== ConflictPopup.OperationType.Merge
+                canQuit: root.currentOperation === ConflictPopup.OperationType.Rebase
                 resolvedFiles: root.stagedFiles.length
                 totalFiles: root.conflicts.length + root.stagedFiles.length
                 resolvedConflicts: root.resolvedConflictTotal
                 totalConflicts: root.conflictTotal
                 onAbortRequested: root.abortOperation()
+                onQuitRequested: root.requestQuit()
                 onSkipRequested: root.skipOperation()
                 onContinueRequested: root.continueOperation()
             }
