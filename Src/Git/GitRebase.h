@@ -301,4 +301,10 @@ signals:
      */
     void rebaseAborted();
 
+    /**
+     * @brief Emitted when the user quits the interactive rebase, leaving HEAD detached and the
+     *        working tree as it is.
+     */
+    void rebaseQuit();
+
 };
