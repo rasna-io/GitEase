@@ -1209,6 +1209,41 @@ void GitRebase::interactiveAbort()
     emit rebaseAborted();
 }
 
+GitResult GitRebase::interactiveQuit()
+{
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, QVariant(), "Repository not found.");
+
+    if (!m_interactiveInProgress)
+        return GitResult(false, QVariant(), "No rebase is in progress.");
+
+    if (git_repository_state_cleanup(activeRepo()) != GIT_OK) {
+        return GitResult(false, QVariant(),
+                         QString("Failed to quit rebase: %1").arg(GitUtils::getLastError()));
+    }
+
+    QString head;
+    git_oid headOid;
+    if (git_reference_name_to_id(&headOid, activeRepo(), "HEAD") == GIT_OK)
+        head = gitOidToString(&headOid);
+
+    QString originalBranch;
+    if (m_originalHeadRef && git_reference_is_branch(m_originalHeadRef))
+        originalBranch = QString::fromUtf8(git_reference_shorthand(m_originalHeadRef));
+
+    QVariantMap data;
+    data["head"]            = head;
+    data["originalBranch"]  = originalBranch;
+    data["conflictedFiles"] = conflictedPaths();
+
+    cleanupInteractiveState();
+
+    emitGitCommand("git rebase --quit");
+    emit rebaseQuit();
+
+    return GitResult(true, data, "Rebase quit.");
+}
+
 
 git_commit* GitRebase::lookupCommit(const QString& hash) const
 {
