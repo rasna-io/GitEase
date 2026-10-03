@@ -77,21 +77,8 @@ ColumnLayout {
             onClicked: root.abortRequested()
         }
 
-        CommandPreview {
-            Layout.fillWidth: true
-            Layout.maximumWidth: 300
-            Layout.alignment: Qt.AlignVCenter
-
-            command: {
-                if (abortButton.hovered)
-                    return root.commandFor("abort")
-                if (skipButton.hovered)
-                    return root.commandFor("skip")
-
-                return root.commandFor("continue")
-            }
-        }
         ConflictPillButton {
+            id: advancedButton
             Layout.preferredHeight: Style.dp(30)
             visible: root.canQuit
             text: "Advanced"
