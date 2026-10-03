@@ -8,6 +8,8 @@ import GitEase_Style
  * ConflictFooter
  * Progress readouts plus the three operation-level commands. Abort lives here rather than behind the
  * window's close button, so quitting the operation is a deliberate act.
+ * Quit, which leaves the half-merged files behind for the user to salvage, is tucked away in the
+ * Advanced menu so nobody reaches it by accident.
  * ************************************************************************************************/
 ColumnLayout {
     id: root
@@ -17,6 +19,7 @@ ColumnLayout {
     property string operationName:  ""
     property bool   canContinue:    false
     property bool   canSkip:        false
+    property bool   canQuit:        false
 
     property int    resolvedFiles:      0
     property int    totalFiles:         0
@@ -30,6 +33,7 @@ ColumnLayout {
     /* Signals
      * ****************************************************************************************/
     signal abortRequested()
+    signal quitRequested()
     signal skipRequested()
     signal continueRequested()
 
@@ -87,6 +91,32 @@ ColumnLayout {
                 return root.commandFor("continue")
             }
         }
+        ConflictPillButton {
+            Layout.preferredHeight: Style.dp(30)
+            visible: root.canQuit
+            text: "Advanced"
+            trailingText: Style.icons.caretUp
+            accentColor: Style.colors.mutedText
+            tooltip: "Options for experienced Git users"
+            onClicked: advancedMenu.open()
+
+            ContextMenu {
+                id: advancedMenu
+                y: -advancedMenu.height - 4
+                menuModel: [
+                    {
+                        text: `Quit ${root.operationName}…`,
+                        icon: Style.icons.warning,
+                        color: Style.colors.warning,
+                        action: function() {
+                            root.quitRequested()
+                        }
+                    }
+                ]
+            }
+        }
+
+        Item { Layout.fillWidth: true }
 
         ConflictPillButton {
             id: skipButton
