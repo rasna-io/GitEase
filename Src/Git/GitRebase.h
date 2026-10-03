@@ -144,6 +144,7 @@ private:
     QVariantMap rebaseProgressData(git_rebase* rebase) const;
     GitResult resetWorktreeToHead() const;
     bool repositoryHasConflicts() const;
+    QStringList conflictedPaths() const;
     bool isRebaseInProgress() const;
 
     // Helper to check out a branch
