@@ -20,7 +20,8 @@ Window {
         None,
         Continue,
         Skip,
-        Abort
+        Abort,
+        Quit
     }
 
     enum OperationType {
@@ -787,6 +788,11 @@ Window {
     }
 
     function quitOperation() {
+        if (interactiveMode) {
+            interactiveActionRequested(ConflictPopup.InteractiveAction.Quit);
+            return;
+        }
+
         let res = currentController.quitOp()
 
         if (res.success) {
