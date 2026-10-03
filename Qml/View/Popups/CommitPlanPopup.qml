@@ -485,6 +485,11 @@ IWindow {
                 root.rebaseController.interactiveAbort()
                 break
 
+            case ConflictPopup.InteractiveAction.Quit:
+                if (!root.quitRebase())
+                    return
+                break
+
             default:
                 return
             }
@@ -695,6 +700,28 @@ IWindow {
             root.rebaseController.interactiveAbort()
 
         root.close()
+    }
+
+    function quitRebase() {
+        let res = root.rebaseController.interactiveQuit()
+        if (!res.success) {
+            root.notificationController.error(res.errorMessage || "Failed to quit the rebase", "Rebase", 5000)
+            return false
+        }
+
+        let data     = res.data || {}
+        let head     = (data.head || "").substring(0, 7)
+        let branch   = data.originalBranch || ""
+        let unmerged = (data.conflictedFiles || []).length
+
+        let summary = head ? `HEAD is detached at ${head}.` : "HEAD is detached."
+        if (unmerged > 0)
+            summary += ` ${unmerged} file${unmerged === 1 ? " is" : "s are"} still unmerged and may contain conflict markers.`
+        if (branch)
+            summary += ` '${branch}' still points to its commits from before the rebase — create a branch here to keep this work.`
+
+        root.notificationController.warning(summary, "Rebase Quit", 12000)
+        return true
     }
 
     function handleStartPressed() {
