@@ -469,7 +469,7 @@ GitResult GitRebase::quitOp()
                          QString("Failed to quit rebase: %1").arg(GitUtils::getLastError()));
     }
 
-    emitGitCommand("git rebase --quit");
+    emitGitCommand(GitCommandText::rebaseQuit());
     return GitResult(true, QVariant(), "Rebase state cleaned up.");
 }
 
@@ -1238,7 +1238,7 @@ GitResult GitRebase::interactiveQuit()
 
     cleanupInteractiveState();
 
-    emitGitCommand("git rebase --quit");
+    emitGitCommand(GitCommandText::rebaseQuit());
     emit rebaseQuit();
 
     return GitResult(true, data, "Rebase quit.");
