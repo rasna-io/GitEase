@@ -853,6 +853,33 @@ Window {
         dialog.open()
     }
 
+    function requestQuit() {
+        let operation   = currentOperationName.toLowerCase()
+        let unresolved  = root.conflicts.length
+
+        let leftovers = unresolved > 0
+            ? `${unresolved} unresolved file${unresolved === 1 ? " stays" : "s stay"} unmerged, with any ` +
+              "conflict markers still in them. Staging and committing them as they are records the markers."
+            : "What you resolved here stays staged, but nothing is committed."
+
+        let dialog = conflictConfirmationDialogComp.createObject(root)
+
+        dialog.title   = `Quit ${currentOperationName}?`
+        dialog.message = `GitEase stops tracking the ${operation} but rewinds nothing, so you can finish by hand:\n\n` +
+                         `•  HEAD stays detached where the ${operation} stopped, so you are not on any branch. ` +
+                         `Your branch keeps its commits from before the ${operation}.\n` +
+                         `•  ${leftovers}\n` +
+                         `•  The remaining commits are not replayed, and the ${operation} cannot be continued ` +
+                         "or aborted afterwards.\n" +
+                         "•  Unsaved edits in this editor are discarded; every file stays as it is on disk."
+
+        dialog.acceptTitle       = `Quit ${currentOperationName}`
+        dialog.acceptDescription = "Stop here and leave HEAD, the index and every file exactly as they are"
+
+        dialog.aborted.connect(() => root.quitOperation())
+        dialog.open()
+    }
+
     function resetSelectedFile() {
         if (!selectedPath || !conflictController)
             return
