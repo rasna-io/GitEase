@@ -43,6 +43,10 @@ RowLayout {
 
     IconButton {
         id: branchChip
+
+        property string headName: headerRow.branchController ? headerRow.branchController.getDisplayBranchName() : ""
+        property bool   headDetached: headerRow.branchController ? headerRow.branchController.isHeadDetached() : false
+
         backgroundColor: Style.colors.headerButtonBackground
         hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
         borderColor: Style.colors.headerButtonBorder
@@ -55,14 +59,16 @@ RowLayout {
         leftPadding     : 10
         rightPadding    : 10
 
-        text: headerRow.branchController ? headerRow.branchController.getDisplayBranchName() : ""
+        text: branchChip.headDetached ? `HEAD detached at ${branchChip.headName}` : branchChip.headName
+        tooltip: branchChip.headDetached ? "You are not on a branch. Commits made here belong to no branch until you create one."
+                                         : ""
         visible: !headerRow.compact
         solidIcon: true
 
-        icon.name   : Style.icons.branch
+        icon.name   : branchChip.headDetached ? Style.icons.warning : Style.icons.branch
         icon.width  : Style.appFont.smallPt
         icon.height : Style.appFont.smallPt
-        icon.color  : Style.colors.branchAccent
+        icon.color  : branchChip.headDetached ? Style.colors.warning : Style.colors.branchAccent
 
         font.family : Style.fontTypes.jetBrainsMono
         font.weight : Font.Medium
@@ -78,16 +84,18 @@ RowLayout {
         Connections {
             target: headerRow.gitStateNotifier
             function onRepositoryChanged() {
-                branchChip.text = headerRow.branchController ? headerRow.branchController.getDisplayBranchName() : ""
+                branchChip.headName     = headerRow.branchController ? headerRow.branchController.getDisplayBranchName() : ""
+                branchChip.headDetached = headerRow.branchController ? headerRow.branchController.isHeadDetached() : false
             }
         }
 
         onClicked: {
-            clipboardHelper.text = branchChip.text
+            clipboardHelper.text = branchChip.headName
             clipboardHelper.selectAll()
             clipboardHelper.copy()
 
-            notificationController.success(`branch name : ${branchChip.text} copied to clipboard`)
+            let what = branchChip.headDetached ? "commit hash" : "branch name"
+            headerRow.notificationController.success(`${what} : ${branchChip.headName} copied to clipboard`)
         }
 
         MouseArea {
