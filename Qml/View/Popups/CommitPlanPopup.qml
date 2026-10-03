@@ -461,6 +461,10 @@ IWindow {
             for (var i = 0; i < commitModel.count; i++)
                 commitModel.setProperty(i, "status", commitStatus.pending);
         }
+
+        function onRebaseQuit() {
+            root.currentRebaseState = rebaseState.stopped;
+        }
     }
 
     Connections {
