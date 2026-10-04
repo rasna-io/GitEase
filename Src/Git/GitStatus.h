@@ -202,7 +202,21 @@ public:
      */
     Q_INVOKABLE GitResult getUnstagedDiffView(const QString &filePath);
 
+    /**
+     * @brief Whether the working copy of a file still holds a complete conflict block
+     *        (`<<<<<<<`, `=======`, `>>>>>>>`), i.e. staging it would record the markers.
+     * @param filePath Path to the file to inspect.
+     */
+    Q_INVOKABLE bool hasConflictMarkers(const QString &filePath);
+
 private:
+
+    /**
+     * @brief Whether the index holds conflict entries for a file instead of a single stage-0
+     *        entry, e.g. after a conflicted merge or a quit rebase.
+     * @param filePath Path to the file to inspect.
+     */
+    bool isUnmerged(const QString &filePath) const;
 
     /**
      * @brief Get staged diff view (HEAD to index).
