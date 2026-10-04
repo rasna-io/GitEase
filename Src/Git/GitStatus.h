@@ -219,6 +219,11 @@ private:
     bool isUnmerged(const QString &filePath) const;
 
     /**
+     * @brief Paths the index currently holds as conflicts rather than single entries.
+     */
+    QStringList unmergedPaths() const;
+
+    /**
      * @brief Get staged diff view (HEAD to index).
      * @param filePath Path to the file to inspect.
      */
