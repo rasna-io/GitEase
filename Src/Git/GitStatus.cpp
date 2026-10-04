@@ -292,7 +292,19 @@ GitResult GitStatus::getDiff(const QString &filePath)
     opts.pathspec.count = 1;
 
     // This compares the Staging Area (Index) to the Local File (Workdir)
-    int error = git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &opts);
+    const bool unmerged = isUnmerged(filePath);
+    int error = GIT_OK;
+    if (unmerged) {
+        git_object* headTree = nullptr;
+        error = git_revparse_single(&headTree, activeRepo(), "HEAD^{tree}");
+        if (error == GIT_OK) {
+            error = git_diff_tree_to_workdir(&diff, activeRepo(),
+                                             reinterpret_cast<git_tree*>(headTree), &opts);
+            git_object_free(headTree);
+        }
+    } else {
+        error = git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &opts);
+    }
 
     if (error == 0) {
         struct RawLine { char origin; int old_no; int new_no; QString content; };
@@ -335,10 +347,19 @@ GitResult GitStatus::getDiff(const QString &filePath)
         }
     }
 
+    if (unmerged && result.isEmpty()) {
+        std::vector<QString> lines = readWorkdirLines(activeRepo(), filePath);
+        if (!lines.empty() && lines.back().isEmpty())
+            lines.pop_back();
+
+        for (int i = 0; i < static_cast<int>(lines.size()); ++i)
+            result.append(GitDiff(GitDiff::Context, i + 1, i + 1, lines[static_cast<size_t>(i)]));
+    }
+
     if (diff)
         git_diff_free(diff);
 
-    emitGitCommand(QString("git diff -- %1").arg(quoteCommandArg(filePath)));
+    emitGitCommand(QString(unmerged ? "git diff HEAD -- %1" : "git diff -- %1").arg(quoteCommandArg(filePath)));
 
     return GitResult(true, QVariant::fromValue(result));
 }
