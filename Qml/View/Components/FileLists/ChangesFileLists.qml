@@ -269,6 +269,11 @@ Item {
         }
     }
 
+    Component {
+        id: conflictStagingDialogComp
+        ConflictConfirmationDialog { }
+    }
+
     /* Functions
      * ****************************************************************************************/
     function updateStatus() {
