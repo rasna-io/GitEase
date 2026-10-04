@@ -682,6 +682,41 @@ GitResult GitStatus::getUnstagedDiffView(const QString &filePath)
     return GitResult(true, out);
 }
 
+bool GitStatus::hasConflictMarkers(const QString &filePath)
+{
+    if (!m_currentRepo || !activeRepo())
+        return false;
+
+    enum { Outside, InOurs, InTheirs } state = Outside;
+    
+    for (const QString& line : readWorkdirLines(activeRepo(), filePath)) {
+        if (line.startsWith("<<<<<<<"))
+            state = InOurs;
+        else if (line.startsWith("=======") && state == InOurs)
+            state = InTheirs;
+        else if (line.startsWith(">>>>>>>") && state == InTheirs)
+            return true;
+    }
+
+    return false;
+}
+
+bool GitStatus::isUnmerged(const QString &filePath) const
+{
+    git_index* indexRaw = nullptr;
+    if (!activeRepo() || git_repository_index(&indexRaw, activeRepo()) != GIT_OK)
+        return false;
+
+    UniqueIndex index(indexRaw);
+
+    const git_index_entry* ancestor = nullptr;
+    const git_index_entry* ours     = nullptr;
+    const git_index_entry* theirs   = nullptr;
+    const QByteArray path = filePath.toUtf8();
+
+    return git_index_conflict_get(&ancestor, &ours, &theirs, index.get(), path.constData()) == GIT_OK;
+}
+
 GitResult GitStatus::getStagedDiffView(const QString &filePath)
 {
     // old/head text
