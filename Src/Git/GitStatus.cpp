@@ -1545,6 +1545,11 @@ GitResult GitStatus::revertAll()
     if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available.");
 
+    const QStringList unmerged = unmergedPaths();
+    GitResult resetResult = resetIndexToHead(unmerged);
+    if (!resetResult.success())
+        return GitResult(false, QVariant(), "Failed to revert all changes: " + resetResult.errorMessage());
+
     git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
 
     // FORCE: Overwrite all local changes
@@ -1564,7 +1569,14 @@ GitResult GitStatus::revertAll()
                          QString("Failed to revert all changes: %1").arg(e ? e->message : "Unknown error"));
     }
 
-    emitGitCommand("git reset --hard HEAD && git clean -fd");
+    QString command = "git checkout -- . && git clean -fd";
+    if (!unmerged.isEmpty()) {
+        QStringList quoted;
+        for (const QString& path : unmerged)
+            quoted.append(quoteCommandArg(path));
+        command.prepend(QString("git restore --source=HEAD --staged --worktree -- %1 && ").arg(quoted.join(' ')));
+    }
+    emitGitCommand(command);
 
     return GitResult(true, QVariant(), "All changes discarded.");
 }
