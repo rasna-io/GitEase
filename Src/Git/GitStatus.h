@@ -224,6 +224,13 @@ private:
     QStringList unmergedPaths() const;
 
     /**
+     * @brief Puts HEAD's version of each path back into the index, which also clears any
+     *        conflict recorded for it. A path HEAD doesn't have is dropped from the index.
+     * @param paths Paths to reset; nothing happens when empty.
+     */
+    GitResult resetIndexToHead(const QStringList &paths);
+
+    /**
      * @brief Get staged diff view (HEAD to index).
      * @param filePath Path to the file to inspect.
      */
