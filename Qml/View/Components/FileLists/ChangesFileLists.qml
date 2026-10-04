@@ -218,13 +218,15 @@ Item {
             onStageAllRequested: function() {
                 root.showSaveDialog(
                             () => {
-                                let res = statusController.stageAll()
-                                if (res.success) {
-                                    root.notificationController.success("All files staged successfully", "Stage All", 3000)
-                                } else {
-                                    root.notificationController.error(res.errorMessage || "Failed to stage all files", "Stage Error", 5000)
-                                }
-                                root.updateStatus()
+                                root.confirmConflictStaging(root.unstagedModel.map(file => file.path), () => {
+                                    let res = statusController.stageAll()
+                                    if (res.success) {
+                                        root.notificationController.success("All files staged successfully", "Stage All", 3000)
+                                    } else {
+                                        root.notificationController.error(res.errorMessage || "Failed to stage all files", "Stage Error", 5000)
+                                    }
+                                    root.updateStatus()
+                                }, true)
                             }
                 )
             }
