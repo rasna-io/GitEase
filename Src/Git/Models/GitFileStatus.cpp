@@ -107,6 +107,11 @@ bool GitFileStatus::isUntracked() const
     return m_isUntracked;
 }
 
+bool GitFileStatus::isConflicted() const
+{
+    return m_isConflicted;
+}
+
 
 int GitFileStatus::deletionsCount() const
 {
