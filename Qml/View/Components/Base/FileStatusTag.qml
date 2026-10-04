@@ -60,6 +60,7 @@ Rectangle {
         case "modified":    return "M"
         case "renamed":     return "R"
         case "untracked":   return "U"
+        case "conflicted":  return "C"
         }
         return ""
     }
