@@ -1555,13 +1555,15 @@ GitResult GitStatus::revertAll()
     // FORCE: Overwrite all local changes
     // RECREATE_MISSING: Restore files that were deleted in workdir
     // GIT_CHECKOUT_REMOVE_UNTRACKED removes untracked files not in index
+    // The index is left free to update: that only refreshes its cached file stats, and without it
+    // a file whose line endings changed on checkout (core.autocrlf) still reads as modified.
     opts.checkout_strategy = GIT_CHECKOUT_FORCE |
                              GIT_CHECKOUT_RECREATE_MISSING |
-                             GIT_CHECKOUT_REMOVE_UNTRACKED |
-                             GIT_CHECKOUT_DONT_UPDATE_INDEX;
+                             GIT_CHECKOUT_REMOVE_UNTRACKED;
 
-    // Passing NULL to the second parameter tells libgit2 to use HEAD
-    int error = git_checkout_head(activeRepo(), &opts);
+    // Restore the working tree from the index rather than HEAD: only unstaged changes are
+    // discarded, and staged files keep their content on disk.
+    int error = git_checkout_index(activeRepo(), nullptr, &opts);
 
     if (error != GIT_OK) {
         const git_error *e = git_error_last();
