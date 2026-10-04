@@ -248,6 +248,11 @@ GitResult GitStatus::addToIndex(const QString& filePath, bool isRemove)
     if (result != GIT_OK)
         return GitResult(false, QVariant(), "Failed to get repository index");
 
+    if (!isRemove && isUnmerged(filePath)) {
+        const char* workdir = git_repository_workdir(activeRepo());
+        isRemove = workdir && !QFile::exists(QDir(QString::fromUtf8(workdir)).filePath(filePath));
+    }
+
     QByteArray filePathUtf8 = filePath.toUtf8();
     result = isRemove ? git_index_remove_bypath(index, filePathUtf8.constData())
                       : git_index_add_bypath(index, filePathUtf8.constData());
