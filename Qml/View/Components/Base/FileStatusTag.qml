@@ -84,6 +84,7 @@ Rectangle {
         case "modified":    return Style.colors.modifiediedFile
         case "renamed":     return Style.colors.renamedFile
         case "untracked":   return Style.colors.untrackedFile
+        case "conflicted":  return Style.colors.conflictMarker
         }
         return "transparent"
     }
