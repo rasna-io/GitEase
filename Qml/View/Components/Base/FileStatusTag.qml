@@ -48,6 +48,7 @@ Rectangle {
         case GitFileStatus.Renamed:
         case GitFileStatus.StagedRenamed:   return "renamed"
         case GitFileStatus.Untracked:       return "untracked"
+        case GitFileStatus.Conflicted:      return "conflicted"
         }
         return ""
     }
