@@ -159,13 +159,15 @@ Item {
 
             onStageFileRequested: function(filePath, isDeleted) {
                 root.showSaveDialog(
-                            () => {
-                                let res = statusController.stageFile(filePath, isDeleted)
-                                if (!res.success) {
-                                    root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
-                                }
-                                root.updateStatus()
+                    () => {
+                        root.confirmConflictStaging([filePath], () => {
+                            let res = statusController.stageFile(filePath, isDeleted)
+                            if (!res.success) {
+                                root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
                             }
+                            root.updateStatus()
+                        })
+                    }
                 )
             }
 
