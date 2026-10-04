@@ -1410,6 +1410,13 @@ GitResult GitStatus::revertFile(const QString &filePath)
     opts.paths.strings = &path;
     opts.paths.count = 1;
 
+    const bool unmerged = isUnmerged(filePath);
+    if (unmerged) {
+        GitResult resetResult = resetIndexToHead({ filePath });
+        if (!resetResult.success())
+            return GitResult(false, QVariant(), "Failed to revert file: " + resetResult.errorMessage());
+    }
+
     // Perform checkout from the index to the working directory
     int error = git_checkout_index(activeRepo(), nullptr, &opts);
 
@@ -1419,7 +1426,8 @@ GitResult GitStatus::revertFile(const QString &filePath)
         return GitResult(false, QVariant(), "Failed to revert file: " + errorMsg);
     }
 
-    emitGitCommand(QString("git checkout -- %1").arg(quoteCommandArg(filePath)));
+    emitGitCommand(QString(unmerged ? "git restore --source=HEAD --staged --worktree -- %1"
+                                    : "git checkout -- %1").arg(quoteCommandArg(filePath)));
 
     return GitResult(true, filePath, "File reverted successfully to index state.");
 }
