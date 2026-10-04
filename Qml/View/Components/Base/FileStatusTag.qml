@@ -72,6 +72,7 @@ Rectangle {
         case "modified":    return "Modified"
         case "renamed":     return "Renamed"
         case "untracked":   return "Untracked"
+        case "conflicted":  return "Conflicted"
         }
         return ""
     }
