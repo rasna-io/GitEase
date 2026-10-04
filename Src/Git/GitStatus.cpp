@@ -738,6 +738,99 @@ bool GitStatus::isUnmerged(const QString &filePath) const
     return git_index_conflict_get(&ancestor, &ours, &theirs, index.get(), path.constData()) == GIT_OK;
 }
 
+QStringList GitStatus::unmergedPaths() const
+{
+    QStringList paths;
+
+    git_index* indexRaw = nullptr;
+    if (!activeRepo() || git_repository_index(&indexRaw, activeRepo()) != GIT_OK)
+        return paths;
+
+    UniqueIndex index(indexRaw);
+
+    git_index_conflict_iterator* iterator = nullptr;
+    if (git_index_conflict_iterator_new(&iterator, index.get()) != GIT_OK)
+        return paths;
+
+    const git_index_entry* ancestor = nullptr;
+    const git_index_entry* ours     = nullptr;
+    const git_index_entry* theirs   = nullptr;
+    while (git_index_conflict_next(&ancestor, &ours, &theirs, iterator) == GIT_OK) {
+        const git_index_entry* entry = ours ? ours : (theirs ? theirs : ancestor);
+        if (entry && entry->path)
+            paths.append(QString::fromUtf8(entry->path));
+    }
+
+    git_index_conflict_iterator_free(iterator);
+    return paths;
+}
+
+GitResult GitStatus::resetIndexToHead(const QStringList &paths)
+{
+    if (paths.isEmpty())
+        return GitResult(true);
+
+    auto failure = [](const QString& what) {
+        const git_error* e = git_error_last();
+        return GitResult(false, QVariant(),
+                         QString("Failed to reset the index to HEAD: %1%2")
+                             .arg(what, e ? QString(" (%1)").arg(e->message) : QString()));
+    };
+
+    git_object* headTreeObject = nullptr;
+    if (git_revparse_single(&headTreeObject, activeRepo(), "HEAD^{tree}") != GIT_OK)
+        return failure("HEAD has no tree");
+
+    git_tree* headTree = reinterpret_cast<git_tree*>(headTreeObject);
+
+    git_index* indexRaw = nullptr;
+    if (git_repository_index(&indexRaw, activeRepo()) != GIT_OK) {
+        git_object_free(headTreeObject);
+        return failure("cannot open the index");
+    }
+    UniqueIndex index(indexRaw);
+
+    for (const QString& path : paths) {
+        const QByteArray pathUtf8 = path.toUtf8();
+
+        int error = git_index_conflict_remove(index.get(), pathUtf8.constData());
+        if (error == GIT_ENOTFOUND)
+            error = GIT_OK;
+
+        if (error == GIT_OK) {
+            git_tree_entry* headEntry = nullptr;
+            if (git_tree_entry_bypath(&headEntry, headTree, pathUtf8.constData()) == GIT_OK) {
+                git_index_entry entry = {};
+                entry.mode = git_tree_entry_filemode(headEntry);
+                entry.path = pathUtf8.constData();
+                git_oid_cpy(&entry.id, git_tree_entry_id(headEntry));
+
+                error = git_index_add(index.get(), &entry);
+                git_tree_entry_free(headEntry);
+            } else {
+                error = git_index_remove(index.get(), pathUtf8.constData(), 0);
+                if (error == GIT_ENOTFOUND)
+                    error = GIT_OK;
+            }
+        }
+
+        if (error != GIT_OK) {
+            git_object_free(headTreeObject);
+            git_index_read(index.get(), true);   // drop the partial changes
+            return failure(QString("'%1'").arg(path));
+        }
+    }
+
+    git_object_free(headTreeObject);
+
+    if (git_index_write(index.get()) != GIT_OK) {
+        git_index_read(index.get(), true);
+        return failure("cannot write the index");
+    }
+
+    return GitResult(true);
+}
+
 GitResult GitStatus::getStagedDiffView(const QString &filePath)
 {
     // old/head text
