@@ -8,7 +8,7 @@ import GitEase_Style_Impl
 /*! ***********************************************************************************************
  * FileStatusTag
  * Reusable change-status tag for a file.
- * - compact  : single colored letter (M / A / D / R / U), no background
+ * - compact  : single colored letter (M / A / D / R / U / C), no background
  * - expanded : full word ("Modified", ...) on a colored rounded background
  *
  * Feed it one of the two GitFileStatus enum families:
