@@ -185,8 +185,9 @@ public:
 
     /**
      * @brief Discards all unstaged modifications in the repository.
-     * * Resets the working directory to match the HEAD commit. This will not
-     * delete untracked files but will restore deleted tracked files.
+     * * Restores the working directory from the index, so staged changes are kept, restores
+     * deleted tracked files and removes untracked ones. Unmerged files are reset to HEAD,
+     * which also ends their conflicts.
      * * @return GitResult indicating success.
      */
     Q_INVOKABLE GitResult revertAll();
