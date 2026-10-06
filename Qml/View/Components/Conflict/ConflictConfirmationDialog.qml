@@ -44,6 +44,7 @@ PopupDialog {
      * ****************************************************************************************/
     signal saved()
     signal aborted()
+    signal quitRequested()
     signal cancelled()
 
     /* Object Properties
