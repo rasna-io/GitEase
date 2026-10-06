@@ -85,6 +85,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/ScrollingText.qml                 # Single-line auto-scrolling text
     Qml/View/Components/Base/ModernInputArea.qml               # Modern Input Area
     Qml/View/Components/Base/CommandPreview.qml                # Shared "command this form will run" strip
+    Qml/View/Components/Base/PopupButton.qml                   # Footer button of a PopupDialog
     Qml/View/Components/Base/PluginCard.qml
     Qml/View/Components/Base/ModernSpinBox.qml
     Qml/View/Components/Base/HorizontalTagInput.qml
