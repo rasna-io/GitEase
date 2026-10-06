@@ -73,6 +73,26 @@ GitResult GitCommit::getCommits(int limit, int offset)
         }
     }
 
+    // A tag can point at a commit no branch contains, for example a release
+    // commit that was replaced by a later commit with the same message.
+    // Peel annotated tags to the commit and walk those tips too, so the tag
+    // still has a row to sit on.
+    {
+        git_reference_iterator* iter = nullptr;
+        if (git_reference_iterator_glob_new(&iter, activeRepo(), "refs/tags/*") == 0) {
+            git_reference* ref = nullptr;
+            while (git_reference_next(&ref, iter) == 0) {
+                git_object* commitObj = nullptr;
+                if (git_reference_peel(&commitObj, ref, GIT_OBJECT_COMMIT) == 0 && commitObj) {
+                    git_revwalk_push(walker, git_object_id(commitObj));
+                    git_object_free(commitObj);
+                }
+                git_reference_free(ref);
+            }
+            git_reference_iterator_free(iter);
+        }
+    }
+
     // Push HEAD as fallback (detached HEAD or repos without branches)
     git_revwalk_push_head(walker);
 
