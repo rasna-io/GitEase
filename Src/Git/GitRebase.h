@@ -129,6 +129,20 @@ public:
      */
     Q_INVOKABLE void interactiveAbort();
 
+    /**
+     * @brief Quit the interactive rebase without rewinding anything (`git rebase --quit`).
+     *
+     * Unlike interactiveAbort(), nothing is restored: HEAD stays detached where the replay
+     * stopped, the original branch keeps pointing where it did before the rebase started, and
+     * the index and working tree keep whatever the stopped commit left in them - conflict
+     * markers included - for the user to salvage by hand.
+     *
+     * @return On success the data map holds `head` (the detached HEAD commit),
+     *         `originalBranch` (the branch HEAD was on when the rebase started, empty if it
+     *         was detached) and `conflictedFiles` (paths still unmerged in the index).
+     */
+    Q_INVOKABLE GitResult interactiveQuit();
+
 private:
     GitResult startRebase(const QString& onto,
                           const QString& upstream,
@@ -144,6 +158,7 @@ private:
     QVariantMap rebaseProgressData(git_rebase* rebase) const;
     GitResult resetWorktreeToHead() const;
     bool repositoryHasConflicts() const;
+    QStringList conflictedPaths() const;
     bool isRebaseInProgress() const;
 
     // Helper to check out a branch
@@ -285,5 +300,11 @@ signals:
      * @brief Emitted when the user aborts the interactive rebase.
      */
     void rebaseAborted();
+
+    /**
+     * @brief Emitted when the user quits the interactive rebase, leaving HEAD detached and the
+     *        working tree as it is.
+     */
+    void rebaseQuit();
 
 };
