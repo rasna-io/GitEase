@@ -292,8 +292,16 @@ Item {
         }
 
         let withMarkers = conflicted.filter(path => root.statusController.hasConflictMarkers(path))
-        let markersText = "conflict markers (<<<<<<<, =======, >>>>>>>)"
-        let dialog = conflictStagingDialogComp.createObject(root)
+        let dialog      = conflictStagingDialogComp.createObject(root)
+
+        const escape  = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        const tint    = (text, color) => `<span style="color:${color}">${escape(text)}</span>`
+        const code    = (text, color) => `<span style="font-family:'${Style.fontTypes.jetBrainsMono}'; ` +
+                                         `font-weight:600; color:${color}">${escape(text)}</span>`
+        const pathOf  = path => code(path, Style.colors.popupTitleText)
+
+        const markers = code(["<<<<<<<", "=======", ">>>>>>>"].join(String.fromCharCode(0xA0)),
+                             Style.colors.conflictMarker)
 
         if (conflicted.length === 1) {
             dialog.title   = "Mark Conflict as Resolved?"
