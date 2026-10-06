@@ -348,6 +348,105 @@ QString readCommits(const QString &repoPath, const QString &range, QVariantMap *
     return {};
 }
 
+// ── Project version files ────────────────────────────────────────────────────────────────────
+// The release commit has to carry the version the tag names. Updating these files afterwards
+// replaces that commit and leaves the tag on a commit no branch contains.
+
+const QRegularExpression &cmakeProjectVersion()
+{
+    static const QRegularExpression re(
+        QStringLiteral(R"(^([ \t]*project\s*\([^\n#]*?\bVERSION\s+)(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?))"),
+        QRegularExpression::MultilineOption);
+    return re;
+}
+
+const QRegularExpression &innoAppVersion()
+{
+    static const QRegularExpression re(
+        QStringLiteral(R"(^([ \t]*#define[ \t]+MyAppVersion[ \t]+")([^"]+)("))"),
+        QRegularExpression::MultilineOption);
+    return re;
+}
+
+struct VersionSpot
+{
+    QString relative;
+    QString current;
+};
+
+QString currentVersionIn(const QString &relative, const QString &text)
+{
+    if (relative.endsWith(QLatin1String("CMakeLists.txt"), Qt::CaseInsensitive)) {
+        const auto match = cmakeProjectVersion().match(text);
+        return match.hasMatch() ? match.captured(2) : QString();
+    }
+    if (relative.endsWith(QLatin1String(".iss"), Qt::CaseInsensitive)) {
+        const auto match = innoAppVersion().match(text);
+        return match.hasMatch() ? match.captured(2) : QString();
+    }
+    return {};
+}
+
+QString withVersion(const QString &relative, const QString &text, const QString &version)
+{
+    QRegularExpressionMatch match;
+    if (relative.endsWith(QLatin1String("CMakeLists.txt"), Qt::CaseInsensitive))
+        match = cmakeProjectVersion().match(text);
+    else if (relative.endsWith(QLatin1String(".iss"), Qt::CaseInsensitive))
+        match = innoAppVersion().match(text);
+
+    if (!match.hasMatch())
+        return text;
+    return text.left(match.capturedStart(2)) + version + text.mid(match.capturedEnd(2));
+}
+
+QList<VersionSpot> projectVersionFiles(const QString &repoPath)
+{
+    QList<VersionSpot> found;
+    auto consider = [&](const QString &relative) {
+        QFile file(QDir(repoPath).filePath(relative));
+        if (!file.open(QIODevice::ReadOnly))
+            return;
+        const QString current = currentVersionIn(relative, QString::fromUtf8(file.readAll()));
+        if (SemVer::parse(current).valid)
+            found.append(VersionSpot{ relative, current });
+    };
+
+    consider(QStringLiteral("CMakeLists.txt"));
+
+    const QDir installer(QDir(repoPath).filePath(QStringLiteral("installer")));
+    if (installer.exists()) {
+        const auto entries = installer.entryInfoList({ QStringLiteral("*.iss") }, QDir::Files);
+        for (const QFileInfo &info : entries) {
+            if (info.fileName().startsWith(QLatin1String("generated"), Qt::CaseInsensitive))
+                continue;
+            consider(QStringLiteral("installer/") + info.fileName());
+        }
+    }
+    return found;
+}
+
+QStringList dirtyPaths(const QString &repoPath)
+{
+    QStringList paths;
+    const QString out = runGit(repoPath, { QStringLiteral("status"),
+                                            QStringLiteral("--porcelain"),
+                                            QStringLiteral("--untracked-files=all") }).out;
+    const auto lines = out.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    for (QString line : lines) {
+        if (line.size() < 4)
+            continue;
+        line = line.mid(3).trimmed();
+        const int arrow = line.indexOf(QStringLiteral(" -> "));
+        if (arrow >= 0)
+            line = line.mid(arrow + 4).trimmed();
+        if (line.startsWith(QLatin1Char('"')) && line.endsWith(QLatin1Char('"')) && line.size() >= 2)
+            line = line.mid(1, line.size() - 2);
+        paths.append(QDir::fromNativeSeparators(line));
+    }
+    return paths;
+}
+
 QString linkIssues(QString text, const QString &webUrl, const QString &provider)
 {
     QString base;
@@ -524,6 +623,17 @@ QVariantMap ReleaseEngine::analyzeRepository(const QString &repoPath)
 
     // Working tree
     result["stagedFiles"] = runGit(repoPath, { "diff", "--cached", "--name-only" }).out.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+
+    QVariantList versionFiles;
+    const QStringList dirty = dirtyPaths(repoPath);
+    for (const VersionSpot &spot : projectVersionFiles(repoPath)) {
+        QVariantMap entry;
+        entry[QStringLiteral("path")] = spot.relative;
+        entry[QStringLiteral("version")] = spot.current;
+        entry[QStringLiteral("dirty")] = dirty.contains(spot.relative);
+        versionFiles.append(entry);
+    }
+    result[QStringLiteral("versionFiles")] = versionFiles;
 
     // Remote
     const GitOutput origin = runGit(repoPath, { "remote", "get-url", "origin" });
@@ -712,6 +822,81 @@ QVariantMap ReleaseEngine::writeChangelog(const QString &fileName,
     result["success"]      = true;
     result["created"]      = !exists;
     result["relativePath"] = QDir::fromNativeSeparators(relative);
+    return result;
+}
+
+QVariantMap ReleaseEngine::writeProjectVersion(const QString &version) const
+{
+    QVariantMap result;
+    result[QStringLiteral("success")] = false;
+    result[QStringLiteral("files")] = QStringList();
+
+    const QString target = version.trimmed();
+    if (!isValidVersion(target)) {
+        result[QStringLiteral("errorMessage")] = QStringLiteral("Version %1 is not a semantic version").arg(version);
+        return result;
+    }
+    if (m_repoPath.isEmpty()) {
+        result[QStringLiteral("errorMessage")] = QStringLiteral("No repository is open");
+        return result;
+    }
+
+    const QStringList dirty = dirtyPaths(m_repoPath);
+    QStringList blocked;
+    QStringList toStage;
+    for (const VersionSpot &spot : projectVersionFiles(m_repoPath)) {
+        const bool already = spot.current == target;
+        const bool isDirty = dirty.contains(spot.relative);
+        if (already) {
+            if (isDirty)
+                toStage.append(spot.relative);
+            continue;
+        }
+        if (isDirty) {
+            blocked.append(spot.relative);
+            continue;
+        }
+        toStage.append(spot.relative);
+    }
+
+    if (!blocked.isEmpty()) {
+        result[QStringLiteral("errorMessage")] =
+            QStringLiteral("%1 has uncommitted changes. Commit or stash them first so the version bump stays in the release commit.")
+                .arg(blocked.join(QStringLiteral(", ")));
+        return result;
+    }
+
+    QStringList written;
+    for (const QString &relative : toStage) {
+        const QString path = QDir(m_repoPath).filePath(relative);
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly)) {
+            result[QStringLiteral("errorMessage")] = QStringLiteral("Could not read %1").arg(relative);
+            return result;
+        }
+        const QByteArray raw = file.readAll();
+        file.close();
+
+        const bool crlf = raw.contains("\r\n");
+        QString text = QString::fromUtf8(raw);
+        text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        const QString updated = withVersion(relative, text, target);
+        if (updated != text) {
+            QString out = updated;
+            if (crlf)
+                out.replace(QStringLiteral("\n"), QStringLiteral("\r\n"));
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+                result[QStringLiteral("errorMessage")] = QStringLiteral("Could not write %1").arg(relative);
+                return result;
+            }
+            file.write(out.toUtf8());
+            file.close();
+        }
+        written.append(relative);
+    }
+
+    result[QStringLiteral("success")] = true;
+    result[QStringLiteral("files")] = written;
     return result;
 }
 

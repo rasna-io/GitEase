@@ -55,6 +55,17 @@ public:
                                            const QString &version,
                                            const QString &section) const;
 
+    /*!
+     * Sets the project version to \a version in the files the release commit must include:
+     * the root CMakeLists.txt project() VERSION, and Inno Setup MyAppVersion defines.
+     * Files that already say \a version are left unchanged. A file with other uncommitted
+     * changes is refused, so the bump cannot be split into a follow-up commit that leaves
+     * the tag behind.
+     *
+     * Keys: success, errorMessage, files (relative paths to stage).
+     */
+    Q_INVOKABLE QVariantMap writeProjectVersion(const QString &version) const;
+
     //! Pushes the current branch, and \a tagName when not empty, to \a remote. Emits pushFinished().
     Q_INVOKABLE void push(const QString &remote, const QString &tagName);
 
