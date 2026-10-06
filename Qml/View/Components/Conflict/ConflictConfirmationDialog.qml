@@ -8,6 +8,11 @@ import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * ConflictConfirmationDialog
+ * Asks how to go on before conflicted work is staged, saved or thrown away. Offers up to three
+ * choices: save (primary), abort (destructive) and cancel; each choice's description is shown as
+ * its button's tooltip. The user has to pick one: Escape and clicks outside are ignored, and the
+ * close button counts as cancel.
+ * Created on demand, and destroys itself once closed.
  * ************************************************************************************************/
 
 PopupDialog {
