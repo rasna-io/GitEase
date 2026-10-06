@@ -33,6 +33,7 @@ private:
     void attach();
     void ensureWindowStyles();
     void setupDwmShadow();
+    void applyRoundedCorners();
     static UINT dpiForWindow(HWND h);
     static int smForDpi(int index, UINT dpi);
     static int resizeBorderThicknessX(HWND h);
