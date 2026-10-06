@@ -22,6 +22,8 @@ PopupDialog {
      * ****************************************************************************************/
     property string message             : "There are unsaved modifications!\nDo you want to save your changes?"
 
+    property int    messageFormat       : Text.PlainText
+
     property string saveTitle           : "Save"
     property string saveDescription     : "The modifications will be saved"
 
