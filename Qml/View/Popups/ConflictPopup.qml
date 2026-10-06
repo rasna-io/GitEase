@@ -144,6 +144,8 @@ Window {
         }
     }
 
+    readonly property bool canQuit: currentOperation === ConflictPopup.OperationType.Rebase
+
     property bool interactiveMode: false
 
     /* Signals
