@@ -87,6 +87,16 @@ PopupDialog {
         },
 
         PopupButton {
+            visible: dialog.hasQuit
+            text: dialog.quitTitle
+            tooltip: dialog.quitDescription
+            onClicked: {
+                dialog.quitRequested()
+                dialog.close()
+            }
+        },
+
+        PopupButton {
             visible: dialog.hasAbort
             tone: PopupButton.Destructive
             text: dialog.acceptTitle
