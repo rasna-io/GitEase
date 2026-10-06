@@ -3,46 +3,72 @@
 // ====================================================================
 // CommitGraphMenuBuilder – builds the context‑menu data model
 // for a commit.
+//
+// The menu only offers actions that are valid for what was
+// right-clicked: a multi-selection, a stash node or a single commit.
+// Actions that never apply to that target are left out; actions that
+// apply but can't run right now are disabled.
 // ====================================================================
 
 // pluginItems: optional array of {pluginId, id, label, icon, separator, order} from IContextMenuPlugin
 function buildMenu(state, pluginItems) {
+    if (state.numSelected > 1)
+        return buildSelectionMenu(state);
+
+    var model = state.isStash ? buildStashMenu(state) : buildCommitMenu(state);
+    appendPluginItems(model, state, pluginItems);
+
+    return model;
+}
+
+function buildSelectionMenu(state) {
+    return [{
+        text: "Cherry-Pick Selected (" + state.numSelected + ")",
+        icon: "copy",
+        enabled: state.cherryPickEnabled,
+        action: "cherryPickSelected"
+    }];
+}
+
+function buildStashMenu(state) {
+    return [browseFilesItem(state)];
+}
+
+function buildCommitMenu(state) {
     var model = [];
 
     // Checkout section
-    if (state.branchNames.length > 0) {
-        var checkoutSubMenu = state.branchNames.map(function(bName) {
+    var checkoutDetached = {
+        text: "Checkout " + state.shortHash + " (Detached)",
+        icon: "hash",
+        enabled: !state.isHead,
+        action: "checkoutCommit",
+        payload: { hash: state.fullHash }
+    };
+
+    if (state.localBranches.length > 0) {
+        var checkoutSubMenu = state.localBranches.map(function(bName) {
             return {
                 text: bName,
                 icon: "gitBranch",
+                enabled: bName !== state.currentBranch,
                 action: "checkoutBranch",
                 payload: { branch: bName }
             };
         });
 
-        checkoutSubMenu.push({
-            text: "Checkout " + state.shortHash + " (Detached)",
-            icon: "hash",
-            action: "checkoutCommit",
-            payload: { hash: state.fullHash }
-        });
+        checkoutSubMenu.push(checkoutDetached);
 
         model.push({
             text: "Checkout",
             icon: "gitBranch",
-            enabled: !state.isHead,
+            enabled: checkoutSubMenu.some(function(item) { return item.enabled; }),
             subItems: checkoutSubMenu
         });
     }
 
     else {
-        model.push({
-            text: "Checkout " + state.shortHash + " (Detached)",
-            icon: "hash",
-            enabled: !state.isHead,
-            action: "checkoutCommit",
-            payload: { hash: state.fullHash }
-        });
+        model.push(checkoutDetached);
     }
 
     model.push({
@@ -79,12 +105,7 @@ function buildMenu(state, pluginItems) {
     });
 
     // Browse files
-    model.push({
-        text: "Browse Files at This Commit...",
-        icon: "folder",
-        action: "browseFiles",
-        payload: { hash: state.fullHash, message: state.commitMessage, date: state.commitDate }
-    });
+    model.push(browseFilesItem(state));
 
     // Merge
     if (state.hasMergeableBranches) {
@@ -110,31 +131,22 @@ function buildMenu(state, pluginItems) {
     }
 
     // Cherry‑Pick
-    if (state.numSelected > 1) {
-        model.push({
-            text: "Cherry-Pick Selected (" + state.numSelected + ")",
-            icon: "copy",
-            enabled: state.cherryPickEnabled,
-            action: "cherryPickSelected"
-        });
-    }
-    else {
-        model.push({
-            text: "Cherry-Pick " + state.shortHash,
-            icon: "copy",
-            enabled: state.canCherryPick,
-            action: "cherryPickSingle",
-            payload: { hash: state.fullHash }
-        });
-    }
+    model.push({
+        text: "Cherry-Pick " + state.shortHash,
+        icon: "copy",
+        enabled: state.canCherryPick,
+        action: "cherryPickSingle",
+        payload: { hash: state.fullHash }
+    });
 
     model.push({
         separator: true
     });
 
     // Reset
+    var resetTarget = state.currentBranch ? "'" + state.currentBranch + "'" : "HEAD";
     model.push({
-        text: "Reset '" + state.currentBranch + "' to This Commit",
+        text: "Reset " + resetTarget + " to This Commit",
         icon: "reset",
         action: "reset",
         subItems: [
@@ -144,22 +156,33 @@ function buildMenu(state, pluginItems) {
         ]
     });
 
-    // Plugin context menu items (appended after a separator when non-empty)
-    if (pluginItems && pluginItems.length > 0) {
-        model.push({ separator: true });
-        pluginItems.forEach(function(pi) {
-            if (pi.separator) {
-                model.push({ separator: true });
-                return;
-            }
-            model.push({
-                text:    pi.label,
-                icon:    pi.icon || "",
-                action:  "pluginAction",
-                payload: { pluginId: pi.pluginId, itemId: pi.id, hash: state.fullHash }
-            });
-        });
-    }
-
     return model;
+}
+
+function browseFilesItem(state) {
+    return {
+        text: "Browse Files at This Commit...",
+        icon: "folder",
+        action: "browseFiles",
+        payload: { hash: state.fullHash, message: state.commitMessage, date: state.commitDate }
+    };
+}
+
+function appendPluginItems(model, state, pluginItems) {
+    if (!pluginItems || pluginItems.length === 0)
+        return;
+
+    model.push({ separator: true });
+    pluginItems.forEach(function(pi) {
+        if (pi.separator) {
+            model.push({ separator: true });
+            return;
+        }
+        model.push({
+            text:    pi.label,
+            icon:    pi.icon || "",
+            action:  "pluginAction",
+            payload: { pluginId: pi.pluginId, itemId: pi.id, hash: state.fullHash }
+        });
+    });
 }
