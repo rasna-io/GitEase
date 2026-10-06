@@ -338,6 +338,18 @@ GitResult GitStatus::getDiff(const QString &filePath)
     if (diff)
         git_diff_free(diff);
 
+    // libgit2 may yield no patch for an untracked file; show its whole content as additions
+    if (result.isEmpty()) {
+        uint32_t mode = 0;
+        if (!getIndexBlob(activeRepo(), filePath, &mode)) {
+            std::vector<QString> lines = readWorkdirLines(activeRepo(), filePath);
+            if (!lines.empty() && lines.back().isEmpty())
+                lines.pop_back(); // trailing newline, not a real line
+            for (size_t i = 0; i < lines.size(); ++i)
+                result.append(GitDiff(GitDiff::Added, -1, static_cast<int>(i) + 1, lines[i]));
+        }
+    }
+
     emitGitCommand(QString("git diff -- %1").arg(quoteCommandArg(filePath)));
 
     return GitResult(true, QVariant::fromValue(result));
