@@ -675,7 +675,7 @@ Window {
         d.hasSave = true
 
         d.cancelTitle = "Cancel"
-        d.cancelDescription = "Don't save The modification"
+        d.cancelDescription = "Keep editing without saving or staging"
 
         d.hasAbort = false
 
