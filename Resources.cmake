@@ -250,6 +250,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/ItemSelectorPopup.qml           # Select Item popup
     Qml/View/Popups/SettingsPopup.qml
     Qml/View/Popups/IPopup.qml
+    Qml/View/Popups/PopupDialog.qml                 # Shared frame for dialog popups
     Qml/View/Popups/IWindow.qml
     Qml/View/Popups/AddEditRemotePopup.qml
     Qml/View/Popups/AddBranchPopup.qml
