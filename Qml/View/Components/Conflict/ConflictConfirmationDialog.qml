@@ -20,7 +20,6 @@ PopupDialog {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string title               : "Save modifications"
     property string message             : "There are unsaved modifications!\nDo you want to save your changes?"
 
     property string saveTitle           : "Save"
