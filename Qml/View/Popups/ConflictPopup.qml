@@ -848,13 +848,34 @@ Window {
     function requestAbort() {
         let dialog = conflictConfirmationDialogComp.createObject(root)
 
-        dialog.title = `Abort ${currentOperationName}?`
-        dialog.message = "You have unresolved conflicts.\n" +
-                         `Closing this window will abort the ${currentOperationName} and discard all progress.\n\n` +
-                         "Are you sure you want to abort?"
+    function requestClose() {
+        let operation = currentOperationName.toLowerCase()
+        let dialog    = conflictConfirmationDialogComp.createObject(root)
+
+        if (root.canQuit) {
+            dialog.title   = `Stop the ${currentOperationName}?`
+            dialog.message = `Closing this window ends the ${operation}. You can:\n\n` +
+                             `•  Abort to discard all progress and return to the state before the ${operation} started.\n` +
+                             "•  Quit to stop here and finish by hand. Nothing is rewound: HEAD stays detached, " +
+                             "unresolved files keep their conflict markers, the remaining commits are not replayed, " +
+                             `and the ${operation} can no longer be continued or aborted.`
+        } else {
+            dialog.title   = `Abort ${currentOperationName}?`
+            dialog.message = "You have unresolved conflicts.\n" +
+                             `Closing this window will abort the ${currentOperationName} and discard all progress.\n\n` +
+                             "Are you sure you want to abort?"
+        }
+
+        dialog.hasQuit         = root.canQuit
+        dialog.quitTitle       = `Quit ${currentOperationName}`
+        dialog.quitDescription = "Stop here and leave HEAD, the index and every file exactly as they are"
+
+        dialog.acceptTitle       = `Abort ${currentOperationName}`
+        dialog.acceptDescription = "Discard all progress and return to the state before the operation started"
 
         dialog.saved.connect(() => root.saveAllModifications())
         dialog.aborted.connect(() => root.abortOperation())
+        dialog.quitRequested.connect(() => root.quitOperation())
         dialog.open()
     }
 
