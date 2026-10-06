@@ -11,7 +11,7 @@ import GitEaseChangelog
 /*! ***********************************************************************************************
  * ReleaseView
  * Prepares a release: choose the version and commits, review the notes, then update the
- * changelog, commit, tag and push.
+ * changelog, project version, commit, tag and push.
  *
  * Layout adapts to the width: the summary sits beside the work area on wide screens and below
  * it otherwise; changes and notes are side by side when there is room and tabs when not.
@@ -108,6 +108,18 @@ Item {
             list.push({ state: "warn", text: "HEAD is detached; the release commit will not be on a branch" })
         if (root.analysis && root.analysis.truncated)
             list.push({ state: "warn", text: "Only the latest 1000 commits are listed" })
+        if (root.updateChangelog && root.analysis && root.analysis.versionFiles) {
+            const files = root.analysis.versionFiles
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i]
+                if (file.dirty && file.version !== root.version)
+                    list.push({ state: "block", text: file.path + " has uncommitted changes, so its version bump cannot join the release commit" })
+                else if (file.dirty && file.version === root.version)
+                    list.push({ state: "warn", text: file.path + " already says " + root.version + "; its other uncommitted changes will join the release commit" })
+                else if (file.version !== root.version)
+                    list.push({ state: "ok", text: file.path + " " + file.version + " → " + root.version + " in the release commit" })
+            }
+        }
         return list
     }
 
@@ -117,7 +129,12 @@ Item {
     readonly property var otherStagedFiles: {
         const staged = root.analysis ? root.analysis.stagedFiles || [] : []
         const file = root.changelogFile.trim().replace(/\\/g, "/")
-        return staged.filter(f => f !== file)
+        const versionPaths = (root.analysis && root.analysis.versionFiles ? root.analysis.versionFiles : [])
+            .map(f => String(f.path).replace(/\\/g, "/"))
+        return staged.filter(f => {
+            const path = String(f).replace(/\\/g, "/")
+            return path !== file && versionPaths.indexOf(path) === -1
+        })
     }
 
     readonly property bool canRelease: !inProgress && blockingIssues.length === 0
@@ -126,6 +143,7 @@ Item {
     property var    _rows:          []
     property var    _included:      ({})
     property string _changelogPath: ""
+    property string _releaseHash:   ""
     property int    _pushIndex:     -1
 
     /* Signals
@@ -358,6 +376,7 @@ Item {
         root.saveSetting("tagPrefix", root.tagPrefix)
         root.notes = notesArea.text
         root.failedIndex = -1
+        root._releaseHash = ""
 
         stepsModel.clear()
         if (root.updateChangelog) {
@@ -427,29 +446,46 @@ Item {
             break
         }
         case "commit": {
-            const staged = root.statusController.stageFile(root._changelogPath)
-            if (!staged.success) {
-                root.failStep(index, staged.errorMessage || "Could not stage " + root._changelogPath)
+            const versions = root.engine.writeProjectVersion(root.version)
+            if (!versions.success) {
+                root.failStep(index, versions.errorMessage || "Could not update the project version")
                 return
+            }
+            const paths = []
+            if (root._changelogPath)
+                paths.push(root._changelogPath)
+            const bumped = versions.files || []
+            for (let i = 0; i < bumped.length; i++) {
+                if (paths.indexOf(bumped[i]) === -1)
+                    paths.push(bumped[i])
+            }
+            for (let i = 0; i < paths.length; i++) {
+                const staged = root.statusController.stageFile(paths[i])
+                if (!staged.success) {
+                    root.failStep(index, staged.errorMessage || "Could not stage " + paths[i])
+                    return
+                }
             }
             const committed = root.commitController.commit("chore(release): " + root.tagName, false, false)
             if (!committed.success) {
                 root.failStep(index, committed.errorMessage || "The release commit failed")
                 return
             }
+            root._releaseHash = (committed.data && committed.data.hash) ? committed.data.hash : "HEAD"
             if (root.pluginManager && typeof root.pluginManager.notifyWorkflowEvent === "function")
                 root.pluginManager.notifyWorkflowEvent("post-commit", { amend: false })
-            root.setStep(index, "done", "")
+            root.setStep(index, "done", bumped.length ? "Version set in " + bumped.join(", ") : "")
             break
         }
         case "tag": {
             const body = root.notes.split("\n").slice(1).join("\n").trim()
-            const res = root.tagController.create(root.tagName, "HEAD", "Release " + root.tagName + (body ? "\n\n" + body : ""), false)
+            const target = root._releaseHash || "HEAD"
+            const res = root.tagController.create(root.tagName, target, "Release " + root.tagName + (body ? "\n\n" + body : ""), false)
             if (!res.success) {
                 root.failStep(index, res.errorMessage || "Could not create tag " + root.tagName)
                 return
             }
-            root.setStep(index, "done", "Annotated tag on HEAD")
+            root.setStep(index, "done", "Annotated tag on " + (target === "HEAD" ? "HEAD" : target.substring(0, 7)))
             break
         }
         case "push": {
@@ -1400,7 +1436,11 @@ Item {
                             Layout.fillWidth: true
                             iconText: Style.icons.file
                             text: "Update changelog"
-                            description: "Add the notes to " + (root.changelogFile.trim() || "CHANGELOG.md") + " and commit chore(release): " + root.tagName
+                            description: "Add the notes to " + (root.changelogFile.trim() || "CHANGELOG.md")
+                                         + ((root.analysis && root.analysis.versionFiles && root.analysis.versionFiles.length)
+                                            ? ", set " + root.analysis.versionFiles.map(f => f.path).join(", ")
+                                            : "")
+                                         + " and commit chore(release): " + root.tagName
                             checked: root.updateChangelog
                             onToggled: root.updateChangelog = checked
                         }
