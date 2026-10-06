@@ -28,6 +28,9 @@ PopupDialog {
     property string acceptTitle         : "Abort Operation"
     property string acceptDescription   : "Discard all changes and exit"
 
+    property string quitTitle           : "Quit Operation"
+    property string quitDescription     : "Stop here and leave HEAD, the index and every file exactly as they are"
+
     property string cancelTitle         : "Keep Resolving"
     property string cancelDescription   : "Return to the conflict editor"
 
