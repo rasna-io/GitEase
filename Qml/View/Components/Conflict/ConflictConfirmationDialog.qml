@@ -75,7 +75,7 @@ PopupDialog {
         font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
         lineHeight: 1.2
-        wrapMode: Text.WordWrap
+        wrapMode: Text.Wrap
     }
 
     actions: [
