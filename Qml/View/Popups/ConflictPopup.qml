@@ -370,7 +370,7 @@ Window {
                 totalFiles: root.conflicts.length + root.stagedFiles.length
                 resolvedConflicts: root.resolvedConflictTotal
                 totalConflicts: root.conflictTotal
-                onAbortRequested: root.abortOperation()
+                onAbortRequested: root.requestAbort()
                 onQuitRequested: root.requestQuit()
                 onSkipRequested: root.skipOperation()
                 onContinueRequested: root.continueOperation()
