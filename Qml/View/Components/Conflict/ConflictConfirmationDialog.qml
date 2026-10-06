@@ -46,9 +46,7 @@ PopupDialog {
      * ****************************************************************************************/
     modal: true
     focus: true
-    width: 580
-    height: Math.max(280, dialogColumn.implicitHeight + 2 * dialogColumn.anchors.margins)
-
+    width: 480
     closePolicy: Popup.NoAutoClose
 
     title: "Save modifications"
