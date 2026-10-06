@@ -306,10 +306,12 @@ Item {
         if (conflicted.length === 1) {
             dialog.title   = "Mark Conflict as Resolved?"
             dialog.message = withMarkers.length > 0
-                    ? `'${conflicted[0]}' still contains ${markersText}.\n` +
-                      "Staging it marks the conflict as resolved, and committing would record the markers."
-                    : `'${conflicted[0]}' has a conflict.\n` +
-                      "Staging it marks the conflict as resolved with the file as it is now."
+                    ? `${pathOf(conflicted[0])} still contains conflict markers ${markers}.<br><br>` +
+                      "Staging it marks the conflict as resolved. If you commit the file like this, " +
+                      "the markers are committed with it."
+                    : `${pathOf(conflicted[0])} has no conflict markers left, but Git still lists it ` +
+                      "as conflicted.<br><br>" +
+                      "Staging it marks the conflict as resolved, using the file exactly as it is now."
         } else {
             dialog.title   = "Mark Conflicts as Resolved?"
             dialog.message = `${conflicted.length} conflicted files will be marked as resolved.` +
