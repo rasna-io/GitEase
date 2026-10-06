@@ -313,11 +313,23 @@ Item {
                       "as conflicted.<br><br>" +
                       "Staging it marks the conflict as resolved, using the file exactly as it is now."
         } else {
+            const shown = conflicted.slice(0, 5)
+            let   list  = shown.map(path => "•&nbsp;&nbsp;" + pathOf(path) +
+                                            (withMarkers.includes(path)
+                                             ? "&nbsp;&nbsp;" + tint("has markers", Style.colors.conflictMarker)
+                                             : ""))
+
+            if (conflicted.length > shown.length)
+                list.push(`•&nbsp;&nbsp;and ${conflicted.length - shown.length} more`)
+
             dialog.title   = "Mark Conflicts as Resolved?"
-            dialog.message = `${conflicted.length} conflicted files will be marked as resolved.` +
-                    (withMarkers.length > 0
-                     ? `\n${withMarkers.length} of them still contain ${markersText}, and committing would record them.`
-                     : "")
+            dialog.message = `${conflicted.length} conflicted files will be marked as resolved:<br>` +
+                             list.join("<br>") + "<br><br>" +
+                             (withMarkers.length > 0
+                              ? (withMarkers.length === conflicted.length ? "All" : withMarkers.length) +
+                                ` of them still contain conflict markers ${markers}. ` +
+                                "Committing them like this would commit the markers too."
+                              : "None of them has conflict markers left, so each is staged exactly as it is now.")
         }
 
         dialog.saveTitle       = stagingAll ? "Stage All and Resolve" : "Stage and Resolve"
