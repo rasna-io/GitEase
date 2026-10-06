@@ -38,6 +38,8 @@ PopupDialog {
 
     property bool hasSave               : false
 
+    property bool hasQuit               : false
+
     /* Signals
      * ****************************************************************************************/
     signal saved()
