@@ -10,7 +10,7 @@ import GitEase_Style_Impl
  * ConflictConfirmationDialog
  * ************************************************************************************************/
 
-IPopup {
+PopupDialog {
     id: dialog
 
     /* Property Declarations
@@ -44,8 +44,23 @@ IPopup {
     width: 580
     height: Math.max(280, dialogColumn.implicitHeight + 2 * dialogColumn.anchors.margins)
     closePolicy: Popup.NoAutoClose
+    title: "Save modifications"
 
     onClosed: destroy()
+
+    /* Children
+     * ****************************************************************************************/
+    Text {
+        Layout.fillWidth: true
+
+        text: dialog.message
+        textFormat: Text.PlainText
+        color: Style.colors.popupBodyText
+        font.family: Style.fontTypes.inter
+        font.pixelSize: Style.appFont.defaultPt
+        lineHeight: 1.2
+        wrapMode: Text.WordWrap
+    }
 
     actions: [
         PopupButton {
