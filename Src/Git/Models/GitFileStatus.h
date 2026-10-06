@@ -81,11 +81,11 @@ public:
 
 private:
     QString m_path;
-    Status m_status;
-    bool m_isStaged;
-    bool m_isUnstaged;
-    bool m_isUntracked;
-    int m_deletionsCount;
-    int m_additionsCount;
-    DeltaStatus m_deltaStatus;
+    Status m_status = static_cast<Status>(0);
+    bool m_isStaged = false;
+    bool m_isUnstaged = false;
+    bool m_isUntracked = false;
+    int m_deletionsCount = 0;
+    int m_additionsCount = 0;
+    DeltaStatus m_deltaStatus = static_cast<DeltaStatus>(0);
 };
