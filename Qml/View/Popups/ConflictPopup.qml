@@ -291,7 +291,7 @@ Window {
                 ontoRef: root.ontoRef
                 positionText: root.positionText
                 windowController: conflictWindowController
-                onCloseRequested: root.requestAbort()
+                onCloseRequested: root.requestClose()
             }
 
             ConflictToolbar {
