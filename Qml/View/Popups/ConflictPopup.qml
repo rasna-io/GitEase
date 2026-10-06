@@ -846,7 +846,20 @@ Window {
     }
 
     function requestAbort() {
-        let dialog = conflictConfirmationDialogComp.createObject(root)
+        let operation = currentOperationName.toLowerCase()
+        let dialog    = conflictConfirmationDialogComp.createObject(root)
+
+        dialog.title   = `Abort ${currentOperationName}?`
+        dialog.message = "Aborting discards all progress, including the conflicts you already resolved, " +
+                         `and returns the repository to the state before the ${operation} started.\n\n` +
+                         "Are you sure you want to abort?"
+
+        dialog.acceptTitle       = `Abort ${currentOperationName}`
+        dialog.acceptDescription = "Discard all progress and return to the state before the operation started"
+
+        dialog.aborted.connect(() => root.abortOperation())
+        dialog.open()
+    }
 
     function requestClose() {
         let operation = currentOperationName.toLowerCase()
