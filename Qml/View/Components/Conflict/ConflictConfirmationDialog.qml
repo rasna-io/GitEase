@@ -70,7 +70,7 @@ PopupDialog {
         Layout.fillWidth: true
 
         text: dialog.message
-        textFormat: Text.PlainText
+        textFormat: dialog.messageFormat
         color: Style.colors.popupBodyText
         font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
