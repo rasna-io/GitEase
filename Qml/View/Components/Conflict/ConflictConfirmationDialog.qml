@@ -43,7 +43,9 @@ PopupDialog {
     focus: true
     width: 580
     height: Math.max(280, dialogColumn.implicitHeight + 2 * dialogColumn.anchors.margins)
+
     closePolicy: Popup.NoAutoClose
+
     title: "Save modifications"
     iconText: Style.icons.warning
     iconColor: dialog.hasAbort ? Style.colors.error : Style.colors.warning
