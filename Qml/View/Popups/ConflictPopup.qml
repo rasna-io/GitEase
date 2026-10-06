@@ -365,7 +365,7 @@ Window {
                 operationName: root.currentOperationName
                 canContinue: root.canContinue
                 canSkip: root.currentOperation !== ConflictPopup.OperationType.Merge
-                canQuit: root.currentOperation === ConflictPopup.OperationType.Rebase
+                canQuit: root.canQuit
                 resolvedFiles: root.stagedFiles.length
                 totalFiles: root.conflicts.length + root.stagedFiles.length
                 resolvedConflicts: root.resolvedConflictTotal
