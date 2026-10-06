@@ -162,6 +162,8 @@ Rectangle {
             if (repo && repo.cppObjectPtr) {
                 branchScanner.currentRepo = repo.cppObjectPtr;
                 var name = branchScanner.getCurrentBranchName();
+                if (!name && branchScanner.isHeadDetached())
+                    name = "HEAD detached at " + branchScanner.getDisplayBranchName();
                 map[repo.path] = (name && name.length > 0) ? name : "";
             }
         }

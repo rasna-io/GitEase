@@ -248,6 +248,11 @@ GitResult GitStatus::addToIndex(const QString& filePath, bool isRemove)
     if (result != GIT_OK)
         return GitResult(false, QVariant(), "Failed to get repository index");
 
+    if (!isRemove && isUnmerged(filePath)) {
+        const char* workdir = git_repository_workdir(activeRepo());
+        isRemove = workdir && !QFile::exists(QDir(QString::fromUtf8(workdir)).filePath(filePath));
+    }
+
     QByteArray filePathUtf8 = filePath.toUtf8();
     result = isRemove ? git_index_remove_bypath(index, filePathUtf8.constData())
                       : git_index_add_bypath(index, filePathUtf8.constData());
@@ -292,7 +297,19 @@ GitResult GitStatus::getDiff(const QString &filePath)
     opts.pathspec.count = 1;
 
     // This compares the Staging Area (Index) to the Local File (Workdir)
-    int error = git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &opts);
+    const bool unmerged = isUnmerged(filePath);
+    int error = GIT_OK;
+    if (unmerged) {
+        git_object* headTree = nullptr;
+        error = git_revparse_single(&headTree, activeRepo(), "HEAD^{tree}");
+        if (error == GIT_OK) {
+            error = git_diff_tree_to_workdir(&diff, activeRepo(),
+                                             reinterpret_cast<git_tree*>(headTree), &opts);
+            git_object_free(headTree);
+        }
+    } else {
+        error = git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &opts);
+    }
 
     if (error == 0) {
         struct RawLine { char origin; int old_no; int new_no; QString content; };
@@ -335,10 +352,19 @@ GitResult GitStatus::getDiff(const QString &filePath)
         }
     }
 
+    if (unmerged && result.isEmpty()) {
+        std::vector<QString> lines = readWorkdirLines(activeRepo(), filePath);
+        if (!lines.empty() && lines.back().isEmpty())
+            lines.pop_back();
+
+        for (int i = 0; i < static_cast<int>(lines.size()); ++i)
+            result.append(GitDiff(GitDiff::Context, i + 1, i + 1, lines[static_cast<size_t>(i)]));
+    }
+
     if (diff)
         git_diff_free(diff);
 
-    emitGitCommand(QString("git diff -- %1").arg(quoteCommandArg(filePath)));
+    emitGitCommand(QString(unmerged ? "git diff HEAD -- %1" : "git diff -- %1").arg(quoteCommandArg(filePath)));
 
     return GitResult(true, QVariant::fromValue(result));
 }
@@ -680,6 +706,134 @@ GitResult GitStatus::getUnstagedDiffView(const QString &filePath)
     out["lines"] = diffRes.data();
 
     return GitResult(true, out);
+}
+
+bool GitStatus::hasConflictMarkers(const QString &filePath)
+{
+    if (!m_currentRepo || !activeRepo())
+        return false;
+
+    enum { Outside, InOurs, InTheirs } state = Outside;
+    
+    for (const QString& line : readWorkdirLines(activeRepo(), filePath)) {
+        if (line.startsWith("<<<<<<<"))
+            state = InOurs;
+        else if (line.startsWith("=======") && state == InOurs)
+            state = InTheirs;
+        else if (line.startsWith(">>>>>>>") && state == InTheirs)
+            return true;
+    }
+
+    return false;
+}
+
+bool GitStatus::isUnmerged(const QString &filePath) const
+{
+    git_index* indexRaw = nullptr;
+    if (!activeRepo() || git_repository_index(&indexRaw, activeRepo()) != GIT_OK)
+        return false;
+
+    UniqueIndex index(indexRaw);
+
+    const git_index_entry* ancestor = nullptr;
+    const git_index_entry* ours     = nullptr;
+    const git_index_entry* theirs   = nullptr;
+    const QByteArray path = filePath.toUtf8();
+
+    return git_index_conflict_get(&ancestor, &ours, &theirs, index.get(), path.constData()) == GIT_OK;
+}
+
+QStringList GitStatus::unmergedPaths() const
+{
+    QStringList paths;
+
+    git_index* indexRaw = nullptr;
+    if (!activeRepo() || git_repository_index(&indexRaw, activeRepo()) != GIT_OK)
+        return paths;
+
+    UniqueIndex index(indexRaw);
+
+    git_index_conflict_iterator* iterator = nullptr;
+    if (git_index_conflict_iterator_new(&iterator, index.get()) != GIT_OK)
+        return paths;
+
+    const git_index_entry* ancestor = nullptr;
+    const git_index_entry* ours     = nullptr;
+    const git_index_entry* theirs   = nullptr;
+    while (git_index_conflict_next(&ancestor, &ours, &theirs, iterator) == GIT_OK) {
+        const git_index_entry* entry = ours ? ours : (theirs ? theirs : ancestor);
+        if (entry && entry->path)
+            paths.append(QString::fromUtf8(entry->path));
+    }
+
+    git_index_conflict_iterator_free(iterator);
+    return paths;
+}
+
+GitResult GitStatus::resetIndexToHead(const QStringList &paths)
+{
+    if (paths.isEmpty())
+        return GitResult(true);
+
+    auto failure = [](const QString& what) {
+        const git_error* e = git_error_last();
+        return GitResult(false, QVariant(),
+                         QString("Failed to reset the index to HEAD: %1%2")
+                             .arg(what, e ? QString(" (%1)").arg(e->message) : QString()));
+    };
+
+    git_object* headTreeObject = nullptr;
+    if (git_revparse_single(&headTreeObject, activeRepo(), "HEAD^{tree}") != GIT_OK)
+        return failure("HEAD has no tree");
+
+    git_tree* headTree = reinterpret_cast<git_tree*>(headTreeObject);
+
+    git_index* indexRaw = nullptr;
+    if (git_repository_index(&indexRaw, activeRepo()) != GIT_OK) {
+        git_object_free(headTreeObject);
+        return failure("cannot open the index");
+    }
+    UniqueIndex index(indexRaw);
+
+    for (const QString& path : paths) {
+        const QByteArray pathUtf8 = path.toUtf8();
+
+        int error = git_index_conflict_remove(index.get(), pathUtf8.constData());
+        if (error == GIT_ENOTFOUND)
+            error = GIT_OK;
+
+        if (error == GIT_OK) {
+            git_tree_entry* headEntry = nullptr;
+            if (git_tree_entry_bypath(&headEntry, headTree, pathUtf8.constData()) == GIT_OK) {
+                git_index_entry entry = {};
+                entry.mode = git_tree_entry_filemode(headEntry);
+                entry.path = pathUtf8.constData();
+                git_oid_cpy(&entry.id, git_tree_entry_id(headEntry));
+
+                error = git_index_add(index.get(), &entry);
+                git_tree_entry_free(headEntry);
+            } else {
+                error = git_index_remove(index.get(), pathUtf8.constData(), 0);
+                if (error == GIT_ENOTFOUND)
+                    error = GIT_OK;
+            }
+        }
+
+        if (error != GIT_OK) {
+            git_object_free(headTreeObject);
+            git_index_read(index.get(), true);   // drop the partial changes
+            return failure(QString("'%1'").arg(path));
+        }
+    }
+
+    git_object_free(headTreeObject);
+
+    if (git_index_write(index.get()) != GIT_OK) {
+        git_index_read(index.get(), true);
+        return failure("cannot write the index");
+    }
+
+    return GitResult(true);
 }
 
 GitResult GitStatus::getStagedDiffView(const QString &filePath)
@@ -1256,6 +1410,13 @@ GitResult GitStatus::revertFile(const QString &filePath)
     opts.paths.strings = &path;
     opts.paths.count = 1;
 
+    const bool unmerged = isUnmerged(filePath);
+    if (unmerged) {
+        GitResult resetResult = resetIndexToHead({ filePath });
+        if (!resetResult.success())
+            return GitResult(false, QVariant(), "Failed to revert file: " + resetResult.errorMessage());
+    }
+
     // Perform checkout from the index to the working directory
     int error = git_checkout_index(activeRepo(), nullptr, &opts);
 
@@ -1265,7 +1426,8 @@ GitResult GitStatus::revertFile(const QString &filePath)
         return GitResult(false, QVariant(), "Failed to revert file: " + errorMsg);
     }
 
-    emitGitCommand(QString("git checkout -- %1").arg(quoteCommandArg(filePath)));
+    emitGitCommand(QString(unmerged ? "git restore --source=HEAD --staged --worktree -- %1"
+                                    : "git checkout -- %1").arg(quoteCommandArg(filePath)));
 
     return GitResult(true, filePath, "File reverted successfully to index state.");
 }
@@ -1383,18 +1545,25 @@ GitResult GitStatus::revertAll()
     if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available.");
 
+    const QStringList unmerged = unmergedPaths();
+    GitResult resetResult = resetIndexToHead(unmerged);
+    if (!resetResult.success())
+        return GitResult(false, QVariant(), "Failed to revert all changes: " + resetResult.errorMessage());
+
     git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
 
     // FORCE: Overwrite all local changes
     // RECREATE_MISSING: Restore files that were deleted in workdir
     // GIT_CHECKOUT_REMOVE_UNTRACKED removes untracked files not in index
+    // The index is left free to update: that only refreshes its cached file stats, and without it
+    // a file whose line endings changed on checkout (core.autocrlf) still reads as modified.
     opts.checkout_strategy = GIT_CHECKOUT_FORCE |
                              GIT_CHECKOUT_RECREATE_MISSING |
-                             GIT_CHECKOUT_REMOVE_UNTRACKED |
-                             GIT_CHECKOUT_DONT_UPDATE_INDEX;
+                             GIT_CHECKOUT_REMOVE_UNTRACKED;
 
-    // Passing NULL to the second parameter tells libgit2 to use HEAD
-    int error = git_checkout_head(activeRepo(), &opts);
+    // Restore the working tree from the index rather than HEAD: only unstaged changes are
+    // discarded, and staged files keep their content on disk.
+    int error = git_checkout_index(activeRepo(), nullptr, &opts);
 
     if (error != GIT_OK) {
         const git_error *e = git_error_last();
@@ -1402,7 +1571,14 @@ GitResult GitStatus::revertAll()
                          QString("Failed to revert all changes: %1").arg(e ? e->message : "Unknown error"));
     }
 
-    emitGitCommand("git reset --hard HEAD && git clean -fd");
+    QString command = "git checkout -- . && git clean -fd";
+    if (!unmerged.isEmpty()) {
+        QStringList quoted;
+        for (const QString& path : unmerged)
+            quoted.append(quoteCommandArg(path));
+        command.prepend(QString("git restore --source=HEAD --staged --worktree -- %1 && ").arg(quoted.join(' ')));
+    }
+    emitGitCommand(command);
 
     return GitResult(true, QVariant(), "All changes discarded.");
 }

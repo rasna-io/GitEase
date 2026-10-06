@@ -70,6 +70,12 @@ public:
 
     Q_INVOKABLE QString getDisplayBranchName();
 
+    /**
+     * \brief Whether HEAD points straight at a commit instead of at a branch, e.g. after
+     *        checking out a commit or quitting a rebase.
+     */
+    Q_INVOKABLE bool isHeadDetached() const;
+
     Q_INVOKABLE QString formatRefName(const QString &branchName);
 
     QString resolveBranchName(const QString &branchName);

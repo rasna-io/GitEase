@@ -20,7 +20,8 @@ Window {
         None,
         Continue,
         Skip,
-        Abort
+        Abort,
+        Quit
     }
 
     enum OperationType {
@@ -362,11 +363,13 @@ Window {
                 operationName: root.currentOperationName
                 canContinue: root.canContinue
                 canSkip: root.currentOperation !== ConflictPopup.OperationType.Merge
+                canQuit: root.currentOperation === ConflictPopup.OperationType.Rebase
                 resolvedFiles: root.stagedFiles.length
                 totalFiles: root.conflicts.length + root.stagedFiles.length
                 resolvedConflicts: root.resolvedConflictTotal
                 totalConflicts: root.conflictTotal
                 onAbortRequested: root.abortOperation()
+                onQuitRequested: root.requestQuit()
                 onSkipRequested: root.skipOperation()
                 onContinueRequested: root.continueOperation()
             }
@@ -787,10 +790,16 @@ Window {
     }
 
     function quitOperation() {
+        if (interactiveMode) {
+            interactiveActionRequested(ConflictPopup.InteractiveAction.Quit);
+            return;
+        }
+
         let res = currentController.quitOp()
 
         if (res.success) {
-            notificationController.success(`${currentOperationName} quitted`, currentOperationName, 2500)
+            notificationController.warning(`${currentOperationName} quit. HEAD is left detached and unresolved files keep their conflict markers.`,
+                                           currentOperationName, 10000)
 
             root.clearFileCaches()
             conflictRows.clear()
@@ -844,6 +853,33 @@ Window {
 
         dialog.saved.connect(() => root.saveAllModifications())
         dialog.aborted.connect(() => root.abortOperation())
+        dialog.open()
+    }
+
+    function requestQuit() {
+        let operation   = currentOperationName.toLowerCase()
+        let unresolved  = root.conflicts.length
+
+        let leftovers = unresolved > 0
+            ? `${unresolved} unresolved file${unresolved === 1 ? " stays" : "s stay"} unmerged, with any ` +
+              "conflict markers still in them. Staging and committing them as they are records the markers."
+            : "What you resolved here stays staged, but nothing is committed."
+
+        let dialog = conflictConfirmationDialogComp.createObject(root)
+
+        dialog.title   = `Quit ${currentOperationName}?`
+        dialog.message = `GitEase stops tracking the ${operation} but rewinds nothing, so you can finish by hand:\n\n` +
+                         `•  HEAD stays detached where the ${operation} stopped, so you are not on any branch. ` +
+                         `Your branch keeps its commits from before the ${operation}.\n` +
+                         `•  ${leftovers}\n` +
+                         `•  The remaining commits are not replayed, and the ${operation} cannot be continued ` +
+                         "or aborted afterwards.\n" +
+                         "•  Unsaved edits in this editor are discarded; every file stays as it is on disk."
+
+        dialog.acceptTitle       = `Quit ${currentOperationName}`
+        dialog.acceptDescription = "Stop here and leave HEAD, the index and every file exactly as they are"
+
+        dialog.aborted.connect(() => root.quitOperation())
         dialog.open()
     }
 
