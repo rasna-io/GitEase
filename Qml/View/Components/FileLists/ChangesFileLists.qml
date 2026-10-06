@@ -332,6 +332,8 @@ Item {
                               : "None of them has conflict markers left, so each is staged exactly as it is now.")
         }
 
+        dialog.messageFormat = Text.RichText
+
         dialog.saveTitle       = stagingAll ? "Stage All and Resolve" : "Stage and Resolve"
         dialog.saveDescription = stagingAll ? "Stage every file and mark its conflict resolved"
                                             : "Mark the conflict resolved with the file as it is now"
