@@ -87,23 +87,23 @@ PopupDialog {
         },
 
         PopupButton {
-            visible: dialog.hasQuit
-            tone: PopupButton.Destructive
-            text: dialog.quitTitle
-            tooltip: dialog.quitDescription
-            onClicked: {
-                dialog.quitRequested()
-                dialog.close()
-            }
-        },
-
-        PopupButton {
             visible: dialog.hasAbort
             tone: PopupButton.Destructive
             text: dialog.acceptTitle
             tooltip: dialog.acceptDescription
             onClicked: {
                 dialog.aborted()
+                dialog.close()
+            }
+        },
+
+        PopupButton {
+            visible: dialog.hasQuit
+            tone: PopupButton.Destructive
+            text: dialog.quitTitle
+            tooltip: dialog.quitDescription
+            onClicked: {
+                dialog.quitRequested()
                 dialog.close()
             }
         },
