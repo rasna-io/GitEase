@@ -94,6 +94,18 @@ void BorderlessWindowHelper::setupDwmShadow()
 #endif
 
 #ifdef Q_OS_WIN
+void BorderlessWindowHelper::applyRoundedCorners()
+{
+    if (!m_hwnd) return;
+
+    // Windows 11 rounds the window natively (anti-aliased, keeps the DWM shadow) and drops the
+    // rounding by itself when maximized or snapped. Older Windows ignores the attribute.
+    const int preference = 2; // DWMWCP_ROUND
+    ::DwmSetWindowAttribute(m_hwnd, 33 /*DWMWA_WINDOW_CORNER_PREFERENCE*/, &preference, sizeof(preference));
+}
+#endif
+
+#ifdef Q_OS_WIN
 UINT BorderlessWindowHelper::dpiForWindow(HWND h)
 {
     // Try GetDpiForWindow (Win10+), else fallback to DC DPI.
@@ -158,6 +170,7 @@ void BorderlessWindowHelper::applyBorderlessNow()
     const MARGINS m = (maximized || fullscreen) ? MARGINS{0,0,0,0} : MARGINS{1,1,1,1};
     ::DwmExtendFrameIntoClientArea(m_hwnd, &m);
 
+    applyRoundedCorners();
 }
 #endif
 
@@ -292,6 +305,8 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
 
             DWORD borderColor = RGB(0,0,0);
             ::DwmSetWindowAttribute(m_hwnd, 34, &borderColor, sizeof(borderColor));
+
+            applyRoundedCorners();
         }
         return false;
     }
