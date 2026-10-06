@@ -185,7 +185,7 @@ IWindow {
 
     Shortcut {
         sequence: "Escape"
-        enabled: root.visible
+        enabled: root.visible && !rebaseConflictPopup.visible
         onActivated: root.cancelPlan()
     }
 
