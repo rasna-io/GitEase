@@ -34,6 +34,9 @@ PopupDialog {
     readonly property bool    isUrlValid:  urlInput.text.match(/^(https?|git|ssh):\/\/|^(git@)/)
 
     readonly property bool    canAccept:   isNameValid && isUrlValid
+    /* Signals
+     * ****************************************************************************************/
+    signal remoteAdded(string name, bool fetchNow)
 
     /* Object Properties
      * ****************************************************************************************/
