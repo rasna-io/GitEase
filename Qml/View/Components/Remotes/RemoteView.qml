@@ -320,8 +320,10 @@ UtilitiesCard {
             }
         }
 
-        function startFetch(remoteName) {
-            AsyncGit.call(root.remoteController, "fetch", [remoteName],
+        function startFetch(remoteName, token) {
+            AsyncGit.call(root.remoteController,
+                token ? "fetchWithToken" : "fetch",
+                token ? [remoteName, token] : [remoteName],
                 function(result) { content.handleFetchResult(remoteName, result) },
                 function(error) { content.handleFetchResult(remoteName, { success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
             )
