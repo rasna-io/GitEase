@@ -34,6 +34,13 @@ PopupDialog {
     readonly property bool    isUrlValid:  urlInput.text.match(/^(https?|git|ssh):\/\/|^(git@)/)
 
     readonly property bool    canAccept:   isNameValid && isUrlValid
+
+    readonly property bool    showUrlError: urlInput.text.length > 0 && !root.isUrlValid
+
+    readonly property var     urlParts:    root.isUrlValid ? root.parseRemoteUrl(urlInput.text.trim()) : null
+
+    readonly property int     elementSpacing: 2
+
     /* Signals
      * ****************************************************************************************/
     signal remoteAdded(string name, bool fetchNow)
