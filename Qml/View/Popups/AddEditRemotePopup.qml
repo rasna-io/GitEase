@@ -324,6 +324,9 @@ PopupDialog {
             onClicked: root.saveRemote()
         }
     ]
+
+    /* Functions
+     * ****************************************************************************************/
     function previewCommand() {
         let name = nameInput.text.trim()
         let url  = urlInput.text.trim()
