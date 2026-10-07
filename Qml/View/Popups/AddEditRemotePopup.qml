@@ -246,9 +246,30 @@ PopupDialog {
         return steps.join(" && ")
     }
 
-    onAboutToHide: {
-        nameInput.text = "";
-        urlInput.text = "";
-        root.oldRemote = null;
+    function parseRemoteUrl(url) {
+        let scheme = /^(https?|ssh|git):\/\/(?:[^@\/]+@)?([^\/:]+)(?::\d+)?\/?(.*)$/i.exec(url)
+        let scp    = /^[^@\/\s]+@([^:\/\s]+):\/?(.*)$/.exec(url)
+
+        let parts = scheme ? { host: scheme[2], path: scheme[3],
+                               protocol: scheme[1].toLowerCase() === "git" ? "Git" : scheme[1].toUpperCase() }
+                  : scp    ? { host: scp[1], path: scp[2], protocol: "SSH" }
+                           : null
+
+        if (!parts || parts.host === "")
+            return null
+
+        parts.path = parts.path.replace(/\/+$/, "").replace(/\.git$/i, "")
+        return parts
+    }
+
+    //! "github.com · HTTPS · owner/repo" for the line under the URL field.
+    function urlSummary() {
+        if (!root.urlParts)
+            return ""
+
+        return [root.urlParts.host, root.urlParts.protocol, root.urlParts.path]
+                .filter(part => part !== "")
+                .join(" \u00b7 ")
+    }
     }
 }
