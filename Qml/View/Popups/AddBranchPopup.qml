@@ -31,77 +31,14 @@ PopupDialog {
 
     signal branchCreatedSuccessfully()
 
+    /* Object Properties
+     * ****************************************************************************************/
     width: 380
-    height: 300
-    padding: 0
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
-    contentItem: Rectangle {
-        color: Style.colors.popupBackground
-        radius: 8
-        clip: true
-        border.color: Style.colors.popupBorder
-        border.width: 1
-
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: 0
-
-            // Header
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 48
-                Layout.leftMargin: 18
-                Layout.rightMargin: 18
-                spacing: 8
-
-                // Title
-                Text {
-                    text: "Create Branch"
-                    color: Style.colors.popupTitleText
-                    font.family: Style.fontTypes.inter
-                    font.weight: Font.DemiBold
-                    font.pixelSize: Style.appFont.mediumPt
-                    Layout.fillWidth: true
-                }
-
-                // Close Button
-                Text {
-                    text: "\u00d7"
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.mediumPt
-                    color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
-                                                    : Style.colors.popupCloseButton
-                    MouseArea {
-                        id: closeMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.close()
-                    }
-                }
-            }
-
-            // Header separator
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 1
-                color: Style.colors.popupHeaderSeparator
-            }
-
-            // Body
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.leftMargin: 18
-                Layout.rightMargin: 18
-                Layout.topMargin: 16
-                spacing: 0
-
-                // Branch name
-                ColumnLayout {
-                    spacing: root.elementSpacing
-                    Layout.fillWidth: true
-                    Layout.bottomMargin: root.sectionSpacing
+    title: "Create Branch"
+    iconText: Style.icons.gitBranch
+    iconColor: Style.colors.accent
 
                     Text {
                         text: "BRANCH NAME"
