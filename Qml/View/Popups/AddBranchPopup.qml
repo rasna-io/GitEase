@@ -26,7 +26,6 @@ PopupDialog {
 
     readonly property bool    canAccept:   isNameValid
 
-    readonly property int sectionSpacing: 12
     readonly property int elementSpacing: 2
 
     signal branchCreatedSuccessfully()
