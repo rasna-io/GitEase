@@ -382,50 +382,8 @@ PopupDialog {
                         }
                     }
 
-                    Button {
-                        id: actionBtn
-                        text: "Create Branch"
-                        Layout.preferredWidth: 130
-                        Layout.alignment: Qt.AlignVCenter
-                        enabled: root.canAccept
-                        topPadding: 6
-                        bottomPadding: 6
-                        leftPadding: 16
-                        rightPadding: 16
-
-                        background: Rectangle {
-                            implicitHeight: 32
-                            color: parent.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
-                                                  : Style.colors.disabledButton
-                            radius: 5
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: Style.colors.secondaryForeground
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.createBranch()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    onAboutToHide: {
-        nameInput.text  = ""
-        targetHash      = ""
-        baseBranch      = "main"
-        baseBranchType  = "remote"
-    }
-
+    /* Functions
+     * ****************************************************************************************/
     function previewCommand() {
         let branchName = nameInput.text.trim()
         if (branchName === "")
