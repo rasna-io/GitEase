@@ -366,5 +366,34 @@ PopupDialog {
                 .filter(part => part !== "")
                 .join(" \u00b7 ")
     }
+
+    function saveRemote() {
+        let res;
+        if (root.isEdit) {
+            res = root.remoteController.editRemote(root.oldRemote.name, nameInput.text.trim(), urlInput.text.trim());
+        } else {
+            res = root.remoteController.addRemote(nameInput.text.trim(), urlInput.text.trim());
+        }
+
+        if (res.success) {
+            if (root.notificationController) {
+                let action = root.isEdit ? "updated" : "added"
+                root.notificationController.success("Remote '" + nameInput.text + "' " + action + " successfully", "Remote", 3000)
+            }
+
+            // Closing resets the form, so keep what remoteAdded() needs first
+            let addedName = root.isEdit ? "" : nameInput.text.trim()
+            let fetchNow  = root.fetchAfterAdd
+
+            root.close();
+
+            if (addedName !== "")
+                root.remoteAdded(addedName, fetchNow)
+        } else {
+            if (root.notificationController) {
+                let action = root.isEdit ? "update" : "add"
+                root.notificationController.error(res.errorMessage || "Failed to " + action + " remote", "Remote Error", 5000)
+            }
+        }
     }
 }
