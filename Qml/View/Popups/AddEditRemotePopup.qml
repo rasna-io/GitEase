@@ -311,6 +311,15 @@ PopupDialog {
             onClicked: root.fetchAfterAdd = !root.fetchAfterAdd
         }
     }
+
+    CommandPreview {
+        Layout.fillWidth: true
+
+        placeholder: root.isEdit ? qsTr("Change the name or URL to see the command")
+                                 : qsTr("Fill in the name and URL to see the command")
+        command: root.previewCommand()
+    }
+
     actions: [
         PopupButton {
             text: "Cancel"
