@@ -129,57 +129,65 @@ PopupDialog {
             }
         }
     }
+        Text {
+            text: "URL"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
 
-                    background: Rectangle {
-                        implicitHeight: 40
-                        color: Style.colors.secondaryBackground
-                        radius: 5
-                        // Turns Red if user has typed something invalid
-                        border.color: (urlInput.text.length > 0 && !root.isUrlValid)
-                                      ? Style.colors.error
-                                      : (urlInput.activeFocus ? Style.colors.accent : "transparent")
-                    }
-                }
+        TextField {
+            id: urlInput
+            placeholderText: "https://github.com/owner/repo.git"
+            Layout.fillWidth: true
+            selectByMouse: true
+            font.family: Style.fontTypes.jetBrainsMono
+            font.pixelSize: Style.appFont.defaultPt
+            color: Style.colors.popupInputText
+            leftPadding: 10
+            rightPadding: 10
+            topPadding: 7
+            bottomPadding: 7
 
-                Text {
-                    text: "Invalid URL format"
-                    color: Style.colors.error
-                    font.pixelSize: Style.appFont.smallPt
-                    visible: urlInput.text.length > 0 && !root.isUrlValid
-                    Layout.leftMargin: 5
-                }
+            background: Rectangle {
+                implicitHeight: 26
+                color: Style.colors.popupInputBackground
+                radius: 5
+                // Red for something that is not a URL, green once Git can use it
+                border.color: root.showUrlError     ? Style.colors.error
+                            : root.isUrlValid       ? Style.colors.popupInputBorderValid
+                            : urlInput.activeFocus  ? Style.colors.popupInputBorderFocus
+                                                    : Style.colors.popupInputBorder
+                border.width: 1
+            }
+        }
 
-                CommandPreview {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 4
+        // What a valid URL points at, or how to fix an invalid one
+        RowLayout {
+            Layout.topMargin: 3
+            Layout.fillWidth: true
+            visible: root.showUrlError || root.urlParts !== null
+            spacing: 5
 
-                    placeholder: root.isEdit ? qsTr("Change the name or URL to see the command")
-                                             : qsTr("Fill in the name and URL to see the command")
-                    command: root.previewCommand()
-                }
+            Text {
+                text: root.showUrlError ? Style.icons.circleExclamation : Style.icons.check
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
+                font.pixelSize: Style.appFont.captionPt
+                color: root.showUrlError ? Style.colors.error : Style.colors.popupValidText
             }
 
-            RowLayout {
-                spacing: 8
+            Text {
                 Layout.fillWidth: true
-
-                Button {
-                    text: "Cancel"
-                    Layout.preferredWidth: 100
-                    onClicked: root.close()
-                    Material.foreground: Style.colors.foreground
-
-                    background: Rectangle {
-                        implicitHeight: 35
-                        color: parent.hovered ? "#33ffffff" : "transparent"
-                        border.color: Style.colors.accent
-                        radius: 5
-                    }
-                }
-
-                Button {
-                    id: actionBtn
-                    text: root.isEdit ? "Save" : "Add Remote"
+                text: root.showUrlError ? "Use an http(s)://, ssh://, git:// or git@ URL"
+                                        : root.urlSummary()
+                color: root.showUrlError ? Style.colors.error : Style.colors.popupValidText
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.smallPt
+                elide: Text.ElideMiddle
+            }
+        }
+    }
                     Layout.fillWidth: true
                     enabled: root.canAccept
 
