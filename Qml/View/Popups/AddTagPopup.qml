@@ -42,6 +42,16 @@ PopupDialog {
     iconText: Style.icons.tag
     iconColor: Style.colors.accent
 
+    // Reset state on close
+    onAboutToHide: {
+        nameInput.text = "";
+        messageInput.text = "";
+        targetHash = "";
+        targetLabel = "";
+        pushAfterCreate = true;
+        isAnnotated = true;
+    }
+
                     Text {
                         text: "TAG NAME"
                         color: Style.colors.popupSectionLabel
@@ -413,24 +423,7 @@ PopupDialog {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.createTag()
                         }
-                    }
-                }
-            }
-        }
-    }
-
-    // Reset state on close
-    onAboutToHide: {
-        nameInput.text = "";
-        messageInput.text = "";
-        targetHash = "";
-        targetLabel = "";
-        pushAfterCreate = true;
-        isAnnotated = true;
-    }
-
-    // Auto-focus logic when popup opens
-    onOpened: nameInput.forceActiveFocus()
+    ]
 
     function previewCommand() {
         let tagName = nameInput.text.trim()
