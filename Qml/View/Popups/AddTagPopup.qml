@@ -53,163 +53,175 @@ PopupDialog {
 
     onOpened: nameInput.forceActiveFocus()
 
+    /* Children
+    * ****************************************************************************************/
+    // TAG name
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
+
+        Text {
+            text: "TAG NAME"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        TextField {
+            id: nameInput
+            placeholderText: "v1.0.0"
+            Layout.fillWidth: true
+            selectByMouse: true
+            font.family: Style.fontTypes.jetBrainsMono
+            font.pixelSize: Style.appFont.defaultPt
+            color: Style.colors.popupInputText
+            leftPadding: 10
+            rightPadding: 10
+            topPadding: 7
+            bottomPadding: 7
+            Layout.bottomMargin: 6
+
+            background: Rectangle {
+                implicitHeight: 26
+                color: Style.colors.popupInputBackground
+                radius: 5
+                border.color: nameInput.activeFocus ? Style.colors.popupInputBorderFocus
+                                                    : Style.colors.popupInputBorder
+                border.width: 1
+            }
+        }
+
+        RowLayout {
+            spacing: 5
+            Layout.fillWidth: true
+
+            Repeater {
+                model: root.versionSuggestions
+
+                Rectangle {
+                    id: chip
+                    required property string modelData
+                    radius: 4
+                    color: Style.colors.popupChipBackground
+                    border.color: Style.colors.popupChipBorder
+                    border.width: 1
+                    implicitWidth: chipText.implicitWidth + 12
+                    implicitHeight: 22
+
                     Text {
-                        text: "TAG NAME"
-                        color: Style.colors.popupSectionLabel
+                        id: chipText
+                        anchors.centerIn: parent
+                        text: chip.modelData
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.defaultPt
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.popupChipText
                     }
 
-                    TextField {
-                        id: nameInput
-                        placeholderText: "v1.0.0"
-                        Layout.fillWidth: true
-                        selectByMouse: true
-                        font.family: Style.fontTypes.jetBrainsMono
-                        font.pixelSize: Style.appFont.defaultPt
-                        color: Style.colors.popupInputText
-                        leftPadding: 10
-                        rightPadding: 10
-                        topPadding: 7
-                        bottomPadding: 7
-                        Layout.bottomMargin: 6
-
-                        background: Rectangle {
-                            implicitHeight: 26
-                            color: Style.colors.popupInputBackground
-                            radius: 5
-                            border.color: nameInput.activeFocus ? Style.colors.popupInputBorderFocus
-                                                                : Style.colors.popupInputBorder
-                            border.width: 1
-                        }
-                    }
-
-                    RowLayout {
-                        spacing: 5
-                        Layout.fillWidth: true
-
-                        Repeater {
-                            model: root.versionSuggestions
-
-                            Rectangle {
-                                id: chip
-                                required property string modelData
-                                radius: 4
-                                color: Style.colors.popupChipBackground
-                                border.color: Style.colors.popupChipBorder
-                                border.width: 1
-                                implicitWidth: chipText.implicitWidth + 12
-                                implicitHeight: 22
-
-                                Text {
-                                    id: chipText
-                                    anchors.centerIn: parent
-                                    text: chip.modelData
-                                    font.family: Style.fontTypes.inter
-                                    font.pixelSize: Style.appFont.captionPt
-                                    color: Style.colors.popupChipText
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: nameInput.text = chip.modelData
-                                }
-                            }
-                        }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: nameInput.text = chip.modelData
                     }
                 }
+            }
+        }
+    }
 
-                // Tag Type section
-                ColumnLayout {
-                    spacing: root.elementSpacing
+    // Tag Type section
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
+
+        Text {
+            text: "TYPE"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        ColumnLayout {
+            spacing: 6
+            Layout.fillWidth: true
+
+            Repeater {
+                model: [
+                    { label: "Annotated tag",       hint: "(recommended — includes message)",   value: true },
+                    { label: "Lightweight tag",     hint: "",                                   value: false }
+                ]
+
+                RowLayout {
+                    id: typeOption
+                    required property var modelData
+                    readonly property bool checked: root.isAnnotated === modelData.value
                     Layout.fillWidth: true
-                    Layout.bottomMargin: root.sectionSpacing
+                    spacing: 8
 
-                    Text {
-                        text: "TYPE"
-                        color: Style.colors.popupSectionLabel
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.defaultPt
-                    }
+                    Rectangle {
+                        width: 16
+                        height: 16
+                        radius: 8
+                        color: typeOption.checked ? Style.colors.popupRadioBorderChecked : "transparent"
+                        border.width: 1
+                        border.color: typeOption.checked ? Style.colors.popupRadioBorderChecked
+                                                         : Style.colors.popupRadioBorder
+                        Layout.alignment: Qt.AlignVCenter
 
-                    ColumnLayout {
-                        spacing: 6
-                        Layout.fillWidth: true
-
-                        Repeater {
-                            model: [
-                                { label: "Annotated tag",       hint: "(recommended — includes message)",   value: true },
-                                { label: "Lightweight tag",     hint: "",                                   value: false }
-                            ]
-
-                            RowLayout {
-                                id: typeOption
-                                required property var modelData
-                                readonly property bool checked: root.isAnnotated === modelData.value
-                                Layout.fillWidth: true
-                                spacing: 8
-
-                                Rectangle {
-                                    width: 16
-                                    height: 16
-                                    radius: 8
-                                    color: typeOption.checked ? Style.colors.popupRadioBorderChecked : "transparent"
-                                    border.width: 1
-                                    border.color: typeOption.checked ? Style.colors.popupRadioBorderChecked
-                                                                     : Style.colors.popupRadioBorder
-                                    Layout.alignment: Qt.AlignVCenter
-
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 8
-                                        height: 8
-                                        radius: 4
-                                        color: Style.colors.popupRadioDot
-                                        visible: typeOption.checked
-                                    }
-                                }
-
-                                // Label
-                                Text {
-                                    text: modelData.label
-                                    color: Style.colors.popupCheckboxLabelText
-                                    font.family: Style.fontTypes.inter
-                                    font.pixelSize: Style.appFont.defaultPt
-                                }
-
-                                // Hint
-                                Text {
-                                    text: modelData.hint
-                                    color: Style.colors.popupCheckboxLabelText
-                                    font.family: Style.fontTypes.inter
-                                    font.pixelSize: Style.appFont.smallPt
-                                    visible: modelData.hint.length > 0
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.isAnnotated = modelData.value
-                                }
-                            }
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 8
+                            height: 8
+                            radius: 4
+                            color: Style.colors.popupRadioDot
+                            visible: typeOption.checked
                         }
                     }
-                }
 
-                // Tag Message
-                ColumnLayout {
-                    spacing: 5
-                    Layout.fillWidth: true
-                    Layout.bottomMargin: root.sectionSpacing
-
+                    // Label
                     Text {
-                        text: "MESSAGE"
-                        color: Style.colors.popupSectionLabel
+                        text: modelData.label
+                        color: Style.colors.popupCheckboxLabelText
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                     }
 
+                    // Hint
+                    Text {
+                        text: modelData.hint
+                        color: Style.colors.popupCheckboxLabelText
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.smallPt
+                        visible: modelData.hint.length > 0
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.isAnnotated = modelData.value
+                    }
+                }
+            }
+        }
+    }
+
+    // Tag Message
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
+
+        Text {
+            text: "MESSAGE"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        TextField {
+            id: messageInput
+            placeholderText: "Release v1.0.0"
+            Layout.fillWidth: true
+            selectByMouse: true
+            enabled: root.isAnnotated
+            opacity: root.isAnnotated ? 1.0 : 0.5
             font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.defaultPt
             color: Style.colors.popupInputText
@@ -218,212 +230,141 @@ PopupDialog {
             topPadding: 7
             bottomPadding: 7
 
-                        background: Rectangle {
-                            implicitHeight: 26
-                            color: Style.colors.popupInputBackground
-                            radius: 5
-                            border.color: messageInput.activeFocus ? Style.colors.popupInputBorderFocus
-                                                                    : Style.colors.popupInputBorder
-                            border.width: 1
-                        }
-                    }
+            background: Rectangle {
+                implicitHeight: 26
+                color: Style.colors.popupInputBackground
+                radius: 5
+                border.color: messageInput.activeFocus ? Style.colors.popupInputBorderFocus
+                                                        : Style.colors.popupInputBorder
+                border.width: 1
+            }
+        }
+    }
+
+    // Target Commit
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
+        visible: false
+        // TODO: Implement commit picker to change the target commit.
+        //       Currently the popup receives targetHash from the caller;
+        //       a future dialog could let the user browse commits and set it.
+
+        Text {
+            text: "TARGET COMMIT"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 26
+            radius: 5
+            color: Style.colors.popupInputBackground
+            border.color: Style.colors.popupInputBorder
+            border.width: 1
+
+            RowLayout {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 8
+
+                Text {
+                    text: Style.icons.tag
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.mutedText
                 }
 
-                // Target Commit
-                ColumnLayout {
-                    spacing: 5
+                Text {
                     Layout.fillWidth: true
-                    Layout.bottomMargin: root.sectionSpacing
-                    visible: false
-                    // TODO: Implement commit picker to change the target commit.
-                    //       Currently the popup receives targetHash from the caller;
-                    //       a future dialog could let the user browse commits and set it.
-
-                    Text {
-                        text: "TARGET COMMIT"
-                        color: Style.colors.popupSectionLabel
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.defaultPt
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: 26
-                        radius: 5
-                        color: Style.colors.popupInputBackground
-                        border.color: Style.colors.popupInputBorder
-                        border.width: 1
-
-                        RowLayout {
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 10
-                            spacing: 8
-
-                            Text {
-                                text: Style.icons.tag
-                                font.family: Style.fontTypes.font6Pro
-                                font.pixelSize: Style.appFont.smallPt
-                                color: Style.colors.mutedText
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                elide: Text.ElideRight
-                                text: root.targetHash !== ""
-                                      ? (
-                                            root.targetLabel !== ""
-                                            ? root.targetHash.substring(0, 8) + " — " + root.targetLabel
-                                            : root.targetHash.substring(0, 8)
-                                        )
-                                      : (
-                                            "HEAD" + (root.targetLabel !== "" ? " — " + root.targetLabel : "")
-                                        )
-                                color: Style.colors.popupInputText
-                                font.family: Style.fontTypes.jetBrainsMono
-                                font.pixelSize: Style.appFont.defaultPt
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                // TODO: open commit picker to change target
-                            }
-                        }
-                    }
+                    elide: Text.ElideRight
+                    text: root.targetHash !== ""
+                          ? (
+                                root.targetLabel !== ""
+                                ? root.targetHash.substring(0, 8) + " — " + root.targetLabel
+                                : root.targetHash.substring(0, 8)
+                            )
+                          : (
+                                "HEAD" + (root.targetLabel !== "" ? " — " + root.targetLabel : "")
+                            )
+                    color: Style.colors.popupInputText
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.defaultPt
                 }
 
-                // Push checkbox
-                RowLayout {
-                    id: pushCheckBox
-                    readonly property bool checked: root.pushAfterCreate
-                    Layout.bottomMargin: root.sectionSpacing
-
-                    spacing: 8
-                    Layout.fillWidth: true
-
-                    Rectangle {
-                        width: 16
-                        height: 16
-                        radius: 3
-                        color: pushCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
-                        border.color: pushCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked
-                                                                : Style.colors.popupCheckboxBorder
-                        border.width: 1
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\u2713"
-                            color: Style.colors.popupCheckboxCheckmark
-                            font.pixelSize: Style.appFont.smallPt
-                            visible: pushCheckBox.checked
-                        }
-                    }
-
-                    Text {
-                        text: "Push to origin after creating"
-                        color: Style.colors.popupCheckboxLabelText
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.defaultPt
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.pushAfterCreate = !root.pushAfterCreate
-                    }
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    // TODO: open commit picker to change target
                 }
+            }
+        }
+    }
 
-                CommandPreview {
-                    Layout.fillWidth: true
-                    Layout.bottomMargin: root.sectionSpacing
+    // Push checkbox
+    RowLayout {
+        id: pushCheckBox
+        readonly property bool checked: root.pushAfterCreate
 
-                    placeholder: qsTr("Name the tag to see the command")
-                    command: root.previewCommand()
-                }
+        spacing: 8
+        Layout.fillWidth: true
 
-                // Footer separator
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: 1
-                    color: Style.colors.popupHeaderSeparator
-                }
+        Rectangle {
+            width: 16
+            height: 16
+            radius: 3
+            color: pushCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
+            border.color: pushCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked
+                                                    : Style.colors.popupCheckboxBorder
+            border.width: 1
 
-                // Footer
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: root.elementSpacing
+            Text {
+                anchors.centerIn: parent
+                text: "\u2713"
+                color: Style.colors.popupCheckboxCheckmark
+                font.pixelSize: Style.appFont.smallPt
+                visible: pushCheckBox.checked
+            }
+        }
 
-                    Item {
-                        Layout.fillWidth: true
-                    }
+        Text {
+            text: "Push to origin after creating"
+            color: Style.colors.popupCheckboxLabelText
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
 
-                    Button {
-                        text: "Cancel"
-                        Layout.preferredWidth: 100
-                        Layout.alignment: Qt.AlignVCenter
-                        topPadding: 6
-                        bottomPadding: 6
-                        leftPadding: 14
-                        rightPadding: 14
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.pushAfterCreate = !root.pushAfterCreate
+        }
+    }
 
-                        background: Rectangle {
-                            implicitHeight: 32
-                            color: "transparent"
-                            border.color: Style.colors.popupCancelButtonBorder
-                            border.width: 1
-                            radius: 5
-                            opacity: parent.hovered ? 1.0 : 0.7
-                        }
+    CommandPreview {
+        Layout.fillWidth: true
 
-                        contentItem: Text {
-                            text: parent.text
-                            color: Style.colors.popupCancelButtonText
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
-                        }
+        placeholder: qsTr("Name the tag to see the command")
+        command: root.previewCommand()
+    }
 
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.close()
-                        }
-                    }
+    actions: [
+        PopupButton {
+            text: "Cancel"
+            onClicked: root.close()
+        },
 
-                    Button {
-                        id: actionBtn
-                        text: "Create Tag"
-                        Layout.preferredWidth: 130
-                        Layout.alignment: Qt.AlignVCenter
-                        enabled: root.canAccept
-                        topPadding: 6
-                        bottomPadding: 6
-                        leftPadding: 16
-                        rightPadding: 16
-
-                        background: Rectangle {
-                            implicitHeight: 32
-                            color: parent.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
-                                                  : Style.colors.disabledButton
-                            radius: 5
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: Style.colors.secondaryForeground
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.createTag()
-                        }
+        PopupButton {
+            tone: PopupButton.Primary
+            text: "Create Tag"
+            enabled: root.canAccept
+            onClicked: root.createTag()
+        }
     ]
 
     function previewCommand() {
