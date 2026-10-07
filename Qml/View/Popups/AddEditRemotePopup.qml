@@ -54,6 +54,7 @@ PopupDialog {
         }
     }
 
+    onOpened: nameInput.forceActiveFocus()
 
     onAboutToHide: {
         nameInput.text = "";
