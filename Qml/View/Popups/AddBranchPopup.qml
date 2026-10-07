@@ -41,6 +41,13 @@ PopupDialog {
     iconColor: Style.colors.accent
     onOpened: nameInput.forceActiveFocus()
 
+    onAboutToHide: {
+        nameInput.text  = ""
+        targetHash      = ""
+        baseBranch      = "main"
+        baseBranchType  = "remote"
+    }
+
 
                     Text {
                         text: "BRANCH NAME"
