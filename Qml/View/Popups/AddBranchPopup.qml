@@ -60,7 +60,7 @@ PopupDialog {
                         placeholderText: "feature/new-work"
                         Layout.fillWidth: true
                         selectByMouse: true
-                        font.family: Style.fontTypes.mono
+            font.family: Style.fontTypes.jetBrainsMono
                         font.pixelSize: Style.appFont.defaultPt
                         color: Style.colors.popupInputText
                         leftPadding: 10
@@ -154,7 +154,7 @@ PopupDialog {
                             Text {
                                 Layout.fillWidth: true
                                 text: root.baseBranch
-                                font.family: Style.fontTypes.mono
+                    font.family: Style.fontTypes.jetBrainsMono
                                 font.pixelSize: Style.appFont.defaultPt
                                 color: Style.colors.popupBaseBranchText
                             }
