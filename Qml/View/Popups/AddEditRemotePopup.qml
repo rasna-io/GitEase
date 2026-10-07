@@ -22,6 +22,13 @@ PopupDialog {
 
     property bool             isEdit:       oldRemote !== null
 
+    property bool             fetchAfterAdd: true
+
+    //! How the remote authenticates. Unused until the Auth section can be shown, see its TODO.
+    property string           authMethod:   "none"
+
+    readonly property var     remoteNameSuggestions: ["origin", "upstream", "fork"]
+
     readonly property bool    isNameValid: nameInput.text.trim().length > 0
 
     readonly property bool    isUrlValid:  urlInput.text.match(/^(https?|git|ssh):\/\/|^(git@)/)
@@ -56,40 +63,72 @@ PopupDialog {
             anchors.fill: parent
             anchors.margins: 20
 
-            Text {
-                text: root.isEdit ? "Edit Remote" : "Add Remote"
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.inter
-                font.bold: true
-                font.pixelSize: Style.appFont.h2Pt
-                Layout.alignment: Qt.AlignHCenter
+        Text {
+            text: "NAME"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        TextField {
+            id: nameInput
+            placeholderText: "origin"
+            Layout.fillWidth: true
+            selectByMouse: true
+            font.family: Style.fontTypes.jetBrainsMono
+            font.pixelSize: Style.appFont.defaultPt
+            color: Style.colors.popupInputText
+            leftPadding: 10
+            rightPadding: 10
+            topPadding: 7
+            bottomPadding: 7
+            Layout.bottomMargin: 6
+
+            background: Rectangle {
+                implicitHeight: 26
+                color: Style.colors.popupInputBackground
+                radius: 5
+                border.color: nameInput.activeFocus ? Style.colors.popupInputBorderFocus
+                                                    : Style.colors.popupInputBorder
+                border.width: 1
             }
+        }
 
-            ColumnLayout {
-                spacing: 12
-                Layout.fillWidth: true
+        RowLayout {
+            spacing: 5
+            Layout.fillWidth: true
 
-                // Name Input
-                TextField {
-                    id: nameInput
-                    placeholderText: "Remote name (e.g. origin)"
-                    Layout.fillWidth: true
-                    selectByMouse: true
+            Repeater {
+                model: root.remoteNameSuggestions
 
-                    background: Rectangle {
-                        implicitHeight: 40
-                        color: Style.colors.secondaryBackground
-                        radius: 5
-                        border.color: nameInput.activeFocus ? Style.colors.accent : "transparent"
+                Rectangle {
+                    id: chip
+                    required property string modelData
+                    radius: 4
+                    color: Style.colors.popupChipBackground
+                    border.color: Style.colors.popupChipBorder
+                    border.width: 1
+                    implicitWidth: chipText.implicitWidth + 12
+                    implicitHeight: 22
+
+                    Text {
+                        id: chipText
+                        anchors.centerIn: parent
+                        text: chip.modelData
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.popupChipText
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: nameInput.text = chip.modelData
                     }
                 }
-
-                // URL Input with visual validation feedback
-                TextField {
-                    id: urlInput
-                    placeholderText: "Remote URL (HTTPS or SSH)"
-                    Layout.fillWidth: true
-                    selectByMouse: true
+            }
+        }
+    }
 
                     background: Rectangle {
                         implicitHeight: 40
