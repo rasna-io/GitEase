@@ -39,6 +39,8 @@ PopupDialog {
     title: "Create Branch"
     iconText: Style.icons.gitBranch
     iconColor: Style.colors.accent
+    onOpened: nameInput.forceActiveFocus()
+
 
                     Text {
                         text: "BRANCH NAME"
