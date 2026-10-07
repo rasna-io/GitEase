@@ -130,6 +130,12 @@ PopupDialog {
             }
         }
     }
+
+    // Remote URL
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
+
         Text {
             text: "URL"
             color: Style.colors.popupSectionLabel
