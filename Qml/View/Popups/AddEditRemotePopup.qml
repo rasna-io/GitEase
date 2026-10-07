@@ -63,6 +63,12 @@ PopupDialog {
         root.authMethod = "none";
     }
 
+    /* Children
+     * ****************************************************************************************/
+    // Remote name
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
 
         Text {
             text: "NAME"
