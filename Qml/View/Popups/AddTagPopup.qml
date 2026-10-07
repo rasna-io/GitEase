@@ -51,6 +51,8 @@ PopupDialog {
         isAnnotated = true;
     }
 
+    onOpened: nameInput.forceActiveFocus()
+
                     Text {
                         text: "TAG NAME"
                         color: Style.colors.popupSectionLabel
