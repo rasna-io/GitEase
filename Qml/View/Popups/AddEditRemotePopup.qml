@@ -54,17 +54,15 @@ PopupDialog {
         }
     }
 
-    contentItem: Rectangle {
-        color: Style.colors.primaryBackground
-        radius: 16
-        clip: true
-        border.color: Style.colors.accent
-        border.width: 1
 
-        ColumnLayout {
-            spacing: 20
-            anchors.fill: parent
-            anchors.margins: 20
+    onAboutToHide: {
+        nameInput.text = "";
+        urlInput.text = "";
+        root.oldRemote = null;
+        root.fetchAfterAdd = true;
+        root.authMethod = "none";
+    }
+
 
         Text {
             text: "NAME"
