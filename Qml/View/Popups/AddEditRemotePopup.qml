@@ -188,40 +188,74 @@ PopupDialog {
             }
         }
     }
+
+    // Auth
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
+
+        visible: false
+        // TODO: Let the user choose how this remote authenticates. Today GitEase picks the method
+        //       from the URL when it fetches or pushes (SSH keys for ssh:// and git@ URLs, a token
+        //       for https://) and nothing stores a choice per remote, so authMethod is unused.
+        //       Show this section once the backend can keep and apply that choice.
+
+        Text {
+            text: "AUTH"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        ColumnLayout {
+            spacing: 6
+            Layout.fillWidth: true
+
+            Repeater {
+                model: [
+                    { label: "None (public / SSH key in URL)",  value: "none" },
+                    { label: "SSH Key",                         value: "ssh" },
+                    { label: "Token",                           value: "token" }
+                ]
+
+                RowLayout {
+                    id: authOption
+                    required property var modelData
+                    readonly property bool checked: root.authMethod === modelData.value
                     Layout.fillWidth: true
-                    enabled: root.canAccept
+                    spacing: 8
 
-                    opacity: enabled ? 1.0 : 0.5
-                    Material.foreground: Style.colors.textButton
+                    Rectangle {
+                        width: 16
+                        height: 16
+                        radius: 8
+                        color: authOption.checked ? Style.colors.popupRadioBorderChecked : "transparent"
+                        border.width: 1
+                        border.color: authOption.checked ? Style.colors.popupRadioBorderChecked
+                                                         : Style.colors.popupRadioBorder
+                        Layout.alignment: Qt.AlignVCenter
 
-                    background: Rectangle {
-                        implicitHeight: 35
-                        color: actionBtn.enabled ? (actionBtn.hovered) ? Style.colors.accentHover : Style.colors.accent
-                                                    : (Style.colors.disabledButton)
-                        border.color: Style.colors.accent
-                        radius: 5
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 8
+                            height: 8
+                            radius: 4
+                            color: Style.colors.popupRadioDot
+                            visible: authOption.checked
+                        }
                     }
 
-                    onClicked: {
-                        let res;
-                        if (root.isEdit) {
-                            res = root.remoteController.editRemote(root.oldRemote.name, nameInput.text.trim(), urlInput.text.trim());
-                        } else {
-                            res = root.remoteController.addRemote(nameInput.text.trim(), urlInput.text.trim());
-                        }
+                    Text {
+                        text: authOption.modelData.label
+                        color: Style.colors.popupCheckboxLabelText
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
+                    }
 
-                        if (res.success) {
-                            if (notificationController) {
-                                let action = root.isEdit ? "updated" : "added"
-                                notificationController.success("Remote '" + nameInput.text + "' " + action + " successfully", "Remote", 3000)
-                            }
-                            root.close();
-                        } else {
-                            if (notificationController) {
-                                let action = root.isEdit ? "update" : "add"
-                                notificationController.error(res.errorMessage || "Failed to " + action + " remote", "Remote Error", 5000)
-                            }
-                        }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.authMethod = authOption.modelData.value
                     }
                 }
             }
