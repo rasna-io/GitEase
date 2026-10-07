@@ -199,13 +199,13 @@ PopupDialog {
                         font.pixelSize: Style.appFont.defaultPt
                     }
 
-                    TextField {
-                        id: messageInput
-                        placeholderText: "Release v1.0.0"
-                        Layout.fillWidth: true
-                        selectByMouse: true
-                        enabled: root.isAnnotated
-                        opacity: root.isAnnotated ? 1.0 : 0.5
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+            color: Style.colors.popupInputText
+            leftPadding: 10
+            rightPadding: 10
+            topPadding: 7
+            bottomPadding: 7
 
                         background: Rectangle {
                             implicitHeight: 26
