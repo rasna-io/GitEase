@@ -38,6 +38,7 @@ PopupDialog {
     title: "Create Branch"
     iconText: Style.icons.gitBranch
     iconColor: Style.colors.accent
+
     onOpened: nameInput.forceActiveFocus()
 
     onAboutToHide: {
