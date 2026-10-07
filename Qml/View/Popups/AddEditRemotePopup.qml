@@ -10,7 +10,7 @@ import GitEase_Style_Impl
  * AddEditRemotePopup
  * ************************************************************************************************/
 
-IPopup {
+PopupDialog {
     id: root
 
     /* Property Declarations
@@ -30,10 +30,12 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
+    width: 380
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
-    width: 360
-    height: 320
-    padding: 20
+    title: root.isEdit ? "Edit Remote" : "Add Remote"
+    iconText: Style.icons.cloud
+    iconColor: Style.colors.accent
 
     onAboutToShow: {
         if (isEdit) {
