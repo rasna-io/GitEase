@@ -310,6 +310,19 @@ PopupDialog {
             onClicked: root.fetchAfterAdd = !root.fetchAfterAdd
         }
     }
+    actions: [
+        PopupButton {
+            text: "Cancel"
+            onClicked: root.close()
+        },
+
+        PopupButton {
+            tone: PopupButton.Primary
+            text: root.isEdit ? "Save" : "Add Remote"
+            enabled: root.canAccept
+            onClicked: root.saveRemote()
+        }
+    ]
     function previewCommand() {
         let name = nameInput.text.trim()
         let url  = urlInput.text.trim()
