@@ -54,7 +54,7 @@ PopupDialog {
                         placeholderText: "v1.0.0"
                         Layout.fillWidth: true
                         selectByMouse: true
-                        font.family: Style.fontTypes.mono
+                        font.family: Style.fontTypes.jetBrainsMono
                         font.pixelSize: Style.appFont.defaultPt
                         color: Style.colors.popupInputText
                         leftPadding: 10
@@ -271,7 +271,7 @@ PopupDialog {
                                             "HEAD" + (root.targetLabel !== "" ? " — " + root.targetLabel : "")
                                         )
                                 color: Style.colors.popupInputText
-                                font.family: Style.fontTypes.mono
+                                font.family: Style.fontTypes.jetBrainsMono
                                 font.pixelSize: Style.appFont.defaultPt
                             }
 
