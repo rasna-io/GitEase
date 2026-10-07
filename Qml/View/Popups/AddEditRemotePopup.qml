@@ -262,6 +262,54 @@ PopupDialog {
         }
     }
 
+    // Separator
+    Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: 1
+        visible: !root.isEdit
+        color: Style.colors.popupHeaderSeparator
+    }
+
+    // Fetch after adding
+    RowLayout {
+        id: fetchCheckBox
+        readonly property bool checked: root.fetchAfterAdd
+
+        visible: !root.isEdit
+        spacing: 8
+        Layout.fillWidth: true
+
+        Rectangle {
+            width: 16
+            height: 16
+            radius: 3
+            color: fetchCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
+            border.color: fetchCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked
+                                                : Style.colors.popupCheckboxBorder
+            border.width: 1
+
+            Text {
+                anchors.centerIn: parent
+                text: "\u2713"
+                color: Style.colors.popupCheckboxCheckmark
+                font.pixelSize: Style.appFont.smallPt
+                visible: fetchCheckBox.checked
+            }
+        }
+
+        Text {
+            text: "Fetch immediately after adding"
+            color: Style.colors.popupCheckboxLabelText
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.fetchAfterAdd = !root.fetchAfterAdd
+        }
+    }
     function previewCommand() {
         let name = nameInput.text.trim()
         let url  = urlInput.text.trim()
