@@ -536,5 +536,7 @@ QtObject{
     property color diffPopupBackground:         secondaryBackground
     property color diffPopupBorder:             primaryBorder
     property color popupBodyText:                    secondaryText
+    property color popupInputBorderValid:            "#8016A34A"
+    property color popupValidText:                   "#15803D"
     property color popupShadow:                      "#2E0F172A"
 }
