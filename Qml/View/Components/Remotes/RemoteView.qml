@@ -74,6 +74,15 @@ UtilitiesCard {
         }
     }
 
+    Connections {
+        target: root.addEditRemotePopup
+
+        function onRemoteAdded(name, fetchNow) {
+            if (fetchNow && root.contentItem)
+                root.contentItem.fetchRemoteNamed(name)
+        }
+    }
+
     content: ColumnLayout {
         id: content
         anchors.fill: parent
