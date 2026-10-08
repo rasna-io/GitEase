@@ -401,6 +401,8 @@ Colors {
     popupInputBorder:                   "#33333D"
     popupInputBorderFocus:              accent          
     popupInputText:                     "#D8DCE6"
+    popupInputBorderValid:              "#4D4ADE80"
+    popupValidText:                     "#4ADE80"
     popupChipBackground:                "#1A1A22"
     popupChipBorder:                    "#2E2E3A"
     popupChipText:                      "#B0B8C8"
