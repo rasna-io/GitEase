@@ -296,6 +296,21 @@ UtilitiesCard {
             }
         }
 
+        function fetchRemoteNamed(remoteName) {
+            content.reload()
+
+            let res = remoteController ? remoteController.getRemotes() : null
+            if (!res || !res.success)
+                return
+
+            for (let i = 0; i < res.data.length; ++i) {
+                if (res.data[i].name === remoteName) {
+                    content.fetchRemote(res.data[i])
+                    return
+                }
+            }
+        }
+
         function pullRemote(remoteItem) {
             root.remote = remoteItem
             let res = remoteController.getRemoteUrl(remoteItem.name)
