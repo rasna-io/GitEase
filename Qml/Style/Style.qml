@@ -418,6 +418,8 @@ QtObject {
         popupCancelButtonBorder:          "#3A3A48"
         popupCancelButtonText:            "#B4BCCB"
         popupBodyText:                    "#B0B8C8"
+        popupInputBorderValid:            "#4D4ADE80"
+        popupValidText:                   "#4ADE80"
         popupShadow:                      "#99000000"
     }
 
