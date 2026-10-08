@@ -185,8 +185,9 @@ public:
 
     /**
      * @brief Discards all unstaged modifications in the repository.
-     * * Resets the working directory to match the HEAD commit. This will not
-     * delete untracked files but will restore deleted tracked files.
+     * * Restores the working directory from the index, so staged changes are kept, restores
+     * deleted tracked files and removes untracked ones. Unmerged files are reset to HEAD,
+     * which also ends their conflicts.
      * * @return GitResult indicating success.
      */
     Q_INVOKABLE GitResult revertAll();
@@ -202,7 +203,33 @@ public:
      */
     Q_INVOKABLE GitResult getUnstagedDiffView(const QString &filePath);
 
+    /**
+     * @brief Whether the working copy of a file still holds a complete conflict block
+     *        (`<<<<<<<`, `=======`, `>>>>>>>`), i.e. staging it would record the markers.
+     * @param filePath Path to the file to inspect.
+     */
+    Q_INVOKABLE bool hasConflictMarkers(const QString &filePath);
+
 private:
+
+    /**
+     * @brief Whether the index holds conflict entries for a file instead of a single stage-0
+     *        entry, e.g. after a conflicted merge or a quit rebase.
+     * @param filePath Path to the file to inspect.
+     */
+    bool isUnmerged(const QString &filePath) const;
+
+    /**
+     * @brief Paths the index currently holds as conflicts rather than single entries.
+     */
+    QStringList unmergedPaths() const;
+
+    /**
+     * @brief Puts HEAD's version of each path back into the index, which also clears any
+     *        conflict recorded for it. A path HEAD doesn't have is dropped from the index.
+     * @param paths Paths to reset; nothing happens when empty.
+     */
+    GitResult resetIndexToHead(const QStringList &paths);
 
     /**
      * @brief Get staged diff view (HEAD to index).

@@ -417,6 +417,8 @@ QtObject {
         popupCreateButtonText:            "#FFFFFF"
         popupCancelButtonBorder:          "#3A3A48"
         popupCancelButtonText:            "#B4BCCB"
+        popupBodyText:                    "#B0B8C8"
+        popupShadow:                      "#99000000"
     }
 
     property          string        currentTheme:               "Modern Light"

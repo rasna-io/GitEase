@@ -159,13 +159,15 @@ Item {
 
             onStageFileRequested: function(filePath, isDeleted) {
                 root.showSaveDialog(
-                            () => {
-                                let res = statusController.stageFile(filePath, isDeleted)
-                                if (!res.success) {
-                                    root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
-                                }
-                                root.updateStatus()
+                    () => {
+                        root.confirmConflictStaging([filePath], () => {
+                            let res = statusController.stageFile(filePath, isDeleted)
+                            if (!res.success) {
+                                root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
                             }
+                            root.updateStatus()
+                        })
+                    }
                 )
             }
 
@@ -216,13 +218,15 @@ Item {
             onStageAllRequested: function() {
                 root.showSaveDialog(
                             () => {
-                                let res = statusController.stageAll()
-                                if (res.success) {
-                                    root.notificationController.success("All files staged successfully", "Stage All", 3000)
-                                } else {
-                                    root.notificationController.error(res.errorMessage || "Failed to stage all files", "Stage Error", 5000)
-                                }
-                                root.updateStatus()
+                                root.confirmConflictStaging(root.unstagedModel.map(file => file.path), () => {
+                                    let res = statusController.stageAll()
+                                    if (res.success) {
+                                        root.notificationController.success("All files staged successfully", "Stage All", 3000)
+                                    } else {
+                                        root.notificationController.error(res.errorMessage || "Failed to stage all files", "Stage Error", 5000)
+                                    }
+                                    root.updateStatus()
+                                }, true)
                             }
                 )
             }
@@ -269,10 +273,78 @@ Item {
         }
     }
 
+    Component {
+        id: conflictStagingDialogComp
+        ConflictConfirmationDialog { }
+    }
+
     /* Functions
      * ****************************************************************************************/
     function updateStatus() {
         statusCoalesceTimer.restart()
+    }
+
+    function confirmConflictStaging(paths, stageAction, stagingAll = false) {
+        let conflicted = paths.filter(path => root.unstagedModel.some(file => file.path === path && file.isConflicted))
+        if (conflicted.length === 0) {
+            stageAction()
+            return
+        }
+
+        let withMarkers = conflicted.filter(path => root.statusController.hasConflictMarkers(path))
+        let dialog      = conflictStagingDialogComp.createObject(root)
+
+        const escape  = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        const tint    = (text, color) => `<span style="color:${color}">${escape(text)}</span>`
+        const code    = (text, color) => `<span style="font-family:'${Style.fontTypes.jetBrainsMono}'; ` +
+                                         `font-weight:600; color:${color}">${escape(text)}</span>`
+        const pathOf  = path => code(path, Style.colors.popupTitleText)
+
+        const markers = code(["<<<<<<<", "=======", ">>>>>>>"].join(String.fromCharCode(0xA0)),
+                             Style.colors.conflictMarker)
+
+        if (conflicted.length === 1) {
+            dialog.title   = "Mark Conflict as Resolved?"
+            dialog.message = withMarkers.length > 0
+                    ? `${pathOf(conflicted[0])} still contains conflict markers ${markers}.<br><br>` +
+                      "Staging it marks the conflict as resolved. If you commit the file like this, " +
+                      "the markers are committed with it."
+                    : `${pathOf(conflicted[0])} has no conflict markers left, but Git still lists it ` +
+                      "as conflicted.<br><br>" +
+                      "Staging it marks the conflict as resolved, using the file exactly as it is now."
+        } else {
+            const shown = conflicted.slice(0, 5)
+            let   list  = shown.map(path => "•&nbsp;&nbsp;" + pathOf(path) +
+                                            (withMarkers.includes(path)
+                                             ? "&nbsp;&nbsp;" + tint("has markers", Style.colors.conflictMarker)
+                                             : ""))
+
+            if (conflicted.length > shown.length)
+                list.push(`•&nbsp;&nbsp;and ${conflicted.length - shown.length} more`)
+
+            dialog.title   = "Mark Conflicts as Resolved?"
+            dialog.message = `${conflicted.length} conflicted files will be marked as resolved:<br>` +
+                             list.join("<br>") + "<br><br>" +
+                             (withMarkers.length > 0
+                              ? (withMarkers.length === conflicted.length ? "All" : withMarkers.length) +
+                                ` of them still contain conflict markers ${markers}. ` +
+                                "Committing them like this would commit the markers too."
+                              : "None of them has conflict markers left, so each is staged exactly as it is now.")
+        }
+
+        dialog.messageFormat = Text.RichText
+
+        dialog.saveTitle       = stagingAll ? "Stage All and Resolve" : "Stage and Resolve"
+        dialog.saveDescription = stagingAll ? "Stage every file and mark its conflict resolved"
+                                            : "Mark the conflict resolved with the file as it is now"
+
+        dialog.hasSave           = true
+        dialog.hasAbort          = false
+        dialog.cancelTitle       = "Cancel"
+        dialog.cancelDescription = "Keep the conflicts unresolved"
+
+        dialog.saved.connect(stageAction)
+        dialog.open()
     }
 
     function requestStatus() {

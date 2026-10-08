@@ -35,10 +35,13 @@ GitFileStatus::GitFileStatus(const git_status_entry *entry)
                                      GIT_STATUS_INDEX_DELETED |
                                      GIT_STATUS_INDEX_RENAMED);
 
-    m_isUnstaged = entry->status & (GIT_STATUS_WT_MODIFIED |
-                                       GIT_STATUS_WT_DELETED |
-                                       GIT_STATUS_WT_RENAMED |
-                                       GIT_STATUS_WT_TYPECHANGE);
+    m_isConflicted = entry->status & GIT_STATUS_CONFLICTED;
+
+    m_isUnstaged = m_isConflicted ||
+                   entry->status & (GIT_STATUS_WT_MODIFIED |
+                                    GIT_STATUS_WT_DELETED |
+                                    GIT_STATUS_WT_RENAMED |
+                                    GIT_STATUS_WT_TYPECHANGE);
 
     m_isUntracked = entry->status & GIT_STATUS_WT_NEW;
 }
@@ -72,7 +75,10 @@ GitFileStatus::GitFileStatus(const git_status_entry *entry,
                  entry->status & GIT_STATUS_INDEX_MODIFIED ||
                  entry->status & GIT_STATUS_INDEX_DELETED;
 
-    m_isUnstaged = entry->status & GIT_STATUS_WT_MODIFIED ||
+    m_isConflicted = entry->status & GIT_STATUS_CONFLICTED;
+
+    m_isUnstaged = m_isConflicted ||
+                   entry->status & GIT_STATUS_WT_MODIFIED ||
                    entry->status & GIT_STATUS_WT_DELETED;
 
     m_isUntracked = entry->status & GIT_STATUS_WT_NEW;
@@ -105,6 +111,11 @@ bool GitFileStatus::isUnstaged() const
 bool GitFileStatus::isUntracked() const
 {
     return m_isUntracked;
+}
+
+bool GitFileStatus::isConflicted() const
+{
+    return m_isConflicted;
 }
 
 

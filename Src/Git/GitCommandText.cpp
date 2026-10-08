@@ -216,6 +216,11 @@ QString GitCommandText::rebaseAbort()
     return "git rebase --abort";
 }
 
+QString GitCommandText::rebaseQuit()
+{
+    return "git rebase --quit";
+}
+
 QString GitCommandText::cherryPickContinue()
 {
     return "git cherry-pick --continue";
