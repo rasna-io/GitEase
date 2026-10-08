@@ -221,7 +221,7 @@ UtilitiesCard {
                             Layout.alignment: Qt.AlignVCenter
 
                             ActionIconButton {
-                                iconText: Style.icons.download
+                                iconText: Style.icons.refresh
                                 tooltip: root.isFetching ? "Fetching..." : "Fetch"
                                 textColor: root.isFetching ? Style.colors.utilitiesActionIconActive
                                                            : Style.colors.utilitiesActionIcon
