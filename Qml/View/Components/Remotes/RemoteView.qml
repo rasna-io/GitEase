@@ -54,12 +54,12 @@ UtilitiesCard {
         function onPasswordConfirm(password){
             if (root.authPurpose === "pull") {
                 root.isFetching = true
-                content.startPull([remote.name, "", password], remote.name)
+                root.contentItem.startPull([remote.name, "", password], remote.name)
             } else {
                 root.isFetching = true
                 if (root.activeFetchRemotes.indexOf(remote.name) === -1)
                     root.activeFetchRemotes.push(remote.name)
-                content.startFetch(remote.name)
+                root.contentItem.startFetch(remote.name, password)
             }
             root.authPurpose = "fetch"
         }
