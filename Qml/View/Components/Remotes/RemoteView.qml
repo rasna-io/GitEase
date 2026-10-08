@@ -237,13 +237,7 @@ UtilitiesCard {
                                 onClicked: content.pullRemote(currentRemote)
                             }
                             ActionIconButton {
-                                iconText: Style.icons.edit
-                                tooltip: "Edit Remote"
-                                textColor: Style.colors.utilitiesActionIcon
-                                onClicked: content.editRemote(currentRemote)
-                            }
-                            ActionIconButton {
-                                iconText: Style.icons.trash
+                                iconText: Style.icons.close
                                 tooltip: "Remove Remote"
                                 textColor: Style.colors.utilitiesActionIconDanger
                                 onClicked: content.removeRemoteItem(currentRemote)
