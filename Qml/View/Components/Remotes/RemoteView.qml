@@ -109,7 +109,7 @@ UtilitiesCard {
                         targetProvider: function() { return listView },
                         icon: Style.icons.upload,
                         title: "Manage Remotes",
-                        description: "Every remote configured for this repository is listed here. Use the icons on each row to fetch, pull, edit, or remove it."
+                        description: "Every remote configured for this repository is listed here. Use the icons on each row to fetch, pull, or remove it, and right-click a remote to edit it."
                     },
                     {
                         targetProvider: function() { return addRemoteBtn },
