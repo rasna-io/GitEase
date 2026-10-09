@@ -335,11 +335,6 @@ PopupDialog {
 
     actions: [
         PopupButton {
-            text: "Cancel"
-            onClicked: root.close()
-        },
-
-        PopupButton {
             tone: PopupButton.Primary
             text: root.isEdit ? "Save" : "Add Remote"
             enabled: root.canAccept
