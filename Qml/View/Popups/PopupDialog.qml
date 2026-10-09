@@ -116,7 +116,7 @@ IPopup {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        root.closeButtonClicked()
+                        root.dismissed()
                         root.close()
                     }
                 }
