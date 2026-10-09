@@ -29,7 +29,7 @@ set_target_properties(libssh2 PROPERTIES
 add_library(libgit2 STATIC IMPORTED GLOBAL)
 set_target_properties(libgit2 PROPERTIES
     IMPORTED_LOCATION "${LIBGIT2_LIBRARY}"
-    INTERFACE_INCLUDE_DIRECTORIES "${LIBGIT2_ROOT}/include"
+    INTERFACE_INCLUDE_DIRECTORIES "${LIBGIT2_ROOT}/include;${OPENSSL_ROOT}/include"
 )
 
 # Link Dependencies
