@@ -16,10 +16,7 @@ Item {
     property GuideController        guideController:        null
 
     property NotificationController notificationController: null
-
-    SshKeyController {
-        id: sshKeyCtrl
-    }
+    property SshKeyController       sshKeyController:       null
 
     property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {
         appModel: root.appModel
@@ -28,7 +25,7 @@ Item {
 
     property SettingsPopup              settingsPopup:              SettingsPopup {
         notificationController: root.notificationController
-        sshKeyController:       sshKeyCtrl
+        sshKeyController:       root.sshKeyController
         guideController:        root.guideController
     }
 
