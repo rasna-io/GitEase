@@ -39,8 +39,6 @@ PopupDialog {
 
     readonly property var     urlParts:    root.isUrlValid ? root.parseRemoteUrl(urlInput.text.trim()) : null
 
-    readonly property int     elementSpacing: 2
-
     /* Signals
      * ****************************************************************************************/
     signal remoteAdded(string name, bool fetchNow)
