@@ -63,6 +63,7 @@ PopupDialog {
     cancelText: dialog.cancelTitle
     cancelTooltip: dialog.cancelDescription
 
+    onDismissed: dialog.cancelled()
 
     onClosed: destroy()
 
