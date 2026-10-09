@@ -1,24 +1,17 @@
 #include "GitSshAuth.h"
 
+#include "Utilities/SshKeyManager/SshKeyManager.h"
+
+namespace {
+    // libgit2 re-invokes the credentials callback after every rejected attempt.
+    // Counting attempts per operation lets us walk through the candidates once
+    // (selected key file, then agent) and then give up instead of looping forever.
+    thread_local int s_attempt = 0;
+}
 
 GitSshAuth::GitSshAuth()
 {
-#ifdef Q_OS_WIN
-    if (ensureAgentRunning()) {
-        // Agent is accessible, check if keys are loaded
-        if (!hasSshKeysLoaded()) {
-            if (!loadDefaultSshKeys()) {
-                m_setupError = "SSH agent is running but no SSH keys could be loaded. "
-                              "Please ensure you have SSH keys in ~/.ssh/ and load them manually.";
-            }
-        }
-    } else {
-        m_setupError = "Failed to start or connect to SSH authentication agent. "
-                      "Please ensure the OpenSSH Authentication Agent service is running.";
-    }
-#else
-    m_setupError = "";
-#endif
+    s_attempt = 0;
 }
 
 QString GitSshAuth::getSetupError() const
@@ -26,33 +19,9 @@ QString GitSshAuth::getSetupError() const
     return m_setupError;
 }
 
-bool GitSshAuth::ensureAgentRunning()
-{
-    // First check if agent is accessible
-    if (isSshAgentAccessible())
-        return true;
-
-    // If not accessible, check if service is running
-    if (!isSshAgentRunning()) {
-        // Try to start service (don't modify startup type)
-        if (!startSshAgent()) {
-            return false;
-        }
-    }
-
-    // Give the service a moment to initialize
-    QThread::msleep(500);
-
-    // Check if agent became accessible after starting service
-    if (isSshAgentAccessible())
-        return true;
-
-    // If still not accessible, try to set up environment variables manually
-    return setupSshEnvironment();
-}
-
 void GitSshAuth::apply(git_fetch_options& fetchOpts)
 {
+    s_attempt = 0;
     fetchOpts.callbacks.credentials = &GitSshAuth::credentialsCallback;
 
     fetchOpts.callbacks.certificate_check = [](git_cert*, int, const char*, void*) -> int {
@@ -62,103 +31,15 @@ void GitSshAuth::apply(git_fetch_options& fetchOpts)
 
 void GitSshAuth::applyFetch(git_fetch_options& fetchOpts)
 {
+    s_attempt = 0;
     fetchOpts.callbacks.credentials = &GitSshAuth::credentialsCallback;
 }
 
 
 void GitSshAuth::applyPush(git_push_options& pushopts)
 {
+    s_attempt = 0;
     pushopts.callbacks.credentials = &credentialsCallback;
-}
-
-bool GitSshAuth::isSshAgentRunning()
-{
-    QProcess proc;
-    proc.start("powershell",
-               {"-Command", "Get-Service ssh-agent | Select-Object -ExpandProperty Status"});
-    proc.waitForFinished();
-
-    QString output = proc.readAllStandardOutput().trimmed();
-    return output == "Running";
-}
-
-bool GitSshAuth::isSshAgentAccessible()
-{
-    QProcess proc;
-    proc.start("ssh-add", QStringList() << "-l");
-    proc.waitForFinished(3000); // 3 second timeout
-
-    // ssh-add -l returns:
-    // 0 if agent is accessible and has keys
-    // 1 if agent is accessible but has no keys
-    // 2 if agent is not accessible
-    int exitCode = proc.exitCode();
-
-    // Exit code 0 or 1 means agent is accessible
-    // Exit code 2 means "Could not open a connection to your authentication agent"
-    return exitCode == 0 || exitCode == 1;
-}
-
-bool GitSshAuth::hasSshKeysLoaded()
-{
-    QProcess proc;
-    proc.start("ssh-add", QStringList() << "-l");
-    proc.waitForFinished(3000);
-
-    // Exit code 0 means keys are loaded
-    // Exit code 1 means agent is accessible but no keys loaded
-    return proc.exitCode() == 0;
-}
-
-bool GitSshAuth::loadDefaultSshKeys()
-{
-    // Try to load default SSH keys
-    QStringList defaultKeyPaths = {
-        QDir::homePath() + "/.ssh/id_rsa",
-        QDir::homePath() + "/.ssh/id_ed25519",
-        QDir::homePath() + "/.ssh/id_ecdsa"
-    };
-
-    bool loadedAny = false;
-    for (const QString& keyPath : defaultKeyPaths) {
-        if (QFile::exists(keyPath)) {
-            QProcess proc;
-            proc.start("ssh-add", QStringList() << keyPath);
-            proc.waitForFinished(5000);
-
-            if (proc.exitCode() == 0) {
-                loadedAny = true;
-            }
-        }
-    }
-
-    return loadedAny;
-}
-
-bool GitSshAuth::setupSshEnvironment()
-{
-    // On Windows, the SSH agent uses a named pipe
-    QString pipePath = "\\\\.\\pipe\\openssh-ssh-agent";
-
-    // Check if the pipe exists and set the environment variable
-    if (QFile::exists(pipePath)) {
-        qputenv("SSH_AUTH_SOCK", pipePath.toUtf8());
-        return isSshAgentAccessible();
-    }
-
-    return false;
-}
-
-bool GitSshAuth::startSshAgent()
-{
-    QProcess proc;
-    proc.start("powershell", {
-                                 "-Command",
-                                 "Start-Service ssh-agent"
-                             });
-    proc.waitForFinished();
-
-    return proc.exitStatus() == QProcess::NormalExit && proc.exitCode() == 0;
 }
 
 int GitSshAuth::credentialsCallback(git_cred** out,
@@ -167,34 +48,34 @@ int GitSshAuth::credentialsCallback(git_cred** out,
                                     unsigned int allowed_types,
                                     void*)
 {
-    if (allowed_types & GIT_CREDTYPE_SSH_KEY)
-    {
-        // First verify agent is accessible
-        const char* user = username_from_url ? username_from_url : "git";
+    if (!(allowed_types & GIT_CREDTYPE_SSH_KEY))
+        return GIT_PASSTHROUGH;
 
-#ifdef Q_OS_LINUX
-        QString privKey = QDir::homePath() + "/.ssh/id_ed25519";
-        QString pubKey = privKey + ".pub";
+    const QByteArray user = username_from_url ? QByteArray(username_from_url) : QByteArray("git");
+    int attempt = s_attempt++;
 
-        if (!QFile::exists(privKey)) {
-            privKey = QDir::homePath() + "/.ssh/id_rsa";
-            pubKey = privKey + ".pub";
+    // Attempt 0: the key assigned to this remote's host (GitHub / GitLab), or
+    // the default key, read straight from disk by libssh2. No ssh-agent,
+    // ssh-add or OpenSSH install needed.
+    if (attempt == 0) {
+        const QString privKey = SshKeyManager::privateKeyPathForUrl(
+            url ? QString::fromUtf8(url) : QString());
+        if (!privKey.isEmpty()) {
+            const QString pubKey = privKey + ".pub";
+            const QByteArray priv = privKey.toUtf8();
+            const QByteArray pub = pubKey.toUtf8();
+            return git_credential_ssh_key_new(out, user.constData(),
+                                              QFile::exists(pubKey) ? pub.constData() : nullptr,
+                                              priv.constData(), nullptr);
         }
-
-        return git_credential_ssh_key_new(
-            out,
-            user,
-            pubKey.toUtf8().constData(),
-            privKey.toUtf8().constData(),
-            nullptr
-            );
-#else
-        if (!isSshAgentAccessible() || !hasSshKeysLoaded()) {
-            return GIT_EAUTH;
-        }
-        return git_cred_ssh_key_from_agent(out, user);
-#endif
+        attempt = 1;     // no key file: go straight to the agent
+        s_attempt = 2;
     }
 
-    return GIT_PASSTHROUGH;
+    // Attempt 1: fall back to a running ssh-agent (passphrase-protected keys,
+    // hardware keys, password-manager agents). libgit2 talks to it directly.
+    if (attempt == 1)
+        return git_cred_ssh_key_from_agent(out, user.constData());
+
+    return GIT_EAUTH;
 }
