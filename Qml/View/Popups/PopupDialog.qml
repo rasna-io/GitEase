@@ -24,6 +24,7 @@ IPopup {
 
     property string iconText:   ""
     property color  iconColor:  Style.colors.accent
+    property Item   initialFocusItem: null
 
     property alias  bodySpacing: body.spacing
 
@@ -42,7 +43,10 @@ IPopup {
     height: contentItem.implicitHeight
     padding: 0
 
-    closePolicy: Popup.CloseOnEscape
+    onOpened: {
+        if (root.initialFocusItem)
+            root.initialFocusItem.forceActiveFocus()
+    }
 
     /* Children
      * ****************************************************************************************/
