@@ -24,6 +24,7 @@ IPopup {
 
     property string iconText:   ""
     property color  iconColor:  Style.colors.accent
+
     property Item   initialFocusItem: null
 
     property bool   hasCancel:      true
