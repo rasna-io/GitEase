@@ -23,7 +23,7 @@ IPopup {
     property string title:      ""
 
     property string iconText:   ""
-    property color  iconColor:  Style.colors.popupTitleText
+    property color  iconColor:  Style.colors.accent
 
     property alias  bodySpacing: body.spacing
 
