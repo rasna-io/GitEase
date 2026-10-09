@@ -40,8 +40,7 @@ IPopup {
 
     /* Signals
      * ****************************************************************************************/
-    //! The header's close button was clicked; emitted just before the popup closes.
-    signal closeButtonClicked()
+    signal dismissed()
 
     /* Object Properties
      * ****************************************************************************************/
