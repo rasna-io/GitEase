@@ -47,7 +47,7 @@ PopupDialog {
      * ****************************************************************************************/
     title: root.isEdit ? "Edit Remote" : "Add Remote"
     iconText: Style.icons.cloud
-    iconColor: Style.colors.accent
+    initialFocusItem: nameInput
 
     onAboutToShow: {
         if (isEdit) {
