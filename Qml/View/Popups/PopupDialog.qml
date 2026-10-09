@@ -28,6 +28,8 @@ IPopup {
 
     property alias  bodySpacing: body.spacing
 
+    readonly property int elementSpacing: 2
+
     default property alias bodyData: body.data
 
     property alias  actions:    actionsRow.data
