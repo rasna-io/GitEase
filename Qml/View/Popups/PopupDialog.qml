@@ -26,6 +26,10 @@ IPopup {
     property color  iconColor:  Style.colors.accent
     property Item   initialFocusItem: null
 
+    property bool   hasCancel:      true
+    property string cancelText:     "Cancel"
+    property string cancelTooltip:  ""
+
     property alias  bodySpacing: body.spacing
 
     readonly property int elementSpacing: 2
