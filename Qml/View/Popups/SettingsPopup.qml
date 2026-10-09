@@ -557,29 +557,55 @@ IPopup {
                                 guideName: "SSH Keys"
                                 guideIcon: Style.icons.terminal
                                 stepsFactory: function() {
-                                    return [
+                                    const hasKeys = (sshSection.sshKeyController?.allKeys?.length ?? 0) > 0
+                                    const steps = [
                                         {
-                                            targetProvider: function() { return sshScrollView },
+                                            targetProvider: function() { return sshSection.generateButton },
                                             icon: Style.icons.terminal,
-                                            title: "SSH Keys",
-                                            description: "Manage the SSH keys used to authenticate with your git remotes — generate a new key pair, copy the public key, or import an existing one.",
+                                            title: "1. Generate a key",
+                                            description: "Click “Generate New Key” and give it a name — tap the suggestion below the field to use it. GitEase creates a secure Ed25519 key right here; nothing else needs to be installed. Keys you already have in ~/.ssh are listed automatically.",
                                             isInPopup: true,
                                             activationDelay: 300,
                                             onActivate: function() { root.currentPage = 2 }
                                         }
                                     ]
+
+                                    if (hasKeys) {
+                                        steps.push({
+                                            targetProvider: function() { return sshSection.firstKeyCopy ?? sshSection.keyListItem },
+                                            icon: Style.icons.copy,
+                                            title: "2. Add the public key to your host",
+                                            description: "Click the copy button to copy the public key (never share the private one). Then paste it on GitHub: Settings → SSH and GPG keys → New SSH key, or on GitLab: Preferences → SSH Keys. Upload each key to every host you want to use it with.",
+                                            isInPopup: true
+                                        })
+                                        steps.push({
+                                            targetProvider: function() { return sshSection.firstKeyChips ?? sshSection.keyListItem },
+                                            icon: Style.icons.terminal,
+                                            title: "3. Choose where it is used",
+                                            description: "Use the “Use for” chips to pick which key GitEase uses: one for GitHub, another for GitLab, and “Other hosts” for everything else. One key can cover all three, or give each host its own. Rename a key with the pencil, and delete ones you no longer need.",
+                                            isInPopup: true
+                                        })
+                                    } else {
+                                        steps.push({
+                                            targetProvider: function() { return sshSection.emptyStateItem },
+                                            icon: Style.icons.copy,
+                                            title: "2. Add it to GitHub or GitLab",
+                                            description: "After generating, copy the public key with the copy button and paste it into your host: use the links here to jump straight to the right page on GitHub or GitLab. Once added, you can clone, fetch and push over SSH.",
+                                            isInPopup: true
+                                        })
+                                    }
+
+                                    return steps
                                 }
                             }
 
-                            SshKeyController { id: sshKeyFallback }
-
-                            SshKeyCard {
-                                id: sshScrollView
+                            SshSection {
+                                id: sshSection
                                 anchors.fill: parent
                                 anchors.topMargin: 10
                                 anchors.leftMargin: 20
                                 anchors.rightMargin: 20
-                                sshKeyController: root.sshKeyController ?? sshKeyFallback
+                                sshKeyController: root.sshKeyController
                                 notificationController: root.notificationController
                                 currentUserProfile: root.appModel?.currentUserProfile ?? null
                             }
