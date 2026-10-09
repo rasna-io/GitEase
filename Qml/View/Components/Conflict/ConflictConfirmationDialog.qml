@@ -60,7 +60,9 @@ PopupDialog {
     iconText: Style.icons.warning
     iconColor: dialog.hasAbort ? Style.colors.error : Style.colors.warning
 
-    onCloseButtonClicked: dialog.cancelled()
+    cancelText: dialog.cancelTitle
+    cancelTooltip: dialog.cancelDescription
+
 
     onClosed: destroy()
 
