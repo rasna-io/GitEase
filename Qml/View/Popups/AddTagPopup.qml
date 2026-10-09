@@ -32,12 +32,9 @@ PopupDialog {
     signal tagCreatedSuccessfully()
 
     /* Object Properties */
-    width: 380
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-
     title: "Create Tag"
     iconText: Style.icons.tag
-    iconColor: Style.colors.accent
+    initialFocusItem: nameInput
 
     // Reset state on close
     onAboutToHide: {
