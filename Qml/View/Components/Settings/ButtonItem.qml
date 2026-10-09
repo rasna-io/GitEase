@@ -22,6 +22,8 @@ RowLayout {
 
     property     string            buttonTitle: "Click Me"
 
+    property     real              buttonWidth: 0
+
 
     /* Signals
      * ****************************************************************************************/
@@ -31,14 +33,19 @@ RowLayout {
 
     /* Children
      * ****************************************************************************************/
+    spacing: 16
+
     ColumnLayout {
         Layout.fillWidth: true
+        Layout.preferredWidth: 0
+        Layout.alignment: Qt.AlignTop
 
         Text {
             Layout.fillWidth: true
             text: root.title
             font.pointSize: Style.appFont.h4Pt
             color: Style.colors.foreground
+            wrapMode: Text.WordWrap
         }
 
         Text {
@@ -46,11 +53,14 @@ RowLayout {
             text: root.description
             font.pointSize: Style.appFont.secondaryPt
             color: Style.colors.mutedText
+            wrapMode: Text.WordWrap
         }
     }
 
     Button {
         id: btn
+        Layout.alignment: Qt.AlignTop
+        Layout.preferredWidth: root.buttonWidth > 0 ? root.buttonWidth : implicitWidth
         flat: true
         text: root.buttonTitle
         enabled: root.enabled

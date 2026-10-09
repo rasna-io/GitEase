@@ -164,6 +164,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Settings/ComboboxItem.qml
     Qml/View/Components/Settings/SpinboxItem.qml
     Qml/View/Components/Settings/ButtonItem.qml
+    Qml/View/Components/Settings/SshSection.qml
     Qml/View/Components/Settings/SshKeyCard.qml
     Qml/View/Components/Settings/UpdateCard.qml
 
@@ -248,6 +249,9 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/RepositorySelectorPopup.qml
     Qml/View/Popups/ItemSelectorPopup.qml           # Select Item popup
     Qml/View/Popups/SettingsPopup.qml
+    Qml/View/Popups/SshKeyNamePopup.qml
+    Qml/View/Popups/SshKeyExportPopup.qml
+    Qml/View/Popups/SshKeyDeletePopup.qml
     Qml/View/Popups/IPopup.qml
     Qml/View/Popups/IWindow.qml
     Qml/View/Popups/AddEditRemotePopup.qml

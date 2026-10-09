@@ -149,6 +149,7 @@ ApplicationWindow {
         appModel: uiSession.appModel
         notificationController: uiSession.notificationController
         guideController: uiSession.guideController
+        sshKeyController: uiSession.sshKeyController
     }
 
     // Main content loader - switches between welcome flow and main application

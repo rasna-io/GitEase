@@ -199,6 +199,8 @@ QtObject {
 
     property NetworkController networkController: NetworkController {}
 
+    property SshKeyController sshKeyController: SshKeyController {}
+
     property UpdateController updateController: UpdateController {
         networkController: root.networkController
         notificationController: root.notificationController
