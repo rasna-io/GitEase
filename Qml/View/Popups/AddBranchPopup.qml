@@ -30,9 +30,6 @@ PopupDialog {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: 380
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-
     title: "Create Branch"
     iconText: Style.icons.gitBranch
     iconColor: Style.colors.accent
