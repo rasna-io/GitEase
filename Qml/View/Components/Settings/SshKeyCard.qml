@@ -8,361 +8,327 @@ import GitEase
 
 /*! ***********************************************************************************************
  * SshKeyCard
- * SSH key-management panel used inside the Settings → SSH tab.
+ * One SSH key in the key list: name (renameable), type, copy / export / delete actions, the
+ * "Use for" host chips and the key's comment, fingerprint and path.
+ *
+ * The card only reports what the user asked for through its signals; SshSection performs the
+ * actions and shows the notifications.
  * ************************************************************************************************/
-Item {
+Rectangle {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-    required property SshKeyController       sshKeyController
+    required property var keyData
 
-    property          NotificationController notificationController:   null
-
-    property          UserProfile            currentUserProfile:       null
-
+    /* Signals
+     * ****************************************************************************************/
+    signal renameRequested(string oldName, string newName)
+    signal copyRequested(string publicKey)
+    signal exportRequested(string keyName)
+    signal deleteRequested(string keyName)
+    signal assignRequested(string provider, string label, string keyName, bool currentlyAssigned)
 
     /* Object Properties
      * ****************************************************************************************/
+    implicitHeight: keyItemCol.implicitHeight + 28
+    radius: 10
+    color: keyHover.hovered ? Style.colors.controlBackgroundHover
+                            : Style.colors.controlBackground
+    border.color: keyHover.hovered ? Style.colors.controlBorderHover
+                                   : Style.colors.controlBorder
+    border.width: 1
 
-    implicitHeight: content.implicitHeight
+    property bool editing: false
+    readonly property var parts: (root.keyData.publicKeyContent || "").split(" ")
+    readonly property string keyType: {
+        const t = parts[0] || ""
+        if (t.startsWith("ssh-"))
+            return t.substring(4).toUpperCase()
+        if (t.startsWith("ecdsa-"))
+            return "ECDSA"
+        if (t.startsWith("sk-"))
+            return "SECURITY KEY"
+        return t.toUpperCase()
+    }
+    readonly property var providers: root.keyData.providers || []
+    readonly property bool isDefault: root.keyData.isActive
+    readonly property Item copyButtonItem: copyKeyBtn
+    readonly property Item chipsItem: chipsRow
+    readonly property string keyComment: parts.length > 2 ? parts.slice(2).join(" ") : ""
 
-    // Hidden TextEdit used solely for clipboard copy
-    TextEdit {
-        id: clipboardHelper
-        visible: false
+    function startEdit() {
+        nameInput.text = root.keyData.name
+        editing = true
+        nameInput.forceActiveFocus()
+        nameInput.selectAll()
     }
 
-    /* Children
-     * ****************************************************************************************/
+    function commitEdit() {
+        if (!editing)
+            return
+        editing = false
+        if (nameInput.text.trim() !== root.keyData.name)
+            root.renameRequested(root.keyData.name, nameInput.text)
+    }
+
+    Behavior on color        {
+        ColorAnimation {
+            duration: 150
+        }
+    }
+    Behavior on border.color {
+        ColorAnimation {
+            duration: 150
+        }
+    }
+
+    HoverHandler { id: keyHover }
+
     ColumnLayout {
-        id: content
-        anchors.fill: parent
-        spacing: 4
+        id: keyItemCol
 
-
-        ButtonItem {
-            id: generateBtn
-            Layout.fillWidth: true
-            title: "SSH Key"
-            description: "Generate and manage your SSH key pair for authenticating with remote Git hosts."
-            enabled: !root.sshKeyController.isGenerating
-            buttonTitle: {
-                if (root.sshKeyController.isGenerating)
-                    return "Generating…"
-                return "Generate New Key"
-            }
-            busy: root.sshKeyController.isGenerating
-            onClicked:  {
-                let keyComment = root.currentUserProfile?.email ?? ""
-
-                doGenerateKey(keyComment)
-            }
-
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: parent.top
+            margins: 14
         }
+        spacing: 8
 
-        Text {
-            visible: root.sshKeyController.allKeys.length > 0
-            Layout.fillWidth: true
-            Layout.topMargin: 10
-            text: "Available Keys"
-            font.pointSize: Style.appFont.h4Pt
-            color: Style.colors.foreground
-        }
-        Item {
-            Layout.fillHeight: listView.count > 0 ? false : true
-        }
-
-        ListView {
-            id: listView
-            visible: root.sshKeyController.allKeys.length > 0
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            model: root.sshKeyController.allKeys
+        RowLayout {
             spacing: 8
-            clip: true
-            ScrollBar.vertical: ScrollBar {
-                policy: ScrollBar.AsNeeded
+            Layout.fillWidth: true
+
+            Text {
+                visible: !root.editing
+                text: root.keyData.name
+                font.pointSize: Style.appFont.h4Pt
+                font.bold: true
+                color: Style.colors.foreground
+                elide: Text.ElideRight
+                Layout.fillWidth: true
             }
 
-            delegate: Rectangle {
-                id: keyCard
-                width: ListView.view.width - 16
-                implicitHeight: keyItemCol.implicitHeight + 16
-                radius: 8
-                color: keyHover.hovered ? Style.colors.controlBackgroundHover
-                                        : Style.colors.controlBackground
-                border.color: keyHover.hovered ? Style.colors.controlBorderHover
-                                               : Style.colors.controlBorder
-                border.width: 1
-
-                Behavior on color        {
-                    ColorAnimation {
-                        duration: 150
-                    }
+            TextField {
+                id: nameInput
+                visible: root.editing
+                Layout.fillWidth: true
+                color: Style.colors.foreground
+                font.pixelSize: Style.appFont.defaultPt
+                font.family: Style.fontTypes.jetBrainsMono
+                selectByMouse: true
+                maximumLength: 64
+                background: Rectangle {
+                    implicitHeight: 30
+                    radius: 5
+                    color: Style.colors.secondaryBackground
+                    border.width: 1
+                    border.color: Style.colors.accent
                 }
-                Behavior on border.color {
-                    ColorAnimation {
-                        duration: 150
-                    }
-                }
-
-                HoverHandler { id: keyHover }
-
-                ColumnLayout {
-                    id: keyItemCol
-                    width: parent.width - 16
-                    anchors {
-                        left: parent.left
-                        right: parent.right
-                        top: parent.top
-                        margins: 8
-                    }
-                    spacing: 4
-
-                    RowLayout {
-                        spacing: 8
-                        Layout.fillWidth: true
-
-                        Text {
-                            text: modelData.name
-                            font.pointSize: Style.appFont.h4Pt
-                            font.bold: true
-                            color: Style.colors.foreground
-                            Layout.fillWidth: true
-                        }
-
-                        ActionIconButton {
-                            id: copyKeyBtn
-                            iconText: copyKeyBtn._copied ? "✓" : Style.icons.copy
-                            tooltip: copyKeyBtn._copied ? "Copied!" : "Copy Public Key"
-                            textColor: copyKeyBtn._copied ? Style.colors.notificationSuccessIcon : Style.colors.accent
-                            width: 24
-                            height: 24
-
-                            property bool _copied: false
-
-                            Timer {
-                                id: copyKeyResetTimer
-                                interval: 2000
-                                onTriggered: copyKeyBtn._copied = false
-                            }
-
-                            onClicked: {
-                                clipboardHelper.text = modelData.publicKeyContent
-                                clipboardHelper.selectAll()
-                                clipboardHelper.copy()
-                                copyKeyBtn._copied = true
-                                copyKeyResetTimer.restart()
-                                if (root.notificationController) {
-                                    root.notificationController.success(
-                                        "Public key copied to clipboard", "SSH Key", 2500)
-                                }
-                            }
-                        }
-
-                        ActionIconButton {
-                            iconText: Style.icons.trash
-                            tooltip: "Delete SSH Key"
-                            textColor: Style.colors.deletededFile
-                            width: 24
-                            height: 24
-
-                            onClicked: {
-                                deleteKeyDialog.targetKeyName = modelData.name
-                                deleteKeyDialog.open()
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        spacing: 6
-                        Layout.fillWidth: true
-                        visible: modelData.fingerprint.length > 0
-
-                        Text {
-                            text: "Fingerprint:"
-                            font.pointSize: Style.appFont.secondaryPt
-                            color: Style.colors.mutedText
-                            Layout.preferredWidth: 70
-                        }
-
-                        Text {
-                            text: modelData.fingerprint
-                            font.pointSize: Style.appFont.secondaryPt
-                            font.family: Style.fontTypes.jetBrainsMono
-                            color: Style.colors.foreground
-                            elide: Text.ElideMiddle
-                            Layout.fillWidth: true
-                        }
-                    }
-
-                    RowLayout {
-                        spacing: 6
-                        Layout.fillWidth: true
-
-                        Text {
-                            text: "Path:"
-                            font.pointSize: Style.appFont.secondaryPt
-                            color: Style.colors.mutedText
-                            Layout.preferredWidth: 70
-                        }
-
-                        Text {
-                            text: modelData.privateKeyPath
-                            font.pointSize: Style.appFont.secondaryPt
-                            font.family: Style.fontTypes.jetBrainsMono
-                            color: Style.colors.secondaryText
-                            elide: Text.ElideMiddle
-                            Layout.fillWidth: true
-                        }
-                    }
-                }
+                onAccepted: root.commitEdit()
+                Keys.onEscapePressed: root.editing = false
             }
-        }
-    }
 
-    IPopup {
-        id: deleteKeyDialog
-        modal: true
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-
-        width: 380
-        height: 240
-
-        padding: 0
-
-        property string targetKeyName: ""
-
-        background: Rectangle {
-            color: "transparent"
-        }
-
-        Overlay.modal: Rectangle {
-            color: "#000000"
-            opacity: 0.35
-        }
-
-        contentItem: Rectangle {
-            color: Style.colors.primaryBackground
-            radius: 16
-            clip: true
-            border.color: Style.colors.primaryBorder
-            border.width: 1
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 20
-                spacing: 16
+            Rectangle {
+                visible: !root.editing && root.keyType.length > 0
+                implicitWidth: typeText.implicitWidth + 12
+                implicitHeight: typeText.implicitHeight + 4
+                radius: 4
+                color: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.15)
 
                 Text {
-                    text: "Delete SSH Key"
-                    color: Style.colors.foreground
-                    font.pointSize: Style.appFont.h3Pt
+                    id: typeText
+                    anchors.centerIn: parent
+                    text: root.keyType
+                    font.pointSize: Style.appFont.secondaryPt
                     font.bold: true
-                    Layout.alignment: Qt.AlignHCenter
+                    color: Style.colors.accent
+                }
+            }
+
+            ActionIconButton {
+                iconText: root.editing ? Style.icons.check : Style.icons.edit
+                tooltip: root.editing ? "Save name" : "Rename Key"
+                textColor: Style.colors.accent
+                width: 24
+                height: 24
+                onClicked: root.editing ? root.commitEdit() : root.startEdit()
+            }
+
+            ActionIconButton {
+                id: copyKeyBtn
+                iconText: copyKeyBtn._copied ? "✓" : Style.icons.copy
+                tooltip: copyKeyBtn._copied ? "Copied!" : "Copy Public Key"
+                textColor: copyKeyBtn._copied ? Style.colors.notificationSuccessIcon : Style.colors.accent
+                width: 24
+                height: 24
+
+                property bool _copied: false
+
+                Timer {
+                    id: copyKeyResetTimer
+                    interval: 2000
+                    onTriggered: copyKeyBtn._copied = false
                 }
 
-                Text {
-                    text: "Are you sure you want to delete this SSH key?\n\n\"" + deleteKeyDialog.targetKeyName + "\"\n\nThis action cannot be undone."
-                    color: Style.colors.mutedText
-                    font.pointSize: Style.appFont.defaultPt
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
+                onClicked: {
+                    copyKeyBtn._copied = true
+                        copyKeyResetTimer.restart()
+                        root.copyRequested(root.keyData.publicKeyContent)
                 }
+            }
 
-                RowLayout {
-                    spacing: 8
-                    Layout.fillWidth: true
-                    Layout.topMargin: 8
+            ActionIconButton {
+                iconText: Style.icons.upload
+                tooltip: "Export Key"
+                textColor: Style.colors.accent
+                width: 24
+                height: 24
 
-                    Button {
-                        text: "Cancel"
-                        Layout.fillWidth: true
-                        flat: true
+                onClicked: {
+                    root.exportRequested(root.keyData.name)
+                }
+            }
 
-                        background: Rectangle {
-                            implicitHeight: 38
-                            color: parent.hovered ? Style.colors.controlBackgroundHover : "transparent"
-                            border.color: Style.colors.accent
-                            border.width: 1
-                            radius: 5
-                        }
+            ActionIconButton {
+                iconText: Style.icons.trash
+                tooltip: "Delete SSH Key"
+                textColor: Style.colors.deletededFile
+                width: 24
+                height: 24
 
-                        contentItem: Text {
-                            text: parent.text
-                            color: Style.colors.foreground
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.mediumPt
-                        }
-
-                        onClicked: deleteKeyDialog.close()
-                    }
-
-                    Button {
-                        id: deleteConfirmBtn
-                        text: "Delete"
-                        Layout.fillWidth: true
-                        flat: true
-
-                        background: Rectangle {
-                            implicitHeight: 38
-                            color: deleteConfirmBtn.hovered ? Style.colors.deletededFile : Qt.rgba(Style.colors.deletededFile.r, Style.colors.deletededFile.g, Style.colors.deletededFile.b, 0.2)
-                            border.color: Style.colors.deletededFile
-                            border.width: 1
-                            radius: 5
-                        }
-
-                        contentItem: Text {
-                            text: deleteConfirmBtn.text
-                            color: deleteConfirmBtn.hovered ? "#ffffff" : Style.colors.deletededFile
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.mediumPt
-                            font.bold: true
-                        }
-
-                        onClicked: {
-                            doDeleteKey(deleteKeyDialog.targetKeyName)
-                            deleteKeyDialog.close()
-                        }
-                    }
+                onClicked: {
+                    root.deleteRequested(root.keyData.name)
                 }
             }
         }
-    }
 
-    /* Functions
-     * ****************************************************************************************/
-    function doGenerateKey(keyComment) {
-        const result = root.sshKeyController.generateKey(keyComment)
-        if (result.success) {
-            if (root.notificationController)
-                root.notificationController.success(
-                    "SSH key generated. Copy the public key and add it to your remote host.",
-                    "SSH Key", 5000)
-        } else {
-            if (root.notificationController)
-                root.notificationController.error(
-                    result.errorMessage || "Failed to generate SSH key",
-                    "SSH Key Error", 6000)
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 1
+            color: Style.colors.controlBorder
+            opacity: 0.6
         }
-    }
 
-    function doDeleteKey(keyName) {
-        const result = root.sshKeyController.deleteKeyByName(keyName)
-        if (result.success) {
-            if (root.notificationController)
-                root.notificationController.success("SSH key deleted.", "SSH Key", 3000)
-        } else {
-            if (root.notificationController)
-                root.notificationController.error(
-                    result.errorMessage || "Failed to delete SSH key",
-                    "SSH Key Error", 5000)
+        // Per-host assignment: remotes on GitHub / GitLab use the key assigned to them
+        RowLayout {
+            id: chipsRow
+            Layout.fillWidth: true
+            spacing: 8
+
+            Text {
+                text: "Use for"
+                font.pointSize: Style.appFont.secondaryPt
+                color: Style.colors.mutedText
+                Layout.preferredWidth: 80
+            }
+
+            Repeater {
+                model: [
+                    { provider: "github", label: "GitHub" },
+                    { provider: "gitlab", label: "GitLab" },
+                    { provider: "",       label: "Other hosts" }
+                ]
+
+                delegate: Rectangle {
+                    id: chip
+                    required property var modelData
+                    // "" = every host without its own key (the default key)
+                    readonly property bool assigned: modelData.provider === ""
+                        ? root.isDefault
+                        : root.providers.indexOf(modelData.provider) >= 0
+
+                    implicitWidth: chipText.implicitWidth + 20
+                    implicitHeight: chipText.implicitHeight + 8
+                    radius: height / 2
+                    color: assigned
+                           ? Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.2)
+                           : (chipArea.containsMouse ? Style.colors.controlBackgroundHover : "transparent")
+                    border.width: 1
+                    border.color: assigned ? Style.colors.accent : Style.colors.controlBorder
+
+                    Text {
+                        id: chipText
+                        anchors.centerIn: parent
+                        text: (chip.assigned ? "✓ " : "") + chip.modelData.label
+                        font.pointSize: Style.appFont.secondaryPt
+                        font.bold: chip.assigned
+                        color: chip.assigned ? Style.colors.accent : Style.colors.mutedText
+                    }
+
+                    MouseArea {
+                        id: chipArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse && chip.modelData.provider === ""
+                        ToolTip.delay: 400
+                        ToolTip.text: "Used for every remote that has no key of its own"
+                        onClicked: root.assignRequested(chip.modelData.provider,
+                                                         chip.modelData.label,
+                                                         root.keyData.name,
+                                                         chip.assigned)
+                    }
+                }
+            }
+
+            Item { Layout.fillWidth: true }
+        }
+
+        GridLayout {
+            Layout.fillWidth: true
+            columns: 2
+            columnSpacing: 12
+            rowSpacing: 4
+
+            Text {
+                visible: root.keyComment.length > 0
+                text: "Comment"
+                font.pointSize: Style.appFont.secondaryPt
+                color: Style.colors.mutedText
+                Layout.preferredWidth: 80
+            }
+            Text {
+                visible: root.keyComment.length > 0
+                text: root.keyComment
+                font.pointSize: Style.appFont.secondaryPt
+                color: Style.colors.foreground
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
+
+            Text {
+                visible: root.keyData.fingerprint.length > 0
+                text: "Fingerprint"
+                font.pointSize: Style.appFont.secondaryPt
+                color: Style.colors.mutedText
+                Layout.preferredWidth: 80
+            }
+            Text {
+                visible: root.keyData.fingerprint.length > 0
+                text: root.keyData.fingerprint
+                font.pointSize: Style.appFont.secondaryPt
+                font.family: Style.fontTypes.jetBrainsMono
+                color: Style.colors.foreground
+                elide: Text.ElideMiddle
+                Layout.fillWidth: true
+            }
+
+            Text {
+                text: "Path"
+                font.pointSize: Style.appFont.secondaryPt
+                color: Style.colors.mutedText
+                Layout.preferredWidth: 80
+            }
+            Text {
+                text: root.keyData.privateKeyPath
+                font.pointSize: Style.appFont.secondaryPt
+                font.family: Style.fontTypes.jetBrainsMono
+                color: Style.colors.secondaryText
+                elide: Text.ElideMiddle
+                Layout.fillWidth: true
+            }
         }
     }
 }
