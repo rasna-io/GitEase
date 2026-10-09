@@ -348,11 +348,6 @@ PopupDialog {
 
     actions: [
         PopupButton {
-            text: "Cancel"
-            onClicked: root.close()
-        },
-
-        PopupButton {
             tone: PopupButton.Primary
             text: "Create Tag"
             enabled: root.canAccept
