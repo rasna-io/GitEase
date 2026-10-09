@@ -1,5 +1,7 @@
 #include "GitTag.h"
 #include "GitCommandText.h"
+#include "Auth/GitSshAuth.h"
+#include "Utilities/GitProtocolDetector.h"
 
 #include <algorithm>
 
@@ -118,6 +120,20 @@ int credentials_cb(git_credential **out, const char *url, const char *user_from_
     return git_credential_userpass_plaintext_new(out, user_from_url, "");
 }
 
+static void applyTagPushAuth(git_remote *remote, git_push_options &options)
+{
+    const char *url = git_remote_pushurl(remote);
+    if (!url)
+        url = git_remote_url(remote);
+
+    if (url && GitProtocolDetector::isSshUrl(QString::fromUtf8(url))) {
+        GitSshAuth().applyPush(options);
+        return;
+    }
+
+    options.callbacks.credentials = credentials_cb;
+}
+
 GitResult GitTag::pushTag(const QString &name)
 {
     GitResult result = pushTagInternal(name);
@@ -145,7 +161,7 @@ GitResult GitTag::pushTagInternal(const QString &name)
     git_push_options options;
     git_push_init_options(&options, GIT_PUSH_OPTIONS_VERSION);
 
-    options.callbacks.credentials = credentials_cb;
+    applyTagPushAuth(remote, options);
 
     int error = git_remote_upload(remote, &array, &options);
 
@@ -187,7 +203,7 @@ GitResult GitTag::pushDeleteTagInternal(const QString &name)
     git_push_options options;
     git_push_init_options(&options, GIT_PUSH_OPTIONS_VERSION);
 
-    options.callbacks.credentials = credentials_cb;
+    applyTagPushAuth(remote, options);
 
     options.callbacks.certificate_check = [](git_cert*, int, const char*, void*) {
         return 0;
