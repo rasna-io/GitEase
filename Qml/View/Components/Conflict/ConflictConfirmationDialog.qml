@@ -83,15 +83,6 @@ PopupDialog {
 
     actions: [
         PopupButton {
-            text: dialog.cancelTitle
-            tooltip: dialog.cancelDescription
-            onClicked: {
-                dialog.cancelled()
-                dialog.close()
-            }
-        },
-
-        PopupButton {
             visible: dialog.hasAbort
             tone: PopupButton.Destructive
             text: dialog.acceptTitle
