@@ -10,10 +10,12 @@ import GitEase_Style_Impl
 /*! ***********************************************************************************************
  * PopupDialog
  * The shared frame for the app's dialog popups: a header with an optional icon, the title and a
- * close button, a body, and a footer of right-aligned PopupButtons. Background, border, shadow,
- * dividers and spacing come from here, so every dialog built on it looks the same.
+ * close button, a body, and a footer with a Cancel button followed by the dialog's own actions.
+ * Background, border, shadow, dividers, spacing, sizing, focus and closing come from here, so every
+ * dialog built on it looks and behaves the same; a dialog only sets what is different about it.
  *
- * The height follows the content. Escape and the close button close the popup.
+ * The height follows the content. Escape, a click outside, the close button and Cancel close the
+ * popup; the last two emit dismissed() first. initialFocusItem gets the focus when it opens.
  * ************************************************************************************************/
 IPopup {
     id: root
