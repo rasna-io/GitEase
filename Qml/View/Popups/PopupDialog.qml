@@ -38,7 +38,7 @@ IPopup {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: 460
+    width: 380
     height: contentItem.implicitHeight
     padding: 0
 
