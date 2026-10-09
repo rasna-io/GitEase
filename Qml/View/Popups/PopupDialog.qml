@@ -155,15 +155,26 @@ IPopup {
             Layout.rightMargin: 18
             Layout.topMargin: 18
             Layout.bottomMargin: 18
-            visible: actionsRow.children.length > 0
-            spacing: 0
+            visible: root.hasCancel || actionsRow.children.length > 0
+            spacing: 8
 
             Item {
                 Layout.fillWidth: true
             }
 
+            PopupButton {
+                visible: root.hasCancel
+                text: root.cancelText
+                tooltip: root.cancelTooltip
+                onClicked: {
+                    root.dismissed()
+                    root.close()
+                }
+            }
+
             RowLayout {
                 id: actionsRow
+                visible: children.length > 0
                 spacing: 8
             }
         }
