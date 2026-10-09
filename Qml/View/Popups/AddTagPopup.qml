@@ -46,8 +46,6 @@ PopupDialog {
         isAnnotated = true;
     }
 
-    onOpened: nameInput.forceActiveFocus()
-
     /* Children
     * ****************************************************************************************/
     // TAG name
