@@ -28,10 +28,12 @@ PopupDialog {
 
     readonly property var versionSuggestions: ["v1.0.1", "v1.1.0", "v2.0.0"]
 
-    /* Signals */
+    /* Signals
+    * ****************************************************************************************/
     signal tagCreatedSuccessfully()
 
-    /* Object Properties */
+    /* Object Properties
+    * ****************************************************************************************/
     title: "Create Tag"
     iconText: Style.icons.tag
     initialFocusItem: nameInput
