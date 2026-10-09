@@ -45,9 +45,6 @@ PopupDialog {
 
     /* Object Properties
      * ****************************************************************************************/
-    width: 380
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-
     title: root.isEdit ? "Edit Remote" : "Add Remote"
     iconText: Style.icons.cloud
     iconColor: Style.colors.accent
