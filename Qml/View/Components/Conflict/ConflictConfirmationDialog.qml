@@ -8,21 +8,30 @@ import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * ConflictConfirmationDialog
+ * Asks how to go on before conflicted work is staged, saved or thrown away. Offers up to four
+ * choices: save (primary), abort (destructive), quit and cancel; each choice's description is
+ * shown as its button's tooltip. The user has to pick one: Escape and clicks outside are ignored,
+ * and the close button counts as cancel.
+ * Created on demand, and destroys itself once closed.
  * ************************************************************************************************/
 
-IPopup {
+PopupDialog {
     id: dialog
 
     /* Property Declarations
      * ****************************************************************************************/
-    property string title               : "Save modifications"
     property string message             : "There are unsaved modifications!\nDo you want to save your changes?"
+
+    property int    messageFormat       : Text.PlainText
 
     property string saveTitle           : "Save"
     property string saveDescription     : "The modifications will be saved"
 
     property string acceptTitle         : "Abort Operation"
     property string acceptDescription   : "Discard all changes and exit"
+
+    property string quitTitle           : "Quit Operation"
+    property string quitDescription     : "Stop here and leave HEAD, the index and every file exactly as they are"
 
     property string cancelTitle         : "Keep Resolving"
     property string cancelDescription   : "Return to the conflict editor"
@@ -31,242 +40,79 @@ IPopup {
 
     property bool hasSave               : false
 
+    property bool hasQuit               : false
+
     /* Signals
      * ****************************************************************************************/
     signal saved()
     signal aborted()
+    signal quitRequested()
     signal cancelled()
 
     /* Object Properties
      * ****************************************************************************************/
     modal: true
     focus: true
-    width: 580
-    height: 280
+    width: 480
     closePolicy: Popup.NoAutoClose
+
+    title: "Save modifications"
+    iconText: Style.icons.warning
+    iconColor: dialog.hasAbort ? Style.colors.error : Style.colors.warning
+
+    cancelText: dialog.cancelTitle
+    cancelTooltip: dialog.cancelDescription
+
+    onDismissed: dialog.cancelled()
 
     onClosed: destroy()
 
-    contentItem: Rectangle {
-        anchors.fill: parent
-        color: Style.colors.primaryBackground
-        radius: 16
-        clip: true
-        border.color: Style.colors.accent
-        border.width: 1
+    /* Children
+     * ****************************************************************************************/
+    Text {
+        Layout.fillWidth: true
 
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 20
-            spacing: 8
+        text: dialog.message
+        textFormat: dialog.messageFormat
+        color: Style.colors.popupBodyText
+        font.family: Style.fontTypes.inter
+        font.pixelSize: Style.appFont.defaultPt
+        lineHeight: 1.2
+        wrapMode: Text.Wrap
+    }
 
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 12
-
-                // Main Icon
-                Text {
-                    Layout.alignment: Qt.AlignTop
-                    text: Style.icons.warning
-                    font.family: Style.fontTypes.font6Pro
-                    color: Style.colors.warning
-                    font.pixelSize: Style.appFont.display2xlPt
-                }
-
-                // Title + Description
-                ColumnLayout{
-                    Layout.fillWidth: true
-                    spacing: 12
-
-                    // Title
-                    Text {
-                        Layout.fillWidth: true
-                        text: dialog.title
-                        color: Style.colors.secondaryText
-                        font.family: Style.fontTypes.inter
-                        font.bold: true
-                        font.pixelSize: Style.appFont.xlPt
-                    }
-
-                    // Description
-                    Text {
-                        Layout.fillWidth: true
-                        text: dialog.message
-                        wrapMode: Text.Wrap
-                        color: Style.colors.secondaryText
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.largePt
-                    }
-                }
+    actions: [
+        PopupButton {
+            visible: dialog.hasAbort
+            tone: PopupButton.Destructive
+            text: dialog.acceptTitle
+            tooltip: dialog.acceptDescription
+            onClicked: {
+                dialog.aborted()
+                dialog.close()
             }
+        },
 
-            // BUTTON 1: Save
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: saveRow.implicitHeight + 16
-                border.color: saveMouseArea.containsMouse ? Style.colors.accent : "transparent"
-                radius: 6
-                visible: dialog.hasSave
-                color: Style.colors.primaryBackground
-
-                MouseArea {
-                    id: saveMouseArea
-                    cursorShape: Qt.PointingHandCursor
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: {
-                        dialog.saved()
-                        dialog.close()
-                    }
-                }
-
-                RowLayout {
-                    id: saveRow
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 12
-
-                    Text {
-                        text: Style.icons.arrowRight
-                        Layout.alignment: Qt.AlignTop
-                        color: Style.colors.accent
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.h2Pt
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-                        Text {
-                            text: dialog.saveTitle
-                            color: Style.colors.secondaryText
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.largePt
-                            font.bold: true
-                        }
-                        Text {
-                            text: dialog.saveDescription
-                            Layout.fillWidth: true
-                            wrapMode: Text.Wrap
-                            color: Qt.darker(Style.colors.secondaryText, 1.2)
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.mediumPt
-                        }
-                    }
-                }
+        PopupButton {
+            visible: dialog.hasQuit
+            tone: PopupButton.Destructive
+            text: dialog.quitTitle
+            tooltip: dialog.quitDescription
+            onClicked: {
+                dialog.quitRequested()
+                dialog.close()
             }
+        },
 
-            // BUTTON 2: Abort
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: abortRow.implicitHeight + 16
-                border.color: abortMouseArea.containsMouse ? Style.colors.accent : "transparent"
-                radius: 6
-                visible: dialog.hasAbort
-                color: Style.colors.primaryBackground
-
-                MouseArea {
-                    id: abortMouseArea
-                    cursorShape: Qt.PointingHandCursor
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: {
-                        dialog.aborted()
-                        dialog.close()
-                    }
-                }
-
-                RowLayout {
-                    id: abortRow
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 12
-
-                    Text {
-                        text: Style.icons.arrowRight
-                        Layout.alignment: Qt.AlignTop
-                        color: Style.colors.accent
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.h2Pt
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-                        Text {
-                            text: dialog.acceptTitle
-                            color: Style.colors.secondaryText
-                            font.family: Style.fontTypes.inter
-                            font.bold: true
-                            font.pixelSize: Style.appFont.largePt
-                        }
-                        Text {
-                            text: dialog.acceptDescription
-                            Layout.fillWidth: true
-                            wrapMode: Text.Wrap
-                            color: Qt.darker(Style.colors.secondaryText, 1.2)
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.mediumPt
-                        }
-                    }
-                }
-            }
-
-            // BUTTON 3: Cancel
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: cancelRow.implicitHeight + 16
-                border.color: cancelMouseArea.containsMouse ? Style.colors.accent : "transparent"
-                radius: 6
-                color: Style.colors.primaryBackground
-
-
-                MouseArea {
-                    id: cancelMouseArea
-                    cursorShape: Qt.PointingHandCursor
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: {
-                        dialog.cancelled()
-                        dialog.close()
-                    }
-                }
-
-                RowLayout {
-                    id: cancelRow
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 12
-
-                    Text {
-                        text: Style.icons.arrowRight
-                        Layout.alignment: Qt.AlignTop
-                        color: Style.colors.accent
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.h2Pt
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-                        Text {
-                            text: dialog.cancelTitle
-                            color: Style.colors.secondaryText
-                            font.family: Style.fontTypes.inter
-                            font.bold: true
-                            font.pixelSize: Style.appFont.largePt
-                        }
-                        Text {
-                            text: dialog.cancelDescription
-                            Layout.fillWidth: true
-                            wrapMode: Text.Wrap
-                            color: Qt.darker(Style.colors.secondaryText, 1.2)
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.mediumPt
-                        }
-                    }
-                }
+        PopupButton {
+            visible: dialog.hasSave
+            tone: PopupButton.Primary
+            text: dialog.saveTitle
+            tooltip: dialog.saveDescription
+            onClicked: {
+                dialog.saved()
+                dialog.close()
             }
         }
-    }
+    ]
 }

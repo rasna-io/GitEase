@@ -69,6 +69,7 @@ public:
     Q_INVOKABLE static QString rebaseContinue();
     Q_INVOKABLE static QString rebaseSkip();
     Q_INVOKABLE static QString rebaseAbort();
+    Q_INVOKABLE static QString rebaseQuit();
     Q_INVOKABLE static QString cherryPickContinue();
     Q_INVOKABLE static QString cherryPickSkip();
     Q_INVOKABLE static QString cherryPickAbort();

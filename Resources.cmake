@@ -85,6 +85,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/ScrollingText.qml                 # Single-line auto-scrolling text
     Qml/View/Components/Base/ModernInputArea.qml               # Modern Input Area
     Qml/View/Components/Base/CommandPreview.qml                # Shared "command this form will run" strip
+    Qml/View/Components/Base/PopupButton.qml                   # Footer button of a PopupDialog
     Qml/View/Components/Base/PluginCard.qml
     Qml/View/Components/Base/ModernSpinBox.qml
     Qml/View/Components/Base/HorizontalTagInput.qml
@@ -249,6 +250,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/ItemSelectorPopup.qml           # Select Item popup
     Qml/View/Popups/SettingsPopup.qml
     Qml/View/Popups/IPopup.qml
+    Qml/View/Popups/PopupDialog.qml                 # Shared frame for dialog popups
     Qml/View/Popups/IWindow.qml
     Qml/View/Popups/AddEditRemotePopup.qml
     Qml/View/Popups/AddBranchPopup.qml

@@ -9,7 +9,7 @@ import GitEase_Style_Impl
 /*! ***********************************************************************************************
  * AddBranchPopup
  * ************************************************************************************************/
-IPopup {
+PopupDialog {
     id: root
 
     /* Property Declarations
@@ -26,453 +26,13 @@ IPopup {
 
     readonly property bool    canAccept:   isNameValid
 
-    readonly property int sectionSpacing: 12
-    readonly property int elementSpacing: 2
-
     signal branchCreatedSuccessfully()
 
-    width: 380
-    height: 300
-    padding: 0
-
-    contentItem: Rectangle {
-        color: Style.colors.popupBackground
-        radius: 8
-        clip: true
-        border.color: Style.colors.popupBorder
-        border.width: 1
-
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: 0
-
-            // Header
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 48
-                Layout.leftMargin: 18
-                Layout.rightMargin: 18
-                spacing: 8
-
-                // Title
-                Text {
-                    text: "Create Branch"
-                    color: Style.colors.popupTitleText
-                    font.family: Style.fontTypes.inter
-                    font.weight: Font.DemiBold
-                    font.pixelSize: Style.appFont.mediumPt
-                    Layout.fillWidth: true
-                }
-
-                // Close Button
-                Text {
-                    text: "\u00d7"
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.mediumPt
-                    color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
-                                                    : Style.colors.popupCloseButton
-                    MouseArea {
-                        id: closeMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.close()
-                    }
-                }
-            }
-
-            // Header separator
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 1
-                color: Style.colors.popupHeaderSeparator
-            }
-
-            // Body
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.leftMargin: 18
-                Layout.rightMargin: 18
-                Layout.topMargin: 16
-                spacing: 0
-
-                // Branch name
-                ColumnLayout {
-                    spacing: root.elementSpacing
-                    Layout.fillWidth: true
-                    Layout.bottomMargin: root.sectionSpacing
-
-                    Text {
-                        text: "BRANCH NAME"
-                        color: Style.colors.popupSectionLabel
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.defaultPt
-                    }
-
-                    TextField {
-                        id: nameInput
-                        placeholderText: "feature/new-work"
-                        Layout.fillWidth: true
-                        selectByMouse: true
-                        font.family: Style.fontTypes.mono
-                        font.pixelSize: Style.appFont.defaultPt
-                        color: Style.colors.popupInputText
-                        leftPadding: 10
-                        rightPadding: 10
-                        topPadding: 7
-                        bottomPadding: 7
-                        Layout.bottomMargin: 6
-
-                        background: Rectangle {
-                            implicitHeight: 26
-                            color: Style.colors.popupInputBackground
-                            radius: 5
-                            border.color: nameInput.activeFocus ? Style.colors.popupInputBorderFocus
-                                                                : Style.colors.popupInputBorder
-                            border.width: 1
-                        }
-                    }
-
-                    RowLayout {
-                        spacing: 5
-                        Layout.fillWidth: true
-
-                        Repeater {
-                            model: root.branchNameSuggestions
-
-                            Rectangle {
-                                id: chip
-                                required property string modelData
-                                radius: 4
-                                color: Style.colors.popupChipBackground
-                                border.color: Style.colors.popupChipBorder
-                                border.width: 1
-                                implicitWidth: chipText.implicitWidth + 12
-                                implicitHeight: 22
-
-                                Text {
-                                    id: chipText
-                                    anchors.centerIn: parent
-                                    text: chip.modelData
-                                    font.family: Style.fontTypes.inter
-                                    font.pixelSize: Style.appFont.captionPt
-                                    color: Style.colors.popupChipText
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: nameInput.text = chip.modelData
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Based on
-                ColumnLayout {
-                    spacing: root.elementSpacing
-                    Layout.fillWidth: true
-                    Layout.bottomMargin: root.sectionSpacing
-
-                    visible: false
-                    // TODO: Implement "Based on" feature – currently the baseBranch and
-                    //       baseBranchType are not used. Need GitBranch::createBranchFromBase()
-                    //       that creates a branch from a given base branch (local or remote).
-                    //       Until then, creation always happens from HEAD or the explicit targetHash.
-
-                    Text {
-                        text: "BASED ON"
-                        color: Style.colors.popupSectionLabel
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.defaultPt
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: 26
-                        radius: 5
-                        color: Style.colors.popupBaseBranchBackground
-                        border.color: Style.colors.popupBaseBranchBorder
-                        border.width: 1
-                        Layout.bottomMargin: 7
-
-                        RowLayout {
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 10
-                            spacing: 8
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: root.baseBranch
-                                font.family: Style.fontTypes.mono
-                                font.pixelSize: Style.appFont.defaultPt
-                                color: Style.colors.popupBaseBranchText
-                            }
-
-                            Text {
-                                text: "▾"
-                                font.family: Style.fontTypes.inter
-                                font.pixelSize: Style.appFont.extraSmallPt
-                                color: Style.colors.popupRadioBorder
-                            }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                        }
-                    }
-
-                    RowLayout {
-                        spacing: 14
-                        Layout.fillWidth: true
-
-                        Repeater {
-                            model: [
-                                { label: "Local branch", value: "local" },
-                                { label: "Remote branch", value: "remote" }
-                            ]
-
-                            RowLayout {
-                                id: baseTypeOption
-                                readonly property bool checked: root.baseBranchType === modelData.value
-                                spacing: 6
-                                Layout.fillWidth: true
-
-                                Rectangle {
-                                    width: 16
-                                    height: 16
-                                    radius: 8
-                                    color: baseTypeOption.checked ? Style.colors.popupRadioBorderChecked : "transparent"
-                                    border.width: 1
-                                    border.color: baseTypeOption.checked ? Style.colors.popupRadioBorderChecked
-                                                                         : Style.colors.popupRadioBorder
-                                    Layout.alignment: Qt.AlignVCenter
-
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 8
-                                        height: 8
-                                        radius: 4
-                                        color: Style.colors.popupRadioDot
-                                        visible: baseTypeOption.checked
-                                    }
-                                }
-
-                                Text {
-                                    text: modelData.label
-                                    color: Style.colors.popupCheckboxLabelText
-                                    font.family: Style.fontTypes.inter
-                                    font.pixelSize: Style.appFont.defaultPt
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.baseBranchType = modelData.value
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Separator
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: 1
-                    color: Style.colors.popupHeaderSeparator
-                    Layout.topMargin: 10
-                    Layout.bottomMargin: 10
-                }
-
-                // Checkboxes
-                ColumnLayout {
-                    spacing: 8
-                    Layout.fillWidth: true
-                    Layout.bottomMargin: root.sectionSpacing
-
-                    // Checkout after creating
-                    RowLayout {
-                        id: checkoutCheckbox
-                        property bool checked: true
-
-                        spacing: 8
-                        Layout.fillWidth: true
-
-                        Rectangle {
-                            width: 16; height: 16
-                            radius: 3
-                            color: checkoutCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
-                            border.color: checkoutCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked
-                                                                    : Style.colors.popupCheckboxBorder
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\u2713"
-                                color: Style.colors.popupCheckboxCheckmark
-                                font.pixelSize: Style.appFont.smallPt
-                                visible: checkoutCheckbox.checked
-                            }
-                        }
-
-                        Text {
-                            text: "Checkout after creating"
-                            color: Style.colors.popupCheckboxLabelText
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.defaultPt
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: checkoutCheckbox.checked = !checkoutCheckbox.checked
-                        }
-                    }
-
-                    // Push to origin after creating
-                    RowLayout {
-                        id: pushCheckbox
-                        property bool checked: false
-
-                        spacing: 8
-                        Layout.fillWidth: true
-                        visible: false  // TODO: Implement GitBranch::pushBranch(branchName) to push the newly created
-                                        // branch to the remote (origin). Until then, the push checkbox has no effect.
-
-
-                        Rectangle {
-                            width: 16; height: 16
-                            radius: 3
-                            color: pushCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
-                            border.color: pushCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked
-                                                                : Style.colors.popupCheckboxBorder
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\u2713"
-                                color: Style.colors.popupCheckboxCheckmark
-                                font.pixelSize: Style.appFont.smallPt
-                                visible: pushCheckbox.checked
-                            }
-                        }
-
-                        Text {
-                            text: "Push to origin after creating"
-                            color: Style.colors.popupCheckboxLabelText
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.defaultPt
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: pushCheckbox.checked = !pushCheckbox.checked
-                        }
-                    }
-                }
-
-                // Git command preview
-                CommandPreview {
-                    Layout.fillWidth: true
-                    Layout.bottomMargin: root.sectionSpacing
-
-                    placeholder: qsTr("Name the branch to see the command")
-                    command: root.previewCommand()
-                }
-
-                // Footer separator
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: 1
-                    color: Style.colors.popupHeaderSeparator
-                }
-
-                // Footer
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: root.elementSpacing
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-
-                    Button {
-                        text: "Cancel"
-                        Layout.preferredWidth: 100
-                        Layout.alignment: Qt.AlignVCenter
-                        topPadding: 6
-                        bottomPadding: 6
-                        leftPadding: 14
-                        rightPadding: 14
-
-                        background: Rectangle {
-                            implicitHeight: 32
-                            color: "transparent"
-                            border.color: Style.colors.popupCancelButtonBorder
-                            border.width: 1
-                            radius: 5
-                            opacity: parent.hovered ? 1.0 : 0.7
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: Style.colors.popupCancelButtonText
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.close()
-                        }
-                    }
-
-                    Button {
-                        id: actionBtn
-                        text: "Create Branch"
-                        Layout.preferredWidth: 130
-                        Layout.alignment: Qt.AlignVCenter
-                        enabled: root.canAccept
-                        topPadding: 6
-                        bottomPadding: 6
-                        leftPadding: 16
-                        rightPadding: 16
-
-                        background: Rectangle {
-                            implicitHeight: 32
-                            color: parent.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
-                                                  : Style.colors.disabledButton
-                            radius: 5
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: Style.colors.secondaryForeground
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.createBranch()
-                        }
-                    }
-                }
-            }
-        }
-    }
+    /* Object Properties
+     * ****************************************************************************************/
+    title: "Create Branch"
+    iconText: Style.icons.gitBranch
+    initialFocusItem: nameInput
 
     onAboutToHide: {
         nameInput.text  = ""
@@ -481,6 +41,296 @@ IPopup {
         baseBranchType  = "remote"
     }
 
+    /* Children
+     * ****************************************************************************************/
+    // Branch name
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
+
+        Text {
+            text: "BRANCH NAME"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        TextField {
+            id: nameInput
+            placeholderText: "feature/new-work"
+            Layout.fillWidth: true
+            selectByMouse: true
+            font.family: Style.fontTypes.jetBrainsMono
+            font.pixelSize: Style.appFont.defaultPt
+            color: Style.colors.popupInputText
+            leftPadding: 10
+            rightPadding: 10
+            topPadding: 7
+            bottomPadding: 7
+            Layout.bottomMargin: 6
+
+            background: Rectangle {
+                implicitHeight: 26
+                color: Style.colors.popupInputBackground
+                radius: 5
+                border.color: nameInput.activeFocus ? Style.colors.popupInputBorderFocus
+                                                    : Style.colors.popupInputBorder
+                border.width: 1
+            }
+        }
+
+        RowLayout {
+            spacing: 5
+            Layout.fillWidth: true
+
+            Repeater {
+                model: root.branchNameSuggestions
+
+                Rectangle {
+                    id: chip
+                    required property string modelData
+                    radius: 4
+                    color: Style.colors.popupChipBackground
+                    border.color: Style.colors.popupChipBorder
+                    border.width: 1
+                    implicitWidth: chipText.implicitWidth + 12
+                    implicitHeight: 22
+
+                    Text {
+                        id: chipText
+                        anchors.centerIn: parent
+                        text: chip.modelData
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.popupChipText
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: nameInput.text = chip.modelData
+                    }
+                }
+            }
+        }
+    }
+
+    // Based on
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
+
+        visible: false
+        // TODO: Implement "Based on" feature – currently the baseBranch and
+        //       baseBranchType are not used. Need GitBranch::createBranchFromBase()
+        //       that creates a branch from a given base branch (local or remote).
+        //       Until then, creation always happens from HEAD or the explicit targetHash.
+
+        Text {
+            text: "BASED ON"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 26
+            radius: 5
+            color: Style.colors.popupBaseBranchBackground
+            border.color: Style.colors.popupBaseBranchBorder
+            border.width: 1
+            Layout.bottomMargin: 7
+
+            RowLayout {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 8
+
+                Text {
+                    Layout.fillWidth: true
+                    text: root.baseBranch
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.defaultPt
+                    color: Style.colors.popupBaseBranchText
+                }
+
+                Text {
+                    text: "▾"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.extraSmallPt
+                    color: Style.colors.popupRadioBorder
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+            }
+        }
+
+        RowLayout {
+            spacing: 14
+            Layout.fillWidth: true
+
+            Repeater {
+                model: [
+                    { label: "Local branch", value: "local" },
+                    { label: "Remote branch", value: "remote" }
+                ]
+
+                RowLayout {
+                    id: baseTypeOption
+                    readonly property bool checked: root.baseBranchType === modelData.value
+                    spacing: 6
+                    Layout.fillWidth: true
+
+                    Rectangle {
+                        width: 16
+                        height: 16
+                        radius: 8
+                        color: baseTypeOption.checked ? Style.colors.popupRadioBorderChecked : "transparent"
+                        border.width: 1
+                        border.color: baseTypeOption.checked ? Style.colors.popupRadioBorderChecked
+                                                             : Style.colors.popupRadioBorder
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 8
+                            height: 8
+                            radius: 4
+                            color: Style.colors.popupRadioDot
+                            visible: baseTypeOption.checked
+                        }
+                    }
+
+                    Text {
+                        text: modelData.label
+                        color: Style.colors.popupCheckboxLabelText
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.baseBranchType = modelData.value
+                    }
+                }
+            }
+        }
+    }
+
+    // Checkboxes
+    ColumnLayout {
+        spacing: 8
+        Layout.fillWidth: true
+
+        // Checkout after creating
+        RowLayout {
+            id: checkoutCheckbox
+            property bool checked: true
+
+            spacing: 8
+            Layout.fillWidth: true
+
+            Rectangle {
+                width: 16; height: 16
+                radius: 3
+                color: checkoutCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
+                border.color: checkoutCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked
+                                                        : Style.colors.popupCheckboxBorder
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "\u2713"
+                    color: Style.colors.popupCheckboxCheckmark
+                    font.pixelSize: Style.appFont.smallPt
+                    visible: checkoutCheckbox.checked
+                }
+            }
+
+            Text {
+                text: "Checkout after creating"
+                color: Style.colors.popupCheckboxLabelText
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: checkoutCheckbox.checked = !checkoutCheckbox.checked
+            }
+        }
+
+        // Push to origin after creating
+        RowLayout {
+            id: pushCheckbox
+            property bool checked: false
+
+            spacing: 8
+            Layout.fillWidth: true
+            visible: false  // TODO: Implement GitBranch::pushBranch(branchName) to push the newly created
+                            // branch to the remote (origin). Until then, the push checkbox has no effect.
+
+
+            Rectangle {
+                width: 16; height: 16
+                radius: 3
+                color: pushCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
+                border.color: pushCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked
+                                                    : Style.colors.popupCheckboxBorder
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "\u2713"
+                    color: Style.colors.popupCheckboxCheckmark
+                    font.pixelSize: Style.appFont.smallPt
+                    visible: pushCheckbox.checked
+                }
+            }
+
+            Text {
+                text: "Push to origin after creating"
+                color: Style.colors.popupCheckboxLabelText
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: pushCheckbox.checked = !pushCheckbox.checked
+            }
+        }
+    }
+
+    // Git command preview
+    CommandPreview {
+        Layout.fillWidth: true
+
+        placeholder: qsTr("Name the branch to see the command")
+        command: root.previewCommand()
+    }
+
+    actions: [
+        PopupButton {
+            tone: PopupButton.Primary
+            text: "Create Branch"
+            enabled: root.canAccept
+            onClicked: root.createBranch()
+        }
+    ]
+
+    /* Functions
+     * ****************************************************************************************/
     function previewCommand() {
         let branchName = nameInput.text.trim()
         if (branchName === "")

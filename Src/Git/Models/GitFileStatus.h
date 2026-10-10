@@ -14,6 +14,7 @@ class GitFileStatus
     Q_PROPERTY(bool isStaged READ isStaged CONSTANT FINAL)
     Q_PROPERTY(bool isUnstaged READ isUnstaged CONSTANT FINAL)
     Q_PROPERTY(bool isUntracked READ isUntracked CONSTANT FINAL)
+    Q_PROPERTY(bool isConflicted READ isConflicted CONSTANT FINAL)
 
     Q_PROPERTY(int deletionsCount READ deletionsCount CONSTANT FINAL)
     Q_PROPERTY(int additionsCount READ additionsCount CONSTANT FINAL)
@@ -32,6 +33,7 @@ public:
         StagedModified = GIT_STATUS_INDEX_MODIFIED,
         StagedDeleted = GIT_STATUS_INDEX_DELETED,
         StagedRenamed = GIT_STATUS_INDEX_RENAMED,
+        Conflicted = GIT_STATUS_CONFLICTED,
         Unknown = 0
     };
 
@@ -71,6 +73,8 @@ public:
 
     bool isUntracked() const;
 
+    bool isConflicted() const;
+
     int deletionsCount() const;
 
     int additionsCount() const;
@@ -85,6 +89,7 @@ private:
     bool m_isStaged;
     bool m_isUnstaged;
     bool m_isUntracked;
+    bool m_isConflicted = false;
     int m_deletionsCount;
     int m_additionsCount;
     DeltaStatus m_deltaStatus;
