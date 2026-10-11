@@ -1,0 +1,18 @@
+# Gems and Bundler
+*.gem
+*.rbc
+.bundle/
+vendor/bundle/
+
+# Rails and tooling
+/.config
+/coverage/
+/tmp/
+/log/
+/pkg/
+/doc/
+.yardoc/
+.byebug_history
+
+# Environment
+.env
