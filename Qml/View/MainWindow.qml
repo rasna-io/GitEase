@@ -16,6 +16,8 @@ Rectangle {
      * ****************************************************************************************/
     property UiSession uiSession: null
 
+    property bool utilityPanelOpen: false
+
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
@@ -146,10 +148,12 @@ Rectangle {
 
                 pageSwipeView.setCurrentIndex(targetIndex)
                 pages[targetIndex]?.onPageActivated?.()
+                utilityPanel.reload()
             })
         } else {
             pageSwipeView.setCurrentIndex(targetIndex)
             pages[targetIndex]?.onPageActivated?.()
+            utilityPanel.reload()
         }
     }
 
@@ -168,6 +172,9 @@ Rectangle {
             windowController: root.uiSession.windowController
             content: pageSwipeView.currentItem?.headerContent ?? null
             pluginManager: root.uiSession?.pluginController?.pluginManager ?? null
+            utilityPanelOpen: root.utilityPanelOpen
+
+            onUtilityPanelToggleRequested: root.utilityPanelOpen = !root.utilityPanelOpen
         }
 
         Item {
@@ -215,13 +222,7 @@ Rectangle {
                     settingsPopup.guideController = root.uiSession.guideController
                     settingsPopup.switchToPageById = root.switchToPageById
                     settingsPopup.openUtilityPanel = function(open) {
-                        let pages = pageSwipeView.contentChildren
-                        for (let i = 0; i < pages.length; i++) {
-                            if (pages[i].pageId === "graph") {
-                                pages[i].utilityPanelOpen = open
-                                break
-                            }
-                        }
+                        root.utilityPanelOpen = open
                     }
                     settingsPopup.open()
                 }
@@ -260,7 +261,12 @@ Rectangle {
 
                     SwipeView {
                         id: pageSwipeView
-                        anchors.fill: parent
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                            right: utilityPanel.left
+                        }
 
                         // Page switching is driven by the NavigationRail only.
                         interactive: false
@@ -322,6 +328,8 @@ Rectangle {
                         }
 
                         GraphViewPage {
+                            onUtilityPanelReloadRequested: utilityPanel.reload()
+
                             appModel: root.uiSession?.appModel
                             branchController: root.uiSession?.branchController
                             remoteController: root.uiSession?.remoteController
@@ -341,8 +349,6 @@ Rectangle {
                             gitTreeController: root.uiSession?.gitTreeController
                             resetController: root.uiSession?.resetController
                             terminalController: root.uiSession?.terminalController
-                            bundleController: root.uiSession?.bundleController
-                            activityController: root.uiSession?.activityController
                             pluginController: root.uiSession?.pluginController
                             guideController: root.uiSession?.guideController
                             layoutController: root.uiSession?.layoutController
@@ -379,6 +385,35 @@ Rectangle {
                             if (requestedPageId)
                                 root.switchToPageById(requestedPageId)
                         }
+                    }
+
+                    UtilityPanel {
+                        id: utilityPanel
+                        anchors {
+                            right: parent.right
+                            top: parent.top
+                            bottom: parent.bottom
+                        }
+                        width: animatedWidth
+                        open: root.utilityPanelOpen
+
+                        branchController        : root.uiSession?.branchController
+                        remoteController        : root.uiSession?.remoteController
+                        repositoryController    : root.uiSession?.repositoryController
+                        commitController        : root.uiSession?.commitController
+                        statusController        : root.uiSession?.statusController
+                        stashController         : root.uiSession?.stashController
+                        tagController           : root.uiSession?.tagController
+                        rebaseController        : root.uiSession?.rebaseController
+                        conflictController      : root.uiSession?.conflictController
+                        bundleController        : root.uiSession?.bundleController
+                        activityController      : root.uiSession?.activityController
+                        notificationController  : root.uiSession?.notificationController
+                        guideController         : root.uiSession?.guideController
+                        userAuthenticationPopup : root.uiSession?.popups?.userAuthenticationPopup
+                        uiSessionPopups         : root.uiSession?.popups
+                        pluginController        : root.uiSession?.pluginController
+                        gitStateNotifier        : root.uiSession?.gitStateNotifier
                     }
                 }
 
