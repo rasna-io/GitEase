@@ -19,6 +19,11 @@ Item {
     property WindowController   windowController
     property Component          content
     property var                pluginManager: null
+    property bool               utilityPanelOpen: false
+
+    /* Signals
+     * ****************************************************************************************/
+    signal utilityPanelToggleRequested()
 
     /* Children
      * ****************************************************************************************/
@@ -112,6 +117,34 @@ Item {
                     onClicked: root.pluginManager.executeToolbarAction(modelData.pluginId, modelData.id, {})
                 }
             }
+
+            IconButton {
+                id: utilityPanelToggleButton
+                Layout.preferredWidth: 26
+                Layout.preferredHeight: 26
+                Layout.leftMargin: Style.dp(6)
+                Layout.rightMargin: Style.dp(10)
+
+                display: IconButton.IconOnly
+                icon.source: Style.icons.togglePanel
+                icon.width: 14
+                icon.height: 14
+                icon.color: root.utilityPanelOpen ? Style.colors.accent : Style.colors.foreground
+                tooltip: root.utilityPanelOpen ? "Hide utility panel" : "Show utility panel"
+
+                background: Rectangle {
+                    radius: 5
+                    color: utilityPanelToggleButton.down ? Style.colors.surfaceMuted :
+                           utilityPanelToggleButton.hovered ? Style.colors.headerButtonBackgroundHover :
+                           root.utilityPanelOpen ? Style.colors.subtleAzureGlow
+                                                 : Style.colors.headerButtonBackground
+                    border.width: 1
+                    border.color: Style.colors.headerButtonBorder
+                }
+
+                onClicked: root.utilityPanelToggleRequested()
+            }
+
             Rectangle {
                 Layout.preferredWidth: Style.dp(1)
                 Layout.fillHeight: true
