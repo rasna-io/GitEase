@@ -72,6 +72,11 @@ public:
     git_repository *activeRepo() const;
 
     /**
+     * @brief Working directory of @p repo, cleaned; empty for a bare repository.
+     */
+    static QString workdirOf(git_repository *repo);
+
+    /**
      * @brief Binds activeRepo() to one handle for as long as it exists, on this thread only.
      *
      * Thread local because one controller can be running two jobs at once - a job for one
