@@ -80,8 +80,14 @@ public:
 
     QString resolveBranchName(const QString &branchName);
     
+    /**
+     * \brief Name of the branch HEAD points at, for any repository handle.
+     * \return The branch name, "initial/no-commits" before the first commit or "Detached HEAD".
+     */
+    static QString currentBranchName(git_repository *repo);
+
     static git_object * getHead(git_repository *repo, const QString &branchName);
-    
+
     static git_reference * getRef(git_repository *, const QString &branchName);
 
 private:
