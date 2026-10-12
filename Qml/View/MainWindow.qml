@@ -279,13 +279,10 @@ Rectangle {
                             interactive: false
                             currentIndex: pageSwipeView.currentIndex
                             orientation: ListView.Horizontal
-                            snapMode: ListView.SnapOneItem
+                            snapMode: ListView.NoSnap
                             boundsBehavior: Flickable.StopAtBounds
-                            highlightRangeMode: ListView.StrictlyEnforceRange
-                            preferredHighlightBegin: 0
-                            preferredHighlightEnd: 0
-                            highlightMoveDuration: 0
-                            highlightResizeDuration: 0
+                            highlightRangeMode: ListView.NoHighlightRange
+                            contentX: originX + currentIndex * width
 
                             property bool hasPresentedPage: false
 
