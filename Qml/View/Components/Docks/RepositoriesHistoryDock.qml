@@ -24,6 +24,12 @@ UtilitiesCard {
     icon: Style.icons.clock
     badgeCount: repositoryController ? repositoryController.appModel.repositoriesHistory.length : 0
 
+    readonly property var filteredRepositories: root.filterItems(
+        root.repositoryController ? root.repositoryController.appModel.repositoriesHistory : [],
+        function(path) { return path })
+    contentMatchesFilter: root.filteredRepositories.length > 0
+    filteredCount: root.filteredRepositories.length
+
     /* Children
      * ****************************************************************************************/
     content: ColumnLayout {
@@ -71,7 +77,7 @@ UtilitiesCard {
             clip: true
             spacing: Style.dp(2)
 
-            model: root.repositoryController.appModel.repositoriesHistory
+            model: root.filteredRepositories
             delegate: RepositoryListItem {
                 id: item
                 implicitWidth: parent.width
