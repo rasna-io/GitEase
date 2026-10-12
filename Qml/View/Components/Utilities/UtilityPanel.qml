@@ -79,7 +79,7 @@ Rectangle {
                     targetProvider: function() { return filterField },
                     icon: Style.icons.search,
                     title: "Filter Docks",
-                    description: "Type to filter the list of utility docks — only matching titles remain visible.",
+                    description: "Type to filter the utility docks — a dock stays visible when its title or anything listed inside it (branches, tags, stashes, remotes, ...) matches.",
                     isInPopup: false,
                     activationDelay: 300,
                 },
@@ -197,7 +197,7 @@ Rectangle {
                 }
 
                 ImportExportBundleDock {
-                    visible: dockFlow.matchesFilter("Export / Import Project")
+                    filterText: dockFlow.filterText
                     branchController: root.branchController
                     bundleController: root.bundleController
                     notificationController: root.notificationController
@@ -206,7 +206,7 @@ Rectangle {
 
                 RemoteView {
                     id: remoteView
-                    visible: dockFlow.matchesFilter(remoteView.title)
+                    filterText: dockFlow.filterText
                     remoteController: root.remoteController
                     repositoryController: root.repositoryController
                     userAuthenticationPopup: root.userAuthenticationPopup
@@ -220,7 +220,7 @@ Rectangle {
 
                 BranchManagementView {
                     id: branchManagementView
-                    visible: dockFlow.matchesFilter(branchManagementView.title)
+                    filterText: dockFlow.filterText
                     branchController: root.branchController
                     addBranchPopup: root.uiSessionPopups ? root.uiSessionPopups.addBranchPopup : null
                     notificationController: root.notificationController
@@ -231,7 +231,7 @@ Rectangle {
 
                 StashManagerDock {
                     id: stashManagerDock
-                    visible: dockFlow.matchesFilter(stashManagerDock.title)
+                    filterText: dockFlow.filterText
                     stashController: root.stashController
                     commitController: root.commitController
                     statusController: root.statusController
@@ -246,7 +246,7 @@ Rectangle {
 
                 TagManagementView {
                     id: tagManagementView
-                    visible: dockFlow.matchesFilter(tagManagementView.title)
+                    filterText: dockFlow.filterText
                     tagController: root.tagController
                     addTagPopup: root.uiSessionPopups ? root.uiSessionPopups.addTagPopup : null
                     guideController: root.guideController
@@ -256,7 +256,7 @@ Rectangle {
                 }
 
                 RecentActivityDock {
-                    visible: dockFlow.matchesFilter("Recent Activity")
+                    filterText: dockFlow.filterText
                     activityController: root.activityController
                     guideController: root.guideController
 
@@ -264,7 +264,7 @@ Rectangle {
                 }
 
                 RepositoriesHistoryDock {
-                    visible: dockFlow.matchesFilter("Repositories History")
+                    filterText: dockFlow.filterText
                     repositoryController: root.repositoryController
                     guideController: root.guideController
 
@@ -273,7 +273,7 @@ Rectangle {
 
                 RebaseDock {
                     id: rebaseDock
-                    visible: dockFlow.matchesFilter("Rebase")
+                    filterText: dockFlow.filterText
                     branchController        : root.branchController
                     rebaseController        : root.rebaseController
                     commitController        : root.commitController
@@ -290,7 +290,11 @@ Rectangle {
                     delegate: Loader {
                         width:  root.contentWidth
                         height: 390
-                        visible: dockFlow.matchesFilter(modelData.title ?? "")
+                        // Plugin docks built on UtilitiesCard filter their own content;
+                        // any other plugin dock is matched by its title only.
+                        visible: item && item.matchesFilter !== undefined
+                                 ? item.matchesFilter
+                                 : dockFlow.matchesFilter(modelData.title ?? "")
                         active: !!modelData?.url
                         source: modelData?.url ?? ""
 
@@ -298,6 +302,8 @@ Rectangle {
                             if (!item)
                                 return
 
+                            if (item.hasOwnProperty("filterText"))
+                                item.filterText = Qt.binding(function() { return dockFlow.filterText })
                             if (item.hasOwnProperty("pluginManager"))
                                 item.pluginManager = Qt.binding(function() { return root.pluginController?.pluginManager })
                             if (item.hasOwnProperty("pluginId"))
