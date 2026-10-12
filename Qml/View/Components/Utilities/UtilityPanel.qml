@@ -65,6 +65,17 @@ Rectangle {
         }
     }
 
+    Connections {
+        target: root.guideController
+
+        function onActiveGuideChanged() {
+            const guide = root.guideController ? root.guideController.activeGuide : null
+
+            if (guide && guide.page === "utilities" && filterField.text.length > 0)
+                filterField.text = ""
+        }
+    }
+
     /* Children
      * ****************************************************************************************/
     GuideHoverTrigger {
