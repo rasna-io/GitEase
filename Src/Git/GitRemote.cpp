@@ -1325,6 +1325,7 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
 
     result = git_remote_fetch(remote, nullptr, &opts, nullptr);
 
+    const QString url = transferUrl(remote, false);
     git_remote_free(remote);
 
     if (result != GIT_OK) {
