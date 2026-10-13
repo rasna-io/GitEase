@@ -126,13 +126,13 @@ public:
      * Explicitly uses HTTPS authentication with a provided personal access token.
      * This method is useful when you want to use a specific token for authentication.
      *
-     * @param remote Name of the remote (default: "origin")
+     * @param remote Name of the remote
      * @param token  Personal access token or password for HTTPS authentication
      *
      * @return GitResult with operation result
      */
     Q_INVOKABLE GitResult fetchWithToken(const QString& remote, const QString& token);
-    
+
     /**
      * @brief Pull a remote branch into the checked out branch.
      *
@@ -150,13 +150,13 @@ public:
                                const QString& branch = QString());
 
     /**
-     * @brief Start pull asynchronously using HTTPS token authentication.
+     * @brief Pull using HTTPS token authentication.
      *
      * @param remote Name of the remote
-     * @param branch Branch to pull from. If empty, uses current local branch name.
+     * @param branch Branch on the remote to pull, see pull(remote, branch).
      * @param token  Personal access token
      *
-     * @return GitResult immediate start status (final result is emitted via pullFinished)
+     * @return GitResult with operation result
      */
     Q_INVOKABLE GitResult pull(const QString& remote,
                                const QString& branch,
