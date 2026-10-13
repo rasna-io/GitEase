@@ -73,8 +73,8 @@ Item {
             implicitHeight: visible ? (topRow.implicitHeight + root.padV * 2) : 0
 
             color: (root.isRemovedOnly || root.isModified)
-                   ? Style.colors.diffRemovedBg
-                   : Style.colors.primaryBackground
+                   ? Style.colors.diffRowRemovedBg
+                   : Style.colors.diffContextBackground
 
             Loader {
                 anchors.fill: parent
@@ -120,8 +120,8 @@ Item {
             implicitHeight: visible ? (bottomRow.implicitHeight + root.padV * 2) : 0
 
             color: (root.isAddedOnly || root.isModified)
-                   ? Style.colors.diffAddedBg
-                   : Style.colors.primaryBackground
+                   ? Style.colors.diffRowAddedBg
+                   : Style.colors.diffContextBackground
 
 
             Loader {
