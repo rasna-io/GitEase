@@ -106,19 +106,15 @@ GitResult GitTag::remove(const QString &name)
     return GitResult(true);
 }
 
-int credentials_cb(git_credential **out, const char *url, const char *user_from_url,
-                   unsigned int allowed_types, void *payload)
+GitResult GitTag::pushTag(const QString &remote, const QString &name, const QString &token)
 {
-    if (allowed_types & GIT_CREDENTIAL_SSH_KEY) {
-        int error = git_credential_ssh_key_from_agent(out, user_from_url);
-        if (error == 0) return 0;
-    }
+    GitResult result = uploadTagRefspec(remote, QString("refs/tags/%1:refs/tags/%1").arg(name), token);
 
-    if (allowed_types & GIT_CREDENTIAL_USERNAME) {
-        return git_credential_username_new(out, user_from_url);
-    }
+    if (!result.success())
+        return GitResult(false, QVariant(), "Push failed: " + result.errorMessage());
 
-    return git_credential_userpass_plaintext_new(out, user_from_url, "");
+    emitGitCommand(GitCommandText::pushTag(remote, name));
+    return GitResult(true, remote);
 }
 
 static void applyTagPushAuth(git_remote *remote, git_push_options &options)
