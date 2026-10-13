@@ -57,11 +57,13 @@ public:
     Q_INVOKABLE GitResult pushTag(const QString &remote, const QString &name, const QString &token);
 
     /**
-    * @brief Deletes a specific tag asynchronously from the remote repository (origin).
-    * @param name The name of the tag to delete from remote
+    * @brief Deletes a specific tag from a remote.
+    * @param remote The remote to delete the tag from
+    * @param name   The name of the tag to delete from remote
+    * @param token  Personal access token, only used for HTTP(S) remotes
     * @return GitResult indicating success or failure
     */
-    Q_INVOKABLE GitResult pushDeleteTag(const QString &name);
+    Q_INVOKABLE GitResult pushDeleteTag(const QString &remote, const QString &name, const QString &token);
 
 signals:
     /**
