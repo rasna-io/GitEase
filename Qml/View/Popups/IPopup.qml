@@ -82,7 +82,7 @@ Popup {
     }
 
     Overlay.modal: Rectangle {
-        color: "#000000"
+        color: Style.colors.scrimColor
         opacity: 0.35
     }
 

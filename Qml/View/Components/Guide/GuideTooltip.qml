@@ -277,7 +277,7 @@ Item {
                                     font.family: Style.fontTypes.font6Pro
                                     font.styleName: "Solid"
                                     font.pixelSize: 10
-                                    color: parent.copied ? "#4caf50" : Style.colors.secondaryText
+                                    color: parent.copied ? Style.colors.stageGreen : Style.colors.secondaryText
                                 }
 
                                 Timer {

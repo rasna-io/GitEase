@@ -51,7 +51,7 @@ Item {
     function colorOf(m) {
         var ctrl = root.repositoryController
         if (!ctrl)
-            return (m && m.color) ? m.color : "#B9FAB9"
+            return (m && m.color) ? m.color : Style.colors.repositoryAvatarDefault
         return ctrl.isValidRepoColor(m ? m.color : "")
                 ? m.color
                 : ctrl.repoColor(m ? m.path : "")
