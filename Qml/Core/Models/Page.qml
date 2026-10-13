@@ -1,5 +1,7 @@
 import QtQuick
 
+import GitEase_Style
+
 /*! ***********************************************************************************************
  * Page
  * Common base type for every page hosted in MainWindow's SwipeView. Carries the identity
@@ -29,5 +31,5 @@ Item {
     // Badge count shown in the rail item. -1 hides the badge.
     property int  badgeCount: -1
     // Override badge background color (defaults to accent blue)
-    property color badgeColor: "#3B82F6"
+    property color badgeColor: Style.colors.accent
 }

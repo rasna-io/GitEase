@@ -35,7 +35,7 @@ Button {
         Rectangle {
             anchors.fill: parent
             visible: root.busy
-            color: "#CCCCCC"
+            color: Style.colors.progressOverlay
             radius: 3
 
             Rectangle {

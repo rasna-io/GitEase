@@ -762,7 +762,7 @@ Rectangle {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: Math.max(Style.dp(220), Math.min(Style.dp(440), width * 0.56))
                                     radius: Style.dp(10)
-                                    color: "#0F1218"
+                                    color: Style.colors.pluginPreviewBackground
                                     clip: true
 
                                     BusyIndicator {
@@ -886,7 +886,7 @@ Rectangle {
                                         width: Style.dp(92)
                                         height: thumbStrip.height
                                         radius: Style.dp(7)
-                                        color: "#161A22"
+                                        color: Style.colors.pluginThumbBackground
                                         border.width: index === root.selectedShot ? 2 : 1
                                         border.color: index === root.selectedShot ? root.categoryColor
                                                                                   : Style.colors.pluginCardBorder

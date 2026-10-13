@@ -194,7 +194,7 @@ IPopup {
 
                     contentItem: Text {
                         text: parent.text
-                        color: "#FFFFFF"
+                        color: Style.colors.onErrorText
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         elide: Text.ElideRight
