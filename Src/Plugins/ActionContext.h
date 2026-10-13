@@ -29,6 +29,8 @@ public:
     // Appended members, filled for Push.
     QString remoteName;
     bool    forcePush = false;
+
+    QString remoteBranchName;
 };
 
 Q_DECLARE_METATYPE(ActionContext*)
