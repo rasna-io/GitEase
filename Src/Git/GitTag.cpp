@@ -117,28 +117,15 @@ GitResult GitTag::pushTag(const QString &remote, const QString &name, const QStr
     return GitResult(true, remote);
 }
 
-static void applyTagPushAuth(git_remote *remote, git_push_options &options)
+GitResult GitTag::pushDeleteTag(const QString &remote, const QString &name, const QString &token)
 {
-    const char *url = git_remote_pushurl(remote);
-    if (!url)
-        url = git_remote_url(remote);
+    GitResult result = uploadTagRefspec(remote, QString(":refs/tags/%1").arg(name), token);
 
-    if (url && GitProtocolDetector::isSshUrl(QString::fromUtf8(url))) {
-        GitSshAuth().applyPush(options);
-        return;
-    }
+    if (!result.success())
+        return GitResult(false, QVariant(), "Remote delete failed: " + result.errorMessage());
 
-    options.callbacks.credentials = credentials_cb;
-}
-
-GitResult GitTag::pushTag(const QString &name)
-{
-    GitResult result = pushTagInternal(name);
-
-    if (result.success())
-        emitGitCommand(GitCommandText::pushTag(name));
-
-    return result;
+    emitGitCommand(GitCommandText::pushDeleteTag(remote, name));
+    return GitResult(true, remote);
 }
 
 GitResult GitTag::uploadTagRefspec(const QString &remoteName, const QString &refspec, const QString &token)
