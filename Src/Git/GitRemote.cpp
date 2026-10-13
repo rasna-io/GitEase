@@ -287,8 +287,10 @@ bool GitRemote::isForcePush() const
 
 GitResult GitRemote::pushInternal(const QString& remoteName,
                                   const QString& branchName,
+                                  const QString& remoteBranch,
                                   std::unique_ptr<IGitAuth> auth,
-                                  bool force)
+                                  bool force,
+                                  bool setUpstream)
 {
     if (remoteName.isEmpty()) {
         return GitResult(false, QVariant(), "Remote name cannot be empty");
@@ -336,6 +338,7 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
 
     result = git_remote_push(remote, &array, &opts);
 
+    const QString url = transferUrl(remote, true);
     git_remote_free(remote);
 
     if (result != GIT_OK) {
@@ -370,6 +373,7 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
     QVariantMap pushResult;
     pushResult["remote"] = remoteName;
     pushResult["branch"] = branchName;
+    pushResult["remoteBranch"] = targetBranch;
     pushResult["force"] = force;
     pushResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
