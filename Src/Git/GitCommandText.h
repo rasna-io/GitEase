@@ -36,8 +36,8 @@ public:
      * ****************************************************************************************/
     Q_INVOKABLE static QString createTag(const QString &name, const QString &message, bool force = false);
     Q_INVOKABLE static QString deleteTag(const QString &name);
-    Q_INVOKABLE static QString pushTag(const QString &name);
-    Q_INVOKABLE static QString pushDeleteTag(const QString &name);
+    Q_INVOKABLE static QString pushTag(const QString &remoteName, const QString &name);
+    Q_INVOKABLE static QString pushDeleteTag(const QString &remoteName, const QString &name);
 
     /* Remote
      * ****************************************************************************************/
