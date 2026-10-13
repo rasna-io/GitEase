@@ -80,13 +80,14 @@ public:
      * Automatically detects the protocol (SSH or HTTPS) from the remote URL
      * and uses the appropriate authentication method. For SSH remotes, uses
      * the system SSH agent. For HTTPS remotes, uses an empty token (relies on
-     * system credentials or SSH agent forwarding).
+     * system credentials or SSH agent forwarding). Remotes that need no
+     * credentials, such as a local path, are fetched without any.
      *
-     * @param remote Name of the remote (default: "origin")
+     * @param remote Name of the remote
      *
      * @return GitResult with operation result
      */
-    Q_INVOKABLE GitResult fetch(const QString& remote = "origin");
+    Q_INVOKABLE GitResult fetch(const QString& remote);
 
     /**
      * @brief Fetch changes from a remote repository using HTTPS with a token.
@@ -102,18 +103,19 @@ public:
     Q_INVOKABLE GitResult fetchWithToken(const QString& remote, const QString& token);
     
     /**
-     * @brief Start pull asynchronously from a remote branch into the current branch.
+     * @brief Pull a remote branch into the checked out branch.
      *
      * Performs fetch + merge analysis. If a fast-forward is possible, it updates
      * the current branch. If already up to date, returns success with that status.
      * Non-fast-forward pulls are rejected to avoid implicit merge commits.
      *
-     * @param remote Name of the remote (default: "origin")
-     * @param branch Branch to pull from. If empty, uses current local branch name.
+     * @param remote Name of the remote
+     * @param branch Branch on the remote to pull. If empty, the upstream branch when the checked
+     *               out branch tracks this remote, otherwise the checked out branch's own name.
      *
-     * @return GitResult immediate start status (final result is emitted via pullFinished)
+     * @return GitResult with operation result
      */
-    Q_INVOKABLE GitResult pull(const QString& remote = "origin",
+    Q_INVOKABLE GitResult pull(const QString& remote,
                                const QString& branch = QString());
 
     /**
