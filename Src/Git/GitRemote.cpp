@@ -185,9 +185,23 @@ GitResult GitRemote::push(const QString& remote,
 
     return runPush(remote, branch, branch, std::make_unique<GitHttpsAuth>(token), force, false);
 }
+
+GitResult GitRemote::push(const QString& remote,
+                          const QString& localBranch,
+                          const QString& remoteBranch,
+                          const QString& token,
+                          bool force,
+                          bool setUpstream)
+{
     GitResult valid = validatePush(remote, localBranch);
     if (!valid.success())
         return valid;
+
+    QString error;
+    std::unique_ptr<IGitAuth> auth = authForRemote(activeRepo(), remote, token, true, &error);
+    if (!auth)
+        return GitResult(false, QVariant(), error);
+
     return runPush(remote,
                    localBranch,
                    remoteBranch.isEmpty() ? localBranch : remoteBranch,
@@ -297,11 +311,11 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
     opts.callbacks.payload = &payload;
     auth->applyPush(opts);
 
-    QByteArray refspec = force
-                             ? QByteArray("+refs/heads/" + branchName.toUtf8() +
-                                          ":refs/heads/" + branchName.toUtf8())
-                             : QByteArray("refs/heads/" + branchName.toUtf8() +
-                                          ":refs/heads/" + branchName.toUtf8());
+    const QString targetBranch = remoteBranch.isEmpty() ? branchName : remoteBranch;
+
+    QByteArray refspec = QByteArray(force ? "+" : "") +
+                         "refs/heads/" + branchName.toUtf8() +
+                         ":refs/heads/" + targetBranch.toUtf8();
 
     char* refspecs[] = { refspec.data() };
     git_strarray array { refspecs, 1 };
@@ -341,7 +355,16 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
     pushResult["force"] = force;
     pushResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    emitGitCommand(GitCommandText::push(remoteName, branchName, force));
+    bool upstreamSet = false;
+    if (setUpstream) {
+        GitResult upstream = writeUpstream(branchName, remoteName, targetBranch);
+        upstreamSet = upstream.success();
+        if (!upstreamSet)
+            pushResult["upstreamError"] = upstream.errorMessage();
+    }
+    pushResult["upstreamSet"] = upstreamSet;
+
+    emitGitCommand(GitCommandText::push(remoteName, branchName, targetBranch, force, upstreamSet));
 
     return GitResult(true, pushResult);
 }
