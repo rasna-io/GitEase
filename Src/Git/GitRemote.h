@@ -180,6 +180,31 @@ public:
                                bool setUpstream);
 
     /**
+     * @brief Works out where Pull and Push go for the checked out branch.
+     *
+     * The branch's upstream decides, the same as for git pull and git push. Push also honours
+     * branch.<name>.pushRemote and remote.pushDefault, which is how a fork workflow pulls from one
+     * remote and pushes to another. Without an upstream, a repository with a single remote uses
+     * it; with several, the target stays empty and the caller asks the user. Push also stays
+     * undecided when the upstream has a different name than the branch, which git's default
+     * push.default=simple refuses to push to.
+     *
+     * @return GitResult whose data is a map with:
+     *  - "branch":          the checked out branch, empty when HEAD is detached
+     *  - "detached":        HEAD points at a commit rather than a branch
+     *  - "unborn":          the branch has no commits yet
+     *  - "remotes":         list of { name, url, hasBranch }; hasBranch is true when the remote
+     *                       is known, from the last fetch, to have a branch named "branch"
+     *  - "upstreamRemote", "upstreamBranch": the branch's upstream, empty when it has none
+     *  - "pullRemote", "pullBranch": where Pull goes, empty when the user has to choose
+     *  - "pushRemote":      the remote Push uses, empty when the user has to choose
+     *  - "pushBranch":      the branch Push updates there, empty when the user has to choose
+     *  - "publish":         the branch has no upstream yet, so Push makes its target the upstream
+     *  - "defaultRemote":   the repository's default remote, see setDefaultRemote(); empty when none
+     *  - "suggestedRemote": the remote to preselect when the user has to choose
+     */
+    Q_INVOKABLE GitResult remoteTarget();
+    /**
      * @brief The authentication a transfer with a remote needs, chosen from the remote's URL.
      *
      * SSH URLs use the SSH agent, HTTP(S) URLs use \a token, and anything else - a local path,
