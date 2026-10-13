@@ -762,7 +762,8 @@ GitResult GitRemote::pull(const QString& remote, const QString& branch)
 
 GitResult GitRemote::pull(const QString& remote,
                           const QString& branch,
-                          const QString& token)
+                          const QString& token,
+                          bool setUpstream)
 {
     if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
@@ -776,11 +777,15 @@ GitResult GitRemote::pull(const QString& remote,
     std::unique_ptr<IGitAuth> auth = authForRemote(activeRepo(), remote, token, false, &error);
     if (!auth) {
         return GitResult(false, QVariant(), error);
+    }
+
+    return pullInternal(remote, branch, std::move(auth), setUpstream);
 }
 
 GitResult GitRemote::pullInternal(const QString& remoteName,
                                   const QString& branchName,
-                                  std::unique_ptr<IGitAuth> auth)
+                                  std::unique_ptr<IGitAuth> auth,
+                                  bool setUpstream)
 {
     if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "No repository available");
@@ -871,7 +876,11 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
                                   .arg(lastGitErrorMessage());
         git_reference_free(localRef);
         return GitResult(false, QVariant(),
-                         QString("Remote branch '%1' not found after fetch").arg(remoteTrackingBranch));
+    bool upstreamSet = false;
+    if (setUpstream) {
+        upstreamSet = writeUpstream(currentBranch, remoteName, targetBranch).success();
+        if (upstreamSet)
+            emitGitCommand(GitCommandText::setUpstream(currentBranch, remoteName, targetBranch));
     }
 
     git_annotated_commit* remoteHead = nullptr;
@@ -908,7 +917,7 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
 
     QVariantMap pullResult;
     pullResult["remote"] = remoteName;
-    pullResult["branch"] = targetBranch;
+    pullResult["upstreamSet"] = upstreamSet;
     pullResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
     if (analysis & GIT_MERGE_ANALYSIS_UP_TO_DATE) {
