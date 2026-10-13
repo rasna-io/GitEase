@@ -162,6 +162,22 @@ public:
                                const QString& branch,
                                const QString& token);
 
+    /**
+     * @brief Pull, picking the authentication from the remote's URL, and optionally remember
+     *        the remote branch as the upstream.
+     *
+     * @param remote      Name of the remote
+     * @param branch      Branch on the remote to pull, see pull(remote, branch).
+     * @param token       Personal access token, only used for HTTP(S) remotes
+     * @param setUpstream Make remote/branch the upstream of the checked out branch once it is
+     *                    found on the remote
+     *
+     * @return GitResult with operation result
+     */
+    Q_INVOKABLE GitResult pull(const QString& remote,
+                               const QString& branch,
+                               const QString& token,
+                               bool setUpstream);
 
     /**
      * \brief Get list of remotes for the repository
