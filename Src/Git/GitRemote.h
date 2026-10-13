@@ -204,6 +204,26 @@ public:
      *  - "suggestedRemote": the remote to preselect when the user has to choose
      */
     Q_INVOKABLE GitResult remoteTarget();
+
+    /**
+     * @brief Makes \a remote the repository's default remote, or clears it when \a remote is empty.
+     *
+     * Stored as git's own remote.pushDefault, so a push from the command line goes there too.
+     * Push uses it for every branch, also one that tracks another remote; Pull falls back to it
+     * for a branch without an upstream.
+     */
+    Q_INVOKABLE GitResult setDefaultRemote(const QString &remote);
+
+    /**
+     * @brief Makes remote/remoteBranch the upstream of localBranch.
+     *
+     * Writes branch.<localBranch>.remote and branch.<localBranch>.merge directly, so it also works
+     * before the remote-tracking branch exists, e.g. for a branch that is about to be pushed.
+     */
+    Q_INVOKABLE GitResult setUpstream(const QString &localBranch,
+                                      const QString &remote,
+                                      const QString &remoteBranch);
+
     /**
      * @brief The authentication a transfer with a remote needs, chosen from the remote's URL.
      *
