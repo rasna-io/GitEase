@@ -267,6 +267,7 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/MergeMethodPopup.qml
     Qml/View/Popups/CommitAmendPopup.qml
     Qml/View/Popups/ConfirmCommandDialog.qml          
+    Qml/View/Popups/RemoteTargetPopup.qml           # Choose the remote for push/pull/tag when the upstream does not say
     Qml/View/Popups/AddTagPopup.qml
     Qml/View/Popups/CalendarPopup.qml
 
