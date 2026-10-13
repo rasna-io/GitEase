@@ -927,14 +927,10 @@ std::unique_ptr<IGitAuth> GitRemote::authForRemote(git_repository *repo,
         return std::make_unique<GitHttpsAuth>(QString());
     }
 }
-    }
-
-    // Check SSH auth setup if needed
-    if (auto sshAuth = dynamic_cast<GitSshAuth*>(auth.get())) {
-        QString setupError = sshAuth->getSetupError();
-        if (!setupError.isEmpty()) {
-            return GitResult(false, QVariant(), setupError);
-        }
+    QString error;
+    std::unique_ptr<IGitAuth> auth = authForRemote(activeRepo(), remote, QString(), false, &error);
+    if (!auth) {
+        return GitResult(false, QVariant(), error);
     }
 
     emitGitCommand(GitCommandText::fetch(remote));
