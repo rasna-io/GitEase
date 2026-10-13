@@ -936,6 +936,17 @@ std::unique_ptr<IGitAuth> GitRemote::authForRemote(git_repository *repo,
         return std::make_unique<GitHttpsAuth>(QString());
     }
 }
+
+GitResult GitRemote::fetch(const QString& remote)
+{
+    if (!m_currentRepo || !activeRepo()) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (remote.isEmpty()) {
+        return GitResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
     QString error;
     std::unique_ptr<IGitAuth> auth = authForRemote(activeRepo(), remote, QString(), false, &error);
     if (!auth) {
