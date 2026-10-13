@@ -103,9 +103,53 @@ QString GitCommandText::setRemoteUrl(const QString &name, const QString &url)
 
 QString GitCommandText::push(const QString &remoteName, const QString &branchName, bool force)
 {
-    return QString("git push %1%2 %3").arg(force ? "--force " : "",
-                                           quote(remoteName),
-                                           quote(branchName));
+    return push(remoteName, branchName, branchName, force, false);
+}
+
+QString GitCommandText::push(const QString &remoteName, const QString &localBranch,
+                             const QString &remoteBranch, bool force, bool setUpstream)
+{
+    QString command = "git push";
+
+    if (force)
+        command += " --force";
+
+    if (setUpstream)
+        command += " -u";
+
+    const QString refspec = (remoteBranch.isEmpty() || remoteBranch == localBranch)
+                                ? localBranch
+                                : localBranch + ":" + remoteBranch;
+
+    return command + " " + quote(remoteName) + " " + quote(refspec);
+}
+
+QString GitCommandText::pull(const QString &remoteName, const QString &branchName)
+{
+    return QString("git pull %1 %2").arg(quote(remoteName), quote(branchName));
+}
+
+QString GitCommandText::fetch(const QString &remoteName)
+{
+    if (remoteName.isEmpty())
+        return "git fetch --all";
+
+    return QString("git fetch %1").arg(quote(remoteName));
+}
+
+QString GitCommandText::setUpstream(const QString &localBranch, const QString &remoteName,
+                                    const QString &remoteBranch)
+{
+    return QString("git branch --set-upstream-to=%1 %2").arg(quote(remoteName + "/" + remoteBranch),
+                                                             quote(localBranch));
+}
+
+QString GitCommandText::setDefaultRemote(const QString &remoteName)
+{
+    if (remoteName.isEmpty())
+        return "git config --unset remote.pushDefault";
+
+    return QString("git config remote.pushDefault %1").arg(quote(remoteName));
 }
 
 QString GitCommandText::stashPush(const QString &message, bool keepIndex)
