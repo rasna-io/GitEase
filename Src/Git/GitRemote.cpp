@@ -106,41 +106,63 @@ QString workingTreeSummary(git_repository* repo)
         .arg(untracked)
         .arg(conflicted);
 }
+
+QString bufToString(const git_buf& buf)
+{
+    return buf.ptr ? QString::fromUtf8(buf.ptr, static_cast<int>(buf.size)) : QString();
 }
 
-GitRemote::GitRemote(QObject *parent)
-    : IGitController{parent}
-{}
-
-GitResult GitRemote::push(const QString& remote,
-                          const QString& branch,
-                          bool force)
+QPair<QString, QString> branchUpstream(git_repository* repo, const QString& localBranch)
 {
-    if (remote.isEmpty()) {
-        return GitResult(false, QVariant(), "Remote name cannot be empty");
+    const QByteArray refName = "refs/heads/" + localBranch.toUtf8();
+
+    git_buf remote = GIT_BUF_INIT;
+    git_buf merge  = GIT_BUF_INIT;
+
+    QPair<QString, QString> upstream;
+
+    if (git_branch_upstream_remote(&remote, repo, refName.constData()) == GIT_OK
+        && git_branch_upstream_merge(&merge, repo, refName.constData()) == GIT_OK) {
+        const QString mergeRef = bufToString(merge);
+
+        // Only remote branches count: "." as the remote means it tracks another local branch
+        if (mergeRef.startsWith("refs/heads/") && bufToString(remote) != ".") {
+            upstream.first  = bufToString(remote);
+            upstream.second = mergeRef.mid(QString("refs/heads/").size());
+        }
     }
 
-    if (!m_currentRepo || !activeRepo()) {
-        return GitResult(false, QVariant(), "No repository available");
-    }
+    git_buf_dispose(&remote);
+    git_buf_dispose(&merge);
 
-    if (branch.isEmpty()) {
-        return GitResult(false, QVariant(),
-                         "No branch specified and repository is in detached HEAD state");
-    }
+    return upstream;
+}
 
-    m_forcePush = force;
-    emit forcePushChanged();
+QString configString(git_config* config, const QString& key)
+{
+    git_buf value = GIT_BUF_INIT;
+    QString result;
 
-    m_pushInProgress = true;
-    emit pushInProgressChanged();
+    if (config && git_config_get_string_buf(&value, config, key.toUtf8().constData()) == GIT_OK)
+        result = bufToString(value);
 
-    GitResult result = pushInternal(remote, branch, std::make_unique<GitSshAuth>(), force);
-
-    m_pushInProgress = false;
-    emit pushInProgressChanged();
-
+    git_buf_dispose(&value);
     return result;
+}
+
+QString transferUrl(const git_remote* remote, bool forPush)
+{
+    const char* pushUrl = forPush ? git_remote_pushurl(remote) : nullptr;
+    const char* url     = pushUrl && *pushUrl ? pushUrl : git_remote_url(remote);
+    return QString::fromUtf8(url ? url : "");
+}
+
+bool tokenWasRejected(const IGitAuth* auth)
+{
+    const auto* https = dynamic_cast<const GitHttpsAuth*>(auth);
+    return https && https->tokenRejected();
+}
+}
 }
 
 GitResult GitRemote::push(const QString& remote,
