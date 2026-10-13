@@ -180,6 +180,25 @@ public:
                                bool setUpstream);
 
     /**
+     * @brief The authentication a transfer with a remote needs, chosen from the remote's URL.
+     *
+     * SSH URLs use the SSH agent, HTTP(S) URLs use \a token, and anything else - a local path,
+     * file:// or git:// - offers no credentials, which those transports do not ask for.
+     *
+     * @param repo       Repository the remote belongs to
+     * @param remoteName Name of the remote
+     * @param token      Personal access token for HTTP(S) remotes
+     * @param forPush    Use the remote's push URL, when it has one, instead of its fetch URL
+     * @param error      Receives why the remote cannot be used; set whenever nullptr is returned
+     */
+    static std::unique_ptr<IGitAuth> authForRemote(git_repository *repo,
+                                                   const QString &remoteName,
+                                                   const QString &token,
+                                                   bool forPush,
+                                                   QString *error);
+
+
+    /**
      * \brief Get list of remotes for the repository
      * \return QVariantList with remote information
      */
