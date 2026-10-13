@@ -334,18 +334,22 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
     git_remote_free(remote);
 
     if (result != GIT_OK) {
-        if (result == GIT_EUSER) {
+        if (tokenWasRejected(auth.get())) {
+            return GitResult(false, QVariant(), GitHttpsAuth::rejectedTokenMessage(remoteName, url, true));
+        } else if (result == GIT_EUSER) {
             return GitResult(false, QVariant(),
                              "Authentication failed. Check your personal access token.");
         } else if (result == GIT_EEXISTS) {
             return GitResult(false, QVariant(),
                              QString("Push rejected: remote already has changes you don't have.\n"
                                      "Try pulling first with:\n"
-                                     "git pull %1 %2").arg(remoteName).arg(branchName));
+                                     "%1").arg(GitCommandText::pull(remoteName, targetBranch)));
         } else if (result == GIT_ENONFASTFORWARD && !force) {
             return GitResult(false, QVariant(),
-                             QString("Push rejected: non-fast-forward update.\n\n"
-                                     "To force push, set force=true (not recommended on shared branches)"));
+                             QString("Push rejected: %1/%2 has commits that you don't have.\n\n"
+                                     "Pull them first, or force push to overwrite them "
+                                     "(not recommended on shared branches).")
+                                 .arg(remoteName, targetBranch));
         }
 
         // Get libgit2 error message if available
@@ -1325,7 +1329,9 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
         .arg(remoteName)
             .arg(result)
             .arg(lastGitErrorMessage());
-        if (result == GIT_EUSER) {
+        if (tokenWasRejected(auth.get())) {
+            return GitResult(false, QVariant(), GitHttpsAuth::rejectedTokenMessage(remoteName, url, false));
+        } else if (result == GIT_EUSER) {
             return GitResult(false, QVariant(),
                              "Authentication failed. Check your credentials or SSH keys.");
         } else if (result == GIT_EEXISTS) {
