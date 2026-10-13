@@ -90,13 +90,13 @@ Item {
         Rectangle {
             Layout.fillHeight: true
             Layout.preferredWidth: parent.width / 2
-            color: (isDel || isMod) ? Style.colors.diffRemovedBg : "transparent"
+            color: (isDel || isMod) ? Style.colors.diffRowRemovedBg : "transparent"
             clip: true
 
             StripedBackground {
                 anchors.fill: parent
                 visible: isAdd
-                stripeColor: Style.colors.voidStripe
+                stripeColor: Style.colors.diffStripe
             }
 
             Row {
@@ -116,7 +116,7 @@ Item {
                     topPadding: 4
 
                     background: Rectangle {
-                        color: Style.colors.linePanelBackgroound
+                        color: Style.colors.diffGutterBackground
                     }
                 }
 
@@ -158,12 +158,12 @@ Item {
         Rectangle {
             Layout.fillHeight: true
             Layout.preferredWidth: 44
-            color: Style.colors.linePanelBackgroound
+            color: Style.colors.diffGutterBackground
             z: 3
 
             Rectangle {
                 width: 1
-                color: Style.colors.primaryBorder
+                color: Style.colors.diffGutterBorder
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
@@ -176,9 +176,9 @@ Item {
                 width: 26
                 height: actionRow.implicitHeight + 6
                 radius: 4
-                color: Style.colors.actionPillBg
+                color: Style.colors.diffPillBackground
                 border.width: 1
-                border.color: Style.colors.actionPillBorder
+                border.color: Style.colors.diffPillBorder
 
                 Column {
                     id: actionRow
@@ -284,13 +284,13 @@ Item {
         Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
-            color: (isAdd || isMod) ? Style.colors.diffAddedBg : "transparent"
+            color: (isAdd || isMod) ? Style.colors.diffRowAddedBg : "transparent"
             clip: true
 
             StripedBackground {
                 anchors.fill: parent
                 visible: isDel
-                stripeColor: Style.colors.voidStripe
+                stripeColor: Style.colors.diffStripe
             }
 
 
@@ -313,7 +313,7 @@ Item {
                     topPadding: 4
 
                     background: Rectangle {
-                        color: Style.colors.linePanelBackgroound
+                        color: Style.colors.diffGutterBackground
                     }
                 }
 
