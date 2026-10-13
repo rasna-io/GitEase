@@ -577,15 +577,46 @@ GitResult GitRemote::fetch(const QString& remote)
         case GitProtocolDetector::GitProtocol::SSH:
             auth = std::make_unique<GitSshAuth>();
             break;
-        case GitProtocolDetector::GitProtocol::HTTPS:
-        case GitProtocolDetector::GitProtocol::HTTP:
-            // For HTTPS/HTTP, use empty token (relies on system credentials)
-            auth = std::make_unique<GitHttpsAuth>("");
-            break;
-        case GitProtocolDetector::GitProtocol::Unknown:
-        default:
-            return GitResult(false, QVariant(),
-                           QString("Unsupported protocol for remote URL: %1").arg(remoteUrl));
+std::unique_ptr<IGitAuth> GitRemote::authForRemote(git_repository *repo,
+                                                   const QString &remoteName,
+                                                   const QString &token,
+                                                   bool forPush,
+                                                   QString *error)
+{
+    git_remote* remote = nullptr;
+    if (!repo || git_remote_lookup(&remote, repo, remoteName.toUtf8().constData()) != GIT_OK) {
+        *error = QString("Remote '%1' not found").arg(remoteName);
+        return nullptr;
+    }
+
+    const char* pushUrl  = git_remote_pushurl(remote);
+    const char* fetchUrl = git_remote_url(remote);
+    const QString url = QString::fromUtf8(forPush && pushUrl && *pushUrl ? pushUrl
+                                                                       : (fetchUrl ? fetchUrl : ""));
+    git_remote_free(remote);
+
+    if (url.isEmpty()) {
+        *error = QString("Remote '%1' has no URL configured").arg(remoteName);
+        return nullptr;
+    }
+
+    switch (GitProtocolDetector::detectProtocol(url)) {
+    case GitProtocolDetector::GitProtocol::SSH: {
+        auto ssh = std::make_unique<GitSshAuth>();
+        if (!ssh->getSetupError().isEmpty()) {
+            *error = ssh->getSetupError();
+            return nullptr;
+        }
+        return ssh;
+    }
+    case GitProtocolDetector::GitProtocol::HTTPS:
+    case GitProtocolDetector::GitProtocol::HTTP:
+        return std::make_unique<GitHttpsAuth>(token);
+    case GitProtocolDetector::GitProtocol::Unknown:
+    default:
+        return std::make_unique<GitHttpsAuth>(QString());
+    }
+}
     }
 
     // Check SSH auth setup if needed
@@ -626,14 +657,10 @@ GitResult GitRemote::pull(const QString& remote, const QString& branch)
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    auto urlResult = getRemoteUrl(remote);
-    if (!urlResult.success()) {
-        return urlResult;
-    }
-
-    QString remoteUrl = urlResult.data().toMap()["url"].toString();
-    if (remoteUrl.isEmpty()) {
-        return GitResult(false, QVariant(), "Remote has no URL configured");
+    QString error;
+    std::unique_ptr<IGitAuth> auth = authForRemote(activeRepo(), remote, QString(), false, &error);
+    if (!auth) {
+        return GitResult(false, QVariant(), error);
     }
 
     GitProtocolDetector::GitProtocol protocol = GitProtocolDetector::detectProtocol(remoteUrl);
@@ -675,7 +702,10 @@ GitResult GitRemote::pull(const QString& remote,
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    return pullInternal(remote, branch, std::make_unique<GitHttpsAuth>(token));
+    QString error;
+    std::unique_ptr<IGitAuth> auth = authForRemote(activeRepo(), remote, token, false, &error);
+    if (!auth) {
+        return GitResult(false, QVariant(), error);
 }
 
 GitResult GitRemote::pullInternal(const QString& remoteName,
