@@ -39,8 +39,8 @@ QtObject{
     property color darkGraphite:        "#0D0D0F"
     property color charcoalGray:        "#222228"
     property color lightPlatinum:       "#DDDDDF"
-    property color azureTint:           "#1F3B82F6"
-    property color accentWash:          "#14074E96"
+    property color azureTint:           "#1F2563EB"
+    property color accentWash:          "#142563EB"
     property color graphiteSurface:     "#1A1A20"
     property color graphiteHover:       "#202028"
     property color graphiteSelected:    "#26262F"
@@ -48,65 +48,65 @@ QtObject{
     property color frostWash:           "#14F4F4F8"
 
     // Primary colors
-    property color primaryBackground:   "#FDFDFD"
-    property color secondaryBackground: "#e5e5e5"
-    property color foreground:          "#363636"
-    property color secondaryForeground: "#FDFDFD"
-    property color accent:              "#074E96"
-    property color accentHover:         "#0C64BE"
-    property color error:               "#DC3545"
-    property color warning:             "#FFA500"
-    property color disabledButton:      "#9D9D9D"
+    property color primaryBackground:   "#FBFCFE"
+    property color secondaryBackground: "#EEF1F6"
+    property color foreground:          "#232A3A"
+    property color secondaryForeground: "#FFFFFF"
+    property color accent:              "#2563EB"
+    property color accentHover:         "#1D4FD8"
+    property color error:               "#DC2626"
+    property color warning:             "#D97706"
+    property color disabledButton:      "#A9B2C3"
 
-    property color navigationRailBgColor: "#EFEFEF"
+    property color navigationRailBgColor: "#EEF1F6"
 
-    property color navButton:           "#F3F3F3"
-    property color hoverTitle:          "#E8E8E8"
-    property color textButton:          "#FDFDFD"
+    property color navButton:           "#F3F5F9"
+    property color hoverTitle:          "#E8ECF3"
+    property color textButton:          "#FFFFFF"
     
     // Files Status
-    property color addedFile:           "#B9FAB9"
-    property color deletededFile:       "#FF9898"
-    property color modifiediedFile:     "#FFF398"
-    property color renamedFile:         "#aafff8"
-    property color untrackedFile:       "#990000ff"
+    property color addedFile:           "#A7E8BD"
+    property color deletededFile:       "#F7A8A8"
+    property color modifiediedFile:     "#F8DF8E"
+    property color renamedFile:         "#A5E3F0"
+    property color untrackedFile:       "#992563EB"
 
     // Text colors
-    property color secondaryText:       "#5F6A7A"
-    property color mutedText:           "#9D9D9D"
-    property color titleText:           "#000000"
-    property color descriptionText:     "#777272"
-    property color hintText:            "#484848"
-    property color placeholderText:     "#8C8C8C"
+    property color secondaryText:       "#566074"
+    property color mutedText:           "#8B94A7"
+    property color titleText:           "#101626"
+    property color descriptionText:     "#657089"
+    property color hintText:            "#465066"
+    property color placeholderText:     "#8B94A7"
 
-    property color voidStripe:          "#f4f4f4"
-    property color editorBackgroound:   "#fcfcfc"
-    property color editorForeground:    "#565656"
-    property color linePanelBackgroound:"#f6f6f6"
-    property color linePanelForeground: "#666666"
+    property color voidStripe:          "#F3F5F9"
+    property color editorBackgroound:   "#FFFFFF"
+    property color editorForeground:    "#3B4458"
+    property color linePanelBackgroound:"#F5F7FA"
+    property color linePanelForeground: "#8B94A7"
     
     // Surface & Background colors
-    property color cardBackground:      "#DCDCDC"
-    property color surfaceLight:        "#F3F3F3"
-    property color surfaceMuted:        "#CECECE"
-    property color hintBackground:      "#DEE5EB"
+    property color cardBackground:      "#E6EAF1"
+    property color surfaceLight:        "#F3F5F9"
+    property color surfaceMuted:        "#DEE3EB"
+    property color hintBackground:      "#E6EEF9"
     
     // Border colors
-    property color primaryBorder:       "#D7DCE5"
-    property color secondaryBorder:     "#E7ECF5"
+    property color primaryBorder:       "#DCE1EA"
+    property color secondaryBorder:     "#E8ECF3"
 
     // Control / Input surfaces (settings & form controls)
-    property color controlBackground:      "#F4F6F9"
-    property color controlBackgroundHover: "#ECEFF4"
-    property color controlBorder:          "#D2D8E2"
-    property color controlBorderHover:     "#9CB8E0"
-    property color switchTrackOff:         "#C9D0DB"
+    property color controlBackground:      "#F3F5F9"
+    property color controlBackgroundHover: "#E9EDF4"
+    property color controlBorder:          "#D5DBE6"
+    property color controlBorderHover:     "#93B0EA"
+    property color switchTrackOff:         "#CBD2DE"
     property color switchHandle:           "#FFFFFF"
 
-    property color diffRemovedBg:       "#FDECEC"
-    property color diffAddedBg:         "#ECFDF3"
-    property color diffRemovedBorder:   "#F5C2C7"
-    property color diffAddedBorder:     "#A6E9C6"
+    property color diffRemovedBg:       "#FEF2F2"
+    property color diffAddedBg:         "#F0FDF4"
+    property color diffRemovedBorder:   "#FECACA"
+    property color diffAddedBorder:     "#BBF7D0"
 
     // Windows Header Buttons
     property color windowsMinimize:     "#4A9EFF"
@@ -115,60 +115,60 @@ QtObject{
 
     // Header indicator
     property color resizeHandle:        primaryBorder
-    property color resizeHandlePressed: "#A0a0a0"
+    property color resizeHandlePressed: "#A9B2C3"
 
     property color selectedText:            "#FFFFFF"
     property color onAccentText:            "#FFFFFF"
     property color onWarningText:           "#363636"
     property color onSuccessText:           "#363636"
-    property color onErrorText:             "#363636"
+    property color onErrorText:             "#FFFFFF"
     property color onInfoText:              "#363636"
     property color onBadgeText:             "#363636"
     
-    property color defaultBackground:       "#FFF4D9"
-    property color defaultHoverBackground:  "#FFE8B3"
+    property color defaultBackground:       "#FEF6E0"
+    property color defaultHoverBackground:  "#FDEBB8"
     
-    property color iconOnSurface:           "#9D9D9D"
-    property color iconOnDefault:           "#8B6914"
+    property color iconOnSurface:           "#8B94A7"
+    property color iconOnDefault:           "#92610E"
 
     property color userInfoSelectedBackground: Qt.rgba(59 / 255, 130 / 255, 246 / 255, 0.1)
 
-    property color pluginBadgeBackground:   "#1F3B82F6"
-    property color pluginBadgeBorder:       "#403B82F6"
-    property color pluginBadgeText:         "#60A5FA"
+    property color pluginBadgeBackground:   "#1A2563EB"
+    property color pluginBadgeBorder:       "#402563EB"
+    property color pluginBadgeText:         "#1D4FD8"
 
-    property color repoSelectectedItem:     "#44074E96"
+    property color repoSelectectedItem:     "#262563EB"
     
     // User Profile Level Badge Colors (darker shades for white text readability in light mode)
-    property color levelSystemBadge:        "#2D8B3D"
-    property color levelGlobalBadge:        "#2D8B8B"
-    property color levelLocalBadge:         "#B89A2D"
-    property color levelWorktreeBadge:      "#B83D3D"
-    property color levelAppBadge:           "#3D3DB8"
+    property color levelSystemBadge:        "#16A34A"
+    property color levelGlobalBadge:        "#0891B2"
+    property color levelLocalBadge:         "#D97706"
+    property color levelWorktreeBadge:      "#DC2626"
+    property color levelAppBadge:           "#4F46E5"
     
     // Notification colors (light theme)
-    property color notificationInfo:            "#E3F2FD"
-    property color notificationInfoBorder:      "#90CAF9"
-    property color notificationInfoIcon:        "#1976D2"
+    property color notificationInfo:            "#EFF6FF"
+    property color notificationInfoBorder:      "#BFDBFE"
+    property color notificationInfoIcon:        "#2563EB"
 
-    property color notificationSuccess:         "#E8F5E9"
-    property color notificationSuccessBorder:   "#81C784"
-    property color notificationSuccessIcon:     "#388E3C"
+    property color notificationSuccess:         "#F0FDF4"
+    property color notificationSuccessBorder:   "#BBF7D0"
+    property color notificationSuccessIcon:     "#16A34A"
 
-    property color notificationWarning:         "#FFF3E0"
-    property color notificationWarningBorder:   "#FFB74D"
-    property color notificationWarningIcon:     "#F57C00"
+    property color notificationWarning:         "#FFFBEB"
+    property color notificationWarningBorder:   "#FDE68A"
+    property color notificationWarningIcon:     "#D97706"
 
-    property color notificationError:           "#FFEBEE"
-    property color notificationErrorBorder:     "#E57373"
-    property color notificationErrorIcon:       "#D32F2F"
+    property color notificationError:           "#FEF2F2"
+    property color notificationErrorBorder:     "#FECACA"
+    property color notificationErrorIcon:       "#DC2626"
 
-    property color notificationInfoText:        "#0D2A4D"
-    property color notificationSuccessText:     "#0F2E17"
-    property color notificationWarningText:     "#3A2300"
-    property color notificationErrorText:       "#4D0D12"
+    property color notificationInfoText:        "#1E3A8A"
+    property color notificationSuccessText:     "#14532D"
+    property color notificationWarningText:     "#78350F"
+    property color notificationErrorText:       "#7F1D1D"
 
-    property color notificationBadge:           "#ef4444"
+    property color notificationBadge:           "#DC2626"
     property color notificationBadgeText:       "#FFFFFF"
 
     property color repoItemStatusPendingBg:     "#FEF3C7"
@@ -179,111 +179,111 @@ QtObject{
     property color repoItemStatusPullingText:   "#0369A1"
     property color repoItemStatusDoneBg:        "#DCFCE7"
     property color repoItemStatusDoneText:      "#166534"
-    property color repoItemStatusDirtyBg:       "#FEF9C3"
-    property color repoItemStatusDirtyText:     "#78350F"
+    property color repoItemStatusDirtyBg:       "#FFEDD5"
+    property color repoItemStatusDirtyText:     "#9A3412"
     property color repoItemStatusConflictBg:    "#FEE2E2"
     property color repoItemStatusConflictText:  "#991B1B"
     property color repoItemStatusCanceledBg:    "#FEE2E2"
     property color repoItemStatusCanceledText:  "#991B1B"
-    property color repoItemStatusPATBg:         "#90CAF9"
-    property color repoItemStatusPATText:       "#43525D"
+    property color repoItemStatusPATBg:         "#E0E7FF"
+    property color repoItemStatusPATText:       "#3730A3"
 
     // Conflict marker backgrounds
-    property color conflictOursBg:          "#E8F1FE"
+    property color conflictOursBg:          "#EFF6FF"
     property color conflictOursLabel:       "#1D4ED8"
-    property color conflictTheirsBg:        "#F6EBFC"
-    property color conflictTheirsLabel:     "#7E22CE"
+    property color conflictTheirsBg:        "#F5F3FF"
+    property color conflictTheirsLabel:     "#6D28D9"
 
-    property color conflictCardOpenBorder:  "#D9A036"
-    property color conflictCardOpenStrip:   "#FDF3DC"
-    property color conflictCardOpenLabel:   "#92610E"
-    property color conflictCardDoneBorder:  "#3E9E5A"
-    property color conflictCardDoneStrip:   "#E4F6E9"
-    property color conflictCardDoneLabel:   "#1B7B3A"
+    property color conflictCardOpenBorder:  "#D97706"
+    property color conflictCardOpenStrip:   "#FFFBEB"
+    property color conflictCardOpenLabel:   "#92400E"
+    property color conflictCardDoneBorder:  "#16A34A"
+    property color conflictCardDoneStrip:   "#F0FDF4"
+    property color conflictCardDoneLabel:   "#15803D"
 
-    property color lineNumberColor:         "#808080"
-    property color conflictMarker:          "#E05555"
+    property color lineNumberColor:         "#8B94A7"
+    property color conflictMarker:          "#DC2626"
 
-    property color conflictStatusConflictColor  :  "#E05555"
-    property color conflictStatusModifiedColor  :  "#FFA500"
-    property color conflictStatusAddedColor     :     "#3BDB6A"
+    property color conflictStatusConflictColor  :  "#DC2626"
+    property color conflictStatusModifiedColor  :  "#D97706"
+    property color conflictStatusAddedColor     :     "#16A34A"
 
     // Scrollbars — translucent so whatever sits in the strip behind them stays readable
-    property color scrollBarHandle:         "#40000000"
-    property color scrollBarHandleHover:    "#66000000"
-    property color scrollBarHandlePressed:  "#8C000000"
+    property color scrollBarHandle:         "#40475569"
+    property color scrollBarHandleHover:    "#66475569"
+    property color scrollBarHandlePressed:  "#8C475569"
     property color scrollBarTrack:          "transparent"
-    property color scrollBarTrackHover:     "#0F000000"
+    property color scrollBarTrackHover:     "#0F475569"
 
     // Scrollbar minimap of where a diff's changes sit
-    property color diffMarkerAdded:         "#3BDB6A"
-    property color diffMarkerRemoved:       "#E05555"
-    property color diffMarkerModified:      "#D9A036"
+    property color diffMarkerAdded:         "#16A34A"
+    property color diffMarkerRemoved:       "#DC2626"
+    property color diffMarkerModified:      "#D97706"
 
-    property color conflictFileSelectedBg:  "#1F3B82F6"
-    property color conflictSectionLabel:    "#6B7280"
-    property color conflictProgressTrack:   "#E3E6EB"
+    property color conflictFileSelectedBg:  "#1A2563EB"
+    property color conflictSectionLabel:    "#6B7488"
+    property color conflictProgressTrack:   "#E3E8F0"
     property color conflictProgressFiles:   "#2563EB"
-    property color conflictProgressChunks:  "#22C55E"
+    property color conflictProgressChunks:  "#16A34A"
     property color conflictDestructive:     "#DC2626"
     property color conflictAssistAccent:    "#B45309"
 
-    property color rebaseActionPick:       "#6B7280"
-    property color rebaseActionPickOnMenu: "#4B5563"
+    property color rebaseActionPick:       "#64748B"
+    property color rebaseActionPickOnMenu: "#475569"
     property color rebaseActionReword:     "#2563EB"
-    property color rebaseActionSquash:     "#7E22CE"
-    property color rebaseActionFixup:      "#BE185D"
+    property color rebaseActionSquash:     "#7C3AED"
+    property color rebaseActionFixup:      "#DB2777"
     property color rebaseActionEdit:       "#B45309"
     property color rebaseActionDrop:       "#DC2626"
 
     // Interactive rebase status colors
     property color rebaseStatusPending:    mutedText
-    property color rebaseStatusInProgress: "#E67E00"       // warm orange
-    property color rebaseStatusRebased:    "#1B7B3A"       // dark green
-    property color rebaseStatusConflict:   "#C0392B"       // deep red
+    property color rebaseStatusInProgress: "#D97706"       // warm orange
+    property color rebaseStatusRebased:    "#16A34A"       // dark green
+    property color rebaseStatusConflict:   "#DC2626"       // deep red
     property color rebaseStatusSkipped:    mutedText       // dimmed
 
     // Plugins page colors
-    property color updateButton: "#28a745"
-    property color compatible:   "#22C55E"   // Green
-    property color incompatible: "#EF4444"   // Red
+    property color updateButton: "#16A34A"
+    property color compatible:   "#16A34A"   // Green
+    property color incompatible: "#DC2626"   // Red
 
-    property color pluginPageBackground:       "#F4F5F7"
+    property color pluginPageBackground:       "#F4F6FA"
     property color pluginPanelBackground:      "#FFFFFF"
-    property color pluginPanelBorder:          "#E4E7EC"
+    property color pluginPanelBorder:          "#E1E6EE"
     property color pluginCardBackground:       "#FFFFFF"
-    property color pluginCardBorder:           "#E4E7EC"
-    property color pluginCardFooterBorder:     "#EEF0F3"
-    property color pluginDivider:              "#E8EAEE"
-    property color pluginSectionLabel:         "#6B7484"
-    property color pluginSectionMetaText:      "#9AA1B0"
-    property color pluginSidebarLabel:         "#9AA1B0"
-    property color pluginSidebarRowText:       "#4A5164"
+    property color pluginCardBorder:           "#E1E6EE"
+    property color pluginCardFooterBorder:     "#EDF0F5"
+    property color pluginDivider:              "#E6EAF1"
+    property color pluginSectionLabel:         "#646E82"
+    property color pluginSectionMetaText:      "#8B94A7"
+    property color pluginSidebarLabel:         "#8B94A7"
+    property color pluginSidebarRowText:       "#465066"
     property color pluginSidebarRowActiveText: "#2563EB"
-    property color pluginSidebarRowActiveBg:   "#1A3B82F6"
+    property color pluginSidebarRowActiveBg:   "#1A2563EB"
     property color pluginSidebarRowHoverBg:    "#0D2563EB"
-    property color pluginCountPillBackground:  "#EFF1F4"
-    property color pluginCountPillText:        "#8A92A2"
-    property color pluginCardTitle:            "#23262E"
-    property color pluginCardMetaText:         "#9AA1B0"
-    property color pluginCardDescription:      "#5A6272"
-    property color pluginBtnSecondaryBorder:   "#D9DDE4"
-    property color pluginBtnSecondaryText:     "#5A6272"
-    property color pluginToggleTrackOff:       "#D5D9E0"
-    property color pluginToggleTrackOffBorder: "#C6CBD4"
+    property color pluginCountPillBackground:  "#EDF0F5"
+    property color pluginCountPillText:        "#7B8599"
+    property color pluginCardTitle:            "#1B2231"
+    property color pluginCardMetaText:         "#8B94A7"
+    property color pluginCardDescription:      "#566074"
+    property color pluginBtnSecondaryBorder:   "#D5DBE6"
+    property color pluginBtnSecondaryText:     "#566074"
+    property color pluginToggleTrackOff:       "#D5DBE6"
+    property color pluginToggleTrackOffBorder: "#B9C2D2"
     property color pluginToggleThumbOff:       "#FFFFFF"
 
     // Terminal colors
-    property color terminalBackground:  "#000000"
-    property color terminalUserAndHost: "#3fb950"  // GitHub green
-    property color terminalWorkDir:     "#58a6ff"  // GitHub blue
-    property color terminalCommand:     "#e6edf3"  // GitHub text
+    property color terminalBackground:  "#F7F9FC"
+    property color terminalUserAndHost: "#15803D"
+    property color terminalWorkDir:     "#1D4ED8"
+    property color terminalCommand:     "#232A3A"
 
-    property color contextMenuBackground: softCloudWhite
-    property color contextMenuBorder:     "#CDD2DA"
-    property color contextMenuSeparator:  "#DCE1E9"
-    property color contextMenuHover:      "#E7E7E7"
-    property color contextMenuDanger:     "#DC3545"
+    property color contextMenuBackground: "#FFFFFF"
+    property color contextMenuBorder:     "#D5DBE6"
+    property color contextMenuSeparator:  "#E6EAF1"
+    property color contextMenuHover:      "#EEF2F9"
+    property color contextMenuDanger:     "#DC2626"
 
     property color branchSelectedAccent:  "#2563EB"
 
@@ -298,14 +298,14 @@ QtObject{
     property color countBadgeText:      secondaryText          // #5F6A7A
     property color countBadgeBg:        cardBackground         // #E8E8E8
     property color sectionHeaderBg:     surfaceLight           // #F3F3F3
-    property color sectionLabel:        "#7A8398"
+    property color sectionLabel:        "#7B8599"
     property color emptyCircleBg:       surfaceLight           // #F3F3F3
-    property color emptyCircleBorder:   "#E0E0E0"
-    property color emptyStateText:      "#9AA1B0"
-    property color emptyStateSubText:   "#B8BEC9"
+    property color emptyCircleBorder:   "#DCE1EA"
+    property color emptyStateText:      "#8B94A7"
+    property color emptyStateSubText:   "#B3BBCB"
 
     // Section actions and badge
-    property color actionIconIdle:        "#9AA1B0"
+    property color actionIconIdle:        "#8B94A7"
     property color stashAmber:            "#D97706"
     property color stageGreen:            "#16A34A"
     property color discardRed:            "#DC2626"
@@ -318,8 +318,8 @@ QtObject{
     property color openBlue:              branchAccent         // #2563EB
 
     // Row-level
-    property color filePathText:         "#686880"
-    property color rowHoverBg:           "#EFEFEF"
+    property color filePathText:         "#5F6A82"
+    property color rowHoverBg:           "#F0F3F8"
 
     // Diff view header line counts
     property color diffAddedCount:       "#16A34A"
@@ -329,12 +329,12 @@ QtObject{
     property color commitButton:         branchAccent         // #2563EB
     property color fileBrowserRowHoverBg: Qt.rgba(0,0,0,0.04)
     property color fileBrowserSearchBg:  Qt.rgba(0,0,0,0.05)
-    property color headerBackground:            warmChalk
-    property color headerButtonBackground:      offWhite
-    property color headerButtonBackgroundHover: "#E0E0DC"
-    property color headerButtonBorder:          lightPlatinum
+    property color headerBackground:            "#F1F4F9"
+    property color headerButtonBackground:      "#E7EBF2"
+    property color headerButtonBackgroundHover: "#DCE2EC"
+    property color headerButtonBorder:          "#D5DBE6"
 
-    property color segmentedSelected:           "#FDFDFD"
+    property color segmentedSelected:           "#FFFFFF"
 
     property color utilitiesPanelBackground:            controlBackground
     property color utilitiesPanelBorder:                primaryBorder
@@ -413,7 +413,7 @@ QtObject{
 
     property color utilitiesActionIcon:                 secondaryText
     property color utilitiesActionIconActive:           accent
-    property color utilitiesActionIconWarning:          "#B26A00"
+    property color utilitiesActionIconWarning:          "#B45309"
     property color utilitiesActionIconDanger:           error
 
     // stash card
@@ -474,6 +474,45 @@ QtObject{
     property color popupCreateButtonText:            "#FFFFFF"
     property color popupCancelButtonBorder:          controlBorder
     property color popupCancelButtonText:            secondaryText
+
+    property color onColorText:                 "#FFFFFF"
+    property color scrimColor:                  "#000000"
+    property color progressOverlay:             "#CBD2DE"
+
+    // Ghost button hover wash on popups
+    property color ghostButtonHoverBackground:  "#142563EB"
+
+    // Navigation rail item that is not selected (non-accent variant)
+    property color navItemInactive:             "#8B94A7"
+
+    // Commit graph
+    property color graphSelectedRowBg:          "#402563EB"
+    property color graphHeadRowBg:              "#33D97706"
+    property color graphTagLabel:               "#CA8A04"
+    property color graphAvatarBackground:       "#DCE1EA"
+    property color graphUncommittedColor:       "#8B94A7"
+
+    // Plugin detail screenshots
+    property color pluginPreviewBackground:     "#E9EDF4"
+    property color pluginThumbBackground:       "#E9EDF4"
+
+    // Fallback identity color for repositories without one
+    property color repositoryAvatarDefault:     "#B9FAB9"
+
+    // Embedded terminal chrome (terminal is dark in both themes)
+    property color terminalScrollBar:           "#C3CAD7"
+    property color terminalScrollBarHover:      "#A9B2C3"
+    property color terminalScrollBarPressed:    "#8B94A7"
+    property color terminalHeaderBorder:        "#DCE1EA"
+
+    // Terminal ANSI palette (SGR 31-37)
+    property color terminalAnsiRed:             "#B91C1C"
+    property color terminalAnsiGreen:           "#15803D"
+    property color terminalAnsiYellow:          "#A16207"
+    property color terminalAnsiBlue:            "#1D4ED8"
+    property color terminalAnsiMagenta:         "#7E22CE"
+    property color terminalAnsiCyan:            "#0E7490"
+    property color terminalAnsiWhite:           "#475569"
     property color popupBodyText:                    secondaryText
     property color popupShadow:                      "#2E0F172A"
 }
