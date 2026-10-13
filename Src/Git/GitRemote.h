@@ -86,6 +86,14 @@ public:
                                          bool force = false);
 
     /**
+     * @brief Runs push rules for a push that updates a differently named branch on the remote.
+     */
+    Q_INVOKABLE GitResult checkPushRules(const QString& remote,
+                                         const QString& localBranch,
+                                         const QString& remoteBranch,
+                                         bool force);
+
+    /**
      * @brief Checks if a push operation is currently in progress
      * @return true if a push operation is actively running, false otherwise
      */
