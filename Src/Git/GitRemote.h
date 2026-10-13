@@ -404,15 +404,17 @@ private:
      * Pull is implemented as fetch + merge analysis + fast-forward update.
      * Non-fast-forward pulls are rejected.
      *
-     * @param remoteName Name of remote
-     * @param branchName Branch to pull (empty => current branch)
-     * @param auth       Authentication strategy
+     * @param remoteName  Name of remote
+     * @param branchName  Branch on the remote to pull (empty => see pull())
+     * @param auth        Authentication strategy
+     * @param setUpstream Make remoteName/branchName the upstream of the checked out branch
      *
      * @return GitResult with operation result
      */
     GitResult pullInternal(const QString& remoteName,
                            const QString& branchName,
-                           std::unique_ptr<IGitAuth> auth);
+                           std::unique_ptr<IGitAuth> auth,
+                           bool setUpstream = false);
 
     GitResult pullStartAsyncInternal(const QString& remoteName,
                                      const QString& branchName,
