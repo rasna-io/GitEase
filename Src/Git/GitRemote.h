@@ -22,7 +22,7 @@ public:
      * Uses the system SSH agent or default SSH keys to authenticate
      * the push operation.
      *
-     * @param remote Name of the remote (default: "origin")
+     * @param remote Name of the remote
      * @param branch Name of the branch to push
      * @param force  Whether to force push (default: false)
      *
@@ -38,7 +38,7 @@ public:
      * Uses a personal access token to authenticate the push
      * operation over HTTPS.
      *
-     * @param remote Name of the remote (default: "origin")
+     * @param remote Name of the remote
      * @param branch Name of the branch to push
      * @param token  Personal access token
      * @param force  Whether to force push (default: false)
