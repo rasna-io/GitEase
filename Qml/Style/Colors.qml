@@ -520,6 +520,19 @@ QtObject{
     property color diffRemovedText:             "#991B1B"
     property color diffAddedText:               "#166534"
     property color diffLineNumberText:          "#566074"
+
+    // Diff view surfaces
+    property color diffViewBackground:          editorBackgroound
+    property color diffContextBackground:       primaryBackground
+    property color diffRowAddedBg:              diffAddedBg
+    property color diffRowRemovedBg:            diffRemovedBg
+    property color diffGutterBackground:        linePanelBackgroound
+    property color diffGutterBorder:            primaryBorder
+    property color diffStripe:                  voidStripe
+    property color diffPillBackground:          actionPillBg
+    property color diffPillBorder:              actionPillBorder
+    property color diffPopupBackground:         secondaryBackground
+    property color diffPopupBorder:             primaryBorder
     property color popupBodyText:                    secondaryText
     property color popupShadow:                      "#2E0F172A"
 }
