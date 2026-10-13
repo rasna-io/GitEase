@@ -322,17 +322,43 @@ private:
      * strategy. This method is shared by both SSH and HTTPS push
      * entry points.
      *
-     * @param remoteName Name of the remote (e.g. "origin")
-     * @param branchName Name of the branch to push
-     * @param auth       Authentication strategy (ownership transferred)
-     * @param force      Whether to force push
+     * @param remoteName   Name of the remote (e.g. "origin")
+     * @param branchName   Name of the local branch to push
+     * @param remoteBranch Name of the branch to update on the remote
+     * @param auth         Authentication strategy (ownership transferred)
+     * @param force        Whether to force push
+     * @param setUpstream  Make remoteName/remoteBranch the upstream of branchName on success
      *
      * @return GitResult containing the push result
      */
     GitResult pushInternal(const QString& remoteName,
                            const QString& branchName,
+                           const QString& remoteBranch,
                            std::unique_ptr<IGitAuth> auth,
-                           bool force);
+                           bool force,
+                           bool setUpstream);
+
+    /**
+     * @brief Checks what every push() overload needs before it touches the remote.
+     */
+    GitResult validatePush(const QString& remote, const QString& localBranch);
+
+    /**
+     * @brief Shared back half of the push() overloads: the in-progress flags around pushInternal().
+     */
+    GitResult runPush(const QString& remote,
+                      const QString& localBranch,
+                      const QString& remoteBranch,
+                      std::unique_ptr<IGitAuth> auth,
+                      bool force,
+                      bool setUpstream);
+
+    /**
+     * @brief Writes the upstream config of localBranch. Emits no command; callers do.
+     */
+    GitResult writeUpstream(const QString& localBranch,
+                            const QString& remote,
+                            const QString& remoteBranch);
 
     GitResult pushStartAsyncInternal(const QString& remoteName,
                                      const QString& branchName,
