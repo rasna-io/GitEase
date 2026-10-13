@@ -51,6 +51,29 @@ public:
                                bool force = false);
 
     /**
+     * @brief Push a local branch to a branch on a remote, optionally making it the upstream.
+     *
+     * Picks the authentication from the remote's URL: the SSH agent for SSH remotes, \a token for
+     * HTTP(S) remotes, and none for remotes that need no credentials, such as a local path.
+     *
+     * @param remote       Name of the remote
+     * @param localBranch  Local branch to push
+     * @param remoteBranch Branch to update on the remote; usually the same name as localBranch
+     * @param token        Personal access token, only used for HTTP(S) remotes
+     * @param force        Whether to force push
+     * @param setUpstream  Make remote/remoteBranch the upstream of localBranch once the push
+     *                     succeeds, like git push -u
+     *
+     * @return GitResult with operation result
+     */
+    Q_INVOKABLE GitResult push(const QString& remote,
+                               const QString& localBranch,
+                               const QString& remoteBranch,
+                               const QString& token,
+                               bool force,
+                               bool setUpstream);
+
+    /**
      * @brief Runs push rules for a pending push.
      *
      * push() runs on the Git worker thread where rules cannot veto it, so callers invoke this
