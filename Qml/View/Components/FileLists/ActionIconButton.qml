@@ -93,7 +93,7 @@ Rectangle {
             text: tip.text
             font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.defaultPt
-            color: "#ffffff"
+            color: Style.colors.onColorText
         }
 
         background: Rectangle {
