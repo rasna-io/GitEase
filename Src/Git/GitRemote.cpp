@@ -163,6 +163,11 @@ bool tokenWasRejected(const IGitAuth* auth)
     return https && https->tokenRejected();
 }
 }
+
+GitRemote::GitRemote(QObject *parent)
+    : IGitController{parent}
+{}
+
 GitResult GitRemote::push(const QString& remote,
                           const QString& branch,
                           bool force)
