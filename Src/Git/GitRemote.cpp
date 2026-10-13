@@ -163,12 +163,40 @@ bool tokenWasRejected(const IGitAuth* auth)
     return https && https->tokenRejected();
 }
 }
+GitResult GitRemote::push(const QString& remote,
+                          const QString& branch,
+                          bool force)
+{
+    GitResult valid = validatePush(remote, branch);
+    if (!valid.success())
+        return valid;
+
+    return runPush(remote, branch, branch, std::make_unique<GitSshAuth>(), force, false);
 }
 
 GitResult GitRemote::push(const QString& remote,
                           const QString& branch,
                           const QString& token,
                           bool force)
+{
+    GitResult valid = validatePush(remote, branch);
+    if (!valid.success())
+        return valid;
+
+    return runPush(remote, branch, branch, std::make_unique<GitHttpsAuth>(token), force, false);
+}
+    GitResult valid = validatePush(remote, localBranch);
+    if (!valid.success())
+        return valid;
+    return runPush(remote,
+                   localBranch,
+                   remoteBranch.isEmpty() ? localBranch : remoteBranch,
+                   std::move(auth),
+                   force,
+                   setUpstream);
+}
+
+GitResult GitRemote::validatePush(const QString& remote, const QString& localBranch)
 {
     if (remote.isEmpty()) {
         return GitResult(false, QVariant(), "Remote name cannot be empty");
@@ -178,18 +206,28 @@ GitResult GitRemote::push(const QString& remote,
         return GitResult(false, QVariant(), "No repository available");
     }
 
-    if (branch.isEmpty()) {
+    if (localBranch.isEmpty()) {
         return GitResult(false, QVariant(),
                          "No branch specified and repository is in detached HEAD state");
     }
 
+    return GitResult(true);
+}
+
+GitResult GitRemote::runPush(const QString& remote,
+                             const QString& localBranch,
+                             const QString& remoteBranch,
+                             std::unique_ptr<IGitAuth> auth,
+                             bool force,
+                             bool setUpstream)
+{
     m_forcePush = force;
     emit forcePushChanged();
 
     m_pushInProgress = true;
     emit pushInProgressChanged();
 
-    GitResult result = pushInternal(remote, branch, std::make_unique<GitHttpsAuth>(token), force);
+    GitResult result = pushInternal(remote, localBranch, remoteBranch, std::move(auth), force, setUpstream);
 
     m_pushInProgress = false;
     emit pushInProgressChanged();
