@@ -365,6 +365,11 @@ QtObject {
         graphUncommittedColor:       "#888888"
         pluginPreviewBackground:     "#0F1218"
         pluginThumbBackground:       "#161A22"
+        diffText:                    "#9898B4"
+        diffTextStacked:             "#F4F4F8"
+        diffRemovedText:             "#F87171"
+        diffAddedText:               "#4ADE80"
+        diffLineNumberText:          "#9D9D9D"
 
         // Terminal
         terminalBackground:          "#0A0A0D"
@@ -646,6 +651,11 @@ QtObject {
         pluginBadgeText: "#173FB0"
         pluginPreviewBackground: "#D3D8E1"
         pluginThumbBackground: "#D3D8E1"
+        diffText:                    "#10151F"
+        diffTextStacked:             "#10151F"
+        diffRemovedText:             "#7F1D1D"
+        diffAddedText:               "#14532D"
+        diffLineNumberText:          "#434D61"
         scrollBarHandle: "#4D3B4660"
         scrollBarHandleHover: "#733B4660"
         scrollBarHandlePressed: "#993B4660"

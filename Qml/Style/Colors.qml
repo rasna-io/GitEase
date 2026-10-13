@@ -513,6 +513,13 @@ QtObject{
     property color terminalAnsiMagenta:         "#7E22CE"
     property color terminalAnsiCyan:            "#0E7490"
     property color terminalAnsiWhite:           "#475569"
+
+    // Diff view text
+    property color diffText:                    "#161B26"
+    property color diffTextStacked:             "#161B26"
+    property color diffRemovedText:             "#991B1B"
+    property color diffAddedText:               "#166534"
+    property color diffLineNumberText:          "#566074"
     property color popupBodyText:                    secondaryText
     property color popupShadow:                      "#2E0F172A"
 }

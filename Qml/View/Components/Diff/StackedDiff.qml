@@ -95,7 +95,7 @@ Item {
                 Text {
                     width: root.gutterWidth
                     text: root.hasOld ? modelData.oldLine : ""
-                    color: Style.colors.mutedText
+                    color: Style.colors.diffLineNumberText
                     font.pixelSize: Style.appFont.smallPt
                     horizontalAlignment: Text.AlignRight
                     verticalAlignment: Text.AlignTop
@@ -104,7 +104,7 @@ Item {
                 Text {
                     width: parent.width - root.gutterWidth - topRow.spacing
                     text: root.oldText
-                    color: Style.colors.foreground
+                    color: Style.colors.diffTextStacked
                     font.family: Style.fontTypes.jetBrainsMono
                     font.pixelSize: Style.appFont.mediumPt
                     wrapMode: Text.WrapAnywhere
@@ -143,7 +143,7 @@ Item {
                 Text {
                     width: root.gutterWidth
                     text: root.hasNew ? modelData.newLine : ""
-                    color: Style.colors.mutedText
+                    color: Style.colors.diffLineNumberText
                     font.pixelSize: Style.appFont.smallPt
                     horizontalAlignment: Text.AlignRight
                     verticalAlignment: Text.AlignTop
@@ -154,7 +154,7 @@ Item {
                     text: root.isModified
                           ? root.newText
                           : (root.isAddedOnly ? root.effectiveNewText : "")
-                    color: Style.colors.foreground
+                    color: Style.colors.diffTextStacked
                     font.family: Style.fontTypes.jetBrainsMono
                     font.pixelSize: Style.appFont.mediumPt
                     wrapMode: Text.WrapAnywhere
