@@ -518,7 +518,7 @@ IPopup {
                                     Layout.fillWidth: true
                                     title: "Theme"
                                     description: "Select theme"
-                                    cmb.model: ["Modern Light", "Modern Dark"]
+                                    cmb.model: ["Modern Light", "Modern Soft", "Modern Dark"]
                                 }
 
                                 Rectangle {
