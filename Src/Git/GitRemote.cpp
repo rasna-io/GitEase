@@ -647,6 +647,75 @@ GitResult GitRemote::fetch(const QString& remote)
         case GitProtocolDetector::GitProtocol::SSH:
             auth = std::make_unique<GitSshAuth>();
             break;
+
+GitResult GitRemote::setUpstream(const QString &localBranch,
+                                 const QString &remote,
+                                 const QString &remoteBranch)
+{
+    if (!m_currentRepo || !activeRepo()) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    git_remote* remoteHandle = nullptr;
+    if (git_remote_lookup(&remoteHandle, activeRepo(), remote.toUtf8().constData()) != GIT_OK) {
+        return GitResult(false, QVariant(), QString("Remote '%1' not found").arg(remote));
+    }
+    git_remote_free(remoteHandle);
+
+    git_reference* local = nullptr;
+    if (git_branch_lookup(&local, activeRepo(), localBranch.toUtf8().constData(), GIT_BRANCH_LOCAL) != GIT_OK) {
+        return GitResult(false, QVariant(), QString("Local branch '%1' not found").arg(localBranch));
+    }
+    git_reference_free(local);
+
+    GitResult result = writeUpstream(localBranch, remote, remoteBranch);
+    if (result.success())
+        emitGitCommand(GitCommandText::setUpstream(localBranch, remote, remoteBranch));
+
+    return result;
+}
+
+GitResult GitRemote::writeUpstream(const QString& localBranch,
+                                   const QString& remote,
+                                   const QString& remoteBranch)
+{
+    if (!activeRepo()) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (localBranch.isEmpty() || remote.isEmpty() || remoteBranch.isEmpty()) {
+        return GitResult(false, QVariant(), "Branch and remote names cannot be empty");
+    }
+
+    git_config* config = nullptr;
+    git_config* local  = nullptr;
+    if (git_repository_config(&config, activeRepo()) != GIT_OK
+        || git_config_open_level(&local, config, GIT_CONFIG_LEVEL_LOCAL) != GIT_OK) {
+        git_config_free(config);
+        return GitResult(false, QVariant(), "Failed to open the repository configuration");
+    }
+
+    // The same two entries git branch --set-upstream-to writes
+    const QByteArray remoteKey = "branch." + localBranch.toUtf8() + ".remote";
+    const QByteArray mergeKey  = "branch." + localBranch.toUtf8() + ".merge";
+
+    int rc = git_config_set_string(local, remoteKey.constData(), remote.toUtf8().constData());
+    if (rc == GIT_OK)
+        rc = git_config_set_string(local, mergeKey.constData(), ("refs/heads/" + remoteBranch).toUtf8().constData());
+
+    const QString error = lastGitErrorMessage();
+
+    git_config_free(local);
+    git_config_free(config);
+
+    if (rc != GIT_OK) {
+        return GitResult(false, QVariant(),
+                         QString("Failed to set the upstream of '%1': %2").arg(localBranch, error));
+    }
+
+    return GitResult(true, QString("%1/%2").arg(remote, remoteBranch));
+}
+
 std::unique_ptr<IGitAuth> GitRemote::authForRemote(git_repository *repo,
                                                    const QString &remoteName,
                                                    const QString &token,
