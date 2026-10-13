@@ -54,6 +54,6 @@ Rectangle {
         anchors.bottom: parent.bottom
         width: parent.width
         height: 1
-        color: "#333333"
+        color: Style.colors.terminalHeaderBorder
     }
 }
