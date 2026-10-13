@@ -937,7 +937,7 @@ std::unique_ptr<IGitAuth> GitRemote::authForRemote(git_repository *repo,
         }
     }
 
-    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remote)));
+    emitGitCommand(GitCommandText::fetch(remote));
 
     return fetchInternal(remote, std::move(auth));
 }
@@ -952,7 +952,7 @@ GitResult GitRemote::fetchWithToken(const QString& remote, const QString& token)
         return GitResult(false, QVariant(), "Remote name cannot be empty");
     }
 
-    emitGitCommand(QString("git fetch %1").arg(quoteCommandArg(remote)));
+    emitGitCommand(GitCommandText::fetch(remote));
 
     return fetchInternal(remote, std::make_unique<GitHttpsAuth>(token));
 }
@@ -1161,8 +1161,7 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
                                   .arg(currentHeadRefName(activeRepo()),
                                        currentHeadOid(activeRepo()),
                                        workingTreeSummary(activeRepo()));
-        emitGitCommand(QString("git pull %1 %2")
-                           .arg(quoteCommandArg(remoteName), quoteCommandArg(targetBranch)));
+        emitGitCommand(GitCommandText::pull(remoteName, targetBranch));
         git_annotated_commit_free(remoteHead);
         git_reference_free(remoteRef);
         git_reference_free(localRef);
@@ -1241,8 +1240,7 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
                                   .arg(currentHeadRefName(activeRepo()),
                                        currentHeadOid(activeRepo()),
                                        workingTreeSummary(activeRepo()));
-        emitGitCommand(QString("git pull %1 %2")
-                           .arg(quoteCommandArg(remoteName), quoteCommandArg(targetBranch)));
+        emitGitCommand(GitCommandText::pull(remoteName, targetBranch));
         return GitResult(true, pullResult);
     }
 
