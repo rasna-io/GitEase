@@ -1071,15 +1071,8 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
 
     QString targetBranch = branchName.trimmed();
     if (targetBranch.isEmpty()) {
-        targetBranch = currentBranch;
-    }
-
-    if (targetBranch != currentBranch) {
-        qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL target mismatch current=%1 target=%2")
-                                  .arg(currentBranch, targetBranch);
-        return GitResult(false, QVariant(),
-                         QString("Pull can only be applied to the checked out branch ('%1').")
-                             .arg(currentBranch));
+        const QPair<QString, QString> upstream = branchUpstream(activeRepo(), currentBranch);
+        targetBranch = upstream.first == remoteName ? upstream.second : currentBranch;
     }
 
     auto fetchResult = fetchInternal(remoteName, std::move(auth));
@@ -1157,6 +1150,8 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
 
     QVariantMap pullResult;
     pullResult["remote"] = remoteName;
+    pullResult["branch"] = currentBranch;
+    pullResult["remoteBranch"] = targetBranch;
     pullResult["upstreamSet"] = upstreamSet;
     pullResult["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
