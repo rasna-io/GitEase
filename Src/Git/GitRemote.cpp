@@ -978,31 +978,22 @@ GitResult GitRemote::pull(const QString& remote, const QString& branch)
         return GitResult(false, QVariant(), error);
     }
 
-    GitProtocolDetector::GitProtocol protocol = GitProtocolDetector::detectProtocol(remoteUrl);
-
-    std::unique_ptr<IGitAuth> auth;
-    switch (protocol) {
-    case GitProtocolDetector::GitProtocol::SSH:
-        auth = std::make_unique<GitSshAuth>();
-        break;
-    case GitProtocolDetector::GitProtocol::HTTPS:
-    case GitProtocolDetector::GitProtocol::HTTP:
-        auth = std::make_unique<GitHttpsAuth>("");
-        break;
-    case GitProtocolDetector::GitProtocol::Unknown:
-    default:
-        return GitResult(false, QVariant(),
-                         QString("Unsupported protocol for remote URL: %1").arg(remoteUrl));
-    }
-
-    if (auto sshAuth = dynamic_cast<GitSshAuth*>(auth.get())) {
-        QString setupError = sshAuth->getSetupError();
-        if (!setupError.isEmpty()) {
-            return GitResult(false, QVariant(), setupError);
-        }
-    }
-
     return pullInternal(remote, branch, std::move(auth));
+}
+
+GitResult GitRemote::pull(const QString& remote,
+                          const QString& branch,
+                          const QString& token)
+{
+    if (!m_currentRepo || !activeRepo()) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (remote.isEmpty()) {
+        return GitResult(false, QVariant(), "Remote name cannot be empty");
+    }
+
+    return pullInternal(remote, branch, std::make_unique<GitHttpsAuth>(token));
 }
 
 GitResult GitRemote::pull(const QString& remote,
