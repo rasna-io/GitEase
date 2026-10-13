@@ -282,11 +282,23 @@ Rectangle {
                             snapMode: ListView.NoSnap
                             boundsBehavior: Flickable.StopAtBounds
                             highlightRangeMode: ListView.NoHighlightRange
-                            contentX: originX + currentIndex * width
+                            highlightMoveDuration: 0
+                            highlightResizeDuration: 0
 
                             property bool hasPresentedPage: false
 
+                            function pinCurrentPage() {
+                                if (width > 0 && count > 0)
+                                    contentX = originX + currentIndex * width
+                            }
+
+                            onWidthChanged: pinCurrentPage()
+                            onContentWidthChanged: pinCurrentPage()
+                            onCountChanged: pinCurrentPage()
+
                             onCurrentIndexChanged: {
+                                pinCurrentPage()
+
                                 if (!hasPresentedPage) {
                                     hasPresentedPage = true
                                     return
