@@ -1090,15 +1090,15 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
     git_reference* localRef = nullptr;
     int result = git_branch_lookup(&localRef,
                                    activeRepo(),
-                                   targetBranch.toUtf8().constData(),
+                                   currentBranch.toUtf8().constData(),
                                    GIT_BRANCH_LOCAL);
     if (result != GIT_OK || !localRef) {
         qDebug().noquote() << QString("[GitRemote][PullTrace] FAIL local branch lookup branch=%1 rc=%2 err=%3")
-                                  .arg(targetBranch)
+                                  .arg(currentBranch)
                                   .arg(result)
                                   .arg(lastGitErrorMessage());
         return GitResult(false, QVariant(),
-                         QString("Local branch '%1' not found").arg(targetBranch));
+                         QString("Local branch '%1' not found").arg(currentBranch));
     }
 
     QString remoteTrackingBranch = remoteName + "/" + targetBranch;
@@ -1114,6 +1114,11 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
                                   .arg(lastGitErrorMessage());
         git_reference_free(localRef);
         return GitResult(false, QVariant(),
+                         QString("Remote branch '%1' not found after fetch. "
+                                 "Push '%2' to %3 first, or pull from another remote.")
+                             .arg(remoteTrackingBranch, currentBranch, remoteName));
+    }
+
     bool upstreamSet = false;
     if (setUpstream) {
         upstreamSet = writeUpstream(currentBranch, remoteName, targetBranch).success();
