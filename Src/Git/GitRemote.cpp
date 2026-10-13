@@ -253,10 +253,19 @@ GitResult GitRemote::checkPushRules(const QString& remote,
                                     const QString& branch,
                                     bool force)
 {
+    return checkPushRules(remote, branch, branch, force);
+}
+
+GitResult GitRemote::checkPushRules(const QString& remote,
+                                    const QString& localBranch,
+                                    const QString& remoteBranch,
+                                    bool force)
+{
     ActionContext context;
     context.type = ActionType::Push;
     context.remoteName = remote;
-    context.branchName = branch;
+    context.branchName = localBranch;
+    context.remoteBranchName = remoteBranch.isEmpty() ? localBranch : remoteBranch;
     context.forcePush = force;
     return runRuleCheck(context);
 }
