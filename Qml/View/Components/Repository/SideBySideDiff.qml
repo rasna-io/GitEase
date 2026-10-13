@@ -108,7 +108,7 @@ Item {
                     width: 45
                     height: parent.height
                     text: (leftLineNum > 0) ? leftLineNum : ""
-                    color: (isDel || isMod) ? Style.colors.softCoralMist : Style.colors.editorForeground
+                    color: (isDel || isMod) ? Style.colors.diffRemovedText : Style.colors.diffText
                     font.pixelSize: Style.appFont.mediumPt
                     font.family: Style.fontTypes.inter
                     horizontalAlignment: Text.AlignRight
@@ -141,7 +141,7 @@ Item {
                         x: -delegateRoot.horizontalOffset
                         text: delegateRoot.textColorizer ? delegateRoot.textColorizer(leftContent) : leftContent
                         textFormat: delegateRoot.textColorizer ? Text.RichText : Text.PlainText
-                        color: (isDel || isMod) ? Style.colors.softCoralMist : Style.colors.editorForeground
+                        color: (isDel || isMod) ? Style.colors.diffRemovedText : Style.colors.diffText
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         topPadding: 2
@@ -305,7 +305,7 @@ Item {
                     height: parent.height
                     z: 2
                     text: (rightLineNum > 0) ? rightLineNum : ""
-                    color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
+                    color: (isAdd || isMod) ? Style.colors.diffAddedText : Style.colors.diffText
                     font.pixelSize: Style.appFont.mediumPt
                     font.family: Style.fontTypes.inter
                     horizontalAlignment: Text.AlignRight
@@ -340,7 +340,7 @@ Item {
                         x: -delegateRoot.horizontalOffset
                         text: visible ? delegateRoot.textColorizer(rightContent) : ""
                         textFormat: Text.RichText
-                        color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
+                        color: (isAdd || isMod) ? Style.colors.diffAddedText : Style.colors.diffText
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         topPadding: 2
@@ -354,7 +354,7 @@ Item {
                         width: 2000
                         text: rightContent
                         color: rightColored.visible ? "transparent"
-                             : (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
+                             : (isAdd || isMod) ? Style.colors.diffAddedText : Style.colors.diffText
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         padding: 0
