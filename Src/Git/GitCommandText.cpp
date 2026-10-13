@@ -71,14 +71,14 @@ QString GitCommandText::deleteTag(const QString &name)
     return QString("git tag -d %1").arg(quote(name));
 }
 
-QString GitCommandText::pushTag(const QString &name)
+QString GitCommandText::pushTag(const QString &remoteName, const QString &name)
 {
-    return QString("git push origin %1").arg(quote(name));
+    return QString("git push %1 %2").arg(quote(remoteName), quote(name));
 }
 
-QString GitCommandText::pushDeleteTag(const QString &name)
+QString GitCommandText::pushDeleteTag(const QString &remoteName, const QString &name)
 {
-    return QString("git push origin --delete %1").arg(quote(name));
+    return QString("git push %1 --delete %2").arg(quote(remoteName), quote(name));
 }
 
 QString GitCommandText::addRemote(const QString &name, const QString &url)
