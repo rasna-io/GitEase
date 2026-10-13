@@ -98,6 +98,22 @@ DetachablePanel {
         }
     }
 
+    //! Maps the ANSI colors emitted by the backend (dark-theme hex values) to the theme palette
+    function resolveColor(c) {
+        switch (String(c).toLowerCase()) {
+        case "":        return Style.colors.terminalCommand
+        case "#e6edf3": return Style.colors.terminalCommand
+        case "#f44747": return Style.colors.terminalAnsiRed
+        case "#89d185": return Style.colors.terminalAnsiGreen
+        case "#dcdcaa": return Style.colors.terminalAnsiYellow
+        case "#569cd6": return Style.colors.terminalAnsiBlue
+        case "#c586c0": return Style.colors.terminalAnsiMagenta
+        case "#4ec9b0": return Style.colors.terminalAnsiCyan
+        case "#d4d4d4": return Style.colors.terminalAnsiWhite
+        default:        return c
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Style.colors.terminalBackground
@@ -120,9 +136,9 @@ DetachablePanel {
                 contentItem: Rectangle {
                     implicitWidth: 10
                     radius: 2
-                    color: vScrollBar.pressed ? "#6e6e6e"
-                         : vScrollBar.hovered ? "#5a5a5a"
-                         : "#3e3e3e"
+                    color: vScrollBar.pressed ? Style.colors.terminalScrollBarPressed
+                         : vScrollBar.hovered ? Style.colors.terminalScrollBarHover
+                         : Style.colors.terminalScrollBar
                 }
                 background: Rectangle { color: "transparent" }
             }
@@ -182,7 +198,7 @@ DetachablePanel {
 
                             delegate: TextEdit {
                                 text: model.text
-                                color: model.color !== "" ? model.color : Style.colors.terminalCommand
+                                color: root.resolveColor(model.color)
                                 font.family: Style.fontTypes.jetBrainsMono
                                 font.pixelSize: root.fontSize
                                 wrapMode: TextEdit.WrapAnywhere
