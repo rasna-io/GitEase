@@ -772,6 +772,49 @@ GitResult GitRemote::remoteTarget()
     return GitResult(true, target);
 }
 
+GitResult GitRemote::setDefaultRemote(const QString &remote)
+{
+    if (!m_currentRepo || !activeRepo()) {
+        return GitResult(false, QVariant(), "No repository available");
+    }
+
+    if (!remote.isEmpty()) {
+        git_remote* handle = nullptr;
+        if (git_remote_lookup(&handle, activeRepo(), remote.toUtf8().constData()) != GIT_OK) {
+            return GitResult(false, QVariant(), QString("Remote '%1' not found").arg(remote));
+        }
+        git_remote_free(handle);
+    }
+
+    git_config* config = nullptr;
+    git_config* local  = nullptr;
+    if (git_repository_config(&config, activeRepo()) != GIT_OK
+        || git_config_open_level(&local, config, GIT_CONFIG_LEVEL_LOCAL) != GIT_OK) {
+        git_config_free(config);
+        return GitResult(false, QVariant(), "Failed to open the repository configuration");
+    }
+
+    int rc = remote.isEmpty() ? git_config_delete_entry(local, "remote.pushDefault")
+                              : git_config_set_string(local, "remote.pushDefault", remote.toUtf8().constData());
+
+    // Clearing a default that was never set is already done
+    if (remote.isEmpty() && rc == GIT_ENOTFOUND)
+        rc = GIT_OK;
+
+    const QString error = lastGitErrorMessage();
+
+    git_config_free(local);
+    git_config_free(config);
+
+    if (rc != GIT_OK) {
+        return GitResult(false, QVariant(), QString("Failed to change the default remote: %1").arg(error));
+    }
+
+    emitGitCommand(GitCommandText::setDefaultRemote(remote));
+
+    return GitResult(true, remote);
+}
+
 GitResult GitRemote::setUpstream(const QString &localBranch,
                                  const QString &remote,
                                  const QString &remoteBranch)
