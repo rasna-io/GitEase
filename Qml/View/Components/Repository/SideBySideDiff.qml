@@ -35,6 +35,11 @@ Item {
 
     property real horizontalOffset: 0
 
+    //! Which side to show alone when the whole file is added or deleted (DiffView.DiffViewSelectionSide).
+    property int singleSide: DiffView.DiffViewSelectionSide.None
+    readonly property bool leftHidden: singleSide === DiffView.DiffViewSelectionSide.Right
+    readonly property bool rightHidden: singleSide === DiffView.DiffViewSelectionSide.Left
+
     readonly property bool isAdd: diffType === GitDiff.Added
     readonly property bool isDel: diffType === GitDiff.Deleted
     readonly property bool isMod: diffType === GitDiff.Modified
@@ -88,7 +93,9 @@ Item {
           * Read Only
           */
         Rectangle {
+            visible: !delegateRoot.leftHidden
             Layout.fillHeight: true
+            Layout.fillWidth: delegateRoot.rightHidden
             Layout.preferredWidth: parent.width / 2
             color: (isDel || isMod) ? Style.colors.diffRowRemovedBg : "transparent"
             clip: true
@@ -156,12 +163,14 @@ Item {
           * CENTER GUTTE
           */
         Rectangle {
+            visible: delegateRoot.singleSide === DiffView.DiffViewSelectionSide.None
             Layout.fillHeight: true
             Layout.preferredWidth: 44
             color: Style.colors.diffGutterBackground
             z: 3
 
             Rectangle {
+                visible: delegateRoot.singleSide === DiffView.DiffViewSelectionSide.None
                 width: 1
                 color: Style.colors.diffGutterBorder
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -282,6 +291,7 @@ Item {
           * Editable
           */
         Rectangle {
+            visible: !delegateRoot.rightHidden
             Layout.fillHeight: true
             Layout.fillWidth: true
             color: (isAdd || isMod) ? Style.colors.diffRowAddedBg : "transparent"
