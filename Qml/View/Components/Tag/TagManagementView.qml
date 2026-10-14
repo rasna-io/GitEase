@@ -21,6 +21,8 @@ UtilitiesCard {
     property var                    tagListModel:           []
     property GuideController        guideController:        null
 
+    property RemoteOperationsSession remoteOperationsSession: null
+
     title: "Tags"
     icon:  Style.icons.tag
     badgeCount: root.tagListModel.length
