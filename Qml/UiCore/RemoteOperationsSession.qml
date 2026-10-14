@@ -15,11 +15,22 @@ Item {
     /* Property Declarations (dependencies)
      * ****************************************************************************************/
     property RemoteController         remoteController:        null
+    property TagController            tagController:           null
     property RepositoryController     repositoryController:    null
     property BranchController         branchController:        null
     property NotificationController   notificationController:  null
+    property GitStateNotifier         gitStateNotifier:        null
     property UserAuthenticationPopup  userAuthenticationPopup: null
     property FetchSummaryPopup        fetchSummaryPopup:       null
+    property RemoteTargetPopup        remoteTargetPopup:       null
+    property ConfirmCommandDialog     confirmDialog:           null
+
+    property AppModel                 appModel:                null
+    property RemoteTargetPopup        remoteTargetPopup:       null
+    property ConfirmCommandDialog     confirmDialog:           null
+
+    property AppModel                 appModel:                null
+
 
     /* State
      * ****************************************************************************************/
@@ -29,107 +40,269 @@ Item {
     property var    pendingFetchRemoteNames: []
     property var    fetchBatchResults:       []
 
+    property var    target:                  ({})
+
+    readonly property var    remotes:    root.target.remotes || []
+    readonly property bool   hasRemotes: root.remotes.length > 0
+    readonly property string branch:     root.target.branch || ""
+    //! A branch with commits is checked out. Not "onBranch": QML reads on<Name> as a signal handler.
+    readonly property bool   isOnBranch: root.branch !== "" && root.target.unborn !== true
+    readonly property bool   pushBusy:   root.remoteController ? root.remoteController.pushInProgress : false
+
+    readonly property bool   canFetch:   root.hasRemotes && !root.isFetching
+    readonly property bool   canPull:    root.hasRemotes && root.isOnBranch
+    readonly property bool   canPush:    root.hasRemotes && root.isOnBranch && !root.pushBusy
+
+    readonly property string defaultRemote: root.target.defaultRemote || ""
+
+    readonly property bool   alwaysAskRemote: root.appModel?.appSettings?.generalSettings?.alwaysAskRemote ?? false
+
+    readonly property string fetchTooltip: {
+        if (root.isFetching)
+            return "Fetching…"
+        if (!root.hasRemotes)
+            return "No remotes yet. Add a remote first to fetch."
+        if (root.alwaysAskRemote)
+            return "Fetch - you choose all remotes or one each time"
+        return "Fetch all remotes (" + root.shortList(root.remotes.map(remote => remote.name)) + ")"
+    }
+
+    readonly property string pullTooltip: {
+        if (!root.hasRemotes)
+            return "No remotes yet. Add a remote first to pull."
+        if (root.target.detached)
+            return "HEAD is detached. Check out a branch to pull."
+        if (!root.isOnBranch)
+            return "This branch has no commits yet."
+        if (root.alwaysAskRemote)
+            return "Pull into '" + root.branch + "' - you choose the remote each time"
+        if (root.target.pullRemote)
+            return "Pull from " + root.target.pullRemote + "/" + root.target.pullBranch
+        return "Pull into '" + root.branch + "' - choose the remote branch"
+    }
+
+    readonly property string pushTooltip:      root.pushTooltipFor(false)
+    readonly property string forcePushTooltip: root.pushTooltipFor(true)
+
+    // Pending answers from the shared popups
+    property var    _authQueue:      []
+    property var    _authActive:     null
+    property var    _choiceCallback: null
+    property var    _confirmCallback: null
+
     /* Signal
      * ****************************************************************************************/
     signal fetchCompleted()
 
+    /* Children
+     * ****************************************************************************************/
+    Connections {
+        target: root.gitStateNotifier
+
+        function onRepositoryChanged() {
+            root.refreshTarget()
+        }
+    }
+
+    Connections {
+        target: root.remoteController
+
+        function onCurrentRepoChanged() {
+            root.refreshTarget()
+        }
+    }
+
+    Connections {
+        target: root.remoteTargetPopup
+
+        function onChosen(remote, branch, setUpstream, alwaysAsk) {
+            let callback = root._choiceCallback
+            root._choiceCallback = null
+
+            if (root.remoteTargetPopup.offerAlwaysAsk)
+                root.setAlwaysAskRemote(alwaysAsk)
+
+            if (callback)
+                callback(remote, branch, setUpstream)
+        }
+    }
+
+    Connections {
+        target: root.confirmDialog
+
+        function onConfirmed(context) {
+            let callback = root._confirmCallback
+            root._confirmCallback = null
+
+            if (callback && context && context.fromRemoteSession === true)
+                callback()
+        }
+    }
+
+    Component.onCompleted: root.refreshTarget()
+
     /* Functions
      * ****************************************************************************************/
-    function fetch() {
-        let remotesRes = remoteController.getRemotes()
-        if (!remotesRes.success || !remotesRes.data || remotesRes.data.length === 0) {
-            if (notificationController)
-                notificationController.error("No remotes configured", "Fetch", 5000)
+    //! Reads where pull and push go now, keeps it in `target` and returns it.
+    function refreshTarget() {
+        let res = root.remoteController ? root.remoteController.remoteTarget() : null
+        root.target = res && res.success ? res.data : ({})
+        return root.target
+    }
+
+    function pushTooltipFor(force) {
+        let verb = force ? "Force push" : "Push"
+
+        if (!root.hasRemotes)
+            return "No remotes yet. Add a remote first to push."
+        if (root.target.detached)
+            return "HEAD is detached. Check out a branch to push."
+        if (!root.isOnBranch)
+            return "Nothing to push yet. Make a first commit."
+        if (root.alwaysAskRemote)
+            return verb + " '" + root.branch + "' - you choose the remote each time"
+        if (root.target.pushRemote && root.target.pushBranch)
+            return verb + " to " + root.target.pushRemote + "/" + root.target.pushBranch
+                    + (root.target.pushRemote === root.defaultRemote ? " (default remote)" : "")
+                    + (root.target.publish ? " and track it as upstream" : "")
+        return verb + " '" + root.branch + "' - choose the remote branch"
+    }
+
+    function setAlwaysAskRemote(enabled) {
+        let settings = root.appModel?.appSettings?.generalSettings
+        if (!settings || settings.alwaysAskRemote === enabled)
+            return
+
+        settings.alwaysAskRemote = enabled
+        root.appModel.save()
+    }
+
+    function setDefaultRemote(remoteName) {
+        let res = root.remoteController ? root.remoteController.setDefaultRemote(remoteName) : null
+
+        // Writing git config raises no repositoryChanged, so pick the change up here
+        root.refreshTarget()
+
+        if (!root.notificationController || !res)
+            return
+
+        if (!res.success)
+            root.notificationController.error(res.errorMessage || "Failed to change the default remote", "Remote", 5000)
+        else if (remoteName)
+            root.notificationController.success("Push now goes to '" + remoteName + "' by default", "Default Remote", 3000)
+        else
+            root.notificationController.success("No default remote: Push follows each branch's upstream", "Default Remote", 3000)
+    }
+
+    function shortList(names) {
+        if (names.length <= 3)
+            return names.join(", ")
+
+        return names.slice(0, 3).join(", ") + " and " + (names.length - 3) + " more"
+    }
+
+    function remoteNamed(name) {
+        return root.remotes.find(remote => remote.name === name) || null
+    }
+
+    function needsToken(url) {
+        if (!url || !root.repositoryController)
+            return false
+
+        let protocol = root.repositoryController.detectGitProtocol(url)
+        return protocol === RepositoryController.GitProtocol.HTTPS
+            || protocol === RepositoryController.GitProtocol.HTTP
+    }
+
+    function credentialKey(url) {
+        let match = /^[a-z][a-z0-9+.-]*:\/\/(?:([^@\/]*)@)?([^\/:]+)(?::(\d+))?/i.exec(url || "")
+        if (!match)
+            return url || ""
+
+        return (match[1] ? match[1] + "@" : "") + match[2].toLowerCase() + (match[3] ? ":" + match[3] : "")
+    }
+
+    function branchChoices(target, forPush) {
+        let choices = []
+
+        if (target.upstreamRemote && target.upstreamBranch !== target.branch) {
+            let upstreamRemote = root.remoteNamed(target.upstreamRemote)
+            choices.push({
+                remote: target.upstreamRemote,
+                branch: target.upstreamBranch,
+                url:    upstreamRemote ? (forPush ? upstreamRemote.pushUrl : upstreamRemote.url) : "",
+                note:   "upstream"
+            })
+        }
+
+        for (let remote of target.remotes || []) {
+            let notes = []
+            if (remote.name === target.defaultRemote)
+                notes.push("default")
+            if (remote.name === target.upstreamRemote && target.branch === target.upstreamBranch)
+                notes.push("upstream")
+            if (!remote.hasBranch)
+                notes.push(forPush ? "new branch" : "not seen on this remote")
+
+            choices.push({
+                remote: remote.name,
+                branch: target.branch,
+                url:    forPush ? remote.pushUrl : remote.url,
+                note:   notes.join(" · ")
+            })
+        }
+
+        return choices
+    }
+
+    function indexOfChoice(choices, remote, branch) {
+        return Math.max(0, choices.findIndex(choice => choice.remote === remote && choice.branch === branch))
+    }
+
+    //! "origin/main" for a branch that tracks origin/main, empty when it tracks nothing.
+    function upstreamOf(target) {
+        return target.upstreamRemote ? target.upstreamRemote + "/" + target.upstreamBranch : ""
+    }
+
+    function canRunBranchOperation(title) {
+        let message = ""
+        if (!root.hasRemotes)
+            message = "This repository has no remotes yet. Add a remote first."
+        else if (root.target.detached)
+            message = "HEAD is detached. Check out a branch first."
+        else if (!root.isOnBranch)
+            message = "This branch has no commits yet."
+
+        if (message !== "" && root.notificationController)
+            root.notificationController.error(message, title, 5000)
+
+        return message === ""
+    }
+
+    function hostPopup(popup, host) {
+        if (popup && popup.hasOwnProperty("hostItem"))
+            popup.hostItem = host || null
+    }
+
+    function chooseTarget(options, host, onChosen) {
+        if (!root.remoteTargetPopup)
+            return
+
+        root._choiceCallback = onChosen
+        root.hostPopup(root.remoteTargetPopup, host)
+        root.remoteTargetPopup.ask(options)
+    }
+
+    function confirm(title, message, command, buttonText, host, onConfirmed) {
+        if (!root.confirmDialog) {
+            onConfirmed()
             return
         }
-        root.fetchBatchResults = []
-        let httpsRemotes = []
-        let httpsUrl = ""
-        let sshFailed = []
-        root.activeFetchRemotes = []
-        root.isFetching = true
-        for (let i = 0; i < remotesRes.data.length; i++) {
-            let remote = remotesRes.data[i]
-            let urlRes = remoteController.getRemoteUrl(remote.name)
-            if (!urlRes.success) {
-                sshFailed.push({ name: remote.name, message: urlRes.errorMessage || "No URL" })
-                continue
-            }
-            let url = urlRes.data.url
-            let protocol = repositoryController.detectGitProtocol(url)
-            switch (protocol) {
-            case RepositoryController.GitProtocol.SSH: {
-                    if (root.activeFetchRemotes.indexOf(remote.name) === -1)
-                        root.activeFetchRemotes.push(remote.name)
-                root.startFetch(remote.name)
-                break
-            }
-            case RepositoryController.GitProtocol.HTTPS:
-            case RepositoryController.GitProtocol.HTTP:
-                httpsRemotes.push(remote.name)
-                if (httpsUrl.length === 0)
-                    httpsUrl = url
-                break
-            default:
-                sshFailed.push({ name: remote.name, message: "Unsupported protocol" })
-            }
-        }
-        if (sshFailed.length > 0 && notificationController) {
-            let msg = sshFailed.map(f => f.name + ": " + f.message).join("; ")
-            notificationController.error(msg, "Fetch Error", 7000)
-        }
-        if (httpsRemotes.length > 0) {
-            root.pendingFetchRemoteNames = httpsRemotes
-            root.authPurpose = "fetch"
-            authConnection.enabled = true
-            userAuthenticationPopup.request("fetch", httpsRemotes.join(", "), httpsUrl)
-        }
-        if (httpsRemotes.length === 0 && root.activeFetchRemotes.length === 0)
-            root.isFetching = false
+
+        root._confirmCallback = onConfirmed
+        root.hostPopup(root.confirmDialog, host)
+        root.confirmDialog.ask(title, message, command, buttonText, { fromRemoteSession: true })
     }
-
-    function push(force) {
-        force = force || false
-
-        let urlRes = remoteController.getRemoteUrl("origin")
-        if (!urlRes.success) {
-            if (notificationController)
-                notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${force ? "Force Push" : "Push"} Error`, 5000)
-            return
-        }
-        let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
-        switch (protocol) {
-        case RepositoryController.GitProtocol.SSH: {
-            let branchName = branchController.getCurrentBranchName()
-            root.startPush(branchName, force)
-            if (notificationController)
-                notificationController.info("Push operation started", "Push", 3000)
-
-            break
-        }
-
-        // Fall-through: both HTTP/HTTPS require auth popup
-        case RepositoryController.GitProtocol.HTTPS:
-        case RepositoryController.GitProtocol.HTTP:
-            root.authPurpose = force ? "pushForce" : "push"
-            authConnection.enabled = true
-            userAuthenticationPopup.request(root.authPurpose, "origin", urlRes.data.url)
-            break
-        default:
-            if (notificationController)
-                notificationController.error("Unsupported protocol", `${force ? "Force Push" : "Push"} Error`, 5000)
-        }
-    }
-
-    function pushAndUpdate(force) {
-        root.push(force)
-    }
-
-    function pull(secret) {
-        let res = remoteController.getRemoteUrl("origin")
-        if (!res.success) {
-            if (notificationController)
-                notificationController.error(res.errorMessage || "Failed to get remote URL", "Pull Error", 5000)
             return
         }
         let url = res.data.url
