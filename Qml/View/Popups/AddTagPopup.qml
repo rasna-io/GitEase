@@ -372,8 +372,8 @@ PopupDialog {
 
         let command = GitCommandText.createTag(tagName, root.isAnnotated ? messageInput.text.trim() : "")
 
-        if (root.pushAfterCreate)
-            command += " && " + GitCommandText.pushTag(tagName)
+        if (root.pushAfterCreate && root.pushRemote !== "")
+            command += " && " + GitCommandText.pushTag(root.pushRemote, tagName)
 
         return command
     }
