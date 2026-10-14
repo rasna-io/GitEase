@@ -335,7 +335,8 @@ PopupDialog {
         }
 
         Text {
-            text: "Push to origin after creating"
+            text: root.pushRemote !== "" ? "Push to " + root.pushRemote + " after creating"
+                                         : "Push to a remote after creating"
             color: Style.colors.popupCheckboxLabelText
             font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.defaultPt
