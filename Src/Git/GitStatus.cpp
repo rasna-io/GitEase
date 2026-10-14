@@ -75,7 +75,7 @@ GitResult GitStatus::stageAll(bool includeUntrackedFiles)
     // Stage all unstaged files
     for (const GitFileStatus& file : files) {
         if (file.isUnstaged()) {
-            GitResult result = addToIndex(file.path(), file.status() == GitFileStatus::Deleted);  // Stage the unstaged file
+            GitResult result = addToIndex(file.path(), file.unstagedStatus() == GitFileStatus::Deleted);
             if (result.success()) {
                 stagedCount++;
                 stagedFiles.append(file.path());
