@@ -34,6 +34,8 @@ UtilitiesCard {
 
     property GuideController guideController: null
 
+    property RemoteOperationsSession remoteOperationsSession: null
+
     property bool isFetching: false
     property var activeFetchRemotes: []
     property string authPurpose: "fetch" // "fetch" | "pull"
@@ -109,7 +111,7 @@ UtilitiesCard {
                         targetProvider: function() { return listView },
                         icon: Style.icons.upload,
                         title: "Manage Remotes",
-                        description: "Every remote configured for this repository is listed here. Use the icons on each row to fetch, pull, or remove it, and right-click a remote to edit it."
+                        description: "Every remote configured for this repository is listed here. Use the icons on each row to fetch, pull, push or remove it. Right-click a remote to edit it, or to make it the default remote that Push uses."
                     },
                     {
                         targetProvider: function() { return addRemoteBtn },
