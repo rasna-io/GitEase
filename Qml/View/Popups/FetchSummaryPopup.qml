@@ -616,9 +616,6 @@ IPopup {
                 names.push(remote)
         }
 
-        if (names.length === 0)
-            return "origin"
-
         return names.join(", ")
     }
 
