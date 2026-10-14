@@ -489,5 +489,56 @@ void TestGitRemote::publishingPushSetsUpstream()
     QVERIFY(!target.value("publish").toBool());
 }
 
+void TestGitRemote::pullFollowsUpstreamOfThatRemote()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+
+    const QString sourcePath = QDir::fromNativeSeparators(dir.path() + "/source");
+    const QString consumerPath = QDir::fromNativeSeparators(dir.path() + "/consumer");
+
+    git_repository* sourceRepo = nullptr;
+    QVERIFY(initRepository(sourcePath, false, &sourceRepo));
+    QVERIFY(commitFiles(sourceRepo, { { "a.txt", "a1\n" } }, "first"));
+
+    git_repository* consumerRepo = nullptr;
+    QCOMPARE(git_clone(&consumerRepo, sourcePath.toUtf8().constData(),
+                       consumerPath.toUtf8().constData(), nullptr), GIT_OK);
+    const QString branch = currentBranchName(consumerRepo);
+
+    // The source moves on, on a branch called trunk
+    git_commit* first = nullptr;
+    git_oid firstId;
+    QCOMPARE(git_reference_name_to_id(&firstId, sourceRepo, "HEAD"), GIT_OK);
+    QCOMPARE(git_commit_lookup(&first, sourceRepo, &firstId), GIT_OK);
+    git_reference* trunk = nullptr;
+    QCOMPARE(git_branch_create(&trunk, sourceRepo, "trunk", first, 0), GIT_OK);
+    git_reference_free(trunk);
+    git_commit_free(first);
+    QCOMPARE(git_repository_set_head(sourceRepo, "refs/heads/trunk"), GIT_OK);
+    QVERIFY(commitFiles(sourceRepo, { { "a.txt", "a2\n" } }, "second"));
+
+    Repository consumerWrapper(consumerRepo);
+    GitRemote controller;
+    controller.setCurrentRepo(&consumerWrapper);
+    QVERIFY(controller.addRemote("upstream", sourcePath).success());
+    QVERIFY(controller.setUpstream(branch, "upstream", "trunk").success());
+
+    // Pulling from upstream without naming a branch follows the upstream: upstream/trunk
+    GitResult pull = controller.pull("upstream", QString(), QString(), false);
+    QVERIFY2(pull.success(), qPrintable(pull.errorMessage()));
+    QCOMPARE(pull.data().toMap().value("remoteBranch").toString(), QString("trunk"));
+    QCOMPARE(pull.data().toMap().value("status").toString(), QString("Fast-forward"));
+    QCOMPARE(headOid(consumerRepo), headOid(sourceRepo));
+    QCOMPARE(readTextFile(consumerPath + "/a.txt"), QByteArray("a2\n"));
+
+    // Origin is not the upstream, so there the branch's own name is used, which trunk is not
+    GitResult fromOrigin = controller.pull("origin");
+    QVERIFY(fromOrigin.success());
+    QCOMPARE(fromOrigin.data().toMap().value("remoteBranch").toString(), branch);
+
+    git_repository_free(sourceRepo);
+}
+
 QTEST_MAIN(TestGitRemote)
 #include "TestGitRemote.moc"
