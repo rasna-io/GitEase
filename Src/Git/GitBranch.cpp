@@ -499,6 +499,14 @@ QString GitBranch::getDisplayBranchName()
     return sha;
 }
 
+bool GitBranch::isHeadDetached() const
+{
+    if (!m_currentRepo || !activeRepo())
+        return false;
+
+    return git_repository_head_detached(activeRepo()) == 1;
+}
+
 QString GitBranch::formatRefName(const QString &branchName)
 {
     QString name = branchName;
