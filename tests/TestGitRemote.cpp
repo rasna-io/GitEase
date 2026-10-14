@@ -584,5 +584,36 @@ void TestGitRemote::tagPushUsesTheGivenRemote()
     QVERIFY2(missing.errorMessage().contains("'origin' not found"), qPrintable(missing.errorMessage()));
 }
 
+void TestGitRemote::rejectedTokenIsNotReplayed()
+{
+    GitHttpsAuth auth("ghp_token");
+    git_push_options options;
+    QCOMPARE(git_push_options_init(&options, GIT_PUSH_OPTIONS_VERSION), GIT_OK);
+    auth.applyPush(options);
+    QVERIFY(options.callbacks.credentials);
+
+    GitRepository::GitPayload payload { nullptr, &auth };
+    const char* url = "https://github.com/owner/repo.git";
+
+    // The first request gets the token
+    git_credential* credential = nullptr;
+    QCOMPARE(options.callbacks.credentials(&credential, url, nullptr, GIT_CREDENTIAL_USERPASS_PLAINTEXT, &payload), 0);
+    QVERIFY(credential);
+    git_credential_free(credential);
+    QVERIFY(!auth.tokenRejected());
+
+    // libgit2 asks again for the same URL only after the server refused it: fail instead of replaying
+    credential = nullptr;
+    QCOMPARE(options.callbacks.credentials(&credential, url, nullptr, GIT_CREDENTIAL_USERPASS_PLAINTEXT, &payload),
+             static_cast<int>(GIT_EAUTH));
+    QVERIFY(!credential);
+    QVERIFY(auth.tokenRejected());
+
+    const QString message = GitHttpsAuth::rejectedTokenMessage("myself", url, true);
+    QVERIFY2(message.startsWith("github.com did not accept the token for 'myself'"), qPrintable(message));
+    QVERIFY2(message.contains("allowed to push to owner/repo"), qPrintable(message));
+    QVERIFY2(message.contains("\"repo\" scope"), qPrintable(message));
+}
+
 QTEST_MAIN(TestGitRemote)
 #include "TestGitRemote.moc"
