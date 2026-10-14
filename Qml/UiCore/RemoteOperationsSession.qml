@@ -26,17 +26,11 @@ Item {
     property ConfirmCommandDialog     confirmDialog:           null
 
     property AppModel                 appModel:                null
-    property RemoteTargetPopup        remoteTargetPopup:       null
-    property ConfirmCommandDialog     confirmDialog:           null
-
-    property AppModel                 appModel:                null
-
 
     /* State
      * ****************************************************************************************/
     property bool   isFetching:              false
     property var    activeFetchRemotes:      []
-    property string authPurpose:             "push"  // "push" | "pushForce" | "fetch" | "pull"
     property var    pendingFetchRemoteNames: []
     property var    fetchBatchResults:       []
 
@@ -528,6 +522,7 @@ Item {
         let target = root.refreshTarget()
         if (!root.canRunBranchOperation("Pull"))
             return
+
         if (target.pullRemote && !root.alwaysAskRemote) {
             root.runPull(target.pullRemote, target.pullBranch, false, host)
             return
