@@ -391,22 +391,18 @@ PopupDialog {
         let res = ctrl.create(tagName, commitToTag, tagMessage);
 
         if (res && res.success) {
-            if (root.pushAfterCreate) {
-                if (notif) notif.info("Pushing tag to GitHub...", "Tag", 1500);
+            if (root.pushAfterCreate && root.remoteOperationsSession) {
+                root.remoteOperationsSession.pushTag(tagName, function(pushResult, remote) {
+                    if (!notif)
+                        return
 
-                                AsyncGit.call(ctrl, "pushTag", [tagName],
-                                    function(pushResult) {
-                                        if (pushResult.success) {
-                                            if (notif) notif.success("Tag created and pushed", "Success", 3000);
-                                        } else {
-                                            if (notif) notif.warning("Tag created locally but failed to push", "Sync Warning", 5000);
-                                        }
-                                    },
-                                    function(error) {
-                                        if (notif) notif.warning("Tag created locally but failed to push", "Sync Warning", 5000);
-                                    }
-                                );
-                            }
+                    if (pushResult.success)
+                        notif.success("Tag created and pushed to " + remote, "Success", 3000);
+                    else
+                        notif.warning("Tag created locally but failed to push to " + remote + ": " + pushResult.errorMessage,
+                                      "Sync Warning", 5000);
+                });
+            }
 
             root.tagCreatedSuccessfully();
             root.close();
