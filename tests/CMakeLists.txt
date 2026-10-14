@@ -57,6 +57,7 @@ add_library(gitease_git_backend_test_support STATIC
     ${CMAKE_SOURCE_DIR}/Src/Git/GitConfig.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/GitStash.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/GitBundle.cpp
+    ${CMAKE_SOURCE_DIR}/Src/Git/GitTag.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/Auth/GitHttpsAuth.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/Auth/GitSshAuth.cpp
     ${CMAKE_SOURCE_DIR}/Src/Git/Utilities/GitProtocolDetector.cpp
