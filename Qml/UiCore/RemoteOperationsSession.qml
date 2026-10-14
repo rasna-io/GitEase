@@ -523,59 +523,70 @@ Item {
 
         root.fetchBatchResults = []
     }
+
+    function pull(host) {
+        let target = root.refreshTarget()
+        if (!root.canRunBranchOperation("Pull"))
+            return
+        if (target.pullRemote && !root.alwaysAskRemote) {
+            root.runPull(target.pullRemote, target.pullBranch, false, host)
             return
         }
 
-        let args = token !== undefined ? ["origin", branchName, token, force] : ["origin", branchName, force]
-        AsyncGit.call(root.remoteController, "push", args,
-            function(result) { root.handlePushResult(result) },
-            function(error) { root.handlePushResult({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
-        )
+        let choices = root.branchChoices(target, false)
+        let preselect = target.pullRemote
+                ? root.indexOfChoice(choices, target.pullRemote, target.pullBranch)
+                : root.indexOfChoice(choices, target.suggestedRemote, target.branch)
+
+        root.chooseTarget({
+            operation:       "pull",
+            subject:         target.branch,
+            message:         target.pullRemote
+                             ? "Choose where to pull '" + target.branch + "' from."
+                             : "'" + target.branch + "' has no upstream branch yet. Choose where to pull it from.",
+            choices:         choices,
+            selectedIndex:   preselect,
+            offerUpstream:   true,
+            setUpstream:     target.upstreamRemote === "",
+            currentUpstream: root.upstreamOf(target),
+            defaultRemote:   target.defaultRemote,
+            offerAlwaysAsk:  true,
+            alwaysAsk:       root.alwaysAskRemote
+        }, host, function(remote, remoteBranch, setUpstream) {
+            root.runPull(remote, remoteBranch, setUpstream, host)
+        })
     }
 
-    function handlePushResult(gitResult) {
-            root.isFetching = false
+    function pullAndUpdate(host) {
+        root.pull(host)
+    }
 
-            if (!root.notificationController)
-                return
-
-        if (gitResult && gitResult.stale === true) {
-            root.notificationController.info("Push finished for the repository you switched away from", "Push", 4000)
-            return
-        }
-
-        let success = gitResult ? gitResult.success : false
-
-        if (success) {
-            let data = gitResult.data
-            let isForce = data && data.force === true
-                root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Force Push" : "Push", 3000)
-            } else {
-            root.notificationController.error((gitResult && gitResult.errorMessage) || "Push error", "Push Error", 5000)
-            }
-        }
-
-    function startPull(remoteName, branchName, token) {
-        let args = token !== undefined ? [remoteName, branchName, token] : [remoteName, branchName]
-        AsyncGit.call(root.remoteController, "pull", args,
-            function(result) { root.handlePullResult(result) },
-            function(error) { root.handlePullResult({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
-        )
+    function runPull(remote, remoteBranch, setUpstream, host) {
+        root.withCredentials("pull", remote, false, host, function(token) {
+            AsyncGit.call(root.remoteController, "pull", [remote, remoteBranch, token, setUpstream],
+                function(result) { root.handlePullResult(result) },
+                function(error) { root.handlePullResult({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
+            )
+        })
     }
 
     function handlePullResult(gitResult) {
-            if (!root.notificationController)
-                return
+        if (!root.notificationController)
+            return
 
         if (gitResult && gitResult.stale === true) {
             root.notificationController.info("Pull finished for the repository you switched away from", "Pull", 4000)
             return
         }
 
-        if (gitResult && gitResult.success)
-                root.notificationController.success("Pulled successfully", "Pull", 3000)
-            else
+        if (gitResult && gitResult.success) {
+            let data = gitResult.data || {}
+            let source = data.remote + "/" + data.remoteBranch
+            let upToDate = data.status === "Already up to date"
+            root.notificationController.success(upToDate ? "Already up to date with " + source : "Pulled from " + source, "Pull", 3000)
+        } else {
             root.notificationController.error((gitResult && gitResult.errorMessage) || "Pull failed", "Pull Error", 5000)
+        }
     }
 
     // Gated so it only reacts when THIS session itself opened the shared auth popup — otherwise
