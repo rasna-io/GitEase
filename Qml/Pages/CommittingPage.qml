@@ -625,8 +625,8 @@ Page {
         root.remoteOperationsSession?.pushAndUpdate(force)
     }
 
-    function pull(secret) {
-        root.remoteOperationsSession?.pull(secret)
+    function pull() {
+        root.remoteOperationsSession?.pull()
     }
 
     function pullAndUpdate() {
