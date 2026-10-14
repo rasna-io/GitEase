@@ -88,29 +88,22 @@ UtilitiesCard {
         })
     }
 
-    function performDeleteTagRemote(tag) {
-        if (!root.tagController)
+    function performDeleteTagRemote(tag, remote) {
+        if (!root.tagController || !root.remoteOperationsSession)
             return
 
         if (root.notificationController)
-            root.notificationController.info("Deleting tag from remote...", "Remote", 1500);
+            root.notificationController.info("Deleting tag from " + remote + "...", "Remote", 1500);
 
-        AsyncGit.call(root.tagController, "pushDeleteTag", [tag.name],
-            function(result) {
-                if (result.success) {
-                    if (root.notificationController)
-                        root.notificationController.success("Tag deleted from remote", "Success", 3000);
-                    root.tagController.remove(tag.name);
-                } else {
-                    if (root.notificationController)
-                        root.notificationController.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
-                }
-            },
-            function(error) {
+        root.remoteOperationsSession.deleteRemoteTag(remote, tag.name, function(result) {
+            if (result.success) {
                 if (root.notificationController)
-                    root.notificationController.error("Failed to delete from remote: " + error, "Error", 5000);
+                    root.notificationController.success("Tag deleted from " + remote, "Success", 3000);
+                root.tagController.remove(tag.name);
+            } else if (root.notificationController) {
+                root.notificationController.error("Failed to delete from " + remote + ": " + result.errorMessage, "Error", 5000);
             }
-        );
+        })
     }
 
     function pushTagToRemote(tag) {
