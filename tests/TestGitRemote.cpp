@@ -615,5 +615,74 @@ void TestGitRemote::rejectedTokenIsNotReplayed()
     QVERIFY2(message.contains("\"repo\" scope"), qPrintable(message));
 }
 
+void TestGitRemote::defaultRemoteDecidesWherePushGoes()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString originPath = createBareRemote(dir, "origin.git");
+    const QString upstreamPath = createBareRemote(dir, "upstream.git");
+    const QString forkPath = createBareRemote(dir, "fork.git");
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+    const QString branch = currentBranchName(repo);
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+    QVERIFY(controller.addRemote("origin", originPath).success());
+    QVERIFY(controller.addRemote("upstream", upstreamPath).success());
+    QVERIFY(controller.addRemote("fork", forkPath).success());
+
+    // Several remotes and no upstream: nothing decides yet
+    QVariantMap target = remoteTargetOf(controller);
+    QVERIFY(target.value("defaultRemote").toString().isEmpty());
+    QVERIFY(target.value("pushRemote").toString().isEmpty());
+
+    QStringList commands;
+    connect(&controller, &IGitController::gitCommandGenerated, this,
+            [&commands](const QString& command) { commands << command; });
+
+    // A default remote decides push and, without an upstream, pull
+    GitResult set = controller.setDefaultRemote("fork");
+    QVERIFY2(set.success(), qPrintable(set.errorMessage()));
+    QCOMPARE(configValue(repo, "remote.pushDefault"), QString("fork"));
+    QVERIFY(commands.contains("git config remote.pushDefault \"fork\""));
+
+    target = remoteTargetOf(controller);
+    QCOMPARE(target.value("defaultRemote").toString(), QString("fork"));
+    QCOMPARE(target.value("pushRemote").toString(), QString("fork"));
+    QCOMPARE(target.value("pushBranch").toString(), branch);
+    QCOMPARE(target.value("pullRemote").toString(), QString("fork"));
+    QCOMPARE(target.value("suggestedRemote").toString(), QString("fork"));
+
+    // It also wins over the upstream for push, the way git's remote.pushDefault does; pull keeps
+    // following the upstream
+    QVERIFY(controller.push("upstream", branch, branch, QString(), false, true).success());
+    target = remoteTargetOf(controller);
+    QCOMPARE(target.value("upstreamRemote").toString(), QString("upstream"));
+    QCOMPARE(target.value("pushRemote").toString(), QString("fork"));
+    QCOMPARE(target.value("pullRemote").toString(), QString("upstream"));
+
+    // Changing it is a matter of setting another one
+    QVERIFY(controller.setDefaultRemote("origin").success());
+    QCOMPARE(remoteTargetOf(controller).value("pushRemote").toString(), QString("origin"));
+
+    // Clearing it gives the upstream back, and clearing twice is fine
+    QVERIFY(controller.setDefaultRemote(QString()).success());
+    QVERIFY(controller.setDefaultRemote(QString()).success());
+    QVERIFY(configValue(repo, "remote.pushDefault").isEmpty());
+    QVERIFY(commands.contains("git config --unset remote.pushDefault"));
+    target = remoteTargetOf(controller);
+    QVERIFY(target.value("defaultRemote").toString().isEmpty());
+    QCOMPARE(target.value("pushRemote").toString(), QString("upstream"));
+
+    // A remote that does not exist cannot be the default
+    GitResult missing = controller.setDefaultRemote("nope");
+    QVERIFY(!missing.success());
+    QVERIFY2(missing.errorMessage().contains("'nope' not found"), qPrintable(missing.errorMessage()));
+}
+
 QTEST_MAIN(TestGitRemote)
 #include "TestGitRemote.moc"
