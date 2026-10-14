@@ -1217,8 +1217,9 @@ DetachablePanel {
             fullHash            : commitData.hash,
             commitMessage       : commitData.message || "",
             commitDate          : commitData.authorDate || "",
-            pushEnabled         : !remoteController.pushInProgress && isHead && !!currentBranch,
+
             localBranches       : localBranches,
+            pushEnabled         : isHead && (root.remoteOperationsSession?.canPush ?? false),
             isStash             : commitData.isStash || false,
             canCherryPick       : root.canCherryPick(commitData),
             canRebase           : root.canRebaseOnto(commitData, currentBranch),
