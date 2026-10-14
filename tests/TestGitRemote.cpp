@@ -5,8 +5,10 @@
 
 #include <git2.h>
 
+#include "Git/Auth/GitHttpsAuth.h"
 #include "Git/GitRemote.h"
 #include "Git/GitResult.h"
+#include "Git/GitTag.h"
 #include "Git/Models/Repository.h"
 
 namespace {
@@ -338,11 +340,9 @@ void TestGitRemote::pushFetchAndUpstreamWork()
 
     QVERIFY(localController.addRemote("origin", QDir::fromNativeSeparators(remotePath)).success());
 
-    QSignalSpy pushSpy(&localController, &GitRemote::pushFinished);
-    GitResult pushStart = localController.push("origin", branch, "dummy-token", false);
-    QVERIFY(pushStart.success());
-    QVERIFY(pushSpy.wait(5000));
-    QVERIFY(pushSpy.at(0).at(0).toMap().value("success").toBool());
+    GitResult push = localController.push("origin", branch, "dummy-token", false);
+    QVERIFY2(push.success(), qPrintable(push.errorMessage()));
+    QCOMPARE(push.data().toMap().value("remote").toString(), QString("origin"));
 
     git_reference* remoteBranch = nullptr;
     QCOMPARE(git_branch_lookup(&remoteBranch,
@@ -371,13 +371,11 @@ void TestGitRemote::pushFetchAndUpstreamWork()
     QVERIFY(consumerController.addRemote("origin", QDir::fromNativeSeparators(remotePath)).success());
 
     GitResult autoFetch = consumerController.fetch("origin");
-    QVERIFY(!autoFetch.success());
+    QVERIFY2(autoFetch.success(), qPrintable(autoFetch.errorMessage()));
 
-    QSignalSpy fetchSpy(&consumerController, &GitRemote::fetchFinished);
-    GitResult fetchStart = consumerController.fetchWithToken("origin", "dummy-token");
-    QVERIFY(fetchStart.success());
-    QVERIFY(fetchSpy.wait(5000));
-    QVERIFY(fetchSpy.at(0).at(0).toMap().value("success").toBool());
+    GitResult fetch = consumerController.fetchWithToken("origin", "dummy-token");
+    QVERIFY2(fetch.success(), qPrintable(fetch.errorMessage()));
+    QCOMPARE(fetch.data().toMap().value("remote").toString(), QString("origin"));
 
     git_reference* trackingRef = nullptr;
     const QByteArray trackingName = QString("refs/remotes/origin/%1").arg(branch).toUtf8();
@@ -441,7 +439,10 @@ void TestGitRemote::noRepositoryValidation()
     QVERIFY(!controller.addRemote("origin", "https://example.com/repo.git").success());
     QVERIFY(!controller.removeRemote("origin").success());
     QVERIFY(!controller.push("origin", "main", "token", false).success());
+    QVERIFY(!controller.push("origin", "main", "main", "token", false, true).success());
     QVERIFY(!controller.fetch("origin").success());
+    QVERIFY(!controller.remoteTarget().success());
+    QVERIFY(!controller.setUpstream("main", "origin", "main").success());
 }
 
 QTEST_MAIN(TestGitRemote)
