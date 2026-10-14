@@ -398,6 +398,13 @@ IPopup {
                                             isInPopup: true
                                         },
                                         {
+                                            targetProvider: function() { return alwaysAskRemote },
+                                            icon: Style.icons.arrowUp,
+                                            title: "Always Ask Which Remote",
+                                            description: "Off: Fetch gets all remotes, Pull follows the branch's upstream, and Push goes to the default remote or the upstream; you are only asked when nothing decides. On: every fetch, pull and push lets you pick the remote. Set the default remote by right-clicking a remote in the Remotes panel.",
+                                            isInPopup: true
+                                        },
+                                        {
                                             targetProvider: function() { return defaultPath },
                                             icon: Style.icons.folder,
                                             title: "Default Path",
@@ -452,6 +459,21 @@ IPopup {
                                     title: "Auto Update"
                                     description: "Reload graph view after each change, otherwise use the reload button"
                                     checked: root.appSettings?.generalSettings?.autoUpdate ?? true
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 2
+                                    Layout.alignment: Qt.AlignHCenter
+                                    color: Style.colors.primaryBorder
+                                }
+
+                                CheckboxItem {
+                                    id: alwaysAskRemote
+                                    Layout.fillWidth: true
+                                    title: "Always Ask Which Remote"
+                                    description: "Choose the remote on every fetch, pull and push instead of the defaults"
+                                    checked: root.appSettings?.generalSettings?.alwaysAskRemote ?? false
                                 }
 
                                 Rectangle {
@@ -1015,6 +1037,7 @@ IPopup {
         root.appSettings.generalSettings.showAvatar = displayAvatar.checked
         root.appSettings.generalSettings.showStashNodes = displayStashNodes.checked
         root.appSettings.generalSettings.autoUpdate = autoUpdate.checked
+        root.appSettings.generalSettings.alwaysAskRemote = alwaysAskRemote.checked
         root.appSettings.generalSettings.defaultPath = defaultPath.text
         root.appSettings.appearanceSettings.currentTheme = theme.cmb.displayText
         root.appSettings.appearanceSettings.reducedMotion = reducedMotion.checked
@@ -1042,6 +1065,7 @@ IPopup {
         displayAvatar.checked = root.appSettings?.generalSettings?.showAvatar
         displayStashNodes.checked = root.appSettings?.generalSettings?.showStashNodes
         autoUpdate.checked = root.appSettings?.generalSettings?.autoUpdate ?? true
+        alwaysAskRemote.checked = root.appSettings?.generalSettings?.alwaysAskRemote ?? false
         defaultPath.text = root.appSettings.generalSettings.defaultPath
 
         theme.cmb.currentIndex = theme.cmb.model.indexOf(root.appSettings.appearanceSettings.currentTheme)
