@@ -16,6 +16,12 @@ UtilitiesCard {
     icon: Style.icons.clock
     badgeCount: activityController ? activityController.activities.length : 0
 
+    readonly property var filteredActivities: root.filterItems(
+        root.activityController ? root.activityController.activities : [],
+        function(activity) { return activity.command })
+    contentMatchesFilter: root.filteredActivities.length > 0
+    filteredCount: root.filteredActivities.length
+
     content: ColumnLayout {
         anchors.fill: parent
         spacing: 8
@@ -62,7 +68,7 @@ UtilitiesCard {
                 height: Math.min(contentHeight, 220)
                 spacing: Style.dp(2)
                 clip: true
-                model: activityController.activities
+                model: root.filteredActivities
 
                 delegate: Rectangle {
                     width: listView.width

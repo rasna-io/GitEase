@@ -86,16 +86,19 @@ RowLayout {
     TextField {
         id: textFilterField
         placeholderTextColor: Style.colors.descriptionText
-        backgroundColor: hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+        hoverEnabled: true
+        backgroundColor: hovered ? Style.colors.headerButtonBackgroundHover
+                                 : Style.colors.headerButtonBackground
+        borderColor: Style.colors.headerButtonBorder
         Layout.preferredWidth: 300
-        minHeight: 27
+        minHeight: 25
         placeholderText: "Search plugins"
         text: headerRow.filterText
         font.family: Style.fontTypes.inter
         font.weight: 400
         font.pixelSize: Style.appFont.captionPt
         borderRadius: 5
-        borderWidth: 0
+        borderWidth: 1
         focusBorderWidth: 1
         onTextChanged: {
             headerRow.filterText = text

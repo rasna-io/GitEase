@@ -44,6 +44,13 @@ UtilitiesCard {
     icon: Style.icons.archive
     badgeCount: root.stashes.length
 
+    readonly property var filteredStashes: root.filterItems(root.stashes, function(stash) {
+        return [stash.message, root.stashBranch(stash), root.stashBaseId(stash),
+                "stash@{" + stash.index + "}"].join(" ")
+    })
+    contentMatchesFilter: root.filteredStashes.length > 0
+    filteredCount: root.filteredStashes.length
+
     /* Children
      * ****************************************************************************************/
     content: ColumnLayout {
@@ -111,7 +118,7 @@ UtilitiesCard {
             Layout.preferredHeight: Math.min(contentHeight, Style.dp(300))
             spacing: Style.dp(6)
             clip: true
-            model: root.stashes
+            model: root.filteredStashes
 
             delegate: StashCard {
                 width: stashListView.width

@@ -40,8 +40,6 @@ Page {
     property TagController           tagController           : null
     property ResetController         resetController         : null
     property TerminalController      terminalController      : null
-    property BundleController        bundleController        : null
-    property ActivityController      activityController      : null
     property var                     pluginController        : null
     property LayoutController        layoutController        : null
     property GuideController         guideController         : null
@@ -49,8 +47,7 @@ Page {
     property GitStateNotifier        gitStateNotifier        : null
     readonly property bool           autoUpdate              : root.appModel?.appSettings?.generalSettings?.autoUpdate ?? true
 
-    // Utility panel (moved in from the old UtilitiesPage), open by default.
-    property bool                    utilityPanelOpen        : false
+    signal utilityPanelReloadRequested()
 
     property alias                   graphRef                : commitGraph
 
@@ -75,11 +72,8 @@ Page {
             branchFilter: root.graphRef ? root.graphRef.branchFilter : (root.activePageState()?.commitGraph?.branchFilter || "")
             navigationRule: root.graphRef ? root.graphRef.navigationRule : (root.activePageState()?.commitGraph?.navigationRule || navigationRules[0])
             guideController: root.guideController
-            panelOpen: root.utilityPanelOpen
             remoteController: root.remoteController
             isFetching: root.isFetching
-
-            onPanelToggleRequested: root.utilityPanelOpen = !root.utilityPanelOpen
 
             onPullRequested: root.pullAndUpdate()
 
@@ -249,29 +243,6 @@ Page {
             }
         }
 
-        // Utility panel (moved in from the old UtilitiesPage), toggled from GraphViewHeader.
-        UtilityPanel {
-            id: utilityPanel
-            open: root.utilityPanelOpen
-
-            branchController        : root.branchController
-            remoteController        : root.remoteController
-            repositoryController    : root.repositoryController
-            commitController        : root.commitController
-            statusController        : root.statusController
-            stashController         : root.stashController
-            tagController           : root.tagController
-            rebaseController        : root.rebaseController
-            conflictController      : root.conflictController
-            bundleController        : root.bundleController
-            activityController      : root.activityController
-            notificationController  : root.notificationController
-            guideController         : root.guideController
-            userAuthenticationPopup : root.userAuthenticationPopup
-            uiSessionPopups         : root.uiSessionPopups
-            pluginController        : root.pluginController
-            gitStateNotifier        : root.gitStateNotifier
-        }
     }
 
     /* Functions
@@ -407,12 +378,10 @@ Page {
     //! Everything the page shows, from the header reload button.
     function reload() {
         root.reloadGraph()
-        utilityPanel.reload()
+        root.utilityPanelReloadRequested()
     }
 
     function onPageActivated() {
-        utilityPanel.reload()
-
         if (root.autoUpdate)
             root.reloadGraph()
     }
