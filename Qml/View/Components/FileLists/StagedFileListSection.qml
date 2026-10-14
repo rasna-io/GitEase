@@ -61,7 +61,7 @@ FileListSection {
     rowDelegate: Component {
         StagedFileListRow {
             text: rowModelData && rowModelData.path ? rowModelData.path : ""
-            status: rowModelData && rowModelData.status ? rowModelData.status : GitFileStatus.Unknown
+            status: rowModelData && rowModelData.stagedStatus ? rowModelData.stagedStatus : GitFileStatus.Unknown
             selected: root.selectedFilePath !== "" && root.selectedFilePath === (rowModelData && rowModelData.path ? rowModelData.path : "")
 
             onClicked: root.selectFile(text)
