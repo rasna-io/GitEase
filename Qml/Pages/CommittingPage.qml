@@ -67,6 +67,7 @@ Page {
         remoteController: root.remoteController
         guideController: root.guideController
         gitStateNotifier: root.gitStateNotifier
+        remoteOperationsSession: root.remoteOperationsSession
 
         onPullRequested: root.pullAndUpdate()
         onPushRequested: function(force) { root.pushAndUpdate(force) }
