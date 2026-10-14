@@ -107,27 +107,18 @@ UtilitiesCard {
     }
 
     function pushTagToRemote(tag) {
-        if (!root.tagController)
+        if (!root.tagController || !root.remoteOperationsSession)
             return
 
-        if (root.notificationController)
-            root.notificationController.info("Pushing tag to remote...", "Tag", 1500);
+        root.remoteOperationsSession.pushTag(tag.name, function(result, remote) {
+            if (!root.notificationController)
+                return
 
-        AsyncGit.call(root.tagController, "pushTag", [tag.name],
-            function(result) {
-                if (result.success) {
-                    if (root.notificationController)
-                        root.notificationController.success("Tag pushed to remote", "Success", 3000)
-                } else {
-                    if (root.notificationController)
-                        root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
-                }
-            },
-            function(error) {
-                if (root.notificationController)
-                    root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
-            }
-        );
+            if (result.success)
+                root.notificationController.success("Tag pushed to " + remote, "Success", 3000)
+            else
+                root.notificationController.warning("Failed to push tag to " + remote + ": " + result.errorMessage, "Sync Warning", 5000);
+        })
     }
 
     function copyTagName(tag) {
