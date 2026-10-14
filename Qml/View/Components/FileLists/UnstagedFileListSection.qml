@@ -75,13 +75,13 @@ FileListSection {
     rowDelegate: Component {
         UnstagedFileListRow {
             text: rowModelData && rowModelData.path ? rowModelData.path : ""
-            status: rowModelData && rowModelData.status ? rowModelData.status : GitFileStatus.Unknown
+            status: rowModelData && rowModelData.unstagedStatus ? rowModelData.unstagedStatus : GitFileStatus.Unknown
             selected: root.selectedFilePath !== "" && root.selectedFilePath === (rowModelData && rowModelData.path ? rowModelData.path : "")
 
-            onClicked: root.selectFile(text, rowModelData.status)
+            onClicked: root.selectFile(text, status)
 
             onStageRequested: function(filePath, isDeleted) {
-                root.stageFileRequested(filePath, rowModelData.status === GitFileStatus.Deleted)
+                root.stageFileRequested(filePath, status === GitFileStatus.Deleted)
             }
 
             onDiscardRequested: function(filePath) {
