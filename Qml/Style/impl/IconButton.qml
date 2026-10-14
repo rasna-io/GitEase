@@ -17,7 +17,8 @@ import GitEase_Style
  * Style.colors so it matches the rest of the app's theme.
  *
  * Set `tooltip` for a hover tooltip, and `maximumWidth` to cap the label's width and have
- * it marquee-scroll on hover instead of eliding (handy for long branch/file names).
+ * it marquee-scroll on hover instead of eliding (handy for long branch/file names). A disabled
+ * button can still explain itself through `hoveredWhileDisabled`.
  * ************************************************************************************************/
 T.Button {
     id: control
@@ -29,6 +30,8 @@ T.Button {
 
     property string tooltip:      ""
     property real   maximumWidth: -1
+
+    property bool   hoveredWhileDisabled: false
 
     property color  backgroundColor:      Style.colors.secondaryBackground
     property color  hoverBackgroundColor: Style.colors.cardBackground
@@ -148,7 +151,8 @@ T.Button {
     }
 
     ToolTip {
-        visible: control.hovered && control.tooltip !== ""
+        visible: (control.hovered || (!control.enabled && control.hoveredWhileDisabled))
+                 && control.tooltip !== ""
         text: control.tooltip
         delay: 600
         x: (parent.width - width) / 2
