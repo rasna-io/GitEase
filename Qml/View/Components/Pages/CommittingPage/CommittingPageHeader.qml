@@ -19,6 +19,7 @@ RowLayout {
     property          RemoteController       remoteController:          null
     property          GuideController        guideController:           null
     property          GitStateNotifier       gitStateNotifier:          null
+    property          RemoteOperationsSession remoteOperationsSession:  null
     readonly property bool                   compact:                   parent.width < 550
 
     /* Object Properties
@@ -39,6 +40,10 @@ RowLayout {
     TextEdit {
         id: clipboardHelper
         visible: false
+    }
+
+    HoverHandler {
+        id: rowHover
     }
 
     IconButton {
@@ -366,5 +371,14 @@ RowLayout {
             })
             return steps
         }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function isHovered(item) {
+        if (!rowHover.hovered || !item)
+            return false
+
+        return item.contains(item.mapFromItem(headerRow, rowHover.point.position))
     }
 }
