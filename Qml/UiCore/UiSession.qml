@@ -222,11 +222,16 @@ QtObject {
 
     property RemoteOperationsSession remoteOperationsSession: RemoteOperationsSession {
         remoteController:        root.remoteController
+        tagController:           root.tagController
         repositoryController:    root.repositoryController
         branchController:        root.branchController
         notificationController:  root.notificationController
+        gitStateNotifier:        root.gitStateNotifier
         userAuthenticationPopup: root.popups?.userAuthenticationPopup
         fetchSummaryPopup:       root.popups?.fetchSummaryPopup
+        remoteTargetPopup:       root.popups?.remoteTargetPopup
+        confirmDialog:           root.popups?.remoteConfirmDialog
+        appModel:                root.appModel
 
         onFetchCompleted: root.gitStateNotifier.notifyChanged()
     }
