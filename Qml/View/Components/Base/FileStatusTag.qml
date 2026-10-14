@@ -8,7 +8,7 @@ import GitEase_Style_Impl
 /*! ***********************************************************************************************
  * FileStatusTag
  * Reusable change-status tag for a file.
- * - compact  : single colored letter (M / A / D / R / U), no background
+ * - compact  : single colored letter (M / A / D / R / U / C), no background
  * - expanded : full word ("Modified", ...) on a colored rounded background
  *
  * Feed it one of the two GitFileStatus enum families:
@@ -48,6 +48,7 @@ Rectangle {
         case GitFileStatus.Renamed:
         case GitFileStatus.StagedRenamed:   return "renamed"
         case GitFileStatus.Untracked:       return "untracked"
+        case GitFileStatus.Conflicted:      return "conflicted"
         }
         return ""
     }
@@ -59,6 +60,7 @@ Rectangle {
         case "modified":    return "M"
         case "renamed":     return "R"
         case "untracked":   return "U"
+        case "conflicted":  return "C"
         }
         return ""
     }
@@ -70,6 +72,7 @@ Rectangle {
         case "modified":    return "Modified"
         case "renamed":     return "Renamed"
         case "untracked":   return "Untracked"
+        case "conflicted":  return "Conflicted"
         }
         return ""
     }
@@ -81,6 +84,7 @@ Rectangle {
         case "modified":    return Style.colors.modifiediedFile
         case "renamed":     return Style.colors.renamedFile
         case "untracked":   return Style.colors.untrackedFile
+        case "conflicted":  return Style.colors.conflictMarker
         }
         return "transparent"
     }
