@@ -540,5 +540,49 @@ void TestGitRemote::pullFollowsUpstreamOfThatRemote()
     git_repository_free(sourceRepo);
 }
 
+void TestGitRemote::tagPushUsesTheGivenRemote()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString upstreamPath = createBareRemote(dir, "upstream.git");
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+
+    Repository wrapper(repo);
+    GitRemote remotes;
+    remotes.setCurrentRepo(&wrapper);
+    QVERIFY(remotes.addRemote("upstream", upstreamPath).success());
+
+    GitTag tags;
+    tags.setCurrentRepo(&wrapper);
+    QVERIFY(tags.create("v1.0", "HEAD").success());
+
+    QStringList commands;
+    connect(&tags, &IGitController::gitCommandGenerated, this,
+            [&commands](const QString& command) { commands << command; });
+
+    // No origin anywhere: the tag goes where it is told
+    GitResult push = tags.pushTag("upstream", "v1.0", QString());
+    QVERIFY2(push.success(), qPrintable(push.errorMessage()));
+    QVERIFY(commands.contains("git push \"upstream\" \"v1.0\""));
+
+    git_repository* upstreamRepo = nullptr;
+    QCOMPARE(git_repository_open(&upstreamRepo, upstreamPath.toUtf8().constData()), GIT_OK);
+    QVERIFY(referenceExists(upstreamRepo, "refs/tags/v1.0"));
+
+    GitResult remove = tags.pushDeleteTag("upstream", "v1.0", QString());
+    QVERIFY2(remove.success(), qPrintable(remove.errorMessage()));
+    QVERIFY(commands.contains("git push \"upstream\" --delete \"v1.0\""));
+    QVERIFY(!referenceExists(upstreamRepo, "refs/tags/v1.0"));
+    git_repository_free(upstreamRepo);
+
+    // A remote that does not exist fails with its own name in the message
+    GitResult missing = tags.pushTag("origin", "v1.0", QString());
+    QVERIFY(!missing.success());
+    QVERIFY2(missing.errorMessage().contains("'origin' not found"), qPrintable(missing.errorMessage()));
+}
+
 QTEST_MAIN(TestGitRemote)
 #include "TestGitRemote.moc"
