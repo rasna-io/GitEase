@@ -250,6 +250,7 @@ Rectangle {
                     id: tagManagementView
                     visible: dockFlow.matchesFilter(tagManagementView.title)
                     tagController: root.tagController
+                    remoteOperationsSession: root.remoteOperationsSession
                     addTagPopup: root.uiSessionPopups ? root.uiSessionPopups.addTagPopup : null
                     guideController: root.guideController
                     notificationController: root.notificationController
