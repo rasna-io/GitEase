@@ -61,7 +61,7 @@ UtilitiesCard {
                              "Delete the tag '" + tag.name + "' from this repository?",
                              GitCommandText.deleteTag(tag.name),
                              "Delete Tag",
-                             { action: "local"})
+                             { action: "local", tag: tag })
     }
 
     function performDeleteTagLocal(tag) {
