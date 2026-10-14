@@ -54,27 +54,15 @@ PopupDialog {
 
     readonly property string selectedTarget: root.selected ? root.selected.remote + "/" + (root.selected.branch || "") : ""
 
-    readonly property bool   canSetUpstream: root.offerUpstream && root.selectedTarget !== root.currentUpstream
+    readonly property var    upstreamOffer: {
+        if (!root.offerUpstream || !root.selected)
+            return null
 
-    readonly property string upstreamHint: {
-        if (!root.canSetUpstream || !root.selected)
-            return ""
-
-        if (!root.setUpstream)
-            return root.currentUpstream !== ""
-                    ? "'" + root.subject + "' keeps tracking " + root.currentUpstream + "."
-                    : "'" + root.subject + "' keeps having no upstream."
-
-        if (root.offerAlwaysAsk && root.alwaysAsk)
-            return "Pull and Push keep asking while \"Always ask\" is on: the upstream is only preselected "
-                    + "here, and is what git uses on the command line."
-
-        if (root.defaultRemote !== "")
-            return "Pull will use it from now on. Push keeps going to the default remote, "
-                    + root.defaultRemote + "."
-
-        return "Pull and Push will use it from now on, without asking."
+        let target = root.selected.remote + "/" + (root.selected.branch || "")
+        return target !== root.currentUpstream ? { target: target, hint: root.upstreamHint() } : null
     }
+
+    readonly property bool   canSetUpstream: root.upstreamOffer !== null
 
     /* Signals
      * ****************************************************************************************/
@@ -102,6 +90,11 @@ PopupDialog {
                                              : Style.icons.arrowUp
 
     iconColor: root.isDanger ? Style.colors.error : Style.colors.accent
+
+    onUpstreamOfferChanged: {
+        if (root.upstreamOffer)
+            upstreamSection.offer = root.upstreamOffer
+    }
 
     /* Children
      * ****************************************************************************************/
@@ -282,32 +275,63 @@ PopupDialog {
     // Set as upstream, with what that changes
     ColumnLayout {
         Layout.fillWidth: true
-        visible: root.canSetUpstream
-        spacing: 3
+        visible: root.offerUpstream || root.offerAlwaysAsk
+        spacing: 0
+
+        Item {
+            id: upstreamSection
+
+            //! 0 hidden, 1 shown. One animated value moves the height, the gap and the fade together.
+            property real reveal: root.canSetUpstream ? 1 : 0
+
+            //! The upstreamOffer the row shows, see onUpstreamOfferChanged.
+            property var  offer: null
+
+            Layout.fillWidth: true
+            implicitHeight: (upstreamColumn.implicitHeight + (root.offerAlwaysAsk ? 8 : 0)) * reveal
+            opacity: reveal
+            visible: reveal > 0
+            clip: true
+
+            // Not while ask() fills the dialog in: it opens with the row already in place.
+            Behavior on reveal {
+                enabled: root.visible
+
+                NumberAnimation {
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            ColumnLayout {
+                id: upstreamColumn
+                width: parent.width
+                spacing: 3
+
+                CheckRow {
+                    checked: root.setUpstream
+                    label: upstreamSection.offer ? "Set " + upstreamSection.offer.target + " as the upstream" : ""
+                    onToggled: root.setUpstream = !root.setUpstream
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 24
+                    text: upstreamSection.offer ? upstreamSection.offer.hint : ""
+                    wrapMode: Text.WordWrap
+                    color: Style.colors.secondaryText
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
+                }
+            }
+        }
 
         CheckRow {
-            checked: root.setUpstream
-            label: "Set " + root.selectedTarget + " as the upstream"
-            onToggled: root.setUpstream = !root.setUpstream
+            visible: root.offerAlwaysAsk
+            checked: root.alwaysAsk
+            label: "Always ask which remote to use"
+            onToggled: root.alwaysAsk = !root.alwaysAsk
         }
-
-        Text {
-            Layout.fillWidth: true
-            Layout.leftMargin: 24
-            visible: root.upstreamHint !== ""
-            text: root.upstreamHint
-            wrapMode: Text.WordWrap
-            color: Style.colors.secondaryText
-            font.family: Style.fontTypes.inter
-            font.pixelSize: Style.appFont.smallPt
-        }
-    }
-
-    CheckRow {
-        visible: root.offerAlwaysAsk
-        checked: root.alwaysAsk
-        label: "Always ask which remote to use"
-        onToggled: root.alwaysAsk = !root.alwaysAsk
     }
 
     CommandPreview {
@@ -349,6 +373,23 @@ PopupDialog {
         root.offerAlwaysAsk  = options.offerAlwaysAsk === true
         root.alwaysAsk       = options.alwaysAsk === true
         root.open()
+    }
+
+    function upstreamHint() {
+        if (!root.setUpstream)
+            return root.currentUpstream !== ""
+                    ? "'" + root.subject + "' keeps tracking " + root.currentUpstream + "."
+                    : "'" + root.subject + "' keeps having no upstream."
+
+        if (root.offerAlwaysAsk && root.alwaysAsk)
+            return "Pull and Push keep asking while \"Always ask\" is on: the upstream is only preselected "
+                    + "here, and is what git uses on the command line."
+
+        if (root.defaultRemote !== "")
+            return "Pull will use it from now on. Push keeps going to the default remote, "
+                    + root.defaultRemote + "."
+
+        return "Pull and Push will use it from now on, without asking."
     }
 
     function accept() {
