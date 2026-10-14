@@ -186,7 +186,7 @@ Page {
                     appModel                : root.appModel
                     branchController        : root.branchController
                     remoteController        : root.remoteController
-                    userAuthenticationPopup : root.userAuthenticationPopup
+                    remoteOperationsSession : root.remoteOperationsSession
                     tagController            : root.tagController
                     mergeController         : root.mergeController
                     rebaseController        : root.rebaseController
