@@ -325,7 +325,7 @@ Item {
         root.confirmDialog.ask(title, message, command, buttonText, { fromRemoteSession: true })
     }
 
-    function withCredentials(operation, remoteName, forPush, host, onToken, onCancel) {
+    function withCredentials(operation, remoteName, forPush, host, onToken, onCancel, warning) {
         let remote = root.remoteNamed(remoteName)
         let url = remote ? (forPush ? remote.pushUrl : remote.url) : ""
 
@@ -334,16 +334,22 @@ Item {
             return
         }
 
-        root.requestCredentials(operation, remoteName, url, host, onToken, onCancel)
+        root.requestCredentials(operation, remoteName, url, host, onToken, onCancel, warning)
+    }
+
+    function asksForToken(remoteName) {
+        let remote = root.remoteNamed(remoteName)
+        return remote !== null && root.userAuthenticationPopup !== null && root.needsToken(remote.pushUrl)
     }
 
     //! Queues a token prompt; the popup is shared, so prompts are shown one after the other.
-    function requestCredentials(operation, remoteLabel, url, host, onToken, onCancel) {
+    function requestCredentials(operation, remoteLabel, url, host, onToken, onCancel, warning) {
         root._authQueue = root._authQueue.concat([{
             operation:   operation,
             remoteLabel: remoteLabel,
             url:         url,
             host:        host,
+            warning:     warning || "",
             onToken:     onToken,
             onCancel:    onCancel,
             answered:    false
@@ -362,7 +368,7 @@ Item {
         root._authActive = request
 
         root.hostPopup(popup, request.host)
-        popup.request(request.operation, request.remoteLabel, request.url)
+        popup.request(request.operation, request.remoteLabel, request.url, request.warning)
     }
 
     function _finishCredentialRequest() {
@@ -632,7 +638,7 @@ Item {
             offerAlwaysAsk:  true,
             alwaysAsk:       root.alwaysAskRemote
         }, host, function(remote, remoteBranch, setUpstream) {
-            root.confirmPush(target.branch, remote, remoteBranch, force, setUpstream, host)
+            root.confirmPush(target.branch, remote, remoteBranch, force, setUpstream, host, true)
         })
     }
 
@@ -648,9 +654,9 @@ Item {
         root.push(force, host)
     }
 
-    function confirmPush(localBranch, remote, remoteBranch, force, setUpstream, host) {
-        if (!force) {
-            root.runPush(localBranch, remote, remoteBranch, false, setUpstream, host)
+    function confirmPush(localBranch, remote, remoteBranch, force, setUpstream, host, confirmed) {
+        if (!force || confirmed === true || root.asksForToken(remote)) {
+            root.runPush(localBranch, remote, remoteBranch, force, setUpstream, host)
             return
         }
 
@@ -670,6 +676,10 @@ Item {
             return
         }
 
+        let warning = force ? "Force pushing overwrites " + remote + "/" + remoteBranch + " with your local history. "
+                              + "Commits there that you do not have are lost."
+                            : ""
+
         root.withCredentials(force ? "pushForce" : "push", remote, true, host, function(token) {
             if (root.notificationController)
                 root.notificationController.info("Pushing to " + remote + "/" + remoteBranch, force ? "Force Push" : "Push", 3000)
@@ -678,7 +688,7 @@ Item {
                 function(result) { root.handlePushResult(result) },
                 function(error) { root.handlePushResult({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
             )
-        })
+        }, null, warning)
     }
 
     function handlePushResult(gitResult) {
