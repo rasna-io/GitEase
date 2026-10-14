@@ -621,8 +621,8 @@ Window {
             return
         }
 
-        // Compute the text to keep
-        let resolvedLines = ConflictUtils.computeResolvedLines(block, mode)
+        let resolvedLines = ConflictUtils.computeResolvedLines(
+                                ConflictUtils.readBlockSides(conflictRows, blockIndex), mode)
 
         // Update the ListModel in place
         ConflictUtils.replaceBlockInModel(conflictRows, blockIndex, block, resolvedLines, mode)
