@@ -1,0 +1,26 @@
+# Objects and precompiled headers
+*.o
+*.obj
+*.lo
+*.slo
+*.gch
+*.pch
+
+# Libraries
+*.a
+*.lib
+*.so
+*.so.*
+*.dll
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Debug files
+*.d
+*.pdb
+*.ilk
+*.exp

@@ -77,7 +77,7 @@ Drawer {
         Rectangle {
             anchors.fill: parent
             z: -1
-            color: "#000000"
+            color: Style.colors.scrimColor
             opacity: root.position * 0.45
 
             MouseArea {

@@ -24,32 +24,30 @@ Item {
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
-        anchors.fill: parent
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 40, 420)
         spacing: 0
 
         // Description text
         Text {
             Layout.fillWidth: true
-            Layout.bottomMargin: 24
-            Layout.maximumWidth: 360
+            Layout.bottomMargin: 28
             Layout.alignment: Qt.AlignHCenter
             text: "This information will be used for your Git commits and identify you in the repository history"
             wrapMode: Text.WordWrap
-            color: Style.colors.mutedText
+            color: Style.colors.secondaryText
             horizontalAlignment: Text.AlignHCenter
             font.family: Style.fontTypes.inter
-            font.weight: 300
-            font.pixelSize: Style.appFont.h2Pt
-            font.italic: true
-            font.letterSpacing: 0
+            font.weight: 400
+            font.pixelSize: Style.appFont.h3Pt
+            font.letterSpacing: 0.1
+            lineHeight: 1.45
         }
 
         // Input sections
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.maximumWidth: 440
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 20
+            spacing: 18
 
             // First input section: Full Name
             FormInputField {
@@ -74,64 +72,77 @@ Item {
                 id: hintRectangle
                 visible: root.showHint && root.errorMessage.length === 0
                 Layout.fillWidth: true
-                Layout.preferredHeight: 37
-                radius: 5
-                color: Style.colors.hintBackground
+                Layout.preferredHeight: hintRow.implicitHeight + 20
+                radius: 8
+                color: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.12)
+                border.width: 1
+                border.color: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.25)
 
                 RowLayout {
+                    id: hintRow
                     anchors.fill: parent
-                    anchors.leftMargin: 10
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    spacing: 10
 
-                    Item {
+                    Text {
+                        Layout.alignment: Qt.AlignVCenter
+                        text: Style.icons.lightbulb
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: Style.appFont.smallPt
+                        color: Style.colors.secondaryText
+                    }
+
+                    Text {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "💡 Tip: You can change these settings later in the Settings page"
-                            wrapMode: Text.WordWrap
-                            font.pixelSize: Style.appFont.smallPt
-                            color: Style.colors.hintText
-                            font.family: Style.fontTypes.inter
-                            font.weight: 300
-                            font.styleName: "Light"
-                            font.letterSpacing: 0
-                        }
+                        Layout.alignment: Qt.AlignVCenter
+                        text: "You can change these settings later in the Settings page"
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: Style.appFont.smallPt
+                        font.family: Style.fontTypes.inter
+                        font.weight: 400
+                        font.letterSpacing: 0
+                        color: Style.colors.secondaryText
                     }
                 }
             }
 
-            // error row
+            // Error row
             Rectangle {
                 id: errorRectangle
                 visible: root.errorMessage.length > 0
                 Layout.fillWidth: true
-                Layout.preferredHeight: 37
-                radius: 5
-                color: "#FF9898"
+                Layout.preferredHeight: errorRow.implicitHeight + 20
+                radius: 8
+                color: Qt.rgba(Style.colors.error.r, Style.colors.error.g, Style.colors.error.b, 0.12)
+                border.width: 1
+                border.color: Qt.rgba(Style.colors.error.r, Style.colors.error.g, Style.colors.error.b, 0.4)
 
                 RowLayout {
+                    id: errorRow
                     anchors.fill: parent
-                    anchors.leftMargin: 25
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    spacing: 10
 
-                    Item {
+                    Text {
+                        Layout.alignment: Qt.AlignVCenter
+                        text: Style.icons.circleExclamation
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: Style.appFont.smallPt
+                        color: Style.colors.error
+                    }
+
+                    Text {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: root.errorMessage
-                            wrapMode: Text.WordWrap
-                            font.pixelSize: Style.appFont.smallPt
-                            font.family: Style.fontTypes.inter
-                            font.weight: 300
-                            font.styleName: "Light"
-                            font.letterSpacing: 0
-                        }
+                        Layout.alignment: Qt.AlignVCenter
+                        text: root.errorMessage
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: Style.appFont.smallPt
+                        font.family: Style.fontTypes.inter
+                        font.weight: 400
+                        font.letterSpacing: 0
+                        color: Style.colors.error
                     }
                 }
             }

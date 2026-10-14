@@ -21,7 +21,7 @@ Item {
      * ****************************************************************************************/
     ColumnLayout {
         anchors.centerIn: parent
-        width: Math.min(parent.width - 20, 420)
+        width: Math.min(parent.width - 20, 600)
         spacing: 0
 
         ColumnLayout {
@@ -52,7 +52,7 @@ Item {
             }
 
             Text {
-                text: "The most advanced Git GUI designed for developers. Manage repositories, resolve conflicts, and collaborate with your team - all with AI-powered assistance."
+                text: "A lightweight, fast Git client with a layout you control, support for multiple users, and a plugin system to make it your own."
                 wrapMode: Text.WordWrap
                 font.family: Style.fontTypes.inter
                 font.weight: 400
@@ -84,8 +84,8 @@ Item {
         }
 
         RowLayout {
-            id: cardsRow
-            Layout.alignment: Qt.AlignHCenter
+            id: cardsColumn
+            Layout.fillWidth: true
             spacing: 12
             opacity: 0
 
@@ -93,7 +93,7 @@ Item {
 
             NumberAnimation {
                 id: cardsFadeIn
-                target: cardsRow
+                target: cardsColumn
                 property: "opacity"
                 from: 0; to: 1
                 duration: 300
@@ -103,16 +103,25 @@ Item {
             Repeater {
                 id: cardRepeater
                 model: [
-                    { title: "Powerful & Fast", icon: Style.icons.rocket, accentColor: Style.colors.vibrantMint,  bgColor: Style.colors.vibrantMintBg,  desc: "Lightning-fast operations with intelligent caching." },
-                    { title: "AI-Powered",      icon: Style.icons.robot,  accentColor: Style.colors.amber,        bgColor: Style.colors.amberBg,        desc: "Smart commit messages and conflict resolution." },
-                    { title: "Team First",      icon: Style.icons.users,  accentColor: Style.colors.purple,       bgColor: Style.colors.purpleBg,       desc: "Built-in collaboration and code review tools." }
+                    { title: "Light & Fast",       icon: Style.icons.rocket,   accentColor: Style.colors.vibrantMint,    bgColor: Style.colors.vibrantMintBg,
+                      desc: "A lightweight native app built on Qt and libgit2, quick to start and quick to respond." },
+                    { title: "Dock & Detach",      icon: Style.icons.detach,   accentColor: Style.colors.cornflowerBlue, bgColor: Style.colors.cornflowerBlueBg,
+                      desc: "Dock panels where you work, or detach any panel into its own window." },
+                    { title: "Plugins & Profiles", icon: Style.icons.plugins,  accentColor: Style.colors.purple,         bgColor: Style.colors.purpleBg,
+                      desc: "Extend GitEase with plugins and switch between multiple user profiles." }
                 ]
 
                 delegate: Item {
                     id: featureCard
-                    width: 138
-                    height: 162
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 200
                     opacity: 0
+
+                    transform: Translate {
+                        id: slide
+                        y: 12
+                    }
 
                     Timer {
                         id: staggerIn
@@ -136,7 +145,7 @@ Item {
 
                     NumberAnimation {
                         id: slideAnim
-                        target: featureCard
+                        target: slide
                         property: "y"
                         from: 12; to: 0
                         duration: 400
@@ -154,114 +163,83 @@ Item {
                                : Style.colors.cardBackground
                         border.width: 1
                         border.color: mouseArea.containsMouse
-                                      ? Qt.lighter(modelData.accentColor, 0.5)
+                                      ? Qt.rgba(modelData.accentColor.r,
+                                                modelData.accentColor.g,
+                                                modelData.accentColor.b, 0.6)
                                       : Qt.rgba(Style.colors.primaryBorder.r,
                                                 Style.colors.primaryBorder.g,
                                                 Style.colors.primaryBorder.b, 0.35)
 
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 150
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                        // Accent bar on the top edge
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.topMargin: 1
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            height: 3
+                            width: mouseArea.containsMouse ? parent.width * 0.6 : parent.width * 0.3
+                            radius: 2
+                            color: modelData.accentColor
+
+                            Behavior on width {
+                                NumberAnimation {
+                                    duration: 150
+                                    easing.type: Easing.OutCubic
+                                }
                             }
                         }
 
-                        Behavior on border.color {
-                            ColorAnimation {
-                                duration: 150
-                            }
-                        }
-
-                        // Corner masks — square the top by covering only the rounded
-                        // corners with the card's own fill color (bound, so hover syncs)
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            width: 12
-                            height: 12
-                            color: cardBg.color
-                        }
-
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.right: parent.right
-                            width: 12
-                            height: 12
-                            color: cardBg.color
-                        }
-
-                        // Square top border line — drawn over the corner masks so it
-                        // changes color on hover exactly like the rest of the border
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: 1
-                            color: cardBg.border.color
-                        }
-
-                        // Left/right border segments — restore the border over the masked
-                        // top corners, continuing the card's side borders
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            width: 1
-                            height: 13
-                            color: cardBg.border.color
-                        }
-
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.right: parent.right
-                            width: 1
-                            height: 13
-                            color: cardBg.border.color
-                        }
-
-                        Column {
+                        ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 16
-                            anchors.topMargin: 20
-                            spacing: 0
+                            anchors.topMargin: 22
+                            spacing: 12
 
                             // Icon badge
                             Rectangle {
-                                width: 42
-                                height: 42
-                                radius: 11
+                                Layout.preferredWidth: 48
+                                Layout.preferredHeight: 48
+                                Layout.alignment: Qt.AlignHCenter
+                                radius: 14
                                 color: modelData.bgColor
+                                border.width: 1
+                                border.color: Qt.rgba(modelData.accentColor.r,
+                                                      modelData.accentColor.g,
+                                                      modelData.accentColor.b, 0.35)
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData.icon
                                     font.family: Style.fontTypes.font6Pro
-                                    font.pixelSize: 17
+                                    font.pixelSize: 18
                                     color: modelData.accentColor
                                 }
                             }
 
-                            // Title
                             Text {
                                 text: modelData.title
                                 font.family: Style.fontTypes.inter
                                 font.weight: Font.DemiBold
                                 font.pixelSize: Style.appFont.mediumPt
                                 color: Style.colors.foreground
-                                width: parent.width
+                                horizontalAlignment: Text.AlignHCenter
                                 wrapMode: Text.WordWrap
-                                Layout.topMargin: 12
+                                Layout.fillWidth: true
                             }
 
-                            // Description
                             Text {
                                 text: modelData.desc
                                 font.family: Style.fontTypes.inter
                                 font.weight: 400
                                 font.pixelSize: Style.appFont.smallPt
                                 color: Style.colors.mutedText
-                                width: parent.width
+                                horizontalAlignment: Text.AlignHCenter
                                 wrapMode: Text.WordWrap
-                                lineHeight: 1.35
-                                Layout.topMargin: 6
+                                lineHeight: 1.3
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
                             }
                         }
 

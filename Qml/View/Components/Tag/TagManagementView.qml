@@ -25,6 +25,12 @@ UtilitiesCard {
     icon:  Style.icons.tag
     badgeCount: root.tagListModel.length
 
+    readonly property var filteredTags: root.filterItems(root.tagListModel, function(tag) {
+        return tag.name + " " + tag.commitId
+    })
+    contentMatchesFilter: root.filteredTags.length > 0
+    filteredCount: root.filteredTags.length
+
     TextEdit {
         id: clipboardHelper
         visible: false
@@ -221,7 +227,7 @@ UtilitiesCard {
             Layout.fillWidth: true
             Layout.preferredHeight: Math.min(contentHeight, 220)
             clip: true
-            model: root.tagListModel
+            model: root.filteredTags
 
             delegate: Item {
                 id: tagDelegate
