@@ -256,6 +256,7 @@ Page {
 
             branchController        : root.branchController
             remoteController        : root.remoteController
+            remoteOperationsSession : root.remoteOperationsSession
             repositoryController    : root.repositoryController
             commitController        : root.commitController
             statusController        : root.statusController
