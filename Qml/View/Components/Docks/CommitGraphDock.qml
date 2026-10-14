@@ -27,7 +27,6 @@ DetachablePanel {
 
     property BranchController       branchController        : null
     property RemoteController        remoteController       : null
-    property UserAuthenticationPopup userAuthenticationPopup : null
     property MergeController        mergeController         : null
     property RebaseController       rebaseController        : null
     property CherryPickController   cherryPickController    : null
@@ -48,8 +47,7 @@ DetachablePanel {
     property AddBranchPopup          addBranchPopup         : null
     property AddTagPopup             addTagPopup            : null
 
-    property bool   isForcePush: false
-    property string pendingPushBranch: ""
+    property RemoteOperationsSession remoteOperationsSession: null
     property string pendingMergeSource: ""
     property var    allCommits      : []
     property var    commits         : []
