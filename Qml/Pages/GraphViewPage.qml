@@ -106,7 +106,7 @@ Page {
             navigationRule: root.graphRef ? root.graphRef.navigationRule : (root.activePageState()?.commitGraph?.navigationRule || navigationRules[0])
             guideController: root.guideController
             remoteController: root.remoteController
-            isFetching: root.isFetching
+            remoteOperationsSession: root.remoteOperationsSession
 
             //! The arrow keys on the graph use the dock's rule, so keep it in step with the "Navigate by" choice.
             onNavigationRuleChanged: {
