@@ -22,6 +22,7 @@ set(SOURCES_BACKEND
     Src/Git/GitMerge.cpp
     Src/Git/GitConflict.cpp
     Src/Git/GitTag.cpp
+    Src/Git/GitIgnore.cpp
     Src/Git/GitReset.cpp
     Src/Git/GitTree.cpp
     Src/Git/GitCommandText.cpp
@@ -36,6 +37,7 @@ set(SOURCES_BACKEND
     Src/Git/Auth/GitSshAuth.cpp
     Src/Git/Auth/GitHttpsAuth.cpp
     Src/Git/Utilities/GitProtocolDetector.cpp
+    Src/Git/Utilities/GitIgnoreMatcher.cpp
     Src/Utilities/SshKeyManager/SshKeyManager.cpp
 
     Src/Plugins/PluginContext.cpp
@@ -70,6 +72,7 @@ set(HEADERS_BACKEND
     Src/Git/GitMerge.h
     Src/Git/GitConflict.h
     Src/Git/GitTag.h
+    Src/Git/GitIgnore.h
     Src/Git/GitReset.h
     Src/Git/GitTree.h
     Src/Git/GitCommandText.h
@@ -86,6 +89,7 @@ set(HEADERS_BACKEND
     Src/Git/Auth/GitHttpsAuth.h
 
     Src/Git/Utilities/GitProtocolDetector.h
+    Src/Git/Utilities/GitIgnoreMatcher.h
     Src/Utilities/SshKeyManager/SshKeyManager.h
 
     Src/Plugins/IPluginContext.h
