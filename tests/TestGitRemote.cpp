@@ -163,6 +163,65 @@ QString headOid(git_repository* repo)
     git_oid_tostr(hash, sizeof(hash), &oid);
     return QString::fromLatin1(hash);
 }
+QString configValue(git_repository* repo, const QString& key)
+{
+    git_config* config = nullptr;
+    if (git_repository_config_snapshot(&config, repo) != GIT_OK)
+        return {};
+
+    git_buf value = GIT_BUF_INIT;
+    QString result;
+    if (git_config_get_string_buf(&value, config, key.toUtf8().constData()) == GIT_OK)
+        result = QString::fromUtf8(value.ptr, static_cast<int>(value.size));
+
+    git_buf_dispose(&value);
+    git_config_free(config);
+    return result;
+}
+
+bool setConfigValue(git_repository* repo, const QString& key, const QString& value)
+{
+    git_config* config = nullptr;
+    if (git_repository_config(&config, repo) != GIT_OK)
+        return false;
+
+    const bool ok = git_config_set_string(config, key.toUtf8().constData(), value.toUtf8().constData()) == GIT_OK;
+    git_config_free(config);
+    return ok;
+}
+
+bool referenceExists(git_repository* repo, const QString& name)
+{
+    git_reference* ref = nullptr;
+    if (git_reference_lookup(&ref, repo, name.toUtf8().constData()) != GIT_OK)
+        return false;
+    git_reference_free(ref);
+    return true;
+}
+
+QString createBareRemote(const QTemporaryDir& dir, const QString& name)
+{
+    const QString path = QDir::fromNativeSeparators(dir.path() + "/" + name);
+    git_repository* repo = nullptr;
+    if (!QDir().mkpath(path) || !initRepository(path, true, &repo))
+        return {};
+    git_repository_free(repo);
+    return path;
+}
+
+QVariantMap remoteTargetOf(GitRemote& controller)
+{
+    GitResult target = controller.remoteTarget();
+    return target.success() ? target.data().toMap() : QVariantMap();
+}
+
+QStringList remoteNamesOf(const QVariantMap& target)
+{
+    QStringList names;
+    for (const QVariant& remote : target.value("remotes").toList())
+        names << remote.toMap().value("name").toString();
+    return names;
+}
 
 }  // namespace
 
