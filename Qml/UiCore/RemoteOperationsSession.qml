@@ -371,36 +371,101 @@ Item {
 
         root._showNextCredentialRequest()
     }
+
+    //! Fetches every remote, or the remote the user picks while "Always ask" is on.
+    function fetch(host) {
+        if (root.isFetching)
+            return
+
+        let target = root.refreshTarget()
+        let remotes = target.remotes || []
+
+        if (remotes.length === 0) {
+            if (root.notificationController)
+                root.notificationController.error("This repository has no remotes yet. Add a remote first.", "Fetch", 5000)
             return
         }
-        let url = res.data.url
-        let protocol = repositoryController.detectGitProtocol(url)
-        switch (protocol) {
-        case RepositoryController.GitProtocol.SSH: {
-            root.startPull("origin", root.branchController.getCurrentBranchName())
-            break
+
+        if (!root.alwaysAskRemote) {
+            root.fetchRemotes(remotes.map(remote => remote.name), host)
+            return
         }
-        case RepositoryController.GitProtocol.HTTPS:
-        case RepositoryController.GitProtocol.HTTP:
-            if (secret && secret.length > 0 && secret !== "undefined") {
-                root.startPull("origin", root.branchController.getCurrentBranchName(), secret)
-            } else {
-                root.authPurpose = "pull"
-                authConnection.enabled = true
-                userAuthenticationPopup.request("pull", "origin", url)
-            }
-            break
-        default:
-            if (notificationController)
-                notificationController.error("Unsupported protocol", "Pull Error", 5000)
-        }
+
+        // Every remote at once, or just one
+        let names = remotes.map(remote => remote.name)
+        let choices = [{ remote: "", branch: "", url: "", label: "All remotes", note: root.shortList(names) }]
+                .concat(remotes.map(remote => ({
+                    remote: remote.name,
+                    branch: "",
+                    url:    remote.url,
+                    note:   remote.name === target.defaultRemote ? "default" : ""
+                })))
+
+        root.chooseTarget({
+            operation:      "fetch",
+            message:        "Choose what to fetch.",
+            choices:        choices,
+            selectedIndex:  0,
+            offerAlwaysAsk: true,
+            alwaysAsk:      root.alwaysAskRemote
+        }, host, function(remote) {
+            root.fetchRemotes(remote === "" ? names : [remote], host)
+        })
     }
 
-    function pullAndUpdate(secret) {
-        root.pull(secret)
+    //! Fetches \a remoteNames. HTTP(S) remotes get one token prompt per host, not one for all.
+    function fetchRemotes(remoteNames, host) {
+        if (root.isFetching)
+            return
+
+        let remotes = remoteNames.map(name => root.remoteNamed(name)).filter(remote => remote !== null)
+        if (remotes.length === 0)
+            return
+
+        let direct = []
+        let groups = []
+
+        for (let remote of remotes) {
+            if (!root.needsToken(remote.url)) {
+                direct.push(remote.name)
+                continue
+            }
+
+            let key = root.credentialKey(remote.url)
+            let group = groups.find(candidate => candidate.key === key)
+            if (!group) {
+                group = { key: key, url: remote.url, names: [] }
+                groups.push(group)
+            }
+            group.names.push(remote.name)
+        }
+
+        root.fetchBatchResults = []
+        root.activeFetchRemotes = []
+        root.pendingFetchRemoteNames = groups.reduce((names, group) => names.concat(group.names), [])
+        root.isFetching = true
+
+        for (let name of direct)
+            root.startFetch(name)
+
+        for (let group of groups) {
+            root.requestCredentials("fetch", group.names.join(", "), group.url, host,
+                function(token) {
+                    root.pendingFetchRemoteNames = root.pendingFetchRemoteNames.filter(name => group.names.indexOf(name) === -1)
+                    for (let name of group.names)
+                        root.startFetchWithToken(name, token)
+                },
+                function() {
+                    root.pendingFetchRemoteNames = root.pendingFetchRemoteNames.filter(name => group.names.indexOf(name) === -1)
+                    root.finishFetchIfDone()
+                })
+        }
+
+        root.finishFetchIfDone()
     }
 
     function startFetch(remoteName) {
+        root.activeFetchRemotes = root.activeFetchRemotes.concat([remoteName])
         AsyncGit.call(root.remoteController, "fetch", [remoteName],
             function(result) { root.handleFetchResult(remoteName, result) },
             function(error) { root.handleFetchResult(remoteName, { success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
@@ -408,6 +473,7 @@ Item {
     }
 
     function startFetchWithToken(remoteName, token) {
+        root.activeFetchRemotes = root.activeFetchRemotes.concat([remoteName])
         AsyncGit.call(root.remoteController, "fetchWithToken", [remoteName, token],
             function(result) { root.handleFetchResult(remoteName, result) },
             function(error) { root.handleFetchResult(remoteName, { success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
@@ -415,20 +481,19 @@ Item {
     }
 
     function handleFetchResult(remoteName, gitResult) {
-        root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
+        root.activeFetchRemotes = root.activeFetchRemotes.filter(name => name !== remoteName)
 
-        let stale = gitResult && gitResult.stale === true
-
-        if (stale) {
-            root.notificationController.info("Fetch finished for the repository you switched away from", "Fetch", 4000)
+        if (gitResult && gitResult.stale === true) {
+            if (root.notificationController)
+                root.notificationController.info("Fetch finished for the repository you switched away from", "Fetch", 4000)
         } else {
             let payload = {
-                remote:         remoteName,
-                success:        gitResult ? gitResult.success : false,
-                errorMessage:   gitResult ? gitResult.errorMessage : "Unknown error",
-                data:           gitResult ? gitResult.data : null
+                remote:       remoteName,
+                success:      gitResult ? gitResult.success : false,
+                errorMessage: gitResult ? gitResult.errorMessage : "Unknown error",
+                data:         gitResult ? gitResult.data : null
             }
-            root.fetchBatchResults.push(payload)
+            root.fetchBatchResults = root.fetchBatchResults.concat([payload])
 
             if (root.notificationController) {
                 if (payload.success)
@@ -438,23 +503,26 @@ Item {
             }
         }
 
-            root.isFetching = root.activeFetchRemotes.length > 0 || root.pendingFetchRemoteNames.length > 0
-            if (root.activeFetchRemotes.length === 0 && root.pendingFetchRemoteNames.length === 0 && root.fetchBatchResults.length > 0) {
+        root.finishFetchIfDone()
+    }
 
-                root.fetchCompleted()
+    //! Shows the summary once every fetch has finished and no token prompt is outstanding.
+    function finishFetchIfDone() {
+        root.isFetching = root.activeFetchRemotes.length > 0 || root.pendingFetchRemoteNames.length > 0
 
-                if (root.fetchSummaryPopup) {
-                    root.fetchSummaryPopup.results = []
-                    root.fetchSummaryPopup.results = root.fetchBatchResults
-                    root.fetchSummaryPopup.open()
-                }
-            }
+        if (root.isFetching || root.fetchBatchResults.length === 0)
+            return
+
+        root.fetchCompleted()
+
+        if (root.fetchSummaryPopup) {
+            root.fetchSummaryPopup.results = []
+            root.fetchSummaryPopup.results = root.fetchBatchResults
+            root.fetchSummaryPopup.open()
         }
 
-    function startPush(branchName, force, token) {
-        let rulesRes = root.remoteController.checkPushRules("origin", branchName, force)
-        if (rulesRes && !rulesRes.success) {
-            root.handlePushResult(rulesRes)
+        root.fetchBatchResults = []
+    }
             return
         }
 
