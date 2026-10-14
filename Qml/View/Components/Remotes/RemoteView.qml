@@ -309,21 +309,21 @@ UtilitiesCard {
                 return
             }
 
-            let url = res.data.url
+            let url = res.data.fetchUrl || res.data.url
             let protocol = repositoryController.detectGitProtocol(url)
             switch (protocol) {
-            case RepositoryController.GitProtocol.SSH:
-                root.isFetching = true
-                if (root.activeFetchRemotes.indexOf(remoteItem.name) === -1)
-                    root.activeFetchRemotes.push(remoteItem.name)
-                content.startFetch(remoteItem.name)
-                break;
             case RepositoryController.GitProtocol.HTTPS:
             case RepositoryController.GitProtocol.HTTP:
                 root.isFetching = true
                 root.authPurpose = "fetch"
                 userAuthenticationPopupConnection.enabled = true
                 userAuthenticationPopup.request("fetch", remoteItem.name, url)
+                break;
+            default:
+                root.isFetching = true
+                if (root.activeFetchRemotes.indexOf(remoteItem.name) === -1)
+                    root.activeFetchRemotes.push(remoteItem.name)
+                content.startFetch(remoteItem.name)
                 break;
             }
         }
@@ -351,18 +351,18 @@ UtilitiesCard {
                 return
             }
 
-            let url = res.data.url
+            let url = res.data.fetchUrl || res.data.url
             let protocol = repositoryController.detectGitProtocol(url)
             switch (protocol) {
-            case RepositoryController.GitProtocol.SSH:
-                root.isFetching = true
-                content.startPull([remoteItem.name], remoteItem.name)
-                break
             case RepositoryController.GitProtocol.HTTPS:
             case RepositoryController.GitProtocol.HTTP:
                 root.authPurpose = "pull"
                 userAuthenticationPopupConnection.enabled = true
                 userAuthenticationPopup.request("pull", remoteItem.name, url)
+                break
+            default:
+                root.isFetching = true
+                content.startPull([remoteItem.name], remoteItem.name)
                 break
             }
         }
