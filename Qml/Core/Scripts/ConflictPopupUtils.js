@@ -259,8 +259,34 @@ function findBlockByIndex(blocks, idx) {
 }
 
 /**
+ * Reads a conflict block's two sides off its rows as they stand in the editor, so lines edited
+ * inside the card by hand are what an accepted side keeps. The texts Git reported for the block
+ * (block.currentText / block.incomingText) predate any such edit.
+ * @param displayModel - The ListModel
+ * @param blockIndex   - The block's index (1‑based)
+ * @returns { currentText, incomingText }, shaped like a block for computeResolvedLines
+ */
+function readBlockSides(displayModel, blockIndex) {
+    let ours   = []
+    let theirs = []
+
+    for (let i = 0; i < displayModel.count; ++i) {
+        let row = displayModel.get(i)
+        if (row.type !== "blockLine" || row.blockIndex !== blockIndex)
+            continue
+
+        if (row.role === "ours")
+            ours.push(row.text)
+        else if (row.role === "theirs")
+            theirs.push(row.text)
+    }
+
+    return { currentText: ours.join("\n"), incomingText: theirs.join("\n") }
+}
+
+/**
  * Returns the lines that should replace a resolved conflict block.
- * @param block - The block object (with currentText, incomingText)
+ * @param block - The block object (with currentText, incomingText), see readBlockSides
  * @param mode  - "ours", "theirs", or "both"
  * @returns String[] of resolved lines
  */
