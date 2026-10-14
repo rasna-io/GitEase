@@ -55,6 +55,10 @@ Item {
 
     property FetchSummaryPopup          fetchSummaryPopup:          FetchSummaryPopup {}
 
+    property RemoteTargetPopup          remoteTargetPopup:          RemoteTargetPopup {}
+
+    property ConfirmCommandDialog       remoteConfirmDialog:        ConfirmCommandDialog {}
+
     property CommitAmendPopup commitAmendPopup: CommitAmendPopup{}
 
 }
