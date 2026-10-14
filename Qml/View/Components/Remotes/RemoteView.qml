@@ -434,9 +434,17 @@ UtilitiesCard {
         }
 
         function buildRemoteMenu(remoteItem) {
+            let session   = root.remoteOperationsSession
+            let isDefault = session !== null && remoteItem.name === session.defaultRemote
+
             return [
                 { text: "Fetch",  icon: Style.icons.download,  enabled: !root.isFetching, action: function() { content.fetchRemote(remoteItem) } },
                 { text: "Pull",   icon: Style.icons.arrowDown, enabled: !root.isFetching, action: function() { content.pullRemote(remoteItem) } },
+                { separator: true },
+                isDefault
+                    ? { text: "Clear Default Remote", icon: Style.icons.star, action: function() { session.setDefaultRemote("") } }
+                    : { text: "Set as Default Remote", icon: Style.icons.star, enabled: session !== null,
+                        action: function() { session.setDefaultRemote(remoteItem.name) } },
                 { separator: true },
                 { text: "Edit Remote...",  icon: Style.icons.edit,      action: function() { content.editRemote(remoteItem) } },
                 { text: "Remove Remote",   icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { content.removeRemoteItem(remoteItem) } },
