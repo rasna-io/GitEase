@@ -269,7 +269,7 @@ PopupDialog {
             }
         }
 
-        // Push to origin after creating
+        // Push to the remote after creating
         RowLayout {
             id: pushCheckbox
             property bool checked: false
@@ -277,7 +277,7 @@ PopupDialog {
             spacing: 8
             Layout.fillWidth: true
             visible: false  // TODO: Implement GitBranch::pushBranch(branchName) to push the newly created
-                            // branch to the remote (origin). Until then, the push checkbox has no effect.
+                            // branch to its remote. Until then, the push checkbox has no effect.
 
 
             Rectangle {
@@ -298,7 +298,7 @@ PopupDialog {
             }
 
             Text {
-                text: "Push to origin after creating"
+                text: "Push to remote after creating"
                 color: Style.colors.popupCheckboxLabelText
                 font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.defaultPt
@@ -367,7 +367,7 @@ PopupDialog {
                 root.branchController.checkoutBranch(branchName)
 
             // TODO: Implement GitBranch::pushBranch(branchName) to push the newly created
-            //       branch to the remote (origin). Until then, the push checkbox has no effect.
+            //       branch to its remote. Until then, the push checkbox has no effect.
             // if (push)
             //     root.branchController.pushBranch(branchName)
 
