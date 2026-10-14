@@ -165,6 +165,7 @@ QString headOid(git_repository* repo)
     git_oid_tostr(hash, sizeof(hash), &oid);
     return QString::fromLatin1(hash);
 }
+
 QString configValue(git_repository* repo, const QString& key)
 {
     git_config* config = nullptr;
@@ -239,6 +240,22 @@ private slots:
     void pushFetchAndUpstreamWork();
     void fastForwardPullKeepsLocalChanges();
     void noRepositoryValidation();
+
+    void targetWithOnlyOrigin();
+    void targetWithoutRemotes();
+    void targetFollowsUpstreamOnAnotherRemote();
+    void targetAsksWhenSeveralRemotesAndNoUpstream();
+    void targetHonoursPushDefault();
+    void targetAsksWhenUpstreamHasAnotherName();
+    void targetOnDetachedHead();
+    void publishingPushSetsUpstream();
+    void pullFollowsUpstreamOfThatRemote();
+    void pullCanRememberUpstream();
+    void targetSurvivesRenamingOrigin();
+    void targetFallsBackWhenOriginIsRemoved();
+    void tagPushUsesTheGivenRemote();
+    void rejectedTokenIsNotReplayed();
+    void defaultRemoteDecidesWherePushGoes();
 };
 
 void TestGitRemote::initTestCase()
@@ -444,6 +461,227 @@ void TestGitRemote::noRepositoryValidation()
     QVERIFY(!controller.remoteTarget().success());
     QVERIFY(!controller.setUpstream("main", "origin", "main").success());
 }
+
+void TestGitRemote::targetWithOnlyOrigin()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString originPath = createBareRemote(dir, "origin.git");
+    QVERIFY(!originPath.isEmpty());
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+    const QString branch = currentBranchName(repo);
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+    QVERIFY(controller.addRemote("origin", originPath).success());
+
+    // A single remote needs no question: pull and push go there under the branch's own name
+    QVariantMap target = remoteTargetOf(controller);
+    QCOMPARE(target.value("branch").toString(), branch);
+    QCOMPARE(remoteNamesOf(target), QStringList{ "origin" });
+    QCOMPARE(target.value("pullRemote").toString(), QString("origin"));
+    QCOMPARE(target.value("pullBranch").toString(), branch);
+    QCOMPARE(target.value("pushRemote").toString(), QString("origin"));
+    QCOMPARE(target.value("pushBranch").toString(), branch);
+    QVERIFY(target.value("publish").toBool());
+    QVERIFY(!target.value("detached").toBool());
+}
+
+void TestGitRemote::targetWithoutRemotes()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+
+    QVariantMap target = remoteTargetOf(controller);
+    QVERIFY(!target.isEmpty());
+    QVERIFY(target.value("remotes").toList().isEmpty());
+    QVERIFY(target.value("pullRemote").toString().isEmpty());
+    QVERIFY(target.value("pushRemote").toString().isEmpty());
+    QVERIFY(target.value("suggestedRemote").toString().isEmpty());
+}
+
+void TestGitRemote::targetFollowsUpstreamOnAnotherRemote()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString originPath = createBareRemote(dir, "origin.git");
+    const QString upstreamPath = createBareRemote(dir, "upstream.git");
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+    const QString branch = currentBranchName(repo);
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+    QVERIFY(controller.addRemote("origin", originPath).success());
+    QVERIFY(controller.addRemote("upstream", upstreamPath).success());
+
+    // Fork workflow: the branch tracks upstream, so both directions use upstream, not origin
+    QVERIFY(controller.push("upstream", branch, branch, QString(), false, false).success());
+    GitResult set = controller.setUpstream(branch, "upstream", branch);
+    QVERIFY2(set.success(), qPrintable(set.errorMessage()));
+    QCOMPARE(configValue(repo, "branch." + branch + ".remote"), QString("upstream"));
+    QCOMPARE(configValue(repo, "branch." + branch + ".merge"), "refs/heads/" + branch);
+
+    QVariantMap target = remoteTargetOf(controller);
+    QCOMPARE(target.value("upstreamRemote").toString(), QString("upstream"));
+    QCOMPARE(target.value("upstreamBranch").toString(), branch);
+    QCOMPARE(target.value("pullRemote").toString(), QString("upstream"));
+    QCOMPARE(target.value("pullBranch").toString(), branch);
+    QCOMPARE(target.value("pushRemote").toString(), QString("upstream"));
+    QCOMPARE(target.value("pushBranch").toString(), branch);
+    QVERIFY(!target.value("publish").toBool());
+}
+
+void TestGitRemote::targetAsksWhenSeveralRemotesAndNoUpstream()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString originPath = createBareRemote(dir, "origin.git");
+    const QString upstreamPath = createBareRemote(dir, "upstream.git");
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+    const QString branch = currentBranchName(repo);
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+    QVERIFY(controller.addRemote("origin", originPath).success());
+    QVERIFY(controller.addRemote("upstream", upstreamPath).success());
+
+    // Nothing says which remote a new branch belongs to: leave it to the user, suggest origin
+    QVariantMap target = remoteTargetOf(controller);
+    QCOMPARE(remoteNamesOf(target), (QStringList{ "origin", "upstream" }));
+    QVERIFY(target.value("pullRemote").toString().isEmpty());
+    QVERIFY(target.value("pushRemote").toString().isEmpty());
+    QVERIFY(target.value("pushBranch").toString().isEmpty());
+    QVERIFY(target.value("publish").toBool());
+    QCOMPARE(target.value("suggestedRemote").toString(), QString("origin"));
+
+    // Once only upstream has the branch, that remote is the better suggestion
+    QVERIFY(controller.push("upstream", branch, branch, QString(), false, false).success());
+    target = remoteTargetOf(controller);
+    QVERIFY(target.value("pushRemote").toString().isEmpty());
+    QCOMPARE(target.value("suggestedRemote").toString(), QString("upstream"));
+}
+
+void TestGitRemote::targetHonoursPushDefault()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString originPath = createBareRemote(dir, "origin.git");
+    const QString forkPath = createBareRemote(dir, "fork.git");
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+    const QString branch = currentBranchName(repo);
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+    QVERIFY(controller.addRemote("origin", originPath).success());
+    QVERIFY(controller.addRemote("fork", forkPath).success());
+    QVERIFY(controller.push("origin", branch, branch, QString(), false, true).success());
+
+    // Triangular workflow: pull from the upstream, push to remote.pushDefault under the same name
+    QVERIFY(setConfigValue(repo, "remote.pushDefault", "fork"));
+    QVariantMap target = remoteTargetOf(controller);
+    QCOMPARE(target.value("pullRemote").toString(), QString("origin"));
+    QCOMPARE(target.value("pushRemote").toString(), QString("fork"));
+    QCOMPARE(target.value("pushBranch").toString(), branch);
+    QVERIFY(!target.value("publish").toBool());
+
+    // branch.<name>.pushRemote outranks remote.pushDefault, as in git
+    QVERIFY(setConfigValue(repo, "branch." + branch + ".pushRemote", "origin"));
+    target = remoteTargetOf(controller);
+    QCOMPARE(target.value("pushRemote").toString(), QString("origin"));
+}
+
+void TestGitRemote::targetAsksWhenUpstreamHasAnotherName()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString originPath = createBareRemote(dir, "origin.git");
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+    const QString mainBranch = currentBranchName(repo);
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+    QVERIFY(controller.addRemote("origin", originPath).success());
+    QVERIFY(controller.push("origin", mainBranch, mainBranch, QString(), false, false).success());
+
+    // feature tracks origin/<main>, as "git checkout -b feature origin/main" leaves it
+    git_commit* head = nullptr;
+    git_oid headId;
+    QCOMPARE(git_reference_name_to_id(&headId, repo, "HEAD"), GIT_OK);
+    QCOMPARE(git_commit_lookup(&head, repo, &headId), GIT_OK);
+    git_reference* feature = nullptr;
+    QCOMPARE(git_branch_create(&feature, repo, "feature", head, 0), GIT_OK);
+    git_reference_free(feature);
+    git_commit_free(head);
+    QCOMPARE(git_repository_set_head(repo, "refs/heads/feature"), GIT_OK);
+    QVERIFY(controller.setUpstream("feature", "origin", mainBranch).success());
+
+    // Pull follows the upstream, but push does not silently update a branch of another name
+    QVariantMap target = remoteTargetOf(controller);
+    QCOMPARE(target.value("branch").toString(), QString("feature"));
+    QCOMPARE(target.value("pullRemote").toString(), QString("origin"));
+    QCOMPARE(target.value("pullBranch").toString(), mainBranch);
+    QCOMPARE(target.value("pushRemote").toString(), QString("origin"));
+    QVERIFY(target.value("pushBranch").toString().isEmpty());
+    QCOMPARE(target.value("suggestedRemote").toString(), QString("origin"));
+}
+
+void TestGitRemote::targetOnDetachedHead()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString upstreamPath = createBareRemote(dir, "upstream.git");
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+
+    git_oid headId;
+    QCOMPARE(git_reference_name_to_id(&headId, repo, "HEAD"), GIT_OK);
+    QCOMPARE(git_repository_set_head_detached(repo, &headId), GIT_OK);
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+    QVERIFY(controller.addRemote("upstream", upstreamPath).success());
+
+    // No branch to pull into or push, but the remote is still known for things like tags
+    QVariantMap target = remoteTargetOf(controller);
+    QVERIFY(target.value("detached").toBool());
+    QVERIFY(target.value("branch").toString().isEmpty());
+    QVERIFY(target.value("pullRemote").toString().isEmpty());
+    QVERIFY(target.value("pushBranch").toString().isEmpty());
+    QCOMPARE(target.value("pushRemote").toString(), QString("upstream"));
+    QVERIFY(!target.value("publish").toBool());
+}
+
 void TestGitRemote::publishingPushSetsUpstream()
 {
     QTemporaryDir dir;
@@ -538,6 +776,119 @@ void TestGitRemote::pullFollowsUpstreamOfThatRemote()
     QCOMPARE(fromOrigin.data().toMap().value("remoteBranch").toString(), branch);
 
     git_repository_free(sourceRepo);
+}
+
+void TestGitRemote::pullCanRememberUpstream()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+
+    const QString sourcePath = QDir::fromNativeSeparators(dir.path() + "/source");
+    const QString consumerPath = QDir::fromNativeSeparators(dir.path() + "/consumer");
+
+    git_repository* sourceRepo = nullptr;
+    QVERIFY(initRepository(sourcePath, false, &sourceRepo));
+    QVERIFY(commitFiles(sourceRepo, { { "a.txt", "a1\n" } }, "first"));
+
+    git_repository* consumerRepo = nullptr;
+    QCOMPARE(git_clone(&consumerRepo, sourcePath.toUtf8().constData(),
+                       consumerPath.toUtf8().constData(), nullptr), GIT_OK);
+    const QString branch = currentBranchName(consumerRepo);
+
+    // A second remote, and the clone's branch no longer tracking anything
+    Repository consumerWrapper(consumerRepo);
+    GitRemote controller;
+    controller.setCurrentRepo(&consumerWrapper);
+    QVERIFY(controller.addRemote("mirror", sourcePath).success());
+
+    git_reference* local = nullptr;
+    QCOMPARE(git_branch_lookup(&local, consumerRepo, branch.toUtf8().constData(), GIT_BRANCH_LOCAL), GIT_OK);
+    QCOMPARE(git_branch_set_upstream(local, nullptr), GIT_OK);
+    git_reference_free(local);
+
+    QVariantMap target = remoteTargetOf(controller);
+    QVERIFY(target.value("pullRemote").toString().isEmpty());
+
+    // The user picked mirror and asked to remember it
+    GitResult pull = controller.pull("mirror", branch, QString(), true);
+    QVERIFY2(pull.success(), qPrintable(pull.errorMessage()));
+    QVERIFY(pull.data().toMap().value("upstreamSet").toBool());
+    QCOMPARE(configValue(consumerRepo, "branch." + branch + ".remote"), QString("mirror"));
+
+    target = remoteTargetOf(controller);
+    QCOMPARE(target.value("pullRemote").toString(), QString("mirror"));
+    QCOMPARE(target.value("pullBranch").toString(), branch);
+
+    // A branch the remote does not have is reported, and nothing is remembered
+    GitResult missing = controller.pull("origin", "no-such-branch", QString(), true);
+    QVERIFY(!missing.success());
+    QVERIFY2(missing.errorMessage().contains("not found after fetch"), qPrintable(missing.errorMessage()));
+    QCOMPARE(configValue(consumerRepo, "branch." + branch + ".remote"), QString("mirror"));
+
+    git_repository_free(sourceRepo);
+}
+
+void TestGitRemote::targetSurvivesRenamingOrigin()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString originPath = createBareRemote(dir, "origin.git");
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+    const QString branch = currentBranchName(repo);
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+    QVERIFY(controller.addRemote("origin", originPath).success());
+    QVERIFY(controller.push("origin", branch, branch, QString(), false, true).success());
+
+    // Renaming the remote carries the upstream along, so nothing still points at origin
+    QVERIFY(controller.editRemote("origin", "github", QString()).success());
+
+    QVariantMap target = remoteTargetOf(controller);
+    QCOMPARE(remoteNamesOf(target), QStringList{ "github" });
+    QCOMPARE(target.value("upstreamRemote").toString(), QString("github"));
+    QCOMPARE(target.value("pullRemote").toString(), QString("github"));
+    QCOMPARE(target.value("pushRemote").toString(), QString("github"));
+    QCOMPARE(target.value("pushBranch").toString(), branch);
+}
+
+void TestGitRemote::targetFallsBackWhenOriginIsRemoved()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString originPath = createBareRemote(dir, "origin.git");
+    const QString upstreamPath = createBareRemote(dir, "upstream.git");
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+    const QString branch = currentBranchName(repo);
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+    QVERIFY(controller.addRemote("origin", originPath).success());
+    QVERIFY(controller.addRemote("upstream", upstreamPath).success());
+    QVERIFY(controller.push("origin", branch, branch, QString(), false, true).success());
+
+    QVERIFY(controller.removeRemote("origin").success());
+
+    // The upstream went with origin; upstream is the only remote left, so it is used
+    QVariantMap target = remoteTargetOf(controller);
+    QCOMPARE(remoteNamesOf(target), QStringList{ "upstream" });
+    QVERIFY(target.value("upstreamRemote").toString().isEmpty());
+    QCOMPARE(target.value("pullRemote").toString(), QString("upstream"));
+    QCOMPARE(target.value("pushRemote").toString(), QString("upstream"));
+    QCOMPARE(target.value("pushBranch").toString(), branch);
+    QVERIFY(target.value("publish").toBool());
+
+    GitResult push = controller.push("upstream", branch, branch, QString(), false, true);
+    QVERIFY2(push.success(), qPrintable(push.errorMessage()));
+    QCOMPARE(configValue(repo, "branch." + branch + ".remote"), QString("upstream"));
 }
 
 void TestGitRemote::tagPushUsesTheGivenRemote()
