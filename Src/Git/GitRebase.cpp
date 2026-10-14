@@ -469,7 +469,7 @@ GitResult GitRebase::quitOp()
                          QString("Failed to quit rebase: %1").arg(GitUtils::getLastError()));
     }
 
-    emitGitCommand("git rebase --quit");
+    emitGitCommand(GitCommandText::rebaseQuit());
     return GitResult(true, QVariant(), "Rebase state cleaned up.");
 }
 
@@ -755,6 +755,35 @@ bool GitRebase::repositoryHasConflicts() const
     const bool hasConflicts = git_index_has_conflicts(index) != 0;
     git_index_free(index);
     return hasConflicts;
+}
+
+QStringList GitRebase::conflictedPaths() const
+{
+    QStringList paths;
+
+    git_index* index = nullptr;
+    if (git_repository_index(&index, activeRepo()) != GIT_OK || !index) {
+        return paths;
+    }
+
+    git_index_conflict_iterator* iterator = nullptr;
+    if (git_index_conflict_iterator_new(&iterator, index) == GIT_OK) {
+        const git_index_entry* ancestor = nullptr;
+        const git_index_entry* ours     = nullptr;
+        const git_index_entry* theirs   = nullptr;
+
+        while (git_index_conflict_next(&ancestor, &ours, &theirs, iterator) == GIT_OK) {
+            const git_index_entry* entry = ours ? ours : (theirs ? theirs : ancestor);
+            if (entry && entry->path) {
+                paths.append(QString::fromUtf8(entry->path));
+            }
+        }
+
+        git_index_conflict_iterator_free(iterator);
+    }
+
+    git_index_free(index);
+    return paths;
 }
 
 bool GitRebase::isRebaseInProgress() const
@@ -1178,6 +1207,41 @@ void GitRebase::interactiveAbort()
     git_repository_state_cleanup(activeRepo());
     cleanupInteractiveState();
     emit rebaseAborted();
+}
+
+GitResult GitRebase::interactiveQuit()
+{
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, QVariant(), "Repository not found.");
+
+    if (!m_interactiveInProgress)
+        return GitResult(false, QVariant(), "No rebase is in progress.");
+
+    if (git_repository_state_cleanup(activeRepo()) != GIT_OK) {
+        return GitResult(false, QVariant(),
+                         QString("Failed to quit rebase: %1").arg(GitUtils::getLastError()));
+    }
+
+    QString head;
+    git_oid headOid;
+    if (git_reference_name_to_id(&headOid, activeRepo(), "HEAD") == GIT_OK)
+        head = gitOidToString(&headOid);
+
+    QString originalBranch;
+    if (m_originalHeadRef && git_reference_is_branch(m_originalHeadRef))
+        originalBranch = QString::fromUtf8(git_reference_shorthand(m_originalHeadRef));
+
+    QVariantMap data;
+    data["head"]            = head;
+    data["originalBranch"]  = originalBranch;
+    data["conflictedFiles"] = conflictedPaths();
+
+    cleanupInteractiveState();
+
+    emitGitCommand(GitCommandText::rebaseQuit());
+    emit rebaseQuit();
+
+    return GitResult(true, data, "Rebase quit.");
 }
 
 
