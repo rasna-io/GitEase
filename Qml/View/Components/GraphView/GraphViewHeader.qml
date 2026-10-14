@@ -299,8 +299,11 @@ RowLayout {
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: "Pull"
-        tooltip: "Pull from origin"
+        tooltip: headerRow.remoteOperationsSession?.pullTooltip ?? ""
         display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        enabled: headerRow.remoteOperationsSession?.canPull ?? false
+
+        hoveredWhileDisabled: headerRow.isHovered(pullBtn)
 
         onClicked: headerRow.pullRequested()
     }
@@ -330,7 +333,7 @@ RowLayout {
             visible: pushBtnHeader.isBusy
         }
 
-        enabled: !headerRow.remoteController?.pushInProgress
+        enabled: headerRow.remoteOperationsSession?.canPush ?? false
         solidIcon: true
         icon.name: !isBusy ? Style.icons.arrowUp : ""
         icon.width: Style.appFont.h3Pt
@@ -339,8 +342,10 @@ RowLayout {
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: !isBusy ? "Push" : ""
-        tooltip: !isBusy ? "Push to origin" : "Pushing..."
+        tooltip: !isBusy ? (headerRow.remoteOperationsSession?.pushTooltip ?? "") : "Pushing..."
         display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+
+        hoveredWhileDisabled: headerRow.isHovered(pushBtnHeader)
 
         onClicked: headerRow.pushRequested(false)
     }
@@ -353,7 +358,7 @@ RowLayout {
         borderWidth: 1
         Layout.preferredHeight: headerRow.controlSize
 
-        enabled: !headerRow.isFetching
+        enabled: headerRow.remoteOperationsSession?.canFetch ?? false
 
         solidIcon: true
         icon.name: Style.icons.download
@@ -363,8 +368,10 @@ RowLayout {
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
         text: "Fetch"
-        tooltip: headerRow.isFetching ? "Fetching…" : "Fetch all remotes"
+        tooltip: headerRow.remoteOperationsSession?.fetchTooltip ?? ""
         display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+
+        hoveredWhileDisabled: headerRow.isHovered(fetchBtnHeader)
 
         onClicked: headerRow.fetchRequested()
     }
