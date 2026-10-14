@@ -233,6 +233,7 @@ Page {
                                 {
                                     text: "Force Push",
                                     icon: Style.icons.arrowUp,
+                                    enabled: root.remoteOperationsSession?.canPush ?? false,
                                     action: function() {
                                         root.pushAndUpdate(true)
                                     }
@@ -240,7 +241,7 @@ Page {
                                 {
                                     text: "Fetch",
                                     icon: Style.icons.download,
-                                    enabled: !root.isFetching,
+                                    enabled: root.remoteOperationsSession?.canFetch ?? false,
                                     action: function() {
                                         root.fetch()
                                     }
@@ -248,7 +249,7 @@ Page {
                                 {
                                     text: "Pull",
                                     icon: Style.icons.arrowDown,
-                                    enabled: !root.isFetching,
+                                    enabled: !root.isFetching && (root.remoteOperationsSession?.canPull ?? false),
                                     action: function() {
                                         root.pullAndUpdate()
                                     }
