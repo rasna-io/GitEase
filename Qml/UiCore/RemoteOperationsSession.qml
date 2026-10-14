@@ -113,6 +113,24 @@ Item {
     }
 
     Connections {
+        target: root.userAuthenticationPopup
+
+        function onPasswordConfirm(password) {
+            let request = root._authActive
+            if (!request || request.answered)
+                return
+
+            request.answered = true
+            request.onToken(password)
+        }
+
+        function onClosed() {
+            // Deferred so the popup finishes closing before it can be asked again
+            Qt.callLater(root._finishCredentialRequest)
+        }
+    }
+
+    Connections {
         target: root.remoteTargetPopup
 
         function onChosen(remote, branch, setUpstream, alwaysAsk) {
@@ -302,6 +320,56 @@ Item {
         root._confirmCallback = onConfirmed
         root.hostPopup(root.confirmDialog, host)
         root.confirmDialog.ask(title, message, command, buttonText, { fromRemoteSession: true })
+    }
+
+    function withCredentials(operation, remoteName, forPush, host, onToken, onCancel) {
+        let remote = root.remoteNamed(remoteName)
+        let url = remote ? (forPush ? remote.pushUrl : remote.url) : ""
+
+        if (!root.needsToken(url) || !root.userAuthenticationPopup) {
+            onToken("")
+            return
+        }
+
+        root.requestCredentials(operation, remoteName, url, host, onToken, onCancel)
+    }
+
+    //! Queues a token prompt; the popup is shared, so prompts are shown one after the other.
+    function requestCredentials(operation, remoteLabel, url, host, onToken, onCancel) {
+        root._authQueue = root._authQueue.concat([{
+            operation:   operation,
+            remoteLabel: remoteLabel,
+            url:         url,
+            host:        host,
+            onToken:     onToken,
+            onCancel:    onCancel,
+            answered:    false
+        }])
+
+        root._showNextCredentialRequest()
+    }
+
+    function _showNextCredentialRequest() {
+        let popup = root.userAuthenticationPopup
+        if (root._authActive || root._authQueue.length === 0 || !popup || popup.visible)
+            return
+
+        let request = root._authQueue[0]
+        root._authQueue = root._authQueue.slice(1)
+        root._authActive = request
+
+        root.hostPopup(popup, request.host)
+        popup.request(request.operation, request.remoteLabel, request.url)
+    }
+
+    function _finishCredentialRequest() {
+        let request = root._authActive
+        root._authActive = null
+
+        if (request && !request.answered && request.onCancel)
+            request.onCancel()
+
+        root._showNextCredentialRequest()
     }
             return
         }
