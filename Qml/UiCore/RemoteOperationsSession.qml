@@ -6,8 +6,17 @@ import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
 /*! ***********************************************************************************************
  * RemoteOperationsSession
  *
- * Single shared owner of "fetch all remotes / push current branch / pull current branch" state
- * and logic.
+ * Single shared owner of the remote actions - fetch all remotes, pull and push the checked out
+ * branch, push and delete tags - and of where each of them goes.
+ *
+ * Where comes from GitRemote::remoteTarget(): the default remote, the branch's upstream, or the
+ * only remote there is. When none of those decides, or on every fetch, pull and push while the
+ * "Always ask which remote" setting is on, the user picks in RemoteTargetPopup, which can also
+ * make the choice the branch's upstream. `target` and the tooltip texts follow the repository,
+ * so every button can say where it is about to go.
+ *
+ * The functions that start an operation take an optional host item: the popups they open then
+ * show in that item's window, e.g. a detached graph panel, instead of the main window.
  * ************************************************************************************************/
 Item {
     id: root
