@@ -225,6 +225,43 @@ PopupDialog {
         }
     }
 
+    Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: forceWarningRow.implicitHeight + 16
+        visible: root.operation === "pushForce" && root.selected !== null
+        radius: 5
+        color: Style.colors.repoItemStatusConflictBg
+
+        RowLayout {
+            id: forceWarningRow
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
+            spacing: 8
+
+            Text {
+                Layout.alignment: Qt.AlignTop
+                text: Style.icons.warning
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.repoItemStatusConflictText
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: "Overwrites " + root.selectedTarget + " with your local history. "
+                      + "Commits there that you do not have are lost."
+                wrapMode: Text.WordWrap
+                color: Style.colors.repoItemStatusConflictText
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.smallPt
+            }
+        }
+    }
+
     component CheckRow: RowLayout {
         id: checkRow
 
