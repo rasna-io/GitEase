@@ -77,7 +77,7 @@ Page {
             guideController: root.guideController
             panelOpen: root.utilityPanelOpen
             remoteController: root.remoteController
-            isFetching: root.isFetching
+            remoteOperationsSession: root.remoteOperationsSession
 
             onPanelToggleRequested: root.utilityPanelOpen = !root.utilityPanelOpen
 
