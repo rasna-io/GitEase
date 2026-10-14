@@ -474,4 +474,6 @@ QtObject{
     property color popupCreateButtonText:            "#FFFFFF"
     property color popupCancelButtonBorder:          controlBorder
     property color popupCancelButtonText:            secondaryText
+    property color popupBodyText:                    secondaryText
+    property color popupShadow:                      "#2E0F172A"
 }
