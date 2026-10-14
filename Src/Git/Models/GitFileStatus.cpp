@@ -143,3 +143,12 @@ QString GitFileStatus::indexStatus() const
     if (m_status & GIT_STATUS_INDEX_TYPECHANGE) return "T";
     return "";
 }
+
+GitFileStatus::Status GitFileStatus::stagedStatus() const
+{
+    if (m_status & GIT_STATUS_INDEX_NEW)        return StagedNew;
+    if (m_status & GIT_STATUS_INDEX_DELETED)    return StagedDeleted;
+    if (m_status & GIT_STATUS_INDEX_RENAMED)    return StagedRenamed;
+    if (m_status & GIT_STATUS_INDEX_MODIFIED)   return StagedModified;
+    return Unknown;
+}
