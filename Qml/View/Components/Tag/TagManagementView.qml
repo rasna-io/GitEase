@@ -37,7 +37,7 @@ UtilitiesCard {
 
         onConfirmed: (context) => {
             if (context.action === "remote")
-                root.performDeleteTagRemote(context.tag)
+                root.performDeleteTagRemote(context.tag, context.remote)
             else
                 root.performDeleteTagLocal(context.tag)
         }
@@ -76,14 +76,16 @@ UtilitiesCard {
     }
 
     function deleteTagRemote(tag) {
-        if (!root.tagController)
+        if (!root.tagController || !root.remoteOperationsSession)
             return
 
-        confirmTagDialog.ask("Delete Tag From Remote",
-                             "Delete the tag '" + tag.name + "' from the remote and from this repository?",
-                             GitCommandText.pushDeleteTag(tag.name) + " && " + GitCommandText.deleteTag(tag.name),
-                             "Delete Tag",
-                             { action: "remote"})
+        root.remoteOperationsSession.chooseTagRemote("deleteTag", tag.name, function(remote) {
+            confirmTagDialog.ask("Delete Tag From Remote",
+                                 "Delete the tag '" + tag.name + "' from " + remote + " and from this repository?",
+                                 GitCommandText.pushDeleteTag(remote, tag.name) + " && " + GitCommandText.deleteTag(tag.name),
+                                 "Delete Tag",
+                                 { action: "remote", tag: tag, remote: remote })
+        })
     }
 
     function performDeleteTagRemote(tag) {
