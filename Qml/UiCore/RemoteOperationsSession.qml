@@ -703,5 +703,71 @@ Item {
             root.notificationController.warning("The push worked, but " + destination + " could not be set as the upstream: "
                                                 + data.upstreamError, "Push", 6000)
     }
+
+    function chooseTagRemote(operation, tagName, onChosen, host) {
+        let target = root.refreshTarget()
+        let remotes = target.remotes || []
+
+        if (remotes.length === 0) {
+            if (root.notificationController)
+                root.notificationController.error("This repository has no remotes yet. Add a remote first.", "Tag", 5000)
+            return
+        }
+
+        if (target.pushRemote && !root.alwaysAskRemote) {
+            onChosen(target.pushRemote)
+            return
+        }
+
+        let choices = remotes.map(remote => ({
+            remote: remote.name,
+            branch: "",
+            url:    remote.pushUrl,
+            note:   remote.name === target.defaultRemote ? "default" : ""
+        }))
+        let preselect = target.pushRemote || target.suggestedRemote
+
+        root.chooseTarget({
+            operation:      operation,
+            subject:        tagName,
+            message:        operation === "deleteTag" ? "Choose the remote to delete the tag from."
+                                                      : "Choose the remote to push the tag to.",
+            choices:        choices,
+            selectedIndex:  Math.max(0, choices.findIndex(choice => choice.remote === preselect)),
+            offerUpstream:  false,
+            offerAlwaysAsk: true,
+            alwaysAsk:      root.alwaysAskRemote
+        }, host, function(remote) {
+            onChosen(remote)
+        })
+    }
+
+    function pushTag(tagName, onFinished, host) {
+        root.chooseTagRemote("pushTag", tagName, function(remote) {
+            root.pushTagTo(remote, tagName, onFinished, host)
+        }, host)
+    }
+
+    function pushTagTo(remote, tagName, onFinished, host) {
+        root.runTagOperation("pushTag", remote, tagName, onFinished, host)
+    }
+
+    function deleteRemoteTag(remote, tagName, onFinished, host) {
+        root.runTagOperation("pushDeleteTag", remote, tagName, onFinished, host)
+    }
+
+    function runTagOperation(method, remote, tagName, onFinished, host) {
+        root.withCredentials("push", remote, true, host, function(token) {
+            AsyncGit.call(root.tagController, method, [remote, tagName, token],
+                function(result) {
+                    if (onFinished)
+                        onFinished(result, remote)
+                },
+                function(error) {
+                    if (onFinished)
+                        onFinished({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }, remote)
+                }
+            )
+        })
     }
 }
