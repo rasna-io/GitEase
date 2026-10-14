@@ -152,3 +152,13 @@ GitFileStatus::Status GitFileStatus::stagedStatus() const
     if (m_status & GIT_STATUS_INDEX_MODIFIED)   return StagedModified;
     return Unknown;
 }
+
+GitFileStatus::Status GitFileStatus::unstagedStatus() const
+{
+    if (m_status & GIT_STATUS_WT_NEW)           return Untracked;
+    if (m_status & GIT_STATUS_WT_DELETED)       return Deleted;
+    if (m_status & GIT_STATUS_WT_RENAMED)       return Renamed;
+    if (m_status & GIT_STATUS_WT_MODIFIED)      return Modified;
+    if (m_status & GIT_STATUS_WT_TYPECHANGE)    return TypeChange;
+    return Unknown;
+}
