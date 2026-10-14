@@ -157,8 +157,16 @@ function padString(str, length, padChar) {
     return str
 }
 
+// Accepts a "#rrggbb" string, "#aarrggbb" string or a QML color value; returns "rrggbb"
+function toHex6(color) {
+    var hex = String(color).replace('#', '')
+    if (hex.length === 8)
+        hex = hex.substr(2)
+    return hex
+}
+
 function lightenColor(color, amount) {
-    var hex = color.replace('#', '')
+    var hex = toHex6(color)
     var r = parseInt(hex.substr(0, 2), 16)
     var g = parseInt(hex.substr(2, 2), 16)
     var b = parseInt(hex.substr(4, 2), 16)
@@ -173,7 +181,7 @@ function lightenColor(color, amount) {
 }
 
 function darkenColor(color, amount) {
-    var hex = color.replace('#', '')
+    var hex = toHex6(color)
     var r = parseInt(hex.substr(0, 2), 16)
     var g = parseInt(hex.substr(2, 2), 16)
     var b = parseInt(hex.substr(4, 2), 16)
@@ -189,7 +197,7 @@ function darkenColor(color, amount) {
 
 // New function to get contrasting text color
 function getContrastColor(backgroundColor) {
-    var hex = backgroundColor.replace('#', '')
+    var hex = toHex6(backgroundColor)
     var r = parseInt(hex.substr(0, 2), 16)
     var g = parseInt(hex.substr(2, 2), 16)
     var b = parseInt(hex.substr(4, 2), 16)

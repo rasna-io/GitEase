@@ -26,7 +26,6 @@ RowLayout {
     property var    filterFieldOptions: ["Messages", "Subjects", "Authors", "Emails", "SHA-1"]
     property var    branchNames     : []
     property string branchFilter    : ""
-    property bool   panelOpen        : false
 
     readonly property bool  compact         : headerRow.parent ? headerRow.parent.width < 650 : false
     readonly property bool  tight           : headerRow.parent ? headerRow.parent.width < 820 : false
@@ -42,7 +41,6 @@ RowLayout {
     signal nextRequested(string rule)
     signal previousRequested(string rule)
     signal reloadRequested()
-    signal panelToggleRequested()
     signal pullRequested()
     signal pushRequested(bool force)
     signal fetchRequested()
@@ -361,31 +359,6 @@ RowLayout {
         tooltip: "Reload graph view"
 
         onClicked: headerRow.reloadRequested()
-    }
-
-    IconButton {
-        id: panelToggleButton
-        Layout.preferredWidth: headerRow.controlSize
-        Layout.preferredHeight: headerRow.controlSize
-        Layout.leftMargin: compact ? 3 : (tight ? 5 : 7)
-
-        display: IconButton.IconOnly
-        icon.source: Style.icons.togglePanel
-        icon.width: 14
-        icon.height: 14
-        icon.color: headerRow.panelOpen ? Style.colors.accent : Style.colors.foreground
-
-        background: Rectangle {
-            radius: 5
-            color: panelToggleButton.down ? Style.colors.surfaceMuted :
-                   panelToggleButton.hovered ? Style.colors.headerButtonBackgroundHover :
-                   headerRow.panelOpen ? Style.colors.subtleAzureGlow
-                                       : Style.colors.headerButtonBackground
-            border.width: 1
-            border.color: Style.colors.headerButtonBorder
-        }
-
-        onClicked: headerRow.panelToggleRequested()
     }
 
     CalendarPopup {

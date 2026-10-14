@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QQmlEngine>
+#include <QStringList>
 
 /*!
  * @brief Builds the git command strings shown to the user.
@@ -76,6 +77,13 @@ public:
 
     //! \a mode matches ResetController.ResetMode: 0 soft, 1 mixed, 2 hard.
     Q_INVOKABLE static QString reset(const QString &commitHash, int mode);
+
+    /* Index and status
+     * ****************************************************************************************/
+    Q_INVOKABLE static QString statusIgnored();
+    Q_INVOKABLE static QString checkIgnore();
+    //! git rm --cached for @p paths: they leave the index but stay on disk.
+    Q_INVOKABLE static QString removeFromIndex(const QStringList &paths);
 
     /* Repository
      * ****************************************************************************************/

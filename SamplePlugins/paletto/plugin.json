@@ -1,0 +1,75 @@
+{
+  "id": "com.gitease.paletto",
+  "name": "Paletto",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": [
+    "page"
+  ],
+  "author": "GitEase",
+  "description": "Design your own color scheme for GitEase, watch it change live, pick colors from anywhere on the screen, then save it, export it and use it as the application's theme.",
+  "cppEntry": "lib/paletto-plugin",
+  "long_description": "Paletto turns the application's color tokens into a live editor. Pick a base theme (Light, Soft or Dark), click any token and change its color: every window, panel and popup of GitEase updates while you drag.\n\nColors can be set with the picker, typed as hex, or taken from anywhere on the screen with the eyedropper: the cursor turns into a dropper, a magnifier shows the Hex, RGB and HSL values of the pixel under it in real time, and a click applies the color and brings you back to GitEase.\n\nPalettes are saved in your library, exported to a small .paletto.json file and imported again on another machine. Only the tokens you changed are stored, so a palette stays small and keeps working when the base theme gains new tokens.\n\nEvery saved palette also appears in Settings > Appearance > Theme. Choose it there and GitEase uses it every time it starts, from the very first window on, even before plugins are loaded.\n\nThe editor has its own light, soft and dark look that follows the base theme you are editing, so it stays readable however far the scheme goes. Your work in progress is remembered and applied again the next time GitEase starts.",
+  "install_guide": "Open the Paletto page from the navigation rail. Choose a base theme, select a token and edit its color, or press the eyedropper next to the value field to pick one from the screen. Use Save to keep the palette and Export to share it. To use a saved palette as the application theme, select it in Settings > Appearance > Theme.",
+  "tags": [
+    "theme",
+    "colors",
+    "appearance",
+    "palette",
+    "eyedropper"
+  ],
+  "features": [
+    {
+      "title": "Live editing",
+      "description": "Every color token of the application can be changed and the whole interface follows in real time."
+    },
+    {
+      "title": "Color picker",
+      "description": "Saturation, hue and opacity controls plus a hex field. Each token shows its base value so a change can be undone with one click. The panel slides in and out."
+    },
+    {
+      "title": "Eyedropper",
+      "description": "Pick a color from anywhere on any screen. A magnifier shows the Hex, RGB and HSL values under the cursor while you move; click to apply, Esc to cancel. Focus returns to GitEase afterwards."
+    },
+    {
+      "title": "Grouped tokens",
+      "description": "Tokens are sorted into groups such as Core, Text, Surfaces, Diff, Commit panel or Terminal, with search and a changed-only filter. New tokens of the application appear automatically."
+    },
+    {
+      "title": "Light, Soft and Dark bases",
+      "description": "Start from any of the three built-in themes. The editor itself switches to a matching light, soft or dark look."
+    },
+    {
+      "title": "Palette library",
+      "description": "Save palettes under a name, load them again, update or delete them."
+    },
+    {
+      "title": "Use it as the app theme",
+      "description": "Saved palettes are listed in Settings > Appearance > Theme. The choice is remembered and applied at startup, before any plugin is loaded."
+    },
+    {
+      "title": "Export and import",
+      "description": "Share a palette as a .paletto.json file. Imports are validated and unknown tokens are skipped."
+    },
+    {
+      "title": "Remembered between sessions",
+      "description": "The palette you were working on is applied again at startup."
+    }
+  ],
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-10-13",
+      "notes": [
+        "First release.",
+        "Live token editor with color picker and Light, Soft and Dark base themes.",
+        "Eyedropper: pick a color from anywhere on the screen with a live Hex, RGB and HSL magnifier.",
+        "Palette library with save, load and delete.",
+        "Saved palettes can be chosen as the application theme in Settings > Appearance and are applied at startup.",
+        "Export and import of .paletto.json files.",
+        "Editor look follows the base theme: light, soft or dark.",
+        "Animated color picker panel and application-style tooltips."
+      ]
+    }
+  ]
+}

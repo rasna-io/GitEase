@@ -518,7 +518,7 @@ IPopup {
                                     Layout.fillWidth: true
                                     title: "Theme"
                                     description: "Select theme"
-                                    cmb.model: ["Modern Light", "Modern Dark"]
+                                    cmb.model: ["Modern Light", "Modern Soft", "Modern Dark"].concat(Style.customThemeNames)
                                 }
 
                                 Rectangle {
@@ -1016,7 +1016,9 @@ IPopup {
         root.appSettings.generalSettings.showStashNodes = displayStashNodes.checked
         root.appSettings.generalSettings.autoUpdate = autoUpdate.checked
         root.appSettings.generalSettings.defaultPath = defaultPath.text
-        root.appSettings.appearanceSettings.currentTheme = theme.cmb.displayText
+        if(theme.cmb.displayText.length > 0) {
+            root.appSettings.appearanceSettings.currentTheme = theme.cmb.displayText
+        }
         root.appSettings.appearanceSettings.reducedMotion = reducedMotion.checked
         root.appSettings.notificationSettings.displayRealtimeNotifications = displayRealtimeNotifications.checked
         root.appSettings.notificationSettings.maxVisibleNotifications = maxVisibleNotifications.value
@@ -1044,7 +1046,9 @@ IPopup {
         autoUpdate.checked = root.appSettings?.generalSettings?.autoUpdate ?? true
         defaultPath.text = root.appSettings.generalSettings.defaultPath
 
-        theme.cmb.currentIndex = theme.cmb.model.indexOf(root.appSettings.appearanceSettings.currentTheme)
+        // A theme that no longer exists (a deleted custom palette) shows as the default one.
+        const themeIndex = theme.cmb.model.indexOf(root.appSettings.appearanceSettings.currentTheme)
+        theme.cmb.currentIndex = themeIndex >= 0 ? themeIndex : 0
         reducedMotion.checked = root.appSettings?.appearanceSettings?.reducedMotion ?? false
         
         displayRealtimeNotifications.checked = root.appSettings?.notificationSettings?.displayRealtimeNotifications ?? true

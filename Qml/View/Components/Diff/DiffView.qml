@@ -216,7 +216,7 @@ DetachablePanel {
     Rectangle {
         id: diffContent
         anchors.fill: parent
-        color: Style.colors.editorBackgroound
+        color: Style.colors.diffViewBackground
         visible: chunkMode ? (chunkData && chunkData.length > 0)
                            : (root.diffData && root.diffData.length > 0)
 
@@ -509,8 +509,8 @@ DetachablePanel {
                 closePolicy: Popup.CloseOnPressOutside | Popup.CloseOnEscape
 
                 background: Rectangle {
-                    color: Style.colors.secondaryBackground
-                    border.color: Style.colors.primaryBorder
+                    color: Style.colors.diffPopupBackground
+                    border.color: Style.colors.diffPopupBorder
                     radius: 6
                 }
 
@@ -598,7 +598,7 @@ DetachablePanel {
 
                 anchors.fill: parent
 
-                color: Style.colors.actionPillBg
+                color: Style.colors.diffPillBackground
                 border.width: 0
 
                 Rectangle {
@@ -606,7 +606,7 @@ DetachablePanel {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     height: 1
-                    color: Style.colors.actionPillBorder
+                    color: Style.colors.diffPillBorder
                 }
 
                 Rectangle {
@@ -614,7 +614,7 @@ DetachablePanel {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     height: 1
-                    color: Style.colors.actionPillBorder
+                    color: Style.colors.diffPillBorder
                 }
 
                 HoverHandler {
@@ -670,7 +670,7 @@ DetachablePanel {
                         color: "transparent"
                         border.color: stepBtnMouse.containsMouse
                                       ? Style.colors.accent
-                                      : Style.colors.actionPillBorder
+                                      : Style.colors.diffPillBorder
                         border.width: 1
 
                         Text {
@@ -709,7 +709,7 @@ DetachablePanel {
                         color: "transparent"
                         border.color: allBtnMouse.containsMouse
                                       ? Style.colors.accent
-                                      : Style.colors.actionPillBorder
+                                      : Style.colors.diffPillBorder
                         border.width: 1
 
                         Text {
