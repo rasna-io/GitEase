@@ -16,9 +16,9 @@ RowLayout {
      * ****************************************************************************************/
     property GuideController guideController : null
     property RemoteController remoteController : null
+    property RemoteOperationsSession remoteOperationsSession : null
 
     property bool   isGraphReady    : false
-    property bool   isFetching      : false
     property string filterText      : ""
     property string filterStartDate : ""
     property string filterEndDate   : ""
@@ -52,6 +52,10 @@ RowLayout {
     spacing             : (parent && parent.width < Style.appHeight) ? 3 : 5
     anchors.leftMargin  : (parent && parent.width < Style.appHeight) ? 8 : 20
     anchors.rightMargin : (parent && parent.width < Style.appHeight) ? 4 : 5
+
+    HoverHandler {
+        id: rowHover
+    }
 
     Text {
         text: "Commit Graph"
@@ -478,5 +482,12 @@ RowLayout {
                                   headerRow.filterStartDate,
                                   headerRow.filterEndDate,
                                   headerRow.filterModes);
+    }
+
+    function isHovered(item) {
+        if (!rowHover.hovered || !item)
+            return false
+
+        return item.contains(item.mapFromItem(headerRow, rowHover.point.position))
     }
 }
