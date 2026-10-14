@@ -589,53 +589,119 @@ Item {
         }
     }
 
-    // Gated so it only reacts when THIS session itself opened the shared auth popup — otherwise
-    // it would misfire on a push/pull/fetch auth prompt started elsewhere.
-    Connections {
-        id: authConnection
-        target: root.userAuthenticationPopup
-        enabled: false
+    function push(force, host) {
+        force = force === true
 
-        function onPasswordConfirm(password) {
-            if (root.authPurpose === "fetch") {
-                let names = root.pendingFetchRemoteNames
-                root.pendingFetchRemoteNames = []
-                for (let i = 0; i < names.length; i++) {
-                    let name = names[i]
-                        if (root.activeFetchRemotes.indexOf(name) === -1)
-                            root.activeFetchRemotes.push(name)
-                    root.startFetchWithToken(name, password)
-                }
-                root.isFetching = root.activeFetchRemotes.length > 0
-                authConnection.enabled = false
-                return
-            }
+        let target = root.refreshTarget()
+        if (!root.canRunBranchOperation(force ? "Force Push" : "Push"))
+            return
 
-            if (root.authPurpose === "pull") {
-                root.pull(password)
-                authConnection.enabled = false
-                return
-            }
-
-            let branchName = root.branchController.getCurrentBranchName()
-            if (branchName.length === 0) {
-                if (root.notificationController)
-                    root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
-            } else {
-                let isForce = root.authPurpose === "pushForce"
-                root.startPush(branchName, isForce, password)
-                if (root.notificationController)
-                    root.notificationController.info("Push operation started", "Push", 3000)
-            }
-            authConnection.enabled = false
+        let decided = target.pushRemote && target.pushBranch
+        if (decided && !root.alwaysAskRemote) {
+            root.confirmPush(target.branch, target.pushRemote, target.pushBranch, force, target.publish, host)
+            return
         }
 
-        function onRejected() {
-            if (root.authPurpose === "fetch") {
-                root.isFetching = root.activeFetchRemotes.length > 0
-                root.pendingFetchRemoteNames = []
-            }
-            authConnection.enabled = false
+        let renamedUpstream = target.upstreamRemote !== "" && target.upstreamBranch !== target.branch
+        let message = decided
+                ? "Choose where to push '" + target.branch + "'."
+                : renamedUpstream
+                  ? "'" + target.branch + "' tracks " + target.upstreamRemote + "/" + target.upstreamBranch
+                    + ", which has a different name. Choose the remote branch to update."
+                  : "'" + target.branch + "' has no upstream branch yet. Choose where to push it."
+
+        let choices = root.branchChoices(target, true)
+        let preselect = decided
+                ? root.indexOfChoice(choices, target.pushRemote, target.pushBranch)
+                : root.indexOfChoice(choices, target.suggestedRemote, target.branch)
+
+        root.chooseTarget({
+            operation:       force ? "pushForce" : "push",
+            subject:         target.branch,
+            message:         message,
+            choices:         choices,
+            selectedIndex:   preselect,
+            offerUpstream:   true,
+            setUpstream:     target.upstreamRemote === "",
+            currentUpstream: root.upstreamOf(target),
+            defaultRemote:   target.defaultRemote,
+            offerAlwaysAsk:  true,
+            alwaysAsk:       root.alwaysAskRemote
+        }, host, function(remote, remoteBranch, setUpstream) {
+            root.confirmPush(target.branch, remote, remoteBranch, force, setUpstream, host)
+        })
+    }
+
+    function pushToRemote(remoteName, host) {
+        let target = root.refreshTarget()
+        if (!root.canRunBranchOperation("Push"))
+            return
+
+        root.confirmPush(target.branch, remoteName, target.branch, false, target.upstreamRemote === "", host)
+    }
+
+    function pushAndUpdate(force, host) {
+        root.push(force, host)
+    }
+
+    function confirmPush(localBranch, remote, remoteBranch, force, setUpstream, host) {
+        if (!force) {
+            root.runPush(localBranch, remote, remoteBranch, false, setUpstream, host)
+            return
         }
+
+        root.confirm("Force Push",
+                     "Overwrite '" + remoteBranch + "' on " + remote + " with your local history? "
+                     + "Commits on the remote that you do not have are lost.",
+                     GitCommandText.push(remote, localBranch, remoteBranch, true, setUpstream),
+                     "Force Push",
+                     host,
+                     function() { root.runPush(localBranch, remote, remoteBranch, true, setUpstream, host) })
+    }
+
+    function runPush(localBranch, remote, remoteBranch, force, setUpstream, host) {
+        let rules = root.remoteController.checkPushRules(remote, localBranch, remoteBranch, force)
+        if (rules && !rules.success) {
+            root.handlePushResult(rules)
+            return
+        }
+
+        root.withCredentials(force ? "pushForce" : "push", remote, true, host, function(token) {
+            if (root.notificationController)
+                root.notificationController.info("Pushing to " + remote + "/" + remoteBranch, force ? "Force Push" : "Push", 3000)
+
+            AsyncGit.call(root.remoteController, "push", [remote, localBranch, remoteBranch, token, force, setUpstream],
+                function(result) { root.handlePushResult(result) },
+                function(error) { root.handlePushResult({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
+            )
+        })
+    }
+
+    function handlePushResult(gitResult) {
+        if (!root.notificationController)
+            return
+
+        if (gitResult && gitResult.stale === true) {
+            root.notificationController.info("Push finished for the repository you switched away from", "Push", 4000)
+            return
+        }
+
+        if (!gitResult || !gitResult.success) {
+            root.notificationController.error((gitResult && gitResult.errorMessage) || "Push error", "Push Error", 5000)
+            return
+        }
+
+        let data = gitResult.data || {}
+        let isForce = data.force === true
+        let destination = data.remote + "/" + data.remoteBranch
+
+        root.notificationController.success((isForce ? "Force pushed to " : "Pushed to ") + destination
+                                            + (data.upstreamSet ? ", now the upstream of '" + data.branch + "'" : ""),
+                                            isForce ? "Force Push" : "Push", 3000)
+
+        if (data.upstreamError)
+            root.notificationController.warning("The push worked, but " + destination + " could not be set as the upstream: "
+                                                + data.upstreamError, "Push", 6000)
+    }
     }
 }
