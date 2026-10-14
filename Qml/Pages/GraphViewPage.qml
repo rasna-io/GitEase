@@ -392,12 +392,12 @@ Page {
         root.remoteOperationsSession?.pushAndUpdate(force)
     }
 
-    function pull(secret) {
-        root.remoteOperationsSession?.pull(secret)
+    function pull() {
+        root.remoteOperationsSession?.pull()
     }
 
-    function pullAndUpdate(secret) {
-        root.remoteOperationsSession?.pullAndUpdate(secret)
+    function pullAndUpdate() {
+        root.remoteOperationsSession?.pullAndUpdate()
     }
 
     //! Rebuilds the graph, keeping the filter and the selection that are in effect.
