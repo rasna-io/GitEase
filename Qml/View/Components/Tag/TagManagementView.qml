@@ -279,7 +279,7 @@ UtilitiesCard {
                         visible: false
                         // TODO: Task "Dynamic Remote/Local Actions"
                         //       Make visible when tag is NOT on the remote.
-                        //       Requires GitTag::remoteTagNames() to get origin's tags.
+                        //       Requires GitTag::remoteTagNames() to get the remote's tags.
                         //       Bind to: root.remoteTagNames.indexOf(modelData.name) === -1
                         //       The corresponding remote‑delete button (not yet in the code)
                         //       will be visible when the tag IS on the remote.
