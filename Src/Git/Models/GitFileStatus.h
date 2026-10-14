@@ -22,6 +22,7 @@ class GitFileStatus
 
     Q_PROPERTY(QString indexStatus READ indexStatus CONSTANT)
 
+    Q_PROPERTY(Status stagedStatus READ stagedStatus CONSTANT FINAL)
 public:
     enum Status {
         Untracked = GIT_STATUS_WT_NEW,
@@ -83,6 +84,9 @@ public:
 
     QString indexStatus() const;
 
+    // The change between HEAD and the index: StagedNew / StagedModified / StagedDeleted /
+    // StagedRenamed, or Unknown when nothing is staged.
+    Status stagedStatus() const;
 private:
     QString m_path;
     Status m_status;
