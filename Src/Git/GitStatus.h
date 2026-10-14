@@ -81,6 +81,17 @@ public:
     GitResult addToIndex(const QString& filePath, bool isRemove = false);
 
     /**
+     * Removes files or whole folders from the index and keeps them on disk.
+     *
+     * Equivalent of `git rm --cached -r -q --ignore-unmatch`. A path that is not in the index is
+     * not an error, and the index is written once for the whole batch.
+     *
+     * @param paths Files or folders relative to the repository root
+     * @return GitResult with data as the number of paths handled
+     */
+    Q_INVOKABLE GitResult removeFromIndex(const QStringList &paths);
+
+    /**
     * @brief Retrieves a processed diff for a specific file.
     *
     * This function uses the Patience diff algorithm to compare the index with the
