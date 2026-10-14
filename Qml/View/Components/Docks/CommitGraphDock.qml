@@ -600,12 +600,7 @@ DetachablePanel {
     ConfirmCommandDialog {
         id: confirmCommandDialog
 
-        onConfirmed: (context) => {
-            if (context.branchName !== undefined)
-                root.performPush(context.branchName, true)
-            else
-                root.performResetHead(context.commitHash, context.mode)
-        }
+        onConfirmed: (context) => root.performResetHead(context.commitHash, context.mode)
     }
 
     Connections {
