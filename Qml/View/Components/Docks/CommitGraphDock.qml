@@ -1355,6 +1355,15 @@ DetachablePanel {
         root.remoteOperationsSession?.push(force, root.activeItem)
     }
 
+    function remoteOfBranch(branchName) {
+        let match = ""
+        for (let remote of root.remoteOperationsSession?.remotes ?? []) {
+            if (branchName.startsWith(remote.name + "/") && remote.name.length > match.length)
+                match = remote.name
+        }
+        return match
+    }
+
 
     function executeShowOnlyBranch(branchName) {
         root.branchFilter = branchName || ""
@@ -1603,12 +1612,17 @@ DetachablePanel {
             return
         }
 
-        var localName = branchName.replace(/^[^/]+\//, "")
+        var remote    = root.remoteOfBranch(branchName)
+        var localName = remote !== "" ? branchName.substring(remote.length + 1)
+                                      : branchName.replace(/^[^/]+\//, "")
         var createRes = root.branchController.createBranch(commitHash, localName)
         if (!createRes.success) {
             handleContextResponse(createRes, "")
             return
         }
+
+        if (remote !== "")
+            root.remoteController?.setUpstream(localName, remote, localName)
 
         handleContextResponse(root.branchController.checkoutBranch(localName), "Created and checked out branch " + localName)
     }
