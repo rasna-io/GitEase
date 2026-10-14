@@ -165,6 +165,9 @@ UtilitiesCard {
 
                     property Remote currentRemote: modelData
 
+                    readonly property bool isDefault: root.remoteOperationsSession !== null
+                                                      && currentRemote.name === root.remoteOperationsSession.defaultRemote
+
                     width: listView.width
                     height: Style.dp(35)
 
@@ -202,12 +205,36 @@ UtilitiesCard {
                             spacing: 1
                             clip: true
 
-                            ScrollingText {
+                            RowLayout {
                                 Layout.fillWidth: true
-                                text: currentRemote.name
-                                color: Style.colors.utilitiesRowText
-                                font.family: Style.fontTypes.inter
-                                font.pixelSize: Style.appFont.mediumPt
+                                spacing: 6
+
+                                ScrollingText {
+                                    Layout.fillWidth: true
+                                    text: currentRemote.name
+                                    color: Style.colors.utilitiesRowText
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.mediumPt
+                                }
+
+                                // The remote Push goes to unless a branch says otherwise
+                                Rectangle {
+                                    visible: isDefault
+                                    radius: 4
+                                    color: Style.colors.accentWash
+                                    implicitWidth: defaultLabel.implicitWidth + 10
+                                    implicitHeight: defaultLabel.implicitHeight + 2
+
+                                    Text {
+                                        id: defaultLabel
+                                        anchors.centerIn: parent
+                                        text: "default"
+                                        color: Style.colors.accent
+                                        font.family: Style.fontTypes.inter
+                                        font.pixelSize: Style.appFont.microPt
+                                        font.weight: Font.DemiBold
+                                    }
+                                }
                             }
                             ScrollingText {
                                 Layout.fillWidth: true
