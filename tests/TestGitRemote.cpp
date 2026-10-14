@@ -444,6 +444,50 @@ void TestGitRemote::noRepositoryValidation()
     QVERIFY(!controller.remoteTarget().success());
     QVERIFY(!controller.setUpstream("main", "origin", "main").success());
 }
+void TestGitRemote::publishingPushSetsUpstream()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString originPath = createBareRemote(dir, "origin.git");
+    const QString upstreamPath = createBareRemote(dir, "upstream.git");
+
+    git_repository* repo = nullptr;
+    QVERIFY(initRepository(dir.path() + "/local", false, &repo));
+    QVERIFY(commitFiles(repo, { { "a.txt", "1\n" } }, "first"));
+    const QString branch = currentBranchName(repo);
+
+    Repository wrapper(repo);
+    GitRemote controller;
+    controller.setCurrentRepo(&wrapper);
+    QVERIFY(controller.addRemote("origin", originPath).success());
+    QVERIFY(controller.addRemote("upstream", upstreamPath).success());
+
+    QStringList commands;
+    connect(&controller, &IGitController::gitCommandGenerated, this,
+            [&commands](const QString& command) { commands << command; });
+
+    // The first push of a branch, like git push -u
+    GitResult push = controller.push("upstream", branch, QString(), QString(), false, true);
+    QVERIFY2(push.success(), qPrintable(push.errorMessage()));
+    QVERIFY(push.data().toMap().value("upstreamSet").toBool());
+    QCOMPARE(push.data().toMap().value("remoteBranch").toString(), branch);
+    QVERIFY(commands.contains(QString("git push -u \"upstream\" \"%1\"").arg(branch)));
+
+    git_repository* upstreamRepo = nullptr;
+    QCOMPARE(git_repository_open(&upstreamRepo, upstreamPath.toUtf8().constData()), GIT_OK);
+    QVERIFY(referenceExists(upstreamRepo, "refs/heads/" + branch));
+    git_repository_free(upstreamRepo);
+
+    QVERIFY(referenceExists(repo, "refs/remotes/upstream/" + branch));
+    QCOMPARE(configValue(repo, "branch." + branch + ".remote"), QString("upstream"));
+
+    // From now on the branch has a home, so nothing needs asking
+    QVariantMap target = remoteTargetOf(controller);
+    QCOMPARE(target.value("pullRemote").toString(), QString("upstream"));
+    QCOMPARE(target.value("pushRemote").toString(), QString("upstream"));
+    QCOMPARE(target.value("pushBranch").toString(), branch);
+    QVERIFY(!target.value("publish").toBool());
+}
 
 QTEST_MAIN(TestGitRemote)
 #include "TestGitRemote.moc"
