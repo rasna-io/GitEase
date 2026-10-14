@@ -593,7 +593,6 @@ Window {
         let found = ConflictUtils.findBlockByIndex(selectedConflict.blocks, blockIndex)
         if (!found)
             return
-        let block = found.block
 
         // Write current editor content and perform C++ resolution
         let currentContent = ConflictUtils.buildFullContent(conflictRows)
@@ -625,14 +624,13 @@ Window {
                                 ConflictUtils.readBlockSides(conflictRows, blockIndex), mode)
 
         // Update the ListModel in place
-        ConflictUtils.replaceBlockInModel(conflictRows, blockIndex, block, resolvedLines, mode)
+        ConflictUtils.replaceBlockInModel(conflictRows, blockIndex, resolvedLines, mode)
 
         // Update the cached block objects
-        let lineDelta = resolvedLines.length - (block.endLine - block.startLine + 1)
-        ConflictUtils.updateRemainingBlocks(selectedConflict, blockIndex, found.pos, lineDelta, block.endLine)
+        ConflictUtils.updateRemainingBlocks(selectedConflict, blockIndex, found.pos, conflictRows)
 
         // Keep the raw lines array in sync
-        selectedConflict.lines = ConflictUtils.updateLinesArray(selectedConflict.lines, block, resolvedLines)
+        selectedConflict.lines = ConflictUtils.buildFullContent(conflictRows).split("\n")
 
         let idx = conflicts.findIndex(c => c.path === selectedPath)
         if (idx >= 0) {
