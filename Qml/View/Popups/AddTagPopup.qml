@@ -22,6 +22,13 @@ PopupDialog {
     property bool pushAfterCreate: true
     property bool isAnnotated: true
 
+    property RemoteOperationsSession remoteOperationsSession: typeof uiSession !== "undefined" && uiSession
+                                                              ? uiSession.remoteOperationsSession : null
+
+    readonly property string pushRemote: root.remoteOperationsSession && !root.remoteOperationsSession.alwaysAskRemote
+                                         ? (root.remoteOperationsSession.target?.pushRemote ?? "")
+                                         : ""
+
     readonly property bool isNameValid: nameInput.text.trim().length > 0
     readonly property bool isMessageValid: !root.isAnnotated || messageInput.text.trim().length > 0
     readonly property bool canAccept: isNameValid && isMessageValid
