@@ -54,12 +54,12 @@ UtilitiesCard {
         function onPasswordConfirm(password){
             if (root.authPurpose === "pull") {
                 root.isFetching = true
-                content.startPull([remote.name, "", password], remote.name)
+                root.contentItem.startPull([remote.name, "", password], remote.name)
             } else {
                 root.isFetching = true
                 if (root.activeFetchRemotes.indexOf(remote.name) === -1)
                     root.activeFetchRemotes.push(remote.name)
-                content.startFetch(remote.name)
+                root.contentItem.startFetch(remote.name, password)
             }
             root.authPurpose = "fetch"
         }
@@ -71,6 +71,15 @@ UtilitiesCard {
 
         function onClosed() {
             userAuthenticationPopupConnection.enabled = false
+        }
+    }
+
+    Connections {
+        target: root.addEditRemotePopup
+
+        function onRemoteAdded(name, fetchNow) {
+            if (fetchNow && root.contentItem)
+                root.contentItem.fetchRemoteNamed(name)
         }
     }
 
@@ -100,7 +109,7 @@ UtilitiesCard {
                         targetProvider: function() { return listView },
                         icon: Style.icons.upload,
                         title: "Manage Remotes",
-                        description: "Every remote configured for this repository is listed here. Use the icons on each row to fetch, pull, edit, or remove it."
+                        description: "Every remote configured for this repository is listed here. Use the icons on each row to fetch, pull, or remove it, and right-click a remote to edit it."
                     },
                     {
                         targetProvider: function() { return addRemoteBtn },
@@ -212,7 +221,7 @@ UtilitiesCard {
                             Layout.alignment: Qt.AlignVCenter
 
                             ActionIconButton {
-                                iconText: Style.icons.download
+                                iconText: Style.icons.refresh
                                 tooltip: root.isFetching ? "Fetching..." : "Fetch"
                                 textColor: root.isFetching ? Style.colors.utilitiesActionIconActive
                                                            : Style.colors.utilitiesActionIcon
@@ -228,13 +237,7 @@ UtilitiesCard {
                                 onClicked: content.pullRemote(currentRemote)
                             }
                             ActionIconButton {
-                                iconText: Style.icons.edit
-                                tooltip: "Edit Remote"
-                                textColor: Style.colors.utilitiesActionIcon
-                                onClicked: content.editRemote(currentRemote)
-                            }
-                            ActionIconButton {
-                                iconText: Style.icons.trash
+                                iconText: Style.icons.close
                                 tooltip: "Remove Remote"
                                 textColor: Style.colors.utilitiesActionIconDanger
                                 onClicked: content.removeRemoteItem(currentRemote)
@@ -296,6 +299,21 @@ UtilitiesCard {
             }
         }
 
+        function fetchRemoteNamed(remoteName) {
+            content.reload()
+
+            let res = remoteController ? remoteController.getRemotes() : null
+            if (!res || !res.success)
+                return
+
+            for (let i = 0; i < res.data.length; ++i) {
+                if (res.data[i].name === remoteName) {
+                    content.fetchRemote(res.data[i])
+                    return
+                }
+            }
+        }
+
         function pullRemote(remoteItem) {
             root.remote = remoteItem
             let res = remoteController.getRemoteUrl(remoteItem.name)
@@ -320,8 +338,10 @@ UtilitiesCard {
             }
         }
 
-        function startFetch(remoteName) {
-            AsyncGit.call(root.remoteController, "fetch", [remoteName],
+        function startFetch(remoteName, token) {
+            AsyncGit.call(root.remoteController,
+                token ? "fetchWithToken" : "fetch",
+                token ? [remoteName, token] : [remoteName],
                 function(result) { content.handleFetchResult(remoteName, result) },
                 function(error) { content.handleFetchResult(remoteName, { success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
             )
