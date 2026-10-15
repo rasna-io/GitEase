@@ -77,7 +77,7 @@ Page {
             guideController: root.guideController
             panelOpen: root.utilityPanelOpen
             remoteController: root.remoteController
-            isFetching: root.isFetching
+            remoteOperationsSession: root.remoteOperationsSession
 
             onPanelToggleRequested: root.utilityPanelOpen = !root.utilityPanelOpen
 
@@ -186,7 +186,7 @@ Page {
                     appModel                : root.appModel
                     branchController        : root.branchController
                     remoteController        : root.remoteController
-                    userAuthenticationPopup : root.userAuthenticationPopup
+                    remoteOperationsSession : root.remoteOperationsSession
                     tagController            : root.tagController
                     mergeController         : root.mergeController
                     rebaseController        : root.rebaseController
@@ -256,6 +256,7 @@ Page {
 
             branchController        : root.branchController
             remoteController        : root.remoteController
+            remoteOperationsSession : root.remoteOperationsSession
             repositoryController    : root.repositoryController
             commitController        : root.commitController
             statusController        : root.statusController
@@ -391,12 +392,12 @@ Page {
         root.remoteOperationsSession?.pushAndUpdate(force)
     }
 
-    function pull(secret) {
-        root.remoteOperationsSession?.pull(secret)
+    function pull() {
+        root.remoteOperationsSession?.pull()
     }
 
-    function pullAndUpdate(secret) {
-        root.remoteOperationsSession?.pullAndUpdate(secret)
+    function pullAndUpdate() {
+        root.remoteOperationsSession?.pullAndUpdate()
     }
 
     //! Rebuilds the graph, keeping the filter and the selection that are in effect.

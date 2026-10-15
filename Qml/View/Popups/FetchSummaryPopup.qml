@@ -616,9 +616,6 @@ IPopup {
                 names.push(remote)
         }
 
-        if (names.length === 0)
-            return "origin"
-
         return names.join(", ")
     }
 
@@ -686,7 +683,7 @@ IPopup {
                 updatedBranches.push({
                     icon: "↓",
                     name: branchName.length > 0
-                          ? branchName
+                          ? remoteBranchName(result.remote, branchName)
                           : summary,
                     meta: meta,
                     hasAction: false
@@ -705,7 +702,7 @@ IPopup {
         if (branch.indexOf(remote + "/") === 0)
             return branch
 
-        return branch
+        return remote + "/" + branch
     }
 
     function shortSha(value) {

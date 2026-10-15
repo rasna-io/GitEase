@@ -1,7 +1,8 @@
 #include "GitTag.h"
 #include "GitCommandText.h"
-#include "Auth/GitSshAuth.h"
-#include "Utilities/GitProtocolDetector.h"
+#include "GitRemote.h"
+#include "GitRepository.h"
+#include "Auth/GitHttpsAuth.h"
 
 #include <algorithm>
 
@@ -105,118 +106,69 @@ GitResult GitTag::remove(const QString &name)
     return GitResult(true);
 }
 
-int credentials_cb(git_credential **out, const char *url, const char *user_from_url,
-                   unsigned int allowed_types, void *payload)
+GitResult GitTag::pushTag(const QString &remote, const QString &name, const QString &token)
 {
-    if (allowed_types & GIT_CREDENTIAL_SSH_KEY) {
-        int error = git_credential_ssh_key_from_agent(out, user_from_url);
-        if (error == 0) return 0;
-    }
+    GitResult result = uploadTagRefspec(remote, QString("refs/tags/%1:refs/tags/%1").arg(name), token);
 
-    if (allowed_types & GIT_CREDENTIAL_USERNAME) {
-        return git_credential_username_new(out, user_from_url);
-    }
+    if (!result.success())
+        return GitResult(false, QVariant(), "Push failed: " + result.errorMessage());
 
-    return git_credential_userpass_plaintext_new(out, user_from_url, "");
+    emitGitCommand(GitCommandText::pushTag(remote, name));
+    return GitResult(true, remote);
 }
 
-static void applyTagPushAuth(git_remote *remote, git_push_options &options)
+GitResult GitTag::pushDeleteTag(const QString &remote, const QString &name, const QString &token)
 {
-    const char *url = git_remote_pushurl(remote);
-    if (!url)
-        url = git_remote_url(remote);
+    GitResult result = uploadTagRefspec(remote, QString(":refs/tags/%1").arg(name), token);
 
-    if (url && GitProtocolDetector::isSshUrl(QString::fromUtf8(url))) {
-        GitSshAuth().applyPush(options);
-        return;
-    }
+    if (!result.success())
+        return GitResult(false, QVariant(), "Remote delete failed: " + result.errorMessage());
 
-    options.callbacks.credentials = credentials_cb;
+    emitGitCommand(GitCommandText::pushDeleteTag(remote, name));
+    return GitResult(true, remote);
 }
 
-GitResult GitTag::pushTag(const QString &name)
-{
-    GitResult result = pushTagInternal(name);
-
-    if (result.success())
-        emitGitCommand(GitCommandText::pushTag(name));
-
-    return result;
-}
-
-GitResult GitTag::pushTagInternal(const QString &name)
+GitResult GitTag::uploadTagRefspec(const QString &remoteName, const QString &refspec, const QString &token)
 {
     if (!m_currentRepo || !activeRepo())
-        return GitResult(false, "Repository not open");
+        return GitResult(false, QVariant(), "Repository not open");
+
+    if (remoteName.isEmpty())
+        return GitResult(false, QVariant(), "Remote name cannot be empty");
+
+    QString authError;
+    std::unique_ptr<IGitAuth> auth = GitRemote::authForRemote(activeRepo(), remoteName, token, true, &authError);
+    if (!auth)
+        return GitResult(false, QVariant(), authError);
 
     git_remote *remote = nullptr;
-    if (git_remote_lookup(&remote, activeRepo(), "origin") != 0)
-        return GitResult(false, "Remote 'origin' not found");
+    if (git_remote_lookup(&remote, activeRepo(), remoteName.toUtf8().constData()) != 0)
+        return GitResult(false, QVariant(), QString("Remote '%1' not found").arg(remoteName));
 
-    QString refSpec = QString("refs/tags/%1:refs/tags/%1").arg(name);
-    QByteArray refByte = refSpec.toUtf8();
-    const char *spec = refByte.constData();
-    git_strarray array = { (char **)&spec, 1 };
+    QByteArray refByte = refspec.toUtf8();
+    char *spec = refByte.data();
+    git_strarray array = { &spec, 1 };
 
     git_push_options options;
-    git_push_init_options(&options, GIT_PUSH_OPTIONS_VERSION);
+    git_push_options_init(&options, GIT_PUSH_OPTIONS_VERSION);
 
-    applyTagPushAuth(remote, options);
+    GitRepository::GitPayload payload { this, auth.get() };
+    options.callbacks.payload = &payload;
+    auth->applyPush(options);
 
     int error = git_remote_upload(remote, &array, &options);
 
-    if (error != 0) {
-        const git_error *lastError = git_error_last();
-        QString errorDetail = lastError ? QString::fromUtf8(lastError->message) : "Unknown error";
-        git_remote_free(remote);
-        return GitResult(false, "Push failed: " + errorDetail);
-    }
-
-    git_remote_free(remote);
-    return GitResult(true);
-}
-
-GitResult GitTag::pushDeleteTag(const QString &name)
-{
-    GitResult result = pushDeleteTagInternal(name);
-
-    if (result.success())
-        emitGitCommand(GitCommandText::pushDeleteTag(name));
-
-    return result;
-}
-
-GitResult GitTag::pushDeleteTagInternal(const QString &name)
-{
-    if (!m_currentRepo || !activeRepo())
-        return GitResult(false, "Repository not open");
-
-    git_remote *remote = nullptr;
-    if (git_remote_lookup(&remote, activeRepo(), "origin") != 0)
-        return GitResult(false, "Remote 'origin' not found");
-
-    QString refSpec = QString(":refs/tags/%1").arg(name);
-    QByteArray refByte = refSpec.toUtf8();
-    const char *spec = refByte.constData();
-    git_strarray array = { (char **)&spec, 1 };
-
-    git_push_options options;
-    git_push_init_options(&options, GIT_PUSH_OPTIONS_VERSION);
-
-    applyTagPushAuth(remote, options);
-
-    options.callbacks.certificate_check = [](git_cert*, int, const char*, void*) {
-        return 0;
-    };
-
-    int error = git_remote_upload(remote, &array, &options);
-
+    const char *pushUrl = git_remote_pushurl(remote);
+    const QString url = QString::fromUtf8(pushUrl && *pushUrl ? pushUrl : git_remote_url(remote));
     git_remote_free(remote);
 
     if (error != 0) {
+        const auto *https = dynamic_cast<const GitHttpsAuth *>(auth.get());
+        if (https && https->tokenRejected())
+            return GitResult(false, QVariant(), GitHttpsAuth::rejectedTokenMessage(remoteName, url, true));
+
         const git_error *lastError = git_error_last();
-        QString errorDetail = lastError ? QString::fromUtf8(lastError->message) : "Unknown error";
-        return GitResult(false, "Remote delete failed: " + errorDetail);
+        return GitResult(false, QVariant(), lastError ? QString::fromUtf8(lastError->message) : "Unknown error");
     }
 
     return GitResult(true);

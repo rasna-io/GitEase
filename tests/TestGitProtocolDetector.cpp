@@ -23,6 +23,12 @@ void TestGitProtocolDetector::detectProtocol_data()
                              << static_cast<int>(GitProtocolDetector::GitProtocol::SSH);
     QTest::newRow("ssh-url") << "ssh://git@github.com/owner/repo.git"
                              << static_cast<int>(GitProtocolDetector::GitProtocol::SSH);
+    QTest::newRow("ssh-scp-other-user") << "deploy@server.example.com:repos/app.git"
+                                        << static_cast<int>(GitProtocolDetector::GitProtocol::SSH);
+    QTest::newRow("https-with-user") << "https://user@github.com/owner/repo.git"
+                                     << static_cast<int>(GitProtocolDetector::GitProtocol::HTTPS);
+    QTest::newRow("local-path") << "C:/repos/project.git"
+                                << static_cast<int>(GitProtocolDetector::GitProtocol::Unknown);
     QTest::newRow("https") << "https://github.com/owner/repo.git"
                            << static_cast<int>(GitProtocolDetector::GitProtocol::HTTPS);
     QTest::newRow("http") << "http://github.com/owner/repo.git"

@@ -27,7 +27,6 @@ DetachablePanel {
 
     property BranchController       branchController        : null
     property RemoteController        remoteController       : null
-    property UserAuthenticationPopup userAuthenticationPopup : null
     property MergeController        mergeController         : null
     property RebaseController       rebaseController        : null
     property CherryPickController   cherryPickController    : null
@@ -48,8 +47,7 @@ DetachablePanel {
     property AddBranchPopup          addBranchPopup         : null
     property AddTagPopup             addTagPopup            : null
 
-    property bool   isForcePush: false
-    property string pendingPushBranch: ""
+    property RemoteOperationsSession remoteOperationsSession: null
     property string pendingMergeSource: ""
     property var    allCommits      : []
     property var    commits         : []
@@ -519,29 +517,6 @@ DetachablePanel {
 
 
     Connections {
-        id: pushAuthConnection
-        target: userAuthenticationPopup
-        enabled: false
-
-        function onPasswordConfirm(password){
-            let branchName = root.pendingPushBranch || branchController.getCurrentBranchName()
-            if(branchName.length === 0){
-                root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
-            }else{
-                root.startPush(branchName, isForcePush, password)
-                root.notificationController.info("Push operation started", "Push", 3000)
-            }
-            root.pendingPushBranch = ""
-            pushAuthConnection.enabled = false
-        }
-
-        function onRejected() {
-            root.pendingPushBranch = ""
-            pushAuthConnection.enabled = false
-        }
-    }
-
-    Connections {
         target: Style
         function onCurrentThemeChanged() {
             graphCanvas.requestPaint()
@@ -625,12 +600,7 @@ DetachablePanel {
     ConfirmCommandDialog {
         id: confirmCommandDialog
 
-        onConfirmed: (context) => {
-            if (context.branchName !== undefined)
-                root.performPush(context.branchName, true)
-            else
-                root.performResetHead(context.commitHash, context.mode)
-        }
+        onConfirmed: (context) => root.performResetHead(context.commitHash, context.mode)
     }
 
     Connections {
@@ -1247,8 +1217,9 @@ DetachablePanel {
             fullHash            : commitData.hash,
             commitMessage       : commitData.message || "",
             commitDate          : commitData.authorDate || "",
-            pushEnabled         : !remoteController.pushInProgress && isHead && !!currentBranch,
+
             localBranches       : localBranches,
+            pushEnabled         : isHead && (root.remoteOperationsSession?.canPush ?? false),
             isStash             : commitData.isStash || false,
             canCherryPick       : root.canCherryPick(commitData),
             canRebase           : root.canRebaseOnto(commitData, currentBranch),
@@ -1381,77 +1352,18 @@ DetachablePanel {
     }
 
     function executePush(branchName, force) {
-        if (!force) {
-            root.performPush(branchName, false)
-            return
-        }
-
-        confirmCommandDialog.ask("Force Push",
-                                 "Overwrite '" + branchName + "' on origin with your local history? " +
-                                 "Commits on the remote that you do not have are lost.",
-                                 GitCommandText.push("origin", branchName, true),
-                                 "Force Push",
-                                 { branchName: branchName })
+        root.remoteOperationsSession?.push(force, root.activeItem)
     }
 
-    function performPush(branchName, force) {
-        isForcePush = force
-        let urlRes = remoteController.getRemoteUrl("origin")
-        if (!urlRes.success) {
-            root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${isForcePush ? "Force Push" : "Push"} Error`, 5000)
-            return
+    function remoteOfBranch(branchName) {
+        let match = ""
+        for (let remote of root.remoteOperationsSession?.remotes ?? []) {
+            if (branchName.startsWith(remote.name + "/") && remote.name.length > match.length)
+                match = remote.name
         }
-        let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
-        switch (protocol) {
-        case RepositoryController.GitProtocol.SSH: {
-            root.startPush(branchName, isForcePush)
-            root.notificationController.info("Push operation started", "Push", 3000)
-            break
-        }
-
-        // Fall-through: both HTTP/HTTPS require auth popup
-        case RepositoryController.GitProtocol.HTTPS:
-        case RepositoryController.GitProtocol.HTTP:
-            root.pendingPushBranch = branchName
-            pushAuthConnection.enabled = true
-            root.openPopup(userAuthenticationPopup)
-            break
-        default:
-            root.notificationController.error("Unsupported protocol", `${isForcePush ? "Force Push" : "Push"} Error`, 5000)
-        }
+        return match
     }
 
-    function startPush(branchName, force, token) {
-        let rulesRes = remoteController.checkPushRules("origin", branchName, force)
-        if (rulesRes && !rulesRes.success) {
-            root.handlePushResult(rulesRes)
-            return
-        }
-
-        let args = token !== undefined ? ["origin", branchName, token, force] : ["origin", branchName, force]
-        AsyncGit.call(remoteController, "push", args,
-            function(result) { root.handlePushResult(result) },
-            function(error) { root.handlePushResult({ success: false, errorMessage: error, stale: error === AsyncGit.STALE }) }
-        )
-    }
-
-    function handlePushResult(gitResult) {
-        if (!root.notificationController)
-            return
-
-        if (gitResult && gitResult.stale === true) {
-            root.notificationController.info("Push finished for the repository you switched away from", "Push", 4000)
-            return
-        }
-
-        if (gitResult && gitResult.success) {
-            let data = gitResult.data
-            let isForce = data && data.force === true
-            root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Force Push" : "Push", 3000)
-        } else {
-            root.notificationController.error((gitResult && gitResult.errorMessage) || "Push error", "Push Error", 5000)
-        }
-    }
 
     function executeShowOnlyBranch(branchName) {
         root.branchFilter = branchName || ""
@@ -1700,12 +1612,17 @@ DetachablePanel {
             return
         }
 
-        var localName = branchName.replace(/^[^/]+\//, "")
+        var remote    = root.remoteOfBranch(branchName)
+        var localName = remote !== "" ? branchName.substring(remote.length + 1)
+                                      : branchName.replace(/^[^/]+\//, "")
         var createRes = root.branchController.createBranch(commitHash, localName)
         if (!createRes.success) {
             handleContextResponse(createRes, "")
             return
         }
+
+        if (remote !== "")
+            root.remoteController?.setUpstream(localName, remote, localName)
 
         handleContextResponse(root.branchController.checkoutBranch(localName), "Created and checked out branch " + localName)
     }

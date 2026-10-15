@@ -67,6 +67,7 @@ Page {
         remoteController: root.remoteController
         guideController: root.guideController
         gitStateNotifier: root.gitStateNotifier
+        remoteOperationsSession: root.remoteOperationsSession
 
         onPullRequested: root.pullAndUpdate()
         onPushRequested: function(force) { root.pushAndUpdate(force) }
@@ -106,12 +107,6 @@ Page {
         function onCurrentRepoChanged() {
             changesFileLists.updateStatus()
         }
-    }
-
-    ConfirmCommandDialog {
-        id: confirmForcePushDialog
-
-        onConfirmed: root.performPushAndUpdate(true)
     }
 
     CommitAmendPopup {
@@ -230,6 +225,7 @@ Page {
                                 {
                                     text: "Force Push",
                                     icon: Style.icons.arrowUp,
+                                    enabled: root.remoteOperationsSession?.canPush ?? false,
                                     action: function() {
                                         root.pushAndUpdate(true)
                                     }
@@ -237,7 +233,7 @@ Page {
                                 {
                                     text: "Fetch",
                                     icon: Style.icons.download,
-                                    enabled: !root.isFetching,
+                                    enabled: root.remoteOperationsSession?.canFetch ?? false,
                                     action: function() {
                                         root.fetch()
                                     }
@@ -245,7 +241,7 @@ Page {
                                 {
                                     text: "Pull",
                                     icon: Style.icons.arrowDown,
-                                    enabled: !root.isFetching,
+                                    enabled: !root.isFetching && (root.remoteOperationsSession?.canPull ?? false),
                                     action: function() {
                                         root.pullAndUpdate()
                                     }
@@ -621,31 +617,15 @@ Page {
     }
 
     function pushAndUpdate(force) {
-        if (!force) {
-            root.performPushAndUpdate(false)
-            return
-        }
-
-        let branch = root.branchController?.getCurrentBranchName() ?? ""
-
-        confirmForcePushDialog.ask("Force Push",
-                                   "Overwrite '" + branch + "' on origin with your local history? " +
-                                   "Commits on the remote that you do not have are lost.",
-                                   GitCommandText.push("origin", branch, true),
-                                   "Force Push",
-                                   null)
-    }
-
-    function performPushAndUpdate(force) {
         root.remoteOperationsSession?.pushAndUpdate(force)
     }
 
-    function pull(secret) {
-        root.remoteOperationsSession?.pull(secret)
+    function pull() {
+        root.remoteOperationsSession?.pull()
     }
 
-    function pullAndUpdate(secret) {
-        root.remoteOperationsSession?.pullAndUpdate(secret)
+    function pullAndUpdate() {
+        root.remoteOperationsSession?.pullAndUpdate()
         changesFileLists.updateStatus()
     }
 

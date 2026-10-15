@@ -19,6 +19,7 @@ RowLayout {
     property          RemoteController       remoteController:          null
     property          GuideController        guideController:           null
     property          GitStateNotifier       gitStateNotifier:          null
+    property          RemoteOperationsSession remoteOperationsSession:  null
     readonly property bool                   compact:                   parent.width < 550
 
     /* Object Properties
@@ -39,6 +40,10 @@ RowLayout {
     TextEdit {
         id: clipboardHelper
         visible: false
+    }
+
+    HoverHandler {
+        id: rowHover
     }
 
     IconButton {
@@ -120,8 +125,11 @@ RowLayout {
         spacing         : 4
 
         text    : "Pull"
-        tooltip : "Pull from origin"
+        tooltip : headerRow.remoteOperationsSession?.pullTooltip ?? ""
         display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        enabled : headerRow.remoteOperationsSession?.canPull ?? false
+
+        hoveredWhileDisabled: headerRow.isHovered(pullBtn)
 
         solidIcon   : true
         icon.name   : Style.icons.arrowDown
@@ -167,9 +175,11 @@ RowLayout {
         property bool isBusy: remoteController?.pushInProgress && !remoteController?.forcePush
 
         text    : !isBusy ? "Push" : ""
-        tooltip : !isBusy ? "Push to origin" : "Pushing..."
+        tooltip : !isBusy ? (headerRow.remoteOperationsSession?.pushTooltip ?? "") : "Pushing..."
         display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
-        enabled : !remoteController?.pushInProgress
+        enabled : headerRow.remoteOperationsSession?.canPush ?? false
+
+        hoveredWhileDisabled: headerRow.isHovered(pushBtnHeader)
 
         solidIcon   : true
         icon.name   : !isBusy ? Style.icons.arrowUp : ""
@@ -228,9 +238,11 @@ RowLayout {
         spacing         : 4
 
         text    : "Fetch"
-        tooltip : root.isFetching ? "Fetching…" : "Fetch all remotes"
+        tooltip : headerRow.remoteOperationsSession?.fetchTooltip ?? ""
         display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
-        enabled : !root.isFetching
+        enabled : headerRow.remoteOperationsSession?.canFetch ?? false
+
+        hoveredWhileDisabled: headerRow.isHovered(fetchBtnHeader)
 
         solidIcon   : true
         icon.name   : Style.icons.download
@@ -276,9 +288,11 @@ RowLayout {
         property bool isBusy: remoteController?.pushInProgress && remoteController?.forcePush
 
         text    : !isBusy ? "Force Push" : ""
-        tooltip : !isBusy ? "Force push to origin" : "Force Pushing..."
+        tooltip : !isBusy ? (headerRow.remoteOperationsSession?.forcePushTooltip ?? "") : "Force Pushing..."
         display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
-        enabled : !remoteController?.pushInProgress
+        enabled : headerRow.remoteOperationsSession?.canPush ?? false
+
+        hoveredWhileDisabled: headerRow.isHovered(pushForceBtnHeader)
 
         solidIcon   : true
         icon.name   : !isBusy ? Style.icons.arrowUp : ""
@@ -366,5 +380,14 @@ RowLayout {
             })
             return steps
         }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function isHovered(item) {
+        if (!rowHover.hovered || !item)
+            return false
+
+        return item.contains(item.mapFromItem(headerRow, rowHover.point.position))
     }
 }

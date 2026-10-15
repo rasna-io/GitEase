@@ -6,8 +6,6 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
-import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
-
 /*! ***********************************************************************************************
  * TagManagementView
  * ************************************************************************************************/
@@ -20,6 +18,8 @@ UtilitiesCard {
     property NotificationController notificationController: null
     property var                    tagListModel:           []
     property GuideController        guideController:        null
+
+    property RemoteOperationsSession remoteOperationsSession: null
 
     title: "Tags"
     icon:  Style.icons.tag
@@ -35,7 +35,7 @@ UtilitiesCard {
 
         onConfirmed: (context) => {
             if (context.action === "remote")
-                root.performDeleteTagRemote(context.tag)
+                root.performDeleteTagRemote(context.tag, context.remote)
             else
                 root.performDeleteTagLocal(context.tag)
         }
@@ -59,7 +59,7 @@ UtilitiesCard {
                              "Delete the tag '" + tag.name + "' from this repository?",
                              GitCommandText.deleteTag(tag.name),
                              "Delete Tag",
-                             { action: "local"})
+                             { action: "local", tag: tag })
     }
 
     function performDeleteTagLocal(tag) {
@@ -74,63 +74,49 @@ UtilitiesCard {
     }
 
     function deleteTagRemote(tag) {
-        if (!root.tagController)
+        if (!root.tagController || !root.remoteOperationsSession)
             return
 
-        confirmTagDialog.ask("Delete Tag From Remote",
-                             "Delete the tag '" + tag.name + "' from the remote and from this repository?",
-                             GitCommandText.pushDeleteTag(tag.name) + " && " + GitCommandText.deleteTag(tag.name),
-                             "Delete Tag",
-                             { action: "remote"})
+        root.remoteOperationsSession.chooseTagRemote("deleteTag", tag.name, function(remote) {
+            confirmTagDialog.ask("Delete Tag From Remote",
+                                 "Delete the tag '" + tag.name + "' from " + remote + " and from this repository?",
+                                 GitCommandText.pushDeleteTag(remote, tag.name) + " && " + GitCommandText.deleteTag(tag.name),
+                                 "Delete Tag",
+                                 { action: "remote", tag: tag, remote: remote })
+        })
     }
 
-    function performDeleteTagRemote(tag) {
-        if (!root.tagController)
+    function performDeleteTagRemote(tag, remote) {
+        if (!root.tagController || !root.remoteOperationsSession)
             return
 
         if (root.notificationController)
-            root.notificationController.info("Deleting tag from remote...", "Remote", 1500);
+            root.notificationController.info("Deleting tag from " + remote + "...", "Remote", 1500);
 
-        AsyncGit.call(root.tagController, "pushDeleteTag", [tag.name],
-            function(result) {
-                if (result.success) {
-                    if (root.notificationController)
-                        root.notificationController.success("Tag deleted from remote", "Success", 3000);
-                    root.tagController.remove(tag.name);
-                } else {
-                    if (root.notificationController)
-                        root.notificationController.error("Failed to delete from remote: " + result.errorMessage, "Error", 5000);
-                }
-            },
-            function(error) {
+        root.remoteOperationsSession.deleteRemoteTag(remote, tag.name, function(result) {
+            if (result.success) {
                 if (root.notificationController)
-                    root.notificationController.error("Failed to delete from remote: " + error, "Error", 5000);
+                    root.notificationController.success("Tag deleted from " + remote, "Success", 3000);
+                root.tagController.remove(tag.name);
+            } else if (root.notificationController) {
+                root.notificationController.error("Failed to delete from " + remote + ": " + result.errorMessage, "Error", 5000);
             }
-        );
+        })
     }
 
     function pushTagToRemote(tag) {
-        if (!root.tagController)
+        if (!root.tagController || !root.remoteOperationsSession)
             return
 
-        if (root.notificationController)
-            root.notificationController.info("Pushing tag to remote...", "Tag", 1500);
+        root.remoteOperationsSession.pushTag(tag.name, function(result, remote) {
+            if (!root.notificationController)
+                return
 
-        AsyncGit.call(root.tagController, "pushTag", [tag.name],
-            function(result) {
-                if (result.success) {
-                    if (root.notificationController)
-                        root.notificationController.success("Tag pushed to remote", "Success", 3000)
-                } else {
-                    if (root.notificationController)
-                        root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
-                }
-            },
-            function(error) {
-                if (root.notificationController)
-                    root.notificationController.warning("Failed to push tag to remote", "Sync Warning", 5000);
-            }
-        );
+            if (result.success)
+                root.notificationController.success("Tag pushed to " + remote, "Success", 3000)
+            else
+                root.notificationController.warning("Failed to push tag to " + remote + ": " + result.errorMessage, "Sync Warning", 5000);
+        })
     }
 
     function copyTagName(tag) {
@@ -291,7 +277,7 @@ UtilitiesCard {
                         visible: false
                         // TODO: Task "Dynamic Remote/Local Actions"
                         //       Make visible when tag is NOT on the remote.
-                        //       Requires GitTag::remoteTagNames() to get origin's tags.
+                        //       Requires GitTag::remoteTagNames() to get the remote's tags.
                         //       Bind to: root.remoteTagNames.indexOf(modelData.name) === -1
                         //       The corresponding remote‑delete button (not yet in the code)
                         //       will be visible when the tag IS on the remote.
