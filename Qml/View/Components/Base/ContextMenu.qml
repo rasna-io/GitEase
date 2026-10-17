@@ -91,7 +91,7 @@ Item {
         //! Owned windows stay above their owner, which keeps the menu above the catcher
         transientParent: catcher
 
-        placement: "cursor"
+        placement: ContextMenuWindow.Placement.Cursor
 
         //! Windows closes a menu as soon as something else takes the focus
         property bool wasActive: false
@@ -136,7 +136,7 @@ Item {
     ContextMenuWindow {
         id: subWindow
 
-        placement: "side"
+        placement: ContextMenuWindow.Placement.Side
         menuWidth: 240
         transientParent: mainWindow
         acceptsFocus: false
