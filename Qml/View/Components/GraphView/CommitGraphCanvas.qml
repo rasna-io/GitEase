@@ -115,21 +115,6 @@ Item {
             tileSize: Qt.size(width, 1024)
             canvasWindow: Qt.rect(0, root.viewportY * dpr, width, height)
 
-            readonly property int avatarIconSize: 14
-
-            property var svgImage: Image {
-                source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
-                sourceSize: Qt.size(Math.ceil(graphCanvas.avatarIconSize * graphCanvas.dpr),
-                                    Math.ceil(graphCanvas.avatarIconSize * graphCanvas.dpr))
-                visible: false
-
-                onStatusChanged: {
-                    if(status === Image.Ready) {
-                        graphCanvas.invalidateAll()
-                    }
-                }
-            }
-
             // Trigger repaint when data changes
             Connections {
                 target: root
@@ -507,55 +492,77 @@ Item {
 
                     if (isUncommitted || isSelected || isHovered || isHead)
                         ctx.fillRect(0, pos3.y, flick.width, root.commitItemHeight + root.commitItemSpacing*2);
-
-                    var centerX2 = Math.round((centerOffset + pos3.column * root.columnSpacing + root.columnSpacing / 2) * scale) / scale;
-                    var centerY2 = Math.round((pos3.y + root.commitItemHeight / 2 + root.commitItemSpacing) * scale) / scale;
-                    var branchColor3 = root.commitColor(commit3);
-
-                    ctx.save();
-                    ctx.strokeStyle = isSelected ? GraphUtils.darkenColor(branchColor3, 0.2) : GraphUtils.lightenColor(branchColor3, 0.3);
-                    ctx.lineWidth = isSelected ? 4 : 2.5;
-
-                    var avatarRadius = (root.showAvatar ? root.commitItemHeight : 10) / 2;
-
-                    if (commit3.isStash === true) {
-                        var sqSize = avatarRadius;
-                        ctx.beginPath();
-                        ctx.moveTo(centerX2 - sqSize + 2, centerY2 - sqSize);
-                        ctx.arcTo(centerX2 + sqSize, centerY2 - sqSize, centerX2 + sqSize, centerY2 + sqSize, 2);
-                        ctx.arcTo(centerX2 + sqSize, centerY2 + sqSize, centerX2 - sqSize, centerY2 + sqSize, 2);
-                        ctx.arcTo(centerX2 - sqSize, centerY2 + sqSize, centerX2 - sqSize, centerY2 - sqSize, 2);
-                        ctx.arcTo(centerX2 - sqSize, centerY2 - sqSize, centerX2 + sqSize, centerY2 - sqSize, 2);
-                        ctx.closePath();
-                        ctx.fillStyle = branchColor3;
-                        ctx.fill();
-                        ctx.stroke();
-                        if (root.showAvatar) {
-                            ctx.fillStyle = Style.colors.onColorText;
-                            ctx.font = root.iconFont(Math.round(avatarRadius));
-                            ctx.textAlign = "center";
-                            ctx.textBaseline = "middle";
-                            ctx.fillText(Style.icons.archive, centerX2, centerY2);
-                        }
-                    } else {
-                        ctx.beginPath();
-                        ctx.arc(centerX2, centerY2, avatarRadius, 0, 2 * Math.PI);
-                        ctx.fillStyle = root.showAvatar ? Style.colors.graphAvatarBackground : GraphUtils.lightenColor(branchColor3, 0.3);
-                        ctx.fill();
-                        ctx.stroke();
-                        if (root.showAvatar && graphCanvas.svgImage.status === Image.Ready) {
-                            var iconSize = graphCanvas.avatarIconSize;
-                            ctx.drawImage(graphCanvas.svgImage,
-                                          centerX2 - iconSize / 2,
-                                          centerY2 - iconSize / 2,
-                                          iconSize,
-                                          iconSize);
-                        }
-                    }
-                    ctx.restore();
                 }
 
                 ctx.restore();
+            }
+        }
+
+        // ---------- Commit nodes (real items so circles and avatars stay crisp at any display scale) ----------
+        Item {
+            id: nodeLayer
+            width: parent.width
+            height: root.graphContentHeight
+            y: -root.viewportY
+
+            readonly property int firstRow: Math.max(0, Math.floor(root.viewportY / root.rowHeight) - 1)
+            readonly property int visibleRows: Math.max(0, Math.min(root.commits.length - firstRow,
+                                                                      Math.ceil(root.height / root.rowHeight) + 3))
+
+            Repeater {
+                model: nodeLayer.visibleRows
+
+                delegate: Item {
+                    id: node
+
+                    readonly property int    rowIdx      : nodeLayer.firstRow + index
+                    readonly property var    commitObj   : root.commits[rowIdx]
+                    readonly property var    pos         : commitObj ? root.commitPositions[commitObj.hash] : null
+                    readonly property bool   isSelected  : !!commitObj && !!root.selectedHashes && root.selectedHashes.indexOf(commitObj.hash) !== -1
+                    readonly property bool   isStash     : !!commitObj && commitObj.isStash === true
+                    readonly property color  branchColor : root.commitColor(commitObj)
+                    readonly property real   diameter    : root.showAvatar ? root.commitItemHeight : 10
+                    readonly property real   borderW     : isSelected ? 4 : 2.5
+                    readonly property color  borderColor : isSelected ? GraphUtils.darkenColor(branchColor, 0.2) : GraphUtils.lightenColor(branchColor, 0.3)
+
+                    visible: pos !== null && pos !== undefined
+                    width: diameter + borderW
+                    height: diameter + borderW
+                    x: pos ? root.columnSpacing * (pos.column + 1) - width / 2 : 0
+                    y: pos ? pos.y + root.commitItemHeight / 2 + root.commitItemSpacing - height / 2 : 0
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: node.isStash ? 2 : width / 2
+                        antialiasing: true
+                        color: node.isStash ? node.branchColor
+                                            : (root.showAvatar ? Style.colors.graphAvatarBackground : GraphUtils.lightenColor(node.branchColor, 0.3))
+                        border.width: node.borderW
+                        border.color: node.borderColor
+                    }
+
+                    Image {
+                        visible: root.showAvatar && !node.isStash
+                        anchors.centerIn: parent
+                        width: 14
+                        height: 14
+                        source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
+                        sourceSize: Qt.size(Math.ceil(14 * Screen.devicePixelRatio), Math.ceil(14 * Screen.devicePixelRatio))
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        mipmap: true
+                    }
+
+                    Text {
+                        visible: root.showAvatar && node.isStash
+                        anchors.centerIn: parent
+                        text: Style.icons.archive
+                        color: Style.colors.onColorText
+                        font.family: Style.fontTypes.font6Pro
+                        font.weight: Font.Black
+                        font.pixelSize: Math.round(node.diameter / 2)
+                    }
+                }
             }
         }
     }
