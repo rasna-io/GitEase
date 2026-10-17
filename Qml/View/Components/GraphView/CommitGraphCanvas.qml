@@ -192,10 +192,18 @@ Item {
                 var ctx = getContext("2d");
                 var scale = graphCanvas.dpr;
 
+                ctx.save();
                 ctx.setTransform(scale, 0, 0, scale, 0, 0);
                 ctx.clearRect(region.x / scale, region.y / scale, region.width / scale, region.height / scale);
 
-                if (!root.commits || root.commits.length === 0) return;
+                ctx.beginPath();
+                ctx.rect(region.x / scale, region.y / scale, region.width / scale, region.height / scale);
+                ctx.clip();
+
+                if (!root.commits || root.commits.length === 0) {
+                    ctx.restore();
+                    return;
+                }
 
                 var commitsHash = root.renderCache.commitsHash;
                 var paintTop = region.y / scale;
@@ -546,6 +554,8 @@ Item {
                     }
                     ctx.restore();
                 }
+
+                ctx.restore();
             }
         }
     }
