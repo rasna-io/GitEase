@@ -41,6 +41,7 @@ Window {
     property CommitController       commitController        : null
     property NotificationController notificationController  : null
     property GuideController        guideController         : null
+    property TextDirectionController textDirectionController : null
 
     property Item hostItem: null
 
@@ -342,6 +343,7 @@ Window {
                     selectedPath: root.selectedPath
                     selectedConflict: root.selectedConflict
                     revision: root.modelRevision
+                    textDirectionController: root.textDirectionController
 
                     onAcceptBlockRequested: (blockIndex, mode) => root.acceptBlock(blockIndex, mode)
                     onResetRequested: root.resetSelectedFile()
