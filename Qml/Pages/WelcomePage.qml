@@ -236,7 +236,7 @@ Rectangle {
                         anchors.fill: parent
                         visible: continueButton.busy
                         radius: 8
-                        color: "#CCCCCC"
+                        color: Style.colors.progressOverlay
 
                         Rectangle {
                             anchors.left: parent.left

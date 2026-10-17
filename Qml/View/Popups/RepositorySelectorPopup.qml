@@ -47,7 +47,7 @@ IPopup {
     }
 
     Overlay.modal: Rectangle {
-        color: "#000000"
+        color: Style.colors.scrimColor
         opacity: 0.85
     }
 
@@ -129,13 +129,17 @@ IPopup {
     Connections {
         target: root.repositoryController
 
-        function onCloneFinished(res) {
-            if (!res.success)
-                root.notificationController.error(`can't clone ${cloneTab.url}, ${res.error}`, "Repository clone failed", 5000)
+        function onCloneCompleted(res) {
             root.busy = false
             root.progress = 0
-            if (res.success)
+
+            if (res && res.success) {
                 root.close()
+            } else if (res && res.stale === true) {
+                root.notificationController.info("Clone finished while you were switching repository", "Clone", 4000)
+            } else {
+                root.notificationController.error(`can't clone ${cloneTab.url}, ${res?.errorMessage ?? res?.error ?? "unknown error"}`, "Repository clone failed", 5000)
+            }
         }
 
         function onCloneProgress(p) {
@@ -402,7 +406,7 @@ IPopup {
                                 anchors.fill: parent
                                 visible: primaryButton.busy
                                 radius: 6
-                                color: "#CCCCCC"
+                                color: Style.colors.progressOverlay
 
                                 Rectangle {
                                     anchors.left: parent.left

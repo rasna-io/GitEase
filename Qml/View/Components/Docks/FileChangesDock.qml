@@ -274,7 +274,7 @@ DetachablePanel {
 
                         color: {
                             if (isSelected) {
-                                return "#6088B2DF";
+                                return Style.colors.graphSelectedRowBg;
                             } else if (isHovered) {
                                 return Style.colors.hoverTitle;
                             } else {

@@ -40,11 +40,19 @@ UtilitiesCard {
 
     property Remote remote: null
 
+    property var remoteList: []
+
+    readonly property var filteredRemotes: root.filterItems(root.remoteList, function(remote) {
+        return remote.name + " " + remote.url
+    })
+
     /* Object Properties
      * ****************************************************************************************/
 
     title: "Remotes"
     icon: Style.icons.upload
+    contentMatchesFilter: root.filteredRemotes.length > 0
+    filteredCount: root.filteredRemotes.length
 
     Connections {
         id: userAuthenticationPopupConnection
@@ -149,6 +157,7 @@ UtilitiesCard {
                 height: Math.min(contentHeight, 220)
                 spacing: 6
                 clip: true
+                model: root.filteredRemotes
 
                 delegate: Item {
 
@@ -263,7 +272,7 @@ UtilitiesCard {
             if (remoteController) {
                 let res = remoteController.getRemotes();
                 if (res.success) {
-                    listView.model = res.data
+                    root.remoteList = res.data
                     root.badgeCount = res.data.length
                 }
             }

@@ -1,0 +1,36 @@
+[
+  { "id": "Node",             "name": "Node",               "category": "Languages",         "description": "Node.js, npm, Yarn and pnpm projects" },
+  { "id": "Python",           "name": "Python",             "category": "Languages",         "description": "Bytecode, virtual environments and packaging output" },
+  { "id": "Java",             "name": "Java",               "category": "Languages",         "description": "Compiled classes and archives" },
+  { "id": "C",                "name": "C",                  "category": "Languages",         "description": "Objects, libraries and executables" },
+  { "id": "CPlusPlus",        "name": "C++",                "category": "Languages",         "description": "Objects, precompiled headers, libraries and executables" },
+  { "id": "Dotnet",           "name": ".NET",               "category": "Languages",         "description": "bin, obj and NuGet output" },
+  { "id": "Go",               "name": "Go",                 "category": "Languages",         "description": "Binaries, test output and the vendor folder" },
+  { "id": "Rust",             "name": "Rust",               "category": "Languages",         "description": "Cargo target folder" },
+  { "id": "Ruby",             "name": "Ruby",               "category": "Languages",         "description": "Gems, Bundler and Rails temporary files" },
+  { "id": "PHP",              "name": "PHP",                "category": "Languages",         "description": "Composer vendor folder and test caches" },
+  { "id": "Swift",            "name": "Swift",              "category": "Languages",         "description": "SwiftPM, Xcode user data and DerivedData" },
+  { "id": "Dart",             "name": "Dart & Flutter",     "category": "Languages",         "description": "Pub cache and Flutter generated files" },
+
+  { "id": "AITools",          "name": "AI tools",           "category": "Tools",             "description": "Claude Code, Cursor, Windsurf, Aider, Codex, Gemini CLI and other assistants" },
+
+  { "id": "SecretsAndKeys",   "name": "Secrets & keys",     "category": "Security",          "description": ".env files, private keys, certificates and credential files" },
+  { "id": "CloudCredentials", "name": "Cloud credentials",  "category": "Security",          "description": "AWS, Google Cloud, Azure, Kubernetes, Firebase and signing profiles" },
+
+  { "id": "CMake",            "name": "CMake",              "category": "Build tools",       "description": "Cache, generated files and build folders" },
+  { "id": "Gradle",           "name": "Gradle",             "category": "Build tools",       "description": "Gradle caches and build output" },
+  { "id": "Maven",            "name": "Maven",              "category": "Build tools",       "description": "target folder and release backups" },
+
+  { "id": "Qt",               "name": "Qt",                 "category": "Frameworks",        "description": "Qt Creator user files and moc, uic and rcc output" },
+  { "id": "VisualStudio",     "name": "Visual Studio",      "category": "Frameworks",        "description": "Solutions, user options and build results" },
+  { "id": "Android",          "name": "Android",            "category": "Frameworks",        "description": "APKs, Gradle output and local configuration" },
+  { "id": "Unity",            "name": "Unity",              "category": "Frameworks",        "description": "Library, Temp, Logs and generated projects" },
+  { "id": "Terraform",        "name": "Terraform",          "category": "Frameworks",        "description": "State files, providers and variable files" },
+
+  { "id": "Windows",          "name": "Windows",            "category": "Operating systems", "description": "Thumbnails, Desktop.ini and shortcuts" },
+  { "id": "macOS",            "name": "macOS",              "category": "Operating systems", "description": ".DS_Store and Finder metadata" },
+  { "id": "Linux",            "name": "Linux",              "category": "Operating systems", "description": "Editor backups and trash folders" },
+
+  { "id": "JetBrains",        "name": "JetBrains",          "category": "Editors",           "description": "IntelliJ IDEA, CLion, Rider and the rest" },
+  { "id": "VisualStudioCode", "name": "Visual Studio Code", "category": "Editors",           "description": "Keeps the shared settings, ignores the rest of .vscode" }
+]

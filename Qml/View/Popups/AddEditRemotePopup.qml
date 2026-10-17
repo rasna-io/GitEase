@@ -130,7 +130,7 @@ IPopup {
 
                     background: Rectangle {
                         implicitHeight: 35
-                        color: parent.hovered ? "#33ffffff" : "transparent"
+                        color: parent.hovered ? Style.colors.ghostButtonHoverBackground : "transparent"
                         border.color: Style.colors.accent
                         radius: 5
                     }

@@ -36,6 +36,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/CherryPickController.qml
     Qml/Core/Controllers/ConflictController.qml
     Qml/Core/Controllers/TagController.qml
+    Qml/Core/Controllers/IgnoreController.qml
     Qml/Core/Controllers/GitTreeController.qml      # Commit file tree browser controller
     Qml/Core/Controllers/PluginController.qml
     Qml/Core/Controllers/ResetController.qml
@@ -76,6 +77,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/UtilitiesCard.qml
     Qml/View/Components/Base/DashedButton.qml                  # Dashed ghost action button for utilities cards
     Qml/View/Components/Base/ContextMenu.qml
+    Qml/View/Components/Base/ContextMenuWindow.qml             # Frameless animated window that renders one menu level
     Qml/View/Components/Base/AccentCard.qml                    # Card with accent peeking out on the left
     Qml/View/Components/Base/DetachablePanel.qml               # Detachable panel wrapper
     Qml/View/Components/Base/WindowMotion.qml                  # Window minimize/maximize transition helper

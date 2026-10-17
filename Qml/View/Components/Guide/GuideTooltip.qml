@@ -17,10 +17,17 @@ Item {
     readonly property var    _commands:    root.stepData?.commands ?? []
     readonly property string _mediaSource: root.stepData?.media ?? ""
     readonly property bool   _mediaIsGif:  root._mediaSource.toLowerCase().endsWith(".gif")
+    readonly property int    _totalSteps:  root.stepData?.totalSteps ?? 0
+    readonly property int    _stepIndex:   root.stepData?.stepIndex ?? 0
+    readonly property bool   _isLast:      root.stepData ? root._stepIndex === root._totalSteps - 1 : false
 
-    /* Sizing — driven by card content; shadow bleeds below without clipping
+    function _accentAlpha(a) {
+        return Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, a)
+    }
+
+    /* Sizing — driven by card content
      * ****************************************************************************************/
-    implicitWidth: 300
+    implicitWidth: 330
     implicitHeight: card.height
 
     // Hidden TextEdit used solely for clipboard copy (see command chip's copy button below)
@@ -35,14 +42,13 @@ Item {
         id: card
         y: 0
         width: parent.width
-        height: _col.implicitHeight + _col.anchors.topMargin + 14
-        radius: 12
+        height: _col.implicitHeight + _col.anchors.topMargin + 6
+        radius: 14
         color: Style.colors.primaryBackground
         border {
             width: 1
             color: Style.colors.primaryBorder
         }
-        clip: true
 
         ColumnLayout {
             id: _col
@@ -50,83 +56,81 @@ Item {
                 top: parent.top
                 topMargin: 18
                 left: parent.left
-                leftMargin: 16
+                leftMargin: 18
                 right: parent.right
-                rightMargin: 16
+                rightMargin: 18
             }
             spacing: 0
 
+            /* Header
+             * ************************************************************************************/
             RowLayout {
                 Layout.fillWidth: true
-                spacing:          8
+                spacing: 12
 
-                // Icon badge
                 Rectangle {
                     visible: (root.stepData?.icon?.length ?? 0) > 0
-                    implicitWidth: 26
-                    implicitHeight: 26
-                    radius: 13
-                    color: Qt.rgba(Style.colors.accent.r,
-                                   Style.colors.accent.g,
-                                   Style.colors.accent.b, 0.13)
+                    implicitWidth: 36
+                    implicitHeight: 36
+                    radius: 10
+                    color: root._accentAlpha(0.14)
+                    border {
+                        width: 1
+                        color: root._accentAlpha(0.28)
+                    }
 
                     Text {
                         anchors.centerIn: parent
                         text: root.stepData?.icon ?? ""
                         font.family: Style.fontTypes.font6Pro
                         font.styleName: "Solid"
-                        font.pixelSize: 12
+                        font.pixelSize: 15
                         color: Style.colors.accent
                     }
                 }
 
-                Text {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    text: root.stepData?.title ?? ""
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
-                    color: Style.colors.foreground
-                    wrapMode: Text.WordWrap
-                }
-
-                Rectangle {
-                    visible: (root.stepData?.totalSteps ?? 0) > 1
-                    implicitWidth: _pillTxt.implicitWidth + 14
-                    implicitHeight: 20
-                    radius: 10
-                    color: Qt.rgba(Style.colors.accent.r,
-                                   Style.colors.accent.g,
-                                   Style.colors.accent.b, 0.13)
+                    spacing: 2
 
                     Text {
-                        id: _pillTxt
-                        anchors.centerIn: parent
-                        text: "%1 / %2".arg((root.stepData?.stepIndex ?? 0) + 1).arg(root.stepData?.totalSteps ?? 1)
+                        visible: root._totalSteps > 1
+                        text: "STEP %1 OF %2".arg(root._stepIndex + 1).arg(root._totalSteps)
                         font.family: Style.fontTypes.inter
-                        font.pixelSize: 10
-                        font.weight: Font.Medium
+                        font.pixelSize: 9
+                        font.weight: Font.DemiBold
+                        font.letterSpacing: 0.8
                         color: Style.colors.accent
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.stepData?.title ?? ""
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: 15
+                        font.weight: Font.DemiBold
+                        color: Style.colors.foreground
+                        wrapMode: Text.WordWrap
                     }
                 }
 
+                // Step progress dots, after the title
                 RowLayout {
-                    spacing: 3
-                    visible: (root.stepData?.totalSteps ?? 0) > 1
+                    Layout.alignment: Qt.AlignVCenter
+                    visible: root._totalSteps > 1
+                    spacing: 4
 
                     Repeater {
-                        model: root.stepData?.totalSteps ?? 0
+                        model: root._totalSteps
 
                         delegate: Rectangle {
                             required property int index
-                            readonly property bool _active: index === (root.stepData?.stepIndex ?? 0)
+                            readonly property bool _active: index === root._stepIndex
 
-                            implicitWidth: _active ? 16 : 5
-                            implicitHeight: 5
+                            implicitWidth: _active ? 18 : 6
+                            implicitHeight: 6
                             radius: 3
-                            color: _active ? Style.colors.accent : Qt.rgba(Style.colors.accent.r,
-                                             Style.colors.accent.g,
-                                             Style.colors.accent.b, 0.22)
+                            color: _active ? Style.colors.accent : root._accentAlpha(0.25)
 
                             Behavior on implicitWidth {
                                 NumberAnimation {
@@ -145,20 +149,14 @@ Item {
                 }
             }
 
+            /* Media
+             * ************************************************************************************/
             Rectangle {
                 Layout.fillWidth: true
-                Layout.topMargin: 10
-                Layout.bottomMargin: 10
-                height: 1
-                color: Style.colors.primaryBorder
-                opacity: 0.55
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
+                Layout.topMargin: 14
                 Layout.preferredHeight: 160
                 visible: root._mediaSource.length > 0
-                radius: 8
+                radius: 10
                 color: Style.colors.secondaryBackground
                 border {
                     width: 1
@@ -193,29 +191,24 @@ Item {
                 }
             }
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.topMargin: 10
-                Layout.bottomMargin: 10
-                height: 1
-                color: Style.colors.primaryBorder
-                opacity: 0.55
-                visible: root._mediaSource.length > 0
-            }
-
+            /* Description
+             * ************************************************************************************/
             Text {
                 Layout.fillWidth: true
+                Layout.topMargin: 12
                 text: root.stepData?.description ?? ""
                 font.family: Style.fontTypes.inter
                 font.pixelSize: 12
                 color: Style.colors.secondaryText
                 wrapMode: Text.WordWrap
-                lineHeight: 1.55
+                lineHeight: 1.5
             }
 
+            /* Commands
+             * ************************************************************************************/
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.topMargin: root._commands.length > 0 ? 10 : 0
+                Layout.topMargin: root._commands.length > 0 ? 12 : 0
                 spacing: 6
 
                 Repeater {
@@ -227,7 +220,7 @@ Item {
 
                         Layout.fillWidth: true
                         implicitHeight: _cmdRow.implicitHeight + 14
-                        radius: 6
+                        radius: 8
                         color: Style.colors.editorBackgroound
                         border {
                             width: 1
@@ -268,7 +261,7 @@ Item {
                             Rectangle {
                                 implicitWidth: 22
                                 implicitHeight: 22
-                                radius: 5
+                                radius: 6
                                 color: _copyMa.containsMouse ? Style.colors.primaryBorder : "transparent"
                                 Behavior on color {
                                     ColorAnimation {
@@ -284,7 +277,7 @@ Item {
                                     font.family: Style.fontTypes.font6Pro
                                     font.styleName: "Solid"
                                     font.pixelSize: 10
-                                    color: parent.copied ? "#4caf50" : Style.colors.secondaryText
+                                    color: parent.copied ? Style.colors.stageGreen : Style.colors.secondaryText
                                 }
 
                                 Timer {
@@ -312,16 +305,62 @@ Item {
                 }
             }
 
+            /* Actions: Skip / Back / Next on the right
+             * ************************************************************************************/
             RowLayout {
                 Layout.fillWidth: true
-                Layout.topMargin: 14
-                spacing: 0
+                Layout.topMargin: 18
+                spacing: 6
 
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                // Skip
+                Rectangle {
+                    visible: root.stepData?.showSkip ?? false
+                    implicitWidth: _skipTxt.implicitWidth + 16
+                    implicitHeight: 30
+                    radius: 8
+                    color: _skipMa.containsMouse
+                           ? Qt.rgba(Style.colors.foreground.r,
+                                     Style.colors.foreground.g,
+                                     Style.colors.foreground.b, 0.07)
+                           : "transparent"
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 80
+                        }
+                    }
+
+                    Text {
+                        id: _skipTxt
+                        anchors.centerIn: parent
+                        text: "Skip"
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: 11
+                        color: Style.colors.mutedText
+                    }
+
+                    MouseArea {
+                        id: _skipMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (root.guideController)
+                                root.guideController.dismiss()
+                        }
+                    }
+                }
+
+                // Back
                 Rectangle {
                     visible: root.stepData?.showBack ?? false
-                    implicitWidth: _backInner.implicitWidth + 20
-                    implicitHeight: 28
-                    radius: 6
+                    implicitWidth: _backInner.implicitWidth + 22
+                    implicitHeight: 30
+                    radius: 8
                     color: _backMa.containsMouse ? Style.colors.primaryBorder : "transparent"
                     border {
                         width: 1
@@ -337,7 +376,7 @@ Item {
                     RowLayout {
                         id: _backInner
                         anchors.centerIn: parent
-                        spacing: 4
+                        spacing: 5
 
                         Text {
                             text: "←"
@@ -349,6 +388,7 @@ Item {
                             text: "Back"
                             font.family: Style.fontTypes.inter
                             font.pixelSize: 11
+                            font.weight: Font.Medium
                             color: Style.colors.secondaryText
                         }
                     }
@@ -365,102 +405,105 @@ Item {
                     }
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                }
+                // Next / Done / Got it
+                Rectangle {
+                    implicitWidth: _nextInner.implicitWidth + 26
+                    implicitHeight: 30
+                    radius: 8
+                    color: _nextMa.containsMouse ? Style.colors.accentHover : Style.colors.accent
 
-                RowLayout {
-                    spacing: 6
-
-                    Rectangle {
-                        visible: root.stepData?.showSkip ?? false
-                        implicitWidth: _skipTxt.implicitWidth + 16
-                        implicitHeight: 28
-                        radius: 6
-                        color: _skipMa.containsMouse
-                                        ? Qt.rgba(Style.colors.foreground.r,
-                                                  Style.colors.foreground.g,
-                                                  Style.colors.foreground.b, 0.07)
-                                        : "transparent"
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 80
-                            }
-                        }
-
-                        Text {
-                            id: _skipTxt
-                            anchors.centerIn: parent
-                            text: "Skip"
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: 11
-                            color: Style.colors.mutedText
-                        }
-
-                        MouseArea {
-                            id: _skipMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (root.guideController)
-                                    root.guideController.dismiss()
-                            }
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 80
                         }
                     }
 
-                    Rectangle {
-                        implicitWidth: _nextInner.implicitWidth + 20
-                        implicitHeight: 28
-                        radius: 6
-                        color: _nextMa.containsMouse ? Style.colors.accentHover : Style.colors.accent
+                    RowLayout {
+                        id: _nextInner
+                        anchors.centerIn: parent
+                        spacing: 6
 
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 80
-                            }
+                        Text {
+                            text: !root.stepData ? "Got it" : (root._isLast ? "Done" : "Next")
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            color: Style.colors.onAccentText
                         }
 
-                        RowLayout {
-                            id: _nextInner
-                            anchors.centerIn: parent
-                            spacing: 5
-
-                            Text {
-                                text: {
-                                    if (!root.stepData)
-                                        return "Got it"
-
-                                    return (root.stepData.stepIndex === root.stepData.totalSteps - 1) ? "Done" : "Next"
-                                }
-                                font.family: Style.fontTypes.inter
-                                font.pixelSize: 11
-                                font.weight: Font.Medium
-                                color: Style.colors.onAccentText
-                            }
-
-                            Text {
-                                visible: root.stepData
-                                         ? root.stepData.stepIndex < root.stepData.totalSteps - 1
-                                         : false
-                                text: "→"
-                                font.family: Style.fontTypes.inter
-                                font.pixelSize: 11
-                                color: Style.colors.onAccentText
-                            }
+                        Text {
+                            visible: root.stepData ? !root._isLast : false
+                            text: "→"
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: 11
+                            color: Style.colors.onAccentText
                         }
+                    }
 
-                        MouseArea {
-                            id: _nextMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (root.guideController)
-                                    root.guideController.next()
-                            }
+                    MouseArea {
+                        id: _nextMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (root.guideController)
+                                root.guideController.next()
                         }
+                    }
+                }
+            }
+
+            /* Opt-out: quiet text link under a hairline divider
+             * ************************************************************************************/
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.topMargin: 14
+                implicitHeight: 1
+                color: Style.colors.primaryBorder
+                opacity: 0.6
+            }
+
+            Item {
+                Layout.fillWidth: true
+                implicitHeight: 32
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 6
+                    opacity: _disableMa.containsMouse ? 1.0 : 0.7
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 100
+                        }
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Style.icons.eyeSlash
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
+                        font.pixelSize: 10
+                        color: _disableMa.containsMouse ? Style.colors.accent : Style.colors.mutedText
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Don't show tutorials"
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: 11
+                        color: _disableMa.containsMouse ? Style.colors.accent : Style.colors.mutedText
+                    }
+                }
+
+                MouseArea {
+                    id: _disableMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (root.guideController)
+                            root.guideController.disableGuides()
                     }
                 }
             }

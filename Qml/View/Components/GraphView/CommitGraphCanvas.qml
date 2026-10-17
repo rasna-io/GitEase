@@ -37,6 +37,8 @@ Item {
     property real   graphContentHeight  : Math.max(height, commits.length * rowHeight)
     readonly property int rowHeight     : commitItemHeight + commitItemSpacing * 2
 
+    readonly property string labelFont  : "bold 11px \"" + Style.fontTypes.inter + "\""
+
     property int    hoveredIndex        : -1
     property var    renderCache         : ({
         commitsHash: ({}),
@@ -96,20 +98,22 @@ Item {
         // ---------- Canvas (draws the entire DAG) ----------
         Canvas {
             id: graphCanvas
-            anchors.fill: parent
+
+            width: Math.max(1, Math.round(flick.width * dpr))
+            height: Math.max(1, Math.round(flick.height * dpr))
+            scale: flick.width / width
+            transformOrigin: Item.TopLeft
+            smooth: true
+            antialiasing: true
 
             property int lastHoveredIndex: -1
             property int scrollRepaintRequest: -1
 
-            canvasSize: Qt.size(width, root.graphContentHeight)
-            tileSize: Qt.size(Math.max(1, Math.ceil(width)), 1024)
-            canvasWindow: Qt.rect(0, root.viewportY, width, height)
+            readonly property real dpr: Math.max(1, Screen.devicePixelRatio)
 
-            property var svgImage: Image {
-                source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
-                anchors.centerIn: parent
-                height: 14.5; width: 14.5
-            }
+            canvasSize: Qt.size(width, Math.ceil(root.graphContentHeight * dpr))
+            tileSize: Qt.size(width, 1024)
+            canvasWindow: Qt.rect(0, root.viewportY * dpr, width, height)
 
             // Trigger repaint when data changes
             Connections {
@@ -125,7 +129,7 @@ Item {
             function invalidateRow(index) {
                 if (index < 0 || index >= root.commits.length)
                     return
-                markDirty(Qt.rect(0, index * root.rowHeight, canvasSize.width, root.rowHeight))
+                markDirty(Qt.rect(0, index * root.rowHeight * dpr, canvasSize.width, root.rowHeight * dpr))
             }
 
             function invalidateAll() {
@@ -147,6 +151,16 @@ Item {
 
             onCanvasWindowChanged: scheduleVisibleRepaint()
 
+            //! Windows display scale changed at runtime: the bitmap was reallocated, so everything must be redrawn
+            onDprChanged: {
+                Qt.callLater(function() {
+                    graphCanvas.invalidateAll()
+                    graphCanvas.scheduleVisibleRepaint()
+                })
+            }
+
+            onCanvasSizeChanged: Qt.callLater(graphCanvas.invalidateAll)
+
             onAvailableChanged: {
                 if (available) {
                     invalidateAll()
@@ -161,13 +175,24 @@ Item {
 
             onPaint: (region) => {
                 var ctx = getContext("2d");
-                ctx.clearRect(region.x, region.y, region.width, region.height);
+                var scale = graphCanvas.dpr;
 
-                if (!root.commits || root.commits.length === 0) return;
+                ctx.save();
+                ctx.setTransform(scale, 0, 0, scale, 0, 0);
+                ctx.clearRect(region.x / scale, region.y / scale, region.width / scale, region.height / scale);
+
+                ctx.beginPath();
+                ctx.rect(region.x / scale, region.y / scale, region.width / scale, region.height / scale);
+                ctx.clip();
+
+                if (!root.commits || root.commits.length === 0) {
+                    ctx.restore();
+                    return;
+                }
 
                 var commitsHash = root.renderCache.commitsHash;
-                var paintTop = region.y;
-                var paintBottom = region.y + region.height;
+                var paintTop = region.y / scale;
+                var paintBottom = (region.y + region.height) / scale;
 
                 // ---- Start of original drawing logic (adapted) ----
 
@@ -355,7 +380,7 @@ Item {
                     var allLabels = [];
                     if (commitForLine.tagNames && commitForLine.tagNames.length > 0) {
                         for (var tIdx = 0; tIdx < commitForLine.tagNames.length; tIdx++) {
-                            allLabels.push({ text: commitForLine.tagNames[tIdx], color: "#e2c044", isTag: true });
+                            allLabels.push({ text: commitForLine.tagNames[tIdx], color: Style.colors.graphTagLabel, isTag: true });
                         }
                     }
                     for (var hbi = 0; hbi < headBranchesForThisCommit.length; hbi++) {
@@ -370,13 +395,23 @@ Item {
                         var curX = labelStartX;
                         var labelSpacing = 8;
 
+                        var labelColumnEnd = root.graphColumnWidth + root.branchTagColumnWidth - 4;
                         var labelPositions = [];
                         for (var calcIdx = 0; calcIdx < allLabels.length; calcIdx++) {
                             var lblInfo = allLabels[calcIdx];
-                            ctx.font = "bold 11px sans-serif";
+                            ctx.font = root.labelFont;
                             ctx.textAlign = "left";
-                            var textW = ctx.measureText(lblInfo.text).width;
                             var extra = lblInfo.isTag ? 20 : 8;
+                            var maxTextW = Math.max(0, labelColumnEnd - curX - 8 - extra);
+                            var textW = ctx.measureText(lblInfo.text).width;
+                            if (textW > maxTextW) {
+                                var shown = lblInfo.text;
+                                while (shown.length > 1 && ctx.measureText(shown + "…").width > maxTextW) {
+                                    shown = shown.substring(0, shown.length - 1);
+                                }
+                                lblInfo.text = shown + "…";
+                                textW = ctx.measureText(lblInfo.text).width;
+                            }
                             var lblW = textW + 8 + extra;
                             labelPositions.push({ x: curX, width: lblW, info: lblInfo });
                             curX += lblW + labelSpacing;
@@ -417,12 +452,12 @@ Item {
                             ctx.textAlign = "left";
 
                             if (lblInfo.isTag) {
-                                ctx.font = "9px sans-serif";
-                                ctx.fillText(typeof Style !== "undefined" ? Style.icons.tag : "🏷", lx + 4, labelY);
-                                ctx.font = "bold 11px sans-serif";
+                                ctx.font = root.iconFont(9);
+                                ctx.fillText(Style.icons.tag, lx + 4, labelY);
+                                ctx.font = root.labelFont;
                                 ctx.fillText(lblInfo.text, lx + 20, labelY);
                             } else {
-                                ctx.font = "bold 11px sans-serif";
+                                ctx.font = root.labelFont;
                                 ctx.fillText(lblInfo.text, lx + 8, labelY);
                             }
                             ctx.restore();
@@ -438,17 +473,13 @@ Item {
                     if (pos3.y + root.rowHeight < paintTop || pos3.y > paintBottom)
                         continue;
 
-                    var centerX2 = centerOffset + pos3.column * root.columnSpacing + root.columnSpacing / 2;
-                    var centerY2 = pos3.y + root.commitItemHeight / 2 + root.commitItemSpacing;
-                    var branchColor3 = root.commitColor(commit3);
-
                     var isSelected = isCommitSelected(commit3.hash);
                     var isHead = commit3.hash === root.headHash;
                     var isHovered = (root.hoveredIndex >= 0 && k === root.hoveredIndex);
                     let isUncommitted = commit3.isUncommitted;
 
                     if (isSelected) {
-                        ctx.fillStyle = "#6088B2DF";
+                        ctx.fillStyle = Style.colors.graphSelectedRowBg;
                     } else if (isUncommitted && isHovered) {
                         ctx.fillStyle = Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.35);
                     } else if (isHovered) {
@@ -456,49 +487,81 @@ Item {
                     } else if (isUncommitted) {
                         ctx.fillStyle = Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.22);
                     } else if (isHead) {
-                        ctx.fillStyle = "#40FFA500";
+                        ctx.fillStyle = Style.colors.graphHeadRowBg;
                     }
 
                     if (isUncommitted || isSelected || isHovered || isHead)
-                        ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + root.commitItemSpacing*2);
+                        ctx.fillRect(0, pos3.y, flick.width, root.commitItemHeight + root.commitItemSpacing*2);
+                }
 
-                    ctx.save();
-                    ctx.strokeStyle = isSelected ? GraphUtils.darkenColor(branchColor3, 0.2) : GraphUtils.lightenColor(branchColor3, 0.3);
-                    ctx.lineWidth = isSelected ? 4 : 2.5;
+                ctx.restore();
+            }
+        }
 
-                    var avatarSize = root.showAvatar ? root.commitItemHeight : 10;
-                    var avatarRadius = avatarSize / 2;
-                    var isStashNode = commit3.isStash === true;
+        // ---------- Commit nodes (real items so circles and avatars stay crisp at any display scale) ----------
+        Item {
+            id: nodeLayer
+            width: parent.width
+            height: root.graphContentHeight
+            y: -root.viewportY
 
-                    if (isStashNode) {
-                        var sqSize = avatarRadius;
-                        ctx.beginPath();
-                        ctx.moveTo(centerX2 - sqSize + 2, centerY2 - sqSize);
-                        ctx.arcTo(centerX2 + sqSize, centerY2 - sqSize, centerX2 + sqSize, centerY2 + sqSize, 2);
-                        ctx.arcTo(centerX2 + sqSize, centerY2 + sqSize, centerX2 - sqSize, centerY2 + sqSize, 2);
-                        ctx.arcTo(centerX2 - sqSize, centerY2 + sqSize, centerX2 - sqSize, centerY2 - sqSize, 2);
-                        ctx.arcTo(centerX2 - sqSize, centerY2 - sqSize, centerX2 + sqSize, centerY2 - sqSize, 2);
-                        ctx.closePath();
-                        ctx.fillStyle = branchColor3;
-                        ctx.fill();
-                        ctx.stroke();
-                        if (root.showAvatar) {
-                            ctx.fillStyle = "#ffffff";
-                            ctx.textAlign = "center";
-                            ctx.textBaseline = "middle";
-                            ctx.fillText(typeof Style !== "undefined" ? Style.icons.archive : "📦", centerX2, centerY2);
-                        }
-                    } else {
-                        ctx.beginPath();
-                        ctx.arc(centerX2, centerY2, avatarRadius, 0, 2 * Math.PI);
-                        ctx.fillStyle = root.showAvatar ? "#D9D9D9" : GraphUtils.lightenColor(branchColor3, 0.3);
-                        ctx.fill();
-                        ctx.stroke();
-                        if (root.showAvatar) {
-                            ctx.drawImage(graphCanvas.svgImage, centerX2 - graphCanvas.svgImage.width/2, centerY2 - graphCanvas.svgImage.height/2);
-                        }
+            readonly property int firstRow: Math.max(0, Math.floor(root.viewportY / root.rowHeight) - 1)
+            readonly property int visibleRows: Math.max(0, Math.min(root.commits.length - firstRow,
+                                                                      Math.ceil(root.height / root.rowHeight) + 3))
+
+            Repeater {
+                model: nodeLayer.visibleRows
+
+                delegate: Item {
+                    id: node
+
+                    readonly property int    rowIdx      : nodeLayer.firstRow + index
+                    readonly property var    commitObj   : root.commits[rowIdx]
+                    readonly property var    pos         : commitObj ? root.commitPositions[commitObj.hash] : null
+                    readonly property bool   isSelected  : !!commitObj && !!root.selectedHashes && root.selectedHashes.indexOf(commitObj.hash) !== -1
+                    readonly property bool   isStash     : !!commitObj && commitObj.isStash === true
+                    readonly property color  branchColor : root.commitColor(commitObj)
+                    readonly property real   diameter    : root.showAvatar ? root.commitItemHeight : 10
+                    readonly property real   borderW     : isSelected ? 4 : 2.5
+                    readonly property color  borderColor : isSelected ? GraphUtils.darkenColor(branchColor, 0.2) : GraphUtils.lightenColor(branchColor, 0.3)
+
+                    visible: pos !== null && pos !== undefined
+                    width: diameter + borderW
+                    height: diameter + borderW
+                    x: pos ? root.columnSpacing * (pos.column + 1) - width / 2 : 0
+                    y: pos ? pos.y + root.commitItemHeight / 2 + root.commitItemSpacing - height / 2 : 0
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: node.isStash ? 2 : width / 2
+                        antialiasing: true
+                        color: node.isStash ? node.branchColor
+                                            : (root.showAvatar ? Style.colors.graphAvatarBackground : GraphUtils.lightenColor(node.branchColor, 0.3))
+                        border.width: node.borderW
+                        border.color: node.borderColor
                     }
-                    ctx.restore();
+
+                    Image {
+                        visible: root.showAvatar && !node.isStash
+                        anchors.centerIn: parent
+                        width: 14
+                        height: 14
+                        source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
+                        sourceSize: Qt.size(Math.ceil(14 * Screen.devicePixelRatio), Math.ceil(14 * Screen.devicePixelRatio))
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        mipmap: true
+                    }
+
+                    Text {
+                        visible: root.showAvatar && node.isStash
+                        anchors.centerIn: parent
+                        text: Style.icons.archive
+                        color: Style.colors.onColorText
+                        font.family: Style.fontTypes.font6Pro
+                        font.weight: Font.Black
+                        font.pixelSize: Math.round(node.diameter / 2)
+                    }
                 }
             }
         }
@@ -507,8 +570,12 @@ Item {
     /* Functions
      * ****************************************************************************************/
 
+    function iconFont(pixelSize) {
+        return "900 " + pixelSize + "px \"" + Style.fontTypes.font6Pro + "\""
+    }
+
     function commitColor(commitObj) {
-        if (commitObj && commitObj.isUncommitted) return "#888888"
+        if (commitObj && commitObj.isUncommitted) return Style.colors.graphUncommittedColor
         if (!commitObj || !commitObj.colorKey) return GraphUtils.getCategoryColor("main")
         return GraphUtils.getCategoryColor(commitObj.colorKey)
     }

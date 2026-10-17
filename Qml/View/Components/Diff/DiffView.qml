@@ -92,6 +92,10 @@ DetachablePanel {
         root.expandLines = gs.chunkExpandLines
     }
 
+    //! When every line is added (new file) or deleted (removed file) only one panel is shown.
+    readonly property int singleSide: root.computeSingleSide(root.chunkMode ? root.chunkData : root.diffData,
+                                                             root.chunkMode)
+
     readonly property int addedLineCount: {
         let n = 0
         for (let i = 0; i < diffData.length; i++)
@@ -216,7 +220,7 @@ DetachablePanel {
     Rectangle {
         id: diffContent
         anchors.fill: parent
-        color: Style.colors.editorBackgroound
+        color: Style.colors.diffViewBackground
         visible: chunkMode ? (chunkData && chunkData.length > 0)
                            : (root.diffData && root.diffData.length > 0)
 
@@ -273,7 +277,8 @@ DetachablePanel {
                     }
 
                     var halfW = selectMsa.width / 2
-                    var inGutter = mouseX >= halfW && mouseX < halfW + 44
+                    var inGutter = root.singleSide === DiffView.DiffViewSelectionSide.None &&
+                                   mouseX >= halfW && mouseX < halfW + 44
                     if (inGutter &&
                         checkHasAction(diffListView.model, idx, row.diffType) &&
                         root.selectedFileStatus !== GitFileStatus.Deleted) {
@@ -308,7 +313,10 @@ DetachablePanel {
                    }
 
                     // Checks which side of diffview is selected
-                    root.selectedSide = mouse.x < selectMsa.width / 2 ? DiffView.DiffViewSelectionSide.Left : DiffView.DiffViewSelectionSide.Right
+                    if (root.singleSide !== DiffView.DiffViewSelectionSide.None)
+                        root.selectedSide = root.singleSide
+                    else
+                        root.selectedSide = mouse.x < selectMsa.width / 2 ? DiffView.DiffViewSelectionSide.Left : DiffView.DiffViewSelectionSide.Right
                 }
 
                 onPositionChanged: (mouse) => {
@@ -414,6 +422,7 @@ DetachablePanel {
                     horizontalOffset: diffListView.horizontalScrollOffset
                     textColorizer: root.textColorizer ?? pluginColorizer.colorize
                     readOnly: root.readOnly || root.chunkMode
+                    singleSide: root.singleSide
                     diffModel: diffListView.model
                     diffType: (model.diffType !== undefined) ? model.diffType : GitDiff.Context
                     leftContent:  model.leftText  || ""
@@ -509,8 +518,8 @@ DetachablePanel {
                 closePolicy: Popup.CloseOnPressOutside | Popup.CloseOnEscape
 
                 background: Rectangle {
-                    color: Style.colors.secondaryBackground
-                    border.color: Style.colors.primaryBorder
+                    color: Style.colors.diffPopupBackground
+                    border.color: Style.colors.diffPopupBorder
                     radius: 6
                 }
 
@@ -598,7 +607,7 @@ DetachablePanel {
 
                 anchors.fill: parent
 
-                color: Style.colors.actionPillBg
+                color: Style.colors.diffPillBackground
                 border.width: 0
 
                 Rectangle {
@@ -606,7 +615,7 @@ DetachablePanel {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     height: 1
-                    color: Style.colors.actionPillBorder
+                    color: Style.colors.diffPillBorder
                 }
 
                 Rectangle {
@@ -614,7 +623,7 @@ DetachablePanel {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     height: 1
-                    color: Style.colors.actionPillBorder
+                    color: Style.colors.diffPillBorder
                 }
 
                 HoverHandler {
@@ -670,7 +679,7 @@ DetachablePanel {
                         color: "transparent"
                         border.color: stepBtnMouse.containsMouse
                                       ? Style.colors.accent
-                                      : Style.colors.actionPillBorder
+                                      : Style.colors.diffPillBorder
                         border.width: 1
 
                         Text {
@@ -709,7 +718,7 @@ DetachablePanel {
                         color: "transparent"
                         border.color: allBtnMouse.containsMouse
                                       ? Style.colors.accent
-                                      : Style.colors.actionPillBorder
+                                      : Style.colors.diffPillBorder
                         border.width: 1
 
                         Text {
@@ -886,6 +895,41 @@ DetachablePanel {
 
     /* Functions
      * ****************************************************************************************/
+    function computeSingleSide(data, isChunked) {
+        if (!data || data.length === 0)
+            return DiffView.DiffViewSelectionSide.None
+
+        let lines = []
+        if (isChunked) {
+            for (let c = 0; c < data.length; c++) {
+                if (data[c].chunkType !== "changed")
+                    return DiffView.DiffViewSelectionSide.None
+
+                for (let l = 0; l < data[c].lines.length; l++)
+                    lines.push(data[c].lines[l])
+            }
+        } else {
+            lines = data
+        }
+
+        if (lines.length === 0)
+            return DiffView.DiffViewSelectionSide.None
+
+        let allAdded = true
+        let allDeleted = true
+        for (let i = 0; i < lines.length; i++) {
+            let t = lines[i].type
+            if (t !== GitDiff.Added)
+                allAdded = false
+            if (t !== GitDiff.Deleted)
+                allDeleted = false
+            if (!allAdded && !allDeleted)
+                return DiffView.DiffViewSelectionSide.None
+        }
+
+        return allAdded ? DiffView.DiffViewSelectionSide.Right : DiffView.DiffViewSelectionSide.Left
+    }
+
     function appendRow(model, type, lTxt, rTxt, lNum, rNum) {
         model.append({
                      "diffType": type,

@@ -1,0 +1,14 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+
+# User files
+*.user
+*.suo
+.vs/
+
+# Packages and test results
+*.nupkg
+project.lock.json
+TestResults/

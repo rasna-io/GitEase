@@ -42,6 +42,7 @@ QtObject {
             cherryPickController.currentRepo = currentRepo
             conflictController.currentRepo = currentRepo
             tagController.currentRepo = currentRepo
+            ignoreController.currentRepo = currentRepo
             gitTreeController.currentRepo = currentRepo
             pluginController.currentRepo = currentRepo
             resetController.currentRepo = currentRepo
@@ -112,6 +113,13 @@ QtObject {
 
     property StashController  stashController : StashController  {
         statusController: root.statusController
+        onGitCommandGenerated: function(command){
+            activityController.addActivity(command)
+            gitStateNotifier.reportCommand(command)
+        }
+    }
+
+    property IgnoreController ignoreController: IgnoreController {
         onGitCommandGenerated: function(command){
             activityController.addActivity(command)
             gitStateNotifier.reportCommand(command)
