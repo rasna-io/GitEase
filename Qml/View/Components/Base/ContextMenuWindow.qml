@@ -10,8 +10,7 @@ import GitEase_Style_Impl
  * ContextMenuWindow
  * One level of a context menu rendered in its own frameless window, like the floating
  * notifications. It places itself the way Windows does: below and to the right of the anchor, and
- * flipped above / to the left when the screen edge would cut it off. The open / close animation
- * grows from the corner that touches the anchor.
+ * flipped above / to the left when the screen edge would cut it off.
  * ************************************************************************************************/
 Window {
     id: root
@@ -33,17 +32,12 @@ Window {
     property real   menuWidth: 200
     property real   contentPadding: 6
     property real   edgeMargin: 8
-    property bool   acceptsFocus: true
 
     //! Side placement only: open on the left of the anchor first (the parent menu opened leftwards)
     property bool   preferLeft: false
 
-    //! Which corner touches the anchor after placement, drives the animation origin
+    //! Whether the window opened to the left of the anchor
     property bool   flippedX: false
-    property bool   flippedY: false
-
-    //! 0 = hidden, 1 = fully shown
-    property real   progress: 0
 
     readonly property real panelHeight: menuColumn.implicitHeight + contentPadding * 2
 
@@ -51,7 +45,6 @@ Window {
      * ****************************************************************************************/
     signal itemHovered(var item, rect itemRect)
     signal itemTriggered(var item, bool checked)
-    signal dismissRequested()
     signal hidden()
 
     /* Functions
@@ -91,7 +84,6 @@ Window {
         let px = 0
         let py = 0
         let fx = false
-        let fy = false
 
         if(placement === ContextMenuWindow.Placement.Side) {
             //! Try the preferred side first, fall back to the other one when it doesn't fit
@@ -109,7 +101,6 @@ Window {
             py = anchor.y - contentPadding
             if(py + h > bottom) {
                 py = anchor.y + anchor.height + contentPadding - h
-                fy = true
             }
         } else {
             px = anchor.x
@@ -121,35 +112,18 @@ Window {
             py = anchor.y
             if(py + h > bottom) {
                 py = anchor.y - h
-                fy = true
             }
         }
 
         flippedX = fx
-        flippedY = fy
 
         x = Math.max(left, Math.min(px, right - w))
         y = Math.max(top, Math.min(py, bottom - h))
 
-        hideAnimation.stop()
-        progress = 0
         visible = true
-        showAnimation.restart()
     }
 
-    function hideAnimated() {
-        if(!visible) {
-            return
-        }
-
-        showAnimation.stop()
-        hideAnimation.restart()
-    }
-
-    function hideNow() {
-        showAnimation.stop()
-        hideAnimation.stop()
-        progress = 0
+    function hide() {
         visible = false
     }
 
@@ -158,41 +132,12 @@ Window {
     width: menuWidth
     height: panelHeight
 
-    flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
-           | (acceptsFocus ? 0 : Qt.WindowDoesNotAcceptFocus)
     color: "transparent"
     visible: false
 
     onVisibleChanged: {
-        if(visible) {
-            if(acceptsFocus) {
-                requestActivate()
-            }
-        } else {
+        if(!visible) {
             hidden()
-        }
-    }
-
-    /* Animations
-     * ****************************************************************************************/
-    NumberAnimation {
-        id: showAnimation
-        target: root
-        property: "progress"
-        to: 1
-        duration: Style.motionFast
-        easing.type: Easing.OutCubic
-    }
-
-    NumberAnimation {
-        id: hideAnimation
-        target: root
-        property: "progress"
-        to: 0
-        duration: Style.motionFast
-        easing.type: Easing.InCubic
-        onFinished: {
-            root.visible = false
         }
     }
 
@@ -201,19 +146,6 @@ Window {
     Item {
         id: panel
         anchors.fill: parent
-        focus: true
-        opacity: root.progress
-
-        transform: Scale {
-            origin.x: root.flippedX ? panel.width : 0
-            origin.y: root.flippedY ? panel.height : 0
-            xScale: 0.94 + 0.06 * root.progress
-            yScale: 0.85 + 0.15 * root.progress
-        }
-
-        Keys.onEscapePressed: {
-            root.dismissRequested()
-        }
 
         Rectangle {
             anchors.fill: parent

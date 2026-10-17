@@ -240,6 +240,15 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
 
     MSG* msg = static_cast<MSG*>(message);
 
+    if (msg->hwnd != m_hwnd && msg->message == WM_SHOWWINDOW && msg->wParam) {
+        HWND currentHwnd = reinterpret_cast<HWND>(m_window->winId());
+        if (currentHwnd && currentHwnd != m_hwnd)
+            m_hwnd = currentHwnd;
+    }
+
+    if (msg->hwnd != m_hwnd)
+        return false;
+
     switch (msg->message)
     {
     case WM_NCCALCSIZE:
@@ -284,13 +293,6 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
     case WM_SHOWWINDOW:
     {
         if (msg->wParam) { // becoming visible
-            HWND currentHwnd = m_window ? reinterpret_cast<HWND>(m_window->winId()) : nullptr;
-            if (currentHwnd && currentHwnd != m_hwnd)
-                m_hwnd = currentHwnd;
-
-            if (reinterpret_cast<HWND>(msg->hwnd) != m_hwnd)
-                return false; // not our window
-
             // Reassert styles and framecalc
             ensureWindowStyles();
             ::SetWindowPos(m_hwnd, nullptr, 0,0,0,0,
@@ -316,9 +318,6 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
         // Provide native resize borders. We *don’t* return HTCAPTION here,
         // because we want QML to initiate move via startSystemMove(), so buttons remain clickable.
         // This keeps resizing 100% native while your header logic stays in QML.
-        if (msg->hwnd != m_hwnd)
-            return false;
-
         const LONG x = GET_X_LPARAM(msg->lParam);
         const LONG y = GET_Y_LPARAM(msg->lParam);
 
