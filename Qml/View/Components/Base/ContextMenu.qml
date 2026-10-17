@@ -27,34 +27,14 @@ Item {
 
         mainWindow.menuWidth = root.width
         mainWindow.menuModel = root.menuModel
-        subWindow.hideNow()
-
-        const screens = Qt.application.screens
-        let left = 0
-        let top = 0
-        let right = 0
-        let bottom = 0
-        for(let i = 0; i < screens.length; ++i) {
-            const s = screens[i]
-            left = Math.min(left, s.virtualX)
-            top = Math.min(top, s.virtualY)
-            right = Math.max(right, s.virtualX + s.width)
-            bottom = Math.max(bottom, s.virtualY + s.height)
-        }
-        catcher.x = left
-        catcher.y = top
-        catcher.width = right - left
-        catcher.height = bottom - top
-        catcher.visible = true
+        subWindow.hide()
 
         mainWindow.openAt(Qt.rect(origin.x, origin.y, 0, 0))
     }
 
     function close() {
-        //! Clicks pass through again while the close animation plays
-        catcher.visible = false
-        subWindow.hideAnimated()
-        mainWindow.hideAnimated()
+        subWindow.hide()
+        mainWindow.hide()
     }
 
     /* Object Properties
@@ -62,24 +42,38 @@ Item {
     implicitWidth: 200
 
     Component.onDestruction: {
-        catcher.visible = false
-        subWindow.hideNow()
-        mainWindow.hideNow()
+        subWindow.hide()
+        mainWindow.hide()
     }
 
     /* Children
      * ****************************************************************************************/
-    Window {
-        id: catcher
+    MouseArea {
+        parent: root.Window.window ? root.Window.window.contentItem : null
+        anchors.fill: parent
+        z: 100000
+        enabled: root.opened
+        acceptedButtons: Qt.AllButtons
+        onPressed: (mouse) => {
+            mouse.accepted = false
+            root.close()
+        }
+    }
 
-        flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus
-        color: Qt.rgba(0, 0, 0, 0.01)
-        visible: false
+    Shortcut {
+        sequence: "Escape"
+        enabled: root.opened
+        onActivated: {
+            root.close()
+        }
+    }
 
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.AllButtons
-            onPressed: {
+    Connections {
+        target: root.Window.window
+        enabled: root.opened
+
+        function onActiveChanged() {
+            if(!root.Window.window.active) {
                 root.close()
             }
         }
@@ -88,33 +82,18 @@ Item {
     ContextMenuWindow {
         id: mainWindow
 
-        //! Owned windows stay above their owner, which keeps the menu above the catcher
-        transientParent: catcher
+        transientParent: root.Window.window
 
         placement: ContextMenuWindow.Placement.Cursor
 
-        //! Windows closes a menu as soon as something else takes the focus
-        property bool wasActive: false
-
-        onActiveChanged: {
-            if(active) {
-                wasActive = true
-            } else if(wasActive && visible) {
-                root.close()
-            }
-        }
-
-        onVisibleChanged: {
-            wasActive = false
-        }
-
         onItemHovered: (item, itemRect) => {
             if(item.subItems && item.subItems.length > 0) {
-                subWindow.hideNow()
+                subWindow.hide()
                 subWindow.menuModel = item.subItems
                 subWindow.openAt(itemRect)
+                subWindow.raise()
             } else {
-                subWindow.hideAnimated()
+                subWindow.hide()
             }
         }
 
@@ -123,12 +102,8 @@ Item {
             root.close()
         }
 
-        onDismissRequested: {
-            root.close()
-        }
-
         onHidden: {
-            subWindow.hideNow()
+            subWindow.hide()
             root.closed()
         }
     }
@@ -139,7 +114,6 @@ Item {
         placement: ContextMenuWindow.Placement.Side
         menuWidth: 240
         transientParent: mainWindow
-        acceptsFocus: false
         preferLeft: mainWindow.flippedX
 
         onItemTriggered: (item, checked) => {
