@@ -21,16 +21,21 @@ Window {
     //! Same format as ContextMenu.menuModel
     property var    menuModel: []
 
-    //! "cursor": the window's corner touches the anchor point (a context menu)
-    //! "side":   the window sits beside the anchor rect (a submenu)
-    property string placement: "cursor"
+    //! Cursor: the window's corner touches the anchor point (a context menu)
+    //! Side:   the window sits beside the anchor rect (a submenu)
+    enum Placement {
+        Cursor,
+        Side
+    }
+
+    property int placement: ContextMenuWindow.Placement.Cursor
 
     property real   menuWidth: 200
     property real   contentPadding: 6
     property real   edgeMargin: 8
     property bool   acceptsFocus: true
 
-    //! "side" placement only: open on the left of the anchor first (the parent menu opened leftwards)
+    //! Side placement only: open on the left of the anchor first (the parent menu opened leftwards)
     property bool   preferLeft: false
 
     //! Which corner touches the anchor after placement, drives the animation origin
@@ -63,7 +68,7 @@ Window {
     }
 
     /*!
-     * Opens the window next to \a anchor, a rect in global coordinates. For the "cursor"
+     * Opens the window next to \a anchor, a rect in global coordinates. For the Cursor
      * placement only anchor.x / anchor.y matter.
      */
     function openAt(anchor) {
@@ -88,7 +93,7 @@ Window {
         let fx = false
         let fy = false
 
-        if(placement === "side") {
+        if(placement === ContextMenuWindow.Placement.Side) {
             //! Try the preferred side first, fall back to the other one when it doesn't fit
             const rightX = anchor.x + anchor.width - 4
             const leftX = anchor.x - w + 4
