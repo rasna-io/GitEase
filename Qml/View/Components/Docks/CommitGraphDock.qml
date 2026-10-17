@@ -44,6 +44,7 @@ DetachablePanel {
     property LayoutController       layoutController        : null
     property var                    pluginController        : null
     property GitTreeController      gitTreeController       : null
+    property TextDirectionController textDirectionController : null
 
 
     property AddBranchPopup          addBranchPopup         : null
@@ -545,6 +546,7 @@ DetachablePanel {
         statusController        : root.statusController
         commitController        : root.commitController
         guideController         : root.guideController
+        textDirectionController : root.textDirectionController
         // onOperationCompleted    : reloadAll()        //TODO
     }
 
@@ -588,6 +590,7 @@ DetachablePanel {
         statusController        : root.statusController
         commitController        : root.commitController
         guideController         : root.guideController
+        textDirectionController : root.textDirectionController
         // onOperationCompleted    : reloadAll()        //TODO
     }
 
@@ -609,6 +612,7 @@ DetachablePanel {
         notificationController: root.notificationController
         layoutController: root.layoutController
         guideController: root.guideController
+        textDirectionController: root.textDirectionController
     }
 
     CommitFileBrowserPopup {
