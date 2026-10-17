@@ -132,6 +132,8 @@ Window {
     width: menuWidth
     height: panelHeight
 
+    flags: Qt.ToolTip | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint
+           | Qt.WindowDoesNotAcceptFocus
     color: "transparent"
     visible: false
 
