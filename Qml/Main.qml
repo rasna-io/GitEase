@@ -156,6 +156,7 @@ ApplicationWindow {
         notificationController: uiSession.notificationController
         guideController: uiSession.guideController
         sshKeyController: uiSession.sshKeyController
+        textDirectionController: uiSession.textDirectionController
     }
 
     // Main content loader - switches between welcome flow and main application
