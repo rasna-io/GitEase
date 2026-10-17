@@ -5,6 +5,7 @@ set(SOURCES_BACKEND
     Src/Utilities/FileManager/FileIO.cpp
     Src/Utilities/NetworkManager/NetworkManager.cpp
     Src/Utilities/UpdateManager/UpdateManager.cpp
+    Src/Utilities/TextDirectionManager/TextDirectionManager.cpp
 
     Src/Git/IGitController.cpp
     Src/Git/Async/GitAsyncRunner.cpp
@@ -54,6 +55,7 @@ set(HEADERS_BACKEND
     Src/Utilities/FileManager/FileIO.hpp
     Src/Utilities/NetworkManager/NetworkManager.hpp
     Src/Utilities/UpdateManager/UpdateManager.hpp
+    Src/Utilities/TextDirectionManager/TextDirectionManager.h
 
     Src/Git/IGitController.h
     Src/Git/Async/GitAsyncRunner.h
@@ -118,6 +120,7 @@ set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Utilities/GitScanner/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/NetworkManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/UpdateManager/
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/TextDirectionManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/windowsManager/
     ${CMAKE_SOURCE_DIR}/Src/Git/Async/
     ${CMAKE_SOURCE_DIR}/Src
