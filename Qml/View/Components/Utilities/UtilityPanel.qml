@@ -36,6 +36,7 @@ Rectangle {
     property UiSessionPopups         uiSessionPopups         : null
     property var                     pluginController        : null
     property GitStateNotifier        gitStateNotifier        : null
+    property TextDirectionController textDirectionController : null
     property real                    animatedWidth           : root.open ? expandedWidth : 0
 
     /* Object Properties
@@ -292,6 +293,7 @@ Rectangle {
                     notificationController  : root.notificationController
                     conflictController      : root.conflictController
                     guideController         : root.guideController
+                    textDirectionController : root.textDirectionController
                 }
 
                 // ── Plugin docks ─────────────────────────────────────────────────
