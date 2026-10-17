@@ -1,0 +1,72 @@
+{
+  "id": "com.gitease.gitignore-manager",
+  "name": "Gitignore Manager",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": [
+    "page"
+  ],
+  "author": "GitEase",
+  "description": "See the status of every file in the repository, edit .gitignore by selecting files, and start from ready-made templates.",
+  "cppEntry": "lib/gitignore-manager-plugin",
+  "long_description": "Gitignore Manager keeps the ignore rules of a repository in one place. It lists every file with its Git status, shows and edits the root .gitignore, and offers ready-made templates in the style of GitHub's collection.\n\nSelect files or whole folders to ignore them with a single rule, or pick a rule that matches by name, extension or parent folder. Files that were committed before they were ignored can be taken out of the index while they stay on disk. Everything works on the root .gitignore only; rules from other files are shown but never changed.",
+  "install_guide": "Open the Gitignore page from the navigation rail. Right-click the file tree or the template list for quick actions, expand all and collapse all.",
+  "tags": [
+    "gitignore",
+    "templates",
+    "files",
+    "status",
+    "security"
+  ],
+  "features": [
+    {
+      "title": "File status tree",
+      "description": "Every file and folder with a colour-coded status: committed, modified, staged, added, deleted, renamed, conflicted, untracked or ignored."
+    },
+    {
+      "title": "Ignore by selection",
+      "description": "Tick files or folders and add them with one rule: exact path, name, extension or parent folder. A folder becomes a single /folder/ rule."
+    },
+    {
+      "title": "Stop ignoring and stop tracking",
+      "description": "See which rules ignore a selection, remove them after confirming, and take committed files out of the index while keeping them on disk."
+    },
+    {
+      "title": "Templates",
+      "description": "Languages, build tools, frameworks, operating systems, editors, AI tools and security templates. Applied sections are marked and never duplicated."
+    },
+    {
+      "title": "Your own templates",
+      "description": "Write templates, customize bundled ones and restore the original at any time. They are stored in your roaming app data."
+    },
+    {
+      "title": ".gitignore viewer and editor",
+      "description": "Line-numbered view with hover removal, a one-line pattern field and a full text editor. The original line endings are kept."
+    },
+    {
+      "title": "Hidden files switch",
+      "description": "Show or hide dot files; the choice is remembered between sessions."
+    },
+    {
+      "title": "Right-click actions",
+      "description": "Quick ignore options, copy path, show in file manager, and expand or collapse all folders and categories."
+    }
+  ],
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-10-10",
+      "notes": [
+        "First release.",
+        "File tree with status for every file and folder, filters and search.",
+        "Ignore files or whole folders by exact path, name, extension or parent folder.",
+        "Stop ignoring (with a rule preview) and stop tracking committed files.",
+        "Bundled templates in eight categories, including AI tools and security.",
+        "Custom templates, customized bundled templates and restore original.",
+        "Editable .gitignore view with per-line removal.",
+        "Hidden files switch saved between sessions.",
+        "Right-click menus with expand all and collapse all."
+      ]
+    }
+  ]
+}

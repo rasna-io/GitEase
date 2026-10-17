@@ -84,14 +84,14 @@ RowLayout {
                 running: root.busy
                 implicitWidth: 18
                 implicitHeight: 18
-                Material.accent: "#ffffff"
+                Material.accent: Style.colors.onAccentText
             }
 
             Text {
                 text: root.buttonTitle
                 font: btn.font
                 color: btn.hovered && btn.enabled
-                       ? "#ffffff" : Style.colors.foreground
+                       ? Style.colors.onAccentText : Style.colors.foreground
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true

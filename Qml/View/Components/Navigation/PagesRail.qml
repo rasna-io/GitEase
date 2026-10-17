@@ -116,11 +116,11 @@ Rectangle {
                                                       : false
                             property bool isHovered: false
 
-                            readonly property color activeColor:   root.useAccentIndicator ? Style.colors.accent : "#60A5FA"
-                            readonly property color inactiveColor: root.useAccentIndicator ? Style.colors.mutedText : "#363650"
+                            readonly property color activeColor:   root.useAccentIndicator ? Style.colors.accent : Style.colors.branchAccent
+                            readonly property color inactiveColor: root.useAccentIndicator ? Style.colors.mutedText : Style.colors.navItemInactive
 
                             color: item.isSelected
-                                   ? "#1F3B82F6"
+                                   ? Style.colors.azureTint
                                    : item.isHovered
                                      ? Qt.darker(Style.colors.navButton, 1.3)
                                      : "transparent"
@@ -192,7 +192,7 @@ Rectangle {
                                     implicitHeight: 16
                                     implicitWidth: Math.max(implicitHeight, badgeLabel.implicitWidth + 8)
                                     radius: implicitHeight / 2
-                                    color: modelData?.badgeColor ?? "#3B82F6"
+                                    color: modelData?.badgeColor ?? Style.colors.accent
 
                                     Label {
                                         id: badgeLabel

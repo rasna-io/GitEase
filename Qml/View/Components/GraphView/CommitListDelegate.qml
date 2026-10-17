@@ -53,7 +53,7 @@ Rectangle {
             return Style.colors.primaryBackground;
 
         if (isSelected)
-            return "#6088B2DF";
+            return Style.colors.graphSelectedRowBg;
 
         if (commitData.isUncommitted) {
             return isHovered ? Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.35)
@@ -64,7 +64,7 @@ Rectangle {
             return Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.15);
 
         if (isHead)
-            return "#40FFA500";
+            return Style.colors.graphHeadRowBg;
 
         return Style.colors.primaryBackground;
     }

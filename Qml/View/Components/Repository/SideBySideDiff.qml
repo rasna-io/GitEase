@@ -35,6 +35,11 @@ Item {
 
     property real horizontalOffset: 0
 
+    //! Which side to show alone when the whole file is added or deleted (DiffView.DiffViewSelectionSide).
+    property int singleSide: DiffView.DiffViewSelectionSide.None
+    readonly property bool leftHidden: singleSide === DiffView.DiffViewSelectionSide.Right
+    readonly property bool rightHidden: singleSide === DiffView.DiffViewSelectionSide.Left
+
     readonly property bool isAdd: diffType === GitDiff.Added
     readonly property bool isDel: diffType === GitDiff.Deleted
     readonly property bool isMod: diffType === GitDiff.Modified
@@ -88,15 +93,17 @@ Item {
           * Read Only
           */
         Rectangle {
+            visible: !delegateRoot.leftHidden
             Layout.fillHeight: true
+            Layout.fillWidth: delegateRoot.rightHidden
             Layout.preferredWidth: parent.width / 2
-            color: (isDel || isMod) ? Style.colors.diffRemovedBg : "transparent"
+            color: (isDel || isMod) ? Style.colors.diffRowRemovedBg : "transparent"
             clip: true
 
             StripedBackground {
                 anchors.fill: parent
                 visible: isAdd
-                stripeColor: Style.colors.voidStripe
+                stripeColor: Style.colors.diffStripe
             }
 
             Row {
@@ -108,7 +115,7 @@ Item {
                     width: 45
                     height: parent.height
                     text: (leftLineNum > 0) ? leftLineNum : ""
-                    color: (isDel || isMod) ? Style.colors.softCoralMist : Style.colors.editorForeground
+                    color: (isDel || isMod) ? Style.colors.diffRemovedText : Style.colors.diffText
                     font.pixelSize: Style.appFont.mediumPt
                     font.family: Style.fontTypes.inter
                     horizontalAlignment: Text.AlignRight
@@ -116,7 +123,7 @@ Item {
                     topPadding: 4
 
                     background: Rectangle {
-                        color: Style.colors.linePanelBackgroound
+                        color: Style.colors.diffGutterBackground
                     }
                 }
 
@@ -141,7 +148,7 @@ Item {
                         x: -delegateRoot.horizontalOffset
                         text: delegateRoot.textColorizer ? delegateRoot.textColorizer(leftContent) : leftContent
                         textFormat: delegateRoot.textColorizer ? Text.RichText : Text.PlainText
-                        color: (isDel || isMod) ? Style.colors.softCoralMist : Style.colors.editorForeground
+                        color: (isDel || isMod) ? Style.colors.diffRemovedText : Style.colors.diffText
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         topPadding: 2
@@ -156,14 +163,16 @@ Item {
           * CENTER GUTTE
           */
         Rectangle {
+            visible: delegateRoot.singleSide === DiffView.DiffViewSelectionSide.None
             Layout.fillHeight: true
             Layout.preferredWidth: 44
-            color: Style.colors.linePanelBackgroound
+            color: Style.colors.diffGutterBackground
             z: 3
 
             Rectangle {
+                visible: delegateRoot.singleSide === DiffView.DiffViewSelectionSide.None
                 width: 1
-                color: Style.colors.primaryBorder
+                color: Style.colors.diffGutterBorder
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
@@ -176,9 +185,9 @@ Item {
                 width: 26
                 height: actionRow.implicitHeight + 6
                 radius: 4
-                color: Style.colors.actionPillBg
+                color: Style.colors.diffPillBackground
                 border.width: 1
-                border.color: Style.colors.actionPillBorder
+                border.color: Style.colors.diffPillBorder
 
                 Column {
                     id: actionRow
@@ -282,15 +291,16 @@ Item {
           * Editable
           */
         Rectangle {
+            visible: !delegateRoot.rightHidden
             Layout.fillHeight: true
             Layout.fillWidth: true
-            color: (isAdd || isMod) ? Style.colors.diffAddedBg : "transparent"
+            color: (isAdd || isMod) ? Style.colors.diffRowAddedBg : "transparent"
             clip: true
 
             StripedBackground {
                 anchors.fill: parent
                 visible: isDel
-                stripeColor: Style.colors.voidStripe
+                stripeColor: Style.colors.diffStripe
             }
 
 
@@ -305,7 +315,7 @@ Item {
                     height: parent.height
                     z: 2
                     text: (rightLineNum > 0) ? rightLineNum : ""
-                    color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
+                    color: (isAdd || isMod) ? Style.colors.diffAddedText : Style.colors.diffText
                     font.pixelSize: Style.appFont.mediumPt
                     font.family: Style.fontTypes.inter
                     horizontalAlignment: Text.AlignRight
@@ -313,7 +323,7 @@ Item {
                     topPadding: 4
 
                     background: Rectangle {
-                        color: Style.colors.linePanelBackgroound
+                        color: Style.colors.diffGutterBackground
                     }
                 }
 
@@ -340,7 +350,7 @@ Item {
                         x: -delegateRoot.horizontalOffset
                         text: visible ? delegateRoot.textColorizer(rightContent) : ""
                         textFormat: Text.RichText
-                        color: (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
+                        color: (isAdd || isMod) ? Style.colors.diffAddedText : Style.colors.diffText
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         topPadding: 2
@@ -354,7 +364,7 @@ Item {
                         width: 2000
                         text: rightContent
                         color: rightColored.visible ? "transparent"
-                             : (isAdd || isMod) ? Style.colors.vibrantMint : Style.colors.editorForeground
+                             : (isAdd || isMod) ? Style.colors.diffAddedText : Style.colors.diffText
                         font.family: Style.fontTypes.inter
                         font.pixelSize: Style.appFont.defaultPt
                         padding: 0

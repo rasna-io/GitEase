@@ -439,27 +439,22 @@ GitResult GitBranch::getBranchLineage(const QString &branchName)
     return GitResult(true, lineage, QString("Successfully retrieved lineage for '%1'.").arg(branchName));
 }
 
-QString GitBranch::getCurrentBranchName()
+QString GitBranch::currentBranchName(git_repository *repo)
 {
-    if (!m_currentRepo || !activeRepo())
-        return "";
+    QString branchName;
+    git_reference* head = nullptr;
 
-    QString branchName;  // Empty string to start
-    git_reference* head = nullptr;  // libgit2 HEAD reference
+    int error = git_repository_head(&head, repo);
 
-    int error = git_repository_head(&head, activeRepo());
-
-    // Get HEAD reference (points to current branch)
     if (error == GIT_OK)
     {
-        const char* name = nullptr;  // Will store branch name
+        const char* name = nullptr;
 
-        // Extract branch name from reference
         if (git_branch_name(&name, head) == GIT_OK && name)
         {
-            branchName = QString::fromUtf8(name);  // Convert C string to QString
+            branchName = QString::fromUtf8(name);
         }
-        git_reference_free(head);  // Clean up libgit2 object
+        git_reference_free(head);
     } else if (error == GIT_ENOTFOUND)
     {
         branchName = "initial/no-commits";
@@ -467,6 +462,16 @@ QString GitBranch::getCurrentBranchName()
     {
         branchName = "Detached HEAD";
     }
+
+    return branchName;
+}
+
+QString GitBranch::getCurrentBranchName()
+{
+    if (!m_currentRepo || !activeRepo())
+        return "";
+
+    const QString branchName = currentBranchName(activeRepo());
 
     emitGitCommand("git rev-parse --abbrev-ref HEAD");
 
