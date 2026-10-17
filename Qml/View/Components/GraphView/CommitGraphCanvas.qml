@@ -37,6 +37,8 @@ Item {
     property real   graphContentHeight  : Math.max(height, commits.length * rowHeight)
     readonly property int rowHeight     : commitItemHeight + commitItemSpacing * 2
 
+    readonly property string labelFont  : "bold 11px \"" + Style.fontTypes.inter + "\""
+
     property int    hoveredIndex        : -1
     property var    renderCache         : ({
         commitsHash: ({}),
@@ -96,19 +98,36 @@ Item {
         // ---------- Canvas (draws the entire DAG) ----------
         Canvas {
             id: graphCanvas
-            anchors.fill: parent
+
+            width: Math.max(1, Math.round(flick.width * dpr))
+            height: Math.max(1, Math.round(flick.height * dpr))
+            scale: flick.width / width
+            transformOrigin: Item.TopLeft
+            smooth: true
+            antialiasing: true
 
             property int lastHoveredIndex: -1
             property int scrollRepaintRequest: -1
 
-            canvasSize: Qt.size(width, root.graphContentHeight)
-            tileSize: Qt.size(Math.max(1, Math.ceil(width)), 1024)
-            canvasWindow: Qt.rect(0, root.viewportY, width, height)
+            readonly property real dpr: Math.max(1, Screen.devicePixelRatio)
+
+            canvasSize: Qt.size(width, Math.ceil(root.graphContentHeight * dpr))
+            tileSize: Qt.size(width, 1024)
+            canvasWindow: Qt.rect(0, root.viewportY * dpr, width, height)
+
+            readonly property int avatarIconSize: 14
 
             property var svgImage: Image {
                 source: "qrc:/GitEase/Resources/Images/defaultUserIcon.svg"
-                anchors.centerIn: parent
-                height: 14.5; width: 14.5
+                sourceSize: Qt.size(Math.ceil(graphCanvas.avatarIconSize * graphCanvas.dpr),
+                                    Math.ceil(graphCanvas.avatarIconSize * graphCanvas.dpr))
+                visible: false
+
+                onStatusChanged: {
+                    if(status === Image.Ready) {
+                        graphCanvas.invalidateAll()
+                    }
+                }
             }
 
             // Trigger repaint when data changes
@@ -125,7 +144,7 @@ Item {
             function invalidateRow(index) {
                 if (index < 0 || index >= root.commits.length)
                     return
-                markDirty(Qt.rect(0, index * root.rowHeight, canvasSize.width, root.rowHeight))
+                markDirty(Qt.rect(0, index * root.rowHeight * dpr, canvasSize.width, root.rowHeight * dpr))
             }
 
             function invalidateAll() {
@@ -147,6 +166,16 @@ Item {
 
             onCanvasWindowChanged: scheduleVisibleRepaint()
 
+            //! Windows display scale changed at runtime: the bitmap was reallocated, so everything must be redrawn
+            onDprChanged: {
+                Qt.callLater(function() {
+                    graphCanvas.invalidateAll()
+                    graphCanvas.scheduleVisibleRepaint()
+                })
+            }
+
+            onCanvasSizeChanged: Qt.callLater(graphCanvas.invalidateAll)
+
             onAvailableChanged: {
                 if (available) {
                     invalidateAll()
@@ -161,13 +190,16 @@ Item {
 
             onPaint: (region) => {
                 var ctx = getContext("2d");
-                ctx.clearRect(region.x, region.y, region.width, region.height);
+                var scale = graphCanvas.dpr;
+
+                ctx.setTransform(scale, 0, 0, scale, 0, 0);
+                ctx.clearRect(region.x / scale, region.y / scale, region.width / scale, region.height / scale);
 
                 if (!root.commits || root.commits.length === 0) return;
 
                 var commitsHash = root.renderCache.commitsHash;
-                var paintTop = region.y;
-                var paintBottom = region.y + region.height;
+                var paintTop = region.y / scale;
+                var paintBottom = (region.y + region.height) / scale;
 
                 // ---- Start of original drawing logic (adapted) ----
 
@@ -370,13 +402,23 @@ Item {
                         var curX = labelStartX;
                         var labelSpacing = 8;
 
+                        var labelColumnEnd = root.graphColumnWidth + root.branchTagColumnWidth - 4;
                         var labelPositions = [];
                         for (var calcIdx = 0; calcIdx < allLabels.length; calcIdx++) {
                             var lblInfo = allLabels[calcIdx];
-                            ctx.font = "bold 11px sans-serif";
+                            ctx.font = root.labelFont;
                             ctx.textAlign = "left";
-                            var textW = ctx.measureText(lblInfo.text).width;
                             var extra = lblInfo.isTag ? 20 : 8;
+                            var maxTextW = Math.max(0, labelColumnEnd - curX - 8 - extra);
+                            var textW = ctx.measureText(lblInfo.text).width;
+                            if (textW > maxTextW) {
+                                var shown = lblInfo.text;
+                                while (shown.length > 1 && ctx.measureText(shown + "…").width > maxTextW) {
+                                    shown = shown.substring(0, shown.length - 1);
+                                }
+                                lblInfo.text = shown + "…";
+                                textW = ctx.measureText(lblInfo.text).width;
+                            }
                             var lblW = textW + 8 + extra;
                             labelPositions.push({ x: curX, width: lblW, info: lblInfo });
                             curX += lblW + labelSpacing;
@@ -417,12 +459,12 @@ Item {
                             ctx.textAlign = "left";
 
                             if (lblInfo.isTag) {
-                                ctx.font = "9px sans-serif";
-                                ctx.fillText(typeof Style !== "undefined" ? Style.icons.tag : "🏷", lx + 4, labelY);
-                                ctx.font = "bold 11px sans-serif";
+                                ctx.font = root.iconFont(9);
+                                ctx.fillText(Style.icons.tag, lx + 4, labelY);
+                                ctx.font = root.labelFont;
                                 ctx.fillText(lblInfo.text, lx + 20, labelY);
                             } else {
-                                ctx.font = "bold 11px sans-serif";
+                                ctx.font = root.labelFont;
                                 ctx.fillText(lblInfo.text, lx + 8, labelY);
                             }
                             ctx.restore();
@@ -437,10 +479,6 @@ Item {
                     if (!pos3) continue;
                     if (pos3.y + root.rowHeight < paintTop || pos3.y > paintBottom)
                         continue;
-
-                    var centerX2 = centerOffset + pos3.column * root.columnSpacing + root.columnSpacing / 2;
-                    var centerY2 = pos3.y + root.commitItemHeight / 2 + root.commitItemSpacing;
-                    var branchColor3 = root.commitColor(commit3);
 
                     var isSelected = isCommitSelected(commit3.hash);
                     var isHead = commit3.hash === root.headHash;
@@ -460,17 +498,19 @@ Item {
                     }
 
                     if (isUncommitted || isSelected || isHovered || isHead)
-                        ctx.fillRect(0, pos3.y, graphCanvas.width, root.commitItemHeight + root.commitItemSpacing*2);
+                        ctx.fillRect(0, pos3.y, flick.width, root.commitItemHeight + root.commitItemSpacing*2);
+
+                    var centerX2 = Math.round((centerOffset + pos3.column * root.columnSpacing + root.columnSpacing / 2) * scale) / scale;
+                    var centerY2 = Math.round((pos3.y + root.commitItemHeight / 2 + root.commitItemSpacing) * scale) / scale;
+                    var branchColor3 = root.commitColor(commit3);
 
                     ctx.save();
                     ctx.strokeStyle = isSelected ? GraphUtils.darkenColor(branchColor3, 0.2) : GraphUtils.lightenColor(branchColor3, 0.3);
                     ctx.lineWidth = isSelected ? 4 : 2.5;
 
-                    var avatarSize = root.showAvatar ? root.commitItemHeight : 10;
-                    var avatarRadius = avatarSize / 2;
-                    var isStashNode = commit3.isStash === true;
+                    var avatarRadius = (root.showAvatar ? root.commitItemHeight : 10) / 2;
 
-                    if (isStashNode) {
+                    if (commit3.isStash === true) {
                         var sqSize = avatarRadius;
                         ctx.beginPath();
                         ctx.moveTo(centerX2 - sqSize + 2, centerY2 - sqSize);
@@ -484,9 +524,10 @@ Item {
                         ctx.stroke();
                         if (root.showAvatar) {
                             ctx.fillStyle = Style.colors.onColorText;
+                            ctx.font = root.iconFont(Math.round(avatarRadius));
                             ctx.textAlign = "center";
                             ctx.textBaseline = "middle";
-                            ctx.fillText(typeof Style !== "undefined" ? Style.icons.archive : "📦", centerX2, centerY2);
+                            ctx.fillText(Style.icons.archive, centerX2, centerY2);
                         }
                     } else {
                         ctx.beginPath();
@@ -494,8 +535,13 @@ Item {
                         ctx.fillStyle = root.showAvatar ? Style.colors.graphAvatarBackground : GraphUtils.lightenColor(branchColor3, 0.3);
                         ctx.fill();
                         ctx.stroke();
-                        if (root.showAvatar) {
-                            ctx.drawImage(graphCanvas.svgImage, centerX2 - graphCanvas.svgImage.width/2, centerY2 - graphCanvas.svgImage.height/2);
+                        if (root.showAvatar && graphCanvas.svgImage.status === Image.Ready) {
+                            var iconSize = graphCanvas.avatarIconSize;
+                            ctx.drawImage(graphCanvas.svgImage,
+                                          centerX2 - iconSize / 2,
+                                          centerY2 - iconSize / 2,
+                                          iconSize,
+                                          iconSize);
                         }
                     }
                     ctx.restore();
@@ -506,6 +552,10 @@ Item {
 
     /* Functions
      * ****************************************************************************************/
+
+    function iconFont(pixelSize) {
+        return "900 " + pixelSize + "px \"" + Style.fontTypes.font6Pro + "\""
+    }
 
     function commitColor(commitObj) {
         if (commitObj && commitObj.isUncommitted) return Style.colors.graphUncommittedColor
