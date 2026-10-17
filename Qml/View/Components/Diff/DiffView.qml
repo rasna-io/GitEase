@@ -21,6 +21,7 @@ DetachablePanel {
     property var editedFileBuffer: [] // holds the value of the edited file
 
     property AppModel appModel: null
+    property TextDirectionController textDirectionController: null
 
     /* Chunking configuration */
     property bool chunkMode     : false
@@ -435,6 +436,7 @@ DetachablePanel {
                     selectedSide: root.selectedSide
                     hasAction: checkHasAction(diffListView.model, index, diffType)
                     selectedFileStatus: root.selectedFileStatus
+                    textDirectionController: root.textDirectionController
 
                     onRequestTextChange: (newText) => root.changeText(index, newText)
                     onRequestSplit: (pos, txt) => root.splitLine(index, pos, txt)
