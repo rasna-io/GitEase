@@ -62,6 +62,7 @@ IWindow {
     property NotificationController notificationController: null
     property LayoutController       layoutController: null
     property GuideController        guideController: null
+    property TextDirectionController textDirectionController: null
 
 
     property var    planData            : ({})
@@ -354,6 +355,7 @@ IWindow {
                         SplitView.minimumWidth: 150
 
                         readOnly: true
+                        textDirectionController: root.textDirectionController
                     }
                 }
             }
@@ -417,6 +419,7 @@ IWindow {
         statusController: root.statusController
         commitController: root.commitController
         guideController: root.guideController
+        textDirectionController: root.textDirectionController
     }
 
     Connections {
