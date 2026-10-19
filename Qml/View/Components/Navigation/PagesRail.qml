@@ -122,7 +122,7 @@ Rectangle {
                             color: item.isSelected
                                    ? Style.colors.azureTint
                                    : item.isHovered
-                                     ? Qt.darker(Style.colors.navButton, 1.3)
+                                     ? Style.colors.navItemHover
                                      : "transparent"
 
                             // Active indicator bar (accent-indicator variant only)
