@@ -48,6 +48,7 @@ QtObject{
     property string check:             "\uf00c"
     property string copy:              "\uf0c5"
     property string undo:              "\uf0E2"
+    property string redo:              "\uf01e" // arrow-rotate-right
     property string tree:              "\uF1BB" // tree
     property string cloud:             "\uf0c2" // cloud
     property string laptop:            "\uf109" // laptop
