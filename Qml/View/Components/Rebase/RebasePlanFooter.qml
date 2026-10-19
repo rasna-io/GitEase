@@ -18,6 +18,7 @@ RowLayout {
     property bool   canStart:       false
     property bool   showCancel:     true
     property string startText:      "Start Rebase"
+    property string startIcon:      Style.icons.arrowRight
 
     property string command:        ""
 
@@ -80,7 +81,7 @@ RowLayout {
 
     ConflictPillButton {
         text: root.startText
-        leadingText: Style.icons.play
+        trailingText: root.startIcon
         accentColor: Style.colors.accent
         prominent: true
         actionEnabled: root.canStart
