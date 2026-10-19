@@ -22,7 +22,7 @@ Page {
     /* Property Declarations
      * ****************************************************************************************/
     pageId: "plugins"
-    title: "Plugins"
+    title: "Plugin Manager"
     icon: Style.icons.plugins
 
     property AppModel       appModel:           null
