@@ -19,7 +19,7 @@ Page {
     /* Property Declarations
      * ****************************************************************************************/
     pageId: "graph"
-    title: "Repository History"
+    title: "Commit History"
     icon: Style.icons.workflow
 
     property AppModel                appModel                : null
