@@ -46,7 +46,7 @@ RowLayout {
 
     ConflictPillButton {
         text: "Redo"
-        leadingText: Style.icons.refresh
+        leadingText: Style.icons.redo
         accentColor: Style.colors.mutedText
         actionEnabled: root.canRedo
         tooltip: root.canRedo ? "Redo the last undone change" : "Nothing to redo"
