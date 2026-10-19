@@ -328,7 +328,7 @@ Colors {
     // Theme-specific values for tokens that were previously hardcoded in views
     progressOverlay:                    "#CCCCCC"
     ghostButtonHoverBackground:         "#33FFFFFF"
-    navItemInactive:                    "#363650"
+    navItemInactive:                    "#9D9D9D"
     graphSelectedRowBg:                 "#6088B2DF"
     graphHeadRowBg:                     "#40FFA500"
     graphTagLabel:                      "#E2C044"
