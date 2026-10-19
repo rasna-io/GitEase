@@ -942,7 +942,8 @@ DetachablePanel {
             branches,
             stashes,
             tags,
-            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null)
+            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null,
+            page.length !== root.pageSize)
 
         root.commitsOffset  = page.length
         root.hasMoreCommits = (page.length === root.pageSize)
@@ -1019,9 +1020,17 @@ DetachablePanel {
             return
         }
 
-        var compiled = compilePage(page)
-        var withoutStashes = root.allCommits.filter(function(c) { return !c.isStash })
-        root.allCommits = withoutStashes.concat(compiled)
+        var placedStashes = {}
+        root.allCommits.forEach(function(c) {
+            if (c.isStash) {
+                placedStashes[c.hash] = true
+            }
+        })
+
+        var compiled = compilePage(page, page.length !== pageSize).filter(function(c) {
+            return !placedStashes[c.hash]
+        })
+        root.allCommits = root.allCommits.concat(compiled)
 
         commitsOffset += page.length
         hasMoreCommits = (page.length === pageSize)
@@ -1038,13 +1047,14 @@ DetachablePanel {
         }
     }
 
-    function compilePage(page) {
+    function compilePage(page, appendOrphanStashes) {
         return DataLoader.compileGraphCommits(
             page,
             root.branchController ? root.branchController.getBranches() : [],
             getStashes(),
             getTags(),
-            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null
+            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null,
+            appendOrphanStashes
         )
     }
 
@@ -1063,7 +1073,8 @@ DetachablePanel {
             root.branchController ? root.branchController.getBranches() : [],
             getStashes(),
             getTags(),
-            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null
+            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null,
+            !root.hasMoreCommits
         )
 
         root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
