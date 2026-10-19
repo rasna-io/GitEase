@@ -296,7 +296,7 @@ DetachablePanel {
                     onContentHeightChanged: root.scheduleScrollRestore()
 
                     onInteractiveChanged: {
-                        if (!interactive && !commitViewsLayout.canScroll) {
+                        if (!interactive && !commitViewsLayout.canScroll && !root.isLoadingMore) {
                             cancelFlick()
                             contentY = originY
                         }
