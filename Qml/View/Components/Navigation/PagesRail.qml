@@ -42,7 +42,7 @@ Rectangle {
                     targetProvider: function() { return root },
                     icon: Style.icons.list,
                     title: "Pages",
-                    description: "Switch between the app's pages — like Local File Status and Repository History — from this list. Hover the rail to see full names, or click a page to jump to it."
+                    description: "Switch between the app's pages — like Local Changes and Commit History — from this list. Hover the rail to see full names, or click a page to jump to it."
                 }
             ]
         }
