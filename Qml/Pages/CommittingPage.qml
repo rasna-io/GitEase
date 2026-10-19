@@ -17,7 +17,7 @@ Page {
     /* Property Declarations
      * ****************************************************************************************/
     pageId: "committing"
-    title: "Committing"
+    title: "Local File Status"
     icon: Style.icons.gitBranch
 
     property AppModel                appModel:                null
