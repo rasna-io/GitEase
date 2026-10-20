@@ -34,6 +34,11 @@ Item {
     // Optional elements in the middle of header
     property Component  middleAccessory: null
 
+    property Component  detachedAccessory: null
+
+    property bool       showDetachedPlaceholder: false
+    property string     detachedPlaceholderDetails: ""
+
     // Default content slot for panel contents
     default property alias content: contentRoot.data
 
@@ -52,7 +57,7 @@ Item {
     visible: root.layoutVisible
 
     function syncPanelVisibility() {
-        const shouldShow = !root.isMinimized && !root.detached
+        const shouldShow = !root.isMinimized && (!root.detached || root.showDetachedPlaceholder)
 
         if (!root.transitionInitialized) {
             root.transitionInitialized = true
@@ -386,6 +391,15 @@ Item {
             Item {
                 id: contentRoot
                 anchors.fill: parent
+            }
+
+            DetachedPanelPlaceholder {
+                anchors.fill: parent
+                visible: root.detached && root.showDetachedPlaceholder
+                title: qsTr("%1 is open in a separate window").arg(root.title)
+                details: root.detachedPlaceholderDetails
+
+                onReattachRequested: root.detached = false
             }
         }
     }
