@@ -465,8 +465,8 @@ Item {
                     Loader {
                         Layout.alignment: Qt.AlignCenter
                         Layout.fillWidth: true
-                        active: root.middleAccessory !== null
-                        sourceComponent: root.middleAccessory
+                        active: root.detachedAccessory !== null || root.middleAccessory !== null
+                        sourceComponent: root.detachedAccessory ? root.detachedAccessory : root.middleAccessory
                     }
 
                     ToolButton {
