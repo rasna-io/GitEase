@@ -1689,18 +1689,34 @@ DetachablePanel {
         var idx     = Navigation.selectedIndex(root.commits, root.selectedCommit)
         var result  = Navigation.selectNext(root.commits, root.selectedCommit, idx, root.navigationRule, rule)
 
-        if (!result)
+        if (!result) {
             return
+        }
 
-        if (rule !== undefined)
+        root.applyNavigationResult(result, rule)
+    }
+
+    /*!
+     * Selects the commit found by the navigation helpers, the same way a click on it would.
+     */
+    function applyNavigationResult(result, rule) {
+        if (rule !== undefined) {
             root.navigationRule = rule
+        }
 
-        setSingleSelection(result.selected, result.index)
+        if (result.selected.isUncommitted) {
+            root.selectedCommitHashes = []
+            root.lastSelectedIndex = result.index
+        } else {
+            setSingleSelection(result.selected, result.index)
+        }
+
         root.selectedCommit = result.selected
-        root.commitClicked(result.selected.hash)
+        root.commitClicked(result.selected.isUncommitted ? "__uncommitted__" : result.selected.hash)
 
-        if (result.scroll)
+        if (result.scroll) {
             root.focusCommitIndex(result.index)
+        }
     }
 
     /*!
@@ -1733,14 +1749,6 @@ DetachablePanel {
             return
         }
 
-        if (rule !== undefined)
-            root.navigationRule = rule
-
-        setSingleSelection(result.selected, result.index)
-        root.selectedCommit = result.selected
-        root.commitClicked(result.selected.hash)
-
-        if (result.scroll)
-            root.focusCommitIndex(result.index)
+        root.applyNavigationResult(result, rule)
     }
 }
