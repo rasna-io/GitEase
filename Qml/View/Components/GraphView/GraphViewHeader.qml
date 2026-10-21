@@ -219,7 +219,7 @@ RowLayout {
     IconButton {
         id: downButton
         Layout.preferredHeight: headerRow.controlSize
-        Layout.preferredWidth: upDownRowLayout.implicitWidth
+        Layout.preferredWidth: headerRow.controlSize
 
         visible: !compact && !crowded
         enabled: headerRow.isGraphReady
