@@ -281,6 +281,19 @@ DetachablePanel {
 
                     cacheBuffer: 400
 
+                    //! The arrow keys do what the header's up / down buttons do, using the current navigation rule.
+                    keyNavigationEnabled: false
+
+                    Keys.onUpPressed: function(event) {
+                        event.accepted = true
+                        root.selectNext()
+                    }
+
+                    Keys.onDownPressed: function(event) {
+                        event.accepted = true
+                        root.selectPrevious()
+                    }
+
                     onMovementStarted: {
                         commitFocusAnimation.stop()
                         if (!scrollRestoreAnimation.running) {
@@ -1150,6 +1163,7 @@ DetachablePanel {
         if (!data)
             return
 
+        commitsListView.forceActiveFocus()
         root.selectedCommit = data
         root.commitClicked(data.isUncommitted ? "__uncommitted__" : data.hash)
 
