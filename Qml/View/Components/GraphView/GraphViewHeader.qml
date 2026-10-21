@@ -425,7 +425,7 @@ RowLayout {
                     targetProvider: function() { return filterButton },
                     icon: Style.icons.filter,
                     title: "Filters",
-                    description: "Narrow the search field, date range, and branch, and choose the field used to navigate between matches: Author Email, Author, Parent commit, or Branch."
+                    description: "Narrow the search field, date range, and branch, and choose how the arrow buttons and the Up/Down keys navigate: Commit (the adjacent commit), Author Email, Author, Parent commit, or Branch."
                 },
                 {
                     targetProvider: function() { return downButton.visible ? downButton : null },
