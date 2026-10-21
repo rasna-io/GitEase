@@ -183,14 +183,25 @@ RowLayout {
         navigationRule: headerRow.navigationRule
 
         onApplyRequested: function(field, startDate, endDate, branch) {
-            headerRow.filterModes = field === "" ? [] : [field]
-            headerRow.filterStartDate = startDate
-            headerRow.filterEndDate = endDate
-            headerRow.applyFilter()
+            var modes           = field === "" ? [] : [field]
+            var modesChanged    = modes.join(",") !== (headerRow.filterModes || []).join(",")
+            var datesChanged    = startDate !== headerRow.filterStartDate || endDate !== headerRow.filterEndDate
+            var branchChanged   = branch !== headerRow.branchFilter
 
-            if (branch.length > 0)
-                headerRow.navigationRule = "Branch"
-            headerRow.branchSelected(branch)
+            //! Only the navigation rule may have changed; rebuilding the graph would drop the selected commit.
+            if (modesChanged || datesChanged || branchChanged) {
+                headerRow.filterModes = modes
+                headerRow.filterStartDate = startDate
+                headerRow.filterEndDate = endDate
+                headerRow.applyFilter()
+
+                if (branchChanged && branch.length > 0) {
+                    headerRow.navigationRule = "Branch"
+                }
+                headerRow.branchSelected(branch)
+            }
+
+            headerRow.restoreFocusOnClose = true
         }
 
         onClearRequested: {
