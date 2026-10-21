@@ -107,6 +107,13 @@ Page {
             remoteController: root.remoteController
             isFetching: root.isFetching
 
+            //! The arrow keys on the graph use the dock's rule, so keep it in step with the "Navigate by" choice.
+            onNavigationRuleChanged: {
+                if (root.graphRef && root.graphRef.navigationRule !== navigationRule) {
+                    root.graphRef.navigationRule = navigationRule
+                    root.saveCommitGraphState()
+                }
+            }
             onPullRequested: root.pullAndUpdate()
 
             onPushRequested: function(force) {

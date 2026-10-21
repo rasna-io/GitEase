@@ -212,7 +212,6 @@ RowLayout {
 
         onNavigationRuleSelected: function(rule) {
             headerRow.navigationRule = rule
-            headerRow.applyFilter()
         }
     }
 
