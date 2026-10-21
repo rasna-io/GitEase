@@ -1699,6 +1699,15 @@ DetachablePanel {
         root.reloadAll()
     }
 
+    /*!
+     * Gives the commit list keyboard focus once the current event (e.g. a popup closing) has settled.
+     */
+    function focusCommitList() {
+        Qt.callLater(function() {
+            commitsListView.forceActiveFocus()
+        })
+    }
+
     function selectNext(rule) {
         var idx     = Navigation.selectedIndex(root.commits, root.selectedCommit)
         var result  = Navigation.selectNext(root.commits, root.selectedCommit, idx, root.navigationRule, rule)

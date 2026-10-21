@@ -27,6 +27,7 @@ RowLayout {
     property var    filterFieldOptions: ["Messages", "Subjects", "Authors", "Emails", "SHA-1"]
     property var    branchNames     : []
     property string branchFilter    : ""
+    property bool   restoreFocusOnClose : false
 
     readonly property bool  compact         : headerRow.parent ? headerRow.parent.width < 650 : false
     readonly property bool  tight           : headerRow.parent ? headerRow.parent.width < 820 : false
@@ -41,6 +42,7 @@ RowLayout {
     signal branchSelected(string branchName)
     signal nextRequested(string rule)
     signal previousRequested(string rule)
+    signal filtersApplied()
     signal reloadRequested()
     signal pullRequested()
     signal pushRequested(bool force)
@@ -211,6 +213,7 @@ RowLayout {
             headerRow.navigationRule = headerRow.navigationRules[0]
             headerRow.applyFilter()
             headerRow.branchSelected("")
+            headerRow.restoreFocusOnClose = true
         }
 
         onStartDateFieldClicked: function(field) {
@@ -223,6 +226,18 @@ RowLayout {
 
         onNavigationRuleSelected: function(rule) {
             headerRow.navigationRule = rule
+        }
+    }
+
+    //! The popup takes focus back when it finishes closing, so the hand-off waits for that.
+    Connections {
+        target: filterPopup
+
+        function onClosed() {
+            if (headerRow.restoreFocusOnClose) {
+                headerRow.restoreFocusOnClose = false
+                headerRow.filtersApplied()
+            }
         }
     }
 

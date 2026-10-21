@@ -114,6 +114,14 @@ Page {
                     root.saveCommitGraphState()
                 }
             }
+
+            //! Closing the filter popup moves keyboard focus away; give it back so the arrow keys keep working.
+            onFiltersApplied: {
+                if (root.graphRef) {
+                    root.graphRef.focusCommitList()
+                }
+            }
+
             onPullRequested: root.pullAndUpdate()
 
             onPushRequested: function(force) {
@@ -146,10 +154,12 @@ Page {
 
             onNextRequested: function(rule) {
                 root.graphRef.selectNext(rule);
+                root.graphRef.focusCommitList()
             }
 
             onPreviousRequested: function(rule) {
                 root.graphRef.selectPrevious(rule);
+                root.graphRef.focusCommitList()
             }
 
             onReloadRequested: function() {
