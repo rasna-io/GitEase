@@ -61,7 +61,7 @@ DetachablePanel {
     property var selectedCommit         : null
     property int lastSelectedIndex      : -1
 
-    property string navigationRule  : "Author Email"
+    property string navigationRule  : "Commit"
     property string filterText      : ""
     property string filterStartDate : ""
     property string filterEndDate   : ""

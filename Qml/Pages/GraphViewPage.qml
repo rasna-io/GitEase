@@ -330,7 +330,7 @@ Page {
             filterEndDate   : root.graphRef.filterEndDate || "",
             filterMode      : root.graphRef.filterMode ? root.graphRef.filterMode.slice(0) : [],
             branchFilter    : root.graphRef.branchFilter || "",
-            navigationRule  : root.graphRef.navigationRule || "Author Email"
+            navigationRule  : root.graphRef.navigationRule || "Commit"
         }
     }
 
@@ -353,7 +353,7 @@ Page {
         root.graphRef.filterEndDate = state.filterEndDate || ""
         root.graphRef.filterMode = state.filterMode ? state.filterMode.slice(0) : []
         root.graphRef.branchFilter = state.branchFilter || ""
-        root.graphRef.navigationRule = state.navigationRule || "Author Email"
+        root.graphRef.navigationRule = state.navigationRule || "Commit"
         root.graphRef.refreshBranchFilterHeadHash()
 
         root.graphRef.applyFilter(
