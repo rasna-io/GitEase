@@ -8,7 +8,7 @@
  * @param {Array}  commits         – current commit array
  * @param {Object} selectedCommit  – the currently selected commit (or null)
  * @param {number} selectedIndex   – index of selectedCommit in commits (-1 if none)
- * @param {string} navigationRule  – "Author Email", "Author", "Parent 1", "Branch", "Message"
+ * @param {string} navigationRule  – "Commit", "Author Email", "Author", "Parent 1", "Branch", "Message"
  * @param {string} newNavRule      – (optional) new navigation rule to apply
  * @returns {{ selected: Object, index: number, scroll: boolean }}
  */
@@ -25,6 +25,12 @@ function selectPrevious(commits, selectedCommit, selectedIndex, navigationRule, 
 
     if (!selectedCommit)
         return null;
+
+    if (navigationRule === "Commit") {
+        if (idx + 1 >= commits.length)
+            return null;
+        return { selected: commits[idx + 1], index: idx + 1, scroll: true };
+    }
 
     if (navigationRule === "Parent 1") {
         if (!selectedCommit.parentHashes || !selectedCommit.parentHashes.length) return null;
@@ -72,6 +78,12 @@ function selectNext(commits, selectedCommit, selectedIndex, navigationRule, newN
 
     if (!selectedCommit)
         return null;
+
+    if (navigationRule === "Commit") {
+        if (idx - 1 < 0)
+            return null;
+        return { selected: commits[idx - 1], index: idx - 1, scroll: true };
+    }
 
     if (navigationRule === "Parent 1") {
         for (var i = idx - 1; i >= 0; i--) {

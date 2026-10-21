@@ -32,7 +32,7 @@ RowLayout {
     readonly property bool  tight           : headerRow.parent ? headerRow.parent.width < 820 : false
     readonly property bool  crowded         : headerRow.parent ? headerRow.parent.width < 600 : false
     readonly property int   controlSize     : 26
-    property var            navigationRules : ["Author Email", "Author", "Parent 1", "Branch"]
+    property var            navigationRules : ["Commit", "Author Email", "Author", "Parent 1", "Branch"]
     property string         navigationRule  : navigationRules[0]
 
     /* Signals
