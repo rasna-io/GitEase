@@ -71,7 +71,7 @@ Item {
     implicitHeight: Math.max(hasAction ? 90 : 24, Math.max(leftTextMetrics.height, rightTextEdit.contentHeight + 4))
 
     onIsCurrentItemChanged: {
-        if (isCurrentItem && !isDel) {
+        if (isCurrentItem && !isDel && !readOnly) {
             Qt.callLater(function() {
                 rightTextEdit.forceActiveFocus()
             })
