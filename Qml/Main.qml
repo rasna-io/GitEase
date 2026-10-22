@@ -35,14 +35,20 @@ ApplicationWindow {
     
     /* Event Handlers
      * ****************************************************************************************/
-    onActiveChanged: {
-        if (!window.active)
-            return
+    Connections {
+        target: Qt.application
 
-        if (window.hasActivatedBefore)
-            uiSession?.gitStateNotifier?.notifyChanged()
+        function onStateChanged(state) {
+            if(state !== Qt.ApplicationActive) {
+                return
+            }
 
-        window.hasActivatedBefore = true
+            if(window.hasActivatedBefore) {
+                uiSession?.gitStateNotifier?.notifyChanged()
+            }
+
+            window.hasActivatedBefore = true
+        }
     }
 
     onClosing: function(close) {
