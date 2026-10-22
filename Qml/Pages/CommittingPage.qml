@@ -488,6 +488,8 @@ Page {
             Layout.fillHeight: true
             Layout.fillWidth: true
             chunkMode: true
+            showDetachedPlaceholder: true
+            detachedPlaceholderDetails: qsTr("Select a file in the list to see its changes there.")
             hasHeaderMiddleComponent: true
             selectEnabled: false
             appModel: root.appModel

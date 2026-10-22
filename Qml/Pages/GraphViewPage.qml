@@ -58,10 +58,42 @@ Page {
     property var                     pendingFetchRemoteNames  : remoteOperationsSession ? remoteOperationsSession.pendingFetchRemoteNames : []
     property var                     fetchBatchResults        : remoteOperationsSession ? remoteOperationsSession.fetchBatchResults : []
 
-    // Header exposed to MainWindow
-    headerContent: Component {
+    headerContent: commitGraph.detached ? detachedHeaderComponent : graphHeaderComponent
+
+    // Stands in for the header while it is shown in the detached window.
+    Component {
+        id: detachedHeaderComponent
+
+        RowLayout {
+            spacing: 8
+
+            Text {
+                text: Style.icons.detach
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.descriptionText
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("Commit Graph is open in a separate window")
+                elide: Text.ElideRight
+                font.family: Style.fontTypes.inter
+                font.weight: Font.DemiBold
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.descriptionText
+            }
+        }
+    }
+
+    Component {
+        id: graphHeaderComponent
+
         GraphViewHeader {
             id: graphViewHeader
+
+            showHeading: !commitGraph.detached
 
             isGraphReady: root.graphRef !== null
             filterText: root.graphRef ? root.graphRef.filterText : (root.activePageState()?.commitGraph?.filterText || "")
@@ -198,6 +230,9 @@ Page {
                     layoutController        : root.layoutController
                     pluginController        : root.pluginController
                     gitTreeController       : root.gitTreeController
+                    detachedAccessory       : graphHeaderComponent
+                    showDetachedPlaceholder : true
+                    detachedPlaceholderDetails: qsTr("The graph and its search, filters, pull, push and fetch controls moved with it.")
 
                     onCommitClicked: function(commitId) { Presenter.handleCommitClicked(commitId) }
                 }
