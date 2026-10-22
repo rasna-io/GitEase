@@ -10,10 +10,12 @@ import GitEase_Style_Impl
 /*! ***********************************************************************************************
  * PopupDialog
  * The shared frame for the app's dialog popups: a header with an optional icon, the title and a
- * close button, a body, and a footer of right-aligned PopupButtons. Background, border, shadow,
- * dividers and spacing come from here, so every dialog built on it looks the same.
+ * close button, a body, and a footer with a Cancel button followed by the dialog's own actions.
+ * Background, border, shadow, dividers, spacing, sizing, focus and closing come from here, so every
+ * dialog built on it looks and behaves the same; a dialog only sets what is different about it.
  *
- * The height follows the content. Escape and the close button close the popup.
+ * The height follows the content. Escape, a click outside, the close button and Cancel close the
+ * popup; the last two emit dismissed() first. initialFocusItem gets the focus when it opens.
  * ************************************************************************************************/
 IPopup {
     id: root
@@ -23,9 +25,17 @@ IPopup {
     property string title:      ""
 
     property string iconText:   ""
-    property color  iconColor:  Style.colors.popupTitleText
+    property color  iconColor:  Style.colors.accent
+
+    property Item   initialFocusItem: null
+
+    property bool   hasCancel:      true
+    property string cancelText:     "Cancel"
+    property string cancelTooltip:  ""
 
     property alias  bodySpacing: body.spacing
+
+    readonly property int elementSpacing: 2
 
     default property alias bodyData: body.data
 
@@ -33,16 +43,18 @@ IPopup {
 
     /* Signals
      * ****************************************************************************************/
-    //! The header's close button was clicked; emitted just before the popup closes.
-    signal closeButtonClicked()
+    signal dismissed()
 
     /* Object Properties
      * ****************************************************************************************/
-    width: 460
+    width: 380
     height: contentItem.implicitHeight
     padding: 0
 
-    closePolicy: Popup.CloseOnEscape
+    onOpened: {
+        if (root.initialFocusItem)
+            root.initialFocusItem.forceActiveFocus()
+    }
 
     /* Children
      * ****************************************************************************************/
@@ -106,7 +118,7 @@ IPopup {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        root.closeButtonClicked()
+                        root.dismissed()
                         root.close()
                     }
                 }
@@ -145,15 +157,26 @@ IPopup {
             Layout.rightMargin: 18
             Layout.topMargin: 18
             Layout.bottomMargin: 18
-            visible: actionsRow.children.length > 0
-            spacing: 0
+            visible: root.hasCancel || actionsRow.children.length > 0
+            spacing: 8
 
             Item {
                 Layout.fillWidth: true
             }
 
+            PopupButton {
+                visible: root.hasCancel
+                text: root.cancelText
+                tooltip: root.cancelTooltip
+                onClicked: {
+                    root.dismissed()
+                    root.close()
+                }
+            }
+
             RowLayout {
                 id: actionsRow
+                visible: children.length > 0
                 spacing: 8
             }
         }
