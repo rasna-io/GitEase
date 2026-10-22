@@ -1703,12 +1703,35 @@ DetachablePanel {
             root.focusCommitIndex(result.index)
     }
 
+    /*!
+     * Called when "previous" navigation reaches the end of the loaded commits without a match.
+     * Loads the next page and retries, until a match is found or there is nothing left to load.
+     */
+    function loadMoreAndSelectPrevious(rule) {
+        if(!root.hasMoreCommits || root.isLoadingMore) {
+            return
+        }
+
+        var offsetBefore = root.commitsOffset
+        root.loadMoreCommits()
+
+        if(root.commitsOffset === offsetBefore) {
+            return
+        }
+
+        Qt.callLater(function() {
+            root.selectPrevious(rule)
+        })
+    }
+
     function selectPrevious(rule) {
         var idx     = Navigation.selectedIndex(root.commits, root.selectedCommit)
         var result  = Navigation.selectPrevious(root.commits, root.selectedCommit, idx, root.navigationRule, rule)
 
-        if (!result)
+        if (!result) {
+            root.loadMoreAndSelectPrevious(rule)
             return
+        }
 
         if (rule !== undefined)
             root.navigationRule = rule
