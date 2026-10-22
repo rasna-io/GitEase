@@ -425,6 +425,7 @@ Rectangle {
                         uiSessionPopups         : root.uiSession?.popups
                         pluginController        : root.uiSession?.pluginController
                         gitStateNotifier        : root.uiSession?.gitStateNotifier
+                        textDirectionController : root.uiSession?.textDirectionController
                     }
                 }
 
