@@ -337,7 +337,7 @@ RowLayout {
     GuideHoverTrigger {
         guideController: headerRow.guideController
         guideId: "committing_header_tutorial"
-        guideName: "Committing Header"
+        guideName: "Local Changes Header"
         guideIcon: Style.icons.arrowUp
         guidePage: "committing"
         stepsFactory: function() {
