@@ -63,6 +63,10 @@ QtObject {
                 root.notificationController.currentRepositoryKey = ""
             }
         }
+
+        onRepositoryClosed: function(repo) {
+            root.terminalController.closeSession(repo.cppObjectPtr)
+        }
     }
 
     property BranchController branchController: BranchController {
