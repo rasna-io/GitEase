@@ -60,7 +60,10 @@ PopupDialog {
     iconText: Style.icons.warning
     iconColor: dialog.hasAbort ? Style.colors.error : Style.colors.warning
 
-    onCloseButtonClicked: dialog.cancelled()
+    cancelText: dialog.cancelTitle
+    cancelTooltip: dialog.cancelDescription
+
+    onDismissed: dialog.cancelled()
 
     onClosed: destroy()
 
@@ -79,15 +82,6 @@ PopupDialog {
     }
 
     actions: [
-        PopupButton {
-            text: dialog.cancelTitle
-            tooltip: dialog.cancelDescription
-            onClicked: {
-                dialog.cancelled()
-                dialog.close()
-            }
-        },
-
         PopupButton {
             visible: dialog.hasAbort
             tone: PopupButton.Destructive
