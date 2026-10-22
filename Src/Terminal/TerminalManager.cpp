@@ -34,11 +34,6 @@ TerminalManager::~TerminalManager()
 
 void TerminalManager::sendCommand(const QString &command)
 {
-    if (!m_process || m_process->state() != QProcess::Running)
-        return;
-
-    m_gitStateUpdateRequired = false;
-
     if(!command.startsWith("git")) {
         QJsonArray arr;
         QJsonObject obj;
@@ -46,38 +41,11 @@ void TerminalManager::sendCommand(const QString &command)
         obj["color"] = "#e6edf3";
         arr.append(obj);
 
-        emit lineReceived(QJsonDocument(arr).toJson(QJsonDocument::Compact));
+        emit lineReceived(m_workingDirectory, QJsonDocument(arr).toJson(QJsonDocument::Compact));
         return;
     }
 
-    const QStringList updateRequiringCommands = {
-        "git commit", "git merge", "git rebase", "git cherry-pick", "git revert",
-        "git reset", "git pull", "git fetch", "git push",
-        "git branch", "git tag", "git stash",
-        "git add", "git rm", "git mv", "git restore",
-        "git switch", "git checkout", "git clean", "git apply", "git am"
-    };
-
-    for (const QString &cmd : updateRequiringCommands) {
-        if (command.trimmed().startsWith(cmd)) {
-            m_gitStateUpdateRequired = true;
-            break;
-        }
-    }
-
-    QString cmd = command.trimmed();
-    if (cmd.startsWith("git "))
-        cmd = "git -c color.ui=always " + cmd.mid(4);
-
-    m_lastCommand = cmd;
-
-#ifdef Q_OS_WIN
-    m_process->write((cmd + "\r\n").toUtf8());
-#else
-    m_process->write((cmd + "\n").toUtf8());
-#endif
-
-    emit commandStarted();
+    sessionFor(m_workingDirectory)->sendCommand(command);
 }
 
 void TerminalManager::kill()
