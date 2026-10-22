@@ -117,7 +117,10 @@ QString TerminalManager::workingDirectory() const
 
 bool TerminalManager::running() const
 {
-    return m_running;
+    const ShellSession *session = currentSession();
+    return session && session->running();
+}
+
 }
 
 void TerminalManager::updateWorkingDirectory()
