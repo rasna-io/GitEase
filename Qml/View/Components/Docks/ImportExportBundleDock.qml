@@ -17,9 +17,11 @@ Item {
     property BundleController bundleController: null
     property NotificationController notificationController: null
     property GuideController  guideController:  null
+    property string           filterText:       ""
 
     /* Property Declarations
      * ****************************************************************************************/
+    visible: bundleCard.matchesFilter
     implicitWidth: bundleCard.width
     implicitHeight: bundleCard.height
     width: implicitWidth
@@ -33,6 +35,7 @@ Item {
     ImportExportBundle {
         id: bundleCard
 
+        filterText: root.filterText
         branchController: root.branchController
         bundleController: root.bundleController
         notificationController: root.notificationController

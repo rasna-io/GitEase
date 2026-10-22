@@ -24,19 +24,23 @@ UtilitiesCard {
 
     property GuideController  guideController: null
 
+    property var              localBranches:    []
+    property var              remoteBranches:   []
+
+    readonly property var     filteredLocalBranches: root.filterItems(root.localBranches, branchName)
+    readonly property var     filteredRemoteBranches: root.filterItems(root.remoteBranches, branchName)
+
     /* Object Properties
      * ****************************************************************************************/
     title: "Branches"
     icon: Style.icons.branch
+    contentMatchesFilter: root.filteredLocalBranches.length > 0 || root.filteredRemoteBranches.length > 0
+    filteredCount: root.filteredLocalBranches.length + root.filteredRemoteBranches.length
 
     content: ColumnLayout {
         id: content
 
         property int currentIndex: 0
-        property var localBranches: []
-        property var remoteBranches: []
-
-        onCurrentIndexChanged: content.updateModel()
 
         anchors.fill: parent
         spacing: 8
@@ -85,6 +89,18 @@ UtilitiesCard {
             target: root
             function onBranchControllerChanged() {
                 content.reload()
+            }
+
+            function onFilterNeedleChanged() {
+                if (!root.filterActive || root.titleMatchesFilter)
+                    return
+
+                if (content.currentIndex === 0 && root.filteredLocalBranches.length === 0
+                        && root.filteredRemoteBranches.length > 0)
+                    content.currentIndex = 1
+                else if (content.currentIndex === 1 && root.filteredRemoteBranches.length === 0
+                         && root.filteredLocalBranches.length > 0)
+                    content.currentIndex = 0
             }
         }
 
@@ -150,6 +166,8 @@ UtilitiesCard {
             currentBranch: root.currentBranch
             branchController: root.branchController
             notificationController: root.notificationController
+            model: content.currentIndex === 0 ? root.filteredLocalBranches
+                                              : root.filteredRemoteBranches
         }
 
         DashedButton {
@@ -169,11 +187,10 @@ UtilitiesCard {
             root.currentBranch = branchController.getCurrentBranchName()
             let res = branchController.getBranches();
 
-            content.localBranches = content.headFirst(res.filter(branch => branch["isLocal"]))
-            content.remoteBranches = res.filter(branch => branch["isRemote"])
+            root.localBranches = content.headFirst(res.filter(branch => branch["isLocal"]))
+            root.remoteBranches = res.filter(branch => branch["isRemote"])
 
-            content.updateModel(res)
-            root.badgeCount = content.localBranches.length + content.remoteBranches.length
+            root.badgeCount = root.localBranches.length + root.remoteBranches.length
         }
 
         //! Moves the checked-out branch to the top; the rest keep the order git reported.
@@ -184,14 +201,13 @@ UtilitiesCard {
 
             return branches
         }
-
-        function updateModel(res) {
-            branchesList.model = content.currentIndex === 0 ? content.localBranches : content.remoteBranches
-        }
     }
 
     /* Functions
      * ****************************************************************************************/
+    function branchName(branch) {
+        return branch.name
+    }
 
     function openAddBranchPopup() {
         addBranchPopup.branchController = root.branchController
