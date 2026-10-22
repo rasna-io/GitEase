@@ -354,7 +354,7 @@ Rectangle {
                                 if (repoMouseArea.pressed)
                                     return Qt.rgba(fg.r, fg.g, fg.b, 0.09)
                                 if (cardHover.hovered)
-                                    return Qt.rgba(fg.r, fg.g, fg.b, 0.05)
+                                    return Style.colors.navItemHover
                                 return "transparent"
                             }
                             tintColor: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.08)
@@ -625,9 +625,7 @@ Rectangle {
             anchors.bottomMargin: 4
             height: 30
             radius: 7
-            color: addRepoMouse.containsMouse
-                   ? Qt.rgba(Style.colors.foreground.r, Style.colors.foreground.g, Style.colors.foreground.b, 0.05)
-                   : "transparent"
+            color: addRepoMouse.containsMouse ? Style.colors.navItemHover : "transparent"
 
             Behavior on color {
                 ColorAnimation {

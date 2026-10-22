@@ -129,9 +129,10 @@ Rectangle {
                 Layout.bottomMargin: 3
                 Layout.preferredHeight: 33
                 radius: 6
-                color: "transparent"
+                color: settingButtonMouse.containsMouse ? Style.colors.navItemHover : "transparent"
                 scale: settingButtonMouse.pressed ? 0.97 : 1.0
 
+                Behavior on color { ColorAnimation { duration: 120 } }
                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
                 RowLayout {
@@ -188,8 +189,6 @@ Rectangle {
                     hoverEnabled: true
 
                     onClicked: root.openSettingsRequested()
-                    onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
-                    onExited: parent.color = "transparent"
                 }
                 
                 GuideHoverTrigger {
@@ -221,9 +220,10 @@ Rectangle {
                 Layout.bottomMargin: 3
                 Layout.preferredHeight: 33
                 radius: 6
-                color: "transparent"
+                color: notificationButtonMouse.containsMouse ? Style.colors.navItemHover : "transparent"
                 scale: notificationButtonMouse.pressed ? 0.97 : 1.0
 
+                Behavior on color { ColorAnimation { duration: 120 } }
                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
                 RowLayout {
@@ -303,8 +303,6 @@ Rectangle {
                     hoverEnabled: true
 
                     onClicked: root.openNotificationsRequested()
-                    onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
-                    onExited: parent.color = "transparent"
                 }
 
                 GuideHoverTrigger {
@@ -336,9 +334,10 @@ Rectangle {
                 Layout.bottomMargin: 3
                 Layout.preferredHeight: 33
                 radius: 6
-                color: "transparent"
+                color: profileButtonMouse.containsMouse ? Style.colors.navItemHover : "transparent"
                 scale: profileButtonMouse.pressed ? 0.97 : 1.0
 
+                Behavior on color { ColorAnimation { duration: 120 } }
                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
                 RowLayout {
@@ -394,9 +393,6 @@ Rectangle {
                         root.userInfoSelectionPopup.userProfileController = root.userProfileController
                         root.userInfoSelectionPopup.open()
                     }
-
-                    onEntered: parent.color = Qt.darker(Style.colors.navButton, 1.3)
-                    onExited: parent.color = "transparent"
                 }
 
                 GuideHoverTrigger {
