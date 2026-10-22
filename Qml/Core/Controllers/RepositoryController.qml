@@ -197,8 +197,17 @@ GitRepository {
         root.activeClones[clonedPath] = false
 
         if (result && result.success) {
-            let repoName = (result.data || clonedPath).toString().split(/[\/:]/).pop()
-            createRepositoryComponent(result.data || clonedPath, repoName)
+            let path = result.data || clonedPath
+            let repoName = path.toString().split(/[\/:]/).pop()
+
+            let openResult = open(path)
+            if (openResult.success) {
+                createRepositoryComponent(path, repoName)
+            } else {
+                if (notificationController)
+                    notificationController.error(openResult.errorMessage || "Failed to open cloned repository", "Repository Error", 5000)
+                result = openResult
+            }
         }
 
         root.cloneCompleted(result)
