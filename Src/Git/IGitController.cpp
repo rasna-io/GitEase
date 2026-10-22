@@ -1,4 +1,5 @@
 #include "IGitController.h"
+#include <QDir>
 #include "Async/GitAsyncRunner.h"
 
 #include <QThread>
@@ -54,6 +55,15 @@ void IGitController::emitAsyncFinished(qint64 requestId, const QString &method, 
 void IGitController::emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, Repository *jobRepo)
 {
     emit asyncFailed(requestId, method, error, jobRepo != m_currentRepo);
+}
+
+QString IGitController::workdirOf(git_repository *repo)
+{
+    const char *workdir = repo ? git_repository_workdir(repo) : nullptr;
+    if (!workdir)
+        return QString();
+
+    return QDir::cleanPath(QString::fromUtf8(workdir));
 }
 
 QString IGitController::gitOidToString(const git_oid *oid)

@@ -114,6 +114,7 @@ Rectangle {
         bindIf("commitController",         function() { return session.commitController })
         bindIf("statusController",         function() { return session.statusController })
         bindIf("tagController",            function() { return session.tagController })
+        bindIf("ignoreController",         function() { return session.ignoreController })
         bindIf("gitStateNotifier",         function() { return session.gitStateNotifier })
         bindIf("notificationController",   function() { return session.notificationController })
         bindIf("guideController",          function() { return session.guideController })

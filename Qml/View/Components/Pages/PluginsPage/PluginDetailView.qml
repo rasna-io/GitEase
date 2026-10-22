@@ -1366,8 +1366,10 @@ Rectangle {
 
     function changeNotes(entry) {
         let notes = entry?.notes ?? entry?.changes ?? ""
-        if (Array.isArray(notes))
-            return notes.map(function(n) { return "- " + n }).join("\n")
+        const isList = typeof notes !== "string" && notes && typeof notes.length === "number"
+        if (isList)
+            return Array.from(notes).map(function(n) { return "- " + n }).join("\n")
+
         return notes
     }
 

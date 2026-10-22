@@ -1,4 +1,5 @@
 #include "GitStatus.h"
+#include "GitCommandText.h"
 #include "GitDiff.h"
 #include "GitFileStatus.h"
 #include <QDir>
@@ -269,6 +270,50 @@ GitResult GitStatus::addToIndex(const QString& filePath, bool isRemove)
         return GitResult(false, QVariant(), "Failed to write changes to disk");
 
     return GitResult(true, filePath, "File staged/unstaged successfully");
+}
+
+GitResult GitStatus::removeFromIndex(const QStringList &paths)
+{
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, QVariant(), "No repository available.");
+
+    if (paths.isEmpty())
+        return GitResult(true, 0);
+
+    git_index *index = nullptr;
+    if (git_repository_index(&index, activeRepo()) != GIT_OK || !index)
+        return GitResult(false, QVariant(), "Failed to get repository index");
+
+    for (const QString &raw : paths) {
+        QString path = raw;
+        while (path.endsWith('/'))
+            path.chop(1);
+
+        if (path.isEmpty())
+            continue;
+
+        const QByteArray utf8 = path.toUtf8();
+
+        // A folder leaves with everything below it, a file is one entry; neither is an error
+        // when nothing matches (--ignore-unmatch).
+        git_index_remove_directory(index, utf8.constData(), 0);
+
+        const int result = git_index_remove_bypath(index, utf8.constData());
+        if (result != GIT_OK && result != GIT_ENOTFOUND) {
+            git_index_free(index);
+            return GitResult(false, QVariant(), QString("Failed to remove %1 from the index").arg(path));
+        }
+    }
+
+    const int written = git_index_write(index);
+    git_index_free(index);
+
+    if (written != GIT_OK)
+        return GitResult(false, QVariant(), "Failed to write changes to disk");
+
+    emitGitCommand(GitCommandText::removeFromIndex(paths));
+
+    return GitResult(true, int(paths.size()));
 }
 
 GitResult GitStatus::getDiff(const QString &filePath)
