@@ -50,10 +50,8 @@ void TerminalManager::sendCommand(const QString &command)
 
 void TerminalManager::kill()
 {
-    if (!m_process) return;
-    m_process->kill();
-    m_process->waitForFinished(1000);
-    startShell();
+    if (ShellSession *session = currentSession())
+        session->kill();
 }
 
 void TerminalManager::onReadyReadStandardOutput()
