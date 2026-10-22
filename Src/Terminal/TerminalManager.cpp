@@ -24,60 +24,12 @@ static QString repositoryDirectory(git_repository *repo)
 TerminalManager::TerminalManager(QObject *parent)
     : IGitController(parent)
 {
-    startShell();
     connect(this, &TerminalManager::currentRepoChanged, this, &TerminalManager::updateWorkingDirectory);
 }
 
 TerminalManager::~TerminalManager()
 {
-    if (m_process && m_process->state() != QProcess::NotRunning) {
-        m_process->kill();
-        m_process->waitForFinished(1000);
-    }
-}
-
-void TerminalManager::startShell()
-{
-    m_process = new QProcess(this);
-
-#ifdef Q_OS_WIN
-    m_process->setProcessChannelMode(QProcess::MergedChannels);
-#else
-    m_process->setProcessChannelMode(QProcess::SeparateChannels);
-#endif
-
-    connect(m_process, &QProcess::readyReadStandardOutput,
-            this, &TerminalManager::onReadyReadStandardOutput);
-    connect(m_process, &QProcess::readyReadStandardError,
-            this, &TerminalManager::onReadyReadStandardError);
-    connect(m_process, &QProcess::stateChanged,
-            this, &TerminalManager::onProcessStateChanged);
-
-#ifdef Q_OS_WIN
-    m_process->start("cmd.exe");
-#else
-    m_process->start("/usr/bin/script", {"-q", "-c", "/bin/bash --login", "/dev/null"});
-#endif
-
-    if (!m_process->waitForStarted(3000)) {
-        return;
-    }
-
-#ifdef Q_OS_WIN
-    QTimer::singleShot(200, this, [this]() {
-        m_process->write("chcp 65001\r\n");
-        m_process->write("PROMPT ##PROMPT##\r\n");
-    });
-#else
-    m_process->write("export HISTCONTROL=ignorespace:ignoreboth\n");
-    QTimer::singleShot(200, this, [this]() {
-        m_process->write(" export PS1='##PROMPT##:$?'\n");
-        m_process->write(" stty -echo\n");
-        m_process->write(" export PAGER=cat\n");
-        m_process->write(" export GIT_PAGER=cat\n");
-        m_process->write(" export GIT_TERMINAL_PROMPT=0\n");
-    });
-#endif
+    qDeleteAll(m_sessions);
 }
 
 void TerminalManager::sendCommand(const QString &command)
