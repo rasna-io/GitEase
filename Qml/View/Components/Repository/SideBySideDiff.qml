@@ -47,6 +47,9 @@ Item {
     property bool hasAction: false
     property int selectedFileStatus: -1
 
+    property TextDirectionController textDirectionController: null
+    readonly property string leftToRightMark: "\u200E"
+
     // Guide targets — the stage/revert/stash action buttons, exposed so a GuideController
     // step can spotlight the actual button instead of the whole row.
     readonly property alias stageButton:  stageButton
@@ -146,7 +149,8 @@ Item {
                     Text {
                         id: leftDisplay
                         x: -delegateRoot.horizontalOffset
-                        text: delegateRoot.textColorizer ? delegateRoot.textColorizer(leftContent) : leftContent
+                        text: delegateRoot.leftToRightMark
+                              + (delegateRoot.textColorizer ? delegateRoot.textColorizer(leftContent) : leftContent)
                         textFormat: delegateRoot.textColorizer ? Text.RichText : Text.PlainText
                         color: (isDel || isMod) ? Style.colors.diffRemovedText : Style.colors.diffText
                         font.family: Style.fontTypes.inter
@@ -348,7 +352,7 @@ Item {
                         id: rightColored
                         visible: !!delegateRoot.textColorizer && (delegateRoot.readOnly || !rightTextEdit.activeFocus)
                         x: -delegateRoot.horizontalOffset
-                        text: visible ? delegateRoot.textColorizer(rightContent) : ""
+                        text: visible ? delegateRoot.leftToRightMark + delegateRoot.textColorizer(rightContent) : ""
                         textFormat: Text.RichText
                         color: (isAdd || isMod) ? Style.colors.diffAddedText : Style.colors.diffText
                         font.family: Style.fontTypes.inter
@@ -379,6 +383,8 @@ Item {
                         Material.accent: Style.colors.accent
 
                         onTextChanged: delegateRoot.requestTextChange(rightTextEdit.text)
+
+                        Component.onCompleted: delegateRoot.textDirectionController?.keepLeftToRight(rightTextEdit.textDocument)
 
                         Keys.onPressed: (event) => {
                                             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {

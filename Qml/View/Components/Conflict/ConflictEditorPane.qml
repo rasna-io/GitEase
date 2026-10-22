@@ -23,6 +23,8 @@ Rectangle {
     property alias      contentMetrics      : conflictListView
     property int        revision            : 0
 
+    property TextDirectionController textDirectionController: null
+
     readonly property int openBlockCount: {
         root.revision
         return root.selectedConflict?.blocks?.length ?? 0
@@ -209,6 +211,7 @@ Rectangle {
                     blockLabels: root.blockLabels
                     openBlockCount: root.openBlockCount
                     firstOpenBlock: root.firstOpenBlock
+                    textDirectionController: root.textDirectionController
 
                     onSplitRequested: (cursorPos) => {
                         ConflictUtils.splitLine(root.displayModel, index, cursorPos, conflictListView)

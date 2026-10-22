@@ -35,6 +35,8 @@ Item {
     //! Index of the first still-open block, so only that card carries the count.
     property int  firstOpenBlock    : -1
 
+    property TextDirectionController textDirectionController: null
+
     readonly property int    blockIndex    : model.blockIndex || 0
     readonly property string blockRole     : model.role || ""
     readonly property int    resolvedGroup : model.resolvedGroup || 0
@@ -197,6 +199,8 @@ Item {
                 if (model.text !== text)
                     model.text = text
             }
+
+            Component.onCompleted: rowRoot.textDirectionController?.keepLeftToRight(lineEditor.textDocument)
 
             Keys.onPressed: (event) => {
                 if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {

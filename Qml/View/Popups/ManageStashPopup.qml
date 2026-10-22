@@ -16,9 +16,10 @@ IWindow {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property StashController  stashController:  null
-    property StatusController statusController: null
-    property CommitController commitController: null
+    property StashController         stashController:         null
+    property StatusController        statusController:        null
+    property CommitController        commitController:        null
+    property TextDirectionController textDirectionController: null
 
     property var    stashEntry:       null
     property var    stashFiles:       []
@@ -233,6 +234,7 @@ IWindow {
                     Layout.fillHeight: true
                     readOnly: true
                     diffData: root.stashDiffData
+                    textDirectionController: root.textDirectionController
                 }
             }
 

@@ -50,6 +50,8 @@ Page {
 
     property GitStateNotifier        gitStateNotifier:        null
 
+    property TextDirectionController textDirectionController: null
+
     // Remote actions (Pull / Push / Fetch) are owned by the shared RemoteOperationsSession so
     property RemoteOperationsSession remoteOperationsSession:              null
     property bool                    isFetching:             remoteOperationsSession ? remoteOperationsSession.isFetching : false
@@ -494,6 +496,7 @@ Page {
             selectEnabled: false
             appModel: root.appModel
             pluginManager: root.pluginController?.pluginManager ?? null
+            textDirectionController: root.textDirectionController
             contextLines: 0
             expandLines: 10
             selectedFileStatus: changesFileLists.currentFileStatus

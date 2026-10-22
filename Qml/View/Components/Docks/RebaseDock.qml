@@ -25,6 +25,7 @@ UtilitiesCard {
     property ConflictController     conflictController:     null
     property LayoutController       layoutController:       null
     property GuideController        guideController:        null
+    property TextDirectionController textDirectionController: null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -228,6 +229,7 @@ UtilitiesCard {
         notificationController: root.notificationController
         layoutController: root.layoutController
         guideController: root.guideController
+        textDirectionController: root.textDirectionController
     }
 
     /* Functions
