@@ -31,9 +31,12 @@ function pickColorKey(branchNames, localBranchNameSet) {
  * @param {Array} rawStashes  – stashController.list().data
  * @param {Array} allTags     – tagController.list().data  (optional)
  * @param {Object} appSettings – appModel.appSettings.generalSettings (optional)
+ * @param {boolean} appendOrphanStashes – also append stashes whose parent is not in rawCommits at the end;
+ *        pass true only when no older commits can still be loaded, otherwise they stay hidden until
+ *        their parent arrives (default true)
  * @returns {Array} compiled commit objects with colorKey, branchNames, etc.
  */
-function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSettings) {
+function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSettings, appendOrphanStashes) {
     if (!rawCommits)
         return [];
 
@@ -171,9 +174,11 @@ function compileGraphCommits(rawCommits, rawBranches, rawStashes, allTags, appSe
         });
     }
 
-    for (var sk = 0; sk < stashNodeList.length; sk++) {
-        if (!stashInserted[stashNodeList[sk].hash])
-            compiled.push(stashNodeList[sk]);
+    if (appendOrphanStashes !== false) {
+        for (var sk = 0; sk < stashNodeList.length; sk++) {
+            if (!stashInserted[stashNodeList[sk].hash])
+                compiled.push(stashNodeList[sk]);
+        }
     }
 
     return compiled;

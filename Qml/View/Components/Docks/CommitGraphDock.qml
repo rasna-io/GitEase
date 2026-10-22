@@ -8,6 +8,7 @@ import GitEase_Style_Impl
 
 import "qrc:/GitEase/Qml/Core/Scripts/GraphLayout.js"            as GraphLayout
 import "qrc:/GitEase/Qml/Core/Scripts/GraphUtils.js"             as GraphUtils
+import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphRouting.js"     as Routing
 import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphDataLoader.js"  as DataLoader
 import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphFilter.js"      as Filter
 import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphNavigation.js"  as Navigation
@@ -60,9 +61,6 @@ DetachablePanel {
     property var selectedCommit         : null
     property int lastSelectedIndex      : -1
 
-    property int hoveredIndex           : -1
-    property string hoverSource         : ""   // "canvas" | "list" | "" - who last set hoveredIndex
-
     property string navigationRule  : "Author Email"
     property string filterText      : ""
     property string filterStartDate : ""
@@ -78,6 +76,7 @@ DetachablePanel {
     property bool   hasMoreCommits  : true
 
     property real   lastContentY            : 0
+    property var    deferredReload          : null
     property real   pendingRestoreContentY  : -1
     property real   restoreDestinationY     : -1
     property bool   suppressContentYTracking: false
@@ -86,6 +85,7 @@ DetachablePanel {
     property int    reloadToken     : 0
 
     property var commitPositions    : ({})
+    property var graphRows          : []
     property int commitItemHeight   : 24
     property int commitItemSpacing  : 4
     property int columnSpacing      : 30
@@ -268,85 +268,6 @@ DetachablePanel {
 
                 readonly property bool canScroll: commitsListView.contentHeight > commitsListView.height + 0.5
 
-                Item {
-                    Layout.preferredWidth: root.commitsColGraphWidth + root.commitsColBranchTagWidth
-                    Layout.fillHeight: true
-
-                    Flickable {
-                        id: graphFlickable
-                        Layout.preferredWidth: root.commitsColGraphWidth + root.commitsColBranchTagWidth
-                        anchors.fill: parent
-                        contentWidth: children[0].width
-                        contentHeight: commitsListView.contentHeight
-
-                        clip: true
-
-                        interactive: commitViewsLayout.canScroll && !scrollRestoreAnimation.running
-                        flickableDirection: Flickable.VerticalFlick
-
-                        property bool syncScroll: false
-
-                        onContentYChanged: {
-                            if (!syncScroll) {
-                                root.rememberScrollPosition(graphFlickable)
-                                commitsListView.syncScroll = true
-                                commitsListView.contentY = contentY
-                                commitsListView.syncScroll = false
-                            }
-                        }
-
-                        onMovementStarted: {
-                            if (!scrollRestoreAnimation.running)
-                                root.cancelPendingScrollRestore(graphFlickable)
-                        }
-
-                        onInteractiveChanged: {
-                            if (!interactive && !commitViewsLayout.canScroll) {
-                                cancelFlick()
-                                contentY = originY
-                            }
-                        }
-
-                        CommitGraphCanvas {
-                            id: graphCanvas
-                            width: root.commitsColGraphWidth + root.commitsColBranchTagWidth
-                            height: graphFlickable.height
-                            y: Math.floor(graphFlickable.contentY)
-                            commits: root.commits
-                            commitPositions: root.commitPositions
-                            viewportY: Math.floor(graphFlickable.contentY)
-                            graphContentHeight: Math.max(commitsListView.contentHeight, graphFlickable.height)
-                            columnSpacing: root.columnSpacing
-                            commitItemHeight: root.commitItemHeight
-                            commitItemSpacing: root.commitItemSpacing
-                            selectedHashes: root.selectedCommitHashes
-                            headHash: root.headHash
-                            showAvatar: root.appModel?.appSettings?.generalSettings?.showAvatar ?? true
-                            graphColumnWidth: root.commitsColGraphWidth
-                            branchTagColumnWidth: root.commitsColBranchTagWidth
-                            allCommitsHash: root.allCommitsHash
-                            hoveredIndex: root.hoveredIndex
-                            onHoverIndexChanged: function(index) {
-                                if (index >= 0) {
-                                    root.hoverSource = "canvas"
-                                    root.hoveredIndex = index
-                                } else if (root.hoverSource === "canvas") {
-                                    root.hoveredIndex = -1
-                                    root.hoverSource = ""
-                                }
-                            }
-                            onCommitRightClicked: function(index, mouseX, mouseY) {
-                                var data = root.commits[index]
-                                if (!data)
-                                    return
-                                var pos = graphCanvas.mapToItem(root.activeItem, mouseX, mouseY)
-                                root.handleItemClick(data, Qt.RightButton, 0, index, pos.x, pos.y)
-                            }
-                            onInfiniteScroll: root.loadMoreCommits()
-                        }
-                    }
-                }
-
                 ListView {
                     id: commitsListView
 
@@ -360,33 +281,30 @@ DetachablePanel {
 
                     cacheBuffer: 400
 
-                    property bool syncScroll: false
-
                     onMovementStarted: {
                         commitFocusAnimation.stop()
-                        if (!scrollRestoreAnimation.running)
+                        if (!scrollRestoreAnimation.running) {
                             root.cancelPendingScrollRestore(commitsListView)
+                        }
+                    }
+
+                    onMovementEnded: {
+                        root.rememberScrollPosition(commitsListView)
+                        root.runDeferredReload()
                     }
 
                     onContentHeightChanged: root.scheduleScrollRestore()
 
                     onInteractiveChanged: {
-                        if (!interactive && !commitViewsLayout.canScroll) {
+                        if (!interactive && !commitViewsLayout.canScroll && !root.isLoadingMore) {
                             cancelFlick()
                             contentY = originY
                         }
                     }
 
-                    // Sync scroll position with graph
                     onContentYChanged: {
-                        if (!syncScroll) {
-                            root.rememberScrollPosition(commitsListView)
-                            graphFlickable.syncScroll = true
-                            graphFlickable.contentY = contentY
-                            graphFlickable.syncScroll = false
-                        }
 
-                        // Infinite scroll trigger (list side)
+                        // Infinite scroll trigger
                         if (!root.suppressContentYTracking
                                 && root.pendingRestoreContentY < 0
                                 && !root.isLoadingMore
@@ -398,20 +316,31 @@ DetachablePanel {
                         }
                     }
 
-                    delegate: CommitListDelegate {
-                        height: root.commitItemHeight + root.commitItemSpacing * 2
+                    delegate: CommitRow {
+                        required property var modelData
+                        required property int index
 
-                        messageWidth: root.commitsColMessageWidth
-                        authorWidth : root.commitsColAuthorWidth
-                        dateWidth   : root.commitsColDateWidth
+                        width           : ListView.view.width
+                        implicitHeight  : root.commitItemHeight + root.commitItemSpacing * 2
 
-                        indicatorColor: graphCanvas.commitColor(modelData)
+                        commitData      : modelData
+                        graphRow        : root.graphRows[index] ?? null
+                        rowIndex        : index
+                        parentRoot      : root.activeItem
+                        laneColor       : root.laneColor(modelData)
 
-                        isSelected  : root.isCommitSelected(modelData.hash)
-                        isHead      : modelData ? modelData.hash === root.headHash  : false
-                        isStash     : modelData ? modelData.isStash === true        : false
-                        parentRoot  : root.activeItem
-                        hoveredIndex: root.hoveredIndex
+                        selected        : root.isCommitSelected(modelData.hash)
+                        isHead          : modelData.hash === root.headHash
+                        isStash         : modelData.isStash === true
+                        showAvatar      : root.appModel?.appSettings?.generalSettings?.showAvatar ?? true
+
+                        columnSpacing   : root.columnSpacing
+                        nodeSize        : root.commitItemHeight
+                        graphWidth      : root.commitsColGraphWidth
+                        refsWidth       : root.commitsColBranchTagWidth
+                        messageWidth    : root.commitsColMessageWidth
+                        authorWidth     : root.commitsColAuthorWidth
+                        dateWidth       : root.commitsColDateWidth
 
                         onItemClicked: function(button, modifiers, idx, mouseX, mouseY) {
                             root.handleItemClick(modelData, button, modifiers, idx, mouseX, mouseY)
@@ -424,18 +353,6 @@ DetachablePanel {
                         onResetHeadOne: {
                             root.executeResetHead("HEAD~1", ResetController.ResetMode.Mixed)
                         }
-
-                        onHoverEntered: function(_index) {
-                            root.hoverSource = "list"
-                            root.hoveredIndex = _index
-                        }
-
-                        onHoverExited: function(_index) {
-                            if (root.hoverSource === "list" && root.hoveredIndex === _index) {
-                                root.hoveredIndex = -1
-                                root.hoverSource = ""
-                            }
-                        }
                     }
                 }
 
@@ -445,6 +362,8 @@ DetachablePanel {
                     property: "contentY"
                     duration: Style.motionMedium
                     easing.type: Easing.OutCubic
+
+                    onStopped: root.rememberScrollPosition(commitsListView)
                 }
 
                 NumberAnimation {
@@ -544,7 +463,7 @@ DetachablePanel {
     Connections {
         target: Style
         function onCurrentThemeChanged() {
-            graphCanvas.requestPaint()
+            root.rebuildGraphRows()
         }
     }
 
@@ -574,10 +493,6 @@ DetachablePanel {
 
     Connections {
         target: root.appModel?.appSettings?.generalSettings ?? null
-        function onShowAvatarChanged() {
-            graphCanvas.requestPaint()
-        }
-
         function onShowStashNodesChanged() {
             root.refreshStashNodes()
         }
@@ -735,7 +650,6 @@ DetachablePanel {
     function clearGraphCaches() {
         GraphUtils.clearBranchColorCache()
         GraphUtils.clearTagColorCache()
-        GraphUtils.clearCategoryColorCache()
     }
 
     function layoutCommits(items) {
@@ -781,10 +695,6 @@ DetachablePanel {
         if (commitsListView) {
             commitsListView.cancelFlick()
             commitsListView.contentY = commitsListView.originY
-        }
-        if (graphFlickable) {
-            graphFlickable.cancelFlick()
-            graphFlickable.contentY = graphFlickable.originY
         }
         root.suppressContentYTracking = false
     }
@@ -882,12 +792,43 @@ DetachablePanel {
         var positions = layoutCommits(items)
         root.commitPositions = positions
         root.commits = items.slice(0)
+        root.rebuildGraphRows()
         root.scheduleScrollRestore()
     }
 
     function update() {
-        graphCanvas.requestPaint()
+        root.rebuildGraphRows()
+    }
 
+    function laneColor(commitData) {
+        if (commitData && commitData.isUncommitted) {
+            return Style.colors.graphUncommittedColor
+        }
+
+        return GraphUtils.getCategoryColor(commitData && commitData.colorKey ? commitData.colorKey : "main")
+    }
+
+    function rebuildGraphRows() {
+        for (let i = 0; i < root.commits.length; i++) {
+            root.laneColor(root.commits[i])
+        }
+
+        root.graphRows = Routing.buildRows(root.commits, root.commitPositions, {
+            columnSpacing: root.columnSpacing,
+            itemHeight: root.commitItemHeight,
+            itemSpacing: root.commitItemSpacing
+        }, {
+            commitColor: root.laneColor
+        })
+    }
+
+    function runDeferredReload() {
+        if (!root.deferredReload)
+            return
+
+        let request = root.deferredReload
+        root.deferredReload = null
+        root.reloadAll(request.preserveScrollPosition)
     }
 
     function reloadAll(preserveScrollPosition) {
@@ -896,6 +837,11 @@ DetachablePanel {
 
         if (!root.statusController || !root.commitController)
             return
+
+        if (commitsListView && (commitsListView.moving || commitsListView.dragging)) {
+            root.deferredReload = { preserveScrollPosition: preserveScrollPosition }
+            return
+        }
 
         if (preserveScrollPosition === undefined || preserveScrollPosition)
             root.captureScrollPositionForReload()
@@ -996,12 +942,14 @@ DetachablePanel {
             branches,
             stashes,
             tags,
-            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null)
+            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null,
+            page.length !== root.pageSize)
 
         root.commitsOffset  = page.length
         root.hasMoreCommits = (page.length === root.pageSize)
 
-        root.allCommits = compiled.slice(0)
+        let previousUncommitted = root.allCommits.filter(function (c) { return c.isUncommitted })
+        root.allCommits = previousUncommitted.concat(compiled)
         root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
 
         root.reloadFetchStatus(token)
@@ -1015,12 +963,16 @@ DetachablePanel {
 
                 var uncommitted = DataLoader.createUncommittedNode(
                     (statusRes && statusRes.success) ? statusRes.data : null, root.headHash)
-                if (!uncommitted)
+                let rest = root.allCommits.filter(function (c) { return !c.isUncommitted })
+                let hadUncommitted = rest.length !== root.allCommits.length
+                if (!uncommitted && !hadUncommitted)
                     return
 
-                var rest = root.allCommits.filter(function (c) { return !c.isUncommitted })
-                rest.unshift(uncommitted)
+                if (uncommitted)
+                    rest.unshift(uncommitted)
                 root.allCommits = rest
+
+                root.captureScrollPositionForReload()
 
                 root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
             })
@@ -1068,9 +1020,17 @@ DetachablePanel {
             return
         }
 
-        var compiled = compilePage(page)
-        var withoutStashes = root.allCommits.filter(function(c) { return !c.isStash })
-        root.allCommits = withoutStashes.concat(compiled)
+        var placedStashes = {}
+        root.allCommits.forEach(function(c) {
+            if (c.isStash) {
+                placedStashes[c.hash] = true
+            }
+        })
+
+        var compiled = compilePage(page, page.length !== pageSize).filter(function(c) {
+            return !placedStashes[c.hash]
+        })
+        root.allCommits = root.allCommits.concat(compiled)
 
         commitsOffset += page.length
         hasMoreCommits = (page.length === pageSize)
@@ -1087,13 +1047,14 @@ DetachablePanel {
         }
     }
 
-    function compilePage(page) {
+    function compilePage(page, appendOrphanStashes) {
         return DataLoader.compileGraphCommits(
             page,
             root.branchController ? root.branchController.getBranches() : [],
             getStashes(),
             getTags(),
-            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null
+            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null,
+            appendOrphanStashes
         )
     }
 
@@ -1112,7 +1073,8 @@ DetachablePanel {
             root.branchController ? root.branchController.getBranches() : [],
             getStashes(),
             getTags(),
-            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null
+            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null,
+            !root.hasMoreCommits
         )
 
         root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
