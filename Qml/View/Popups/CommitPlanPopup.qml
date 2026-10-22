@@ -386,6 +386,7 @@ IWindow {
                 showCancel: root.currentRebaseState !== rebaseState.completed
                             && root.currentRebaseState !== rebaseState.stopped
                 startText: root.currentRebaseState
+                startIcon: root.planEditable ? Style.icons.arrowRight : ""
 
                 onUndoRequested: root.undoPlanEdit()
                 onRedoRequested: root.redoPlanEdit()

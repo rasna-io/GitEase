@@ -84,7 +84,8 @@ Rectangle {
             visible: root.leadingText !== ""
             text: root.leadingText
             color: root.prominent ? Style.colors.onAccentText : root.accentColor
-            font.family: Style.fontTypes.inter
+            font.family: Style.fontTypes.font6Pro
+            font.styleName: "Solid"
             font.pixelSize: Style.appFont.captionPt
         }
 
@@ -100,7 +101,8 @@ Rectangle {
             visible: root.trailingText !== ""
             text: root.trailingText
             color: root.prominent ? Style.colors.onAccentText : root.accentColor
-            font.family: Style.fontTypes.inter
+            font.family: Style.fontTypes.font6Pro
+            font.styleName: "Solid"
             font.pixelSize: Style.appFont.captionPt
         }
     }
