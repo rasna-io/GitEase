@@ -121,6 +121,10 @@ bool TerminalManager::running() const
     return session && session->running();
 }
 
+bool TerminalManager::busy() const
+{
+    const ShellSession *session = currentSession();
+    return session && session->busy();
 }
 
 void TerminalManager::updateWorkingDirectory()
