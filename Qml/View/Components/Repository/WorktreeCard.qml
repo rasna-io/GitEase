@@ -84,7 +84,7 @@ Rectangle {
                         font.family: Style.fontTypes.inter
                         font.weight: 700
                         font.pixelSize: 8
-                        color: "#FFFFFF"
+                        color: Style.colors.onColorText
                     }
                 }
 

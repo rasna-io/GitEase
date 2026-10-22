@@ -63,7 +63,7 @@ Item {
             font.family: Style.fontTypes.inter
             font.pixelSize: Math.round(root.size * 0.4)
             font.weight: 700
-            color: "#FFFFFF"
+            color: Style.colors.onColorText
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }

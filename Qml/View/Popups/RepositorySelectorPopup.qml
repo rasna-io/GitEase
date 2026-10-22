@@ -47,7 +47,7 @@ IPopup {
     }
 
     Overlay.modal: Rectangle {
-        color: "#000000"
+        color: Style.colors.scrimColor
         opacity: 0.85
     }
 
@@ -406,7 +406,7 @@ IPopup {
                                 anchors.fill: parent
                                 visible: primaryButton.busy
                                 radius: 6
-                                color: "#CCCCCC"
+                                color: Style.colors.progressOverlay
 
                                 Rectangle {
                                     anchors.left: parent.left

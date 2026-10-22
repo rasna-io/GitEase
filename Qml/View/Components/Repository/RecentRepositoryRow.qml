@@ -18,7 +18,7 @@ Rectangle {
      * ****************************************************************************************/
     property string repoName:    ""
     property string repoPath:    ""
-    property color  avatarColor: "#B9FAB9"
+    property color  avatarColor: Style.colors.repositoryAvatarDefault
     property bool   selected:    false
 
     readonly property string initial: repoName.length >= 1 ? repoName.charAt(0).toUpperCase() : "?"
