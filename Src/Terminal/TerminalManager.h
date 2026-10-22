@@ -6,14 +6,16 @@
 class ShellSession;
 
 /*!
- * @brief Manages an embedded shell process for executing git and system commands.
+ * @brief Manages the embedded shells executing git and system commands, one per repository.
  *
- * TerminalManager spawns a persistent shell process (bash on Unix, cmd.exe on Windows)
- * and provides a QML-accessible interface for sending commands and receiving output.
- * Output is parsed for ANSI color codes and emitted as JSON-encoded color segments.
+ * TerminalManager gives every repository session its own persistent shell process (see
+ * ShellSession), started in the repository's working directory on the first command sent from
+ * it. Commands go to the current repository's shell, so a command still running in one
+ * repository neither blocks another repository's prompt nor mixes its output into it: the output
+ * signals name the session they come from, by its working directory.
  *
- * Sentinel-based prompt detection is used to track command completion and trigger
- * git state updates when relevant commands are executed.
+ * A session's shell ends when its repository is closed, and all of them when the manager is
+ * destroyed.
  */
 class TerminalManager : public IGitController
 {
@@ -31,12 +33,12 @@ public:
     ~TerminalManager();
 
     /**
-     * @brief Returns the current working directory of the shell process.
+     * @brief Returns the working directory of the current repository's session.
      */
     QString workingDirectory() const;
 
     /**
-     * @brief Returns true if the shell process is running
+     * @brief Returns true if the current repository's shell process is running
      */
     bool running() const;
 
@@ -46,7 +48,7 @@ public:
     bool busy() const;
 
     /**
-     * @brief Sends a command to the shell process for execution.
+     * @brief Sends a command to the current repository's shell for execution.
      *
      * Git commands are automatically prefixed with `-c color.ui=always` to force
      * colored output. Commands matching known git state-changing operations will
@@ -100,25 +102,9 @@ private:
 
 private slots:
     /**
-     * @brief Reads and processes stdout from the shell process.
-     */
-    void onReadyReadStandardOutput();
-
-    /**
-     * @brief Reads and processes stderr from the shell process.
-     */
-    void onReadyReadStandardError();
-
-    /**
-     * @brief Handles shell process state transitions.
-     */
-    void onProcessStateChanged(QProcess::ProcessState state);
-
-    /**
-     * @brief Updates the working directory when the active repository changes.
+     * @brief Switches to the session of the current repository's working directory.
      *
-     * Issues a \c cd command to the shell to align the shell's working directory
-     * with the current repository's working directory.
+     * Nothing is sent to any shell, so a busy shell never holds the switch up.
      */
     void updateWorkingDirectory();
 
