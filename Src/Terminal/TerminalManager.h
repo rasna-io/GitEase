@@ -21,6 +21,7 @@ class TerminalManager : public IGitController
 
     Q_PROPERTY(QString workingDirectory READ workingDirectory NOTIFY workingDirectoryChanged)
     Q_PROPERTY(bool running READ running NOTIFY runningChanged)
+    Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString username READ username CONSTANT)
     Q_PROPERTY(QString hostname READ hostname CONSTANT)
 
@@ -37,6 +38,11 @@ public:
      * @brief Returns true if the shell process is running
      */
     bool running() const;
+
+    /**
+     * @brief Returns true while a command is running in the current repository's shell.
+     */
+    bool busy() const;
 
     /**
      * @brief Sends a command to the shell process for execution.
@@ -132,6 +138,11 @@ signals:
      * @brief Emitted when the shell process state changes.
      */
     void runningChanged();
+
+    /**
+     * @brief Emitted when a command starts or finishes in the current repository's shell.
+     */
+    void busyChanged();
 
     /**
      * @brief Emitted when a git state-changing command completes successfully.
