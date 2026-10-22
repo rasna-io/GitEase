@@ -74,6 +74,7 @@ GitRepository {
     /* Signals
      * ****************************************************************************************/
     signal repositorySelected(Repository repo)
+    signal repositoryClosed(Repository repo)
     signal cloneCompleted(var result)
 
     /* Functions
@@ -221,8 +222,10 @@ GitRepository {
         if (idx < 0)
             return
 
+        const closedRepo = root.appModel.repositories[idx]
         root.appModel.repositories.splice(idx, 1)
         root.appModel.repositories = root.appModel.repositories.slice()
+        root.repositoryClosed(closedRepo)
 
         selectRepository(root.appModel.repositories[0].id)
     }
