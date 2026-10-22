@@ -37,8 +37,8 @@ public:
      * ****************************************************************************************/
     Q_INVOKABLE static QString createTag(const QString &name, const QString &message, bool force = false);
     Q_INVOKABLE static QString deleteTag(const QString &name);
-    Q_INVOKABLE static QString pushTag(const QString &name);
-    Q_INVOKABLE static QString pushDeleteTag(const QString &name);
+    Q_INVOKABLE static QString pushTag(const QString &remoteName, const QString &name);
+    Q_INVOKABLE static QString pushDeleteTag(const QString &remoteName, const QString &name);
 
     /* Remote
      * ****************************************************************************************/
@@ -47,6 +47,19 @@ public:
     Q_INVOKABLE static QString renameRemote(const QString &oldName, const QString &newName);
     Q_INVOKABLE static QString setRemoteUrl(const QString &name, const QString &url);
     Q_INVOKABLE static QString push(const QString &remoteName, const QString &branchName, bool force = false);
+
+    //! "git push -u origin feature", or "git push origin feature:main" when the names differ.
+    Q_INVOKABLE static QString push(const QString &remoteName, const QString &localBranch,
+                                    const QString &remoteBranch, bool force, bool setUpstream);
+    Q_INVOKABLE static QString pull(const QString &remoteName, const QString &branchName);
+
+    //! "git fetch origin", or "git fetch --all" when \a remoteName is empty.
+    Q_INVOKABLE static QString fetch(const QString &remoteName);
+    Q_INVOKABLE static QString setUpstream(const QString &localBranch, const QString &remoteName,
+                                           const QString &remoteBranch);
+
+    //! Sets remote.pushDefault, or unsets it when \a remoteName is empty.
+    Q_INVOKABLE static QString setDefaultRemote(const QString &remoteName);
 
     /* Stash
      * ****************************************************************************************/

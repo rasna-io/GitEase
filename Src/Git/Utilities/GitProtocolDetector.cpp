@@ -11,6 +11,11 @@ GitProtocolDetector::GitProtocol GitProtocolDetector::detectProtocol(const QStri
         return GitProtocol::SSH;
     }
 
+    static const QRegularExpression scpLike(QStringLiteral("^[^@/\\s]+@[^:/\\s]+:"));
+    if (scpLike.match(url).hasMatch()) {
+        return GitProtocol::SSH;
+    }
+
     // HTTPS
     if (url.startsWith("https://", Qt::CaseInsensitive)) {
         return GitProtocol::HTTPS;

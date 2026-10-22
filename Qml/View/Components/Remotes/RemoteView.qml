@@ -34,6 +34,8 @@ UtilitiesCard {
 
     property GuideController guideController: null
 
+    property RemoteOperationsSession remoteOperationsSession: null
+
     property bool isFetching: false
     property var activeFetchRemotes: []
     property string authPurpose: "fetch" // "fetch" | "pull"
@@ -117,7 +119,7 @@ UtilitiesCard {
                         targetProvider: function() { return listView },
                         icon: Style.icons.upload,
                         title: "Manage Remotes",
-                        description: "Every remote configured for this repository is listed here. Use the icons on each row to fetch, pull, or remove it, and right-click a remote to edit it."
+                        description: "Every remote configured for this repository is listed here. Use the icons on each row to fetch, pull, push or remove it. Right-click a remote to edit it, or to make it the default remote that Push uses."
                     },
                     {
                         targetProvider: function() { return addRemoteBtn },
@@ -172,6 +174,9 @@ UtilitiesCard {
 
                     property Remote currentRemote: modelData
 
+                    readonly property bool isDefault: root.remoteOperationsSession !== null
+                                                      && currentRemote.name === root.remoteOperationsSession.defaultRemote
+
                     width: listView.width
                     height: Style.dp(35)
 
@@ -209,12 +214,36 @@ UtilitiesCard {
                             spacing: 1
                             clip: true
 
-                            ScrollingText {
+                            RowLayout {
                                 Layout.fillWidth: true
-                                text: currentRemote.name
-                                color: Style.colors.utilitiesRowText
-                                font.family: Style.fontTypes.inter
-                                font.pixelSize: Style.appFont.mediumPt
+                                spacing: 6
+
+                                ScrollingText {
+                                    Layout.fillWidth: true
+                                    text: currentRemote.name
+                                    color: Style.colors.utilitiesRowText
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.mediumPt
+                                }
+
+                                // The remote Push goes to unless a branch says otherwise
+                                Rectangle {
+                                    visible: isDefault
+                                    radius: 4
+                                    color: Style.colors.accentWash
+                                    implicitWidth: defaultLabel.implicitWidth + 10
+                                    implicitHeight: defaultLabel.implicitHeight + 2
+
+                                    Text {
+                                        id: defaultLabel
+                                        anchors.centerIn: parent
+                                        text: "default"
+                                        color: Style.colors.accent
+                                        font.family: Style.fontTypes.inter
+                                        font.pixelSize: Style.appFont.microPt
+                                        font.weight: Font.DemiBold
+                                    }
+                                }
                             }
                             ScrollingText {
                                 Layout.fillWidth: true
@@ -289,21 +318,21 @@ UtilitiesCard {
                 return
             }
 
-            let url = res.data.url
+            let url = res.data.fetchUrl || res.data.url
             let protocol = repositoryController.detectGitProtocol(url)
             switch (protocol) {
-            case RepositoryController.GitProtocol.SSH:
-                root.isFetching = true
-                if (root.activeFetchRemotes.indexOf(remoteItem.name) === -1)
-                    root.activeFetchRemotes.push(remoteItem.name)
-                content.startFetch(remoteItem.name)
-                break;
             case RepositoryController.GitProtocol.HTTPS:
             case RepositoryController.GitProtocol.HTTP:
                 root.isFetching = true
                 root.authPurpose = "fetch"
                 userAuthenticationPopupConnection.enabled = true
                 userAuthenticationPopup.request("fetch", remoteItem.name, url)
+                break;
+            default:
+                root.isFetching = true
+                if (root.activeFetchRemotes.indexOf(remoteItem.name) === -1)
+                    root.activeFetchRemotes.push(remoteItem.name)
+                content.startFetch(remoteItem.name)
                 break;
             }
         }
@@ -331,18 +360,18 @@ UtilitiesCard {
                 return
             }
 
-            let url = res.data.url
+            let url = res.data.fetchUrl || res.data.url
             let protocol = repositoryController.detectGitProtocol(url)
             switch (protocol) {
-            case RepositoryController.GitProtocol.SSH:
-                root.isFetching = true
-                content.startPull([remoteItem.name], remoteItem.name)
-                break
             case RepositoryController.GitProtocol.HTTPS:
             case RepositoryController.GitProtocol.HTTP:
                 root.authPurpose = "pull"
                 userAuthenticationPopupConnection.enabled = true
                 userAuthenticationPopup.request("pull", remoteItem.name, url)
+                break
+            default:
+                root.isFetching = true
+                content.startPull([remoteItem.name], remoteItem.name)
                 break
             }
         }
@@ -414,9 +443,17 @@ UtilitiesCard {
         }
 
         function buildRemoteMenu(remoteItem) {
+            let session   = root.remoteOperationsSession
+            let isDefault = session !== null && remoteItem.name === session.defaultRemote
+
             return [
                 { text: "Fetch",  icon: Style.icons.download,  enabled: !root.isFetching, action: function() { content.fetchRemote(remoteItem) } },
                 { text: "Pull",   icon: Style.icons.arrowDown, enabled: !root.isFetching, action: function() { content.pullRemote(remoteItem) } },
+                { separator: true },
+                isDefault
+                    ? { text: "Clear Default Remote", icon: Style.icons.star, action: function() { session.setDefaultRemote("") } }
+                    : { text: "Set as Default Remote", icon: Style.icons.star, enabled: session !== null,
+                        action: function() { session.setDefaultRemote(remoteItem.name) } },
                 { separator: true },
                 { text: "Edit Remote...",  icon: Style.icons.edit,      action: function() { content.editRemote(remoteItem) } },
                 { text: "Remove Remote",   icon: Style.icons.trash, color: Style.colors.contextMenuDanger, action: function() { content.removeRemoteItem(remoteItem) } },

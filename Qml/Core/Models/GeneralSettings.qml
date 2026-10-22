@@ -21,6 +21,8 @@ QtObject {
 
     property                int               chunkExpandLines:         10
 
+    property                bool              alwaysAskRemote:      false
+
     /* Functions
      * ****************************************************************************************/
     function serialize() {
@@ -30,7 +32,8 @@ QtObject {
             showStashNodes: root.showStashNodes,
             autoUpdate: root.autoUpdate,
             chunkContextLines: root.chunkContextLines,
-            chunkExpandLines: root.chunkExpandLines
+            chunkExpandLines: root.chunkExpandLines,
+            alwaysAskRemote: root.alwaysAskRemote
         }
 
         return data;
@@ -43,6 +46,7 @@ QtObject {
         root.autoUpdate = data.autoUpdate ?? true
         root.chunkContextLines = data.chunkContextLines ?? 0
         root.chunkExpandLines = data.chunkExpandLines ?? 10
+        root.alwaysAskRemote = data.alwaysAskRemote ?? false
     }
 }
 
