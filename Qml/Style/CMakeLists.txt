@@ -42,6 +42,8 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style
         Style.qml
         AppFontSize.qml
         Colors.qml
+        ModernDarkColors.qml
+        ModernSoftColors.qml
         FontIconSize.qml
         Icons.qml
 )
