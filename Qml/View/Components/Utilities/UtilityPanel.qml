@@ -21,6 +21,7 @@ Rectangle {
 
     property BranchController        branchController        : null
     property RemoteController        remoteController        : null
+    property RemoteOperationsSession remoteOperationsSession : null
     property RepositoryController    repositoryController    : null
     property CommitController        commitController        : null
     property StatusController        statusController        : null
@@ -220,6 +221,7 @@ Rectangle {
                     id: remoteView
                     filterText: dockFlow.filterText
                     remoteController: root.remoteController
+                    remoteOperationsSession: root.remoteOperationsSession
                     repositoryController: root.repositoryController
                     userAuthenticationPopup: root.userAuthenticationPopup
                     uiSessionPopups: root.uiSessionPopups
@@ -260,6 +262,7 @@ Rectangle {
                     id: tagManagementView
                     filterText: dockFlow.filterText
                     tagController: root.tagController
+                    remoteOperationsSession: root.remoteOperationsSession
                     addTagPopup: root.uiSessionPopups ? root.uiSessionPopups.addTagPopup : null
                     guideController: root.guideController
                     notificationController: root.notificationController

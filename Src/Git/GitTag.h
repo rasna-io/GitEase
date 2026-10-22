@@ -48,18 +48,22 @@ public:
     Q_INVOKABLE GitResult remove(const QString &name);
 
     /**
-     * @brief Pushes a specific tag asynchronously to the remote repository (origin).
-     * @param name The name of the tag to push
+     * @brief Pushes a specific tag to a remote.
+     * @param remote The remote to push to
+     * @param name   The name of the tag to push
+     * @param token  Personal access token, only used for HTTP(S) remotes
      * @return GitResult indicating success or failure
      */
-    Q_INVOKABLE GitResult pushTag(const QString &name);
+    Q_INVOKABLE GitResult pushTag(const QString &remote, const QString &name, const QString &token);
 
     /**
-    * @brief Deletes a specific tag asynchronously from the remote repository (origin).
-    * @param name The name of the tag to delete from remote
+    * @brief Deletes a specific tag from a remote.
+    * @param remote The remote to delete the tag from
+    * @param name   The name of the tag to delete from remote
+    * @param token  Personal access token, only used for HTTP(S) remotes
     * @return GitResult indicating success or failure
     */
-    Q_INVOKABLE GitResult pushDeleteTag(const QString &name);
+    Q_INVOKABLE GitResult pushDeleteTag(const QString &remote, const QString &name, const QString &token);
 
 signals:
     /**
@@ -93,20 +97,13 @@ private:
 
 
     /**
-     * @brief Internal implementation for pushing a specific tag to remote repository (origin).
-     * @param name The name of the tag to push
-     * @return GitResult indicating success or failure
+     * @brief Uploads one refspec to a remote; shared by pushTag() and pushDeleteTag().
+     * @param remote  The remote to upload to
+     * @param refspec "refs/tags/<name>:refs/tags/<name>" to push, ":refs/tags/<name>" to delete
+     * @param token   Personal access token, only used for HTTP(S) remotes
+     * @return GitResult with the libgit2 error message on failure
      */
-    GitResult pushTagInternal(const QString &name);
-    GitResult pushTagStartAsyncInternal(const QString &name);
-
-    /**
-     * @brief Internal implementation for deleting a specific tag from the remote repository (origin).
-    * @param name The name of the tag to delete from remote
-    * @return GitResult indicating success or failure
-    */
-    GitResult pushDeleteTagInternal(const QString &name);
-    GitResult pushDeleteTagStartAsyncInternal(const QString &name);
+    GitResult uploadTagRefspec(const QString &remote, const QString &refspec, const QString &token);
 
 private:
     bool m_pushTagInProgress{false};

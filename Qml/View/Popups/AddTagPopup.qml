@@ -6,8 +6,6 @@ import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
-import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
-
 /*! ***********************************************************************************************
  * AddTagPopup
  * ************************************************************************************************/
@@ -21,6 +19,13 @@ PopupDialog {
     property string targetLabel: ""
     property bool pushAfterCreate: true
     property bool isAnnotated: true
+
+    property RemoteOperationsSession remoteOperationsSession: typeof uiSession !== "undefined" && uiSession
+                                                              ? uiSession.remoteOperationsSession : null
+
+    readonly property string pushRemote: root.remoteOperationsSession && !root.remoteOperationsSession.alwaysAskRemote
+                                         ? (root.remoteOperationsSession.target?.pushRemote ?? "")
+                                         : ""
 
     readonly property bool isNameValid: nameInput.text.trim().length > 0
     readonly property bool isMessageValid: !root.isAnnotated || messageInput.text.trim().length > 0
@@ -328,7 +333,8 @@ PopupDialog {
         }
 
         Text {
-            text: "Push to origin after creating"
+            text: root.pushRemote !== "" ? "Push to " + root.pushRemote + " after creating"
+                                         : "Push to a remote after creating"
             color: Style.colors.popupCheckboxLabelText
             font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.defaultPt
@@ -364,8 +370,8 @@ PopupDialog {
 
         let command = GitCommandText.createTag(tagName, root.isAnnotated ? messageInput.text.trim() : "")
 
-        if (root.pushAfterCreate)
-            command += " && " + GitCommandText.pushTag(tagName)
+        if (root.pushAfterCreate && root.pushRemote !== "")
+            command += " && " + GitCommandText.pushTag(root.pushRemote, tagName)
 
         return command
     }
@@ -383,22 +389,18 @@ PopupDialog {
         let res = ctrl.create(tagName, commitToTag, tagMessage);
 
         if (res && res.success) {
-            if (root.pushAfterCreate) {
-                if (notif) notif.info("Pushing tag to GitHub...", "Tag", 1500);
+            if (root.pushAfterCreate && root.remoteOperationsSession) {
+                root.remoteOperationsSession.pushTag(tagName, function(pushResult, remote) {
+                    if (!notif)
+                        return
 
-                                AsyncGit.call(ctrl, "pushTag", [tagName],
-                                    function(pushResult) {
-                                        if (pushResult.success) {
-                                            if (notif) notif.success("Tag created and pushed", "Success", 3000);
-                                        } else {
-                                            if (notif) notif.warning("Tag created locally but failed to push", "Sync Warning", 5000);
-                                        }
-                                    },
-                                    function(error) {
-                                        if (notif) notif.warning("Tag created locally but failed to push", "Sync Warning", 5000);
-                                    }
-                                );
-                            }
+                    if (pushResult.success)
+                        notif.success("Tag created and pushed to " + remote, "Success", 3000);
+                    else
+                        notif.warning("Tag created locally but failed to push to " + remote + ": " + pushResult.errorMessage,
+                                      "Sync Warning", 5000);
+                });
+            }
 
             root.tagCreatedSuccessfully();
             root.close();

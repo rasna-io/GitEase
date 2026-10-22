@@ -25,6 +25,8 @@ IPopup {
     property string remoteName:     ""
     property string remoteUrl:      ""
 
+    property string warning:        ""
+
     readonly property string token:         tokenField.text.trim()
     readonly property bool   canConfirm:    token.length > 0
     readonly property bool   hasWhitespace: tokenField.text.length > 0 && tokenField.text !== token
@@ -107,15 +109,17 @@ IPopup {
         root.operation = ""
         root.remoteName = ""
         root.remoteUrl = ""
+        root.warning = ""
     }
 
     /* Functions
      * ****************************************************************************************/
     //! Opens the prompt with context about the operation that needs the token.
-    function request(operation, remoteName, remoteUrl) {
+    function request(operation, remoteName, remoteUrl, warning) {
         root.operation = operation || ""
         root.remoteName = remoteName || ""
         root.remoteUrl = remoteUrl || ""
+        root.warning = warning || ""
         root.open()
     }
 
@@ -316,6 +320,42 @@ IPopup {
                         font.weight: Font.DemiBold
                         color: root.operation === "pushForce" ? Style.colors.repoItemStatusConflictText : Style.colors.accent
                     }
+                }
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: warningRow.implicitHeight + Style.dp(20)
+            visible: root.warning.length > 0
+            radius: Style.dp(8)
+            color: Style.colors.repoItemStatusConflictBg
+
+            RowLayout {
+                id: warningRow
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: Style.dp(12)
+                anchors.rightMargin: Style.dp(12)
+                spacing: Style.dp(10)
+
+                Text {
+                    Layout.alignment: Qt.AlignTop
+                    text: Style.icons.warning
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
+                    font.pixelSize: Style.appFont.captionPt
+                    color: Style.colors.repoItemStatusConflictText
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: root.warning
+                    wrapMode: Text.WordWrap
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.microPt
+                    color: Style.colors.repoItemStatusConflictText
                 }
             }
         }

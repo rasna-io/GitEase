@@ -410,6 +410,7 @@ Rectangle {
 
                         branchController        : root.uiSession?.branchController
                         remoteController        : root.uiSession?.remoteController
+                        remoteOperationsSession : root.uiSession?.remoteOperationsSession
                         repositoryController    : root.uiSession?.repositoryController
                         commitController        : root.uiSession?.commitController
                         statusController        : root.uiSession?.statusController
