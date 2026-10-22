@@ -54,16 +54,16 @@ void TerminalManager::kill()
         session->kill();
 }
 
-void TerminalManager::onReadyReadStandardOutput()
+void TerminalManager::closeSession(Repository *repository)
 {
-    const QString output = QString::fromUtf8(m_process->readAllStandardOutput());
-    QString cleaned = output;
-    cleaned.remove('\r');
-    const QStringList lines = cleaned.split('\n');
-    for (const QString &line : lines) {
-        const QString trimmed = line.trimmed();
-        if (trimmed.isEmpty()) continue;
-        if (!m_lastCommand.isEmpty() && trimmed == m_lastCommand.trimmed()) {
+    const QString directory = repositoryDirectory(repository ? repository->repo : nullptr);
+    if (directory.isEmpty())
+        return;
+
+    if (ShellSession *session = m_sessions.value(directory))
+        session->close();
+}
+
 ShellSession *TerminalManager::sessionFor(const QString &workingDirectory)
 {
     if (ShellSession *session = m_sessions.value(workingDirectory))
