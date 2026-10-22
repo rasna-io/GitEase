@@ -112,6 +112,15 @@ Item {
     }
 
 
+    Connections {
+        target: Style
+
+        function onThemeFallbackRequested() {
+            root.appSettings.appearanceSettings.currentTheme = "Modern Soft"
+            root.save()
+        }
+    }
+
     Component.onCompleted: {
         Style.currentTheme = Qt.binding(function() { return appSettings.appearanceSettings.currentTheme})
         Style.appFont.defaultPt = Qt.binding(function() { return appSettings.appearanceSettings.fontSizePt})
