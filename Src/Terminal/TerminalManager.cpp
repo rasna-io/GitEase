@@ -129,33 +129,17 @@ bool TerminalManager::busy() const
 
 void TerminalManager::updateWorkingDirectory()
 {
-    if (!m_process || m_process->state() != QProcess::Running)
+    QString directory = repositoryDirectory(activeRepo());
+    if (directory.isEmpty())
+        directory = QDir::homePath();
+
+    if (directory == m_workingDirectory)
         return;
 
-    if (m_currentRepo) {
-        const char* workdir = git_repository_workdir(activeRepo());
-        if (workdir) {
-            QString dir = QString::fromUtf8(workdir);
-            m_process->setWorkingDirectory(dir);
-            m_workingDirectory = dir;
-            emit workingDirectoryChanged();
-#ifdef Q_OS_WIN
-            m_process->write(("cd /d \"" + dir + "\"\r\n").toUtf8());
-#else
-            m_process->write((" cd \"" + dir + "\"\n").toUtf8());
-#endif
-        }
-    } else {
-        QString home = QDir::homePath();
-        m_process->setWorkingDirectory(home);
-        m_workingDirectory = home;
-        emit workingDirectoryChanged();
-#ifdef Q_OS_WIN
-        m_process->write(("cd /d \"" + home + "\"\r\n").toUtf8());
-#else
-        m_process->write((" cd \"" + home + "\"\n").toUtf8());
-#endif
-    }
+    m_workingDirectory = directory;
+    emit workingDirectoryChanged();
+    emit runningChanged();
+    emit busyChanged();
 }
 
 QString TerminalManager::username() const
