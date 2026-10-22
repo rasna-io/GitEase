@@ -251,6 +251,25 @@ QString GitCommandText::reset(const QString &commitHash, int mode)
     return command + " " + commitHash;
 }
 
+QString GitCommandText::statusIgnored()
+{
+    return QStringLiteral("git status --short --ignored");
+}
+
+QString GitCommandText::checkIgnore()
+{
+    return QStringLiteral("git check-ignore -v --no-index");
+}
+
+QString GitCommandText::removeFromIndex(const QStringList &paths)
+{
+    QStringList quoted;
+    for (const QString &path : paths)
+        quoted << quote(path);
+
+    return QString("git rm --cached -r -q --ignore-unmatch -- %1").arg(quoted.join(' '));
+}
+
 QString GitCommandText::init(const QString &path)
 {
     return QString("git init %1").arg(quote(path));
