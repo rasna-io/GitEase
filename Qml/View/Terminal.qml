@@ -8,7 +8,8 @@ import GitEase_Style
 /*! ***********************************************************************************************
  * Terminal
  * Embedded shell panel, built on DetachablePanel for its shared header/minimize/detach behavior.
- * Each repository working directory keeps its own session, restored when switching back to it.
+ * Each repository working directory keeps its own session, restored when switching back to it,
+ * and its own shell process, so a command running in one repository never blocks another.
  * ************************************************************************************************/
 DetachablePanel {
     id: root
@@ -26,13 +27,12 @@ DetachablePanel {
      * ****************************************************************************************/
     property var                sessions: ({})
     property TerminalSession    activeSession: null
-    property TerminalSession    commandSession: null
     property int                fontSize: 13
     property TerminalController terminalController: null
     property string             currentPath: terminalController.workingDirectory + "$ "
     property string             prompt: terminalController ? terminalController.username + "@" + terminalController.hostname + ":"
                                 : "user@host:~$ "
-    property bool               commandRunning: false
+    property bool               commandRunning: root.terminalController?.busy ?? false
 
     /* Object Properties
      * ****************************************************************************************/
@@ -44,12 +44,18 @@ DetachablePanel {
 
     /* Functions
      * ****************************************************************************************/
-    function showSession(key) {
+    function sessionFor(key) {
         let session = root.sessions[key]
         if (!session) {
             session = sessionComponent.createObject(root)
             root.sessions[key] = session
         }
+
+        return session
+    }
+
+    function showSession(key) {
+        const session = root.sessionFor(key)
 
         if (session === root.activeSession)
             return
@@ -70,19 +76,10 @@ DetachablePanel {
 
     Connections {
         target: root.terminalController
-        function onLineReceived(segmentsJson) {
-            const session = root.commandSession ?? root.activeSession
-            session.output.append({ segments: JSON.parse(segmentsJson)})
-        }
 
-        function onCommandStarted() {
-            root.commandSession = root.activeSession
-            root.commandRunning = true
-        }
-
-        function onCommandFinished() {
-            root.commandSession = null
-            root.commandRunning = false
+        // Lines come from every repository's shell, not only the one on screen
+        function onLineReceived(workingDirectory, segmentsJson) {
+            root.sessionFor(workingDirectory).output.append({ segments: JSON.parse(segmentsJson)})
         }
 
         function onWorkingDirectoryChanged() {
