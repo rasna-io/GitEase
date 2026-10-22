@@ -146,51 +146,50 @@ void TerminalManager::onReadyReadStandardOutput()
         const QString trimmed = line.trimmed();
         if (trimmed.isEmpty()) continue;
         if (!m_lastCommand.isEmpty() && trimmed == m_lastCommand.trimmed()) {
-            m_lastCommand.clear();
-            continue;
-        }
-        if (trimmed.startsWith("cd")) continue;
-        if (trimmed.startsWith("##PROMPT##:")) {
-            // Linux — has exit code
-            int exitCode = trimmed.mid(11).trimmed().toInt();
-            if (exitCode == 0 && m_gitStateUpdateRequired) {
-                emit gitStateChanged();
-            }
-            m_gitStateUpdateRequired = false;
-            emit commandFinished();
-            continue;
-        }
-        if (trimmed == "##PROMPT##") {
-            // Windows — no exit code available
-            if (m_gitStateUpdateRequired) {
-                emit gitStateChanged();
-            }
-            m_gitStateUpdateRequired = false;
-            emit commandFinished();
-            continue;
-        }
+ShellSession *TerminalManager::sessionFor(const QString &workingDirectory)
+{
+    if (ShellSession *session = m_sessions.value(workingDirectory))
+        return session;
 
-        emit lineReceived(segmentsToJson(parseAnsi(line)));
-    }
+    auto *session = new ShellSession(workingDirectory, this);
+    m_sessions.insert(workingDirectory, session);
+
+    connect(session, &ShellSession::lineReceived, this, [this, workingDirectory](const QString &segmentsJson) {
+        emit lineReceived(workingDirectory, segmentsJson);
+    });
+    connect(session, &ShellSession::commandStarted, this, [this, workingDirectory]() {
+        emit commandStarted(workingDirectory);
+    });
+    connect(session, &ShellSession::commandFinished, this, [this, workingDirectory]() {
+        emit commandFinished(workingDirectory);
+    });
+    connect(session, &ShellSession::gitStateChanged, this, [this, workingDirectory]() {
+        emit gitStateChanged(workingDirectory);
+    });
+
+    // running and busy describe the current repository's session only
+    connect(session, &ShellSession::runningChanged, this, [this, session]() {
+        if (session == currentSession())
+            emit runningChanged();
+    });
+    connect(session, &ShellSession::busyChanged, this, [this, session]() {
+        if (session == currentSession())
+            emit busyChanged();
+    });
+
+    connect(session, &ShellSession::closed, this, [this, session, workingDirectory]() {
+        if (m_sessions.value(workingDirectory) == session)
+            m_sessions.remove(workingDirectory);
+
+        session->deleteLater();
+    });
+
+    return session;
 }
 
-void TerminalManager::onReadyReadStandardError()
+ShellSession *TerminalManager::currentSession() const
 {
-    const QString err = QString::fromUtf8(m_process->readAllStandardError());
-    QString cleaned = err;
-    cleaned.remove('\r');
-
-    const QStringList lines = cleaned.split('\n');
-    for (const QString &line : lines) {
-        if (!line.trimmed().isEmpty())
-            emit lineReceived(segmentsToJson(parseAnsi(line)));
-    }
-}
-
-void TerminalManager::onProcessStateChanged(QProcess::ProcessState state)
-{
-    m_running = (state == QProcess::Running);
-    emit runningChanged();
+    return m_sessions.value(m_workingDirectory);
 }
 
 QString TerminalManager::workingDirectory() const
