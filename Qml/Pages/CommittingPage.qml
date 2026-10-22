@@ -128,7 +128,10 @@ Page {
     Connections {
         target: terminalController
 
-        function onGitStateChanged() {
+        function onGitStateChanged(workingDirectory) {
+            if (workingDirectory !== root.terminalController.workingDirectory)
+                return
+
             root.showSaveDialog(
                         () => {
                             changesFileLists.updateStatus()
