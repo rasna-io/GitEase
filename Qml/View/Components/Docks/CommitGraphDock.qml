@@ -61,7 +61,7 @@ DetachablePanel {
     property var selectedCommit         : null
     property int lastSelectedIndex      : -1
 
-    property string navigationRule  : "Author Email"
+    property string navigationRule  : "Commit"
     property string filterText      : ""
     property string filterStartDate : ""
     property string filterEndDate   : ""
@@ -280,6 +280,19 @@ DetachablePanel {
                     interactive: commitViewsLayout.canScroll && !scrollRestoreAnimation.running
 
                     cacheBuffer: 400
+
+                    //! The arrow keys do what the header's up / down buttons do, using the current navigation rule.
+                    keyNavigationEnabled: false
+
+                    Keys.onUpPressed: function(event) {
+                        event.accepted = true
+                        root.selectNext()
+                    }
+
+                    Keys.onDownPressed: function(event) {
+                        event.accepted = true
+                        root.selectPrevious()
+                    }
 
                     onMovementStarted: {
                         commitFocusAnimation.stop()
@@ -1150,6 +1163,7 @@ DetachablePanel {
         if (!data)
             return
 
+        commitsListView.forceActiveFocus()
         root.selectedCommit = data
         root.commitClicked(data.isUncommitted ? "__uncommitted__" : data.hash)
 
@@ -1685,22 +1699,47 @@ DetachablePanel {
         root.reloadAll()
     }
 
+    /*!
+     * Gives the commit list keyboard focus once the current event (e.g. a popup closing) has settled.
+     */
+    function focusCommitList() {
+        Qt.callLater(function() {
+            commitsListView.forceActiveFocus()
+        })
+    }
+
     function selectNext(rule) {
         var idx     = Navigation.selectedIndex(root.commits, root.selectedCommit)
         var result  = Navigation.selectNext(root.commits, root.selectedCommit, idx, root.navigationRule, rule)
 
-        if (!result)
+        if (!result) {
             return
+        }
 
-        if (rule !== undefined)
+        root.applyNavigationResult(result, rule)
+    }
+
+    /*!
+     * Selects the commit found by the navigation helpers, the same way a click on it would.
+     */
+    function applyNavigationResult(result, rule) {
+        if (rule !== undefined) {
             root.navigationRule = rule
+        }
 
-        setSingleSelection(result.selected, result.index)
+        if (result.selected.isUncommitted) {
+            root.selectedCommitHashes = []
+            root.lastSelectedIndex = result.index
+        } else {
+            setSingleSelection(result.selected, result.index)
+        }
+
         root.selectedCommit = result.selected
-        root.commitClicked(result.selected.hash)
+        root.commitClicked(result.selected.isUncommitted ? "__uncommitted__" : result.selected.hash)
 
-        if (result.scroll)
+        if (result.scroll) {
             root.focusCommitIndex(result.index)
+        }
     }
 
     /*!
@@ -1733,14 +1772,6 @@ DetachablePanel {
             return
         }
 
-        if (rule !== undefined)
-            root.navigationRule = rule
-
-        setSingleSelection(result.selected, result.index)
-        root.selectedCommit = result.selected
-        root.commitClicked(result.selected.hash)
-
-        if (result.scroll)
-            root.focusCommitIndex(result.index)
+        root.applyNavigationResult(result, rule)
     }
 }

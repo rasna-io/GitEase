@@ -107,6 +107,21 @@ Page {
             remoteController: root.remoteController
             isFetching: root.isFetching
 
+            //! The arrow keys on the graph use the dock's rule, so keep it in step with the "Navigate by" choice.
+            onNavigationRuleChanged: {
+                if (root.graphRef && root.graphRef.navigationRule !== navigationRule) {
+                    root.graphRef.navigationRule = navigationRule
+                    root.saveCommitGraphState()
+                }
+            }
+
+            //! Closing the filter popup moves keyboard focus away; give it back so the arrow keys keep working.
+            onFiltersApplied: {
+                if (root.graphRef) {
+                    root.graphRef.focusCommitList()
+                }
+            }
+
             onPullRequested: root.pullAndUpdate()
 
             onPushRequested: function(force) {
@@ -139,10 +154,12 @@ Page {
 
             onNextRequested: function(rule) {
                 root.graphRef.selectNext(rule);
+                root.graphRef.focusCommitList()
             }
 
             onPreviousRequested: function(rule) {
                 root.graphRef.selectPrevious(rule);
+                root.graphRef.focusCommitList()
             }
 
             onReloadRequested: function() {
@@ -330,7 +347,7 @@ Page {
             filterEndDate   : root.graphRef.filterEndDate || "",
             filterMode      : root.graphRef.filterMode ? root.graphRef.filterMode.slice(0) : [],
             branchFilter    : root.graphRef.branchFilter || "",
-            navigationRule  : root.graphRef.navigationRule || "Author Email"
+            navigationRule  : root.graphRef.navigationRule || "Commit"
         }
     }
 
@@ -353,7 +370,7 @@ Page {
         root.graphRef.filterEndDate = state.filterEndDate || ""
         root.graphRef.filterMode = state.filterMode ? state.filterMode.slice(0) : []
         root.graphRef.branchFilter = state.branchFilter || ""
-        root.graphRef.navigationRule = state.navigationRule || "Author Email"
+        root.graphRef.navigationRule = state.navigationRule || "Commit"
         root.graphRef.refreshBranchFilterHeadHash()
 
         root.graphRef.applyFilter(
