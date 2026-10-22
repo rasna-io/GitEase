@@ -45,6 +45,7 @@ set(SOURCES_BACKEND
     Src/Plugins/PluginManager.cpp
 
     Src/Terminal/TerminalManager.cpp
+    Src/Terminal/ShellSession.cpp
 )
 
 set(HEADERS_BACKEND
@@ -109,6 +110,7 @@ set(HEADERS_BACKEND
     Src/Plugins/IRepositoryAwarePlugin.h
 
     Src/Terminal/TerminalManager.h
+    Src/Terminal/ShellSession.h
 )
 
 set(INCLUDE_DIRS_BACKEND
