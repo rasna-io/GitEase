@@ -355,7 +355,7 @@ Item {
                     var allLabels = [];
                     if (commitForLine.tagNames && commitForLine.tagNames.length > 0) {
                         for (var tIdx = 0; tIdx < commitForLine.tagNames.length; tIdx++) {
-                            allLabels.push({ text: commitForLine.tagNames[tIdx], color: "#e2c044", isTag: true });
+                            allLabels.push({ text: commitForLine.tagNames[tIdx], color: Style.colors.graphTagLabel, isTag: true });
                         }
                     }
                     for (var hbi = 0; hbi < headBranchesForThisCommit.length; hbi++) {
@@ -448,7 +448,7 @@ Item {
                     let isUncommitted = commit3.isUncommitted;
 
                     if (isSelected) {
-                        ctx.fillStyle = "#6088B2DF";
+                        ctx.fillStyle = Style.colors.graphSelectedRowBg;
                     } else if (isUncommitted && isHovered) {
                         ctx.fillStyle = Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.35);
                     } else if (isHovered) {
@@ -456,7 +456,7 @@ Item {
                     } else if (isUncommitted) {
                         ctx.fillStyle = Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.22);
                     } else if (isHead) {
-                        ctx.fillStyle = "#40FFA500";
+                        ctx.fillStyle = Style.colors.graphHeadRowBg;
                     }
 
                     if (isUncommitted || isSelected || isHovered || isHead)
@@ -483,7 +483,7 @@ Item {
                         ctx.fill();
                         ctx.stroke();
                         if (root.showAvatar) {
-                            ctx.fillStyle = "#ffffff";
+                            ctx.fillStyle = Style.colors.onColorText;
                             ctx.textAlign = "center";
                             ctx.textBaseline = "middle";
                             ctx.fillText(typeof Style !== "undefined" ? Style.icons.archive : "📦", centerX2, centerY2);
@@ -491,7 +491,7 @@ Item {
                     } else {
                         ctx.beginPath();
                         ctx.arc(centerX2, centerY2, avatarRadius, 0, 2 * Math.PI);
-                        ctx.fillStyle = root.showAvatar ? "#D9D9D9" : GraphUtils.lightenColor(branchColor3, 0.3);
+                        ctx.fillStyle = root.showAvatar ? Style.colors.graphAvatarBackground : GraphUtils.lightenColor(branchColor3, 0.3);
                         ctx.fill();
                         ctx.stroke();
                         if (root.showAvatar) {
@@ -508,7 +508,7 @@ Item {
      * ****************************************************************************************/
 
     function commitColor(commitObj) {
-        if (commitObj && commitObj.isUncommitted) return "#888888"
+        if (commitObj && commitObj.isUncommitted) return Style.colors.graphUncommittedColor
         if (!commitObj || !commitObj.colorKey) return GraphUtils.getCategoryColor("main")
         return GraphUtils.getCategoryColor(commitObj.colorKey)
     }

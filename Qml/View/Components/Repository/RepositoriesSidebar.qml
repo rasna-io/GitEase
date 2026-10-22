@@ -47,7 +47,7 @@ Rectangle {
     property string                  detachRepositoryName: ""
     property string                  detachRepositoryPath: ""
     property string                  detachRepositoryInitials: "?"
-    property color                   detachRepositoryColor: "#B9FAB9"
+    property color                   detachRepositoryColor: Style.colors.repositoryAvatarDefault
 
     /* Signals
      * ****************************************************************************************/
@@ -146,7 +146,7 @@ Rectangle {
     function repositoryColor(repository) {
         const ctrl = root.repositoryController;
         if (!ctrl)
-            return (repository && repository.color) ? repository.color : "#B9FAB9";
+            return (repository && repository.color) ? repository.color : Style.colors.repositoryAvatarDefault;
         return ctrl.isValidRepoColor(repository ? repository.color : "")
                 ? repository.color
                 : ctrl.repoColor(repository ? repository.path : "");
@@ -598,7 +598,7 @@ Rectangle {
                                 text: tip.text
                                 font.family: Style.fontTypes.inter
                                 font.pixelSize: Style.appFont.defaultPt
-                                color: "#ffffff"
+                                color: Style.colors.onColorText
                             }
 
                             background: Rectangle {

@@ -168,14 +168,14 @@ T.Control {
             color: Qt.rgba(239/255, 83/255, 80/255, 0.1) // Light red background
             radius: 4
             border.width: 1
-            border.color: Style.colors.error || "#ef5350"
+            border.color: Style.colors.error
 
             Text {
                 id: errorText
                 anchors.centerIn: parent
                 width: parent.width - 16
                 text: control.errorMessage
-                color: Style.colors.error || "#ef5350"
+                color: Style.colors.error
                 font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.defaultPt
                 horizontalAlignment: Text.AlignHCenter
