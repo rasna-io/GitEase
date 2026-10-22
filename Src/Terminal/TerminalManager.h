@@ -124,28 +124,31 @@ private slots:
 
 signals:
     /**
-     * @brief Emitted when a line of output is received from the shell.
+     * @brief Emitted when a line of output is received from a shell.
+     * @param workingDirectory Working directory of the session the line belongs to.
      * @param segmentsJson JSON array of color segments: [{text, color, bold}].
      */
-    void lineReceived(const QString &segmentsJson);
+    void lineReceived(const QString &workingDirectory, const QString &segmentsJson);
 
     /**
-     *  @brief Emitted when the working directory changes.
+     *  @brief Emitted when the current repository, and with it the working directory, changes.
      */
     void workingDirectoryChanged();
 
     /**
-     * @brief Emitted when a command is sent to the shell.
+     * @brief Emitted when a command is sent to a shell.
+     * @param workingDirectory Working directory of the session running the command.
      */
-    void commandStarted();
+    void commandStarted(const QString &workingDirectory);
 
     /**
      * @brief Emitted when the shell prompt sentinel is detected, indicating command completion.
+     * @param workingDirectory Working directory of the session that ran the command.
      */
-    void commandFinished();
+    void commandFinished(const QString &workingDirectory);
 
     /**
-     * @brief Emitted when the shell process state changes.
+     * @brief Emitted when the current repository's shell process state changes.
      */
     void runningChanged();
 
@@ -158,7 +161,10 @@ signals:
      * @brief Emitted when a git state-changing command completes successfully.
      *
      * Connect this signal to refresh repository views such as the commit graph,
-     * staging area, or branch list.
+     * staging area, or branch list. Commands run in the background repositories' shells too, so
+     * a view showing only the current repository compares \a workingDirectory first.
+     *
+     * @param workingDirectory Working directory of the session that ran the command.
      */
-    void gitStateChanged();
+    void gitStateChanged(const QString &workingDirectory);
 };
