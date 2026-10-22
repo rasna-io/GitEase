@@ -485,6 +485,8 @@ QtObject{
     // Navigation rail item that is not selected (non-accent variant)
     property color navItemInactive:             "#8B94A7"
 
+    property color navItemHover:                Qt.rgba(foreground.r, foreground.g, foreground.b, 0.06)
+
     // Commit graph
     property color graphSelectedRowBg:          "#402563EB"
     property color graphHeadRowBg:              "#33D97706"
