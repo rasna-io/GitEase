@@ -56,11 +56,22 @@ public:
     Q_INVOKABLE void sendCommand(const QString &command);
 
     /**
-     * @brief Kills the current shell process and starts a new one.
+     * @brief Kills the current repository's shell process; the next command starts a new one.
      *
-     * Use this to recover from a hung or crashed shell session.
+     * Use this to recover from a hung or crashed shell session. The other repositories' shells
+     * keep running.
      */
     Q_INVOKABLE void kill();
+
+    /**
+     * @brief Ends the shell session of a repository being closed.
+     *
+     * A command still running there is allowed to complete first, so closing a repository never
+     * interrupts a git operation halfway.
+     *
+     * @param repository The repository being closed.
+     */
+    Q_INVOKABLE void closeSession(Repository *repository);
 
 private:
     /**
