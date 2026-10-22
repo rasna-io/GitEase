@@ -43,6 +43,7 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/NetworkController.qml      # Network Controller
     Qml/Core/Controllers/UpdateController.qml       # Application Update Controller
     Qml/Core/Controllers/TerminalController.qml
+    Qml/Core/Controllers/TextDirectionController.qml # Keeps code in the diff editors left to right
     Qml/Core/Controllers/GuideController.qml
 
     # Scripts

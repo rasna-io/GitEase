@@ -218,6 +218,8 @@ QtObject {
         onGitStateChanged: gitStateNotifier.notifyChanged()
     }
 
+    property TextDirectionController textDirectionController: TextDirectionController {}
+
     property LayoutController layoutController: LayoutController {
         appModel: root.appModel
     }

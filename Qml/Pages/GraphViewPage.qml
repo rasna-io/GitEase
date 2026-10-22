@@ -45,6 +45,7 @@ Page {
     property GuideController         guideController         : null
     property GitTreeController       gitTreeController       : null
     property GitStateNotifier        gitStateNotifier        : null
+    property TextDirectionController textDirectionController : null
     readonly property bool           autoUpdate              : root.appModel?.appSettings?.generalSettings?.autoUpdate ?? true
 
     signal utilityPanelReloadRequested()
@@ -250,6 +251,7 @@ Page {
                     detachedAccessory       : graphHeaderComponent
                     showDetachedPlaceholder : true
                     detachedPlaceholderDetails: qsTr("The graph and its search, filters, pull, push and fetch controls moved with it.")
+                    textDirectionController : root.textDirectionController
 
                     onCommitClicked: function(commitId) { Presenter.handleCommitClicked(commitId) }
                 }
@@ -290,6 +292,7 @@ Page {
                     guideController: root.guideController
                     currentRepositoryName: root.appModel.currentRepository.name || ""
                     pluginManager: root.pluginController?.pluginManager ?? null
+                    textDirectionController: root.textDirectionController
                     readOnly: true
                 }
             }

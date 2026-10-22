@@ -362,6 +362,7 @@ Rectangle {
                             guideController: root.uiSession?.guideController
                             layoutController: root.uiSession?.layoutController
                             gitStateNotifier: root.uiSession?.gitStateNotifier
+                            textDirectionController: root.uiSession?.textDirectionController
                         }
 
                         CommittingPage {
@@ -381,6 +382,7 @@ Rectangle {
                             terminalController: root.uiSession?.terminalController
                             guideController: root.uiSession?.guideController
                             gitStateNotifier: root.uiSession?.gitStateNotifier
+                            textDirectionController: root.uiSession?.textDirectionController
                         }
 
                         PluginsPage {
@@ -423,6 +425,7 @@ Rectangle {
                         uiSessionPopups         : root.uiSession?.popups
                         pluginController        : root.uiSession?.pluginController
                         gitStateNotifier        : root.uiSession?.gitStateNotifier
+                        textDirectionController : root.uiSession?.textDirectionController
                     }
                 }
 

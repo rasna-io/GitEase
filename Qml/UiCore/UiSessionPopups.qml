@@ -18,6 +18,8 @@ Item {
     property NotificationController notificationController: null
     property SshKeyController       sshKeyController:       null
 
+    property TextDirectionController textDirectionController: null
+
     property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {
         appModel: root.appModel
         notificationController: root.notificationController
@@ -43,6 +45,7 @@ Item {
 
     property AddStashPopup              addStashPopup:              AddStashPopup {
         notificationController: root.notificationController
+        textDirectionController: root.textDirectionController
     }
 
     property AddTagPopup                addTagPopup:                AddTagPopup {
@@ -51,7 +54,9 @@ Item {
 
     property NotificationCenterPopup    notificationCenterPopup:    NotificationCenterPopup {}
 
-    property ManageStashPopup           manageStashPopup:           ManageStashPopup {}
+    property ManageStashPopup           manageStashPopup:           ManageStashPopup {
+        textDirectionController: root.textDirectionController
+    }
 
     property FetchSummaryPopup          fetchSummaryPopup:          FetchSummaryPopup {}
 
