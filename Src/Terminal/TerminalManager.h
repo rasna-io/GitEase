@@ -1,8 +1,9 @@
 #pragma once
 #include "IGitController.h"
+#include <QHash>
 #include <QObject>
-#include <QProcess>
-#include <QTimer>
+
+class ShellSession;
 
 /*!
  * @brief Manages an embedded shell process for executing git and system commands.
@@ -75,13 +76,14 @@ public:
 
 private:
     /**
-     * @brief Starts the shell process and configures the environment.
-     *
-     * On Unix, launches bash via the \c script command to allocate a PTY.
-     * On Windows, launches cmd.exe with UTF-8 encoding enabled.
-     * Sets up sentinel-based prompt detection for command completion tracking.
+     * @brief Returns the session of a working directory, creating it on first use.
      */
-    void startShell();
+    ShellSession *sessionFor(const QString &workingDirectory);
+
+    /**
+     * @brief Returns the current repository's session, or nullptr before its first command.
+     */
+    ShellSession *currentSession() const;
 
     /**
      *  @brief Returns the OS username from environment variables.
@@ -93,11 +95,8 @@ private:
      */
     QString hostname() const;
 
-    QProcess *m_process = nullptr;
-    QString   m_workingDirectory;
-    bool      m_running = false;
-    bool      m_gitStateUpdateRequired = false;
-    QString   m_lastCommand;
+    QHash<QString, ShellSession *> m_sessions;
+    QString                        m_workingDirectory;
 
 private slots:
     /**
