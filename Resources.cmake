@@ -48,6 +48,7 @@ set(RESOURCES_CORE
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
     Qml/Core/Scripts/GraphLayout.js
+    Qml/Core/Scripts/CommitGraphRouting.js
     Qml/Core/Scripts/ConflictPopupUtils.js
     Qml/Core/Scripts/GraphViewPresenter.js
     Qml/Core/Scripts/CommitGraphDataLoader.js
@@ -232,8 +233,11 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/GraphView/DateField.qml
     Qml/View/Components/GraphView/GraphFilterPopup.qml
     Qml/View/Components/GraphView/ResizableColumnHeader.qml
-    Qml/View/Components/GraphView/CommitGraphCanvas.qml
-    Qml/View/Components/GraphView/CommitListDelegate.qml
+    Qml/View/Components/GraphView/CommitRow.qml
+    Qml/View/Components/GraphView/CommitGraphCell.qml
+    Qml/View/Components/GraphView/CommitGraphNode.qml
+    Qml/View/Components/GraphView/CommitLaneEdges.qml
+    Qml/View/Components/GraphView/CommitRefLabel.qml
 )
 
 
