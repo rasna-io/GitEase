@@ -17,6 +17,7 @@ RowLayout {
     property GuideController guideController : null
     property RemoteController remoteController : null
 
+    property bool   showHeading     : true
     property bool   isGraphReady    : false
     property bool   isFetching      : false
     property string filterText      : ""
@@ -58,7 +59,7 @@ RowLayout {
         font.weight: Font.DemiBold
         font.pixelSize: Style.appFont.smallPt
 
-        visible: !headerRow.compact
+        visible: headerRow.showHeading && !headerRow.compact
     }
 
     Rectangle {
@@ -68,7 +69,7 @@ RowLayout {
 
         color: Style.colors.primaryBorder
 
-        visible: !headerRow.compact
+        visible: headerRow.showHeading && !headerRow.compact
     }
 
     Item {
