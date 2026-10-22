@@ -27,12 +27,13 @@ RowLayout {
     property var    filterFieldOptions: ["Messages", "Subjects", "Authors", "Emails", "SHA-1"]
     property var    branchNames     : []
     property string branchFilter    : ""
+    property bool   restoreFocusOnClose : false
 
     readonly property bool  compact         : headerRow.parent ? headerRow.parent.width < 650 : false
     readonly property bool  tight           : headerRow.parent ? headerRow.parent.width < 820 : false
     readonly property bool  crowded         : headerRow.parent ? headerRow.parent.width < 600 : false
     readonly property int   controlSize     : 26
-    property var            navigationRules : ["Author Email", "Author", "Parent 1", "Branch"]
+    property var            navigationRules : ["Commit", "Author Email", "Author", "Parent 1", "Branch"]
     property string         navigationRule  : navigationRules[0]
 
     /* Signals
@@ -41,6 +42,7 @@ RowLayout {
     signal branchSelected(string branchName)
     signal nextRequested(string rule)
     signal previousRequested(string rule)
+    signal filtersApplied()
     signal reloadRequested()
     signal pullRequested()
     signal pushRequested(bool force)
@@ -183,14 +185,25 @@ RowLayout {
         navigationRule: headerRow.navigationRule
 
         onApplyRequested: function(field, startDate, endDate, branch) {
-            headerRow.filterModes = field === "" ? [] : [field]
-            headerRow.filterStartDate = startDate
-            headerRow.filterEndDate = endDate
-            headerRow.applyFilter()
+            var modes           = field === "" ? [] : [field]
+            var modesChanged    = modes.join(",") !== (headerRow.filterModes || []).join(",")
+            var datesChanged    = startDate !== headerRow.filterStartDate || endDate !== headerRow.filterEndDate
+            var branchChanged   = branch !== headerRow.branchFilter
 
-            if (branch.length > 0)
-                headerRow.navigationRule = "Branch"
-            headerRow.branchSelected(branch)
+            //! Only the navigation rule may have changed; rebuilding the graph would drop the selected commit.
+            if (modesChanged || datesChanged || branchChanged) {
+                headerRow.filterModes = modes
+                headerRow.filterStartDate = startDate
+                headerRow.filterEndDate = endDate
+                headerRow.applyFilter()
+
+                if (branchChanged && branch.length > 0) {
+                    headerRow.navigationRule = "Branch"
+                }
+                headerRow.branchSelected(branch)
+            }
+
+            headerRow.restoreFocusOnClose = true
         }
 
         onClearRequested: {
@@ -200,6 +213,7 @@ RowLayout {
             headerRow.navigationRule = headerRow.navigationRules[0]
             headerRow.applyFilter()
             headerRow.branchSelected("")
+            headerRow.restoreFocusOnClose = true
         }
 
         onStartDateFieldClicked: function(field) {
@@ -212,14 +226,25 @@ RowLayout {
 
         onNavigationRuleSelected: function(rule) {
             headerRow.navigationRule = rule
-            headerRow.applyFilter()
+        }
+    }
+
+    //! The popup takes focus back when it finishes closing, so the hand-off waits for that.
+    Connections {
+        target: filterPopup
+
+        function onClosed() {
+            if (headerRow.restoreFocusOnClose) {
+                headerRow.restoreFocusOnClose = false
+                headerRow.filtersApplied()
+            }
         }
     }
 
     IconButton {
         id: downButton
         Layout.preferredHeight: headerRow.controlSize
-        Layout.preferredWidth: upDownRowLayout.implicitWidth
+        Layout.preferredWidth: headerRow.controlSize
 
         visible: !compact && !crowded
         enabled: headerRow.isGraphReady
@@ -400,7 +425,7 @@ RowLayout {
                     targetProvider: function() { return filterButton },
                     icon: Style.icons.filter,
                     title: "Filters",
-                    description: "Narrow the search field, date range, and branch, and choose the field used to navigate between matches: Author Email, Author, Parent commit, or Branch."
+                    description: "Narrow the search field, date range, and branch, and choose how the arrow buttons and the Up/Down keys navigate: Commit (the adjacent commit), Author Email, Author, Parent commit, or Branch."
                 },
                 {
                     targetProvider: function() { return downButton.visible ? downButton : null },

@@ -429,7 +429,7 @@ DetachablePanel {
                     rightContent: model.rightText || ""
                     leftLineNum:  model.oldLineNum !== undefined ? model.oldLineNum : -1
                     rightLineNum: model.newLineNum !== undefined ? model.newLineNum : -1
-                    isCurrentItem: index === root.currentIndex
+                    isCurrentItem: index >= 0 && index === root.currentIndex
                     selectionStart: root.selectionStart
                     selectionEnd: root.selectionEnd
                     selectedSide: root.selectedSide
