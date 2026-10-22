@@ -118,12 +118,17 @@ Rectangle {
 
                             readonly property color activeColor:   root.useAccentIndicator ? Style.colors.accent : Style.colors.branchAccent
                             readonly property color inactiveColor: root.useAccentIndicator ? Style.colors.mutedText : Style.colors.navItemInactive
+                            readonly property color labelColor:    item.isSelected ? item.activeColor
+                                                                   : item.isHovered ? Style.colors.foreground
+                                                                   : item.inactiveColor
 
                             color: item.isSelected
                                    ? Style.colors.azureTint
                                    : item.isHovered
-                                     ? Qt.darker(Style.colors.navButton, 1.3)
+                                     ? Style.colors.navItemHover
                                      : "transparent"
+
+                            Behavior on color { ColorAnimation { duration: 120 } }
 
                             // Active indicator bar (accent-indicator variant only)
                             Rectangle {
@@ -167,7 +172,7 @@ Rectangle {
                                         font.pixelSize: Style.appFont.h3Pt
                                         font.family: Style.fontTypes.font6Pro
                                         font.weight: (root.useAccentIndicator && item.isSelected) ? 600 : 500
-                                        color: item.isSelected ? item.activeColor : item.inactiveColor
+                                        color: item.labelColor
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
@@ -181,7 +186,7 @@ Rectangle {
                                     font.pixelSize: Style.appFont.h3Pt
                                     font.family: Style.fontTypes.inter
                                     font.weight: (root.useAccentIndicator && item.isSelected) ? Font.DemiBold : Font.Normal
-                                    color: item.isSelected ? item.activeColor : item.inactiveColor
+                                    color: item.labelColor
                                     elide: Text.ElideRight
                                 }
 
