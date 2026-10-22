@@ -77,6 +77,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/UtilitiesCard.qml
     Qml/View/Components/Base/DashedButton.qml                  # Dashed ghost action button for utilities cards
     Qml/View/Components/Base/ContextMenu.qml
+    Qml/View/Components/Base/ContextMenuWindow.qml             # Frameless animated window that renders one menu level
     Qml/View/Components/Base/AccentCard.qml                    # Card with accent peeking out on the left
     Qml/View/Components/Base/DetachablePanel.qml               # Detachable panel wrapper
     Qml/View/Components/Base/WindowMotion.qml                  # Window minimize/maximize transition helper
