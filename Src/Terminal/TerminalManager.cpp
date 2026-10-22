@@ -1,87 +1,24 @@
 #include "TerminalManager.h"
-#include <QRegularExpression>
+#include "ShellSession.h"
 #include <QSysInfo>
 #include <QDir>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonDocument>
 
-static QVariantList parseAnsi(const QString &line)
+/**
+ * @brief Returns the directory a repository's shell runs in: its working directory, or the
+ *        repository itself when it is bare. Empty without a repository.
+ */
+static QString repositoryDirectory(git_repository *repo)
 {
-    QVariantList segments;
-    static QRegularExpression ansiRegex("\x1b\\[([0-9;]*)m");
+    if (!repo)
+        return QString();
 
-    QString currentColor;
-    bool currentBold = false;
-    int lastIndex = 0;
+    if (const char *workdir = git_repository_workdir(repo))
+        return QString::fromUtf8(workdir);
 
-    QRegularExpressionMatchIterator it = ansiRegex.globalMatch(line);
-
-    while (it.hasNext()) {
-        QRegularExpressionMatch match = it.next();
-
-        QString before = line.mid(lastIndex, match.capturedStart() - lastIndex);
-        if (!before.isEmpty()) {
-            QVariantMap seg;
-            seg["text"]  = before;
-            seg["color"] = currentColor;
-            seg["bold"]  = currentBold;
-            segments.append(seg);
-        }
-
-        const QStringList codes = match.captured(1).split(';');
-        for (const QString &c : codes) {
-            int n = c.toInt();
-            switch (n) {
-            case 0:  currentColor = ""; currentBold = false; break;
-            case 1:  currentBold  = true; break;
-            case 31: currentColor = "#f44747"; break;
-            case 32: currentColor = "#89d185"; break;
-            case 33: currentColor = "#dcdcaa"; break;
-            case 34: currentColor = "#569cd6"; break;
-            case 35: currentColor = "#c586c0"; break;
-            case 36: currentColor = "#4ec9b0"; break;
-            case 37: currentColor = "#d4d4d4"; break;
-            }
-        }
-
-        lastIndex = match.capturedEnd();
-    }
-
-    QString remaining = line.mid(lastIndex);
-    if (!remaining.isEmpty()) {
-        QVariantMap seg;
-        seg["text"]  = remaining;
-        seg["color"] = currentColor;
-        seg["bold"]  = currentBold;
-        segments.append(seg);
-    }
-
-    if (segments.isEmpty()) {
-        QVariantMap seg;
-        seg["text"]  = line;
-        seg["color"] = "";
-        seg["bold"]  = false;
-        segments.append(seg);
-    }
-
-    return segments;
-}
-
-static QString segmentsToJson(const QVariantList &segments)
-{
-    QJsonArray arr;
-    for (const QVariant &v : segments)
-        arr.append(QJsonObject::fromVariantMap(v.toMap()));
-    return QString::fromUtf8(QJsonDocument(arr).toJson(QJsonDocument::Compact));
-}
-
-static QString stripAnsi(const QString &text)
-{
-    QString result = text;
-    static QRegularExpression ansiRegex("\x1b\\[[0-9;]*[A-Za-z]");
-    result.remove(ansiRegex);
-    return result;
+    return QString::fromUtf8(git_repository_path(repo));
 }
 
 TerminalManager::TerminalManager(QObject *parent)
