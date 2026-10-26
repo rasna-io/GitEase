@@ -208,13 +208,67 @@ Page {
                         GridView {
                             id: installedGridView
                             Layout.fillWidth: true
-                            Layout.preferredHeight: installedGridView.contentHeight
+                            Layout.preferredHeight: installedGridView.sectionHeight
                             Layout.bottomMargin: Style.dp(20)
                             clip: true
                             model: installedPluginsModel
                             property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
                             cellWidth: width / columns
                             cellHeight: root.minCardHeight
+
+                            property real sectionHeight: contentHeight
+                            Behavior on sectionHeight {
+                                NumberAnimation {
+                                    duration: 240
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
+
+                            add: Transition {
+                                ParallelAnimation {
+                                    NumberAnimation {
+                                        property: "opacity"
+                                        from: 0
+                                        to: 1
+                                        duration: 240
+                                        easing.type: Easing.OutCubic
+                                    }
+
+                                    NumberAnimation {
+                                        property: "scale"
+                                        from: 0.9
+                                        to: 1
+                                        duration: 240
+                                        easing.type: Easing.OutCubic
+                                    }
+                                }
+                            }
+
+                            remove: Transition {
+                                ParallelAnimation {
+                                    NumberAnimation {
+                                        property: "opacity"
+                                        to: 0
+                                        duration: 180
+                                        easing.type: Easing.InCubic
+                                    }
+
+                                    NumberAnimation {
+                                        property: "scale"
+                                        to: 0.9
+                                        duration: 180
+                                        easing.type: Easing.InCubic
+                                    }
+                                }
+                            }
+
+                            displaced: Transition {
+                                NumberAnimation {
+                                    properties: "x,y"
+                                    duration: 240
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
 
                             delegate: Item {
                                 width: installedGridView.cellWidth
@@ -226,14 +280,14 @@ Page {
                                     height: installedGridView.cellHeight - 8
                                     plugin: model
                                     pluginBusy: model.busy
-                                                || (root.pluginController
-                                                    && root.pluginController.installingPluginId === model.pluginId)
-                                    installPhase: (root.pluginController
-                                                   && root.pluginController.installingPluginId === model.pluginId)
-                                                  ? root.pluginController.installPhase : ""
-                                    installProgress: (root.pluginController
-                                                      && root.pluginController.installingPluginId === model.pluginId)
-                                                     ? root.pluginController.installProgress : -1
+                                                || !!(root.pluginController
+                                                      && root.pluginController.installStates[model.pluginId])
+                                    installPhase: root.pluginController
+                                                  ? (root.pluginController.installStates[model.pluginId]?.phase ?? "")
+                                                  : ""
+                                    installProgress: root.pluginController
+                                                     ? (root.pluginController.installStates[model.pluginId]?.progress ?? -1)
+                                                     : -1
 
                                     onDetailsClicked: function(pluginId) { root.openPluginDetails(pluginId) }
                                     onInstallClicked: function(pluginId) { root.pluginController?.installPlugin(pluginId) }
@@ -284,6 +338,52 @@ Page {
                             cellWidth: width / columns
                             cellHeight: root.minCardHeight
 
+                            add: Transition {
+                                ParallelAnimation {
+                                    NumberAnimation {
+                                        property: "opacity"
+                                        from: 0
+                                        to: 1
+                                        duration: 240
+                                        easing.type: Easing.OutCubic
+                                    }
+
+                                    NumberAnimation {
+                                        property: "scale"
+                                        from: 0.9
+                                        to: 1
+                                        duration: 240
+                                        easing.type: Easing.OutCubic
+                                    }
+                                }
+                            }
+
+                            remove: Transition {
+                                ParallelAnimation {
+                                    NumberAnimation {
+                                        property: "opacity"
+                                        to: 0
+                                        duration: 180
+                                        easing.type: Easing.InCubic
+                                    }
+
+                                    NumberAnimation {
+                                        property: "scale"
+                                        to: 0.9
+                                        duration: 180
+                                        easing.type: Easing.InCubic
+                                    }
+                                }
+                            }
+
+                            displaced: Transition {
+                                NumberAnimation {
+                                    properties: "x,y"
+                                    duration: 240
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
+
                             delegate: Item {
                                 width: availableGridView.cellWidth
                                 height: availableGridView.cellHeight
@@ -294,14 +394,14 @@ Page {
                                     height: availableGridView.cellHeight - 8
                                     plugin: model
                                     pluginBusy: model.busy
-                                                || (root.pluginController
-                                                    && root.pluginController.installingPluginId === model.pluginId)
-                                    installPhase: (root.pluginController
-                                                   && root.pluginController.installingPluginId === model.pluginId)
-                                                  ? root.pluginController.installPhase : ""
-                                    installProgress: (root.pluginController
-                                                      && root.pluginController.installingPluginId === model.pluginId)
-                                                     ? root.pluginController.installProgress : -1
+                                                || !!(root.pluginController
+                                                      && root.pluginController.installStates[model.pluginId])
+                                    installPhase: root.pluginController
+                                                  ? (root.pluginController.installStates[model.pluginId]?.phase ?? "")
+                                                  : ""
+                                    installProgress: root.pluginController
+                                                     ? (root.pluginController.installStates[model.pluginId]?.progress ?? -1)
+                                                     : -1
 
                                     onDetailsClicked: function(pluginId) { root.openPluginDetails(pluginId) }
                                     onInstallClicked: function(pluginId) { root.pluginController?.installPlugin(pluginId) }
@@ -422,20 +522,61 @@ Page {
         root.pluginController.fetchAvailablePlugins(1, "")
     }
 
-    function applyCurrentMode() {
-        installedPluginsModel.clear()
-        availablePluginsModel.clear()
+    function syncModel(model, items) {
+        let wanted = {}
+        for(let i = 0; i < items.length; i++) {
+            wanted[items[i].pluginId] = true
+        }
 
-        if (!root.pluginsData)
+        for(let r = model.count - 1; r >= 0; r--) {
+            if(!wanted[model.get(r).pluginId]) {
+                model.remove(r)
+            }
+        }
+
+        for(let n = 0; n < items.length; n++) {
+            let item = items[n]
+            let found = -1
+            for(let j = n; j < model.count; j++) {
+                if(model.get(j).pluginId === item.pluginId) {
+                    found = j
+                    break
+                }
+            }
+
+            if(found === -1) {
+                model.insert(n, item)
+                continue
+            }
+
+            if(found !== n) {
+                model.move(found, n, 1)
+            }
+
+            model.set(n, item)
+        }
+    }
+
+    function applyCurrentMode() {
+        let installedItems = []
+        let availableItems = []
+
+        if (!root.pluginsData) {
+            root.syncModel(installedPluginsModel, installedItems)
+            root.syncModel(availablePluginsModel, availableItems)
             return
+        }
 
         for (var i = 0; i < root.pluginsData.length; i++) {
             var plugin = root.pluginsData[i]
 
+            // A card that stands in for a running install is always shown
             var matchesCategory = plugin.category === root.currentCategory
                                   || root.currentCategory === "All"
+                                  || plugin.isPlaceholder === true
 
             var matchesMode = root.currentMode === ""
+                || plugin.isPlaceholder === true
                 || (root.currentMode === "All"           && plugin.isInstalled)
                 || (root.currentMode === "Enabled"       && plugin.isInstalled && plugin.isEnabled)
                 || (root.currentMode === "Disabled"      && plugin.isInstalled && !plugin.isEnabled)
@@ -444,11 +585,14 @@ Page {
 
             if (matchesCategory && matchesMode) {
                 if (plugin.isInstalled)
-                    installedPluginsModel.append(plugin)
+                    installedItems.push(plugin)
                 else
-                    availablePluginsModel.append(plugin)
+                    availableItems.push(plugin)
             }
         }
+
+        root.syncModel(installedPluginsModel, installedItems)
+        root.syncModel(availablePluginsModel, availableItems)
 
         buildInstalledCounts()
     }
@@ -460,6 +604,10 @@ Page {
             counts[category.id] = 0
 
         for (const plugin of root.pluginsData) {
+            if(plugin.isPlaceholder) {
+                continue
+            }
+
             if (!counts.hasOwnProperty(plugin.category))
                 counts[plugin.category] = 0
             counts[plugin.category]++
@@ -476,7 +624,7 @@ Page {
         }
 
         for (const plugin of root.pluginsData) {
-            if (!plugin.isInstalled)
+            if (!plugin.isInstalled || plugin.isPlaceholder)
                 continue
 
             if (plugin.isEnabled)
