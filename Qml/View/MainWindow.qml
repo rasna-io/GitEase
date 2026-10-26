@@ -37,6 +37,7 @@ Rectangle {
             Loader {
                 id: pluginLoader
                 anchors.fill: parent
+                asynchronous: true
                 source: parent.pluginUrl
                 onLoaded: root.injectPluginHostProperties(item)
                 onStatusChanged: {
