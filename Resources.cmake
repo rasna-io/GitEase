@@ -52,6 +52,7 @@ set(RESOURCES_CORE
     Qml/Core/Scripts/CommitGraphRouting.js
     Qml/Core/Scripts/ConflictPopupUtils.js
     Qml/Core/Scripts/GraphViewPresenter.js
+    Qml/Core/Scripts/PluginDetailFormat.js
     Qml/Core/Scripts/CommitGraphDataLoader.js
     Qml/Core/Scripts/CommitGraphFilter.js
     Qml/Core/Scripts/CommitGraphNavigation.js
@@ -231,6 +232,26 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/PluginsPage/PluginsPageHeader.qml
     Qml/View/Components/Pages/PluginsPage/PluginsLeftPanel.qml
     Qml/View/Components/Pages/PluginsPage/PluginDetailView.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailChip.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailMetaItem.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailInfoRow.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailLink.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailButton.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailRichText.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailCard.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailGalleryArrow.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailTab.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailTabBar.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailTopBar.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailErrorBanner.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailActions.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailHero.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailGallery.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailOverview.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailFeatureGrid.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailChangelog.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailSidebar.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailBody.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
     Qml/View/Components/GraphView/GraphFilterPopup.qml
