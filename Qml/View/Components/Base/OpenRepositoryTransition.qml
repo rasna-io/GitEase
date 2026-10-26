@@ -22,7 +22,7 @@ Item {
     property var        incubator: null
 
     // Fixed on purpose: this transition also plays with Reduced motion, where Style.motionMedium is 0
-    readonly property int duration: 240
+    readonly property int duration: 100
 
     /* Signals
      * ****************************************************************************************/

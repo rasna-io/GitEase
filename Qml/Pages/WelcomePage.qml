@@ -121,15 +121,41 @@ Rectangle {
                 }
 
                 // Step 1: Welcome
-                WelcomeContent {
-                    controller: root.controller
+                Loader {
+                    id: welcomeContentLoader
+
+                    property bool needed: false
+
+                    active: needed || root.controller?.currentPageIndex === Enums.WelcomePages.WelcomeBanner
+                    onActiveChanged: {
+                        if(active) {
+                            needed = true
+                        }
+                    }
+
+                    sourceComponent: WelcomeContent {
+                        controller: root.controller
+                    }
                 }
 
-                SetupProfileForm {
-                    id: setupProfileForm
+                Loader {
+                    id: setupProfileLoader
+
+                    property bool needed: false
+
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    showHint: true
+
+                    active: needed || root.controller?.currentPageIndex === Enums.WelcomePages.SetupProfle
+                    onActiveChanged: {
+                        if(active) {
+                            needed = true
+                        }
+                    }
+
+                    sourceComponent: SetupProfileForm {
+                        showHint: true
+                    }
                 }
 
                 RepositorySelector {
@@ -266,11 +292,17 @@ Rectangle {
                 onClicked: {
                     if (!root.controller) return
 
+                    let setupProfileForm = setupProfileLoader.item
+
                     switch(root.controller.currentPageIndex) {
                         case Enums.WelcomePages.WelcomeBanner:
                             root.controller.nextPage()
                             break
                         case Enums.WelcomePages.SetupProfle:
+                            if(!setupProfileForm) {
+                                break
+                            }
+
                             if(setupProfileForm.fullName.length === 0
                                     && setupProfileForm.email.length === 0)
                                 root.controller.nextPage()
