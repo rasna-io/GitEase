@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <atomic>
 #include "GitResult.h"
 #include "IGitController.h"
 
@@ -16,6 +17,9 @@ class GitRepository : public IGitController
 
 private:
     QString m_currentRepoPath;
+
+    //! Set from the GUI thread to make the clone running on the Git worker stop at its next callback.
+    std::atomic<bool> m_cloneCancelRequested { false };
 
     /**
      * @brief Internal clone implementation.
@@ -48,6 +52,7 @@ public:
     struct GitPayload {
         QObject* parentThread;    ///< Owner repository (UI + signals)
         IGitAuth* auth;                 ///< Authentication strategy
+        const std::atomic<bool>* cancelFlag = nullptr;  ///< When set, the transfer is aborted
     };
 
     /**
@@ -115,6 +120,19 @@ public:
     Q_INVOKABLE GitResult clone(const QString& url,
                                 const QString& localPath,
                                 const QString& token);                  // HTTPS
+
+    /**
+     * @brief Asks the clone that is running (or queued) to stop.
+     *
+     * Safe to call from the GUI thread. The clone aborts at its next progress callback, removes
+     * the partly written directory and finishes with a "Clone cancelled" error.
+     */
+    Q_INVOKABLE void cancelClone();
+
+    /**
+     * @brief Clears a previous cancelClone() request. Call it right before starting a clone.
+     */
+    Q_INVOKABLE void resetCloneCancel();
 
     /**
      * @brief Git protocol types (matches GitProtocolDetector::GitProtocol).

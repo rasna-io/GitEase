@@ -158,11 +158,16 @@ GitResult GitRepository::cloneInternal(const QString& url,
 
     GitPayload payload {
         this,
-        auth.get()
+        auth.get(),
+        &m_cloneCancelRequested
     };
 
     auto progressCallback = [](const git_indexer_progress *stats, void *p) -> int {
         auto *data = static_cast<GitPayload*>(p);
+
+        if (data->cancelFlag && data->cancelFlag->load()) {
+            return -1;
+        }
 
         if (stats->total_objects > 0) {
             int percent = static_cast<int>(
@@ -183,6 +188,10 @@ GitResult GitRepository::cloneInternal(const QString& url,
     opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
 
     opts.fetch_opts.callbacks.transfer_progress = progressCallback;
+    opts.fetch_opts.callbacks.sideband_progress = [](const char *, int, void *p) -> int {
+        auto *data = static_cast<GitPayload*>(p);
+        return (data->cancelFlag && data->cancelFlag->load()) ? -1 : 0;
+    };
     opts.fetch_opts.callbacks.payload = &payload;
 
     auth->apply(opts.fetch_opts);
@@ -197,6 +206,12 @@ GitResult GitRepository::cloneInternal(const QString& url,
 
     emitGitCommand(GitCommandText::clone(url, localPath));
 
+    if (result != 0 && m_cloneCancelRequested.load()) {
+        // The directory did not exist when the clone started, so whatever is there is partial.
+        QDir(localPath).removeRecursively();
+        return GitResult(false, {}, "Clone cancelled");
+    }
+
     if (result != 0) {
         const git_error *err = git_error_last();
         QString msg = err ? err->message : "Unknown git error";
@@ -207,6 +222,16 @@ GitResult GitRepository::cloneInternal(const QString& url,
     m_currentRepoPath = localPath;
 
     return GitResult(true, localPath);
+}
+
+void GitRepository::cancelClone()
+{
+    m_cloneCancelRequested.store(true);
+}
+
+void GitRepository::resetCloneCancel()
+{
+    m_cloneCancelRequested.store(false);
 }
 
 GitResult GitRepository::close()
