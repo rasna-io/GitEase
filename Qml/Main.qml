@@ -24,6 +24,8 @@ ApplicationWindow {
     property bool closeAnimationPlayed: false
     property bool hasActivatedBefore: false
 
+    property Component mainWindowPreload: null
+
 
     /* Object Properties
      * ****************************************************************************************/
@@ -33,6 +35,17 @@ ApplicationWindow {
     color: Style.colors.primaryBackground
     title: qsTr("GitEase")
     
+    /* Functions
+     * ****************************************************************************************/
+    function preloadMainWindow() {
+        if(window.mainWindowPreload) {
+            return
+        }
+
+        window.mainWindowPreload = Qt.createComponent("qrc:/GitEase/Qml/View/MainWindow.qml",
+                                                      Component.Asynchronous, window)
+    }
+
     /* Event Handlers
      * ****************************************************************************************/
     Connections {
@@ -190,6 +203,19 @@ ApplicationWindow {
         Item {
             anchors.fill: parent
 
+            Timer {
+                id: preloadTimer
+
+                interval: 50
+                repeat: false
+                running: true
+
+                onTriggered: {
+                    preloadTimer.stop()
+                    window.preloadMainWindow()
+                }
+            }
+
             WelcomeController {
                 id: welcomeController
 
@@ -240,13 +266,9 @@ ApplicationWindow {
 
             Loader {
                 anchors.fill: parent
-                source: "qrc:/GitEase/Qml/View/MainWindow.qml"
 
-                onLoaded: {
-                    if (item && item.hasOwnProperty("uiSession")) {
-                        item.uiSession = uiSession
-                    }
-                }
+                Component.onCompleted: setSource("qrc:/GitEase/Qml/View/MainWindow.qml",
+                                                 { "uiSession": uiSession })
             }
 
             Component.onCompleted: {
