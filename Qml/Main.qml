@@ -196,6 +196,18 @@ ApplicationWindow {
         }
     }
 
+    OpenRepositoryTransition {
+        id: openRepositoryTransition
+
+        anchors.fill: parent
+        z: 1
+        window: window
+        session: uiSession
+        preload: window.mainWindowPreload
+
+        onFinished: mainContentLoader.sourceComponent = mainApplicationComponent
+    }
+
     // Welcome Flow Component
     Component {
         id: welcomeFlowComponent
@@ -223,7 +235,7 @@ ApplicationWindow {
                 onWelcomeFlowCompleted: {
                     uiSession.appModel.appSettings.hasCompletedWelcome = true
                     uiSession.appModel.save()
-                    mainContentLoader.sourceComponent = mainApplicationComponent
+                    openRepositoryTransition.start()
                 }
             }
 
@@ -262,16 +274,20 @@ ApplicationWindow {
         id: mainApplicationComponent
 
         Item {
+            id: mainWindowContainer
             anchors.fill: parent
 
             Loader {
                 anchors.fill: parent
+                active: openRepositoryTransition.mainWindow === null
 
                 Component.onCompleted: setSource("qrc:/GitEase/Qml/View/MainWindow.qml",
                                                  { "uiSession": uiSession })
             }
 
             Component.onCompleted: {
+                openRepositoryTransition.adoptInto(mainWindowContainer)
+
                 window.width = Qt.binding(function() {return Style.appWidth})
                 window.height = Qt.binding(function() {return Style.appHeight})
                 window.x = (Screen.width - Style.appWidth) / 2
