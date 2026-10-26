@@ -7,7 +7,7 @@ import GitEase_Style
  * OpenRepositoryTransition
  * Takes the application window from the welcome flow to the main window. The window grows to its
  * main size while the main window is built behind the welcome page, with a loading state on top,
- * and `finished` is emitted once both are done. This is the only window size change that is animated.
+ * and `finished` is emitted once both are done. This is the only window size change that is animated, and it always plays, even with Reduced motion.
  * ************************************************************************************************/
 Item {
     id: root
@@ -21,6 +21,9 @@ Item {
     property bool       opening: false
     property var        incubator: null
 
+    // Fixed on purpose: this transition also plays with Reduced motion, where Style.motionMedium is 0
+    readonly property int duration: 240
+
     /* Signals
      * ****************************************************************************************/
     signal finished()
@@ -29,11 +32,6 @@ Item {
      * ****************************************************************************************/
     function start() {
         root.mainWindow = null
-
-        if(!Style.motionEnabled) {
-            root.finished()
-            return
-        }
 
         root.opening = true
         root.startIncubation()
@@ -94,7 +92,7 @@ Item {
             target: root.window
             property: "width"
             to: Style.appWidth
-            duration: Style.motionMedium
+            duration: root.duration
             easing.type: Easing.OutCubic
         }
 
@@ -102,7 +100,7 @@ Item {
             target: root.window
             property: "height"
             to: Style.appHeight
-            duration: Style.motionMedium
+            duration: root.duration
             easing.type: Easing.OutCubic
         }
 
@@ -110,7 +108,7 @@ Item {
             target: root.window
             property: "x"
             to: ((root.window?.screen.width ?? Style.appWidth) - Style.appWidth) / 2
-            duration: Style.motionMedium
+            duration: root.duration
             easing.type: Easing.OutCubic
         }
 
@@ -118,7 +116,7 @@ Item {
             target: root.window
             property: "y"
             to: ((root.window?.screen.height ?? Style.appHeight) - Style.appHeight) / 2
-            duration: Style.motionMedium
+            duration: root.duration
             easing.type: Easing.OutCubic
         }
 
@@ -148,7 +146,7 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Style.motionMedium
+                duration: root.duration
                 easing.type: Easing.OutCubic
             }
         }
