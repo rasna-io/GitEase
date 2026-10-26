@@ -26,12 +26,16 @@ ApplicationWindow {
 
     property Component mainWindowPreload: null
 
+    property bool contentReady: false
+    property bool revealed: false
+
 
     /* Object Properties
      * ****************************************************************************************/
     width: 523
     height: 475
-    visible: true
+    visible: window.contentReady
+    opacity: 0
     color: Style.colors.primaryBackground
     title: qsTr("GitEase")
     
@@ -46,8 +50,58 @@ ApplicationWindow {
                                                       Component.Asynchronous, window)
     }
 
+    function revealWindow() {
+        if(window.contentReady) {
+            return
+        }
+
+        mainContentLoader.opacity = 1
+        window.contentReady = true
+        revealFallbackTimer.restart()
+    }
+
+    function showRevealedWindow() {
+        if(window.revealed) {
+            return
+        }
+
+        window.revealed = true
+        revealFallbackTimer.stop()
+        windowRevealAnimation.restart()
+    }
+
     /* Event Handlers
      * ****************************************************************************************/
+    Connections {
+        target: window
+
+        function onFrameSwapped() {
+            if(window.contentReady) {
+                window.showRevealedWindow()
+            }
+        }
+    }
+
+    Timer {
+        id: revealFallbackTimer
+
+        interval: 1000
+        repeat: false
+
+        onTriggered: window.showRevealedWindow()
+    }
+
+    NumberAnimation {
+        id: windowRevealAnimation
+
+        target: window
+        property: "opacity"
+        from: 0
+        to: 1
+        duration: Style.motionFast
+        easing.type: Easing.OutCubic
+    }
+
     Connections {
         target: Qt.application
 
@@ -151,7 +205,7 @@ ApplicationWindow {
      * ****************************************************************************************/
     UiSession {
         id: uiSession
-        popups: uiSessionPopups
+        popups: popupsLoader.item
 
         Component.onCompleted: {
             uiSession.windowController.window = window
@@ -161,15 +215,23 @@ ApplicationWindow {
         }
     }
 
-    UiSessionPopups {
-        id: uiSessionPopups
-        width: window.width
-        height: window.height
-        appModel: uiSession.appModel
-        notificationController: uiSession.notificationController
-        guideController: uiSession.guideController
-        sshKeyController: uiSession.sshKeyController
-        textDirectionController: uiSession.textDirectionController
+    Loader {
+        id: popupsLoader
+
+        readonly property bool needsPopupsNow: uiSession?.shellController?.commandExecuted ?? false
+
+        active: window.revealed || openRepositoryTransition.opening || popupsLoader.needsPopupsNow
+        asynchronous: !popupsLoader.needsPopupsNow
+
+        sourceComponent: UiSessionPopups {
+            width: window.width
+            height: window.height
+            appModel: uiSession.appModel
+            notificationController: uiSession.notificationController
+            guideController: uiSession.guideController
+            sshKeyController: uiSession.sshKeyController
+            textDirectionController: uiSession.textDirectionController
+        }
     }
 
     // Main content loader - switches between welcome flow and main application
@@ -182,7 +244,17 @@ ApplicationWindow {
         sourceComponent: uiSession?.shellController.commandExecuted
                          ? mainApplicationComponent : welcomeFlowComponent
 
-        onLoaded: mainContentFadeIn.restart()
+        onLoaded: {
+            if(mainContentLoader.sourceComponent !== mainApplicationComponent) {
+                return
+            }
+
+            if(window.contentReady) {
+                mainContentFadeIn.restart()
+            } else {
+                window.revealWindow()
+            }
+        }
 
         NumberAnimation {
             id: mainContentFadeIn
@@ -191,7 +263,7 @@ ApplicationWindow {
             property: "opacity"
             from: 0
             to: 1
-            duration: Style.motionPage
+            duration: Style.motionMedium
             easing.type: Easing.OutCubic
         }
     }
@@ -242,7 +314,14 @@ ApplicationWindow {
             Loader {
                 id: welcomePageLoader
                 anchors.fill: parent
+                asynchronous: true
                 source: "qrc:/GitEase/Qml/Pages/WelcomePage.qml"
+
+                onStatusChanged: {
+                    if(welcomePageLoader.status === Loader.Error) {
+                        window.revealWindow()
+                    }
+                }
 
                 // Pass controller to loaded page
                 onLoaded: {
@@ -264,6 +343,8 @@ ApplicationWindow {
                     if (item.hasOwnProperty("notificationController")) {
                         item.notificationController = Qt.binding(function() { return uiSession.notificationController })
                     }
+
+                    window.revealWindow()
                 }
             }
         }
