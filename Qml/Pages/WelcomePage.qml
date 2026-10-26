@@ -57,7 +57,7 @@ Rectangle {
                     default: return ""
                 }
             }
-            showBackButton: root.controller ? root.controller.canGoBack : false
+            showBackButton: (root.controller ? root.controller.canGoBack : false) && !repositorySelector.busy
             backButtonText: root.appModel?.appSettings?.hasCompletedWelcome ? Style.icons.close : Style.icons.angleLeft
             onBackClicked: {
                 if(root.appModel?.appSettings?.hasCompletedWelcome)
@@ -193,6 +193,37 @@ Rectangle {
             Layout.fillWidth: true
             Layout.topMargin: 8
             Layout.preferredHeight: 40
+
+            Button {
+                id: cancelCloneButton
+                anchors.right: continueButton.left
+                anchors.rightMargin: 10
+                width: 110
+                height: 40
+                flat: true
+                visible: repositorySelector.busy
+                enabled: !repositorySelector.cancelling
+                text: repositorySelector.cancelling ? "Cancelling…" : "Cancel"
+                font.family: Style.fontTypes.inter
+                font.pixelSize: 12
+
+                background: Rectangle {
+                    radius: 8
+                    color: cancelCloneButton.hovered ? Style.colors.controlBackgroundHover : "transparent"
+                    border.width: 1
+                    border.color: Style.colors.controlBorder
+                }
+
+                contentItem: Text {
+                    text: cancelCloneButton.text
+                    font: cancelCloneButton.font
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: repositorySelector.cancelClone()
+            }
 
             ProgressButton {
                 id: continueButton
