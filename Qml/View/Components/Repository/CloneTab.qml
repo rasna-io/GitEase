@@ -22,6 +22,7 @@ Item {
     property string   url: ""
     property string   toPath: ""
     property int      auth: 0
+    property bool     locked: false
 
     /* Object Properties
      * ****************************************************************************************/
@@ -71,6 +72,7 @@ Item {
             RepoTextField {
                 id: urlField
                 placeholderText: "https://github.com/username/repository.git"
+                enabled: !root.locked
                 onTextChanged: root.url = text
             }
 
@@ -129,10 +131,12 @@ Item {
                         RepoTextField {
                             id: toField
                             placeholderText: "C:/Users/Username/Documents/Projects"
+                            enabled: !root.locked
                             onTextChanged: root.toPath = text
                         }
 
                         RepoBrowseButton {
+                            enabled: !root.locked
                             onClicked: folderDialog.open()
                         }
                     }
