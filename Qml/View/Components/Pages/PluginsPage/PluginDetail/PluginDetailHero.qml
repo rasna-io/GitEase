@@ -138,8 +138,8 @@ Rectangle {
                     spacing: Style.dp(10)
 
                     Label {
-                        Layout.maximumWidth: identityColumn.width
-                                             - (versionChip.visible ? versionChip.width + Style.dp(10) : 0)
+                        Layout.fillWidth: true
+                        Layout.maximumWidth: implicitWidth
                         text: root.plugin?.name || "Plugin"
                         color: Style.colors.pluginCardTitle
                         font.pixelSize: Style.appFont.xlPt
