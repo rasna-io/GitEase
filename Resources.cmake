@@ -85,6 +85,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/AccentCard.qml                    # Card with accent peeking out on the left
     Qml/View/Components/Base/DetachablePanel.qml               # Detachable panel wrapper
     Qml/View/Components/Base/WindowMotion.qml                  # Window minimize/maximize transition helper
+    Qml/View/Components/Base/OpenRepositoryTransition.qml      # Welcome to main window transition with loading state
     Qml/View/Components/Base/MinimizedPanels.qml                # Footer bar for minimized DetachablePanel/Terminal instances
     Qml/View/Components/Base/SplitViewHandle.qml                # Shared SplitView drag handle
     Qml/View/Components/Base/DropZone.qml                      # Dock zone
