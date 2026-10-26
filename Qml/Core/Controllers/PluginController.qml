@@ -42,10 +42,11 @@ QtObject {
     property var    pendingInstallKeys:   ({})
     // map of expected MD5 hashes for in-progress downloads: requestKey → md5 hex string
     property var    pendingInstallHashes: ({})
-    property string installingPluginId:   ""
-    property string installingPluginName: ""
-    property string installPhase:         ""
-    property real   installProgress:      -1   // 0-100, or -1 for indeterminate
+    property var    removingPlugins:      ({})
+    property var    installStates:        ({})
+
+    property var    uninstallLinger:      ({})
+    readonly property int uninstallLingerMs: 1600
     property var    pluginDetail:         null  // rich detail payload for the detail page
     property bool   pluginDetailBusy:     false
     property string pluginDetailError:    ""
@@ -63,7 +64,7 @@ QtObject {
      * ****************************************************************************************/
     property PluginManager pluginManager: PluginManager {
 
-        onPluginsChanged: root.syncLocalPlugins()
+        onPluginsChanged: Qt.callLater(root.syncLocalPlugins)
 
         onPluginLoaded: function(id) {
             console.log("[PluginController] Plugin loaded:", id)
@@ -109,15 +110,27 @@ QtObject {
             }
         }
 
+        onPluginInstallQueued: function(pendingId, displayName) {
+            console.log("[PluginController] Plugin install queued:", pendingId, displayName)
+            root.addInstallPlaceholder(pendingId, displayName)
+            root.setInstallState(pendingId, true, "Preparing", -1)
+        }
+
+        onPluginInstallResolved: function(pendingId, id, name) {
+            console.log("[PluginController] Plugin install resolved:", pendingId, "->", id, name)
+            root.resolveInstallPlaceholder(pendingId, id, name)
+            root.renameInstallState(pendingId, id)
+        }
+
         onPluginInstallStarted: function(id, name) {
             console.log("[PluginController] Plugin install started:", id, name)
-            root.installingPluginId   = id
-            root.installingPluginName = name
-            root.setInstallState(id, true, "Installing", -1)
+            root.setInstallState(id, true, "Installing", -1, name)
         }
 
         onPluginInstalled: function(id) {
             console.log("[PluginController] Plugin installed:", id)
+            root.syncLocalPlugins()
+            let installedLabel = root.describePlugin(root.localPluginMap[id], root.installStates[id]?.name || id)
             root.setInstallState(id, false)
             if (root.appModel) {
                 let ids = root.appModel.enabledPluginIds ? root.appModel.enabledPluginIds.slice() : []
@@ -126,12 +139,14 @@ QtObject {
                 root.appModel.enabledPluginIds = ids
                 root.appModel.save()
             }
-            root.notificationController.success("Plugin installed successfully.", "Plugins")
+            root.notificationController.success(installedLabel + " was installed.", "Plugins")
         }
 
         onPluginRemoved: function(id) {
             console.log("[PluginController] Plugin removed:", id)
-            root.setInstallState(id, false)
+            let removedLabel = root.describePlugin(root.removingPlugins[id], id)
+            delete root.removingPlugins[id]
+            root.showUninstalled(id)
 
             if (root.appModel) {
                 let ids = (root.appModel.enabledPluginIds || []).filter(function(x) {
@@ -141,15 +156,30 @@ QtObject {
                 root.appModel.save()
             }
 
-            root.notificationController.info("Plugin uninstalled.", "Plugins")
+            root.notificationController.info(removedLabel + " was uninstalled.", "Plugins")
         }
 
         onPluginInstallFailed: function(id, error) {
             console.warn("[PluginController] Plugin install failed:", id, error)
             root.setInstallState(id, false)
+            root.removeInstallPlaceholder(id)
             if (error)
                 root.notificationController.error("Could not install plugin: " + error, "Plugins")
         }
+
+        onPluginRemoveFailed: function(id, error) {
+            console.warn("[PluginController] Plugin removal failed:", id, error)
+            root.setInstallState(id, false)
+            root.notificationController.error("Could not uninstall plugin: " + error, "Plugins")
+        }
+    }
+
+    // Drops the cards that were shown as "Uninstalled" long enough
+    property Timer uninstallLingerTimer: Timer {
+        interval: 150
+        repeat: true
+
+        onTriggered: root.releaseUninstalled()
     }
 
     /* State forwarding
@@ -285,18 +315,20 @@ QtObject {
                 return
 
             let pluginId = root.pendingInstallKeys[requestKey] ?? ""
-            if (!pluginId || root.installingPluginId !== pluginId)
+            let state = pluginId ? root.installStates[pluginId] : undefined
+            if(!state) {
                 return
+            }
 
-            if (bytesTotal > 0) {
+            if(bytesTotal > 0) {
                 let progress = Math.max(0, Math.min(100, Math.round((bytesReceived / bytesTotal) * 100)))
-                if (progress === root.installProgress && root.installPhase === "Downloading")
+                if(progress === state.progress) {
                     return
-                root.installPhase = "Downloading"
-                root.installProgress = progress
+                }
+
+                root.putInstallState(pluginId, "Downloading", progress)
             } else {
-                root.installPhase = "Downloading"
-                root.installProgress = -1
+                root.putInstallState(pluginId, "Downloading", -1)
             }
         }
     }
@@ -407,33 +439,104 @@ QtObject {
         })
     }
 
-    function setInstallState(pluginId, busy, phase, progress) {
-        if (busy) {
-            if (root.installingPluginId !== pluginId) {
-                root.installingPluginId = pluginId
-                let name = ""
-                if (root.appModel) {
-                    for (let i = 0; i < root.appModel.plugins.length; i++) {
-                        if (root.appModel.plugins[i].pluginId === pluginId) {
-                            name = root.appModel.plugins[i].name || ""
-                            break
-                        }
-                    }
-                }
-                root.installingPluginName = name
+    function putInstallState(pluginId, phase, progress, name) {
+        let states = Object.assign({}, root.installStates)
+        let previous = states[pluginId]
+
+        let updating = (previous && previous.updating) || phase === "Updating"
+        if(updating && (phase === "Downloading" || phase === "Installing")) {
+            phase = "Updating"
+        }
+
+        states[pluginId] = {
+            phase: phase || "Preparing",
+            progress: (progress === undefined || progress === null) ? -1 : progress,
+            name: name || (previous ? previous.name : "") || root.knownPluginName(pluginId),
+            updating: updating
+        }
+        root.installStates = states
+    }
+
+    function isLingering(pluginId) {
+        return root.installStates[pluginId]?.phase === "Uninstalled"
+    }
+
+    function showUninstalled(pluginId) {
+        root.putInstallState(pluginId, "Uninstalled", 100)
+
+        let linger = Object.assign({}, root.uninstallLinger)
+        linger[pluginId] = Date.now() + root.uninstallLingerMs
+        root.uninstallLinger = linger
+        root.uninstallLingerTimer.start()
+    }
+
+    function releaseUninstalled() {
+        let now = Date.now()
+        let linger = Object.assign({}, root.uninstallLinger)
+        let released = false
+
+        for(let pluginId in linger) {
+            if(linger[pluginId] > now) {
+                continue
             }
-            root.installPhase = phase || "Preparing"
-            root.installProgress = (progress === undefined || progress === null) ? -1 : progress
+
+            delete linger[pluginId]
+            released = true
+
+            if(root.isLingering(pluginId)) {
+                root.setInstallState(pluginId, false)
+            }
+        }
+
+        root.uninstallLinger = linger
+        if(Object.keys(linger).length === 0) {
+            root.uninstallLingerTimer.stop()
+        }
+
+        if(released) {
+            root.syncLocalPlugins()
+        }
+    }
+
+    function renameInstallState(fromId, toId) {
+        let state = root.installStates[fromId]
+        if(!state) {
+            return
+        }
+
+        let states = Object.assign({}, root.installStates)
+        delete states[fromId]
+        states[toId] = state
+        root.installStates = states
+    }
+
+    function knownPluginName(pluginId) {
+        if(!root.appModel || !root.appModel.plugins) {
+            return ""
+        }
+
+        for(let i = 0; i < root.appModel.plugins.length; i++) {
+            if(root.appModel.plugins[i].pluginId === pluginId) {
+                return root.appModel.plugins[i].name || ""
+            }
+        }
+
+        return ""
+    }
+
+    function setInstallState(pluginId, busy, phase, progress, name) {
+        if(!pluginId) {
+            return
+        }
+
+        if(busy) {
+            root.putInstallState(pluginId, phase, progress, name)
             root.setPluginBusy(pluginId, true)
         } else {
-            if (root.installingPluginId === pluginId || !pluginId) {
-                root.installingPluginId = ""
-                root.installingPluginName = ""
-                root.installPhase = ""
-                root.installProgress = -1
-            }
-            if (pluginId)
-                root.setPluginBusy(pluginId, false)
+            let states = Object.assign({}, root.installStates)
+            delete states[pluginId]
+            root.installStates = states
+            root.setPluginBusy(pluginId, false)
         }
     }
 
@@ -553,11 +656,22 @@ QtObject {
         pluginManager.installGepFile(gepPath)
     }
 
+    function describePlugin(info, fallbackName) {
+        let name = (info && info.name) ? info.name : fallbackName
+        if(info && info.version) {
+            return name + " " + info.version
+        }
+
+        return name
+    }
+
     function uninstallPlugin(pluginId) {
         if (!pluginId)
             return
+        root.removingPlugins[pluginId] = root.localPluginMap[pluginId] || null
         root.setInstallState(pluginId, true, "Uninstalling", -1)
         if (!pluginManager.removePlugin(pluginId)) {
+            delete root.removingPlugins[pluginId]
             root.setInstallState(pluginId, false)
             root.notificationController.error("Could not uninstall plugin.", "Plugins")
         }
@@ -727,8 +841,107 @@ QtObject {
         }
 
         root.setInstallState(pluginId, true, "Installing", 100)
-        if (!pluginManager.installGepFromBase64(base64Data))
+        if (!pluginManager.installGepFromBase64(base64Data, pluginId))
             root.setInstallState(pluginId, false)
+    }
+
+    // A stand-in card for a package whose manifest is not read yet.
+    function buildPlaceholderEntry(pluginId, name) {
+        return {
+            pluginId:         pluginId,
+            name:             name || "Plugin",
+            description:      "Installing plugin…",
+            longDescription:  "",
+            features:         [],
+            installGuide:     "",
+            changelog:        [],
+            tags:             [],
+            screenshots:      [],
+            githubUrl:        "",
+            author:           "Local package",
+            latestVersion:    "",
+            minAppVersion:    "",
+            category:         "",
+            mainColor:        "",
+            size:             "",
+            sizeKb:           0,
+            iconUrl:          "",
+            releaseDate:      "",
+            donwloadsCount:   0,
+            downloadsCount:   0,
+            isInstalled:      true,
+            isEnabled:        false,
+            isCompatible:     true,
+            updateAvailable:  false,
+            busy:             true,
+            isPlaceholder:    true
+        }
+    }
+
+    function addInstallPlaceholder(pluginId, name) {
+        if(!root.appModel) {
+            return
+        }
+
+        let plugins = root.appModel.plugins ? root.appModel.plugins.slice() : []
+        for(let i = 0; i < plugins.length; i++) {
+            if(plugins[i].pluginId === pluginId) {
+                return
+            }
+        }
+
+        plugins.unshift(root.buildPlaceholderEntry(pluginId, name))
+        root.appModel.plugins = plugins
+    }
+
+    function resolveInstallPlaceholder(pendingId, pluginId, name) {
+        if(!root.appModel) {
+            return
+        }
+
+        let plugins = root.appModel.plugins ? root.appModel.plugins : []
+        let hasRealCard = false
+        for(let i = 0; i < plugins.length; i++) {
+            if(plugins[i].pluginId === pluginId) {
+                hasRealCard = true
+                break
+            }
+        }
+
+        let next = []
+        for(let j = 0; j < plugins.length; j++) {
+            let p = plugins[j]
+            if(p.pluginId !== pendingId) {
+                next.push(p)
+                continue
+            }
+
+            if(hasRealCard) {
+                continue
+            }
+
+            next.push(Object.assign({}, p, {
+                pluginId: pluginId,
+                name: name || p.name
+            }))
+        }
+
+        root.appModel.plugins = next
+    }
+
+    function removeInstallPlaceholder(pluginId) {
+        if(!root.appModel || !root.appModel.plugins) {
+            return
+        }
+
+        let plugins = root.appModel.plugins
+        let next = plugins.filter(function(p) {
+            return !(p.isPlaceholder && p.pluginId === pluginId)
+        })
+
+        if(next.length !== plugins.length) {
+            root.appModel.plugins = next
+        }
     }
 
     // Replaces appModel.plugins with the server list merged with local state.
@@ -761,6 +974,16 @@ QtObject {
                     continue
             }
             merged.push(buildLocalEntry(local))
+        }
+
+        let current = root.appModel.plugins ? root.appModel.plugins : []
+        for(let k = 0; k < current.length; k++) {
+            let existing = current[k]
+            if(existing.isPlaceholder
+                    && !newServerIds[existing.pluginId]
+                    && !root.localPluginMap[existing.pluginId]) {
+                merged.unshift(existing)
+            }
         }
 
         root.appModel.plugins = merged
@@ -818,7 +1041,8 @@ QtObject {
             isEnabled:        local ? local.enabled : false,
             isCompatible:     local ? local.loaded  : true,
             updateAvailable:  false,
-            busy:             false
+            busy:             false,
+            isPlaceholder:    false
         }
     }
 
@@ -898,7 +1122,8 @@ QtObject {
             isEnabled:        local.enabled,
             isCompatible:     local.loaded,
             updateAvailable:  false,
-            busy:             false
+            busy:             false,
+            isPlaceholder:    false
         }
     }
 
@@ -923,13 +1148,22 @@ QtObject {
                 .map(function(p) {
                     listedIds[p.pluginId] = true
                     let local = localMap[p.pluginId]
-                    if (!local)
+                    if(!local) {
+                        if(p.isPlaceholder || root.isLingering(p.pluginId)) {
+                            return p
+                        }
+
                         return Object.assign({}, p, {
                                                  isInstalled: false,
                                                  isEnabled: false,
                                                  isCompatible: true,
                                                  updateAvailable: false,
                                                  busy: false })
+                    }
+
+                    if(p.isPlaceholder) {
+                        return Object.assign(root.buildLocalEntry(local), { busy: p.busy })
+                    }
 
                     return Object.assign({}, p, {
                         isInstalled: true,
@@ -941,7 +1175,7 @@ QtObject {
 
                 // Drop local-only entries that are no longer installed
                 .filter(function(p) {
-                    return root.serverPluginIds[p.pluginId] || p.isInstalled
+                    return p.isPlaceholder || root.isLingering(p.pluginId) || root.serverPluginIds[p.pluginId] || p.isInstalled
                 })
 
             // Add newly installed plugins that aren't listed yet (e.g. imported .gep files
