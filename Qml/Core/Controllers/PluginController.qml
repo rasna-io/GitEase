@@ -46,6 +46,9 @@ QtObject {
     property var    installStates:        ({})
 
     property var    uninstallLinger:      ({})
+
+    property string removingNow:          ""
+    property var    removeQueue:          []
     readonly property int uninstallLingerMs: 1600
     property var    pluginDetail:         null  // rich detail payload for the detail page
     property bool   pluginDetailBusy:     false
@@ -147,6 +150,7 @@ QtObject {
             let removedLabel = root.describePlugin(root.removingPlugins[id], id)
             delete root.removingPlugins[id]
             root.showUninstalled(id)
+            root.startNextRemoval(id)
 
             if (root.appModel) {
                 let ids = (root.appModel.enabledPluginIds || []).filter(function(x) {
@@ -169,8 +173,10 @@ QtObject {
 
         onPluginRemoveFailed: function(id, error) {
             console.warn("[PluginController] Plugin removal failed:", id, error)
+            delete root.removingPlugins[id]
             root.setInstallState(id, false)
             root.notificationController.error("Could not uninstall plugin: " + error, "Plugins")
+            root.startNextRemoval(id)
         }
     }
 
@@ -461,6 +467,11 @@ QtObject {
         return root.installStates[pluginId]?.phase === "Uninstalled"
     }
 
+    function isBeingRemoved(pluginId) {
+        let phase = root.installStates[pluginId]?.phase
+        return phase === "Waiting" || phase === "Uninstalling" || phase === "Uninstalled"
+    }
+
     function showUninstalled(pluginId) {
         root.putInstallState(pluginId, "Uninstalled", 100)
 
@@ -666,15 +677,48 @@ QtObject {
     }
 
     function uninstallPlugin(pluginId) {
-        if (!pluginId)
+        if(!pluginId || root.installStates[pluginId]) {
             return
+        }
+
+        // The plugin is gone from the list once it is removed; keep its name and version for the message
         root.removingPlugins[pluginId] = root.localPluginMap[pluginId] || null
+
+        if(root.removingNow !== "") {
+            root.setInstallState(pluginId, true, "Waiting", -1)
+            root.removeQueue = root.removeQueue.concat([pluginId])
+            return
+        }
+
+        root.beginRemoval(pluginId)
+    }
+
+    function beginRemoval(pluginId) {
+        root.removingNow = pluginId
         root.setInstallState(pluginId, true, "Uninstalling", -1)
-        if (!pluginManager.removePlugin(pluginId)) {
+
+        if(!pluginManager.removePlugin(pluginId)) {
             delete root.removingPlugins[pluginId]
             root.setInstallState(pluginId, false)
             root.notificationController.error("Could not uninstall plugin.", "Plugins")
+            root.startNextRemoval(pluginId)
         }
+    }
+
+    function startNextRemoval(finishedId) {
+        if(root.removingNow !== finishedId) {
+            return
+        }
+
+        root.removingNow = ""
+        if(root.removeQueue.length === 0) {
+            return
+        }
+
+        let queue = root.removeQueue.slice()
+        let next = queue.shift()
+        root.removeQueue = queue
+        root.beginRemoval(next)
     }
 
     function updatePlugin(pluginId) {
@@ -1149,7 +1193,7 @@ QtObject {
                     listedIds[p.pluginId] = true
                     let local = localMap[p.pluginId]
                     if(!local) {
-                        if(p.isPlaceholder || root.isLingering(p.pluginId)) {
+                        if(p.isPlaceholder || root.isBeingRemoved(p.pluginId)) {
                             return p
                         }
 
@@ -1175,7 +1219,7 @@ QtObject {
 
                 // Drop local-only entries that are no longer installed
                 .filter(function(p) {
-                    return p.isPlaceholder || root.isLingering(p.pluginId) || root.serverPluginIds[p.pluginId] || p.isInstalled
+                    return p.isPlaceholder || root.isBeingRemoved(p.pluginId) || root.serverPluginIds[p.pluginId] || p.isInstalled
                 })
 
             // Add newly installed plugins that aren't listed yet (e.g. imported .gep files
