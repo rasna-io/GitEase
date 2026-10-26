@@ -40,6 +40,7 @@ Rectangle {
         case "Downloading":  return "Downloading"
         case "Installing":   return "Installing"
         case "Updating":     return "Updating"
+        case "Waiting":      return "Waiting"
         case "Uninstalling": return "Uninstalling"
         case "Uninstalled":  return "Uninstalled"
         default:             return root.pluginBusy ? "Working" : ""
@@ -47,6 +48,7 @@ Rectangle {
     }
 
     readonly property bool isDestructiveBusy: root.installPhase === "Uninstalling"
+                                              || root.installPhase === "Waiting"
     readonly property bool isDone: root.installPhase === "Uninstalled"
     readonly property color busyAccent: root.isDone
                                         ? Style.colors.vibrantMint
