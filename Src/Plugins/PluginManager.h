@@ -6,7 +6,9 @@
 #include <QSet>
 #include <QQmlEngine>
 #include <QJSValue>
+#include <QPair>
 #include <functional>
+#include <memory>
 
 #include "GitResult.h"
 #include "PluginInfo.h"
@@ -24,8 +26,62 @@ class IToolbarPlugin;
 class IRulePlugin;
 class PluginContext;
 class QPluginLoader;
+class QThread;
 class Repository;
 class ActionContext;
+
+//! A plugin whose manifest is read and whose library copy is ready, so loading it costs little.
+struct PreparedPlugin
+{
+    PluginInfo info;
+    QString    libraryPath; // hot copy of the library; empty when nothing has to be loaded
+};
+
+//! Result of looking through one plugin directory on a worker thread.
+struct PluginScanResult
+{
+    QList<PreparedPlugin>          plugins;
+    QList<QPair<QString, QString>> staleDirs; // { directory, plugin id } of older versions
+};
+
+//! What was found out about a .gep package before anything is installed.
+struct GepInspection
+{
+    PluginInfo manifest;
+    QString    payloadSource; // staging directory that already holds the extracted package
+    QString    staging;       // staging directory that must be deleted when the package is invalid
+};
+
+enum class GepPlaceResult
+{
+    Ok,
+    PlaceFailed,
+    ExtractFailed
+};
+
+struct GepPlacement
+{
+    GepPlaceResult result = GepPlaceResult::Ok;
+    PreparedPlugin prepared;
+    QString        id;
+    QString        name;
+    QString        targetDir;
+};
+
+struct GepRequest
+{
+    QString gepPath;
+    QString tempToRemove;  // temporary copy that is deleted once the install is over
+    QString pendingId;     // stands in for the plugin until its manifest is known
+    QString pluginId;      // id the caller already knows (downloads), used to report failures
+    QString pluginRoot;
+    QString downloadsDir;
+};
+
+struct PluginRemovalResult
+{
+    bool foundAny = false;
+};
 
 /*!
  * \brief Discovers, loads, and manages the lifecycle of external plugins.
@@ -63,7 +119,7 @@ public:
     Q_INVOKABLE bool installPluginFromBase64Zip(const QString& pluginId, const QString& base64Data,
                                                 const QString& expectedMd5 = {});
     Q_INVOKABLE bool installGepFile(const QString& gepPath);
-    Q_INVOKABLE bool installGepFromBase64(const QString& base64Data);
+    Q_INVOKABLE bool installGepFromBase64(const QString& base64Data, const QString& pluginId = {});
     Q_INVOKABLE bool removePlugin(const QString& id);
 
     // ── Diff plugin lookup ────────────────────────────────────────────────────
@@ -119,6 +175,8 @@ public:
     QList<IWorkflowPlugin*>      workflowPlugins()    const;
     QList<IToolbarPlugin*>       toolbarPlugins()     const;
 
+    QObject* backgroundContext() const;
+
 signals:
     void pluginsChanged   ();
     void docksChanged     ();
@@ -133,6 +191,10 @@ signals:
     void pluginAboutToUnload(const QString& id);
     void pluginInstallStarted(const QString& id, const QString& name);
     void pluginInstallFailed(const QString& id, const QString& error);
+
+    void pluginInstallQueued(const QString& pendingId, const QString& displayName);
+    void pluginInstallResolved(const QString& pendingId, const QString& id, const QString& name);
+    void pluginRemoveFailed(const QString& id, const QString& error);
 
     // Forwarded from PluginContext — consumed by PluginController
     void notifyRequested  (const QString& message, const QString& type);
@@ -155,18 +217,30 @@ signals:
                                   const QString& tooltip, const QString& icon, int order);
 
 private:
+    struct ReleaseJob;
+
     bool       loadPlugin   (const QString& pluginDir);
+    bool       loadPlugin   (const PreparedPlugin& prepared);
     PluginInfo parseManifest(const QString& pluginDir) const;
-    void startGepInstall(const QString& gepPath, const QString& tempFileToRemove);
-    void finishGepInstall(int resultCode, const QString& id, const QString& name,
-                          const QString& targetDir);
-    bool       loadCppPlugin(const PluginInfo& info);
+    void       startGepInstall(const QString& gepPath, const QString& tempFileToRemove,
+                               const QString& pluginId, bool announce);
+    void       continueGepInstall(const GepRequest& request, const GepInspection& inspection);
+    void       finishGepInstall(const GepRequest& request, const GepPlacement& placement);
+    bool       loadCppPlugin(const PluginInfo& info, const QString& preparedLibrary = {});
     void       wireContext  ();
-    bool       activatePlugin(PluginInfo& info);
-    void       deactivatePlugin(const QString& id);
-    void       tearDownPlugin(const QString& id);
-    QStringList directoriesForPlugin(const QString& id) const;
-    bool       unloadLibrary(QPluginLoader* loader);
+    bool       activatePlugin(PluginInfo& info, const QString& preparedLibrary = {});
+
+    void       deactivatePlugin(const QString& id, std::function<void()> done = {});
+    void       tearDownPlugin(const QString& id, std::function<void()> done = {});
+    void       releaseLibrary(const std::shared_ptr<ReleaseJob>& job);
+
+    void       startNextScan();
+    void       finishScan(const PluginScanResult& result);
+    void       pumpLoadQueue();
+    void       runWhenScanIdle(std::function<void()> action);
+    void       finishRemoval(const QString& id, const PluginRemovalResult& result);
+    bool       isBusy(const QString& id) const;
+
     QString    hotLoadLibraryPath(const QString& pluginDir, const QString& entry) const;
     QString    uniquePluginDir(const QString& pluginRoot, const QString& id,
                                const QString& version) const;
@@ -177,11 +251,21 @@ private:
                           std::function<void(bool)> finalCallback);
 
     PluginContext* m_context = nullptr;
+    QThread*       m_workerThread  = nullptr;
+    QObject*       m_workerContext = nullptr;
 
     QMap<QString, QPluginLoader*> m_loaders;
     QMap<QString, IPlugin*>       m_plugins;
     QList<PluginInfo>             m_infos;
     QSet<QString>                 m_installingIds; // .gep installs still being placed on disk
+    QSet<QString>                 m_removingIds;   // uninstalls still deleting files
+
+    QStringList                   m_scanQueue;     // directories waiting for a background scan
+    bool                          m_scanRunning    = false;
+    QList<PreparedPlugin>         m_loadQueue;     // scanned plugins waiting to be loaded one by one
+    bool                          m_loadPumpActive = false;
+    QList<std::shared_ptr<ReleaseJob>> m_releaseJobs;
+    int                           m_pendingCounter = 0;
 
     QVariantList                  m_docks;        // accumulated dock registrations
     QVariantList                  m_pages;        // accumulated page registrations
