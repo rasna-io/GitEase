@@ -41,14 +41,18 @@ Rectangle {
         case "Installing":   return "Installing"
         case "Updating":     return "Updating"
         case "Uninstalling": return "Uninstalling"
+        case "Uninstalled":  return "Uninstalled"
         default:             return root.pluginBusy ? "Working" : ""
         }
     }
 
     readonly property bool isDestructiveBusy: root.installPhase === "Uninstalling"
-    readonly property color busyAccent: root.isDestructiveBusy
-                                        ? Style.colors.softCoralMist
-                                        : Style.colors.accent
+    readonly property bool isDone: root.installPhase === "Uninstalled"
+    readonly property color busyAccent: root.isDone
+                                        ? Style.colors.vibrantMint
+                                        : (root.isDestructiveBusy
+                                           ? Style.colors.softCoralMist
+                                           : Style.colors.accent)
     readonly property color busyAccentMuted: Qt.rgba(root.busyAccent.r,
                                                      root.busyAccent.g,
                                                      root.busyAccent.b, 0.14)
@@ -260,6 +264,7 @@ Rectangle {
 
                 // Category badge (design: 10px semibold, padding 2px 7px, radius 3px)
                 Rectangle {
+                    visible: (root.plugin?.category ?? "") !== ""
                     radius: 3
                     color: root.categoryBadgeBg
                     implicitHeight: categoryBadgeLabel.implicitHeight + 4
@@ -500,9 +505,20 @@ Rectangle {
                     Layout.preferredWidth: 16
                     Layout.preferredHeight: 16
 
+                    Text {
+                        anchors.centerIn: parent
+                        visible: root.isDone
+                        text: Style.icons.check
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
+                        font.pixelSize: Style.appFont.mediumPt
+                        color: root.busyAccent
+                    }
+
                     Canvas {
                         id: spinnerCanvas
                         anchors.fill: parent
+                        visible: !root.isDone
                         property real sweep: 0
 
                         onPaint: {
@@ -545,7 +561,7 @@ Rectangle {
                             to: Math.PI * 2
                             duration: 1000
                             loops: Animation.Infinite
-                            running: root.pluginBusy
+                            running: root.pluginBusy && !root.isDone
                             easing.type: Easing.Linear
                         }
                     }
@@ -572,6 +588,7 @@ Rectangle {
             // Slim progress track
             Item {
                 id: progressTrack
+                visible: !root.isDone
                 Layout.fillWidth: true
                 Layout.preferredHeight: 3
                 clip: true
