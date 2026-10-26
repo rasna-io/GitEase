@@ -51,17 +51,21 @@ Rectangle {
     readonly property bool isCompatible:    root.plugin?.isCompatible ?? true
     readonly property bool updateAvailable: root.plugin?.updateAvailable ?? false
 
-    readonly property bool isActiveInstall: !!(root.pluginController && root.plugin
-                                               && root.pluginController.installingPluginId === root.plugin.pluginId)
+    readonly property var  installState: (root.pluginController && root.plugin)
+                                         ? root.pluginController.installStates[root.plugin.pluginId]
+                                         : undefined
+    readonly property bool isActiveInstall: !!root.installState
     readonly property bool pluginBusy: (root.plugin?.busy ?? false) || root.isActiveInstall
-    readonly property string installPhase: root.isActiveInstall ? root.pluginController.installPhase : ""
-    readonly property real installProgress: root.isActiveInstall ? root.pluginController.installProgress : -1
+    readonly property string installPhase: root.installState?.phase ?? ""
+    readonly property real installProgress: root.installState?.progress ?? -1
     readonly property bool hasDeterminateProgress: root.installProgress >= 0
                                                    && (root.installPhase === "Downloading"
                                                        || root.installPhase === "Updating")
     readonly property bool isDestructiveBusy: root.installPhase === "Uninstalling"
-    readonly property color busyAccent: root.isDestructiveBusy ? Style.colors.softCoralMist
-                                                               : Style.colors.accent
+    readonly property bool isDone: root.installPhase === "Uninstalled"
+    readonly property color busyAccent: root.isDone ? Style.colors.vibrantMint
+                                                    : (root.isDestructiveBusy ? Style.colors.softCoralMist
+                                                                              : Style.colors.accent)
 
     readonly property string busyLabel: {
         switch (root.installPhase) {
@@ -70,6 +74,7 @@ Rectangle {
         case "Installing":   return "Installing…"
         case "Updating":     return "Updating…"
         case "Uninstalling": return "Uninstalling…"
+        case "Uninstalled":  return "Uninstalled"
         default:             return root.pluginBusy ? "Working…" : ""
         }
     }
@@ -630,7 +635,8 @@ Rectangle {
                                             spacing: Style.dp(8)
 
                                             BusyIndicator {
-                                                running: root.pluginBusy
+                                                visible: !root.isDone
+                                                running: root.pluginBusy && !root.isDone
                                                 Layout.preferredWidth: Style.dp(16)
                                                 Layout.preferredHeight: Style.dp(16)
                                             }
@@ -655,6 +661,7 @@ Rectangle {
 
                                         Item {
                                             id: progressTrack
+                                            visible: !root.isDone
                                             Layout.fillWidth: true
                                             Layout.preferredHeight: 4
                                             clip: true
