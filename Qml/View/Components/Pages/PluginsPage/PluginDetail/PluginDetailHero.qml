@@ -211,48 +211,43 @@ Rectangle {
                     }
 
                     PluginDetailChip {
-                        visible: root.isInstalled && root.isEnabled
+                        shown: root.isInstalled && root.isEnabled
                         iconText: Style.icons.circleCheck
                         text: "Installed"
                         tint: Style.colors.vibrantMint
                     }
 
                     PluginDetailChip {
-                        visible: root.isInstalled && !root.isEnabled
+                        shown: root.isInstalled && !root.isEnabled
                         text: "Installed · Disabled"
                         tint: Style.colors.pluginSectionLabel
                     }
 
                     PluginDetailChip {
-                        visible: !!(root.plugin?.sourceLabel)
+                        shown: !!(root.plugin?.sourceLabel)
                         iconText: root.isInstalled ? Style.icons.file : Style.icons.download
                         text: root.plugin?.sourceLabel || ""
                         tint: Style.colors.pluginSectionLabel
                     }
 
                     PluginDetailChip {
-                        visible: root.updateAvailable
+                        shown: root.updateAvailable
                         iconText: Style.icons.update
                         text: "Update available"
                         tint: Style.colors.marigold
                     }
 
                     PluginDetailChip {
-                        visible: !root.isCompatible
+                        shown: !root.isCompatible
                         iconText: Style.icons.warning
                         text: "Incompatible"
                         tint: Style.colors.incompatible
                     }
                 }
 
-                Label {
+                PluginDetailNote {
                     Layout.fillWidth: true
-                    visible: text !== ""
                     text: root.plugin?.sourceNote || ""
-                    color: Style.colors.pluginCardMetaText
-                    font.pixelSize: Style.appFont.smallPt
-                    font.family: Style.fontTypes.inter
-                    wrapMode: Text.WordWrap
                 }
             }
 

@@ -59,6 +59,43 @@ ColumnLayout {
         }
     }
 
+    readonly property bool showButtons: !root.pluginBusy
+    readonly property bool showToggle: root.isInstalled && !root.pluginBusy
+    readonly property bool showProgress: root.pluginBusy
+
+    property real buttonsProgress: root.showButtons ? 1.0 : 0.0
+    property real toggleProgress: root.showToggle ? 1.0 : 0.0
+    property real progressProgress: root.showProgress ? 1.0 : 0.0
+
+    property string heldBusyLabel: root.busyLabel
+
+    onBusyLabelChanged: {
+        if(root.busyLabel !== "") {
+            root.heldBusyLabel = root.busyLabel
+        }
+    }
+
+    Behavior on buttonsProgress {
+        NumberAnimation {
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on toggleProgress {
+        NumberAnimation {
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on progressProgress {
+        NumberAnimation {
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+    }
+
     /* Signals
      * ****************************************************************************************/
     signal installClicked(string pluginId)
@@ -75,8 +112,11 @@ ColumnLayout {
     // Buttons
     Flow {
         id: buttonFlow
-        visible: !root.pluginBusy
+        visible: root.buttonsProgress > 0
+        opacity: root.buttonsProgress
+        clip: true
         Layout.fillWidth: true
+        Layout.preferredHeight: buttonFlow.implicitHeight * root.buttonsProgress
         layoutDirection: root.wide ? Qt.RightToLeft : Qt.LeftToRight
         spacing: Style.dp(8)
 
@@ -117,10 +157,12 @@ ColumnLayout {
     // Enable toggle
     Rectangle {
         id: toggleCard
-        visible: root.isInstalled && !root.pluginBusy
+        visible: root.toggleProgress > 0
+        opacity: root.toggleProgress
+        clip: true
         Layout.fillWidth: true
         Layout.maximumWidth: root.wide ? -1 : Style.dp(320)
-        implicitHeight: toggleRow.implicitHeight + Style.dp(16)
+        implicitHeight: (toggleRow.implicitHeight + Style.dp(16)) * root.toggleProgress
         radius: Style.dp(8)
         color: Style.colors.pluginPageBackground
         border.width: 1
@@ -128,7 +170,10 @@ ColumnLayout {
 
         RowLayout {
             id: toggleRow
-            anchors.fill: parent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.topMargin: Style.dp(8)
             anchors.leftMargin: Style.dp(12)
             anchors.rightMargin: Style.dp(10)
             spacing: Style.dp(10)
@@ -201,10 +246,12 @@ ColumnLayout {
     // Progress
     Rectangle {
         id: progressCard
-        visible: root.pluginBusy
+        visible: root.progressProgress > 0
+        opacity: root.progressProgress
+        clip: true
         Layout.fillWidth: true
         Layout.maximumWidth: root.wide ? -1 : Style.dp(320)
-        implicitHeight: progressColumn.implicitHeight + Style.dp(20)
+        implicitHeight: (progressColumn.implicitHeight + Style.dp(20)) * root.progressProgress
         radius: Style.dp(8)
         color: Qt.rgba(root.busyAccent.r, root.busyAccent.g, root.busyAccent.b, 0.06)
         border.width: 1
@@ -214,7 +261,8 @@ ColumnLayout {
             id: progressColumn
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.top: parent.top
+            anchors.topMargin: Style.dp(10)
             anchors.leftMargin: Style.dp(12)
             anchors.rightMargin: Style.dp(12)
             spacing: Style.dp(8)
@@ -232,7 +280,7 @@ ColumnLayout {
 
                 Label {
                     Layout.fillWidth: true
-                    text: root.busyLabel
+                    text: root.heldBusyLabel
                     color: Style.colors.pluginCardTitle
                     font.pixelSize: Style.appFont.smallPt
                     font.weight: Font.Medium
