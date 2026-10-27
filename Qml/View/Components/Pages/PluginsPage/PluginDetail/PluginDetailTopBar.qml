@@ -26,6 +26,14 @@ Rectangle {
      * ****************************************************************************************/
     implicitHeight: Style.dp(48)
     color: Style.colors.pluginCardBackground
+    clip: true
+
+    Behavior on implicitHeight {
+        NumberAnimation {
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+    }
 
     /* Children
      * ****************************************************************************************/

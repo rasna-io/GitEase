@@ -244,6 +244,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailTabBar.qml
     Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailTopBar.qml
     Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailErrorBanner.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailNote.qml
     Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailActions.qml
     Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailHero.qml
     Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailGallery.qml
