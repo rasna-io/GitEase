@@ -17,6 +17,7 @@ Rectangle {
     property int pluginsCount: 0
     property var categoriesData: []
     property var categoriesCounts: ({})
+    property int downloadedCount: 0
 
     //! Counts for the Installed filter rows (Enabled / Disabled / Needs Update)
     property var installedCounts: ({})
@@ -146,6 +147,79 @@ Rectangle {
                     onClicked: {
                         root.selectedCategory = -1
                         root.categorySelected("All")
+                    }
+                }
+            }
+
+            // Downloaded row: plugins that have a package in the downloads folder
+            Rectangle {
+                id: downloadedRow
+                Layout.fillWidth: true
+                Layout.leftMargin: Style.dp(10)
+                Layout.rightMargin: Style.dp(10)
+                Layout.topMargin: 1
+                Layout.bottomMargin: 1
+                implicitHeight: 28
+                radius: 5
+                color: root.selectedCategory === -2
+                       ? Style.colors.pluginSidebarRowActiveBg
+                       : (downloadedHover.containsMouse ? Style.colors.pluginSidebarRowHoverBg
+                                                        : "transparent")
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Style.dp(10)
+                    anchors.rightMargin: Style.dp(10)
+                    spacing: 8
+
+                    Text {
+                        text: Style.icons.download
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
+                        font.pixelSize: Style.fontIconSize.smallPt
+                        color: root.selectedCategory === -2
+                               ? Style.colors.pluginSidebarRowActiveText
+                               : Style.colors.pluginSidebarRowText
+                    }
+
+                    Label {
+                        text: "Downloaded"
+                        Layout.fillWidth: true
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
+                        font.weight: root.selectedCategory === -2 ? Font.Medium : Font.Normal
+                        color: root.selectedCategory === -2
+                               ? Style.colors.pluginSidebarRowActiveText
+                               : Style.colors.pluginSidebarRowText
+                        elide: Text.ElideRight
+                    }
+
+                    Rectangle {
+                        visible: root.downloadedCount > 0
+                        radius: 8
+                        color: Style.colors.pluginCountPillBackground
+                        implicitHeight: downloadedCountLabel.implicitHeight + 3
+                        implicitWidth: downloadedCountLabel.implicitWidth + 12
+
+                        Label {
+                            id: downloadedCountLabel
+                            anchors.centerIn: parent
+                            text: root.downloadedCount
+                            color: Style.colors.pluginCountPillText
+                            font.pixelSize: Style.appFont.smallPt
+                            font.family: Style.fontTypes.jetBrainsMono
+                        }
+                    }
+                }
+
+                MouseArea {
+                    id: downloadedHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        root.selectedCategory = -2
+                        root.categorySelected("Downloaded")
                     }
                 }
             }

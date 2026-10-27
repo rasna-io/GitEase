@@ -30,6 +30,8 @@ Page {
     property var            pluginsData:        root.appModel ? root.appModel.plugins : []
     property var            categoriesData:     root.appModel ? root.appModel.pluginsCategories : []
     property var            categoriesCounts:     ({})
+    property int            downloadedCount:    0
+    readonly property string downloadedCategory: "Downloaded"
     readonly property int   minCardWidth:       280
     readonly property int   minCardHeight:      170
 
@@ -119,6 +121,7 @@ Page {
                     pluginsCount: root.pluginsData.length
                     categoriesData: root.categoriesData
                     categoriesCounts: root.categoriesCounts
+                    downloadedCount: root.downloadedCount
                     installedCounts: root.installedCounts
 
                     onCategorySelected: (category) => {
@@ -176,249 +179,270 @@ Page {
                             }
                         }
 
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.bottomMargin: Style.dp(10)
-                            spacing: Style.dp(8)
-
-                            Label {
-                                text: "Installed"
-                                color: Style.colors.pluginSectionLabel
-                                font.pixelSize: Style.appFont.h4Pt
-                                font.weight: Font.DemiBold
-                                font.family: Style.fontTypes.inter
-                                font.capitalization: Font.AllUppercase
-                                font.letterSpacing: 0.7
-                            }
-
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 1
-                                color: Style.colors.pluginDivider
-                            }
-
-                            Label {
-                                text: installedPluginsModel.count + " plugins"
-                                color: Style.colors.pluginSectionMetaText
-                                font.pixelSize: Style.appFont.smallPt
-                                font.family: Style.fontTypes.inter
-                            }
-                        }
-
-                        GridView {
-                            id: installedGridView
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: installedGridView.sectionHeight
-                            Layout.bottomMargin: Style.dp(20)
-                            clip: true
-                            model: installedPluginsModel
-                            property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
-                            cellWidth: width / columns
-                            cellHeight: root.minCardHeight
-
-                            property real sectionHeight: contentHeight
-                            Behavior on sectionHeight {
-                                NumberAnimation {
-                                    duration: 240
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-
-                            add: Transition {
-                                ParallelAnimation {
-                                    NumberAnimation {
-                                        property: "opacity"
-                                        from: 0
-                                        to: 1
-                                        duration: 240
-                                        easing.type: Easing.OutCubic
-                                    }
-
-                                    NumberAnimation {
-                                        property: "scale"
-                                        from: 0.9
-                                        to: 1
-                                        duration: 240
-                                        easing.type: Easing.OutCubic
-                                    }
-                                }
-                            }
-
-                            remove: Transition {
-                                ParallelAnimation {
-                                    NumberAnimation {
-                                        property: "opacity"
-                                        to: 0
-                                        duration: 180
-                                        easing.type: Easing.InCubic
-                                    }
-
-                                    NumberAnimation {
-                                        property: "scale"
-                                        to: 0.9
-                                        duration: 180
-                                        easing.type: Easing.InCubic
-                                    }
-                                }
-                            }
-
-                            displaced: Transition {
-                                NumberAnimation {
-                                    properties: "x,y"
-                                    duration: 240
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-
-                            delegate: Item {
-                                width: installedGridView.cellWidth
-                                height: installedGridView.cellHeight
-
-                                PluginCard {
-                                    anchors.centerIn: parent
-                                    width: installedGridView.cellWidth - 8
-                                    height: installedGridView.cellHeight - 8
-                                    plugin: model
-                                    pluginBusy: model.busy
-                                                || !!(root.pluginController
-                                                      && root.pluginController.installStates[model.pluginId])
-                                    installPhase: root.pluginController
-                                                  ? (root.pluginController.installStates[model.pluginId]?.phase ?? "")
-                                                  : ""
-                                    installProgress: root.pluginController
-                                                     ? (root.pluginController.installStates[model.pluginId]?.progress ?? -1)
-                                                     : -1
-
-                                    onDetailsClicked: function(pluginId) { root.openPluginDetails(pluginId) }
-                                    onInstallClicked: function(pluginId) { root.pluginController?.installPlugin(pluginId) }
-                                    onUninstallClicked: function(pluginId) { root.pluginController?.uninstallPlugin(pluginId) }
-                                    onUpdateClicked: function(pluginId) { root.pluginController?.updatePlugin(pluginId) }
-                                    onEnableToggled: function(pluginId, enabled) { root.pluginController?.togglePlugin(pluginId, enabled) }
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.bottomMargin: Style.dp(10)
-                            spacing: Style.dp(8)
-
-                            Label {
-                                text: "Available"
-                                color: Style.colors.pluginSectionLabel
-                                font.pixelSize: Style.appFont.h4Pt
-                                font.weight: Font.DemiBold
-                                font.family: Style.fontTypes.inter
-                                font.capitalization: Font.AllUppercase
-                                font.letterSpacing: 0.7
-                            }
-
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 1
-                                color: Style.colors.pluginDivider
-                            }
-
-                            Label {
-                                text: availablePluginsModel.count + " plugins"
-                                color: Style.colors.pluginSectionMetaText
-                                font.pixelSize: Style.appFont.smallPt
-                                font.family: Style.fontTypes.inter
-                            }
-                        }
-
-                        GridView {
-                            id: availableGridView
+                        Flickable {
+                            id: pluginsFlick
                             Layout.fillWidth: true
                             Layout.fillHeight: true
+                            contentWidth: width
+                            contentHeight: sectionsColumn.implicitHeight
                             clip: true
-                            model: availablePluginsModel
-                            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
-                            property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
-                            cellWidth: width / columns
-                            cellHeight: root.minCardHeight
-
-                            add: Transition {
-                                ParallelAnimation {
-                                    NumberAnimation {
-                                        property: "opacity"
-                                        from: 0
-                                        to: 1
-                                        duration: 240
-                                        easing.type: Easing.OutCubic
-                                    }
-
-                                    NumberAnimation {
-                                        property: "scale"
-                                        from: 0.9
-                                        to: 1
-                                        duration: 240
-                                        easing.type: Easing.OutCubic
-                                    }
-                                }
+                            boundsBehavior: Flickable.StopAtBounds
+                            ScrollBar.vertical: ScrollBar {
+                                id: pluginsScrollBar
+                                policy: ScrollBar.AsNeeded
                             }
 
-                            remove: Transition {
-                                ParallelAnimation {
-                                    NumberAnimation {
-                                        property: "opacity"
-                                        to: 0
-                                        duration: 180
-                                        easing.type: Easing.InCubic
+                            onContentYChanged: root.loadMoreIfNeeded()
+                            onContentHeightChanged: root.loadMoreIfNeeded()
+                            onHeightChanged: root.loadMoreIfNeeded()
+
+                            ColumnLayout {
+                                id: sectionsColumn
+                                width: pluginsFlick.width - pluginsScrollBar.width - Style.dp(6)
+                                spacing: 0
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Layout.bottomMargin: Style.dp(10)
+                                    spacing: Style.dp(8)
+
+                                    Label {
+                                        text: "Installed"
+                                        color: Style.colors.pluginSectionLabel
+                                        font.pixelSize: Style.appFont.h4Pt
+                                        font.weight: Font.DemiBold
+                                        font.family: Style.fontTypes.inter
+                                        font.capitalization: Font.AllUppercase
+                                        font.letterSpacing: 0.7
                                     }
 
-                                    NumberAnimation {
-                                        property: "scale"
-                                        to: 0.9
-                                        duration: 180
-                                        easing.type: Easing.InCubic
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 1
+                                        color: Style.colors.pluginDivider
+                                    }
+
+                                    Label {
+                                        text: installedPluginsModel.count + " plugins"
+                                        color: Style.colors.pluginSectionMetaText
+                                        font.pixelSize: Style.appFont.smallPt
+                                        font.family: Style.fontTypes.inter
                                     }
                                 }
-                            }
 
-                            displaced: Transition {
-                                NumberAnimation {
-                                    properties: "x,y"
-                                    duration: 240
-                                    easing.type: Easing.OutCubic
+                                GridView {
+                                    id: installedGridView
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: installedGridView.sectionHeight
+                                    Layout.bottomMargin: Style.dp(20)
+                                    clip: true
+                                    interactive: false
+                                    model: installedPluginsModel
+                                    property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
+                                    cellWidth: width / columns
+                                    cellHeight: root.minCardHeight
+
+                                    property real sectionHeight: contentHeight
+                                    Behavior on sectionHeight {
+                                        NumberAnimation {
+                                            duration: 240
+                                            easing.type: Easing.OutCubic
+                                        }
+                                    }
+
+                                    add: Transition {
+                                        ParallelAnimation {
+                                            NumberAnimation {
+                                                property: "opacity"
+                                                from: 0
+                                                to: 1
+                                                duration: 240
+                                                easing.type: Easing.OutCubic
+                                            }
+
+                                            NumberAnimation {
+                                                property: "scale"
+                                                from: 0.9
+                                                to: 1
+                                                duration: 240
+                                                easing.type: Easing.OutCubic
+                                            }
+                                        }
+                                    }
+
+                                    remove: Transition {
+                                        ParallelAnimation {
+                                            NumberAnimation {
+                                                property: "opacity"
+                                                to: 0
+                                                duration: 180
+                                                easing.type: Easing.InCubic
+                                            }
+
+                                            NumberAnimation {
+                                                property: "scale"
+                                                to: 0.9
+                                                duration: 180
+                                                easing.type: Easing.InCubic
+                                            }
+                                        }
+                                    }
+
+                                    displaced: Transition {
+                                        NumberAnimation {
+                                            properties: "x,y"
+                                            duration: 240
+                                            easing.type: Easing.OutCubic
+                                        }
+                                    }
+
+                                    delegate: Item {
+                                        width: installedGridView.cellWidth
+                                        height: installedGridView.cellHeight
+
+                                        PluginCard {
+                                            anchors.centerIn: parent
+                                            width: installedGridView.cellWidth - 8
+                                            height: installedGridView.cellHeight - 8
+                                            plugin: model
+                                            pluginBusy: model.busy
+                                                        || !!(root.pluginController
+                                                              && root.pluginController.installStates[model.pluginId])
+                                            installPhase: root.pluginController
+                                                          ? (root.pluginController.installStates[model.pluginId]?.phase ?? "")
+                                                          : ""
+                                            installProgress: root.pluginController
+                                                             ? (root.pluginController.installStates[model.pluginId]?.progress ?? -1)
+                                                             : -1
+
+                                            onDetailsClicked: function(pluginId) { root.openPluginDetails(pluginId) }
+                                            onInstallClicked: function(pluginId) { root.pluginController?.installPlugin(pluginId) }
+                                            onUninstallClicked: function(pluginId) { root.pluginController?.uninstallPlugin(pluginId) }
+                                            onUpdateClicked: function(pluginId) { root.pluginController?.updatePlugin(pluginId) }
+                                            onEnableToggled: function(pluginId, enabled) { root.pluginController?.togglePlugin(pluginId, enabled) }
+                                        }
+                                    }
                                 }
-                            }
 
-                            delegate: Item {
-                                width: availableGridView.cellWidth
-                                height: availableGridView.cellHeight
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Layout.bottomMargin: Style.dp(10)
+                                    spacing: Style.dp(8)
 
-                                PluginCard {
-                                    anchors.centerIn: parent
-                                    width: availableGridView.cellWidth - 8
-                                    height: availableGridView.cellHeight - 8
-                                    plugin: model
-                                    pluginBusy: model.busy
-                                                || !!(root.pluginController
-                                                      && root.pluginController.installStates[model.pluginId])
-                                    installPhase: root.pluginController
-                                                  ? (root.pluginController.installStates[model.pluginId]?.phase ?? "")
-                                                  : ""
-                                    installProgress: root.pluginController
-                                                     ? (root.pluginController.installStates[model.pluginId]?.progress ?? -1)
-                                                     : -1
+                                    Label {
+                                        text: "Available"
+                                        color: Style.colors.pluginSectionLabel
+                                        font.pixelSize: Style.appFont.h4Pt
+                                        font.weight: Font.DemiBold
+                                        font.family: Style.fontTypes.inter
+                                        font.capitalization: Font.AllUppercase
+                                        font.letterSpacing: 0.7
+                                    }
 
-                                    onDetailsClicked: function(pluginId) { root.openPluginDetails(pluginId) }
-                                    onInstallClicked: function(pluginId) { root.pluginController?.installPlugin(pluginId) }
-                                    onUninstallClicked: function(pluginId) { root.pluginController?.uninstallPlugin(pluginId) }
-                                    onUpdateClicked: function(pluginId) { root.pluginController?.updatePlugin(pluginId) }
-                                    onEnableToggled: function(pluginId, enabled) { root.pluginController?.togglePlugin(pluginId, enabled) }
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 1
+                                        color: Style.colors.pluginDivider
+                                    }
+
+                                    Label {
+                                        text: availablePluginsModel.count + " plugins"
+                                        color: Style.colors.pluginSectionMetaText
+                                        font.pixelSize: Style.appFont.smallPt
+                                        font.family: Style.fontTypes.inter
+                                    }
                                 }
-                            }
 
-                            onContentYChanged: {
-                                if (contentHeight <= height)
-                                    return
+                                GridView {
+                                    id: availableGridView
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: availableGridView.sectionHeight
+                                    clip: true
+                                    interactive: false
+                                    model: availablePluginsModel
+                                    property int columns: Math.max(1, Math.floor(width / root.minCardWidth))
+                                    cellWidth: width / columns
+                                    cellHeight: root.minCardHeight
 
-                                if (contentY + height >= contentHeight - availableGridView.cellHeight
-                                        && !root.fetchingMore
-                                        && root.pluginController?.hasMorePages) {
-                                    root.loadNextPage()
+                                    property real sectionHeight: contentHeight
+                                    Behavior on sectionHeight {
+                                        NumberAnimation {
+                                            duration: 240
+                                            easing.type: Easing.OutCubic
+                                        }
+                                    }
+
+                                    add: Transition {
+                                        ParallelAnimation {
+                                            NumberAnimation {
+                                                property: "opacity"
+                                                from: 0
+                                                to: 1
+                                                duration: 240
+                                                easing.type: Easing.OutCubic
+                                            }
+
+                                            NumberAnimation {
+                                                property: "scale"
+                                                from: 0.9
+                                                to: 1
+                                                duration: 240
+                                                easing.type: Easing.OutCubic
+                                            }
+                                        }
+                                    }
+
+                                    remove: Transition {
+                                        ParallelAnimation {
+                                            NumberAnimation {
+                                                property: "opacity"
+                                                to: 0
+                                                duration: 180
+                                                easing.type: Easing.InCubic
+                                            }
+
+                                            NumberAnimation {
+                                                property: "scale"
+                                                to: 0.9
+                                                duration: 180
+                                                easing.type: Easing.InCubic
+                                            }
+                                        }
+                                    }
+
+                                    displaced: Transition {
+                                        NumberAnimation {
+                                            properties: "x,y"
+                                            duration: 240
+                                            easing.type: Easing.OutCubic
+                                        }
+                                    }
+
+                                    delegate: Item {
+                                        width: availableGridView.cellWidth
+                                        height: availableGridView.cellHeight
+
+                                        PluginCard {
+                                            anchors.centerIn: parent
+                                            width: availableGridView.cellWidth - 8
+                                            height: availableGridView.cellHeight - 8
+                                            plugin: model
+                                            pluginBusy: model.busy
+                                                        || !!(root.pluginController
+                                                              && root.pluginController.installStates[model.pluginId])
+                                            installPhase: root.pluginController
+                                                          ? (root.pluginController.installStates[model.pluginId]?.phase ?? "")
+                                                          : ""
+                                            installProgress: root.pluginController
+                                                             ? (root.pluginController.installStates[model.pluginId]?.progress ?? -1)
+                                                             : -1
+
+                                            onDetailsClicked: function(pluginId) { root.openPluginDetails(pluginId) }
+                                            onInstallClicked: function(pluginId) { root.pluginController?.installPlugin(pluginId) }
+                                            onUninstallClicked: function(pluginId) { root.pluginController?.uninstallPlugin(pluginId) }
+                                            onUpdateClicked: function(pluginId) { root.pluginController?.updatePlugin(pluginId) }
+                                            onEnableToggled: function(pluginId, enabled) { root.pluginController?.togglePlugin(pluginId, enabled) }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -491,6 +515,16 @@ Page {
             root.isSearchActive = false
             searchDebounceTimer.stop()
             root.appModel.plugins = initialPlugins.slice()
+        }
+    }
+
+    function loadMoreIfNeeded() {
+        if(root.fetchingMore || !root.pluginController?.hasMorePages) {
+            return
+        }
+
+        if(pluginsFlick.contentY + pluginsFlick.height >= pluginsFlick.contentHeight - root.minCardHeight) {
+            root.loadNextPage()
         }
     }
 
@@ -573,6 +607,8 @@ Page {
             // A card that stands in for a running install is always shown
             var matchesCategory = plugin.category === root.currentCategory
                                   || root.currentCategory === "All"
+                                  || (root.currentCategory === root.downloadedCategory
+                                      && plugin.hasCachedPackage === true)
                                   || plugin.isPlaceholder === true
 
             var matchesMode = root.currentMode === ""
@@ -599,6 +635,7 @@ Page {
 
     function buildCategoriesCounts() {
         let counts = {}
+        let downloaded = 0
 
         for (const category of root.categoriesData)
             counts[category.id] = 0
@@ -608,12 +645,17 @@ Page {
                 continue
             }
 
+            if(plugin.hasCachedPackage === true) {
+                downloaded++
+            }
+
             if (!counts.hasOwnProperty(plugin.category))
                 counts[plugin.category] = 0
             counts[plugin.category]++
         }
 
         root.categoriesCounts = counts
+        root.downloadedCount = downloaded
     }
 
     function buildInstalledCounts() {
