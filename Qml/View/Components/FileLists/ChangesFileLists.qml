@@ -31,6 +31,8 @@ Item {
 
     property int statusToken: 0
 
+    property bool bulkBusy: false
+
     /* Signals
      * ****************************************************************************************/
     signal fileSelected(string filePath, bool isStaged)
@@ -106,21 +108,15 @@ Item {
             }
 
             onUnstageAllRequested: function() {
+                if(root.bulkBusy) {
+                    return
+                }
+
                 root.showSaveDialog(
                             () => {
-                                let failedFiles = []
-                                root.stagedModel.forEach((file)=>{
-                                    let res = statusController.unstageFile(file.path)
-                                    if (!res.success) {
-                                        failedFiles.push(file.path)
-                                    }
-                                })
-                                if (failedFiles.length > 0) {
-                                    root.notificationController.error("Failed to unstage some files", "Unstage Error", 5000)
-                                } else if (root.unstagedModel.length > 0) {
-                                    root.notificationController.success("All files unstaged successfully", "Unstage All", 3000)
-                                }
-                                root.updateStatus()
+                                root.runBulk("unstageAll",
+                                             "All files unstaged successfully", "Unstage All",
+                                             "Failed to unstage all files", "Unstage Error")
                             }
                 )
             }
@@ -216,16 +212,16 @@ Item {
             }
 
             onStageAllRequested: function() {
+                if(root.bulkBusy) {
+                    return
+                }
+
                 root.showSaveDialog(
                             () => {
                                 root.confirmConflictStaging(root.unstagedModel.map(file => file.path), () => {
-                                    let res = statusController.stageAll()
-                                    if (res.success) {
-                                        root.notificationController.success("All files staged successfully", "Stage All", 3000)
-                                    } else {
-                                        root.notificationController.error(res.errorMessage || "Failed to stage all files", "Stage Error", 5000)
-                                    }
-                                    root.updateStatus()
+                                    root.runBulk("stageAll",
+                                                 "All files staged successfully", "Stage All",
+                                                 "Failed to stage all files", "Stage Error")
                                 }, true)
                             }
                 )
@@ -345,6 +341,37 @@ Item {
 
         dialog.saved.connect(stageAction)
         dialog.open()
+    }
+
+    function runBulk(method, successText, successTitle, failureText, failureTitle) {
+        if(!root.statusController || root.bulkBusy) {
+            return
+        }
+
+        root.bulkBusy = true
+
+        AsyncGit.call(root.statusController, method, [],
+            function(res) {
+                root.bulkBusy = false
+
+                if(res && res.success) {
+                    root.notificationController.success(successText, successTitle, 3000)
+                } else {
+                    root.notificationController.error((res && res.errorMessage) || failureText, failureTitle, 5000)
+                }
+
+                root.updateStatus()
+            },
+            function(error) {
+                root.bulkBusy = false
+
+                // The repository changed underneath the call: the new one loads its own status
+                if(error !== AsyncGit.STALE) {
+                    root.notificationController.error(failureText, failureTitle, 5000)
+                }
+
+                root.updateStatus()
+            })
     }
 
     function requestStatus() {
