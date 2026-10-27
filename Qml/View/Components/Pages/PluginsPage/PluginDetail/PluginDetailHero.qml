@@ -224,6 +224,13 @@ Rectangle {
                     }
 
                     PluginDetailChip {
+                        visible: !!(root.plugin?.sourceLabel)
+                        iconText: root.isInstalled ? Style.icons.file : Style.icons.download
+                        text: root.plugin?.sourceLabel || ""
+                        tint: Style.colors.pluginSectionLabel
+                    }
+
+                    PluginDetailChip {
                         visible: root.updateAvailable
                         iconText: Style.icons.update
                         text: "Update available"
@@ -236,6 +243,16 @@ Rectangle {
                         text: "Incompatible"
                         tint: Style.colors.incompatible
                     }
+                }
+
+                Label {
+                    Layout.fillWidth: true
+                    visible: text !== ""
+                    text: root.plugin?.sourceNote || ""
+                    color: Style.colors.pluginCardMetaText
+                    font.pixelSize: Style.appFont.smallPt
+                    font.family: Style.fontTypes.inter
+                    wrapMode: Text.WordWrap
                 }
             }
 
