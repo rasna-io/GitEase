@@ -271,11 +271,35 @@ Rectangle {
                     isCompatible: list[i].isCompatible,
                     updateAvailable: list[i].updateAvailable,
                     busy: list[i].busy,
+                    isLocal: list[i].isLocal,
+                    hasCachedPackage: list[i].hasCachedPackage,
+                    cachedVersion: list[i].cachedVersion,
+                    cachedPath: list[i].cachedPath,
+                    cacheStatus: list[i].cacheStatus,
+                    installFromCache: list[i].installFromCache,
+                    sourceLabel: list[i].sourceLabel,
+                    sourceNote: list[i].sourceNote,
                     latestVersion: list[i].latestVersion || root.plugin.latestVersion,
                     screenshots: root.plugin.screenshots
                 })
-                break
+                return
             }
+            if(!root.isInstalled || root.pluginController.isBeingRemoved(root.plugin.pluginId)) {
+                return
+            }
+
+            if(root.pluginController.serverPluginIds[root.plugin.pluginId]) {
+                root.pluginController.pluginDetail = Object.assign({}, root.plugin, {
+                    isInstalled: false,
+                    isEnabled: false,
+                    isCompatible: true,
+                    updateAvailable: false,
+                    busy: false
+                })
+                return
+            }
+
+            root.backRequested()
         }
     }
 
