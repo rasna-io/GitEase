@@ -51,10 +51,24 @@ public:
 
     /**
      * \brief Stage all unstaged changes
+     *
+     * Reads the status once and updates the index in memory, so the index is written a single
+     * time however many files change. Safe to call through callAsync().
+     *
      * \param includeUntrackedFiles Include new files not yet tracked by git
      * \return GitResult with count of staged files
      */
     Q_INVOKABLE GitResult stageAll(bool includeUntrackedFiles = true);
+
+    /**
+     * \brief Unstage everything in the index, keeping the working tree as it is
+     *
+     * Equivalent of `git reset`. The index is written a single time. Safe to call through
+     * callAsync().
+     *
+     * \return GitResult with count of unstaged files
+     */
+    Q_INVOKABLE GitResult unstageAll();
 
     /**
      * \brief Get list of currently staged files
