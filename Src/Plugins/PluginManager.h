@@ -95,6 +95,7 @@ class PluginManager : public QObject
     QML_ELEMENT
 
     Q_PROPERTY(QVariantList pluginInfos          READ pluginInfos          NOTIFY pluginsChanged)
+    Q_PROPERTY(QVariantList downloadedPackages   READ downloadedPackages   NOTIFY downloadedPackagesChanged)
     Q_PROPERTY(QVariantList registeredDocks      READ registeredDocks      NOTIFY docksChanged)
     Q_PROPERTY(QVariantList registeredPages      READ registeredPages      NOTIFY pagesChanged)
     Q_PROPERTY(QVariantList registeredToolbarActions READ registeredToolbarActions NOTIFY toolbarActionsChanged)
@@ -121,6 +122,10 @@ public:
     Q_INVOKABLE bool installGepFile(const QString& gepPath);
     Q_INVOKABLE bool installGepFromBase64(const QString& base64Data, const QString& pluginId = {});
     Q_INVOKABLE bool removePlugin(const QString& id);
+
+    // ── Downloads folder ─────────────────────────────────────────────────────
+    Q_INVOKABLE void scanDownloads();
+    Q_INVOKABLE bool installDownloadedPackage(const QString& pluginId, const QString& packagePath);
 
     // ── Diff plugin lookup ────────────────────────────────────────────────────
     Q_INVOKABLE QUrl diffPluginUrlFor(const QString& extension) const;
@@ -162,6 +167,7 @@ public:
 
     // ── Queries ──────────────────────────────────────────────────────────────
     QVariantList pluginInfos()           const;
+    QVariantList downloadedPackages()    const;
     QVariantList registeredDocks()       const;
     QVariantList registeredPages()       const;
     QVariantList registeredToolbarActions() const;
@@ -179,6 +185,7 @@ public:
 
 signals:
     void pluginsChanged   ();
+    void downloadedPackagesChanged();
     void docksChanged     ();
     void pagesChanged     ();
     void toolbarActionsChanged();
@@ -266,6 +273,10 @@ private:
     bool                          m_loadPumpActive = false;
     QList<std::shared_ptr<ReleaseJob>> m_releaseJobs;
     int                           m_pendingCounter = 0;
+
+    QVariantList                  m_downloadedPackages; // best package per plugin in the downloads folder
+    bool                          m_downloadScanRunning = false;
+    bool                          m_downloadScanQueued  = false;
 
     QVariantList                  m_docks;        // accumulated dock registrations
     QVariantList                  m_pages;        // accumulated page registrations
