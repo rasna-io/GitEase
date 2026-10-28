@@ -681,8 +681,10 @@ QtObject {
             return
         }
 
-        // The plugin is gone from the list once it is removed; keep its name and version for the message
-        root.removingPlugins[pluginId] = root.localPluginMap[pluginId] || null
+        // The plugin is gone from the list once it is removed; keep a copy of its name and version for the message.
+        // The map entry can't be kept as is, because it may read the list by index and show the next plugin.
+        let local = root.localPluginMap[pluginId]
+        root.removingPlugins[pluginId] = local ? { name: local.name, version: local.version } : null
 
         if(root.removingNow !== "") {
             root.setInstallState(pluginId, true, "Waiting", -1)
