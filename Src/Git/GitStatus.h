@@ -83,6 +83,13 @@ public:
     Q_INVOKABLE GitResult status();
 
     /**
+     * \brief Get repository status, optionally without per-file line counts.
+     * \param withLineStats false leaves additionsCount and deletionsCount at 0, which skips a
+     *        diff of every changed file and makes the call much faster on large change sets.
+     */
+    Q_INVOKABLE GitResult status(bool withLineStats);
+
+    /**
      * \brief Stage or unstage a file in the repository index
      *
      * This method stages or unstages a file depending on the `isRemove` parameter. If `isRemove` is `false`,

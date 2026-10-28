@@ -5,6 +5,8 @@
 #include <QDir>
 #include <QFile>
 #include <git2.h>
+#include <string>
+#include <unordered_map>
 
 GitStatus::GitStatus(QObject *parent)
     : IGitController{parent}
@@ -174,7 +176,7 @@ GitResult GitStatus::unstageAll()
 
     git_status_options opts = GIT_STATUS_OPTIONS_INIT;
     opts.show  = GIT_STATUS_SHOW_INDEX_ONLY;
-    opts.flags = GIT_STATUS_OPT_EXCLUDE_SUBMODULES;
+    opts.flags = 0;
 
     git_status_list *statusListRaw = nullptr;
     if(git_status_list_new(&statusListRaw, activeRepo(), &opts) != GIT_OK || !statusListRaw) {
@@ -224,6 +226,11 @@ GitResult GitStatus::unstageAll()
 
 GitResult GitStatus::status()
 {
+    return status(true);
+}
+
+GitResult GitStatus::status(bool withLineStats)
+{
     if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
 
@@ -239,51 +246,59 @@ GitResult GitStatus::status()
     if (git_status_list_new(&status_list, activeRepo(), &opts) != 0 || !status_list)
         return GitResult(true, QVariant::fromValue(fileInfos));
 
-    git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
-    diffOpts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
+    std::unordered_map<std::string, size_t> deltaIndexByPath;
 
-    git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &diffOpts);
+    if (withLineStats) {
+        git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
+        diffOpts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
 
-    size_t numDeltas = diff ? git_diff_num_deltas(diff) : 0;
+        git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &diffOpts);
 
-    for (size_t i = 0; i < git_status_list_entrycount(status_list); i++) {
+        const size_t numDeltas = diff ? git_diff_num_deltas(diff) : 0;
+        deltaIndexByPath.reserve(numDeltas);
+
+        for (size_t j = 0; j < numDeltas; j++) {
+            const git_diff_delta *delta = git_diff_get_delta(diff, j);
+            if (delta && delta->new_file.path)
+                deltaIndexByPath.emplace(delta->new_file.path, j);  // the first delta of a path wins
+        }
+    }
+
+    const size_t entryCount = git_status_list_entrycount(status_list);
+    fileInfos.reserve(static_cast<qsizetype>(entryCount));
+
+    for (size_t i = 0; i < entryCount; i++) {
 
         const git_status_entry *entry = git_status_byindex(status_list, i);
         if (!entry) continue;
 
+        const char *entryPath = nullptr;
+        if (entry->head_to_index && entry->head_to_index->new_file.path)
+            entryPath = entry->head_to_index->new_file.path;
+        else if (entry->index_to_workdir && entry->index_to_workdir->new_file.path)
+            entryPath = entry->index_to_workdir->new_file.path;
+
         int add = 0, del = 0;
         const git_diff_delta *matched = nullptr;
 
-        if (diff) {
-            for (size_t j = 0; j < numDeltas; j++) {
+        if (!withLineStats) {
+            matched = entry->index_to_workdir;
+        } else if (diff && entryPath) {
+            const auto found = deltaIndexByPath.find(entryPath);
 
-                const git_diff_delta *delta = git_diff_get_delta(diff, j);
-                if (!delta) continue;
-
-                QString dPath = QString::fromUtf8(delta->new_file.path);
-
-                QString ePath;
-                if (entry->head_to_index && entry->head_to_index->new_file.path)
-                    ePath = QString::fromUtf8(entry->head_to_index->new_file.path);
-                else if (entry->index_to_workdir && entry->index_to_workdir->new_file.path)
-                    ePath = QString::fromUtf8(entry->index_to_workdir->new_file.path);
-
-                if (dPath != ePath)
-                    continue;
-
-                matched = delta;
+            if (found != deltaIndexByPath.end()) {
+                matched = git_diff_get_delta(diff, found->second);
 
                 git_patch *patch = nullptr;
                 size_t a = 0, d = 0;
 
-                if (git_patch_from_diff(&patch, diff, j) == GIT_OK && patch) {
+                if (git_patch_from_diff(&patch, diff, found->second) == GIT_OK && patch) {
                     git_patch_line_stats(nullptr, &a, &d, patch);
                     git_patch_free(patch);
                 }
 
                 add = static_cast<int>(a);
                 del = static_cast<int>(d);
-                break;
             }
         }
 
