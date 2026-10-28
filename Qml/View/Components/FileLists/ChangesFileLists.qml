@@ -31,7 +31,19 @@ Item {
 
     property int statusToken: 0
 
-    property bool bulkBusy: false
+    property var bulkJobs: []
+    readonly property var activeRepo: root.statusController ? root.statusController.currentRepo : null
+    readonly property var bulkJob: root.bulkJobs.find(job => job.repo === root.activeRepo) || null
+    property var loadedRepo: null
+    readonly property bool statusLoading: root.activeRepo !== null && root.loadedRepo !== root.activeRepo
+    readonly property bool listsBusy: root.bulkJob !== null || root.statusLoading
+    readonly property string busyText: root.bulkJob ? root.bulkJob.text : "Loading changes"
+    property bool busyVisible: false
+    readonly property int fillingSections: (stagedSection.wantsFillHeight ? 1 : 0) + (unstagedSection.wantsFillHeight ? 1 : 0)
+    readonly property real fixedHeight: (stagedSection.wantsFillHeight ? 0 : stagedSection.implicitHeight) +
+                                        (unstagedSection.wantsFillHeight ? 0 : unstagedSection.implicitHeight)
+    readonly property real fillHeight: root.fillingSections > 0 ? Math.max(0, (root.height - root.fixedHeight) / root.fillingSections) : 0
+    property bool resizing: false
 
     /* Signals
      * ****************************************************************************************/
@@ -43,13 +55,44 @@ Item {
     implicitWidth: 1
     implicitHeight: 1
 
+    onHeightChanged: {
+        root.resizing = true
+        resizeSettleTimer.restart()
+    }
+
+    onListsBusyChanged: {
+        if(!root.listsBusy) {
+            root.busyVisible = false
+        }
+    }
+
     Component.onCompleted: root.updateStatus()
+
+    Connections {
+        target: root.statusController
+
+        function onCurrentRepoChanged() {
+            root.updateStatus()
+        }
+    }
 
     Timer {
         id: statusCoalesceTimer
         interval: 16
         repeat: false
         onTriggered: root.requestStatus()
+    }
+
+    Timer {
+        interval: 250
+        running: root.listsBusy
+        onTriggered: root.busyVisible = true
+    }
+
+    Timer {
+        id: resizeSettleTimer
+        interval: 150
+        onTriggered: root.resizing = false
     }
 
     GuideHoverTrigger {
@@ -78,16 +121,14 @@ Item {
 
     /* Children
      * ****************************************************************************************/
-    ColumnLayout {
+    Column {
         anchors.fill: parent
-        spacing: 0
 
         StagedFileListSection {
             id: stagedSection
-            Layout.fillWidth: true
-            Layout.fillHeight: wantsFillHeight
-            Layout.minimumHeight: 30
-            Layout.preferredHeight: expanded ? -1 : 30
+            width: parent.width
+            height: wantsFillHeight ? root.fillHeight : implicitHeight
+            animated: !root.resizing
 
             model: root.stagedModel
 
@@ -108,15 +149,12 @@ Item {
             }
 
             onUnstageAllRequested: function() {
-                if(root.bulkBusy) {
-                    return
-                }
-
                 root.showSaveDialog(
                             () => {
                                 root.runBulk("unstageAll",
                                              "All files unstaged successfully", "Unstage All",
-                                             "Failed to unstage all files", "Unstage Error")
+                                             "Failed to unstage all files", "Unstage Error",
+                                             "Unstaging all files")
                             }
                 )
             }
@@ -146,10 +184,9 @@ Item {
 
         UnstagedFileListSection {
             id: unstagedSection
-            Layout.fillWidth: true
-            Layout.fillHeight: wantsFillHeight
-            Layout.minimumHeight: 30
-            Layout.preferredHeight: expanded ? -1 : 30
+            width: parent.width
+            height: wantsFillHeight ? root.fillHeight : implicitHeight
+            animated: !root.resizing
 
             model: root.unstagedModel
 
@@ -212,16 +249,13 @@ Item {
             }
 
             onStageAllRequested: function() {
-                if(root.bulkBusy) {
-                    return
-                }
-
                 root.showSaveDialog(
                             () => {
                                 root.confirmConflictStaging(root.unstagedModel.map(file => file.path), () => {
                                     root.runBulk("stageAll",
                                                  "All files staged successfully", "Stage All",
-                                                 "Failed to stage all files", "Stage Error")
+                                                 "Failed to stage all files", "Stage Error",
+                                                 "Staging all files")
                                 }, true)
                             }
                 )
@@ -260,12 +294,33 @@ Item {
                 root.fileSelected(filePath, false)
             }
         }
+    }
 
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: !(stagedSection.wantsFillHeight && unstagedSection.wantsFillHeight)
-            Layout.preferredHeight: 0
-            visible: true
+    // Blocks the lists while they are stale, and shows the waiter once the wait is noticeable
+    MouseArea {
+        anchors.fill: parent
+        enabled: root.listsBusy
+
+        Loader {
+            anchors.fill: parent
+            active: root.busyVisible || opacity > 0
+            opacity: root.busyVisible ? 1 : 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            sourceComponent: BusyWaiter {
+                // Keeps its text while fading out
+                Binding on message {
+                    value: root.busyText
+                    when: root.listsBusy
+                    restoreMode: Binding.RestoreNone
+                }
+            }
         }
     }
 
@@ -281,7 +336,14 @@ Item {
     }
 
     function confirmConflictStaging(paths, stageAction, stagingAll = false) {
-        let conflicted = paths.filter(path => root.unstagedModel.some(file => file.path === path && file.isConflicted))
+        const conflictedPaths = new Set()
+        root.unstagedModel.forEach(file => {
+            if (file.isConflicted) {
+                conflictedPaths.add(file.path)
+            }
+        })
+
+        let conflicted = paths.filter(path => conflictedPaths.has(path))
         if (conflicted.length === 0) {
             stageAction()
             return
@@ -343,53 +405,88 @@ Item {
         dialog.open()
     }
 
-    function runBulk(method, successText, successTitle, failureText, failureTitle) {
-        if(!root.statusController || root.bulkBusy) {
+    function runBulk(method, successText, successTitle, failureText, failureTitle, busyText) {
+        const repo = root.activeRepo
+        if(!root.statusController || !repo || root.bulkJob) {
             return
         }
 
-        root.bulkBusy = true
+        root.bulkJobs = root.bulkJobs.concat([{ repo: repo, text: busyText, refreshing: false }])
 
         AsyncGit.call(root.statusController, method, [],
             function(res) {
-                root.bulkBusy = false
-
                 if(res && res.success) {
                     root.notificationController.success(successText, successTitle, 3000)
                 } else {
                     root.notificationController.error((res && res.errorMessage) || failureText, failureTitle, 5000)
                 }
 
-                root.updateStatus()
+                root.refreshAfterBulk(repo)
             },
             function(error) {
-                root.bulkBusy = false
-
-                // The repository changed underneath the call: the new one loads its own status
-                if(error !== AsyncGit.STALE) {
-                    root.notificationController.error(failureText, failureTitle, 5000)
+                // Another repository was opened meanwhile: this one reloads when it is opened again
+                if(error === AsyncGit.STALE) {
+                    root.endBulkJob(repo, false)
+                    return
                 }
 
-                root.updateStatus()
+                root.notificationController.error(failureText, failureTitle, 5000)
+                root.refreshAfterBulk(repo)
             })
+    }
+
+    // The lists show the old state until the status is read again, which takes a while on large
+    // change sets, so the job stays until that status has been applied.
+    function refreshAfterBulk(repo) {
+        root.bulkJobs.forEach(job => {
+            if(job.repo === repo) {
+                job.refreshing = true
+            }
+        })
+
+        root.requestStatus()
+    }
+
+    // Ends the job of \a repo, or only if its result is already being read when \a refreshedOnly
+    function endBulkJob(repo, refreshedOnly) {
+        root.bulkJobs = root.bulkJobs.filter(job => job.repo !== repo || (refreshedOnly && !job.refreshing))
     }
 
     function requestStatus() {
         if (!root.statusController)
             return
 
-        let token = ++root.statusToken
+        const repo  = root.activeRepo
+        let   token = ++root.statusToken
 
-        AsyncGit.call(root.statusController, "status", [],
+        statusCoalesceTimer.stop()
+
+        AsyncGit.call(root.statusController, "status", [false],
             function (res) {
-                if (token !== root.statusToken)
-                    return
-
-                if (!res || !res.success || !res.data)
-                    return
-
-                root.applyStatus(res.data)
+                if (token === root.statusToken) {
+                    root.showStatus(repo, res && res.success ? res.data : null)
+                }
+            },
+            function () {
+                root.showStatus(repo, null)
             })
+    }
+
+    // \a files is null when the status could not be read
+    function showStatus(repo, files) {
+        if (repo === root.activeRepo) {
+            if (files) {
+                root.applyStatus(files)
+            } else if (root.loadedRepo !== repo) {
+                // Nothing to show for this repository, and nothing of the previous one either
+                root.unstagedModel = []
+                root.stagedModel = []
+            }
+
+            root.loadedRepo = repo
+        }
+
+        root.endBulkJob(repo, true)
     }
 
     function applyStatus(files) {
