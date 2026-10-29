@@ -613,11 +613,13 @@ Page {
 
             var matchesMode = root.currentMode === ""
                 || plugin.isPlaceholder === true
-                || (root.currentMode === "All"           && plugin.isInstalled)
+                || ((root.currentMode === "All" || root.currentMode === "Installed") && plugin.isInstalled)
                 || (root.currentMode === "Enabled"       && plugin.isInstalled && plugin.isEnabled)
                 || (root.currentMode === "Disabled"      && plugin.isInstalled && !plugin.isEnabled)
                 || (root.currentMode === "Needs Update"  && plugin.isInstalled && plugin.updateAvailable)
                 || (root.currentMode === "Available"     && !plugin.isInstalled)
+                || (root.currentMode === "Downloaded"    && plugin.hasCachedPackage === true)
+                || (root.currentMode === "Local"         && plugin.isLocal === true)
 
             if (matchesCategory && matchesMode) {
                 if (plugin.isInstalled)
