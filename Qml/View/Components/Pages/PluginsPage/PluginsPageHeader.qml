@@ -31,6 +31,8 @@ RowLayout {
         ListElement { text: "Installed"; checked: false }
         ListElement { text: "Enabled"; checked: false }
         ListElement { text: "Available"; checked: false }
+        ListElement { text: "Downloaded"; checked: false }
+        ListElement { text: "Local"; checked: false }
     }
 
     FileDialog {
@@ -206,7 +208,7 @@ RowLayout {
 
         var mode = filterOptionsPopup.selectedItems.length > 0
                      ? filterOptionsPopup.selectedItems[0].text
-                     : [];
+                     : "";
         headerRow.filterRequested(headerRow.filterText, mode);
     }
 }
