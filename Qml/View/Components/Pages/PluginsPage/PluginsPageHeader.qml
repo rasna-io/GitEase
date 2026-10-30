@@ -69,7 +69,7 @@ RowLayout {
         Label {
             id: installedLabel
             anchors.centerIn: parent
-            text: (headerRow.pluginsData ? headerRow.pluginsData.filter(function(p) { return p.isInstalled }).length : 0) + " installed"
+            text: (headerRow.pluginsData ? headerRow.pluginsData.filter(function(p) { return p.isInstalled && !p.isPlaceholder }).length : 0) + " installed"
             font.family: Style.fontTypes.jetBrainsMono
             font.pixelSize: Style.appFont.h4Pt
             font.bold: true

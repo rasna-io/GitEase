@@ -40,7 +40,11 @@
 #include <QEventLoop>
 #include <QEvent>
 #include <QMetaObject>
+#include <QPointer>
+#include <QSet>
+#include <QTimer>
 
+#include <atomic>
 #include <thread>
 #include <algorithm>
 
@@ -179,15 +183,14 @@ namespace {
         }
     }
 
-    enum class GepWorkResult {
-        Ok,
-        PlaceFailed,
-        ExtractFailed
-    };
+    constexpr int kUiSettleMs        = 60;
+    constexpr int kUnloadRetryMs     = 40;
+    constexpr int kMaxUnloadAttempts = 25;
+    constexpr int kScanIdleRetryMs   = 40;
 
     bool extractPackage(const QString& gepPath, const QString& targetDir);
 
-    GepWorkResult placeGepPayload(const QString& gepPath, const QString& payloadSource,
+    GepPlaceResult placeGepPayload(const QString& gepPath, const QString& payloadSource,
                                 const QString& targetDir, const QString& pluginId,
                                 bool hasBinary)
     {
@@ -195,13 +198,13 @@ namespace {
         if (QDir(targetDir).exists() && !removeDirectoryPatiently(targetDir, 1500)) {
             if (!payloadSource.isEmpty())
                 QDir(payloadSource).removeRecursively();
-            return GepWorkResult::PlaceFailed;
+            return GepPlaceResult::PlaceFailed;
         }
 
         if (payloadSource.isEmpty()) {
             // Nothing staged yet: write each file once, in place.
             if (!extractPackage(gepPath, targetDir))
-                return GepWorkResult::ExtractFailed;
+                return GepPlaceResult::ExtractFailed;
         } else {
             bool moved = false;
             for (int attempt = 0; attempt < 15 && !moved; ++attempt) {
@@ -214,7 +217,7 @@ namespace {
                 moved = extractPackage(gepPath, targetDir);
             QDir(payloadSource).removeRecursively();
             if (!moved)
-                return GepWorkResult::PlaceFailed;
+                return GepPlaceResult::PlaceFailed;
         }
 
         if (hasBinary)
@@ -236,7 +239,7 @@ namespace {
                 }
             }
         }
-        return GepWorkResult::Ok;
+        return GepPlaceResult::Ok;
     }
 
     bool extractPackage(const QString& gepPath, const QString& targetDir)
@@ -331,6 +334,311 @@ namespace {
         return extractOk;
     }
 
+    QString resolveLibraryPath(const QString& pluginDir, const QString& entry)
+    {
+        if(entry.endsWith(QStringLiteral(".dll"), Qt::CaseInsensitive) ||
+           entry.endsWith(QStringLiteral(".so"),  Qt::CaseInsensitive) ||
+           entry.endsWith(QStringLiteral(".dylib"), Qt::CaseInsensitive))
+        {
+            return QDir(pluginDir).filePath(entry);
+        }
+
+#if defined(Q_OS_WIN)
+        return QDir(pluginDir).filePath(entry + QStringLiteral(".dll"));
+#elif defined(Q_OS_MACOS)
+        const QFileInfo fi(entry);
+        const QString dir  = fi.path();
+        const QString base = fi.fileName();
+        return QDir(pluginDir).filePath(dir + QStringLiteral("/lib") + base + QStringLiteral(".dylib"));
+#else
+        const QFileInfo fi(entry);
+        const QString dir  = fi.path();
+        const QString base = fi.fileName();
+        return QDir(pluginDir).filePath(dir + QStringLiteral("/lib") + base + QStringLiteral(".so"));
+#endif
+    }
+
+    PluginInfo readManifestFile(const QString& pluginDir)
+    {
+        QJsonObject obj;
+        QFile f(QDir(pluginDir).filePath(QStringLiteral("plugin.json")));
+        if(!f.open(QIODevice::ReadOnly)) {
+            return {};
+        }
+
+        const auto doc = QJsonDocument::fromJson(f.readAll());
+        if(!doc.isNull() && doc.isObject()) {
+            obj = doc.object();
+        }
+
+        return PluginInfo::fromJson(obj, pluginDir);
+    }
+
+    // Deletes the copies an earlier load left in a .hot folder. A copy that is still mapped by a
+    // running process cannot be deleted on Windows; it stays and is tried again next time.
+    void removeHotCopies(const QString& hotDir)
+    {
+        const QDir hot(hotDir);
+        const auto copies = hot.entryList(QDir::Files);
+        for(const QString& copy : copies) {
+            QFile::remove(hot.filePath(copy));
+        }
+    }
+
+    bool isHotCopy(const QString& path)
+    {
+        return QDir::fromNativeSeparators(path).contains(QStringLiteral("/.hot/"));
+    }
+
+    QString prepareHotLibrary(const QString& pluginDir, const QString& entry)
+    {
+        static std::atomic<int> counter { 0 };
+
+        const QString original = resolveLibraryPath(pluginDir, entry);
+        if(!QFileInfo::exists(original)) {
+            return original;
+        }
+
+        const QFileInfo fi(original);
+        const QString hotDir = fi.dir().filePath(QStringLiteral(".hot"));
+        QDir().mkpath(hotDir);
+        removeHotCopies(hotDir);
+        const QString hotPath = QDir(hotDir).filePath(
+            QString::number(QDateTime::currentMSecsSinceEpoch()) + QLatin1Char('-')
+            + QString::number(counter.fetch_add(1)) + QLatin1Char('-') + fi.fileName());
+        if(QFile::copy(original, hotPath)) {
+            return hotPath;
+        }
+
+        return original;
+    }
+
+    template<typename Work, typename Done>
+    void runInBackground(PluginManager* self, Work work, Done done)
+    {
+        QPointer<PluginManager> guard(self);
+        QMetaObject::invokeMethod(self->backgroundContext(),
+                                  [guard, work = std::move(work), done = std::move(done)]() mutable {
+            auto result = work();
+            if(!guard) {
+                return;
+            }
+
+            QMetaObject::invokeMethod(guard.data(), [done, result]() mutable {
+                done(result);
+            }, Qt::QueuedConnection);
+        }, Qt::QueuedConnection);
+    }
+
+    PluginScanResult scanPluginDirectory(const QString& path, const QSet<QString>& skipIds)
+    {
+        struct Candidate
+        {
+            QString    dir;
+            PluginInfo info;
+        };
+
+        PluginScanResult result;
+        QDir dir(path);
+        if(!dir.exists()) {
+            return result;
+        }
+
+        QList<Candidate> candidates;
+        const auto entries = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for(const QString& entry : entries) {
+            if(entry.startsWith(QLatin1Char('.'))) {
+                continue; // staging dirs / markers
+            }
+
+            const QString dirPath = dir.absoluteFilePath(entry);
+            if(QFile::exists(dirPath + QStringLiteral("/.gitease-uninstalled"))) {
+                QDir(dirPath).removeRecursively(); // marked for removal on a previous run
+                continue;
+            }
+
+            const PluginInfo info = readManifestFile(dirPath);
+            if(!info.isValid() || info.id.isEmpty() || info.version.isEmpty()) {
+                continue;
+            }
+
+            if(skipIds.contains(info.id)) {
+                continue; // a loaded plugin's files may be in use; never touch or reload them here
+            }
+
+            candidates.append(Candidate { dirPath, info });
+        }
+
+        QMap<QString, int> best;
+        for(int i = 0; i < candidates.size(); ++i) {
+            const Candidate& candidate = candidates.at(i);
+            auto it = best.find(candidate.info.id);
+            if(it == best.end()) {
+                best.insert(candidate.info.id, i);
+                continue;
+            }
+
+            const Candidate& current = candidates.at(it.value());
+            const int order = compareVersions(candidate.info.version, current.info.version);
+            if(order > 0
+               || (order == 0 && QFileInfo(candidate.dir).lastModified() > QFileInfo(current.dir).lastModified())) {
+                it.value() = i;
+            }
+        }
+
+        for(int i = 0; i < candidates.size(); ++i) {
+            const Candidate& candidate = candidates.at(i);
+            if(best.value(candidate.info.id) != i) {
+                result.staleDirs.append(qMakePair(candidate.dir, candidate.info.id));
+            }
+        }
+
+        for(auto it = best.cbegin(); it != best.cend(); ++it) {
+            const Candidate& candidate = candidates.at(it.value());
+            PreparedPlugin prepared;
+            prepared.info = candidate.info;
+            if(candidate.info.enabled && candidate.info.hasCppEntry()) {
+                prepared.libraryPath = prepareHotLibrary(candidate.dir, candidate.info.cppEntry);
+            }
+            result.plugins.append(prepared);
+        }
+
+        return result;
+    }
+
+    // Reads the manifest of a .gep without touching the plugin folders and keeps a copy of the
+    // package in the downloads folder.
+    GepInspection inspectGepPackage(const GepRequest& request)
+    {
+        GepInspection inspection;
+        QDir().mkpath(request.pluginRoot);
+
+        inspection.manifest = readGepManifest(request.gepPath);
+        if(!inspection.manifest.isValid() || inspection.manifest.id.isEmpty()) {
+            const QString staging = request.pluginRoot + QStringLiteral("/.stage_")
+                                    + QString::number(QDateTime::currentMSecsSinceEpoch());
+            inspection.staging = staging;
+            if(extractPackage(request.gepPath, staging)) {
+                QString actualStagingDir = staging;
+                if(!QFile::exists(staging + QStringLiteral("/plugin.json"))) {
+                    QDirIterator it(staging, {QStringLiteral("plugin.json")},
+                                    QDir::Files, QDirIterator::Subdirectories);
+                    if(it.hasNext()) {
+                        it.next();
+                        actualStagingDir = QFileInfo(it.filePath()).absolutePath();
+                    }
+                }
+
+                inspection.manifest = readManifestFile(actualStagingDir);
+                if(inspection.manifest.isValid() && !inspection.manifest.id.isEmpty()) {
+                    inspection.payloadSource = staging; // already extracted — reuse it
+                }
+            }
+        }
+
+        if(inspection.manifest.isValid() && !inspection.manifest.id.isEmpty()
+           && QDir().mkpath(request.downloadsDir)) {
+            const QString slug = slugify(inspection.manifest.name);
+            const QString savedName = slug.isEmpty() ? inspection.manifest.id : slug;
+            const QString savedPath = request.downloadsDir + QLatin1Char('/')
+                                      + savedName + QLatin1Char('-') + inspection.manifest.version
+                                      + QStringLiteral(".gep");
+            // A package picked from the downloads folder already is its own saved copy; touching
+            // it would delete the file that is about to be installed.
+            const QString sourcePath = QFileInfo(request.gepPath).canonicalFilePath();
+            const QString savedCanonical = QFileInfo(savedPath).canonicalFilePath();
+            if(sourcePath.isEmpty() || sourcePath != savedCanonical) {
+                const QString partialPath = savedPath + QStringLiteral(".part");
+                QFile::remove(partialPath);
+                if(QFile::copy(request.gepPath, partialPath)) {
+                    QFile::remove(savedPath);
+                    QFile::rename(partialPath, savedPath);
+                } else {
+                    QFile::remove(partialPath);
+                }
+            }
+        }
+
+        return inspection;
+    }
+
+    GepPlacement placeAndPrepare(const GepRequest& request, const QString& payloadSource,
+                                 const QString& targetDir, const PluginInfo& manifest)
+    {
+        GepPlacement placement;
+        placement.id        = manifest.id;
+        placement.name      = manifest.name;
+        placement.targetDir = targetDir;
+        placement.result    = placeGepPayload(request.gepPath, payloadSource, targetDir,
+                                              manifest.id, !manifest.cppEntry.isEmpty());
+
+        if(placement.result == GepPlaceResult::Ok) {
+            placement.prepared.info = readManifestFile(targetDir);
+            const PluginInfo& info = placement.prepared.info;
+            if(info.isValid() && info.enabled && info.hasCppEntry()) {
+                placement.prepared.libraryPath = prepareHotLibrary(targetDir, info.cppEntry);
+            }
+        } else {
+            QDir(targetDir).removeRecursively();
+        }
+
+        if(!request.tempToRemove.isEmpty()) {
+            QFile::remove(request.tempToRemove);
+        }
+
+        return placement;
+    }
+
+    // Deletes every folder that holds the plugin. Folders that stay locked are marked so the
+    // next scan removes them.
+    PluginRemovalResult removePluginDirectories(const QString& id, bool known,
+                                                const QStringList& knownDirs,
+                                                const QStringList& roots)
+    {
+        QStringList dirs;
+        for(const QString& knownDir : knownDirs) {
+            const QString dirPath = QDir::cleanPath(knownDir);
+            if(!dirs.contains(dirPath)) {
+                dirs << dirPath;
+            }
+        }
+
+        for(const QString& rootPath : roots) {
+            QDir root(rootPath);
+            if(!root.exists()) {
+                continue;
+            }
+
+            const auto entries = root.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+            for(const QString& entry : entries) {
+                if(entry.startsWith(QLatin1Char('.'))) {
+                    continue;
+                }
+
+                const QString dirPath = QDir::cleanPath(root.absoluteFilePath(entry));
+                if(manifestIdOfDir(dirPath) == id && !dirs.contains(dirPath)) {
+                    dirs << dirPath;
+                }
+            }
+        }
+
+        for(const QString& dirPath : std::as_const(dirs)) {
+            if(removeDirectoryPatiently(dirPath, 2000) || !QDir(dirPath).exists()) {
+                continue;
+            }
+
+            QFile marker(dirPath + QStringLiteral("/.gitease-uninstalled"));
+            if(marker.open(QIODevice::WriteOnly)) {
+                marker.write("1");
+                marker.close();
+            }
+        }
+
+        PluginRemovalResult result;
+        result.foundAny = known || !dirs.isEmpty();
+        return result;
+    }
+
 } // namespace
 
 // ── Construction / destruction ───────────────────────────────────────────────
@@ -340,6 +648,14 @@ PluginManager::PluginManager(QObject* parent)
     , m_context(new PluginContext(this))
 {
     wireContext();
+
+    // Scans, installs and uninstalls do their file work here, never on the UI thread.
+    m_workerThread = new QThread(this);
+    m_workerThread->setObjectName(QStringLiteral("GitEasePluginWorker"));
+    m_workerContext = new QObject;
+    m_workerContext->moveToThread(m_workerThread);
+    connect(m_workerThread, &QThread::finished, m_workerContext, &QObject::deleteLater);
+    m_workerThread->start();
 
     // Accumulate dock registrations into m_docks so QML can bind to registeredDocks
     connect(this, &PluginManager::dockRegistered,
@@ -395,14 +711,44 @@ PluginManager::PluginManager(QObject* parent)
             });
 }
 
+// A plugin that was deactivated and whose library is still being released.
+struct PluginManager::ReleaseJob
+{
+    QString            id;
+    IPlugin*           plugin   = nullptr;
+    QPluginLoader*     loader   = nullptr;
+    int                attempts = 0;
+    bool               shutDown = false;
+    std::function<void()> done;
+};
+
 PluginManager::~PluginManager()
 {
+    m_workerThread->quit();
+    m_workerThread->wait();
+
+    for(const auto& job : std::as_const(m_releaseJobs)) {
+        if(!job->shutDown && job->plugin) {
+            job->plugin->shutdown();
+        }
+
+        if(job->loader) {
+            job->loader->unload();
+            delete job->loader;
+        }
+    }
+
     for (auto* plugin : std::as_const(m_plugins))
         plugin->shutdown();
     for (auto* loader : std::as_const(m_loaders)) {
         loader->unload();
         delete loader;
     }
+}
+
+QObject* PluginManager::backgroundContext() const
+{
+    return m_workerContext;
 }
 
 // ── Context wiring ───────────────────────────────────────────────────────────
@@ -509,116 +855,158 @@ void PluginManager::scanApplicationPluginsDirectory()
 
 void PluginManager::scanDirectory(const QString& path)
 {
-    QDir dir(path);
-    if (!dir.exists()) return;
+    if(!m_scanQueue.contains(path)) {
+        m_scanQueue.append(path);
+    }
 
-    struct Candidate { QString dir; QString id; QString version; };
-    QList<Candidate> candidates;
+    startNextScan();
+}
 
-    const auto entries = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-    for (const QString& entry : entries) {
-        if (entry.startsWith(QLatin1Char('.')))
-            continue; // staging dirs / markers
+bool PluginManager::isBusy(const QString& id) const
+{
+    return m_installingIds.contains(id) || m_removingIds.contains(id);
+}
 
-        const QString dirPath = dir.absoluteFilePath(entry);
-        if (QFile::exists(dirPath + QStringLiteral("/.gitease-uninstalled"))) {
-            QDir(dirPath).removeRecursively(); // marked for removal on a previous run
+// Directories are looked through on a worker thread; the plugins found are then loaded one per
+// event-loop turn so the window keeps painting and answering input while they come up.
+void PluginManager::startNextScan()
+{
+    if(m_scanRunning || m_scanQueue.isEmpty()) {
+        return;
+    }
+
+    // Scans never overlap installs or uninstalls; whoever finishes last starts the next scan.
+    if(!m_installingIds.isEmpty() || !m_removingIds.isEmpty()) {
+        return;
+    }
+
+    const QString path = m_scanQueue.takeFirst();
+
+    QSet<QString> skipIds = m_installingIds;
+    skipIds.unite(m_removingIds);
+    for(const PluginInfo& info : std::as_const(m_infos)) {
+        skipIds.insert(info.id);
+    }
+    for(const PreparedPlugin& queued : std::as_const(m_loadQueue)) {
+        skipIds.insert(queued.info.id);
+    }
+
+    m_scanRunning = true;
+    runInBackground(this,
+                    [path, skipIds]() {
+                        return scanPluginDirectory(path, skipIds);
+                    },
+                    [this](const PluginScanResult& result) {
+                        finishScan(result);
+                    });
+}
+
+void PluginManager::finishScan(const PluginScanResult& result)
+{
+    m_scanRunning = false;
+
+    for(const PreparedPlugin& prepared : result.plugins) {
+        m_loadQueue.append(prepared);
+    }
+
+    QStringList staleDirs;
+    for(const auto& stale : result.staleDirs) {
+        if(isBusy(stale.second)) {
             continue;
         }
 
-        const PluginInfo info = parseManifest(dirPath);
-        if (!info.isValid() || info.id.isEmpty() || info.version.isEmpty())
-            continue;
-        const bool alreadyKnown = std::any_of(m_infos.cbegin(), m_infos.cend(),
-                                              [&info](const PluginInfo& known) {
-                                                  return known.id == info.id;
-                                              });
-        if (alreadyKnown || m_installingIds.contains(info.id))
-            continue; // loaded plugin's files may be in use; never touch or reload them here
-        candidates.append({ dirPath, info.id, info.version });
-    }
-
-    QMap<QString, QString> bestVersion;
-    QMap<QString, QString> bestDir;
-    for (const auto& c : std::as_const(candidates)) {
-        auto it = bestVersion.find(c.id);
-        if (it == bestVersion.end()
-            || compareVersions(c.version, it.value()) > 0
-            || (compareVersions(c.version, it.value()) == 0
-                && QFileInfo(c.dir).lastModified() > QFileInfo(bestDir.value(c.id)).lastModified())) {
-            bestVersion[c.id] = c.version;
-            bestDir[c.id]     = c.dir;
+        const QString clean = QDir::cleanPath(stale.first);
+        const bool inUse = std::any_of(m_infos.cbegin(), m_infos.cend(),
+                                       [&clean](const PluginInfo& info) {
+                                           return QDir::cleanPath(info.pluginDir) == clean;
+                                       });
+        if(!inUse) {
+            staleDirs << stale.first;
         }
     }
 
-    // Drop older versions of the same plugin id (nothing is loaded yet).
-    for (const auto& c : std::as_const(candidates)) {
-        if (bestDir.value(c.id) != c.dir)
-            QDir(c.dir).removeRecursively();
+    if(!staleDirs.isEmpty()) {
+        // Nothing is loaded from older versions, so they can go without waiting.
+        runInBackground(this,
+                        [staleDirs]() {
+                            for(const QString& staleDir : staleDirs) {
+                                QDir(staleDir).removeRecursively();
+                            }
+                            return true;
+                        },
+                        [](bool) {
+                        });
     }
 
-    for (auto it = bestDir.cbegin(); it != bestDir.cend(); ++it)
-        loadPlugin(it.value());
+    pumpLoadQueue();
+    startNextScan();
+}
+
+void PluginManager::pumpLoadQueue()
+{
+    if(m_loadPumpActive || m_loadQueue.isEmpty()) {
+        return;
+    }
+
+    m_loadPumpActive = true;
+    QTimer::singleShot(0, this, [this]() {
+        m_loadPumpActive = false;
+        if(m_loadQueue.isEmpty()) {
+            return;
+        }
+
+        const PreparedPlugin next = m_loadQueue.takeFirst();
+        const bool known = isBusy(next.info.id)
+                           || std::any_of(m_infos.cbegin(), m_infos.cend(),
+                                          [&next](const PluginInfo& info) {
+                                              return info.id == next.info.id;
+                                          });
+        if(!known) {
+            loadPlugin(next);
+        }
+
+        pumpLoadQueue();
+    });
+}
+
+void PluginManager::runWhenScanIdle(std::function<void()> action)
+{
+    if(!m_scanRunning) {
+        action();
+        return;
+    }
+
+    QTimer::singleShot(kScanIdleRetryMs, this, [this, action]() {
+        runWhenScanIdle(action);
+    });
 }
 
 // ── Loading ──────────────────────────────────────────────────────────────────
 
 bool PluginManager::loadPlugin(const QString& pluginDir)
 {
-    PluginInfo info = parseManifest(pluginDir);
-    if (!info.isValid()) {
-        emit pluginError(pluginDir, QStringLiteral("Invalid or missing plugin.json"));
+    PreparedPlugin prepared;
+    prepared.info = parseManifest(pluginDir);
+    return loadPlugin(prepared);
+}
+
+bool PluginManager::loadPlugin(const PreparedPlugin& prepared)
+{
+    PluginInfo info = prepared.info;
+    if(!info.isValid()) {
+        emit pluginError(info.pluginDir, QStringLiteral("Invalid or missing plugin.json"));
         return false;
     }
 
-    const bool ok = info.enabled ? activatePlugin(info) : false;
+    const bool ok = info.enabled ? activatePlugin(info, prepared.libraryPath) : false;
     m_infos.append(info);
     emit pluginsChanged();
     return ok;
 }
 
-static QString resolveLibraryPath(const QString& pluginDir, const QString& entry)
-{
-    // If the entry already has a known extension, use it as-is
-    if (entry.endsWith(QStringLiteral(".dll"), Qt::CaseInsensitive) ||
-        entry.endsWith(QStringLiteral(".so"),  Qt::CaseInsensitive) ||
-        entry.endsWith(QStringLiteral(".dylib"), Qt::CaseInsensitive))
-    {
-        return QDir(pluginDir).filePath(entry);
-    }
-
-    // No extension — append the platform-specific one
-#if defined(Q_OS_WIN)
-    return QDir(pluginDir).filePath(entry + QStringLiteral(".dll"));
-#elif defined(Q_OS_MACOS)
-    const QFileInfo fi(entry);
-    const QString dir  = fi.path();
-    const QString base = fi.fileName();
-    return QDir(pluginDir).filePath(dir + QStringLiteral("/lib") + base + QStringLiteral(".dylib"));
-#else
-    const QFileInfo fi(entry);
-    const QString dir  = fi.path();
-    const QString base = fi.fileName();
-    return QDir(pluginDir).filePath(dir + QStringLiteral("/lib") + base + QStringLiteral(".so"));
-#endif
-}
-
 QString PluginManager::hotLoadLibraryPath(const QString& pluginDir, const QString& entry) const
 {
-    const QString original = resolveLibraryPath(pluginDir, entry);
-    if (!QFileInfo::exists(original))
-        return original;
-
-    // Windows keeps a mapped image after QPluginLoader::unload(). Load a unique
-    // copy so install/uninstall/reinstall can happen without restarting.
-    const QFileInfo fi(original);
-    const QString hotDir = fi.dir().filePath(QStringLiteral(".hot"));
-    QDir().mkpath(hotDir);
-    const QString hotPath = QDir(hotDir).filePath(
-        QString::number(QDateTime::currentMSecsSinceEpoch()) + QLatin1Char('-') + fi.fileName());
-    if (QFile::copy(original, hotPath))
-        return hotPath;
-    return original;
+    return prepareHotLibrary(pluginDir, entry);
 }
 
 QString PluginManager::uniquePluginDir(const QString& pluginRoot, const QString& id,
@@ -629,25 +1017,12 @@ QString PluginManager::uniquePluginDir(const QString& pluginRoot, const QString&
            + QLatin1Char('-') + QString::number(QDateTime::currentMSecsSinceEpoch());
 }
 
-bool PluginManager::unloadLibrary(QPluginLoader* loader)
+bool PluginManager::loadCppPlugin(const PluginInfo& info, const QString& preparedLibrary)
 {
-    if (!loader)
-        return true;
-
-    for (int attempt = 0; attempt < 25; ++attempt) {
-        if (!loader->isLoaded() || loader->unload())
-            return true;
-        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
-        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents | QEventLoop::ExcludeSocketNotifiers);
-        QThread::msleep(40);
-    }
-    return !loader->isLoaded();
-}
-
-bool PluginManager::loadCppPlugin(const PluginInfo& info)
-{
-    const QString libPath = hotLoadLibraryPath(info.pluginDir, info.cppEntry);
-    if (!QFileInfo::exists(libPath)) {
+    const QString libPath = preparedLibrary.isEmpty()
+                                ? hotLoadLibraryPath(info.pluginDir, info.cppEntry)
+                                : preparedLibrary;
+    if(!QFileInfo::exists(libPath)) {
         emit pluginError(info.id,
                          QStringLiteral("Library not found: ") + libPath);
         return false;
@@ -656,14 +1031,14 @@ bool PluginManager::loadCppPlugin(const PluginInfo& info)
     auto* loader = new QPluginLoader(libPath, this);
     loader->setLoadHints(QLibrary::ExportExternalSymbolsHint);
     QObject* obj = loader->instance();
-    if (!obj) {
+    if(!obj) {
         emit pluginError(info.id, loader->errorString());
         delete loader;
         return false;
     }
 
     auto* plugin = qobject_cast<IPlugin*>(obj);
-    if (!plugin) {
+    if(!plugin) {
         emit pluginError(info.id,
                          QStringLiteral("Object does not implement IPlugin"));
         loader->unload();
@@ -673,10 +1048,11 @@ bool PluginManager::loadCppPlugin(const PluginInfo& info)
 
     plugin->initialize(m_context);
 
-    if (auto* repoAware = dynamic_cast<IRepositoryAwarePlugin*>(plugin)) {
-        if (Repository* repo = m_context->currentRepository()) {
-            if (const char* workdir = git_repository_workdir(repo->repo))
+    if(auto* repoAware = dynamic_cast<IRepositoryAwarePlugin*>(plugin)) {
+        if(Repository* repo = m_context->currentRepository()) {
+            if(const char* workdir = git_repository_workdir(repo->repo)) {
                 repoAware->repositoryChanged(QString::fromUtf8(workdir));
+            }
         }
     }
 
@@ -687,14 +1063,7 @@ bool PluginManager::loadCppPlugin(const PluginInfo& info)
 
 PluginInfo PluginManager::parseManifest(const QString& pluginDir) const
 {
-    QJsonObject obj;
-    QFile f(QDir(pluginDir).filePath(QStringLiteral("plugin.json")));
-    if (!f.open(QIODevice::ReadOnly)) return {};
-    const auto doc = QJsonDocument::fromJson(f.readAll());
-    if (!doc.isNull() && doc.isObject())
-        obj = doc.object();
-
-    return PluginInfo::fromJson(obj, pluginDir);
+    return readManifestFile(pluginDir);
 }
 
 // ── State forwarding ─────────────────────────────────────────────────────────
@@ -724,12 +1093,12 @@ void PluginManager::setCurrentBranch(const QString& branch)
 
 // ── Management ───────────────────────────────────────────────────────────────
 
-bool PluginManager::activatePlugin(PluginInfo& info)
+bool PluginManager::activatePlugin(PluginInfo& info, const QString& preparedLibrary)
 {
     bool ok = true;
 
     if (info.hasCppEntry())
-        ok = loadCppPlugin(info);
+        ok = loadCppPlugin(info, preparedLibrary);
 
     if (info.hasQmlEntry()) {
         if (auto* engine = m_context->qmlEngine())
@@ -761,7 +1130,7 @@ bool PluginManager::activatePlugin(PluginInfo& info)
     return ok;
 }
 
-void PluginManager::deactivatePlugin(const QString& id)
+void PluginManager::deactivatePlugin(const QString& id, std::function<void()> done)
 {
     IPlugin* plugin = m_plugins.value(id, nullptr);
 
@@ -810,22 +1179,79 @@ void PluginManager::deactivatePlugin(const QString& id)
     emit contextMenusChanged();
     emit pluginAboutToUnload(id);
 
-    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
-    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents | QEventLoop::ExcludeSocketNotifiers);
+    // The plugin object and its library leave the maps right away, so the plugin can be loaded
+    // again at once. Shutting it down and unloading the library happens a moment later, from the
+    // event loop, instead of blocking the UI while the page of the plugin is torn down.
+    auto job = std::make_shared<ReleaseJob>();
+    job->id     = id;
+    job->plugin = m_plugins.take(id);
+    job->loader = m_loaders.take(id);
+    job->done   = std::move(done);
+    m_releaseJobs.append(job);
 
-    if (plugin) {
-        plugin->shutdown();
-        if (QPluginLoader* loader = m_loaders.take(id)) {
-            unloadLibrary(loader);
-            delete loader;
+    QTimer::singleShot(kUiSettleMs, this, [this, job]() {
+        releaseLibrary(job);
+    });
+}
+
+void PluginManager::releaseLibrary(const std::shared_ptr<ReleaseJob>& job)
+{
+    // Let QML finish destroying the objects of the plugin before its code goes away.
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+
+    if(!job->shutDown) {
+        job->shutDown = true;
+        if(job->plugin) {
+            job->plugin->shutdown();
         }
-        m_plugins.remove(id);
+    }
+
+    const bool released = !job->loader || !job->loader->isLoaded() || job->loader->unload();
+    if(!released && ++job->attempts < kMaxUnloadAttempts) {
+        QTimer::singleShot(kUnloadRetryMs, this, [this, job]() {
+            releaseLibrary(job);
+        });
+        return;
+    }
+
+    // The copy the plugin was loaded from is of no use once the library is released.
+    const QString loadedPath = (released && job->loader) ? job->loader->fileName() : QString();
+
+    delete job->loader;
+    job->loader = nullptr;
+    job->plugin = nullptr;
+    m_releaseJobs.removeOne(job);
+
+    if(!loadedPath.isEmpty() && isHotCopy(loadedPath)) {
+        runInBackground(this,
+                        [loadedPath]() {
+                            // The system may keep the file mapped for a moment after unloading
+                            for(int attempt = 0; attempt < 10; ++attempt) {
+                                if(QFile::remove(loadedPath) || !QFile::exists(loadedPath)) {
+                                    break;
+                                }
+                                QThread::msleep(100);
+                            }
+                            return true;
+                        },
+                        [](bool) {
+                        });
+    }
+
+    if(job->done) {
+        const auto done = std::move(job->done);
+        job->done = nullptr;
+        done();
     }
 }
 
-void PluginManager::tearDownPlugin(const QString& id)
+void PluginManager::tearDownPlugin(const QString& id, std::function<void()> done)
 {
-    deactivatePlugin(id);
+    m_loadQueue.removeIf([&id](const PreparedPlugin& prepared) {
+        return prepared.info.id == id;
+    });
+
+    deactivatePlugin(id, std::move(done));
     m_infos.removeIf([&](const PluginInfo& info) { return info.id == id; });
 }
 
@@ -996,193 +1422,246 @@ bool PluginManager::installPluginFromBase64Zip(const QString& pluginId, const QS
 
 bool PluginManager::installGepFile(const QString& gepPath)
 {
-    if (gepPath.isEmpty() || !QFileInfo::exists(gepPath))
+    if(gepPath.isEmpty() || !QFileInfo::exists(gepPath)) {
         return false;
-    startGepInstall(gepPath, QString());
+    }
+
+    startGepInstall(gepPath, QString(), QString(), true);
     return true;
 }
 
-bool PluginManager::installGepFromBase64(const QString& base64Data)
+bool PluginManager::installGepFromBase64(const QString& base64Data, const QString& pluginId)
 {
-    const QByteArray archiveData = QByteArray::fromBase64(base64Data.toLatin1());
-    if (archiveData.isEmpty())
+    if(base64Data.isEmpty()) {
         return false;
+    }
 
     const QString tempPath = QDir::tempPath()
                              + QStringLiteral("/gitease_plugin_%1.gep")
                                    .arg(QDateTime::currentMSecsSinceEpoch());
-    {
-        QFile tempFile(tempPath);
-        if (!tempFile.open(QIODevice::WriteOnly)) {
-            qWarning() << "[GEP] Cannot create temp file:" << tempPath;
-            return false;
-        }
-        tempFile.write(archiveData);
-    }
 
-    // Temp file is handed off and removed once the async install finishes.
-    startGepInstall(tempPath, tempPath);
+    // Decoding and writing a package takes a while; do it away from the UI thread.
+    runInBackground(this,
+                    [base64Data, tempPath]() {
+                        const QByteArray archiveData = QByteArray::fromBase64(base64Data.toLatin1());
+                        if(archiveData.isEmpty()) {
+                            return false;
+                        }
+
+                        QFile tempFile(tempPath);
+                        if(!tempFile.open(QIODevice::WriteOnly)) {
+                            return false;
+                        }
+
+                        const bool written = tempFile.write(archiveData) == archiveData.size();
+                        tempFile.close();
+                        return written;
+                    },
+                    [this, tempPath, pluginId](bool written) {
+                        if(!written) {
+                            QFile::remove(tempPath);
+                            emit pluginInstallFailed(pluginId.isEmpty() ? QStringLiteral("unknown") : pluginId,
+                                                     QStringLiteral("Could not read the downloaded package"));
+                            return;
+                        }
+
+                        // The temp file is removed once the install is over.
+                        startGepInstall(tempPath, tempPath, pluginId, false);
+                    });
     return true;
 }
 
-void PluginManager::startGepInstall(const QString& gepPath, const QString& tempToRemove)
+// An install runs as a chain of steps: the package is inspected on a worker thread, the old
+// version is deactivated on the UI thread without blocking, the files are placed on a worker
+// thread, and the new plugin is loaded on the UI thread. The UI thread never waits for the disk.
+void PluginManager::startGepInstall(const QString& gepPath, const QString& tempToRemove,
+                                    const QString& pluginId, bool announce)
 {
-    const QString appData    = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    const QString pluginRoot = appData + QStringLiteral("/plugins");
-    QDir().mkpath(pluginRoot);
+    const QString appData = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
 
-    PluginInfo manifest = readGepManifest(gepPath);
-    QString payloadSource;
-    QString staging;
-    if (!manifest.isValid() || manifest.id.isEmpty()) {
-        staging = pluginRoot + QStringLiteral("/.stage_")
-                  + QString::number(QDateTime::currentMSecsSinceEpoch());
-        if (extractPackage(gepPath, staging)) {
-            QString actualStagingDir = staging;
-            if (!QFile::exists(staging + QStringLiteral("/plugin.json"))) {
-                QDirIterator it(staging, {QStringLiteral("plugin.json")},
-                                QDir::Files, QDirIterator::Subdirectories);
-                if (it.hasNext()) {
-                    it.next();
-                    actualStagingDir = QFileInfo(it.filePath()).absolutePath();
-                }
-            }
-            manifest = parseManifest(actualStagingDir);
-            if (manifest.isValid() && !manifest.id.isEmpty())
-                payloadSource = staging; // already extracted — reuse it
-        }
+    GepRequest request;
+    request.gepPath      = gepPath;
+    request.tempToRemove = tempToRemove;
+    request.pluginId     = pluginId;
+    request.pluginRoot   = appData + QStringLiteral("/plugins");
+    request.downloadsDir = appData + QStringLiteral("/downloads/plugins");
+
+    if(announce) {
+        request.pendingId = QStringLiteral("pending:") + QString::number(++m_pendingCounter);
+        emit pluginInstallQueued(request.pendingId, QFileInfo(gepPath).completeBaseName());
     }
 
-    const auto abort = [this, tempToRemove](const QString& id, const QString& msg) {
-        if (!tempToRemove.isEmpty())
-            QFile::remove(tempToRemove);
-        emit pluginInstallFailed(id, msg);
+    runInBackground(this,
+                    [request]() {
+                        return inspectGepPackage(request);
+                    },
+                    [this, request](const GepInspection& inspection) {
+                        continueGepInstall(request, inspection);
+                    });
+}
+
+void PluginManager::continueGepInstall(const GepRequest& request, const GepInspection& inspection)
+{
+    const PluginInfo& manifest = inspection.manifest;
+
+    const auto abort = [this, &request, &inspection](const QString& message) {
+        if(!request.tempToRemove.isEmpty()) {
+            QFile::remove(request.tempToRemove);
+        }
+
+        if(!inspection.staging.isEmpty()) {
+            const QString staging = inspection.staging;
+            runInBackground(this,
+                            [staging]() {
+                                QDir(staging).removeRecursively();
+                                return true;
+                            },
+                            [](bool) {
+                            });
+        }
+
+        QString failedId = request.pendingId;
+        if(failedId.isEmpty()) {
+            failedId = request.pluginId.isEmpty() ? QStringLiteral("unknown") : request.pluginId;
+        }
+
+        emit pluginInstallFailed(failedId, message);
     };
 
-    if (!manifest.isValid() || manifest.id.isEmpty()) {
-        if (!staging.isEmpty() && staging != payloadSource)
-            QDir(staging).removeRecursively();
-        abort(QStringLiteral("unknown"),
-              QStringLiteral("Not a valid GEP package (missing plugin.json)"));
+    if(!manifest.isValid() || manifest.id.isEmpty()) {
+        abort(QStringLiteral("Not a valid GEP package (missing plugin.json)"));
         return;
     }
 
-    const QString id      = manifest.id;
-    const QString name    = manifest.name;
-    const QString version = manifest.version;
+    // Plugin folders are never touched while a scan is looking through them.
+    if(m_scanRunning) {
+        QTimer::singleShot(kScanIdleRetryMs, this, [this, request, inspection]() {
+            continueGepInstall(request, inspection);
+        });
+        return;
+    }
+
+    const QString id   = manifest.id;
+    const QString name = manifest.name;
+
+    if(isBusy(id)) {
+        abort(QStringLiteral("This plugin is already being installed or removed."));
+        return;
+    }
+
+    if(!request.pendingId.isEmpty()) {
+        emit pluginInstallResolved(request.pendingId, id, name);
+    }
 
     emit pluginInstallStarted(id, name);
-
     m_installingIds.insert(id);
-    tearDownPlugin(id);
 
-    const QString targetDir = uniquePluginDir(pluginRoot, id, version);
-    const bool hasBinary = !manifest.cppEntry.isEmpty();
+    const QString targetDir     = uniquePluginDir(request.pluginRoot, id, manifest.version);
+    const QString payloadSource = inspection.payloadSource;
 
-    std::thread([gepPath, payloadSource, targetDir, id, hasBinary, name, tempToRemove, this]() {
-        const GepWorkResult result = placeGepPayload(gepPath, payloadSource, targetDir, id, hasBinary);
-        QMetaObject::invokeMethod(this, [this, result, id, name, targetDir, tempToRemove]() {
-            if (!tempToRemove.isEmpty())
-                QFile::remove(tempToRemove);
-            finishGepInstall(static_cast<int>(result), id, name, targetDir);
-        }, Qt::QueuedConnection);
-    }).detach();
-
-    const QString downloadsDir = appData + QStringLiteral("/downloads/plugins");
-    if (QDir().mkpath(downloadsDir)) {
-        const QString savedName = slugify(name).isEmpty() ? id : slugify(name);
-        const QString savedPath = downloadsDir + QLatin1Char('/')
-                                  + savedName + QLatin1Char('-') + version
-                                  + QStringLiteral(".gep");
-        QFile::remove(savedPath);
-        QFile::copy(gepPath, savedPath);
-    }
+    tearDownPlugin(id, [this, request, manifest, payloadSource, targetDir]() {
+        runInBackground(this,
+                        [request, payloadSource, targetDir, manifest]() {
+                            return placeAndPrepare(request, payloadSource, targetDir, manifest);
+                        },
+                        [this, request](const GepPlacement& placement) {
+                            finishGepInstall(request, placement);
+                        });
+    });
 }
 
-void PluginManager::finishGepInstall(int resultCode, const QString& id,
-                                     const QString& name, const QString& targetDir)
+void PluginManager::finishGepInstall(const GepRequest& request, const GepPlacement& placement)
 {
-    Q_UNUSED(name)
-    m_installingIds.remove(id);
-    switch (static_cast<GepWorkResult>(resultCode)) {
-    case GepWorkResult::Ok: {
-        const bool ok = loadPlugin(targetDir);
-        if (ok)
-            emit pluginInstalled(id);
-        else
-            emit pluginInstallFailed(id, QStringLiteral("Plugin extracted but failed to load"));
-        break;
-    }
-    case GepWorkResult::PlaceFailed:
-        QDir(targetDir).removeRecursively();
-        emit pluginInstallFailed(id, QStringLiteral("Failed to place plugin directory"));
-        break;
-    case GepWorkResult::ExtractFailed:
-        QDir(targetDir).removeRecursively();
-        emit pluginInstallFailed(id, QStringLiteral("Failed to extract GEP package"));
-        break;
-    }
-}
+    Q_UNUSED(request)
+    m_installingIds.remove(placement.id);
 
-QStringList PluginManager::directoriesForPlugin(const QString& id) const
-{
-    QStringList dirs;
-
-    const auto considerRoot = [this, &id, &dirs](const QString& rootPath) {
-        QDir root(rootPath);
-        if (!root.exists())
-            return;
-        const auto entries = root.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-        for (const QString& entry : entries) {
-            if (entry.startsWith(QLatin1Char('.')))
-                continue;
-            const QString dirPath = QDir::cleanPath(root.absoluteFilePath(entry));
-            if (parseManifest(dirPath).id == id && !dirs.contains(dirPath))
-                dirs << dirPath;
+    switch(placement.result) {
+    case GepPlaceResult::Ok: {
+        const bool ok = placement.prepared.info.isValid() && loadPlugin(placement.prepared);
+        if(ok) {
+            emit pluginInstalled(placement.id);
+        } else {
+            emit pluginInstallFailed(placement.id, QStringLiteral("Plugin extracted but failed to load"));
         }
-    };
-
-    considerRoot(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
-                 + QStringLiteral("/plugins"));
-    considerRoot(QCoreApplication::applicationDirPath() + QStringLiteral("/plugins"));
-
-    for (const auto& info : std::as_const(m_infos)) {
-        if (info.id != id || info.pluginDir.isEmpty())
-            continue;
-        const QString dirPath = QDir::cleanPath(info.pluginDir);
-        if (!dirs.contains(dirPath))
-            dirs << dirPath;
+        break;
     }
-    return dirs;
+    case GepPlaceResult::PlaceFailed:
+        // The previous version was already torn down, so let the list catch up before reporting.
+        emit pluginsChanged();
+        emit pluginInstallFailed(placement.id, QStringLiteral("Failed to place plugin directory"));
+        break;
+    case GepPlaceResult::ExtractFailed:
+        emit pluginsChanged();
+        emit pluginInstallFailed(placement.id, QStringLiteral("Failed to extract GEP package"));
+        break;
+    }
+
+    startNextScan();
 }
 
+// An uninstall deactivates the plugin right away, but the library is released and the files are
+// deleted in the background. The caller is told when it is over through pluginRemoved() or
+// pluginRemoveFailed().
 bool PluginManager::removePlugin(const QString& id)
 {
-    const QStringList dirs = directoriesForPlugin(id);
-    const bool known = m_plugins.contains(id)
-                       || m_loaders.contains(id)
-                       || std::any_of(m_infos.cbegin(), m_infos.cend(),
-                                      [&id](const PluginInfo& info) { return info.id == id; });
-
-    if (!known && dirs.isEmpty())
+    if(id.isEmpty()) {
         return false;
+    }
 
-    // Drop runtime registrations and unload the DLL before touching the disk.
-    tearDownPlugin(id);
+    if(m_removingIds.contains(id)) {
+        return true;
+    }
 
-    for (const QString& dirPath : dirs) {
-        if (removeDirectoryPatiently(dirPath, 2000) || !QDir(dirPath).exists())
+    bool known = m_plugins.contains(id) || m_loaders.contains(id);
+    QStringList knownDirs;
+    for(const PluginInfo& info : std::as_const(m_infos)) {
+        if(info.id != id) {
             continue;
-        QFile marker(dirPath + QStringLiteral("/.gitease-uninstalled"));
-        if (marker.open(QIODevice::WriteOnly)) {
-            marker.write("1");
-            marker.close();
+        }
+
+        known = true;
+        if(!info.pluginDir.isEmpty()) {
+            knownDirs << info.pluginDir;
         }
     }
 
-    emit pluginsChanged();
-    emit pluginRemoved(id);
+    const QStringList roots {
+        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/plugins"),
+        QCoreApplication::applicationDirPath() + QStringLiteral("/plugins")
+    };
+
+    m_removingIds.insert(id);
+
+    // Give the card a moment to show that the plugin is being removed before the work starts.
+    QTimer::singleShot(kUiSettleMs, this, [this, id, known, knownDirs, roots]() {
+        runWhenScanIdle([this, id, known, knownDirs, roots]() {
+            tearDownPlugin(id, [this, id, known, knownDirs, roots]() {
+                runInBackground(this,
+                                [id, known, knownDirs, roots]() {
+                                    return removePluginDirectories(id, known, knownDirs, roots);
+                                },
+                                [this, id](const PluginRemovalResult& result) {
+                                    finishRemoval(id, result);
+                                });
+            });
+        });
+    });
+
     return true;
+}
+
+void PluginManager::finishRemoval(const QString& id, const PluginRemovalResult& result)
+{
+    m_removingIds.remove(id);
+
+    if(result.foundAny) {
+        emit pluginsChanged();
+        emit pluginRemoved(id);
+    } else {
+        emit pluginRemoveFailed(id, QStringLiteral("Plugin not found."));
+    }
+
+    startNextScan();
 }
 
 // ── Queries ──────────────────────────────────────────────────────────────────
