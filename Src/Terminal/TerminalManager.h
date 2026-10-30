@@ -1,18 +1,21 @@
 #pragma once
 #include "IGitController.h"
+#include <QHash>
 #include <QObject>
-#include <QProcess>
-#include <QTimer>
+
+class ShellSession;
 
 /*!
- * @brief Manages an embedded shell process for executing git and system commands.
+ * @brief Manages the embedded shells executing git and system commands, one per repository.
  *
- * TerminalManager spawns a persistent shell process (bash on Unix, cmd.exe on Windows)
- * and provides a QML-accessible interface for sending commands and receiving output.
- * Output is parsed for ANSI color codes and emitted as JSON-encoded color segments.
+ * TerminalManager gives every repository session its own persistent shell process (see
+ * ShellSession), started in the repository's working directory on the first command sent from
+ * it. Commands go to the current repository's shell, so a command still running in one
+ * repository neither blocks another repository's prompt nor mixes its output into it: the output
+ * signals name the session they come from, by its working directory.
  *
- * Sentinel-based prompt detection is used to track command completion and trigger
- * git state updates when relevant commands are executed.
+ * A session's shell ends when its repository is closed, and all of them when the manager is
+ * destroyed.
  */
 class TerminalManager : public IGitController
 {
@@ -21,6 +24,7 @@ class TerminalManager : public IGitController
 
     Q_PROPERTY(QString workingDirectory READ workingDirectory NOTIFY workingDirectoryChanged)
     Q_PROPERTY(bool running READ running NOTIFY runningChanged)
+    Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString username READ username CONSTANT)
     Q_PROPERTY(QString hostname READ hostname CONSTANT)
 
@@ -29,17 +33,22 @@ public:
     ~TerminalManager();
 
     /**
-     * @brief Returns the current working directory of the shell process.
+     * @brief Returns the working directory of the current repository's session.
      */
     QString workingDirectory() const;
 
     /**
-     * @brief Returns true if the shell process is running
+     * @brief Returns true if the current repository's shell process is running
      */
     bool running() const;
 
     /**
-     * @brief Sends a command to the shell process for execution.
+     * @brief Returns true while a command is running in the current repository's shell.
+     */
+    bool busy() const;
+
+    /**
+     * @brief Sends a command to the current repository's shell for execution.
      *
      * Git commands are automatically prefixed with `-c color.ui=always` to force
      * colored output. Commands matching known git state-changing operations will
@@ -50,21 +59,33 @@ public:
     Q_INVOKABLE void sendCommand(const QString &command);
 
     /**
-     * @brief Kills the current shell process and starts a new one.
+     * @brief Kills the current repository's shell process; the next command starts a new one.
      *
-     * Use this to recover from a hung or crashed shell session.
+     * Use this to recover from a hung or crashed shell session. The other repositories' shells
+     * keep running.
      */
     Q_INVOKABLE void kill();
 
+    /**
+     * @brief Ends the shell session of a repository being closed.
+     *
+     * A command still running there is allowed to complete first, so closing a repository never
+     * interrupts a git operation halfway.
+     *
+     * @param repository The repository being closed.
+     */
+    Q_INVOKABLE void closeSession(Repository *repository);
+
 private:
     /**
-     * @brief Starts the shell process and configures the environment.
-     *
-     * On Unix, launches bash via the \c script command to allocate a PTY.
-     * On Windows, launches cmd.exe with UTF-8 encoding enabled.
-     * Sets up sentinel-based prompt detection for command completion tracking.
+     * @brief Returns the session of a working directory, creating it on first use.
      */
-    void startShell();
+    ShellSession *sessionFor(const QString &workingDirectory);
+
+    /**
+     * @brief Returns the current repository's session, or nullptr before its first command.
+     */
+    ShellSession *currentSession() const;
 
     /**
      *  @brief Returns the OS username from environment variables.
@@ -76,68 +97,60 @@ private:
      */
     QString hostname() const;
 
-    QProcess *m_process = nullptr;
-    QString   m_workingDirectory;
-    bool      m_running = false;
-    bool      m_gitStateUpdateRequired = false;
-    QString   m_lastCommand;
+    QHash<QString, ShellSession *> m_sessions;
+    QString                        m_workingDirectory;
 
 private slots:
     /**
-     * @brief Reads and processes stdout from the shell process.
-     */
-    void onReadyReadStandardOutput();
-
-    /**
-     * @brief Reads and processes stderr from the shell process.
-     */
-    void onReadyReadStandardError();
-
-    /**
-     * @brief Handles shell process state transitions.
-     */
-    void onProcessStateChanged(QProcess::ProcessState state);
-
-    /**
-     * @brief Updates the working directory when the active repository changes.
+     * @brief Switches to the session of the current repository's working directory.
      *
-     * Issues a \c cd command to the shell to align the shell's working directory
-     * with the current repository's working directory.
+     * Nothing is sent to any shell, so a busy shell never holds the switch up.
      */
     void updateWorkingDirectory();
 
 signals:
     /**
-     * @brief Emitted when a line of output is received from the shell.
+     * @brief Emitted when a line of output is received from a shell.
+     * @param workingDirectory Working directory of the session the line belongs to.
      * @param segmentsJson JSON array of color segments: [{text, color, bold}].
      */
-    void lineReceived(const QString &segmentsJson);
+    void lineReceived(const QString &workingDirectory, const QString &segmentsJson);
 
     /**
-     *  @brief Emitted when the working directory changes.
+     *  @brief Emitted when the current repository, and with it the working directory, changes.
      */
     void workingDirectoryChanged();
 
     /**
-     * @brief Emitted when a command is sent to the shell.
+     * @brief Emitted when a command is sent to a shell.
+     * @param workingDirectory Working directory of the session running the command.
      */
-    void commandStarted();
+    void commandStarted(const QString &workingDirectory);
 
     /**
      * @brief Emitted when the shell prompt sentinel is detected, indicating command completion.
+     * @param workingDirectory Working directory of the session that ran the command.
      */
-    void commandFinished();
+    void commandFinished(const QString &workingDirectory);
 
     /**
-     * @brief Emitted when the shell process state changes.
+     * @brief Emitted when the current repository's shell process state changes.
      */
     void runningChanged();
+
+    /**
+     * @brief Emitted when a command starts or finishes in the current repository's shell.
+     */
+    void busyChanged();
 
     /**
      * @brief Emitted when a git state-changing command completes successfully.
      *
      * Connect this signal to refresh repository views such as the commit graph,
-     * staging area, or branch list.
+     * staging area, or branch list. Commands run in the background repositories' shells too, so
+     * a view showing only the current repository compares \a workingDirectory first.
+     *
+     * @param workingDirectory Working directory of the session that ran the command.
      */
-    void gitStateChanged();
+    void gitStateChanged(const QString &workingDirectory);
 };
