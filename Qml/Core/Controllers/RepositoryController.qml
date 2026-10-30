@@ -19,6 +19,7 @@ GitRepository {
 
     property int maxRecentLength:   10
     property var activeClones:      ({})
+    property bool cloneCancelRequested: false
     property var usedRepoColors:    ({})
 
     readonly property var repoColorPalette: [
@@ -161,7 +162,7 @@ GitRepository {
     /**
      * Clone a repository from URL to the specified local path
      */
-    function cloneRepository(path, url) : bool {
+    function cloneRepository(path, url) : var {
         let repoName = extractRepoName(url)
         let protocol = detectGitProtocol(url)
 
@@ -170,18 +171,16 @@ GitRepository {
 
         let clonedPath = path + repoName
         if (protocol === RepositoryController.GitProtocol.Unknown) {
-            if(notificationController)
-                notificationController.error(`Unsupported Git URL: ${url}`)
-            return { success: false }
+            return { success: false, errorMessage: "Unsupported Git URL" }
         }
 
         if (root.activeClones[clonedPath]) {
-            if(notificationController)
-                notificationController.warning(`Clone already in progress: ${clonedPath}`)
-            return { success: false }
+            return { success: false, errorMessage: `A clone to ${clonedPath} is already in progress` }
         }
 
         root.activeClones[clonedPath] = true
+        root.cloneCancelRequested = false
+        root.resetCloneCancel()
 
         let args = protocol === RepositoryController.GitProtocol.SSH ? [url, clonedPath] : [url, clonedPath, ""]
 
@@ -193,10 +192,24 @@ GitRepository {
         return { success: true }
     }
 
+    /**
+     * Ask the running clone to stop. The clone still reports back through cloneCompleted,
+     * with `cancelled: true`.
+     */
+    function abortClone() {
+        root.cloneCancelRequested = true
+        root.cancelClone()
+    }
+
     function handleCloneResult(clonedPath, result) {
         root.activeClones[clonedPath] = false
 
-        if (result && result.success) {
+        let wasCancelled = root.cloneCancelRequested
+        root.cloneCancelRequested = false
+
+        if (wasCancelled && !(result && result.success)) {
+            result = { success: false, cancelled: true, errorMessage: "Clone cancelled" }
+        } else if (result && result.success) {
             let path = result.data || clonedPath
             let repoName = path.toString().split(/[\/:]/).pop()
 
@@ -204,9 +217,10 @@ GitRepository {
             if (openResult.success) {
                 createRepositoryComponent(path, repoName)
             } else {
-                if (notificationController)
-                    notificationController.error(openResult.errorMessage || "Failed to open cloned repository", "Repository Error", 5000)
-                result = openResult
+                result = {
+                    success: false,
+                    errorMessage: openResult.errorMessage || "Failed to open cloned repository"
+                }
             }
         }
 

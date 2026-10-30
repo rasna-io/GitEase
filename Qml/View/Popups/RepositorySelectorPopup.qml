@@ -23,6 +23,8 @@ IPopup {
 
     property bool                   busy: false
     property real                   progress: 0
+    property string                 cloneUrl: ""
+    property bool                   cancelling: false
 
     property int                    currentTabIndex: Enums.RepositorySelectorTab.Recents
 
@@ -30,6 +32,8 @@ IPopup {
      * ****************************************************************************************/
     width: 600
     height: Math.min(720, bodyColumn.implicitHeight)
+
+    closePolicy: root.busy ? Popup.NoAutoClose : (Popup.CloseOnEscape | Popup.CloseOnPressOutside)
 
     Behavior on height {
         NumberAnimation {
@@ -39,7 +43,7 @@ IPopup {
     }
 
     onClosed: root.reset()
-    onCurrentTabIndexChanged: root.reset()
+    onCurrentTabIndexChanged: root.resetSelections()
 
     onOpened: {
         root.currentTabIndex = Enums.RepositorySelectorTab.Recents
@@ -65,8 +69,9 @@ IPopup {
     }
 
     function primaryEnabled() {
-        if (root.busy)
+        if (root.busy) {
             return false
+        }
 
         switch (root.currentTabIndex) {
             case Enums.RepositorySelectorTab.Recents:
@@ -94,10 +99,15 @@ IPopup {
                 return ok
             }
             case Enums.RepositorySelectorTab.Clone: {
-                let res = root.repositoryController.cloneRepository(cloneTab.toPath, cloneTab.url)
-                root.busy = res.success
-                if (!res.success && res.errorMessage)
-                    root.notificationController.error(`can't clone ${cloneTab.url}, ${res.errorMessage}`, "Repository clone failed", 5000)
+                let url = cloneTab.url
+                let res = root.repositoryController.cloneRepository(cloneTab.toPath, url)
+                if (res.success) {
+                    root.cloneUrl = url
+                    root.progress = 0
+                    root.busy = true
+                } else if (res.errorMessage) {
+                    root.notificationController.error(`can't clone ${url}, ${res.errorMessage}`, "Repository clone failed", 5000)
+                }
                 return false
             }
             case Enums.RepositorySelectorTab.Init: {
@@ -115,13 +125,31 @@ IPopup {
         }
     }
 
-    function reset() {
-        root.busy = false
-        root.progress = 0
+    function resetSelections() {
         recentsTab.reset()
         openTab.reset()
-        cloneTab.reset()
         initTab.reset()
+
+        if (!root.busy) {
+            cloneTab.reset()
+        }
+    }
+
+    function cancelClone() {
+        if (root.cancelling) {
+            return
+        }
+
+        root.cancelling = true
+        root.repositoryController.abortClone()
+    }
+
+    function reset() {
+        if (!root.busy) {
+            root.progress = 0
+        }
+
+        root.resetSelections()
     }
 
     /* Clone progress wiring
@@ -130,20 +158,33 @@ IPopup {
         target: root.repositoryController
 
         function onCloneCompleted(res) {
+            if (!root.busy) {
+                return
+            }
+
+            let url = root.cloneUrl
+
             root.busy = false
             root.progress = 0
+            root.cloneUrl = ""
+            root.cancelling = false
 
             if (res && res.success) {
+                cloneTab.reset()
                 root.close()
+            } else if (res && res.cancelled === true) {
+                root.notificationController.info(`Cloning ${url} was cancelled`, "Clone cancelled", 3000)
             } else if (res && res.stale === true) {
                 root.notificationController.info("Clone finished while you were switching repository", "Clone", 4000)
             } else {
-                root.notificationController.error(`can't clone ${cloneTab.url}, ${res?.errorMessage ?? res?.error ?? "unknown error"}`, "Repository clone failed", 5000)
+                root.notificationController.error(`can't clone ${url}, ${res?.errorMessage ?? res?.error ?? "unknown error"}`, "Repository clone failed", 5000)
             }
         }
 
         function onCloneProgress(p) {
-            root.progress = p
+            if (root.busy) {
+                root.progress = p
+            }
         }
     }
 
@@ -181,6 +222,8 @@ IPopup {
                     anchors.right: parent.right
                     anchors.rightMargin: 20
                     anchors.verticalCenter: parent.verticalCenter
+                    enabled: !root.busy
+                    opacity: root.busy ? 0.4 : 1.0
                     onClicked: root.close()
                     Material.accent: Style.colors.windowsClose
                     content: Item {
@@ -243,6 +286,8 @@ IPopup {
 
                             readonly property bool active: root.currentTabIndex === modelData.index
 
+                            opacity: (root.busy && !tabDelegate.active) ? 0.4 : 1.0
+
                             Row {
                                 id: tabContent
                                 anchors.verticalCenter: parent.verticalCenter
@@ -281,6 +326,7 @@ IPopup {
                             MouseArea {
                                 id: tabMouse
                                 anchors.fill: parent
+                                enabled: !root.busy
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: root.currentTabIndex = modelData.index
@@ -324,6 +370,7 @@ IPopup {
                 CloneTab {
                     id: cloneTab
                     appModel: root.appModel
+                    locked: root.busy
                 }
 
                 // TODO: unreachable while the Worktrees tab is hidden; kept so the stack
@@ -359,10 +406,11 @@ IPopup {
 
                     Button {
                         id: cancelButton
-                        width: 84
+                        width: 96
                         height: 43
                         flat: true
-                        text: "Cancel"
+                        enabled: !root.cancelling
+                        text: root.cancelling ? "Cancelling…" : "Cancel"
                         font.family: Style.fontTypes.inter
                         font.pixelSize: 12
 
@@ -381,7 +429,13 @@ IPopup {
                             verticalAlignment: Text.AlignVCenter
                         }
 
-                        onClicked: root.close()
+                        onClicked: {
+                            if (root.busy) {
+                                root.cancelClone()
+                            } else {
+                                root.close()
+                            }
+                        }
                     }
 
                     ProgressButton {
