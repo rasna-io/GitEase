@@ -28,18 +28,21 @@ Rectangle {
 
     property bool fillWhenEmpty: false
 
+    property bool animated: true
+
     // Optional custom row delegate. If not set, a default delegate is used.
     property Component rowDelegate: null
     // Optional header actions content (rendered on the right side of the header)
     property Component headerActions: null
 
-    readonly property bool needsVScroll: listView.contentHeight > (listView.height + 1)
+    readonly property bool needsVScroll: root.expanded && listView.contentHeight > (listView.height + 1)
     readonly property bool wantsFillHeight: expanded && (listView.count > 0 || root.fillWhenEmpty)
     readonly property int count: listView.count
 
     /* Object Properties
      * ****************************************************************************************/
     color: "transparent"
+    clip: true
     implicitHeight: headerHeight + ((expanded && (listView.count === 0) && !root.fillWhenEmpty) ? emptyExpandedHeight : 0)
 
     /* Signals
@@ -49,9 +52,12 @@ Rectangle {
 
     /* Children
      * ****************************************************************************************/
-    Behavior on implicitHeight {
+    Behavior on height {
+        enabled: root.animated
+
         NumberAnimation {
-            duration: 120
+            duration: Style.motionMedium
+            easing.type: Easing.OutCubic
         }
     }
 
@@ -145,18 +151,10 @@ Rectangle {
         Rectangle {
             id: listArea
             Layout.fillWidth: true
-            Layout.fillHeight: root.wantsFillHeight
-            Layout.preferredHeight: !root.expanded ? 0 : ((listView.count === 0) ? root.emptyExpandedHeight : -1)
-            visible: root.expanded
-            opacity: root.expanded ? 1 : 0
+
+            Layout.fillHeight: true
             color: "transparent"
             clip: true
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 100
-                }
-            }
 
             RowLayout {
                 anchors.fill: parent
@@ -211,10 +209,28 @@ Rectangle {
 
                     // Empty state
                     ColumnLayout {
+                        id: emptyState
+
+                        property real shown: listView.count === 0 ? 1 : 0
+
                         anchors.centerIn: parent
                         width: parent.width - 40
-                        visible: listView.count === 0
+                        visible: shown > 0
+                        opacity: shown
                         spacing: 8
+
+                        transform: Translate {
+                            y: (1 - emptyState.shown) * 10
+                        }
+
+                        Behavior on shown {
+                            enabled: root.animated
+
+                            NumberAnimation {
+                                duration: Style.motionMedium
+                                easing.type: Easing.OutCubic
+                            }
+                        }
 
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
