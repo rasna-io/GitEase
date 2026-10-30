@@ -211,15 +211,39 @@ Rectangle {
                     }
                 }
 
-                // Author (design: 11px, margin-bottom 6px)
-                Label {
-                    text: "by " + (root.plugin?.author ?? "")
-                    color: Style.colors.pluginCardMetaText
-                    font.pixelSize: Style.appFont.h4Pt
-                    font.family: Style.fontTypes.inter
-                    elide: Text.ElideRight
+                RowLayout {
                     Layout.fillWidth: true
                     Layout.bottomMargin: Style.dp(6)
+                    spacing: Style.dp(6)
+
+                    Label {
+                        text: "by " + (root.plugin?.author ?? "")
+                        color: Style.colors.pluginCardMetaText
+                        font.pixelSize: Style.appFont.h4Pt
+                        font.family: Style.fontTypes.inter
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                    }
+
+                    Rectangle {
+                        visible: (root.plugin?.sourceLabel ?? "") !== ""
+                        radius: 3
+                        color: root.categoryBadgeBg
+                        implicitHeight: sourceBadgeLabel.implicitHeight + 4
+                        implicitWidth: sourceBadgeLabel.implicitWidth + 12
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Label {
+                            id: sourceBadgeLabel
+                            anchors.centerIn: parent
+                            text: root.plugin?.sourceLabel ?? ""
+                            color: Style.colors.pluginCardMetaText
+                            font.pixelSize: Style.appFont.smallPt
+                            font.weight: Font.DemiBold
+                            font.family: Style.fontTypes.inter
+                        }
+                    }
                 }
 
                 // Description (design: 12px, line-height 1.6)

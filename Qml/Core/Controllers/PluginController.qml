@@ -38,6 +38,10 @@ QtObject {
 
     // server plugin IDs seen so far — used in syncLocalPlugins to distinguish server vs local-only entries
     property var    serverPluginIds:    ({})
+    // true once the catalog was fetched; before that a plugin is not known to be local-only
+    property bool   serverListLoaded:   false
+    // packages found in the downloads folder: id → package (manifest plus packagePath)
+    property var    downloadedMap:      ({})
     // map of in-progress install requests: requestKey → pluginId
     property var    pendingInstallKeys:   ({})
     // map of expected MD5 hashes for in-progress downloads: requestKey → md5 hex string
@@ -68,6 +72,8 @@ QtObject {
     property PluginManager pluginManager: PluginManager {
 
         onPluginsChanged: Qt.callLater(root.syncLocalPlugins)
+
+        onDownloadedPackagesChanged: Qt.callLater(root.refreshDownloadedPackages)
 
         onPluginLoaded: function(id) {
             console.log("[PluginController] Plugin loaded:", id)
@@ -197,6 +203,7 @@ QtObject {
      * ****************************************************************************************/
     Component.onCompleted: {
         pluginManager.initialize()
+        pluginManager.scanDownloads()
         // Defer scanning one event-loop tick so that all Component.onCompleted handlers fire
         // first — including MainWindow's SwipeView which sets pageController. Without this
         // deferral, pageRegistered signals arrive before pageController is available.
@@ -636,12 +643,25 @@ QtObject {
                 entry.latestVersion = existing.latestVersion
         }
 
-        root.pluginDetail = entry
+        root.pluginDetail = root.decorateEntry(entry, true)
     }
 
     function installPlugin(pluginId, phase) {
-        if (!root.networkController)
+        // A copy in the downloads folder is installed without going online.
+        let cached = root.usableCachedPackage(root.findListedPlugin(pluginId))
+        if(cached) {
+            root.setInstallState(pluginId, true, phase || "Installing", -1)
+            if(pluginManager.installDownloadedPackage(pluginId, cached.packagePath)) {
+                return
+            }
+
+            root.setInstallState(pluginId, false)
+        }
+
+        if (!root.networkController) {
+            root.notificationController.error("Could not install plugin: no package is available.", "Plugins")
             return
+        }
 
         root.setInstallState(pluginId, true, phase || "Preparing", 0)
 
@@ -659,6 +679,158 @@ QtObject {
     function rescanLocalPlugins() {
         pluginManager.scanDefaultDirectory()
         pluginManager.scanApplicationPluginsDirectory()
+        pluginManager.scanDownloads()
+    }
+
+    function refreshDownloadedPackages() {
+        let map = {}
+        let packages = pluginManager.downloadedPackages
+        for(let i = 0; i < packages.length; i++) {
+            map[packages[i].id] = packages[i]
+        }
+
+        root.downloadedMap = map
+        root.syncLocalPlugins()
+    }
+
+    function compareVersions(a, b) {
+        let partsA = String(a || "").split(".")
+        let partsB = String(b || "").split(".")
+        let count = Math.max(partsA.length, partsB.length)
+
+        for(let i = 0; i < count; i++) {
+            let x = parseInt(partsA[i]) || 0
+            let y = parseInt(partsB[i]) || 0
+            if(x !== y) {
+                return x < y ? -1 : 1
+            }
+        }
+
+        return 0
+    }
+
+    function findListedPlugin(pluginId) {
+        let plugins = root.appModel ? root.appModel.plugins : null
+        if(!plugins) {
+            return null
+        }
+
+        for(let i = 0; i < plugins.length; i++) {
+            if(plugins[i].pluginId === pluginId) {
+                return plugins[i]
+            }
+        }
+
+        return null
+    }
+
+    // The downloaded package an install should use, or null when the plugin has to be downloaded.
+    // A plugin that is also online only uses its downloaded copy when that is not older than the
+    // catalog's latest version.
+    function usableCachedPackage(entry) {
+        if(!entry) {
+            return null
+        }
+
+        let pkg = root.downloadedMap[entry.pluginId]
+        if(!pkg) {
+            return null
+        }
+
+        if(!root.serverPluginIds[entry.pluginId]) {
+            return pkg
+        }
+
+        return root.compareVersions(pkg.version, entry.latestVersion) >= 0 ? pkg : null
+    }
+
+    // Adds what the cards need to tell where a plugin comes from: the catalog, the downloads
+    // folder or only this machine.
+    function decorateEntry(p, forceOnline) {
+        if(p.isPlaceholder) {
+            return p
+        }
+
+        let pkg = root.downloadedMap[p.pluginId] || null
+        let online = !!forceOnline || !!root.serverPluginIds[p.pluginId]
+        let isLocal = root.serverListLoaded && !online
+
+        let latestVersion = p.latestVersion
+        if(pkg && !online && !p.isInstalled) {
+            latestVersion = pkg.version
+        }
+
+        // "same" | "newer" | "older" | "only" (not online) | "" (no downloaded copy)
+        let cacheStatus = ""
+        if(pkg) {
+            if(!online) {
+                cacheStatus = "only"
+            } else {
+                let order = root.compareVersions(pkg.version, latestVersion)
+                cacheStatus = order === 0 ? "same" : (order > 0 ? "newer" : "older")
+            }
+        }
+
+        let label = ""
+        let note = ""
+        if(p.isInstalled) {
+            if(isLocal) {
+                label = "Installed locally"
+                note = "This plugin is not in the online catalog. It was installed from this computer."
+            }
+        } else if(pkg) {
+            switch(cacheStatus) {
+            case "only":
+                label = isLocal ? "Local package" : "Downloaded"
+                note = "Installs from the copy in your downloads folder (v" + pkg.version + ")."
+                break
+            case "same":
+                label = "Downloaded"
+                note = "Installs from the copy in your downloads folder, no download needed."
+                break
+            case "newer":
+                label = "Downloaded"
+                note = "Your downloaded copy (v" + pkg.version + ") is newer than the catalog's v"
+                       + latestVersion + " and is used to install."
+                break
+            case "older":
+                note = "Your downloaded copy (v" + pkg.version + ") is older than the catalog's v"
+                       + latestVersion + ". The latest version is downloaded instead."
+                break
+            }
+        }
+
+        return Object.assign({}, p, {
+            latestVersion:    latestVersion,
+            isLocal:          isLocal,
+            hasCachedPackage: !!pkg,
+            cachedVersion:    pkg ? pkg.version : "",
+            cachedPath:       pkg ? pkg.packagePath : "",
+            cacheStatus:      cacheStatus,
+            installFromCache: !p.isInstalled && cacheStatus !== "" && cacheStatus !== "older",
+            sourceLabel:      label,
+            sourceNote:       note
+        })
+    }
+
+    function decorateAll(list) {
+        return list.map(function(p) {
+            return root.decorateEntry(p, false)
+        })
+    }
+
+    // Builds a card for a package that only exists in the downloads folder.
+    function buildCachedEntry(pkg) {
+        let entry = root.buildLocalEntry(pkg)
+        let sizeKb = pkg.packageSizeKb || 0
+
+        return Object.assign(entry, {
+            size:            pkg.size || (sizeKb ? (sizeKb + " KB") : ""),
+            sizeKb:          sizeKb,
+            isInstalled:     false,
+            isEnabled:       false,
+            isCompatible:    true
+        })
     }
 
     function installGepFile(gepPath) {
@@ -1005,6 +1177,7 @@ QtObject {
         })
 
         root.serverPluginIds = newServerIds
+        root.serverListLoaded = true
 
         // Append locally-installed plugins absent from the server list.
         for (var id in root.localPluginMap) {
@@ -1022,6 +1195,20 @@ QtObject {
             merged.push(buildLocalEntry(local))
         }
 
+        // Append packages from the downloads folder that are neither online nor installed.
+        for (var packageId in root.downloadedMap) {
+            if (newServerIds[packageId] || root.localPluginMap[packageId]) {
+                continue
+            }
+
+            let pkg = root.downloadedMap[packageId]
+            if (!root.matchesSearch(pkg, searchLower)) {
+                continue
+            }
+
+            merged.push(root.buildCachedEntry(pkg))
+        }
+
         let current = root.appModel.plugins ? root.appModel.plugins : []
         for(let k = 0; k < current.length; k++) {
             let existing = current[k]
@@ -1032,8 +1219,17 @@ QtObject {
             }
         }
 
-        root.appModel.plugins = merged
+        root.appModel.plugins = root.decorateAll(merged)
         checkUpdates()
+    }
+
+    function matchesSearch(info, searchLower) {
+        if(searchLower === "") {
+            return true
+        }
+
+        return (info.name || "").toLowerCase().indexOf(searchLower) !== -1
+               || (info.description || "").toLowerCase().indexOf(searchLower) !== -1
     }
 
     // Appends new server results to the existing list (pagination).
@@ -1042,7 +1238,21 @@ QtObject {
             return
 
         let existingIds = {}
-        root.appModel.plugins.forEach(function(p) { existingIds[p.pluginId] = true })
+        let offlineIds = {}
+        root.appModel.plugins.forEach(function(p) {
+            existingIds[p.pluginId] = true
+            if (!p.isPlaceholder && !root.serverPluginIds[p.pluginId]) {
+                offlineIds[p.pluginId] = true
+            }
+        })
+
+        // A card that was only known from this computer is replaced by the catalog's entry.
+        let replaced = {}
+        serverPlugins.forEach(function(sp) {
+            if (offlineIds[sp.id]) {
+                replaced[sp.id] = sp
+            }
+        })
 
         let newItems = serverPlugins
             .filter(function(sp) { return !existingIds[sp.id] })
@@ -1051,8 +1261,22 @@ QtObject {
                 return buildPluginEntry(sp, root.localPluginMap[sp.id])
             })
 
-        if (newItems.length > 0) {
-            root.appModel.plugins = root.appModel.plugins.concat(newItems)
+        let replacedIds = Object.keys(replaced)
+        if (newItems.length > 0 || replacedIds.length > 0) {
+            let current = root.appModel.plugins
+            if (replacedIds.length > 0) {
+                current = current.map(function(p) {
+                    let sp = replaced[p.pluginId]
+                    if (!sp) {
+                        return p
+                    }
+
+                    root.serverPluginIds[sp.id] = true
+                    return Object.assign(root.buildPluginEntry(sp, root.localPluginMap[sp.id]), { busy: p.busy })
+                })
+            }
+
+            root.appModel.plugins = root.decorateAll(current.concat(newItems))
             checkUpdates()
         }
     }
@@ -1221,7 +1445,11 @@ QtObject {
 
                 // Drop local-only entries that are no longer installed
                 .filter(function(p) {
-                    return p.isPlaceholder || root.isBeingRemoved(p.pluginId) || root.serverPluginIds[p.pluginId] || p.isInstalled
+                    return p.isPlaceholder
+                            || root.isBeingRemoved(p.pluginId)
+                            || root.serverPluginIds[p.pluginId]
+                            || root.downloadedMap[p.pluginId]
+                            || p.isInstalled
                 })
 
             // Add newly installed plugins that aren't listed yet (e.g. imported .gep files
@@ -1240,14 +1468,34 @@ QtObject {
                 updated.push(buildLocalEntry(info))
             }
 
-            root.appModel.plugins = updated
+            // Packages from the downloads folder that are not listed yet
+            for (var packageId in root.downloadedMap) {
+                if (listedIds[packageId] || localMap[packageId]) {
+                    continue
+                }
+
+                let pkg = root.downloadedMap[packageId]
+                if (root.matchesSearch(pkg, searchLower)) {
+                    updated.push(root.buildCachedEntry(pkg))
+                }
+            }
+
+            root.appModel.plugins = root.decorateAll(updated)
             return
         }
 
         // No server data yet — show local plugins as an immediate fallback
-        root.appModel.plugins = infos.map(function(info) {
+        let fallback = infos.map(function(info) {
             return buildLocalEntry(info)
         })
+
+        for (var cachedId in root.downloadedMap) {
+            if (!localMap[cachedId]) {
+                fallback.push(root.buildCachedEntry(root.downloadedMap[cachedId]))
+            }
+        }
+
+        root.appModel.plugins = root.decorateAll(fallback)
     }
 
     // Get plugin main color based on its categoryId
