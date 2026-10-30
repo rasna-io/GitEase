@@ -274,11 +274,19 @@ Page {
                             spacing: 6
 
                             readonly property int stagedCount: changesFileLists.stagedModel.length
-                            readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
+                            readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "" && !changesFileLists.busyVisible
 
                             Component.onCompleted: buildCommitMenu()
                             onStagedCountChanged: buildCommitMenu()
                             onCommitEnabledChanged: buildCommitMenu()
+
+                            Connections {
+                                target: changesFileLists
+
+                                function onBusyVisibleChanged() {
+                                    committingButton.buildCommitMenu()
+                                }
+                            }
 
                             function buildCommitMenu() {
                                 let items = []
@@ -288,6 +296,7 @@ Page {
                                          ? "Change Commit Message..."
                                          : "Amend Commit...",
                                     icon: Style.icons.penToSquare,
+                                    enabled: !changesFileLists.busyVisible,
                                     action: function() { amendPopup.open() }
                                 })
 
@@ -501,6 +510,10 @@ Page {
             currentRepositoryName: root.appModel.currentRepository.name || ""
 
             onRequestStage: function (start, end, type, rows) {
+                if (changesFileLists.listsBusy) {
+                    return
+                }
+
                 root.showSaveDialog(
                             () => {
                                 let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
@@ -515,6 +528,10 @@ Page {
             }
 
             onRequestRevert: function (start, end, type) {
+                if (changesFileLists.listsBusy) {
+                    return
+                }
+
                 root.showSaveDialog(
                             () => {
                                 let res = root.statusController.revertSelectedLines(root.selectedFilePath, start, end, type)
@@ -533,6 +550,10 @@ Page {
             }
 
             onRequestStash: function (start, end, type) {
+                if (changesFileLists.listsBusy) {
+                    return
+                }
+
                 let res = root.stashController.stashLines(root.selectedFilePath, start, end, type)
                 if (res.success) {
                     root.notificationController.success("Selected lines stashed", "Stash", 2000)
@@ -572,6 +593,10 @@ Page {
     }
 
     function commit(amend) : bool {
+        if (changesFileLists.listsBusy) {
+            return false
+        }
+
         amend = amend || false
         const pm = root.pluginController?.pluginManager
         if (pm && pm.hasWorkflowPluginsFor("pre-commit")) {
@@ -599,6 +624,10 @@ Page {
     }
 
     function _doCommit(amend) : bool {
+        if (changesFileLists.listsBusy) {
+            return false
+        }
+
         let res = commitController.commit(commitTextArea.text, amend, false)
         if (res.success) {
             commitTextArea.text = ""

@@ -5,6 +5,8 @@
 #include <QDir>
 #include <QFile>
 #include <git2.h>
+#include <string>
+#include <unordered_map>
 
 GitStatus::GitStatus(QObject *parent)
     : IGitController{parent}
@@ -63,51 +65,171 @@ GitResult GitStatus::unstageFile(const QString &filePath)
 
 GitResult GitStatus::stageAll(bool includeUntrackedFiles)
 {
-
-    GitResult statusResult = status();
-    if (!statusResult.success()) {
-        return GitResult(false, QVariant(), statusResult.errorMessage());
+    if(!m_currentRepo || !activeRepo()) {
+        return GitResult(false, QVariant(), "No repository available.");
     }
 
-    int stagedCount = 0;
+    git_status_options opts = GIT_STATUS_OPTIONS_INIT;
+    opts.show  = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
+    opts.flags = GIT_STATUS_OPT_RECURSE_UNTRACKED_DIRS;
+
+    if(includeUntrackedFiles) {
+        opts.flags |= GIT_STATUS_OPT_INCLUDE_UNTRACKED;
+    }
+
+    git_status_list *statusListRaw = nullptr;
+    if(git_status_list_new(&statusListRaw, activeRepo(), &opts) != GIT_OK || !statusListRaw) {
+        return GitResult(false, QVariant(), "Failed to read the repository status");
+    }
+
+    std::unique_ptr<git_status_list, decltype(&git_status_list_free)> statusList(statusListRaw, git_status_list_free);
+
+    git_index *indexRaw = nullptr;
+    if(git_repository_index(&indexRaw, activeRepo()) != GIT_OK || !indexRaw) {
+        return GitResult(false, QVariant(), "Failed to get repository index");
+    }
+
+    UniqueIndex index(indexRaw);
+
+    const char *workdir = git_repository_workdir(activeRepo());
+    const QDir workdirDir(workdir ? QString::fromUtf8(workdir) : QString());
+
+    const unsigned int unstagedMask = GIT_STATUS_WT_NEW | GIT_STATUS_WT_MODIFIED | GIT_STATUS_WT_DELETED |
+                                      GIT_STATUS_WT_RENAMED | GIT_STATUS_WT_TYPECHANGE | GIT_STATUS_CONFLICTED;
+
     QStringList stagedFiles;
-    QList<GitFileStatus> files = statusResult.data().value<QList<GitFileStatus>>();
+    QStringList failedFiles;
 
-    // Stage all unstaged files
-    for (const GitFileStatus& file : files) {
-        if (file.isUnstaged()) {
-            GitResult result = addToIndex(file.path(), file.unstagedStatus() == GitFileStatus::Deleted);
-            if (result.success()) {
-                stagedCount++;
-                stagedFiles.append(file.path());
-            }
+    const size_t entryCount = git_status_list_entrycount(statusList.get());
+    for(size_t i = 0; i < entryCount; ++i) {
+        const git_status_entry *entry = git_status_byindex(statusList.get(), i);
+        if(!entry || !(entry->status & unstagedMask)) {
+            continue;
+        }
+
+        const git_diff_delta *delta = entry->index_to_workdir ? entry->index_to_workdir : entry->head_to_index;
+        if(!delta || !delta->new_file.path) {
+            continue;
+        }
+
+        const QString path = QString::fromUtf8(delta->new_file.path);
+
+        // A conflicted file whose working copy is gone is resolved as a deletion
+        bool remove = entry->status & GIT_STATUS_WT_DELETED;
+        if(!remove && (entry->status & GIT_STATUS_CONFLICTED)) {
+            remove = !workdirDir.exists(path);
+        }
+
+        const int result = remove ? git_index_remove_bypath(index.get(), delta->new_file.path)
+                                  : git_index_add_bypath(index.get(), delta->new_file.path);
+
+        if(result == GIT_OK) {
+            stagedFiles.append(path);
+        } else {
+            failedFiles.append(path);
         }
     }
 
-    if (includeUntrackedFiles) {
-        // Stage all untracked files
-        for (const GitFileStatus& file : files) {
-            if (file.isUntracked()) {
-                GitResult result = addToIndex(file.path());  // Stage the untracked file
-                if (result.success()) {
-                    stagedCount++;
-                    stagedFiles.append(file.path());
-                }
-            }
-        }
+    if(git_index_write(index.get()) != GIT_OK) {
+        return GitResult(false, QVariant(), "Failed to write changes to disk");
     }
-
-    QVariantMap resultData;
-    resultData["count"] = stagedCount;
-    resultData["files"] = stagedFiles;
 
     emitGitCommand(includeUntrackedFiles ? "git add -A" : "git add -u");
+
+    QVariantMap resultData;
+    resultData["count"] = int(stagedFiles.size());
+    resultData["files"] = stagedFiles;
+    resultData["failedFiles"] = failedFiles;
+
+    if(!failedFiles.isEmpty()) {
+        return GitResult(false, resultData, QString("Failed to stage %1 file(s)").arg(failedFiles.size()));
+    }
 
     return GitResult(true, resultData, "All files staged successfully.");
 }
 
+GitResult GitStatus::unstageAll()
+{
+    if(!m_currentRepo || !activeRepo()) {
+        return GitResult(false, QVariant(), "No repository available.");
+    }
+
+    if(git_repository_head_unborn(activeRepo()) == 1) {
+        git_index *indexRaw = nullptr;
+        if(git_repository_index(&indexRaw, activeRepo()) != GIT_OK || !indexRaw) {
+            return GitResult(false, QVariant(), "Failed to get repository index");
+        }
+
+        UniqueIndex index(indexRaw);
+
+        const int count = int(git_index_entrycount(index.get()));
+
+        if(git_index_clear(index.get()) != GIT_OK || git_index_write(index.get()) != GIT_OK) {
+            git_index_read(index.get(), true);
+            return GitResult(false, QVariant(), "Failed to write changes to disk");
+        }
+
+        emitGitCommand("git rm --cached -r .");
+
+        return GitResult(true, count, "All files unstaged successfully.");
+    }
+
+    git_status_options opts = GIT_STATUS_OPTIONS_INIT;
+    opts.show  = GIT_STATUS_SHOW_INDEX_ONLY;
+    opts.flags = 0;
+
+    git_status_list *statusListRaw = nullptr;
+    if(git_status_list_new(&statusListRaw, activeRepo(), &opts) != GIT_OK || !statusListRaw) {
+        return GitResult(false, QVariant(), "Failed to read the repository status");
+    }
+
+    std::unique_ptr<git_status_list, decltype(&git_status_list_free)> statusList(statusListRaw, git_status_list_free);
+
+    const unsigned int stagedMask = GIT_STATUS_INDEX_NEW | GIT_STATUS_INDEX_MODIFIED | GIT_STATUS_INDEX_DELETED |
+                                    GIT_STATUS_INDEX_RENAMED | GIT_STATUS_INDEX_TYPECHANGE;
+
+    QStringList paths;
+
+    const size_t entryCount = git_status_list_entrycount(statusList.get());
+    for(size_t i = 0; i < entryCount; ++i) {
+        const git_status_entry *entry = git_status_byindex(statusList.get(), i);
+        if(!entry || !(entry->status & stagedMask) || !entry->head_to_index) {
+            continue;
+        }
+
+        // A staged rename also leaves its old path in HEAD but not in the index
+        if(entry->head_to_index->old_file.path) {
+            paths.append(QString::fromUtf8(entry->head_to_index->old_file.path));
+        }
+
+        if(entry->head_to_index->new_file.path) {
+            paths.append(QString::fromUtf8(entry->head_to_index->new_file.path));
+        }
+    }
+
+    paths.removeDuplicates();
+
+    if(paths.isEmpty()) {
+        return GitResult(true, 0, "Nothing to unstage.");
+    }
+
+    GitResult resetResult = resetIndexToHead(paths);
+    if(!resetResult.success()) {
+        return resetResult;
+    }
+
+    emitGitCommand("git reset");
+
+    return GitResult(true, int(paths.size()), "All files unstaged successfully.");
+}
+
 
 GitResult GitStatus::status()
+{
+    return status(true);
+}
+
+GitResult GitStatus::status(bool withLineStats)
 {
     if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "No repository available. Please open a repository first.");
@@ -124,51 +246,59 @@ GitResult GitStatus::status()
     if (git_status_list_new(&status_list, activeRepo(), &opts) != 0 || !status_list)
         return GitResult(true, QVariant::fromValue(fileInfos));
 
-    git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
-    diffOpts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
+    std::unordered_map<std::string, size_t> deltaIndexByPath;
 
-    git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &diffOpts);
+    if (withLineStats) {
+        git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
+        diffOpts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
 
-    size_t numDeltas = diff ? git_diff_num_deltas(diff) : 0;
+        git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &diffOpts);
 
-    for (size_t i = 0; i < git_status_list_entrycount(status_list); i++) {
+        const size_t numDeltas = diff ? git_diff_num_deltas(diff) : 0;
+        deltaIndexByPath.reserve(numDeltas);
+
+        for (size_t j = 0; j < numDeltas; j++) {
+            const git_diff_delta *delta = git_diff_get_delta(diff, j);
+            if (delta && delta->new_file.path)
+                deltaIndexByPath.emplace(delta->new_file.path, j);  // the first delta of a path wins
+        }
+    }
+
+    const size_t entryCount = git_status_list_entrycount(status_list);
+    fileInfos.reserve(static_cast<qsizetype>(entryCount));
+
+    for (size_t i = 0; i < entryCount; i++) {
 
         const git_status_entry *entry = git_status_byindex(status_list, i);
         if (!entry) continue;
 
+        const char *entryPath = nullptr;
+        if (entry->head_to_index && entry->head_to_index->new_file.path)
+            entryPath = entry->head_to_index->new_file.path;
+        else if (entry->index_to_workdir && entry->index_to_workdir->new_file.path)
+            entryPath = entry->index_to_workdir->new_file.path;
+
         int add = 0, del = 0;
         const git_diff_delta *matched = nullptr;
 
-        if (diff) {
-            for (size_t j = 0; j < numDeltas; j++) {
+        if (!withLineStats) {
+            matched = entry->index_to_workdir;
+        } else if (diff && entryPath) {
+            const auto found = deltaIndexByPath.find(entryPath);
 
-                const git_diff_delta *delta = git_diff_get_delta(diff, j);
-                if (!delta) continue;
-
-                QString dPath = QString::fromUtf8(delta->new_file.path);
-
-                QString ePath;
-                if (entry->head_to_index && entry->head_to_index->new_file.path)
-                    ePath = QString::fromUtf8(entry->head_to_index->new_file.path);
-                else if (entry->index_to_workdir && entry->index_to_workdir->new_file.path)
-                    ePath = QString::fromUtf8(entry->index_to_workdir->new_file.path);
-
-                if (dPath != ePath)
-                    continue;
-
-                matched = delta;
+            if (found != deltaIndexByPath.end()) {
+                matched = git_diff_get_delta(diff, found->second);
 
                 git_patch *patch = nullptr;
                 size_t a = 0, d = 0;
 
-                if (git_patch_from_diff(&patch, diff, j) == GIT_OK && patch) {
+                if (git_patch_from_diff(&patch, diff, found->second) == GIT_OK && patch) {
                     git_patch_line_stats(nullptr, &a, &d, patch);
                     git_patch_free(patch);
                 }
 
                 add = static_cast<int>(a);
                 del = static_cast<int>(d);
-                break;
             }
         }
 
