@@ -37,6 +37,8 @@ Item {
 
     property bool busy: false
 
+    property bool cancelling: false
+
     property real progress: 0
 
     property string defaultPath: ""
@@ -51,7 +53,8 @@ Item {
      * ****************************************************************************************/
 
     onCurrentTabIndexChanged: {
-        reset()
+        if (!root.busy)
+            reset()
     }
 
     ColumnLayout {
@@ -105,6 +108,8 @@ Item {
 
                         readonly property bool active: root.currentTabIndex === modelData.index
 
+                        opacity: (root.busy && !tabDelegate.active) ? 0.4 : 1.0
+
                         Row {
                             id: tabContent
                             anchors.verticalCenter: parent.verticalCenter
@@ -143,6 +148,7 @@ Item {
                         MouseArea {
                             id: tabMouse
                             anchors.fill: parent
+                            enabled: !root.busy
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.currentTabIndex = modelData.index
@@ -191,6 +197,7 @@ Item {
             CloneTab {
                 id: cloneTab
                 appModel: root.repositoryController ? root.repositoryController.appModel : null
+                locked: root.busy
             }
         }
 
@@ -245,18 +252,25 @@ Item {
         target: root.repositoryController
 
         function onCloneCompleted(res) {
-            if (res && res.stale === true)
+            if (!root.busy)
+                return
+
+            if (res && res.cancelled === true)
+                notificationController.info(`Cloning ${root.selectedUrl} was cancelled`, "Clone cancelled", 3000)
+            else if (res && res.stale === true)
                 notificationController.info("Clone finished while you were switching repository", "Clone", 4000)
             else if(!res.success)
                 notificationController.error(`can't clone ${root.selectedUrl}, ${res.errorMessage}`, ` Repository clone failed`, 5000)
 
             root.busy = false
+            root.cancelling = false
             root.progress = 0
             root.cloneFinished(res)
         }
 
         function onCloneProgress (progress){
-            root.progress = progress
+            if (root.busy)
+                root.progress = progress
         }
     }
 
@@ -288,8 +302,17 @@ Item {
         }
     }
 
+    function cancelClone() {
+        if (!root.busy || root.cancelling)
+            return
+
+        root.cancelling = true
+        root.repositoryController.abortClone()
+    }
+
     function reset() {
         root.busy = false
+        root.cancelling = false
         root.progress = 0
         root.selectedPath = ""
         root.selectedUrl = ""
