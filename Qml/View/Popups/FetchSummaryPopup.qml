@@ -42,16 +42,9 @@ IPopup {
     width: Style.dp(500)
     height: Math.min(root.maxPopupHeight, popupColumn.implicitHeight)
 
-    Behavior on height {
-        NumberAnimation {
-            duration: 220
-            easing.type: Easing.OutCubic
-        }
-    }
-
     padding: 0
 
-    onOpened: {
+    onResultsChanged: {
         buildFetchGroups()
         subtitleText = fetchSubtitle()
     }
