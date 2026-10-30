@@ -639,6 +639,62 @@ namespace {
         return result;
     }
 
+    QString downloadsDirectory()
+    {
+        return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+               + QStringLiteral("/downloads/plugins");
+    }
+
+    // Reads the manifest of every package in the downloads folder. When several versions of one
+    // plugin are kept, only the newest one is reported.
+    QVariantList scanDownloadedPackages(const QString& downloadsDir)
+    {
+        struct Package
+        {
+            PluginInfo info;
+            QString    path;
+            qint64     bytes = 0;
+            QDateTime  modified;
+        };
+
+        QMap<QString, Package> best;
+        const QDir dir(downloadsDir);
+        const auto files = dir.entryInfoList({ QStringLiteral("*.gep") }, QDir::Files);
+        for(const QFileInfo& file : files) {
+            const PluginInfo info = readGepManifest(file.absoluteFilePath());
+            if(!info.isValid() || info.version.isEmpty()) {
+                continue;
+            }
+
+            Package package;
+            package.info     = info;
+            package.path     = file.absoluteFilePath();
+            package.bytes    = file.size();
+            package.modified = file.lastModified();
+
+            auto it = best.find(info.id);
+            if(it == best.end()) {
+                best.insert(info.id, package);
+                continue;
+            }
+
+            const int order = compareVersions(info.version, it->info.version);
+            if(order > 0 || (order == 0 && package.modified > it->modified)) {
+                it.value() = package;
+            }
+        }
+
+        QVariantList result;
+        for(auto it = best.cbegin(); it != best.cend(); ++it) {
+            QVariantMap map = it->info.toVariantMap();
+            map.insert(QStringLiteral("packagePath"), it->path);
+            map.insert(QStringLiteral("packageSizeKb"), int((it->bytes + 1023) / 1024));
+            result << map;
+        }
+
+        return result;
+    }
+
 } // namespace
 
 // ── Construction / destruction ───────────────────────────────────────────────
@@ -1337,6 +1393,11 @@ QVariantList PluginManager::pluginInfos() const
     return result;
 }
 
+QVariantList PluginManager::downloadedPackages() const
+{
+    return m_downloadedPackages;
+}
+
 QVariantList PluginManager::registeredDocks() const
 {
     return m_docks;
@@ -1427,6 +1488,46 @@ bool PluginManager::installGepFile(const QString& gepPath)
     }
 
     startGepInstall(gepPath, QString(), QString(), true);
+    return true;
+}
+
+void PluginManager::scanDownloads()
+{
+    if(m_downloadScanRunning) {
+        m_downloadScanQueued = true;
+        return;
+    }
+
+    m_downloadScanRunning = true;
+    runInBackground(this,
+                    []() {
+                        return scanDownloadedPackages(downloadsDirectory());
+                    },
+                    [this](const QVariantList& packages) {
+                        m_downloadScanRunning = false;
+                        if(packages != m_downloadedPackages) {
+                            m_downloadedPackages = packages;
+                            emit downloadedPackagesChanged();
+                        }
+
+                        if(m_downloadScanQueued) {
+                            m_downloadScanQueued = false;
+                            scanDownloads();
+                        }
+                    });
+}
+
+bool PluginManager::installDownloadedPackage(const QString& pluginId, const QString& packagePath)
+{
+    // Only packages that sit in the downloads folder may be installed through this call.
+    const QString canonicalDir = QFileInfo(downloadsDirectory()).canonicalFilePath();
+    const QString canonicalPackage = QFileInfo(packagePath).canonicalFilePath();
+    if(canonicalDir.isEmpty() || canonicalPackage.isEmpty()
+       || !canonicalPackage.startsWith(canonicalDir + QLatin1Char('/'))) {
+        return false;
+    }
+
+    startGepInstall(canonicalPackage, QString(), pluginId, false);
     return true;
 }
 
@@ -1574,6 +1675,8 @@ void PluginManager::finishGepInstall(const GepRequest& request, const GepPlaceme
 {
     Q_UNUSED(request)
     m_installingIds.remove(placement.id);
+
+    scanDownloads();
 
     switch(placement.result) {
     case GepPlaceResult::Ok: {
