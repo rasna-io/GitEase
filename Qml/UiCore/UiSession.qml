@@ -237,10 +237,10 @@ QtObject {
         branchController:        root.branchController
         notificationController:  root.notificationController
         gitStateNotifier:        root.gitStateNotifier
-        userAuthenticationPopup: root.popups?.userAuthenticationPopup
-        fetchSummaryPopup:       root.popups?.fetchSummaryPopup
-        remoteTargetPopup:       root.popups?.remoteTargetPopup
-        confirmDialog:           root.popups?.remoteConfirmDialog
+        userAuthenticationPopup: root.popups?.userAuthenticationPopup ?? null
+        fetchSummaryPopup:       root.popups?.fetchSummaryPopup ?? null
+        remoteTargetPopup:       root.popups?.remoteTargetPopup ?? null
+        confirmDialog:           root.popups?.remoteConfirmDialog ?? null
         appModel:                root.appModel
 
         onFetchCompleted: root.gitStateNotifier.notifyChanged()

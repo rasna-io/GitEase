@@ -18,6 +18,8 @@ Rectangle {
 
     property bool utilityPanelOpen: false
 
+    property bool utilityPanelReady: false
+
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
@@ -48,10 +50,74 @@ Rectangle {
         }
     }
 
+    /* Core pages that are not on screen at start-up. They are created after the first frame,
+     * in the order listed here, so choosing a repository does not wait for them.
+     * ****************************************************************************************/
+    readonly property var deferredPageOrder: ["committing", "plugins"]
+
+    property var deferredPageComponents: ({
+        "committing": committingPageComponent,
+        "plugins":    pluginsPageComponent
+    })
+
+    // Keeps the running incubators alive until their page has been added to the SwipeView.
+    property var deferredPageIncubators: ({})
+
+    Component {
+        id: committingPageComponent
+
+        CommittingPage {
+            appModel: root.uiSession?.appModel
+            repositoryController: root.uiSession?.repositoryController
+            statusController: root.uiSession?.statusController
+            branchController: root.uiSession?.branchController
+            commitController: root.uiSession?.commitController
+            remoteController: root.uiSession?.remoteController
+            remoteOperationsSession: root.uiSession?.remoteOperationsSession
+            userProfileController: root.uiSession?.userProfileController
+            stashController: root.uiSession?.stashController
+            notificationController: root.uiSession?.notificationController
+            userAuthenticationPopup: root.uiSession?.popups?.userAuthenticationPopup
+            uiSessionPopups: root.uiSession?.popups
+            pluginController: root.uiSession?.pluginController
+            terminalController: root.uiSession?.terminalController
+            guideController: root.uiSession?.guideController
+            gitStateNotifier: root.uiSession?.gitStateNotifier
+            textDirectionController: root.uiSession?.textDirectionController
+        }
+    }
+
+    Component {
+        id: pluginsPageComponent
+
+        PluginsPage {
+            appModel: root.uiSession?.appModel
+            pluginController: root.uiSession?.pluginController
+            guideController: root.uiSession?.guideController
+        }
+    }
+
+    Timer {
+        id: deferredPagesTimer
+
+        interval: 50
+        repeat: false
+        running: true
+
+        onTriggered: {
+            deferredPagesTimer.stop()
+            root.utilityPanelReady = true
+            root.startNextDeferredPage()
+        }
+    }
+
     /* Wiring
      * ****************************************************************************************/
-    onUiSessionChanged: {
-        if (!uiSession) return
+    Component.onCompleted: {
+        if(!uiSession) {
+            return
+        }
+
         uiSession.pageController = {
             createPage: root.addPluginPage,
             removePage: root.removePluginPage
@@ -63,12 +129,103 @@ Rectangle {
 
     /* Functions
      * ****************************************************************************************/
-    function addPluginPage(id, title, qmlUrl, icon) {
+    function findPage(pageId) {
         let pages = pageSwipeView.contentChildren
-        for (let i = 0; i < pages.length; i++) {
-            if (pages[i].pageId === id)
-                return
+        for(let i = 0; i < pages.length; i++) {
+            if(pages[i].pageId === pageId) {
+                return pages[i]
+            }
         }
+        return null
+    }
+
+    function corePageCount() {
+        let pages = pageSwipeView.contentChildren
+        let count = 0
+        for(let i = 0; i < pages.length; i++) {
+            if(!pages[i].isPlugin) {
+                ++count
+            }
+        }
+        return count
+    }
+
+    function startNextDeferredPage() {
+        for(let pageId of root.deferredPageOrder) {
+            if(root.findPage(pageId)) {
+                continue
+            }
+
+            if(!root.deferredPageIncubators[pageId]) {
+                root.startDeferredPage(pageId)
+            }
+
+            return
+        }
+    }
+
+    function startDeferredPage(pageId) {
+        let incubator = root.deferredPageComponents[pageId].incubateObject(null, {}, Qt.Asynchronous)
+        root.deferredPageIncubators[pageId] = incubator
+
+        if(incubator.status === Component.Loading) {
+            incubator.onStatusChanged = function() {
+                root.finishDeferredPage(pageId)
+            }
+        } else {
+            root.finishDeferredPage(pageId)
+        }
+    }
+
+    function finishDeferredPage(pageId) {
+        let incubator = root.deferredPageIncubators[pageId]
+        if(!incubator || incubator.status === Component.Loading) {
+            return
+        }
+
+        delete root.deferredPageIncubators[pageId]
+
+        if(incubator.status !== Component.Ready) {
+            console.error("[MainWindow] Failed to create page:", pageId)
+            return
+        }
+
+        if(!root.findPage(pageId)) {
+            pageSwipeView.insertItem(root.corePageCount(), incubator.object)
+        }
+
+        root.startNextDeferredPage()
+    }
+
+    function ensureDeferredPage(pageId) {
+        if(!(pageId in root.deferredPageComponents)) {
+            return
+        }
+
+        for(let id of root.deferredPageOrder) {
+            if(!root.findPage(id)) {
+                if(!root.deferredPageIncubators[id]) {
+                    root.startDeferredPage(id)
+                }
+
+                let incubator = root.deferredPageIncubators[id]
+                if(incubator) {
+                    incubator.forceCompletion()
+                    root.finishDeferredPage(id)
+                }
+            }
+
+            if(id === pageId) {
+                return
+            }
+        }
+    }
+
+    function addPluginPage(id, title, qmlUrl, icon) {
+        if(root.findPage(id)) {
+            return
+        }
+
         let page = pluginPageComponent.createObject(pageSwipeView, {
             pageId: id, title: title, icon: icon, pluginUrl: qmlUrl
         })
@@ -130,6 +287,8 @@ Rectangle {
     }
 
     function switchToPageById(pageId) {
+        root.ensureDeferredPage(pageId)
+
         let pages = pageSwipeView.contentChildren
         let targetIndex = -1
         for (let i = 0; i < pages.length; i++) {
@@ -149,12 +308,12 @@ Rectangle {
 
                 pageSwipeView.setCurrentIndex(targetIndex)
                 pages[targetIndex]?.onPageActivated?.()
-                utilityPanel.reload()
+                utilityPanelLoader.item?.reload()
             })
         } else {
             pageSwipeView.setCurrentIndex(targetIndex)
             pages[targetIndex]?.onPageActivated?.()
-            utilityPanel.reload()
+            utilityPanelLoader.item?.reload()
         }
     }
 
@@ -266,7 +425,7 @@ Rectangle {
                             left: parent.left
                             top: parent.top
                             bottom: parent.bottom
-                            right: utilityPanel.left
+                            right: utilityPanelHost.left
                         }
 
                         // Page switching is driven by the NavigationRail only.
@@ -338,7 +497,7 @@ Rectangle {
                         }
 
                         GraphViewPage {
-                            onUtilityPanelReloadRequested: utilityPanel.reload()
+                            onUtilityPanelReloadRequested: utilityPanelLoader.item?.reload()
 
                             appModel: root.uiSession?.appModel
                             branchController: root.uiSession?.branchController
@@ -366,32 +525,6 @@ Rectangle {
                             textDirectionController: root.uiSession?.textDirectionController
                         }
 
-                        CommittingPage {
-                            appModel: root.uiSession?.appModel
-                            repositoryController: root.uiSession?.repositoryController
-                            statusController: root.uiSession?.statusController
-                            branchController: root.uiSession?.branchController
-                            commitController: root.uiSession?.commitController
-                            remoteController: root.uiSession?.remoteController
-                            remoteOperationsSession: root.uiSession?.remoteOperationsSession
-                            userProfileController: root.uiSession?.userProfileController
-                            stashController: root.uiSession?.stashController
-                            notificationController: root.uiSession?.notificationController
-                            userAuthenticationPopup: root.uiSession?.popups?.userAuthenticationPopup
-                            uiSessionPopups: root.uiSession?.popups
-                            pluginController: root.uiSession?.pluginController
-                            terminalController: root.uiSession?.terminalController
-                            guideController: root.uiSession?.guideController
-                            gitStateNotifier: root.uiSession?.gitStateNotifier
-                            textDirectionController: root.uiSession?.textDirectionController
-                        }
-
-                        PluginsPage {
-                            appModel: root.uiSession?.appModel
-                            pluginController: root.uiSession?.pluginController
-                            guideController: root.uiSession?.guideController
-                        }
-
                         Component.onCompleted: {
                             let requestedPageId = root.uiSession?.shellController?.arguments?.["page"]
                             if (requestedPageId)
@@ -399,35 +532,51 @@ Rectangle {
                         }
                     }
 
-                    UtilityPanel {
-                        id: utilityPanel
+                    Item {
+                        id: utilityPanelHost
                         anchors {
                             right: parent.right
                             top: parent.top
                             bottom: parent.bottom
                         }
-                        width: animatedWidth
-                        open: root.utilityPanelOpen
+                        width: utilityPanelLoader.item ? utilityPanelLoader.item.animatedWidth : 0
 
-                        branchController        : root.uiSession?.branchController
-                        remoteController        : root.uiSession?.remoteController
-                        remoteOperationsSession : root.uiSession?.remoteOperationsSession
-                        repositoryController    : root.uiSession?.repositoryController
-                        commitController        : root.uiSession?.commitController
-                        statusController        : root.uiSession?.statusController
-                        stashController         : root.uiSession?.stashController
-                        tagController           : root.uiSession?.tagController
-                        rebaseController        : root.uiSession?.rebaseController
-                        conflictController      : root.uiSession?.conflictController
-                        bundleController        : root.uiSession?.bundleController
-                        activityController      : root.uiSession?.activityController
-                        notificationController  : root.uiSession?.notificationController
-                        guideController         : root.uiSession?.guideController
-                        userAuthenticationPopup : root.uiSession?.popups?.userAuthenticationPopup
-                        uiSessionPopups         : root.uiSession?.popups
-                        pluginController        : root.uiSession?.pluginController
-                        gitStateNotifier        : root.uiSession?.gitStateNotifier
-                        textDirectionController : root.uiSession?.textDirectionController
+                        Loader {
+                            id: utilityPanelLoader
+                            anchors.fill: parent
+                            asynchronous: true
+                            active: root.utilityPanelReady || root.utilityPanelOpen
+
+                            sourceComponent: UtilityPanel {
+                                anchors {
+                                    right: parent.right
+                                    top: parent.top
+                                    bottom: parent.bottom
+                                }
+                                width: animatedWidth
+                                open: root.utilityPanelOpen
+
+                                branchController        : root.uiSession?.branchController
+                                remoteController        : root.uiSession?.remoteController
+                                remoteOperationsSession : root.uiSession?.remoteOperationsSession
+                                repositoryController    : root.uiSession?.repositoryController
+                                commitController        : root.uiSession?.commitController
+                                statusController        : root.uiSession?.statusController
+                                stashController         : root.uiSession?.stashController
+                                tagController           : root.uiSession?.tagController
+                                rebaseController        : root.uiSession?.rebaseController
+                                conflictController      : root.uiSession?.conflictController
+                                bundleController        : root.uiSession?.bundleController
+                                activityController      : root.uiSession?.activityController
+                                notificationController  : root.uiSession?.notificationController
+                                guideController         : root.uiSession?.guideController
+                                userAuthenticationPopup : root.uiSession?.popups?.userAuthenticationPopup
+                                uiSessionPopups         : root.uiSession?.popups
+                                pluginController        : root.uiSession?.pluginController
+                                gitStateNotifier        : root.uiSession?.gitStateNotifier
+                                textDirectionController : root.uiSession?.textDirectionController
+                            }
+                        }
                     }
                 }
 
