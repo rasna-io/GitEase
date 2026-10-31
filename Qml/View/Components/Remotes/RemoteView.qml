@@ -8,6 +8,7 @@ import GitEase_Style
 import GitEase
 
 import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+import "qrc:/GitEase/Qml/Core/Scripts/RemoteErrorGuide.js" as RemoteErrorGuide
 
 /*! ***********************************************************************************************
  * RemoteView
@@ -132,6 +133,48 @@ UtilitiesCard {
             }
         }
 
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "private_host_tutorial"
+            guideName: "Connect a private host"
+            guideIcon: Style.icons.upload
+            guidePage: "utilities"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return listView },
+                        icon: Style.icons.upload,
+                        title: "1. The host has to resolve",
+                        description: "Fetch and pull need a network path to the server. A name like gitlab.company.local only works on the VPN or office network that publishes it. When the error says the host is not known, Git never offered your SSH key — the computer could not find the server. Check the URL on this list, then confirm the name from a terminal.",
+                        commands: [{ label: "Look up the host", command: "ping <host>" }],
+                        isInPopup: false,
+                        activationDelay: 300,
+                        onActivate: function() { root.collapsed = false }
+                    },
+                    {
+                        targetProvider: function() { return addRemoteBtn },
+                        icon: Style.icons.terminal,
+                        title: "2. Match the SSH key to that host",
+                        description: "Open Settings → SSH Keys. A host whose name contains gitlab uses the key marked GitLab. GitHub uses the GitHub key. Every other server uses Other hosts. Copy that public key and add it on the server itself. On a self-hosted GitLab that page is Preferences → SSH Keys on that instance.",
+                        commands: [{ command: "ssh -T git@<host>" }]
+                    },
+                    {
+                        targetProvider: function() {
+                            const row = listView.itemAtIndex(0)
+                            return (row && row.fetchButton) ? row.fetchButton : listView
+                        },
+                        icon: Style.icons.refresh,
+                        title: "3. Fetch, then pull a branch the remote has",
+                        description: "Pull looks for a remote branch with the same name as the branch you have checked out. On a local branch named cicd, GitEase looks for origin/cicd. Fetch first and read which branches came back. Pull one of those, or push the local branch when you want to create it on the remote.",
+                        commands: [
+                            { label: "See remote branches", command: "git fetch origin" },
+                            { command: "git branch -r" }
+                        ]
+                    }
+                ]
+            }
+        }
+
         Connections {
             target: root
             function onRemoteControllerChanged() {
@@ -171,7 +214,9 @@ UtilitiesCard {
                 model: root.filteredRemotes
 
                 delegate: Item {
+                    id: remoteRow
 
+                    property Item fetchButton: fetchBtn
                     property Remote currentRemote: modelData
 
                     readonly property bool isDefault: root.remoteOperationsSession !== null
@@ -259,6 +304,7 @@ UtilitiesCard {
                             Layout.alignment: Qt.AlignVCenter
 
                             ActionIconButton {
+                                id: fetchBtn
                                 iconText: Style.icons.refresh
                                 tooltip: root.isFetching ? "Fetching..." : "Fetch"
                                 textColor: root.isFetching ? Style.colors.utilitiesActionIconActive
@@ -395,7 +441,7 @@ UtilitiesCard {
             if (gitResult && gitResult.success)
                 root.notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
             else
-                root.notificationController.error("Failed to fetch from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Unknown error"), "Fetch Error", 7000)
+                RemoteErrorGuide.notifyFailure(root.notificationController, "Fetch", remoteName, gitResult && gitResult.errorMessage)
         }
 
         function startPull(args, remoteName) {
@@ -412,7 +458,7 @@ UtilitiesCard {
             if (gitResult && gitResult.success)
                 root.notificationController.success("Successfully pulled from " + remoteName, "Pull", 5000)
             else
-                root.notificationController.error("Failed to pull from " + remoteName + ": " + ((gitResult && gitResult.errorMessage) || "Pull failed"), "Pull Error", 7000)
+                RemoteErrorGuide.notifyFailure(root.notificationController, "Pull", remoteName, (gitResult && gitResult.errorMessage) || "Pull failed")
 
             root.isFetching = false
         }

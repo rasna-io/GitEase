@@ -19,6 +19,8 @@
  * read directly from disk by libssh2, so no OpenSSH client, ssh-add or
  * ssh-agent service is required. If the key is rejected (for example because
  * it is passphrase-protected), a running ssh-agent is tried as a fallback.
+ * The server host key is accepted so a host that is not yet in
+ * ~/.ssh/known_hosts can still be fetched from and pushed to.
  *
  * Works the same for GitHub, GitLab and any other host: the user is "git" and
  * the host identifies the account by the public key that was uploaded to it.
@@ -50,6 +52,9 @@ private:
                                    const char* username_from_url,
                                    unsigned int allowed_types,
                                    void* payload);
+
+    /** Credentials callback plus acceptance of an unknown SSH server host key. */
+    static void installCallbacks(git_remote_callbacks& callbacks);
 
 public:
 

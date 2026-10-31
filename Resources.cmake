@@ -58,6 +58,7 @@ set(RESOURCES_CORE
     Qml/Core/Scripts/CommitGraphNavigation.js
     Qml/Core/Scripts/CommitGraphMenuBuilder.js
     Qml/Core/Scripts/AsyncGit.js                     # Callback wrapper over IGitController::callAsync
+    Qml/Core/Scripts/RemoteErrorGuide.js             # Step-by-step copy for unreachable remotes
 )
 
 
