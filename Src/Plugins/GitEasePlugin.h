@@ -13,6 +13,7 @@
 #include "IWorkflowPlugin.h"
 #include "IToolbarPlugin.h"
 #include "IRulePlugin.h"
+#include "IConflictAssistPlugin.h"
 
 // ── Optional mix-in interfaces ────────────────────────────────────────────────
 #include "IRepositoryAwarePlugin.h"

@@ -63,6 +63,7 @@ IWindow {
     property LayoutController       layoutController: null
     property GuideController        guideController: null
     property TextDirectionController textDirectionController: null
+    property var pluginManager: null
 
 
     property var    planData            : ({})
@@ -421,6 +422,7 @@ IWindow {
         commitController: root.commitController
         guideController: root.guideController
         textDirectionController: root.textDirectionController
+        pluginManager: root.pluginManager
     }
 
     Connections {

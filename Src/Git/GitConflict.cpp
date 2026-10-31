@@ -164,6 +164,13 @@ QVariantList GitConflict::parseConflictBlocks(const QStringList& lines) const
     return blocks;
 }
 
+QString GitConflict::repositoryPath() const
+{
+    if (!m_currentRepo || !m_currentRepo->repo)
+        return {};
+    return workdirOf(m_currentRepo->repo);
+}
+
 GitResult GitConflict::acceptBlockOurs(const QString& filePath, int blockIndex)
 {
     return replaceBlock(filePath, blockIndex, true, false, false);

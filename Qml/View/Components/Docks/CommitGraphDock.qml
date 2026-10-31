@@ -522,6 +522,7 @@ DetachablePanel {
         commitController        : root.commitController
         guideController         : root.guideController
         textDirectionController : root.textDirectionController
+        pluginManager           : root.pluginController?.pluginManager ?? null
         // onOperationCompleted    : reloadAll()        //TODO
     }
 
@@ -561,6 +562,7 @@ DetachablePanel {
         commitController        : root.commitController
         guideController         : root.guideController
         textDirectionController : root.textDirectionController
+        pluginManager           : root.pluginController?.pluginManager ?? null
         // onOperationCompleted    : reloadAll()        //TODO
     }
 
@@ -583,6 +585,7 @@ DetachablePanel {
         layoutController: root.layoutController
         guideController: root.guideController
         textDirectionController: root.textDirectionController
+        pluginManager: root.pluginController?.pluginManager ?? null
     }
 
     CommitFileBrowserPopup {

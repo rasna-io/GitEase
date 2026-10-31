@@ -81,6 +81,8 @@ QtObject {
 
         onPluginError: function(id, error) {
             console.warn("[PluginController] Plugin error —", id, ":", error)
+            const name = id && id.length > 0 ? id : "Plugin"
+            root.notificationController.error(error, name, 8000)
         }
 
         onDockRegistered: function(id, qmlUrl, title, icon) {

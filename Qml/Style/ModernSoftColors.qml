@@ -126,6 +126,8 @@ Colors {
     conflictOursLabel:           "#1E40AF"
     conflictTheirsBg:            "#E3DBF3"
     conflictTheirsLabel:         "#5B21B6"
+    conflictAiBg:                "#F8E6C8"
+    conflictAiLabel:             "#92400E"
     conflictCardOpenBorder:      "#B45309"
     conflictCardOpenStrip:       "#F0E3C2"
     conflictCardOpenLabel:       "#78350F"

@@ -16,15 +16,15 @@ RowLayout {
     property int  totalChunks:      0
     property bool canNavigate:      false
 
-    //! todo
-    //! The AI assist entry point is designed but not wired up; flip this on to preview it.
-    property bool assistEnabled:    false
+    //! One entry per plugin that registered a conflict assistant.
+    property var assists: []
+    property bool canAssist: false
 
     /* Signals
      * ****************************************************************************************/
     signal previousChunkRequested()
     signal nextChunkRequested()
-    signal assistRequested()
+    signal assistRequested(var assist)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -60,11 +60,21 @@ RowLayout {
         Layout.fillWidth: true
     }
 
-    ConflictPillButton {
-        visible: root.assistEnabled
-        text: "Ask Claude"
-        leadingText: Style.icons.star
-        accentColor: Style.colors.conflictAssistAccent
-        onClicked: root.assistRequested()
+    Row {
+        spacing: 8
+        visible: root.canAssist
+
+        Repeater {
+            model: root.assists
+
+            ConflictPillButton {
+                required property var modelData
+                text: modelData.action || modelData.title
+                leadingText: Style.icons.star
+                accentColor: Style.colors.conflictAssistAccent
+                tooltip: modelData.title || ""
+                onClicked: root.assistRequested(modelData)
+            }
+        }
     }
 }

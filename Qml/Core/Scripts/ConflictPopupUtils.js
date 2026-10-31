@@ -20,7 +20,7 @@ function recomputeLineNumbers(displayModel) {
     for (var i = 0; i < displayModel.count; i++) {
         var row = displayModel.get(i);
 
-        if (row.type === "blockButton")
+        if (row.type === "blockButton" || row.type === "aiPreview")
             continue;
 
         displayModel.setProperty(i, "lineNumber", lineNum);
@@ -61,7 +61,7 @@ function buildFullContent(displayModel) {
     for (var i = 0; i < displayModel.count; i++) {
         var row = displayModel.get(i);
 
-        if (row.type === "blockButton")
+        if (row.type === "blockButton" || row.type === "aiPreview")
             continue
 
         lines.push(row.text)
@@ -166,7 +166,7 @@ function buildDisplayModel(selectedConflict, modifiedFiles, selectedPath, displa
 function splitLine(displayModel, rowIndex, cursorPos, conflictListView) {
     var row = displayModel.get(rowIndex);
 
-    if (!row || row.type === "blockButton")
+    if (!row || row.type === "blockButton" || row.type === "aiPreview")
         return;
 
     if (row.type === "blockLine" && (row.role === "marker-start" || row.role === "separator" || row.role === "marker-end"))
@@ -209,6 +209,9 @@ function mergeLineUp(displayModel, rowIndex, conflictListView) {
     if (!current || !prev)
         return;
 
+    if (current.type === "aiPreview" || prev.type === "aiPreview")
+        return;
+
     if (current.type !== prev.type)
         return;
 
@@ -242,6 +245,91 @@ function findBlockRowRange(model, blockIndex) {
         }
     }
     return { start, end }
+}
+
+/**
+ * Shows or clears the AI result band inside one open conflict card.
+ * Rows use type "aiPreview" so they are drawn with the card but never written to the file.
+ * @param displayModel - The conflict ListModel
+ * @param blockIndex   - Card to attach the band to, or < 0 to clear
+ * @param text         - Replacement text. null clears the band. "" is an empty replacement.
+ * @param widthCalculator - Optional TextMetrics
+ * @param conflictListView - Optional ListView whose maxContentWidth should track long lines
+ */
+function syncAiPreview(displayModel, blockIndex, text, widthCalculator, conflictListView) {
+    if (!displayModel)
+        return
+
+    var lines = []
+    var active = text !== null && text !== undefined && blockIndex > 0
+    if (active)
+        lines = String(text).split("\n")
+
+    var existing = []
+    var existingBlock = -1
+    for (var i = 0; i < displayModel.count; ++i) {
+        var row = displayModel.get(i)
+        if (row.type !== "aiPreview")
+            continue
+        existingBlock = row.blockIndex
+        if (row.role === "ai")
+            existing.push(row.text)
+    }
+
+    var same = active && existingBlock === blockIndex && existing.length === lines.length
+    if (same) {
+        for (var j = 0; j < lines.length; ++j) {
+            if (existing[j] !== lines[j]) {
+                same = false
+                break
+            }
+        }
+    }
+    if (same)
+        return
+    if (!active && existingBlock < 0)
+        return
+
+    for (var k = displayModel.count - 1; k >= 0; --k) {
+        if (displayModel.get(k).type === "aiPreview")
+            displayModel.remove(k)
+    }
+    if (!active)
+        return
+
+    var insertAt = -1
+    var cardNumber = 0
+    for (var n = 0; n < displayModel.count; ++n) {
+        var marker = displayModel.get(n)
+        if (marker.type === "blockLine" && marker.role === "marker-end" && marker.blockIndex === blockIndex) {
+            insertAt = n
+            cardNumber = marker.cardNumber || 0
+            break
+        }
+    }
+    if (insertAt < 0)
+        return
+
+    displayModel.insert(insertAt, {
+        type: "aiPreview",
+        role: "ai-label",
+        text: "",
+        blockIndex: blockIndex,
+        cardNumber: cardNumber,
+        lineNumber: 0
+    })
+    for (var p = 0; p < lines.length; ++p) {
+        displayModel.insert(insertAt + 1 + p, {
+            type: "aiPreview",
+            role: "ai",
+            text: lines[p],
+            blockIndex: blockIndex,
+            cardNumber: cardNumber,
+            lineNumber: p + 1
+        })
+        if (widthCalculator && conflictListView)
+            updateMaxContentWidth(lines[p], widthCalculator, conflictListView)
+    }
 }
 
 /**

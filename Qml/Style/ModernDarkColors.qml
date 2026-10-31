@@ -124,6 +124,8 @@ Colors {
     conflictOursLabel:                  "#7AB9FF"
     conflictTheirsBg:                   "#2A1836"  // faded violet
     conflictTheirsLabel:                "#C79BE8"
+    conflictAiBg:                       "#3A2610"
+    conflictAiLabel:                    "#F0C062"
 
     // Conflict block card chrome, keyed by state
     conflictCardOpenBorder:             "#D9A036"

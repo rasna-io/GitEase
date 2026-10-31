@@ -66,6 +66,9 @@ public:
      */
     Q_INVOKABLE GitResult writeWorkingFile(const QString& filePath, const QString& content);
 
+    //! Working tree of the open repository. Empty when no repository is open.
+    Q_INVOKABLE QString repositoryPath() const;
+
 private:
     // Reads the current working file content as lines
     QStringList readWorkdirLines(const QString& filePath) const;

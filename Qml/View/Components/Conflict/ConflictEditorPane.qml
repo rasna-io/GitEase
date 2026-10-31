@@ -24,6 +24,10 @@ Rectangle {
     property int        revision            : 0
 
     property TextDirectionController textDirectionController: null
+    property bool aiAvailable: false
+    property string assistLabel: "Ask"
+    property bool recommendationReady: false
+    property int recommendationBlock: -1
 
     readonly property int openBlockCount: {
         root.revision
@@ -68,6 +72,8 @@ Rectangle {
     /* Signals
      * ****************************************************************************************/
     signal acceptBlockRequested(int blockIndex, string mode)
+    signal askAiRequested(int blockIndex)
+    signal useAiRecommendationRequested(int blockIndex)
     signal resetRequested()
     signal contentChanged()
 
@@ -100,6 +106,23 @@ Rectangle {
         let rows = root.openChunkRows()
         let previous = rows.filter(r => r < conflictListView.currentIndex).pop()
         root.jumpTo(previous !== undefined ? previous : rows[rows.length - 1])
+    }
+
+    //! Block index of the open chunk under the caret, or the first open chunk.
+    function focusedOpenBlock() {
+        if (!root.displayModel)
+            return -1
+
+        let start = conflictListView.currentIndex
+        if (start < 0)
+            start = 0
+
+        for (let i = start; i >= 0; --i) {
+            let row = root.displayModel.get(i)
+            if (row.type === "blockButton" && row.blockIndex > 0 && !(row.resolvedGroup > 0))
+                return row.blockIndex
+        }
+        return root.firstOpenBlock
     }
 
     function jumpTo(rowIndex) {
@@ -211,6 +234,10 @@ Rectangle {
                     blockLabels: root.blockLabels
                     openBlockCount: root.openBlockCount
                     firstOpenBlock: root.firstOpenBlock
+                    aiAvailable: root.aiAvailable
+                    assistLabel: root.assistLabel
+                    recommendationReady: root.recommendationReady
+                    recommendationBlock: root.recommendationBlock
                     textDirectionController: root.textDirectionController
 
                     onSplitRequested: (cursorPos) => {
@@ -224,6 +251,8 @@ Rectangle {
                     }
 
                     onAcceptBlockRequested: (blockIndex, mode) => root.acceptBlockRequested(blockIndex, mode)
+                    onAskAiRequested: (blockIndex) => root.askAiRequested(blockIndex)
+                    onUseAiRecommendationRequested: (blockIndex) => root.useAiRecommendationRequested(blockIndex)
                     onEditBlockRequested: (blockIndex) => root.editBlock(blockIndex)
                     onMoveFocusUp: conflictListView.currentIndex = Math.max(0, index - 1)
                     onMoveFocusDown: conflictListView.currentIndex =

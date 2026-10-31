@@ -7,6 +7,7 @@
 #include "IWorkflowPlugin.h"
 #include "IToolbarPlugin.h"
 #include "IRulePlugin.h"
+#include "IConflictAssistPlugin.h"
 
 #include <QSettings>
 
@@ -73,6 +74,11 @@ void PluginContext::registerToolbar(IToolbarPlugin* plugin)
 void PluginContext::registerRule(IRulePlugin* plugin)
 {
     emit ruleRegistered(plugin);
+}
+
+void PluginContext::registerConflictAssist(IConflictAssistPlugin* plugin)
+{
+    emit conflictAssistRegistered(plugin);
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
