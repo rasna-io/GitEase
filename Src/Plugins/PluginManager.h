@@ -99,6 +99,7 @@ class PluginManager : public QObject
     Q_PROPERTY(QVariantList registeredDocks      READ registeredDocks      NOTIFY docksChanged)
     Q_PROPERTY(QVariantList registeredPages      READ registeredPages      NOTIFY pagesChanged)
     Q_PROPERTY(QVariantList registeredToolbarActions READ registeredToolbarActions NOTIFY toolbarActionsChanged)
+    Q_PROPERTY(QVariantList registeredConflictAssists READ registeredConflictAssists NOTIFY conflictAssistsChanged)
 
 public:
     explicit PluginManager(QObject* parent = nullptr);
@@ -171,6 +172,7 @@ public:
     QVariantList registeredDocks()       const;
     QVariantList registeredPages()       const;
     QVariantList registeredToolbarActions() const;
+    QVariantList registeredConflictAssists() const;
 
     QList<IDockPlugin*>          dockPlugins()    const;
     QList<ICommandPlugin*>       commandPlugins() const;
@@ -189,6 +191,7 @@ signals:
     void docksChanged     ();
     void pagesChanged     ();
     void toolbarActionsChanged();
+    void conflictAssistsChanged();
     void contextMenusChanged  ();
 
     void pluginLoaded     (const QString& id);
@@ -281,6 +284,7 @@ private:
     QVariantList                  m_docks;        // accumulated dock registrations
     QVariantList                  m_pages;        // accumulated page registrations
     QVariantList                  m_toolbarActions; // accumulated toolbar action registrations
+    QVariantList                  m_conflictAssists;
 
     QMap<QString, QUrl>           m_diffPlugins;   // extension → custom viewer URL
     QMap<QString, QUrl>           m_colorizers;    // extension → colorizer QtObject URL

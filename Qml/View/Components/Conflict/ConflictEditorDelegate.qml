@@ -15,6 +15,8 @@ import GitEase_Style_Impl
  *   blockLine "ours"         -> code line, ours tint
  *   blockLine "separator"    -> THEIRS region label
  *   blockLine "theirs"       -> code line, theirs tint
+ *   aiPreview "ai-label"     -> AI region label
+ *   aiPreview "ai"           -> code line, AI tint
  *   blockLine "marker-end"   -> card action bar
  *   contextLine / resolved   -> plain code line
  *
@@ -36,6 +38,18 @@ Item {
     property int  firstOpenBlock    : -1
 
     property TextDirectionController textDirectionController: null
+    property bool aiAvailable: false
+    property string assistLabel: "Ask"
+    property bool recommendationReady: false
+    property int recommendationBlock: -1
+
+    readonly property bool showAiChoice: rowRoot.recommendationReady
+                                         && !rowRoot.isResolved
+                                         && rowRoot.blockIndex === rowRoot.recommendationBlock
+                                         && rowRoot.recommendationBlock > 0
+    property real aiChoiceReveal: rowRoot.showAiChoice ? 1 : 0
+
+    Behavior on aiChoiceReveal { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
 
     readonly property int    blockIndex    : model.blockIndex || 0
     readonly property string blockRole     : model.role || ""
@@ -66,6 +80,8 @@ Item {
                 return "oursLabel"
             case "separator":
                 return "theirsLabel"
+            case "ai-label":
+                return "aiLabel"
             case "marker-end":
                 return "actionBar"
             default:
@@ -76,6 +92,7 @@ Item {
     readonly property bool inCard: rowRoot.kind !== "codeLine"
                                    || rowRoot.blockRole === "ours"
                                    || rowRoot.blockRole === "theirs"
+                                   || rowRoot.blockRole === "ai"
                                    || rowRoot.blockRole === "resolved"
 
     readonly property color cardAccent: rowRoot.isResolved ? Style.colors.conflictCardDoneBorder
@@ -87,6 +104,8 @@ Item {
                 return Style.colors.conflictOursBg
             case "theirs":
                 return Style.colors.conflictTheirsBg
+            case "ai":
+                return Style.colors.conflictAiBg
             case "resolved":
                 return Style.colors.conflictCardDoneStrip
             default:
@@ -100,6 +119,8 @@ Item {
     signal mergeUpRequested()
     signal acceptBlockRequested(int blockIndex, string mode)
     signal editBlockRequested(int blockIndex)
+    signal askAiRequested(int blockIndex)
+    signal useAiRecommendationRequested(int blockIndex)
     signal moveFocusUp()
     signal moveFocusDown()
 
@@ -113,6 +134,7 @@ Item {
                 return Style.dp(24)
             case "oursLabel":
             case "theirsLabel":
+            case "aiLabel":
                 return Style.dp(20)
             case "actionBar":
                 return Style.dp(34)
@@ -141,8 +163,8 @@ Item {
             anchors.rightMargin: 10
             anchors.top: parent.top
             anchors.topMargin: 3
-            visible: rowRoot.kind === "codeLine"
-            text: model.lineNumber !== undefined ? model.lineNumber : ""
+            visible: rowRoot.kind === "codeLine" && model.lineNumber > 0
+            text: model.lineNumber > 0 ? model.lineNumber : ""
             color: Style.colors.linePanelForeground
             font.family: Style.fontTypes.jetBrainsMono
             font.pixelSize: Style.appFont.captionPt
@@ -180,6 +202,7 @@ Item {
             width: 2000
 
             text: model.text
+            readOnly: rowRoot.blockRole === "ai"
 
             color: Style.colors.editorForeground
             font.family: Style.fontTypes.jetBrainsMono
@@ -196,6 +219,8 @@ Item {
             Material.accent: Style.colors.accent
 
             onTextChanged: {
+                if (rowRoot.blockRole === "ai")
+                    return
                 if (model.text !== text)
                     model.text = text
             }
@@ -203,6 +228,10 @@ Item {
             Component.onCompleted: rowRoot.textDirectionController?.keepLeftToRight(lineEditor.textDocument)
 
             Keys.onPressed: (event) => {
+                if (rowRoot.blockRole === "ai") {
+                    event.accepted = true
+                    return
+                }
                 if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                     event.accepted = true
                     rowRoot.splitRequested(cursorPosition)
@@ -238,6 +267,8 @@ Item {
                         return oursLabelComponent
                     case "theirsLabel":
                         return theirsLabelComponent
+                    case "aiLabel":
+                        return aiLabelComponent
                     case "actionBar":
                         return actionBarComponent
                     default:
@@ -328,6 +359,16 @@ Item {
     }
 
     Component {
+        id: aiLabelComponent
+
+        ConflictRegionLabel {
+            text: `${Style.icons.caretRight} AI`
+            labelColor: Style.colors.conflictAiLabel
+            tintColor: Style.colors.conflictAiBg
+        }
+    }
+
+    Component {
         id: actionBarComponent
 
         Rectangle {
@@ -359,6 +400,19 @@ Item {
                 }
 
                 ConflictPillButton {
+                    visible: rowRoot.aiChoiceReveal > 0.01
+                    opacity: rowRoot.aiChoiceReveal
+                    scale: 0.92 + (0.08 * rowRoot.aiChoiceReveal)
+                    transformOrigin: Item.Left
+                    text: "Use AI recommendation"
+                    leadingText: Style.icons.star
+                    accentColor: Style.colors.conflictAssistAccent
+                    prominent: true
+                    tooltip: "Replace this conflict with the assistant's recommendation"
+                    onClicked: rowRoot.useAiRecommendationRequested(rowRoot.blockIndex)
+                }
+
+                ConflictPillButton {
                     text: "Both"
                     leadingText: Style.icons.arrowLeft
                     trailingText: Style.icons.arrowRight
@@ -373,6 +427,15 @@ Item {
                     accentColor: Style.colors.mutedText
                     tooltip: "Put the caret in this block and resolve it by hand"
                     onClicked: rowRoot.editBlockRequested(rowRoot.blockIndex)
+                }
+
+                ConflictPillButton {
+                    visible: rowRoot.aiAvailable && !rowRoot.isResolved && !rowRoot.showAiChoice
+                    text: rowRoot.assistLabel
+                    leadingText: Style.icons.star
+                    accentColor: Style.colors.conflictAssistAccent
+                    tooltip: "Ask a conflict assistant to suggest a resolution for this chunk"
+                    onClicked: rowRoot.askAiRequested(rowRoot.blockIndex)
                 }
 
                 Item {

@@ -200,6 +200,7 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Notification/NotificationCloseAllHeader.qml
 
     # Conflict Components
+    Qml/View/Components/Conflict/ConflictAssistSlot.qml
     Qml/View/Components/Conflict/ConflictFileList.qml
     Qml/View/Components/Conflict/ConflictConfirmationDialog.qml
     Qml/View/Components/Conflict/ConflictEditorDelegate.qml

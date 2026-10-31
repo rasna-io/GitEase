@@ -14,6 +14,7 @@
 #include "IWorkflowPlugin.h"
 #include "IToolbarPlugin.h"
 #include "IRulePlugin.h"
+#include "IConflictAssistPlugin.h"
 
 #include <QJSEngine>
 #include <QJSValueList>
@@ -37,12 +38,12 @@
 #include <QDateTime>
 #include <QElapsedTimer>
 #include <QThread>
+#include <QTimer>
 #include <QEventLoop>
 #include <QEvent>
 #include <QMetaObject>
 #include <QPointer>
 #include <QSet>
-#include <QTimer>
 
 #include <atomic>
 #include <thread>
@@ -886,6 +887,31 @@ void PluginManager::wireContext()
             this, [this](IRulePlugin* plugin) {
                 m_rulePlugins.append(plugin);
             });
+
+    connect(m_context, &PluginContext::conflictAssistRegistered,
+            this, [this](IConflictAssistPlugin* plugin) {
+                auto* base = dynamic_cast<IPlugin*>(plugin);
+                const QString pluginId = base ? base->id() : QString();
+                for (const QVariant& existing : std::as_const(m_conflictAssists)) {
+                    if (existing.toMap().value(QStringLiteral("id")).toString() == plugin->assistId()
+                        && existing.toMap().value(QStringLiteral("pluginId")).toString() == pluginId)
+                        return;
+                }
+                m_conflictAssists.append(QVariantMap {
+                    { QStringLiteral("id"),       plugin->assistId() },
+                    { QStringLiteral("pluginId"), pluginId },
+                    { QStringLiteral("url"),      plugin->assistQmlUrl().toString() },
+                    { QStringLiteral("title"),    plugin->assistTitle() },
+                    { QStringLiteral("action"),   plugin->assistAction() },
+                    { QStringLiteral("order"),    plugin->assistOrder() },
+                });
+                std::sort(m_conflictAssists.begin(), m_conflictAssists.end(),
+                          [](const QVariant& a, const QVariant& b) {
+                    return a.toMap().value(QStringLiteral("order")).toInt()
+                         < b.toMap().value(QStringLiteral("order")).toInt();
+                });
+                emit conflictAssistsChanged();
+            });
 }
 
 // ── Setup ────────────────────────────────────────────────────────────────────
@@ -1216,6 +1242,11 @@ void PluginManager::deactivatePlugin(const QString& id, std::function<void()> do
             m_toolbarActions.removeAt(i);
     }
 
+    for (int i = m_conflictAssists.size() - 1; i >= 0; --i) {
+        if (m_conflictAssists.at(i).toMap().value(QStringLiteral("pluginId")).toString() == id)
+            m_conflictAssists.removeAt(i);
+    }
+
     const auto eraseByPluginId = [&id](auto& list) {
         for (auto it = list.begin(); it != list.end(); )
             it = ((*it)->id() == id) ? list.erase(it) : ++it;
@@ -1232,6 +1263,7 @@ void PluginManager::deactivatePlugin(const QString& id, std::function<void()> do
     emit docksChanged();
     emit pagesChanged();
     emit toolbarActionsChanged();
+    emit conflictAssistsChanged();
     emit contextMenusChanged();
     emit pluginAboutToUnload(id);
 
@@ -1777,6 +1809,11 @@ QVariantList PluginManager::registeredPages() const
 QVariantList PluginManager::registeredToolbarActions() const
 {
     return m_toolbarActions;
+}
+
+QVariantList PluginManager::registeredConflictAssists() const
+{
+    return m_conflictAssists;
 }
 
 // ── Event bus ────────────────────────────────────────────────────────────────

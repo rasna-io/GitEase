@@ -119,6 +119,32 @@ Window {
 
     property int currentOperation: ConflictPopup.OperationType.None
 
+    property var pluginManager: null
+
+    readonly property var conflictAssists: root.pluginManager
+                                           ? root.pluginManager.registeredConflictAssists
+                                           : []
+
+    property var activeAssist: null
+    property bool assistOpen: false
+    property string assistRepo: ""
+    property string assistPath: ""
+    property int assistRegion: -1
+    property int assistGeneration: 0
+    property int assistBlock: -1
+    property bool assistReady: false
+    property string assistText: assistSlot.recommendationText
+
+    onAssistReadyChanged: root.refreshAiPreview()
+    onAssistTextChanged: root.refreshAiPreview()
+    onAssistBlockChanged: root.refreshAiPreview()
+    onSelectedPathChanged: root.refreshAiPreview()
+    onModelRevisionChanged: root.refreshAiPreview()
+
+    readonly property string cardAssistLabel: root.conflictAssists.length === 1
+                                              ? (root.conflictAssists[0].action || "Ask")
+                                              : "Ask"
+
     readonly property var currentController:{
         switch(currentOperation){
             case ConflictPopup.OperationType.Merge:
@@ -257,7 +283,7 @@ Window {
                         targetProvider: function() { return editorPane },
                         icon: Style.icons.penToSquare,
                         title: "Resolve a Conflict",
-                        description: "Each conflict becomes a card showing both versions side by side. Keep ours, keep theirs, keep both, or edit the lines directly — the card turns green once it is settled."
+                        description: "Each conflict becomes a card showing both versions side by side. Keep ours, keep theirs, keep both, ask the local model, or edit the lines directly — the card turns green once it is settled."
                     },
                     {
                         targetProvider: function() { return toolbar },
@@ -305,8 +331,11 @@ Window {
                 resolvedChunks: root.resolvedChunkCount
                 totalChunks: root.totalChunkCount
                 canNavigate: editorPane.canNavigate
+                assists: root.conflictAssists
+                canAssist: root.openChunkCount > 0
                 onPreviousChunkRequested: editorPane.goToPreviousChunk()
                 onNextChunkRequested: editorPane.goToNextChunk()
+                onAssistRequested: (assist) => root.askAssist(assist, editorPane.focusedOpenBlock())
             }
 
             Rectangle {
@@ -335,20 +364,47 @@ Window {
                     color: Style.colors.primaryBorder
                 }
 
-                ConflictEditorPane {
-                    id: editorPane
+                Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    displayModel: conflictRows
-                    selectedPath: root.selectedPath
-                    selectedConflict: root.selectedConflict
-                    revision: root.modelRevision
-                    textDirectionController: root.textDirectionController
 
-                    onAcceptBlockRequested: (blockIndex, mode) => root.acceptBlock(blockIndex, mode)
-                    onResetRequested: root.resetSelectedFile()
-                    onContentChanged: editorPane.scheduleMarkerUpdate()
+                    ConflictEditorPane {
+                        id: editorPane
+                        anchors.fill: parent
+                        displayModel: conflictRows
+                        selectedPath: root.selectedPath
+                        selectedConflict: root.selectedConflict
+                        revision: root.modelRevision
+                        textDirectionController: root.textDirectionController
+
+                        aiAvailable: root.conflictAssists.length > 0
+                        assistLabel: root.cardAssistLabel
+                        recommendationReady: root.assistReady && root.assistPath === root.selectedPath
+                        recommendationBlock: root.assistBlock
+                        onAcceptBlockRequested: (blockIndex, mode) => root.acceptBlock(blockIndex, mode)
+                        onAskAiRequested: (blockIndex) => {
+                            if (root.conflictAssists.length > 0)
+                                root.askAssist(root.conflictAssists[0], blockIndex)
+                        }
+                        onUseAiRecommendationRequested: (blockIndex) => root.applyAssistRecommendation(blockIndex)
+                        onResetRequested: root.resetSelectedFile()
+                        onContentChanged: editorPane.scheduleMarkerUpdate()
+                    }
                 }
+            }
+
+            ConflictAssistSlot {
+                id: assistSlot
+                Layout.fillWidth: true
+                open: root.assistOpen
+                assist: root.activeAssist
+                repositoryPath: root.assistRepo
+                filePath: root.assistPath
+                regionIndex: root.assistRegion
+                onApplied: (message) => root.finishAssist(message)
+                onDismissed: root.closeAssist()
+                onFailed: (message) => root.noteAssistFailure(message)
+                onRecommendationChanged: (ready) => { root.assistReady = ready }
             }
 
             Rectangle {
@@ -393,6 +449,105 @@ Window {
 
     /* Functions
      * ****************************************************************************************/
+
+    function askAssist(assist, blockIndex) {
+        if (!assist || !root.selectedPath || blockIndex < 0)
+            return
+
+        let region = root.openRegionIndex(blockIndex)
+        const title = assist.title || "Conflict assist"
+        if (region < 0) {
+            root.notificationController.error("Choose an open conflict first.", title, 4000)
+            return
+        }
+
+        let repoPath = root.conflictController.repositoryPath()
+        if (!repoPath) {
+            root.notificationController.error("Open a repository before asking for help.", title, 4000)
+            return
+        }
+
+        let content = ConflictUtils.buildFullContent(conflictRows)
+        let written = root.conflictController.writeWorkingFile(root.selectedPath, content)
+        if (!written.success) {
+            root.notificationController.error(written.errorMessage || "Could not save the file.", title, 4000)
+            return
+        }
+
+        root.assistReady = false
+        root.assistBlock = blockIndex
+        root.activeAssist = assist
+        root.assistRepo = repoPath
+        root.assistPath = root.selectedPath
+        root.assistRegion = region
+        root.assistOpen = true
+        const generation = ++root.assistGeneration
+        Qt.callLater(function() {
+            if (root.assistGeneration === generation)
+                assistSlot.restart()
+        })
+    }
+
+    function refreshAiPreview() {
+        if (!editorPane || !editorPane.contentMetrics)
+            return
+        const show = root.assistReady
+                     && root.assistPath === root.selectedPath
+                     && root.assistBlock > 0
+        ConflictUtils.syncAiPreview(conflictRows,
+                                    root.assistBlock,
+                                    show ? root.assistText : null,
+                                    widthCalculator,
+                                    editorPane.contentMetrics)
+        editorPane.scheduleMarkerUpdate()
+    }
+
+    function applyAssistRecommendation(blockIndex) {
+        if (!root.assistReady || blockIndex !== root.assistBlock)
+            return
+        if (root.assistPath !== root.selectedPath)
+            return
+        assistSlot.applyRecommendation()
+    }
+
+    function closeAssist() {
+        root.assistReady = false
+        const generation = ++root.assistGeneration
+        assistSlot.dismissPlugin()
+        Qt.callLater(function() {
+            if (root.assistGeneration === generation)
+                root.assistOpen = false
+        })
+    }
+
+    function finishAssist(message) {
+        const title = root.activeAssist ? root.activeAssist.title : "Conflict assist"
+        root.assistReady = false
+        Qt.callLater(function() { root.assistOpen = false })
+        let copy = Object.assign({}, root.modifiedFiles)
+        delete copy[root.assistPath]
+        root.modifiedFiles = copy
+        root.notificationController.success(message || "The conflict region was updated.", title, 4000)
+        root.loadConflicts(true)
+    }
+
+    function noteAssistFailure(message) {
+        const title = root.activeAssist ? root.activeAssist.title : "Conflict assist"
+        root.notificationController.error(message || "The assistant could not resolve this conflict.", title, 6000)
+    }
+
+    function openRegionIndex(blockIndex) {
+        let seen = 0
+        for (let i = 0; i < conflictRows.count; ++i) {
+            let row = conflictRows.get(i)
+            if (row.role !== "marker-start" || row.resolvedGroup > 0)
+                continue
+            if (row.blockIndex === blockIndex)
+                return seen
+            seen++
+        }
+        return -1
+    }
 
     function loadConflicts(keepSelection = false) {
         if (!conflictController)
@@ -831,7 +986,7 @@ Window {
             let fileModel = modifiedFiles[path]
             for (let i = 0; i < fileModel.length; ++i) {
                 let row = fileModel[i]
-                if (row.type !== "blockButton") {
+                if (row.type !== "blockButton" && row.type !== "aiPreview") {
                     lines.push(row.text)
                 }
             }

@@ -193,6 +193,8 @@ QtObject{
     property color conflictOursLabel:       "#1D4ED8"
     property color conflictTheirsBg:        "#F5F3FF"
     property color conflictTheirsLabel:     "#6D28D9"
+    property color conflictAiBg:            "#FFF4E5"
+    property color conflictAiLabel:         "#B45309"
 
     property color conflictCardOpenBorder:  "#D97706"
     property color conflictCardOpenStrip:   "#FFFBEB"

@@ -107,6 +107,7 @@ set(HEADERS_BACKEND
     Src/Plugins/PluginManager.h
     Src/Plugins/ActionContext.h
     Src/Plugins/IRulePlugin.h
+    Src/Plugins/IConflictAssistPlugin.h
     Src/Plugins/IRepositoryAwarePlugin.h
 
     Src/Terminal/TerminalManager.h

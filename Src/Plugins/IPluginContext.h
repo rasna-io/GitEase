@@ -13,6 +13,7 @@ class IContextMenuPlugin;
 class IWorkflowPlugin;
 class IToolbarPlugin;
 class IRulePlugin;
+class IConflictAssistPlugin;
 
 /*!
  * \brief Pure abstract interface exposed to plugins.
@@ -59,4 +60,7 @@ public:
     // ── NEW extension points (always add at the end to preserve ABI) ─────────
     // registerRule: slot is after publish so existing plugin DLLs are unaffected.
     virtual void registerRule       (IRulePlugin*         plugin) = 0;
+
+    // Conflict-window advisor. Appended so existing plugin DLLs keep their vtable.
+    virtual void registerConflictAssist(IConflictAssistPlugin* plugin) = 0;
 };
