@@ -7,6 +7,23 @@ namespace {
     // Counting attempts per operation lets us walk through the candidates once
     // (selected key file, then agent) and then give up instead of looping forever.
     thread_local int s_attempt = 0;
+
+    // libgit2 rejects the SSH handshake with GIT_ECERTIFICATE
+    // ("invalid or unknown remote ssh hostkey") when the server is not in
+    // ~/.ssh/known_hosts and no callback accepts the key. Return 0 to proceed.
+    // A positive return is not "accept": libgit2 only treats 0 as acceptance
+    // and GIT_PASSTHROUGH as "use the known_hosts result".
+    int acceptSshHostKey(git_cert *, int, const char *, void *)
+    {
+        return 0;
+    }
+}
+
+void GitSshAuth::installCallbacks(git_remote_callbacks &callbacks)
+{
+    s_attempt = 0;
+    callbacks.credentials = &GitSshAuth::credentialsCallback;
+    callbacks.certificate_check = &acceptSshHostKey;
 }
 
 GitSshAuth::GitSshAuth()
@@ -21,25 +38,17 @@ QString GitSshAuth::getSetupError() const
 
 void GitSshAuth::apply(git_fetch_options& fetchOpts)
 {
-    s_attempt = 0;
-    fetchOpts.callbacks.credentials = &GitSshAuth::credentialsCallback;
-
-    fetchOpts.callbacks.certificate_check = [](git_cert*, int, const char*, void*) -> int {
-        return 1;
-    };
+    installCallbacks(fetchOpts.callbacks);
 }
 
 void GitSshAuth::applyFetch(git_fetch_options& fetchOpts)
 {
-    s_attempt = 0;
-    fetchOpts.callbacks.credentials = &GitSshAuth::credentialsCallback;
+    installCallbacks(fetchOpts.callbacks);
 }
-
 
 void GitSshAuth::applyPush(git_push_options& pushopts)
 {
-    s_attempt = 0;
-    pushopts.callbacks.credentials = &credentialsCallback;
+    installCallbacks(pushopts.callbacks);
 }
 
 int GitSshAuth::credentialsCallback(git_cred** out,

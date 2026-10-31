@@ -218,19 +218,19 @@ IPopup {
                     // Show one compact empty state only when fetch produced no branches.
                     Item {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 60
+                        implicitHeight: emptyStateRow.implicitHeight
                         visible: root.updatedBranches.length === 0 &&
                                  root.newBranches.length === 0
 
                         RowLayout {
-                            anchors.fill: parent
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.leftMargin: 12
-                            anchors.rightMargin: 12
+                            id: emptyStateRow
+                            anchors.left: parent.left
+                            anchors.right: parent.right
                             spacing: 12
 
                             Rectangle {
-                                Layout.alignment: Qt.AlignVCenter
+                                Layout.alignment: Qt.AlignTop
+                                Layout.topMargin: 2
                                 width: 36
                                 height: 36
                                 radius: 18
@@ -254,7 +254,7 @@ IPopup {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 Layout.alignment: Qt.AlignVCenter
-                                spacing: 3
+                                spacing: 6
 
                                 Text {
                                     Layout.fillWidth: true
@@ -270,12 +270,13 @@ IPopup {
                                 Text {
                                     Layout.fillWidth: true
                                     text: root.failureCount(root.results) > 0
-                                          ? "Check your credentials or network connection."
+                                          ? (root.failureText() || "Check your credentials or network connection.")
                                           : "No updated or new branches were found."
                                     wrapMode: Text.WordWrap
                                     font.family: Style.fontTypes.inter
                                     font.pixelSize: Style.appFont.defaultPt
                                     color: Style.colors.popupInputText
+                                    lineHeight: 1.35
                                 }
                             }
                         }
@@ -612,16 +613,28 @@ IPopup {
         return names.join(", ")
     }
 
+    function failureText() {
+        if (!results)
+            return ""
+
+        let lines = []
+        for (let i = 0; i < results.length; ++i) {
+            const item = results[i]
+            if (!item || item.success)
+                continue
+            lines.push(item.errorMessage || "Unknown error")
+        }
+        return lines.join("\n\n")
+    }
+
     function fetchSubtitle() {
         const remote = remoteSummary()
+        const verb = failureCount(results) > 0 ? "could not fetch" : "fetched just now"
 
         if (remote.length === 0)
-            return "fetched just now"
+            return verb
 
-        if (remote.indexOf(",") === -1)
-            return remote + " · fetched just now"
-
-        return remote + " · fetched just now"
+        return remote + " · " + verb
     }
 
     function buildFetchGroups() {

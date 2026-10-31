@@ -3,6 +3,7 @@ import QtQuick
 import GitEase
 
 import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+import "qrc:/GitEase/Qml/Core/Scripts/RemoteErrorGuide.js" as RemoteErrorGuide
 /*! ***********************************************************************************************
  * RemoteOperationsSession
  *
@@ -508,7 +509,7 @@ Item {
                 if (payload.success)
                     root.notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
                 else
-                    root.notificationController.error("Fetch failed for " + remoteName + ": " + (payload.errorMessage || "Unknown error"), "Fetch Error", 7000)
+                    RemoteErrorGuide.notifyFailure(root.notificationController, "Fetch", remoteName, payload.errorMessage)
             }
         }
 
@@ -595,7 +596,7 @@ Item {
             let upToDate = data.status === "Already up to date"
             root.notificationController.success(upToDate ? "Already up to date with " + source : "Pulled from " + source, "Pull", 3000)
         } else {
-            root.notificationController.error((gitResult && gitResult.errorMessage) || "Pull failed", "Pull Error", 5000)
+            RemoteErrorGuide.notifyFailure(root.notificationController, "Pull", "", (gitResult && gitResult.errorMessage) || "Pull failed")
         }
     }
 
@@ -701,7 +702,7 @@ Item {
         }
 
         if (!gitResult || !gitResult.success) {
-            root.notificationController.error((gitResult && gitResult.errorMessage) || "Push error", "Push Error", 5000)
+            RemoteErrorGuide.notifyFailure(root.notificationController, "Push", "", (gitResult && gitResult.errorMessage) || "Push error")
             return
         }
 

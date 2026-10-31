@@ -22,6 +22,108 @@ QString lastGitErrorMessage()
     return QString();
 }
 
+QString hostFromGitUrl(const QString& url)
+{
+    QString host = url.trimmed();
+    const int scheme = host.indexOf(QStringLiteral("://"));
+    if (scheme >= 0)
+        host = host.mid(scheme + 3);
+
+    const int at = host.lastIndexOf('@');
+    if (at >= 0)
+        host = host.mid(at + 1);
+
+    const int slash = host.indexOf('/');
+    if (slash >= 0)
+        host = host.left(slash);
+
+    const int colon = host.indexOf(':');
+    if (colon >= 0)
+        host = host.left(colon);
+
+    return host.trimmed();
+}
+
+bool isSshGitUrl(const QString& url)
+{
+    const QString lower = url.trimmed().toLower();
+    if (lower.startsWith(QStringLiteral("ssh://")) || lower.startsWith(QStringLiteral("git@")))
+        return true;
+    return lower.contains('@') && lower.contains(':') && !lower.startsWith(QStringLiteral("http"));
+}
+
+QString fillGuide(QString pattern, const QString& host, const QString& urlNote)
+{
+    pattern.replace(QStringLiteral("%H"), host);
+    pattern.replace(QStringLiteral("%U"), urlNote);
+    return pattern;
+}
+
+QString transportFailureMessage(const QString& action, const QString& url, int result, const QString& libMessage)
+{
+    const QString host = hostFromGitUrl(url);
+    const QString shownHost = host.isEmpty() ? QStringLiteral("the remote host") : host;
+    const QString urlNote = url.isEmpty() ? QString() : QStringLiteral(" (") + url + QStringLiteral(")");
+    const QString lower = libMessage.toLower();
+
+    const bool dns = lower.contains(QStringLiteral("failed to resolve"))
+                     || lower.contains(QStringLiteral("no such host"))
+                     || lower.contains(QStringLiteral("name or service not known"))
+                     || lower.contains(QStringLiteral("nodename nor servname"));
+    if (dns) {
+        return fillGuide(QStringLiteral(
+                   "Can't reach %H.\n\n"
+                   "This computer has no address for that host, so Git never offered your SSH key.\n\n"
+                   "1. Connect to the VPN or office network that publishes %H.\n"
+                   "2. Check the remote URL in Remotes%U.\n"
+                   "3. In a terminal, run: ping %H\n"
+                   "4. If the name is internal, ask whoever runs it for the DNS entry, or add the host to your hosts file."),
+                   shownHost, urlNote);
+    }
+
+    const bool offline = lower.contains(QStringLiteral("failed to connect"))
+                         || lower.contains(QStringLiteral("connection refused"))
+                         || lower.contains(QStringLiteral("timed out"))
+                         || lower.contains(QStringLiteral("network is unreachable"));
+    if (offline) {
+        return fillGuide(QStringLiteral(
+                   "Can't connect to %H.\n\n"
+                   "The name resolved. The server did not accept a connection.\n\n"
+                   "1. Confirm the VPN is connected and %H is up.\n"
+                   "2. Check the remote URL in Remotes%U. SSH uses port 22 unless the URL names another port.\n"
+                   "3. In a terminal, run: ssh -T git@%H"),
+                   shownHost, urlNote);
+    }
+
+    if (lower.contains(QStringLiteral("hostkey")) || lower.contains(QStringLiteral("certificate"))
+        || result == GIT_ECERTIFICATE) {
+        return fillGuide(QStringLiteral(
+                   "Git does not trust the server key for %H.\n\n"
+                   "1. Confirm the remote URL is the server you meant%U.\n"
+                   "2. Fetch again. A mismatch means ~/.ssh/known_hosts has a different key for this host."),
+                   shownHost, urlNote);
+    }
+
+    if (isSshGitUrl(url)
+        && (result == GIT_EAUTH || result == GIT_EUSER
+            || lower.contains(QStringLiteral("authentication"))
+            || lower.contains(QStringLiteral("publickey")))) {
+        const QString whichKey = shownHost.contains(QStringLiteral("gitlab"), Qt::CaseInsensitive)
+            ? QStringLiteral("This host name contains \"gitlab\", so the GitLab key is the one that is used.")
+            : QStringLiteral("Use the GitHub key for GitHub, the GitLab key for GitLab, and Other hosts for every other server.");
+        return fillGuide(QStringLiteral(
+                   "Couldn't sign in to %H.\n\n"
+                   "1. Open Settings → SSH Keys. %U\n"
+                   "2. Copy that public key and add it on this server. On a self-hosted GitLab that is Preferences → SSH Keys on that instance.\n"
+                   "3. A key with a passphrase works only while an ssh-agent is running."),
+                   shownHost, whichKey);
+    }
+
+    if (libMessage.isEmpty())
+        return action + QStringLiteral(" failed");
+    return action + QStringLiteral(" failed: ") + libMessage;
+}
+
 QString currentHeadRefName(git_repository* repo)
 {
     git_reference* head = nullptr;
@@ -344,7 +446,7 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
     if (result != GIT_OK) {
         if (tokenWasRejected(auth.get())) {
             return GitResult(false, QVariant(), GitHttpsAuth::rejectedTokenMessage(remoteName, url, true));
-        } else if (result == GIT_EUSER) {
+        } else if (result == GIT_EUSER && !isSshGitUrl(url)) {
             return GitResult(false, QVariant(),
                              "Authentication failed. Check your personal access token.");
         } else if (result == GIT_EEXISTS) {
@@ -360,14 +462,8 @@ GitResult GitRemote::pushInternal(const QString& remoteName,
                                  .arg(remoteName, targetBranch));
         }
 
-        // Get libgit2 error message if available
-        const git_error* error = giterr_last();
-        QString errorMsg = "Push failed";
-        if (error && error->message) {
-            errorMsg += QString(": %1").arg(error->message);
-        }
-
-        return GitResult(false, QVariant(), errorMsg);
+        return GitResult(false, QVariant(),
+                         transportFailureMessage(QStringLiteral("Push"), url, result, lastGitErrorMessage()));
     }
 
     QVariantMap pushResult;
@@ -1115,10 +1211,16 @@ GitResult GitRemote::pullInternal(const QString& remoteName,
                                   .arg(result)
                                   .arg(lastGitErrorMessage());
         git_reference_free(localRef);
-        return GitResult(false, QVariant(),
-                         QString("Remote branch '%1' not found after fetch. "
-                                 "Push '%2' to %3 first, or pull from another remote.")
-                             .arg(remoteTrackingBranch, currentBranch, remoteName));
+        QString missingBranch = QStringLiteral(
+            "No remote branch %1.\n\n"
+            "Pull looks for a branch on %2 with the same name as the branch you have checked out (%3).\n\n"
+            "1. Fetch %2 and see which branches come back.\n"
+            "2. Pull a branch that exists on the remote.\n"
+            "3. To publish %3, push it and set it as the upstream.");
+        missingBranch.replace(QStringLiteral("%1"), remoteTrackingBranch);
+        missingBranch.replace(QStringLiteral("%2"), remoteName);
+        missingBranch.replace(QStringLiteral("%3"), currentBranch);
+        return GitResult(false, QVariant(), missingBranch);
     }
 
     bool upstreamSet = false;
@@ -1337,9 +1439,9 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
             .arg(lastGitErrorMessage());
         if (tokenWasRejected(auth.get())) {
             return GitResult(false, QVariant(), GitHttpsAuth::rejectedTokenMessage(remoteName, url, false));
-        } else if (result == GIT_EUSER) {
+        } else if (result == GIT_EUSER || result == GIT_EAUTH || result == GIT_ECERTIFICATE) {
             return GitResult(false, QVariant(),
-                             "Authentication failed. Check your credentials or SSH keys.");
+                             transportFailureMessage(QStringLiteral("Fetch"), url, result, lastGitErrorMessage()));
         } else if (result == GIT_EEXISTS) {
             return GitResult(false, QVariant(),
                              "Fetch conflict: Unable to update refs");
@@ -1348,14 +1450,8 @@ GitResult GitRemote::fetchInternal(const QString& remoteName, std::unique_ptr<IG
                              "Cannot fetch: repository has no commits");
         }
 
-        // Get libgit2 error message if available
-        const git_error* error = giterr_last();
-        QString errorMsg = "Fetch failed";
-        if (error && error->message) {
-            errorMsg += QString(": %1").arg(error->message);
-        }
-
-        return GitResult(false, QVariant(), errorMsg);
+        return GitResult(false, QVariant(),
+                         transportFailureMessage(QStringLiteral("Fetch"), url, result, lastGitErrorMessage()));
     }
 
     QVariantMap fetchResult;

@@ -284,38 +284,45 @@ PopupDialog {
         color: Style.colors.popupHeaderSeparator
     }
 
-    // Fetch after adding
-    RowLayout {
+    // Fetch after adding. The click target sits outside the row so it is not
+    // a layout-managed item with anchors (that combination is undefined).
+    Item {
         id: fetchCheckBox
         readonly property bool checked: root.fetchAfterAdd
 
         visible: !root.isEdit
-        spacing: 8
         Layout.fillWidth: true
+        implicitHeight: fetchRow.implicitHeight
 
-        Rectangle {
-            width: 16
-            height: 16
-            radius: 3
-            color: fetchCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
-            border.color: fetchCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked
-                                                : Style.colors.popupCheckboxBorder
-            border.width: 1
+        RowLayout {
+            id: fetchRow
+            width: parent.width
+            spacing: 8
+
+            Rectangle {
+                width: 16
+                height: 16
+                radius: 3
+                color: fetchCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
+                border.color: fetchCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked
+                                                    : Style.colors.popupCheckboxBorder
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "\u2713"
+                    color: Style.colors.popupCheckboxCheckmark
+                    font.pixelSize: Style.appFont.smallPt
+                    visible: fetchCheckBox.checked
+                }
+            }
 
             Text {
-                anchors.centerIn: parent
-                text: "\u2713"
-                color: Style.colors.popupCheckboxCheckmark
-                font.pixelSize: Style.appFont.smallPt
-                visible: fetchCheckBox.checked
+                text: "Fetch immediately after adding"
+                color: Style.colors.popupCheckboxLabelText
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
             }
-        }
-
-        Text {
-            text: "Fetch immediately after adding"
-            color: Style.colors.popupCheckboxLabelText
-            font.family: Style.fontTypes.inter
-            font.pixelSize: Style.appFont.defaultPt
         }
 
         MouseArea {

@@ -607,12 +607,26 @@ IPopup {
                                             description: "Use the “Use for” chips to pick which key GitEase uses: one for GitHub, another for GitLab, and “Other hosts” for everything else. One key can cover all three, or give each host its own. Rename a key with the pencil, and delete ones you no longer need.",
                                             isInPopup: true
                                         })
+                                        steps.push({
+                                            targetProvider: function() { return sshSection.firstKeyChips ?? sshSection.keyListItem },
+                                            icon: Style.icons.terminal,
+                                            title: "4. Private and self-hosted hosts",
+                                            description: "A company GitLab uses the GitLab chip when its host name contains gitlab. The computer has to resolve that name — connect to the VPN or office network — before a key is offered. Add the public key on that GitLab, under Preferences → SSH Keys. If fetch says the host is not known, the key is not the problem yet.",
+                                            isInPopup: true
+                                        })
                                     } else {
                                         steps.push({
                                             targetProvider: function() { return sshSection.emptyStateItem },
                                             icon: Style.icons.copy,
                                             title: "2. Add it to GitHub or GitLab",
                                             description: "After generating, copy the public key with the copy button and paste it into your host: use the links here to jump straight to the right page on GitHub or GitLab. Once added, you can clone, fetch and push over SSH.",
+                                            isInPopup: true
+                                        })
+                                        steps.push({
+                                            targetProvider: function() { return sshSection.emptyStateItem },
+                                            icon: Style.icons.terminal,
+                                            title: "3. Private and self-hosted hosts",
+                                            description: "A company GitLab uses the GitLab chip when its host name contains gitlab. Connect to the VPN or office network so the computer can resolve that host, then add the public key under Preferences → SSH Keys on that instance. If fetch says the host is not known, fix the network before checking the key.",
                                             isInPopup: true
                                         })
                                     }
