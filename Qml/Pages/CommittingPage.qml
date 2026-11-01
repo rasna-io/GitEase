@@ -52,6 +52,8 @@ Page {
 
     property TextDirectionController textDirectionController: null
 
+    property GitTreeController       gitTreeController:       null
+
     // Remote actions (Pull / Push / Fetch) are owned by the shared RemoteOperationsSession so
     property RemoteOperationsSession remoteOperationsSession:              null
     property bool                    isFetching:             remoteOperationsSession ? remoteOperationsSession.isFetching : false
@@ -504,6 +506,8 @@ Page {
             selectEnabled: false
             appModel: root.appModel
             pluginManager: root.pluginController?.pluginManager ?? null
+            gitTree: root.gitTreeController
+            repositoryPath: root.appModel?.currentRepository?.path ?? ""
             textDirectionController: root.textDirectionController
             contextLines: 0
             expandLines: 10
@@ -578,6 +582,9 @@ Page {
         context: Qt.ApplicationShortcut
 
         onActivated: {
+            if (diffView.prefersImageViewer(root.selectedFilePath))
+                return
+
             let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
 
             if (res.success) {
@@ -667,6 +674,22 @@ Page {
     }
 
     function updateDiff(isStaged) {
+        diffView.repositoryPath = root.appModel?.currentRepository?.path ?? ""
+        diffView.imageSource = isStaged ? "index" : "workdir"
+        diffView.imageOldRevision = "HEAD"
+        diffView.imageNewRevision = ""
+
+        if (diffView.prefersImageViewer(root.selectedFilePath)) {
+            diffView.chunkData = []
+            diffView.diffData = []
+            diffView.originalFileBuffer = []
+            diffView.editedFileBuffer = []
+            diffView.selectedFile = root.selectedFilePath
+            diffView.readOnly = isStaged
+            root.currentFileEdited = false
+            return
+        }
+
         let oldY = diffView.scrollPosition
 
         let res = root.statusController.getChunkedDiffView(root.selectedFilePath, isStaged)
@@ -724,6 +747,9 @@ Page {
     }
 
     function saveFile() {
+        if (diffView.prefersImageViewer(root.selectedFilePath))
+            return
+
         let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
 
         if (res.success) {

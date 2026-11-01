@@ -76,13 +76,22 @@ function handleFileSelected(filePath) {
     if (!commitId)
         return;
 
-    // Also picks the syntax colorizer for the file.
+    // Also picks the syntax colorizer, or an image viewer, for the file.
     diffView.selectedFile = filePath;
 
     var node = commitGraph.commits ? commitGraph.commits.find(function(c) { return c.hash === commitId; }) : null;
 
     // uncommitted diff
     if (commitId === "__uncommitted__" || (node && node.isUncommitted)) {
+        diffView.imageSource = "workdir";
+        diffView.imageOldRevision = "HEAD";
+        diffView.imageNewRevision = "";
+        if (diffView.prefersImageViewer && diffView.prefersImageViewer(filePath)) {
+            diffView.diffData = [];
+            diffView.chunkData = [];
+            return;
+        }
+
         var headHash = statusController.getHeadHash();
         if (!headHash) {
             return;
@@ -109,7 +118,18 @@ function handleFileSelected(filePath) {
         parentHash = node.parentHashes[0];
     }
 
+    diffView.imageSource = "commit";
+    diffView.imageOldRevision = parentHash || "";
+    diffView.imageNewRevision = commitId;
+
     if (!parentHash) {
+        diffView.diffData = [];
+        return;
+    }
+
+    if (diffView.prefersImageViewer && diffView.prefersImageViewer(filePath)) {
+        diffView.diffData = [];
+        diffView.chunkData = [];
         return;
     }
 

@@ -84,6 +84,7 @@ Rectangle {
             guideController: root.uiSession?.guideController
             gitStateNotifier: root.uiSession?.gitStateNotifier
             textDirectionController: root.uiSession?.textDirectionController
+            gitTreeController: root.uiSession?.gitTreeController
         }
     }
 
@@ -573,6 +574,7 @@ Rectangle {
                                 userAuthenticationPopup : root.uiSession?.popups?.userAuthenticationPopup
                                 uiSessionPopups         : root.uiSession?.popups
                                 pluginController        : root.uiSession?.pluginController
+                                gitTreeController       : root.uiSession?.gitTreeController
                                 gitStateNotifier        : root.uiSession?.gitStateNotifier
                                 textDirectionController : root.uiSession?.textDirectionController
                             }

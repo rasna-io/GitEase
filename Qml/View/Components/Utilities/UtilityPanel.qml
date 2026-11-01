@@ -36,6 +36,7 @@ Rectangle {
     property UserAuthenticationPopup userAuthenticationPopup : null
     property UiSessionPopups         uiSessionPopups         : null
     property var                     pluginController        : null
+    property GitTreeController       gitTreeController       : null
     property GitStateNotifier        gitStateNotifier        : null
     property TextDirectionController textDirectionController : null
     property real                    animatedWidth           : root.open ? expandedWidth : 0
@@ -297,6 +298,9 @@ Rectangle {
                     conflictController      : root.conflictController
                     guideController         : root.guideController
                     textDirectionController : root.textDirectionController
+                    gitTreeController       : root.gitTreeController
+                    repositoryPath          : root.repositoryController?.appModel?.currentRepository?.path ?? ""
+                    pluginManager           : root.pluginController?.pluginManager ?? null
                 }
 
                 // ── Plugin docks ─────────────────────────────────────────────────
@@ -304,13 +308,15 @@ Rectangle {
                     model: root.pluginController?.pluginManager?.registeredDocks ?? []
 
                     delegate: Loader {
-                        width:  root.contentWidth
-                        height: 390
+                        width: root.contentWidth
+                        // A UtilitiesCard sizes itself, including while it expands.
+                        // A dock that fails to load takes no space.
+                        height: item ? item.height : 0
                         // Plugin docks built on UtilitiesCard filter their own content;
                         // any other plugin dock is matched by its title only.
                         visible: item && item.matchesFilter !== undefined
                                  ? item.matchesFilter
-                                 : dockFlow.matchesFilter(modelData.title ?? "")
+                                 : (item ? dockFlow.matchesFilter(modelData.title ?? "") : false)
                         active: !!modelData?.url
                         source: modelData?.url ?? ""
 

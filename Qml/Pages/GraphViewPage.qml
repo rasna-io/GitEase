@@ -292,6 +292,8 @@ Page {
                     guideController: root.guideController
                     currentRepositoryName: root.appModel.currentRepository.name || ""
                     pluginManager: root.pluginController?.pluginManager ?? null
+                    gitTree: root.gitTreeController
+                    repositoryPath: root.appModel?.currentRepository?.path ?? ""
                     textDirectionController: root.textDirectionController
                     readOnly: true
                 }

@@ -1,12 +1,56 @@
 #include "GitTree.h"
 
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QDir>
+#include <QTimer>
+#include <QUrl>
+#include <QUuid>
+
+#include <git2/diff.h>
+#include <git2/index.h>
+
+#include <utility>
+
+namespace {
+
+GitResult writeBlobToFile(git_blob *blob, const QString &targetPath)
+{
+    if (!blob)
+        return GitResult(false, QVariant(), QStringLiteral("File has no content"));
+
+    QFile file(targetPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        return GitResult(false, QVariant(), QStringLiteral("Cannot write to ") + targetPath);
+
+    const auto size = static_cast<qint64>(git_blob_rawsize(blob));
+    const qint64 written = file.write(static_cast<const char *>(git_blob_rawcontent(blob)), size);
+    file.close();
+
+    if (written != size) {
+        QFile::remove(targetPath);
+        return GitResult(false, QVariant(), QStringLiteral("Cannot write to ") + targetPath);
+    }
+
+    return GitResult(true, targetPath);
+}
+
+QString normalizedGitPath(const QString &path)
+{
+    return QDir::fromNativeSeparators(path);
+}
+
+}
 
 GitTree::GitTree(QObject *parent)
     : IGitController(parent)
 {
+}
+
+GitTree::~GitTree()
+{
+    for (const QString &path : std::as_const(m_pendingTempFiles))
+        QFile::remove(path);
 }
 
 GitResult GitTree::getFileTree(const QString &sha)
@@ -69,19 +113,196 @@ GitResult GitTree::saveFileContent(const QString &sha, const QString &path, cons
     if (!blob)
         return GitResult(false, QVariant(), errorMessage);
 
-    QFile file(targetPath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        git_blob_free(blob);
-        return GitResult(false, QVariant(), "Cannot write to " + targetPath);
+    const GitResult result = writeBlobToFile(blob, targetPath);
+    git_blob_free(blob);
+    return result;
+}
+
+GitResult GitTree::saveIndexFileContent(const QString &path, const QString &targetPath)
+{
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, QVariant(), QStringLiteral("Repository not open"));
+
+    if (targetPath.isEmpty())
+        return GitResult(false, QVariant(), QStringLiteral("Target path is empty"));
+
+    if (path.isEmpty())
+        return GitResult(false, QVariant(), QStringLiteral("File path is empty"));
+
+    git_index *index = nullptr;
+    if (git_repository_index(&index, activeRepo()) != GIT_OK || !index)
+        return GitResult(false, QVariant(), QStringLiteral("Failed to read the index"));
+
+    const QByteArray pathUtf8 = path.toUtf8();
+    const git_index_entry *entry = git_index_get_bypath(index, pathUtf8.constData(), 0);
+    if (!entry) {
+        git_index_free(index);
+        return GitResult(false, QVariant(), QStringLiteral("File not found in the index: ") + path);
     }
 
-    file.write(static_cast<const char*>(git_blob_rawcontent(blob)),
-               static_cast<qint64>(git_blob_rawsize(blob)));
-    file.close();
+    git_blob *blob = nullptr;
+    const int error = git_blob_lookup(&blob, activeRepo(), &entry->id);
+    git_index_free(index);
+    if (error != GIT_OK || !blob)
+        return GitResult(false, QVariant(), QStringLiteral("Failed to read the staged file: ") + path);
 
+    const GitResult result = writeBlobToFile(blob, targetPath);
     git_blob_free(blob);
+    return result;
+}
 
-    return GitResult(true, targetPath);
+QString GitTree::previousPath(const QString &filePath, const QString &oldRevision,
+                              const QString &mode, const QString &newRevision)
+{
+    const QString fallback = normalizedGitPath(filePath);
+    if (!m_currentRepo || !activeRepo() || fallback.isEmpty())
+        return fallback;
+
+    const QString oldRev = oldRevision.isEmpty() ? QStringLiteral("HEAD") : oldRevision;
+    QString errorMessage;
+    git_tree *oldTree = lookupCommitTree(oldRev, errorMessage);
+    if (!oldTree)
+        return fallback;
+
+    git_tree *newTree = nullptr;
+    git_diff *diff = nullptr;
+    git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+    int error = GIT_OK;
+
+    if (mode == QLatin1String("commit")) {
+        newTree = lookupCommitTree(newRevision, errorMessage);
+        if (!newTree) {
+            git_tree_free(oldTree);
+            return fallback;
+        }
+        error = git_diff_tree_to_tree(&diff, activeRepo(), oldTree, newTree, &opts);
+    } else if (mode == QLatin1String("index")) {
+        error = git_diff_tree_to_index(&diff, activeRepo(), oldTree, nullptr, &opts);
+    } else {
+        opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED | GIT_DIFF_RECURSE_UNTRACKED_DIRS;
+        error = git_diff_tree_to_workdir(&diff, activeRepo(), oldTree, &opts);
+    }
+
+    git_tree_free(oldTree);
+    if (newTree)
+        git_tree_free(newTree);
+
+    if (error != GIT_OK || !diff)
+        return fallback;
+
+    git_diff_find_options findOpts = GIT_DIFF_FIND_OPTIONS_INIT;
+    findOpts.flags = GIT_DIFF_FIND_RENAMES;
+    if (mode != QLatin1String("commit") && mode != QLatin1String("index"))
+        findOpts.flags |= GIT_DIFF_FIND_FOR_UNTRACKED;
+    git_diff_find_similar(diff, &findOpts);
+
+    QString found = fallback;
+    const size_t count = git_diff_num_deltas(diff);
+    for (size_t i = 0; i < count; ++i) {
+        const git_diff_delta *delta = git_diff_get_delta(diff, i);
+        if (!delta || !delta->new_file.path)
+            continue;
+
+        const QString newPath = normalizedGitPath(QString::fromUtf8(delta->new_file.path));
+        if (newPath != fallback)
+            continue;
+
+        if (delta->old_file.path) {
+            const QString oldPath = normalizedGitPath(QString::fromUtf8(delta->old_file.path));
+            if (!oldPath.isEmpty())
+                found = oldPath;
+        }
+        break;
+    }
+
+    git_diff_free(diff);
+    return found;
+}
+
+QString GitTree::absoluteWorkdirFile(const QString &repositoryPath, const QString &filePath) const
+{
+    return QDir(repositoryPath).filePath(filePath);
+}
+
+bool GitTree::localFileExists(const QString &path) const
+{
+    const QFileInfo info(path);
+    return info.isFile() && info.exists();
+}
+
+QUrl GitTree::localFileUrl(const QString &path) const
+{
+    return QUrl::fromLocalFile(QFileInfo(path).absoluteFilePath());
+}
+
+QString GitTree::makeTempImagePath(const QString &extension) const
+{
+    QString ext;
+    for (const QChar &ch : extension) {
+        if (ch.isLetterOrNumber())
+            ext.append(ch.toLower());
+        if (ext.size() >= 8)
+            break;
+    }
+    if (ext.isEmpty())
+        ext = QStringLiteral("img");
+
+    const QString name = QStringLiteral("gitease-imagediff-%1.%2")
+                             .arg(QUuid::createUuid().toString(QUuid::Id128), ext);
+    return QDir(QDir::tempPath()).filePath(name);
+}
+
+void GitTree::discardTempFiles(const QStringList &paths)
+{
+    const QString tempRoot = QDir(QDir::tempPath()).absolutePath();
+    for (const QString &path : paths) {
+        const QFileInfo info(path);
+        if (!info.fileName().startsWith(QStringLiteral("gitease-imagediff-")))
+            continue;
+        const QString absolute = info.absoluteFilePath();
+        if (!absolute.startsWith(tempRoot, Qt::CaseInsensitive))
+            continue;
+        if (!m_pendingTempFiles.contains(absolute))
+            m_pendingTempFiles.append(absolute);
+    }
+
+    if (m_pendingTempFiles.isEmpty())
+        return;
+
+    if (!m_tempDiscardTimer) {
+        m_tempDiscardTimer = new QTimer(this);
+        m_tempDiscardTimer->setInterval(400);
+        connect(m_tempDiscardTimer, &QTimer::timeout, this, &GitTree::flushTempFiles);
+    }
+
+    m_tempDiscardAttempts = 0;
+    flushTempFiles();
+    if (!m_pendingTempFiles.isEmpty() && !m_tempDiscardTimer->isActive())
+        m_tempDiscardTimer->start();
+}
+
+void GitTree::flushTempFiles()
+{
+    QStringList stillLocked;
+    for (const QString &path : std::as_const(m_pendingTempFiles)) {
+        if (!QFileInfo::exists(path))
+            continue;
+        if (!QFile::remove(path))
+            stillLocked.append(path);
+    }
+
+    m_pendingTempFiles = stillLocked;
+    ++m_tempDiscardAttempts;
+
+    if (m_pendingTempFiles.isEmpty() || m_tempDiscardAttempts >= 20) {
+        m_pendingTempFiles.clear();
+        if (m_tempDiscardTimer)
+            m_tempDiscardTimer->stop();
+        return;
+    }
+
+    if (m_tempDiscardTimer && !m_tempDiscardTimer->isActive())
+        m_tempDiscardTimer->start();
 }
 
 git_tree* GitTree::lookupCommitTree(const QString &sha, QString &errorMessage)

@@ -586,6 +586,8 @@ DetachablePanel {
         guideController: root.guideController
         textDirectionController: root.textDirectionController
         pluginManager: root.pluginController?.pluginManager ?? null
+        gitTree: root.gitTreeController
+        repositoryPath: root.appModel?.currentRepository?.path ?? ""
     }
 
     CommitFileBrowserPopup {

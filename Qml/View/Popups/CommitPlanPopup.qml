@@ -64,6 +64,8 @@ IWindow {
     property GuideController        guideController: null
     property TextDirectionController textDirectionController: null
     property var pluginManager: null
+    property GitTree gitTree: null
+    property string repositoryPath: ""
 
 
     property var    planData            : ({})
@@ -357,6 +359,9 @@ IWindow {
 
                         readOnly: true
                         textDirectionController: root.textDirectionController
+                        pluginManager: root.pluginManager
+                        gitTree: root.gitTree
+                        repositoryPath: root.repositoryPath
                     }
                 }
             }
@@ -675,13 +680,27 @@ IWindow {
         if (!root.selectedCommitHash || !filePath)
             return
 
+        diffView.selectedFile = filePath
+
         var parentHash = root.commitController.getParentHash(root.selectedCommitHash)
         var selected = commitModel.get(root.selectedIndex)
         if (!parentHash && selected && selected.parentHash)
             parentHash = selected.parentHash
 
-        if (!parentHash)
+        diffView.imageSource = "commit"
+        diffView.imageOldRevision = parentHash || ""
+        diffView.imageNewRevision = parentHash ? root.selectedCommitHash : ""
+
+        if (!parentHash) {
+            diffView.diffData = []
             return
+        }
+
+        if (diffView.prefersImageViewer(filePath)) {
+            diffView.diffData = []
+            diffView.chunkData = []
+            return
+        }
 
         var diffRes = root.statusController.getDiff(parentHash, root.selectedCommitHash, filePath)
         if (diffRes && diffRes.success)

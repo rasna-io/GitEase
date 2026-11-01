@@ -1,0 +1,10 @@
+{
+  "id": "com.gitease.image-diff",
+  "name": "Image Diff",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["diff"],
+  "author": "GitEase",
+  "description": "Shows the old and new picture when the selected file is an image, including SVG. Side by side, swipe, and onion skin.",
+  "cppEntry": "lib/image-diff-plugin"
+}
