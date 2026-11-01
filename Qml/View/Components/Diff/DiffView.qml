@@ -8,6 +8,7 @@ import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * DiffView
+ * A diff plugin viewer for the selected extension replaces the text diff.
  * ************************************************************************************************/
 
 DetachablePanel {
@@ -32,6 +33,12 @@ DetachablePanel {
     property var  textColorizer: null   // JS function (text) => richHtml, set by host
     //! Looks up a diff plugin colorizer for selectedFile when textColorizer is not set.
     property var  pluginManager: null
+    property GitTree gitTree: null
+    property string repositoryPath: ""
+    //! "workdir" working copy, "index" staged blob, "commit" imageNewRevision.
+    property string imageSource: "workdir"
+    property string imageOldRevision: "HEAD"
+    property string imageNewRevision: ""
     property int currentIndex: -1
     property bool fileIsEdited: false
     property string selectedFile: ""
@@ -211,19 +218,32 @@ DetachablePanel {
         onTriggered: root.updateChangeMarkers()
     }
 
+    ImageDiffHost {
+        id: imageDiff
+        anchors.fill: parent
+        z: 5
+        pluginManager: root.pluginManager
+        gitTree: root.gitTree
+        repositoryPath: root.repositoryPath
+        filePath: root.selectedFile
+        imageSource: root.imageSource
+        oldRevision: root.imageOldRevision
+        newRevision: root.imageNewRevision
+    }
+
     EmptyStateView {
         title: "No file changes to show"
         details: "Select a file to view the Diff"
-        visible: chunkMode ? (!chunkData || chunkData.length === 0)
-                           : (!root.diffData || root.diffData.length === 0)
+        visible: !imageDiff.active && (chunkMode ? (!chunkData || chunkData.length === 0)
+                           : (!root.diffData || root.diffData.length === 0))
     }
 
     Rectangle {
         id: diffContent
         anchors.fill: parent
         color: Style.colors.diffViewBackground
-        visible: chunkMode ? (chunkData && chunkData.length > 0)
-                           : (root.diffData && root.diffData.length > 0)
+        visible: !imageDiff.active && (chunkMode ? (chunkData && chunkData.length > 0)
+                           : (root.diffData && root.diffData.length > 0))
 
         ListView {
             id: diffListView
@@ -897,6 +917,11 @@ DetachablePanel {
 
     /* Functions
      * ****************************************************************************************/
+    //! True when a diff plugin should replace the text diff for this file.
+    function prefersImageViewer(filePath) {
+        return imageDiff.hasViewer(filePath) && !!root.gitTree
+    }
+
     function computeSingleSide(data, isChunked) {
         if (!data || data.length === 0)
             return DiffView.DiffViewSelectionSide.None

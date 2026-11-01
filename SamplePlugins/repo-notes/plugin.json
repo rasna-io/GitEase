@@ -1,10 +1,54 @@
 {
   "id": "com.gitease.repo-notes",
   "name": "Repo Notes",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "apiVersion": "1",
-  "capabilities": ["dock"],
+  "capabilities": [
+    "dock"
+  ],
   "author": "GitEase",
-  "description": "A simple per-repository notepad dock.",
-  "qmlEntry": "qml/NotesDock.qml"
+  "description": "Tasks and a branch reminder for each repository, kept on this computer.",
+  "cppEntry": "lib/repo-notes-plugin",
+  "long_description": "Repo Notes is a utilities dock for the work you do not want to commit. Each repository has a task list and a short reminder for the branch that is checked out. A scratch note is there for anything longer. Switching repositories or branches saves what you were writing and opens the notes for where you landed.",
+  "install_guide": "Open the utilities panel and expand Repo Notes. Add tasks with the field under Tasks. The branch name at the top is the reminder for the branch you have checked out. Scratch holds a longer note and stays collapsed until you open it.",
+  "tags": [
+    "notes",
+    "tasks",
+    "repository",
+    "dock"
+  ],
+  "features": [
+    {
+      "title": "Tasks for this repository",
+      "description": "Add a task, check it off, and bring done tasks back when you need them. The header badge is the number still open."
+    },
+    {
+      "title": "Reminder for the current branch",
+      "description": "Each branch keeps its own short note, so checking the branch out again shows what you left for yourself."
+    },
+    {
+      "title": "Scratch note",
+      "description": "A longer note stays with the repository. It saves as you type and is never committed."
+    }
+  ],
+  "changelog": [
+    {
+      "version": "1.1.0",
+      "date": "2026-11-01",
+      "notes": [
+        "Task list for the open repository, with the open count on the dock.",
+        "A reminder that follows the checked-out branch.",
+        "The free-form note is now a scratch section. Existing notes are kept."
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-31",
+      "notes": [
+        "First release.",
+        "Notepad dock in the utilities panel.",
+        "A separate note for each repository, saved on this computer."
+      ]
+    }
+  ]
 }

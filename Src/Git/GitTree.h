@@ -2,11 +2,15 @@
 
 #include <QObject>
 #include <QQmlEngine>
-#include <git2.h>
+#include <QStringList>
+#include <QUrl>
 #include <QVariantList>
+#include <git2.h>
 
 #include "GitResult.h"
 #include "IGitController.h"
+
+class QTimer;
 
 /**
  * @class GitTree
@@ -49,7 +53,43 @@ public:
      */
     Q_INVOKABLE GitResult saveFileContent(const QString &sha, const QString &path, const QString &targetPath);
 
+    /**
+     * @brief Writes the staged blob for @p path to @p targetPath.
+     *        The index is not a commit, so saveFileContent() cannot read it.
+     */
+    Q_INVOKABLE GitResult saveIndexFileContent(const QString &path, const QString &targetPath);
+
+    /**
+     * @brief Path this file had in @p oldRevision when the change is a rename.
+     *        @p mode is "workdir" (old revision to the working tree), "index"
+     *        (old revision to the index), or "commit" (old revision to @p newRevision).
+     *        Returns @p filePath when the file was not renamed.
+     */
+    Q_INVOKABLE QString previousPath(const QString &filePath, const QString &oldRevision,
+                                     const QString &mode, const QString &newRevision);
+
+    //! Absolute path of a working-tree file. Does not check that the file exists.
+    Q_INVOKABLE QString absoluteWorkdirFile(const QString &repositoryPath, const QString &filePath) const;
+
+    Q_INVOKABLE bool localFileExists(const QString &path) const;
+
+    Q_INVOKABLE QUrl localFileUrl(const QString &path) const;
+
+    //! Unique path under the system temp directory. The file is not created yet.
+    Q_INVOKABLE QString makeTempImagePath(const QString &extension) const;
+
+    //! Deletes temp files this class created. Ignores every other path.
+    //! Removal is retried briefly so a picture that still has the file open can finish with it.
+    Q_INVOKABLE void discardTempFiles(const QStringList &paths);
+
+    ~GitTree() override;
+
 private:
+    void flushTempFiles();
+
+    QTimer *m_tempDiscardTimer = nullptr;
+    QStringList m_pendingTempFiles;
+    int m_tempDiscardAttempts = 0;
     /**
      * @brief Resolves a revision string to the root tree of its commit.
      *        Works on any commit, including merge commits.

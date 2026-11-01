@@ -26,6 +26,9 @@ UtilitiesCard {
     property LayoutController       layoutController:       null
     property GuideController        guideController:        null
     property TextDirectionController textDirectionController: null
+    property GitTreeController       gitTreeController:       null
+    property string                  repositoryPath:         ""
+    property var                     pluginManager:          null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -230,6 +233,9 @@ UtilitiesCard {
         layoutController: root.layoutController
         guideController: root.guideController
         textDirectionController: root.textDirectionController
+        pluginManager: root.pluginManager
+        gitTree: root.gitTreeController
+        repositoryPath: root.repositoryPath
     }
 
     /* Functions
