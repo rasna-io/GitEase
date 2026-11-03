@@ -337,7 +337,7 @@ GitRepository {
             r && root.normalizeRepoPath(r.path) !== targetPath
         )
 
-        // add to end (newest last)
+        // add to front (newest first, oldest last)
         appModel.recentRepositories.unshift(repo)
         // add repo path in history
         let exists = root.appModel.repositoriesHistory.indexOf(repo.path)
@@ -346,9 +346,9 @@ GitRepository {
             appModel.repositoriesHistory = appModel.repositoriesHistory.slice()
         }
 
-        // trim to max length
-        if (root.maxRecentLength && appModel.recentRepositories.length > root.maxRecentLength) {
-            appModel.recentRepositories = appModel.recentRepositories.slice(appModel.recentRepositories.length - root.maxRecentLength)
+        // FIFO eviction: drop the oldest entries (the tail) beyond the limit
+        if (root.maxRecentLength > 0 && appModel.recentRepositories.length > root.maxRecentLength) {
+            appModel.recentRepositories = appModel.recentRepositories.slice(0, root.maxRecentLength)
         }
     }
 
