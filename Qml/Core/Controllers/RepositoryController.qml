@@ -337,7 +337,7 @@ GitRepository {
             r && root.normalizeRepoPath(r.path) !== targetPath
         )
 
-        // add to end (newest last)
+        // add to front (newest first, oldest last)
         appModel.recentRepositories.unshift(repo)
         // add repo path in history
         let exists = root.appModel.repositoriesHistory.indexOf(repo.path)
