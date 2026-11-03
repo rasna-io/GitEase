@@ -346,9 +346,9 @@ GitRepository {
             appModel.repositoriesHistory = appModel.repositoriesHistory.slice()
         }
 
-        // trim to max length
-        if (root.maxRecentLength && appModel.recentRepositories.length > root.maxRecentLength) {
-            appModel.recentRepositories = appModel.recentRepositories.slice(appModel.recentRepositories.length - root.maxRecentLength)
+        // FIFO eviction: drop the oldest entries (the tail) beyond the limit
+        if (root.maxRecentLength > 0 && appModel.recentRepositories.length > root.maxRecentLength) {
+            appModel.recentRepositories = appModel.recentRepositories.slice(0, root.maxRecentLength)
         }
     }
 
