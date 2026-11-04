@@ -20,6 +20,7 @@ Rectangle {
     property string repoPath:    ""
     property color  avatarColor: Style.colors.repositoryAvatarDefault
     property bool   selected:    false
+    property bool   isExists:    true
 
     readonly property string initial: repoName.length >= 1 ? repoName.charAt(0).toUpperCase() : "?"
 
