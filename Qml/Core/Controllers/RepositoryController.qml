@@ -161,6 +161,14 @@ GitRepository {
     }
 
     /**
+     * Whether a folder is still present on disk
+     */
+    function folderExists(path) : bool {
+        return !!path && !!appModel.fileIO.isFileExist(path)
+    }
+
+
+    /**
      * Clone a repository from URL to the specified local path
      */
     function cloneRepository(path, url) : var {
