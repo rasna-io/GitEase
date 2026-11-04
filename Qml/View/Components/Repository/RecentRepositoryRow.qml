@@ -102,7 +102,8 @@ Rectangle {
                     font.family: Style.fontTypes.inter
                     font.weight: Font.DemiBold
                     font.pixelSize: 12
-                    color: Style.colors.foreground
+                    font.strikeout: !root.isExists
+                    color: root.isExists ? Style.colors.foreground : Style.colors.utilitiesRowMissingText
                 }
 
                 Text {
@@ -123,9 +124,10 @@ Rectangle {
                 Layout.preferredHeight: implicitHeight
                 text: root.repoPath
                 running: rowMouse.containsMouse
-                color: Style.colors.mutedText
+                color: root.isExists ? Style.colors.mutedText : Style.colors.utilitiesRowMissingText
                 font.family: Style.fontTypes.inter
                 font.pixelSize: 10
+                font.strikeout: !root.isExists
             }
         }
     }
