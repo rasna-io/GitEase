@@ -150,11 +150,11 @@ Rectangle {
         anchors.right: parent.right
         anchors.rightMargin: 10
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 6
+        spacing: 4
 
         ActionIconButton {
-            width: 26
-            height: 26
+            width: 24
+            height: 24
             iconText: Style.icons.edit
             tooltip: "Locate the new folder"
             textColor: Style.colors.accent
@@ -163,8 +163,8 @@ Rectangle {
         }
 
         ActionIconButton {
-            width: 26
-            height: 26
+            width: 24
+            height: 24
             iconText: Style.icons.trash
             tooltip: "Remove from recents"
             textColor: Style.colors.utilitiesRowMissingText
