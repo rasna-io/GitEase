@@ -28,6 +28,8 @@ Rectangle {
      * ****************************************************************************************/
     signal clicked()
     signal doubleClicked()
+    signal relocateRequested()
+    signal removeRequested()
 
     /* Object Properties
      * ****************************************************************************************/
