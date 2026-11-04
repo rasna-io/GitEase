@@ -182,6 +182,44 @@ GitRepository {
         appModel.save()
     }
 
+    /**
+     * Point a recent entry whose folder was moved at its new location. The entry keeps its place in
+     * the list, its name and its colour. Nothing is opened: the folder is validated by open() when
+     * the user presses Continue, like for any other entry.
+     *
+     * Returns false when the entry is no longer in the list.
+     */
+    function relocateRecent(oldPath, newPath) : bool {
+        const oldKey  = root.normalizeRepoPath(oldPath)
+        const newKey  = root.normalizeRepoPath(newPath)
+        const recents = appModel.recentRepositories || []
+
+        const idx = recents.findIndex(r => r && root.normalizeRepoPath(r.path) === oldKey)
+        if (idx < 0)
+            return false
+
+        if (oldKey === newKey)
+            return true
+
+        // The new location is already listed: the stale entry is simply dropped
+        if (recents.some(r => r && root.normalizeRepoPath(r.path) === newKey)) {
+            root.removeRecent(oldPath)
+            return true
+        }
+
+        const old = recents[idx]
+        const next = recents.slice()
+        next[idx] = { id: old.id, name: old.name, path: newPath, color: old.color }
+        appModel.recentRepositories = next
+
+        const history = appModel.repositoriesHistory || []
+        appModel.repositoriesHistory = history.some(p => root.normalizeRepoPath(p) === newKey)
+                ? history.filter(p => root.normalizeRepoPath(p) !== oldKey)
+                : history.map(p => root.normalizeRepoPath(p) === oldKey ? newPath : p)
+
+        appModel.save()
+        return true
+    }
 
     /**
      * Clone a repository from URL to the specified local path
