@@ -138,6 +138,7 @@ Rectangle {
     MouseArea {
         id: rowMouse
         anchors.fill: parent
+        enabled: root.isExists
         hoverEnabled: true
         cursorShape: root.isExists ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.clicked()
