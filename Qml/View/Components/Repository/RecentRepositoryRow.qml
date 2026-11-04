@@ -66,7 +66,7 @@ Rectangle {
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 10
-        anchors.rightMargin: 12
+        anchors.rightMargin: root.isExists ? 12 : (missingActions.width + 20)
         spacing: 10
 
         // Initial avatar
@@ -142,5 +142,34 @@ Rectangle {
         cursorShape: root.isExists ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.clicked()
         onDoubleClicked: root.doubleClicked()
+    }
+
+    Row {
+        id: missingActions
+        visible: !root.isExists
+        anchors.right: parent.right
+        anchors.rightMargin: 10
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 6
+
+        ActionIconButton {
+            width: 26
+            height: 26
+            iconText: Style.icons.edit
+            tooltip: "Locate the new folder"
+            textColor: Style.colors.accent
+            backgroundColor: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.12)
+            onClicked: root.relocateRequested()
+        }
+
+        ActionIconButton {
+            width: 26
+            height: 26
+            iconText: Style.icons.trash
+            tooltip: "Remove from recents"
+            textColor: Style.colors.utilitiesRowMissingText
+            backgroundColor: Qt.rgba(Style.colors.utilitiesRowMissingText.r, Style.colors.utilitiesRowMissingText.g, Style.colors.utilitiesRowMissingText.b, 0.12)
+            onClicked: root.removeRequested()
+        }
     }
 }
