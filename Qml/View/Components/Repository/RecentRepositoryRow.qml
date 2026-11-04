@@ -74,6 +74,7 @@ Rectangle {
             height: 32
             radius: width / 2
             color: root.avatarColor
+            opacity: root.isExists ? 1.0 : 0.5
 
             Text {
                 anchors.centerIn: parent
@@ -136,7 +137,7 @@ Rectangle {
         id: rowMouse
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: root.isExists ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.clicked()
         onDoubleClicked: root.doubleClicked()
     }
