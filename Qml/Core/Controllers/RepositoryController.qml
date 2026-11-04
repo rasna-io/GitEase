@@ -167,6 +167,21 @@ GitRepository {
         return !!path && !!appModel.fileIO.isFileExist(path)
     }
 
+    /**
+     * Remove a repository from the recent list and the path history
+     */
+    function removeRecent(path) {
+        const target = root.normalizeRepoPath(path)
+
+        appModel.recentRepositories = (appModel.recentRepositories || []).filter(r =>
+            r && root.normalizeRepoPath(r.path) !== target
+        )
+        appModel.repositoriesHistory = (appModel.repositoriesHistory || []).filter(p =>
+            root.normalizeRepoPath(p) !== target
+        )
+        appModel.save()
+    }
+
 
     /**
      * Clone a repository from URL to the specified local path
