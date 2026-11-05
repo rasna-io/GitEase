@@ -161,6 +161,67 @@ GitRepository {
     }
 
     /**
+     * Whether a folder is still present on disk
+     */
+    function folderExists(path) : bool {
+        return !!path && !!appModel.fileIO.isFileExist(path)
+    }
+
+    /**
+     * Remove a repository from the recent list and the path history
+     */
+    function removeRecent(path) {
+        const target = root.normalizeRepoPath(path)
+
+        appModel.recentRepositories = (appModel.recentRepositories || []).filter(r =>
+            r && root.normalizeRepoPath(r.path) !== target
+        )
+        appModel.repositoriesHistory = (appModel.repositoriesHistory || []).filter(p =>
+            root.normalizeRepoPath(p) !== target
+        )
+        appModel.save()
+    }
+
+    /**
+     * Point a recent entry whose folder was moved at its new location. The entry keeps its place in
+     * the list, its name and its colour. Nothing is opened: the folder is validated by open() when
+     * the user presses Continue, like for any other entry.
+     *
+     * Returns false when the entry is no longer in the list.
+     */
+    function relocateRecent(oldPath, newPath) : bool {
+        const oldKey  = root.normalizeRepoPath(oldPath)
+        const newKey  = root.normalizeRepoPath(newPath)
+        const recents = appModel.recentRepositories || []
+
+        const idx = recents.findIndex(r => r && root.normalizeRepoPath(r.path) === oldKey)
+        if (idx < 0)
+            return false
+
+        if (oldKey === newKey)
+            return true
+
+        // The new location is already listed: the stale entry is simply dropped
+        if (recents.some(r => r && root.normalizeRepoPath(r.path) === newKey)) {
+            root.removeRecent(oldPath)
+            return true
+        }
+
+        const old = recents[idx]
+        const next = recents.slice()
+        next[idx] = { id: old.id, name: old.name, path: newPath, color: old.color }
+        appModel.recentRepositories = next
+
+        const history = appModel.repositoriesHistory || []
+        appModel.repositoriesHistory = history.some(p => root.normalizeRepoPath(p) === newKey)
+                ? history.filter(p => root.normalizeRepoPath(p) !== oldKey)
+                : history.map(p => root.normalizeRepoPath(p) === oldKey ? newPath : p)
+
+        appModel.save()
+        return true
+    }
+
+    /**
      * Clone a repository from URL to the specified local path
      */
     function cloneRepository(path, url) : var {
@@ -337,7 +398,7 @@ GitRepository {
             r && root.normalizeRepoPath(r.path) !== targetPath
         )
 
-        // add to end (newest last)
+        // add to front (newest first, oldest last)
         appModel.recentRepositories.unshift(repo)
         // add repo path in history
         let exists = root.appModel.repositoriesHistory.indexOf(repo.path)
@@ -346,9 +407,9 @@ GitRepository {
             appModel.repositoriesHistory = appModel.repositoriesHistory.slice()
         }
 
-        // trim to max length
-        if (root.maxRecentLength && appModel.recentRepositories.length > root.maxRecentLength) {
-            appModel.recentRepositories = appModel.recentRepositories.slice(appModel.recentRepositories.length - root.maxRecentLength)
+        // FIFO eviction: drop the oldest entries (the tail) beyond the limit
+        if (root.maxRecentLength > 0 && appModel.recentRepositories.length > root.maxRecentLength) {
+            appModel.recentRepositories = appModel.recentRepositories.slice(0, root.maxRecentLength)
         }
     }
 
