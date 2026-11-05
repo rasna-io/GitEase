@@ -131,6 +131,11 @@ Item {
                         avatarColor: root.colorOf(modelData)
                         isExists: !root.missingPaths[modelData?.path ?? ""]
                         selected: isExists && root.selectedPath !== "" && root.selectedPath === (modelData?.path ?? "")
+
+                        onClicked: {
+                            if (isExists)
+                                root.selectedPath = modelData?.path ?? ""
+                        }
                         onDoubleClicked: {
                             if (!isExists)
                                 return
