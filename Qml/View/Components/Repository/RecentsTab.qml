@@ -123,10 +123,11 @@ Item {
                         repoName: modelData?.name ?? ""
                         repoPath: modelData?.path ?? ""
                         avatarColor: root.colorOf(modelData)
-                        selected: root.selectedPath !== "" && root.selectedPath === (modelData?.path ?? "")
-
-                        onClicked: root.selectedPath = modelData?.path ?? ""
+                        isExists: !root.missingPaths[modelData?.path ?? ""]
+                        selected: isExists && root.selectedPath !== "" && root.selectedPath === (modelData?.path ?? "")
                         onDoubleClicked: {
+                            if (!isExists)
+                                return
                             root.selectedPath = modelData?.path ?? ""
                             root.accepted()
                         }
