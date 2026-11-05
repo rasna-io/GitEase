@@ -37,6 +37,10 @@ Rectangle {
     radius: 8
     color: {
         var accent = Style.colors.accent
+        if (!root.isExists){
+            var warn = Style.colors.utilitiesRowMissingText
+            return Qt.rgba(warn.r, warn.g, warn.b, 0.06)
+        }
         if (root.selected)
             return Qt.rgba(accent.r, accent.g, accent.b, rowMouse.containsMouse ? 0.25 : 0.12)
         if (rowMouse.containsMouse)
