@@ -46,7 +46,9 @@ IPopup {
     onCurrentTabIndexChanged: root.resetSelections()
 
     onOpened: {
-        root.currentTabIndex = Enums.RepositorySelectorTab.Recents
+        root.currentTabIndex = (root.recentRepositories || []).length === 0
+                             ? Enums.RepositorySelectorTab.Clone
+                             : Enums.RepositorySelectorTab.Recents
         recentsTab.selectedPath = root.appModel?.currentRepository?.path ?? ""
     }
 
