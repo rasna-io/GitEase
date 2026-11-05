@@ -43,6 +43,7 @@ Item {
 
     property string defaultPath: ""
 
+    property bool tabChosen: false
 
 
     /* Signals
@@ -51,6 +52,8 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    onRecentRepositoriesChanged: root.chooseStartTab()
+    Component.onCompleted: root.chooseStartTab()
 
     onCurrentTabIndexChanged: {
         if (!root.busy)
@@ -151,7 +154,10 @@ Item {
                             enabled: !root.busy
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.currentTabIndex = modelData.index
+                            onClicked: {
+                                root.tabChosen = true
+                                root.currentTabIndex = modelData.index
+                            }
                         }
                     }
                 }
@@ -319,6 +325,16 @@ Item {
         recentsTab.reset()
         openLocalTab.reset()
         cloneTab.reset()
+    }
+
+        function chooseStartTab() {
+        if (root.tabChosen)
+            return
+
+        const hasRecents = (root.recentRepositories || []).length > 0
+        root.currentTabIndex = hasRecents ? Enums.RepositorySelectorTab.Recents
+                                          : Enums.RepositorySelectorTab.Clone
+        root.tabChosen = hasRecents
     }
 }
 
