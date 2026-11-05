@@ -40,12 +40,33 @@ Item {
      * ****************************************************************************************/
     implicitHeight: 320
 
+    property var missingPaths: ({})
+
+    property string missingPath: ""
+
+    onRecentRepositoriesChanged     : root.checkFolders()
+    onRepositoryControllerChanged   : root.checkFolders()
+    Component.onCompleted           : root.checkFolders()
+
     /* Functions
      * ****************************************************************************************/
     function reset() {
         root.selectedPath = ""
         root.search = ""
         searchField.text = ""
+        root.checkFolders()
+    }
+
+    function checkFolders() {
+        var missing = {}
+        var ctrl = root.repositoryController
+        if (ctrl) {
+            for (var r of (root.recentRepositories || [])) {
+                if (r && !ctrl.folderExists(r.path))
+                    missing[r.path] = true
+            }
+        }
+        root.missingPaths = missing
     }
 
     function colorOf(m) {
