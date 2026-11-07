@@ -807,6 +807,12 @@ DetachablePanel {
                 })
             } else if (root.chunkMode) {
                 steps.push({
+                    targetProvider: function() { return diffContent },
+                    icon: Style.icons.penToSquare,
+                    title: "Read-only in Chunk View",
+                    description: "You can't type in Chunk View. To edit the file, turn off Chunk View in the diff settings (gear icon)."
+                })
+                steps.push({
                     targetProvider: function() {
                         var item = root.findActionableDelegate()
                         return item ? item.stageButton : diffContent
@@ -846,9 +852,15 @@ DetachablePanel {
             } else {
                 steps.push({
                     targetProvider: function() { return diffContent },
+                    icon: Style.icons.penToSquare,
+                    title: "Edit the File",
+                    description: "The right-hand side is the file itself: type to change it, then press Ctrl+S to save. You can edit only here, outside Chunk View."
+                })
+                steps.push({
+                    targetProvider: function() { return diffContent },
                     icon: Style.icons.arrowRight,
                     title: "Chunk View",
-                    description: "Enable Chunk View in the header to switch to per-block mode. Each changed block gets Stage, Revert, and Stash buttons — commit exactly the lines you want, nothing more."
+                    description: "Turn on Chunk View in the diff settings (gear icon) to switch to per-block mode. Each changed block gets Stage, Revert, and Stash buttons — commit exactly the lines you want, nothing more. Chunk View is read-only."
                 })
             }
             return steps
