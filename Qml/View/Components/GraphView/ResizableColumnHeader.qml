@@ -7,6 +7,7 @@ import GitEase_Style
  * ResizableColumnHeader – a column header with a draggable right divider.
  * Emits resized(delta, startWidth) from the drag origin so callers can size
  * against a stable baseline (avoids feedback loops with live layout widths).
+ * Double-click the divider to restore defaultWidth when it is > 0.
  * ************************************************************************************************/
 Item {
     id: root
@@ -15,13 +16,17 @@ Item {
     property bool   resizable: true
     property bool   fillWidth: false
     property real   contentPadding: 8
+    property real   defaultWidth: 0
 
     // width at the moment the drag began (captured in onPressed)
     property real dragStartWidth: 0
+    readonly property bool resizing: dividerMouse.pressed
+    readonly property bool handleHot: dividerMouse.containsMouse || dividerMouse.pressed
 
     signal resized(real delta, real startWidth)
     signal resizeStarted()
     signal resizeFinished()
+    signal resetRequested()
 
     Layout.fillHeight: true
     Layout.fillWidth: root.fillWidth
@@ -33,7 +38,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: headerMouse.containsMouse || dividerMouse.pressed
+        color: (headerMouse.containsMouse && !root.handleHot) || root.resizing
                ? Style.colors.hoverTitle
                : "transparent"
     }
@@ -54,32 +59,46 @@ Item {
     MouseArea {
         id: headerMouse
         anchors.fill: parent
-        anchors.rightMargin: root.resizable ? 6 : 0
+        anchors.rightMargin: root.resizable ? 8 : 0
         hoverEnabled: true
         propagateComposedEvents: true
         onPressed: (mouse) => mouse.accepted = false
         onReleased: (mouse) => mouse.accepted = false
     }
 
-    // Right edge divider + drag area
-    Rectangle {
+    // Right edge divider + drag area (thickens on hover like SplitViewHandle)
+    Item {
         id: divider
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: 1
         visible: root.resizable
-        color: dividerMouse.pressed || dividerMouse.containsMouse
-               ? Style.colors.resizeHandlePressed
-               : Style.colors.resizeHandle
+        z: 2
+
+        Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: root.handleHot ? 3 : 1
+            radius: width / 2
+            color: dividerMouse.pressed ? Style.colors.accent
+                 : dividerMouse.containsMouse ? Style.colors.resizeHandlePressed
+                 : Style.colors.resizeHandle
+
+            Behavior on width {
+                NumberAnimation {
+                    duration: Style.reducedMotion ? 0 : 120
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
 
         MouseArea {
             id: dividerMouse
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: 12
-            anchors.rightMargin: -6
+            anchors.centerIn: parent
+            width: 14
+            height: parent.height
             hoverEnabled: true
             cursorShape: Qt.SizeHorCursor
             enabled: root.resizable
@@ -87,6 +106,12 @@ Item {
 
             // Global coordinate tracking to avoid feedback loop
             property real startGlobalX: 0
+
+            ToolTip.visible: containsMouse && !pressed
+            ToolTip.delay: 600
+            ToolTip.text: root.defaultWidth > 0
+                          ? qsTr("Drag to resize · double-click to reset")
+                          : qsTr("Drag to resize")
 
             onPressed: (mouse) => {
                 startGlobalX = dividerMouse.mapToItem(null, mouse.x, mouse.y).x
@@ -104,6 +129,11 @@ Item {
 
             onReleased: {
                 root.resizeFinished()
+            }
+
+            onDoubleClicked: {
+                if (root.defaultWidth > 0)
+                    root.resetRequested()
             }
         }
     }
