@@ -98,6 +98,8 @@ Rectangle {
 
         CommitGraphCell {
             Layout.preferredWidth: root.graphWidth + root.refsWidth
+            Layout.minimumWidth: Layout.preferredWidth
+            Layout.maximumWidth: Layout.preferredWidth
             Layout.fillHeight: true
 
             graphRow: root.graphRow
@@ -109,10 +111,12 @@ Rectangle {
             graphWidth: root.graphWidth
             refsWidth: root.refsWidth
             nodeSize: root.nodeSize
+            contentPadding: 8
         }
 
         RowLayout {
-            Layout.preferredWidth: root.messageWidth
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
             Layout.fillHeight: true
             spacing: 0
 
@@ -120,6 +124,7 @@ Rectangle {
                 Layout.preferredWidth: 3
                 Layout.preferredHeight: root.height * 0.6
                 Layout.alignment: Qt.AlignVCenter
+                Layout.leftMargin: 8
                 radius: 6
                 color: root.laneColor
             }
@@ -203,7 +208,11 @@ Rectangle {
 
         Label {
             Layout.preferredWidth: root.authorWidth
+            Layout.minimumWidth: Layout.preferredWidth
+            Layout.maximumWidth: Layout.preferredWidth
             Layout.fillHeight: true
+            leftPadding: 8
+            rightPadding: 4
             text: root.commitData ? (root.commitData.author || "") : ""
             color: Style.colors.foreground
             verticalAlignment: Text.AlignVCenter
@@ -214,7 +223,11 @@ Rectangle {
 
         Label {
             Layout.preferredWidth: root.dateWidth
+            Layout.minimumWidth: Layout.preferredWidth
+            Layout.maximumWidth: Layout.preferredWidth
             Layout.fillHeight: true
+            leftPadding: 8
+            rightPadding: 4
             text: root.commitData ? GraphUtils.formatDate(root.commitData.authorDate) + " "
                                     + GraphUtils.formatTime(root.commitData.authorDate) : ""
             color: Style.colors.foreground
@@ -222,6 +235,7 @@ Rectangle {
             horizontalAlignment: Text.AlignLeft
             font.pixelSize: Style.appFont.smallPt
             wrapMode: Text.NoWrap
+            elide: Text.ElideRight
         }
     }
 }

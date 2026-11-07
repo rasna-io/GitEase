@@ -22,12 +22,14 @@ Item {
     property real   graphWidth      : 60
     property real   refsWidth       : 80
     property real   nodeSize        : 24
+    property real   contentPadding  : 8
 
     readonly property int   column      : graphRow ? graphRow.column : 0
     readonly property real  nodeCenterX : columnSpacing * (column + 1)
     readonly property var   refs        : graphRow ? graphRow.refs : []
-    readonly property real  refsStartX  : Math.max(graphWidth + 10, nodeCenterX + 20)
-    readonly property real  refsEndX    : graphWidth + refsWidth - 4
+    // Keep Branch/Tag labels under the header column (not pushed by lane position).
+    readonly property real  refsStartX  : graphWidth + contentPadding
+    readonly property real  refsEndX    : graphWidth + refsWidth - contentPadding
 
     /* Object Properties
      * ****************************************************************************************/
