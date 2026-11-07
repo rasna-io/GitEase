@@ -335,6 +335,16 @@ Item {
         statusCoalesceTimer.restart()
     }
 
+    //! Highlights currentFile again, e.g. after switching to another file was cancelled.
+    function selectCurrentFile(isStaged) {
+        unstagedSection.selectedFilePath = isStaged ? "" : root.currentFile
+        stagedSection.selectedFilePath   = isStaged ? root.currentFile : ""
+
+        const file = root.unstagedModel.find(entry => entry.path === root.currentFile)
+        if (!isStaged && file)
+            root.currentFileStatus = file.unstagedStatus ? file.unstagedStatus : GitFileStatus.Unknown
+    }
+
     function confirmConflictStaging(paths, stageAction, stagingAll = false) {
         const conflictedPaths = new Set()
         root.unstagedModel.forEach(file => {
