@@ -72,8 +72,6 @@ DetachablePanel {
     signal requestStage(int start, int end, int type)
     signal requestRevert(int start, int end, int type)
     signal requestStash(int start, int end, int type)
-    signal fileEdited(bool isEdited)
-    signal saveFile()
 
     /* Children
      * ****************************************************************************************/
@@ -1091,7 +1089,6 @@ DetachablePanel {
         }
 
         root.fileIsEdited = isFileEdited()
-        root.fileEdited(root.fileIsEdited)
     }
 
     // Called by Delegate when user presses Enter
@@ -1139,7 +1136,6 @@ DetachablePanel {
         }
 
         root.fileIsEdited = isFileEdited()
-        root.fileEdited(root.fileIsEdited)
     }
 
     // Called by Delegate when user presses Backspace at start
@@ -1198,7 +1194,6 @@ DetachablePanel {
         root.currentIndex = index - 1
 
         root.fileIsEdited = isFileEdited()
-        root.fileEdited(root.fileIsEdited)
     }
 
     function updateMaxContentWidth(newText) {
