@@ -262,6 +262,8 @@ Item {
             }
 
             onDiscardAllRequested: function() {
+                root.changesAborted()
+
                 let res = statusController.revertAll()
                 if (res.success) {
                     root.notificationController.success("All changes discarded successfully", "Discard All", 3000)
