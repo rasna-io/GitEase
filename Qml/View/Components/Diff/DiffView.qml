@@ -514,28 +514,13 @@ DetachablePanel {
                         id: chunkViewCheck
                         Layout.fillWidth: true
                         title: "Chunk View"
-                        description: "Enable chunk-based diff display"
+                        description: "Per-block actions, read-only. Turn off to edit."
                         checked: root.chunkMode
 
-                        onCheckedChanged: {
-                            if (root.fileIsEdited) {
-                                var d = unsavedChangesDialogComp.createObject(root.activeItem)
-                                d.title = "Unsaved Changes"
-                                d.message = "You have unsaved changes in: " + root.selectedFile
-                                d.saved.connect(() => {
-                                    root.saveFile()
-                                    root.chunkMode = checked
-                                })
-                                d.aborted.connect(() => {
-                                    root.chunkMode = checked
-                                })
-                                d.cancelled.connect(() => {
-                                    checked = Qt.binding(() => root.chunkMode)
-                                })
-                                d.open()
-                            } else {
-                                root.chunkMode = checked
-                            }
+                        onClicked: {
+                            const desired = checked                              // what the user wants
+                            checked = Qt.binding(() => root.chunkMode)           // re-staple to reality
+                            root.requestChunkMode(desired)                       // let the parent decide
                         }
                     }
 
@@ -758,11 +743,6 @@ DetachablePanel {
                 }
             }
         }
-    }
-
-    Component {
-        id: unsavedChangesDialogComp
-        UnsavedChangesDialog { }
     }
 
     /* Guide
