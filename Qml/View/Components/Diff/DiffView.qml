@@ -454,13 +454,48 @@ DetachablePanel {
                 anchors.left: parent.left
                 anchors.leftMargin: 4
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.min(implicitWidth, parent.width * 0.55)
+                width: Math.max(0, Math.min(implicitWidth, parent.width * 0.55,
+                                            parent.width - headerActions.width - 12))
             }
 
             RowLayout {
+                id: headerActions
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 6
+
+                Rectangle {
+                    Layout.preferredHeight: 20
+                    Layout.preferredWidth: readOnlyLabel.width + 12
+                    radius: 3
+                    color: Qt.rgba(1,0,0,0.1)
+                    border.color: Qt.rgba(248/255,113/255,113/255,0.2)
+                    border.width: 1
+
+                    readonly property bool leadsToFileView: root.chunkMode && !root.readOnly
+                    visible: diffContent.visible && (root.readOnly || root.chunkMode)
+
+
+                    HoverHandler {
+                        id: readOnlyHover
+                    }
+
+                    ToolTip.visible: readOnlyHover.hovered
+                    ToolTip.delay: 400
+                    ToolTip.text: leadsToFileView
+                                  ? qsTr("Chunk view is read-only.")
+                                  : qsTr("Staged changes can't be edited here.")
+
+                    Label {
+                        id: readOnlyLabel
+                        anchors.centerIn: parent
+                        text: "READ ONLY"
+                        color: Style.colors.error
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                        font.bold: true
+                    }
+                }       
 
                 Text {
                     visible: root.selectedFile !== "" && (root.addedLineCount > 0 || root.deletedLineCount > 0)
