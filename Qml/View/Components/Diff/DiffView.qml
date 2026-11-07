@@ -145,9 +145,7 @@ DetachablePanel {
             buildFileModel()
         else
             buildChunkModel()
-        }
 
-        root.fileIsEdited = false
         root.clearSelection()
         root.animateDiffSwap()
     }
