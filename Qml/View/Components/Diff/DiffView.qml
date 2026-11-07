@@ -30,6 +30,7 @@ DetachablePanel {
     property int  expandLines   : 10        // lines to reveal when expanding a hidden block
 
     property bool readOnly: false
+    property var  showSaveDialog: null
     property var  textColorizer: null   // JS function (text) => richHtml, set by host
     //! Looks up a diff plugin colorizer for selectedFile when textColorizer is not set.
     property var  pluginManager: null
