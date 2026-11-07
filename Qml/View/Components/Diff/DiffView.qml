@@ -1508,6 +1508,39 @@ DetachablePanel {
         return false
     }
 
+    //! Switches between chunk and file view. Unsaved edits are saved or discarded first, through
+    //! the host's showSaveDialog, and the view stays as it is if the user cancels.
+    function requestChunkMode(desired) {
+        if (desired === root.chunkMode)
+            return
+
+        const apply = () => { root.chunkMode = desired }
+
+        if (root.fileIsEdited && root.showSaveDialog)
+            root.showSaveDialog(apply, { hostItem: root.activeItem })
+        else
+            apply()
+    }
+
+    //! Throws the unsaved edits away and shows the file as it was loaded.
+    function discardEdits() {
+        if (!root.fileIsEdited)
+            return
+
+        if (!root.chunkMode)
+            buildFileModel()
+
+        root.editedFileBuffer = root.originalFileBuffer.slice()
+        root.fileIsEdited = false
+        root.clearSelection()
+    }
+
+    //! Takes the edited text as the saved state, once the host has written it to disk.
+    function markSaved() {
+        root.originalFileBuffer = root.editedFileBuffer.slice()
+        root.fileIsEdited = false
+    }
+
     function persistSettings() {
         if (!appModel)
             return
