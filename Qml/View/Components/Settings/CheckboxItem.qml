@@ -20,6 +20,10 @@ RowLayout {
 
     property     alias             checked:     swt.checked
 
+    /* Signals
+     * ****************************************************************************************/
+    signal clicked()
+
     /* Children
      * ****************************************************************************************/
     ColumnLayout {
@@ -86,5 +90,7 @@ RowLayout {
                 }
             }
         }
+
+        onClicked: root.clicked()
     }
 }
