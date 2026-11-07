@@ -7,7 +7,7 @@ import GitEase_Style
  * ResizableColumnHeader – a column header with a draggable right divider.
  * Emits resized(delta, startWidth) from the drag origin so callers can size
  * against a stable baseline (avoids feedback loops with live layout widths).
- * Double-click the divider to restore defaultWidth when it is > 0.
+ * Double-click the divider to auto-fit the column to its content (Excel-style).
  * ************************************************************************************************/
 Item {
     id: root
@@ -15,8 +15,8 @@ Item {
     property string label: ""
     property bool   resizable: true
     property bool   fillWidth: false
+    property bool   autoFitEnabled: true
     property real   contentPadding: 8
-    property real   defaultWidth: 0
 
     // width at the moment the drag began (captured in onPressed)
     property real dragStartWidth: 0
@@ -26,7 +26,7 @@ Item {
     signal resized(real delta, real startWidth)
     signal resizeStarted()
     signal resizeFinished()
-    signal resetRequested()
+    signal autoFitRequested()
 
     Layout.fillHeight: true
     Layout.fillWidth: root.fillWidth
@@ -100,21 +100,23 @@ Item {
             width: 14
             height: parent.height
             hoverEnabled: true
-            cursorShape: Qt.SizeHorCursor
+            // SplitHCursor is the Excel-style column resize cursor (bar + arrows)
+            cursorShape: Qt.SplitHCursor
             enabled: root.resizable
             preventStealing: true
 
-            // Global coordinate tracking to avoid feedback loop
             property real startGlobalX: 0
+            property bool moved: false
 
             ToolTip.visible: containsMouse && !pressed
             ToolTip.delay: 600
-            ToolTip.text: root.defaultWidth > 0
-                          ? qsTr("Drag to resize · double-click to reset")
+            ToolTip.text: root.autoFitEnabled
+                          ? qsTr("Drag to resize · double-click to auto-fit")
                           : qsTr("Drag to resize")
 
             onPressed: (mouse) => {
                 startGlobalX = dividerMouse.mapToItem(null, mouse.x, mouse.y).x
+                moved = false
                 root.dragStartWidth = root.width
                 root.resizeStarted()
                 mouse.accepted = true
@@ -124,7 +126,13 @@ Item {
                 if (!pressed)
                     return
                 var currentGlobalX = dividerMouse.mapToItem(null, mouse.x, mouse.y).x
-                root.resized(currentGlobalX - startGlobalX, root.dragStartWidth)
+                var delta = currentGlobalX - startGlobalX
+                if (Math.abs(delta) >= 2)
+                    moved = true
+                // Ignore tiny motion so a double-click does not nudge the column first
+                if (!moved)
+                    return
+                root.resized(delta, root.dragStartWidth)
             }
 
             onReleased: {
@@ -132,8 +140,10 @@ Item {
             }
 
             onDoubleClicked: {
-                if (root.defaultWidth > 0)
-                    root.resetRequested()
+                if (!root.autoFitEnabled)
+                    return
+                root.resizeFinished()
+                root.autoFitRequested()
             }
         }
     }
