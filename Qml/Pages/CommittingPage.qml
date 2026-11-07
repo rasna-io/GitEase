@@ -514,6 +514,7 @@ Page {
             contextLines: 0
             expandLines: 10
             selectedFileStatus: changesFileLists.currentFileStatus
+            showSaveDialog: root.showSaveDialog
 
             guideController: root.guideController
             currentRepositoryName: root.appModel.currentRepository.name || ""
