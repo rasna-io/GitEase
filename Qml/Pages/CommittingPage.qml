@@ -63,6 +63,7 @@ Page {
     readonly property bool           currentFileEdited:       diffView.fileIsEdited
 
     property string                  selectedFilePath:        ""
+    property bool                    selectedFileIsStaged:    false
 
     // Exposed to MainWindow's header area (see MainWindow.qml)
     headerContent: CommittingPageHeader {
@@ -85,20 +86,7 @@ Page {
 
     Component.onCompleted: {
         root.onPageChange = function(callback) {
-            if (!root.currentFileEdited) {
-                callback(true)
-                return
-            }
-            var d = unsavedChangesDialogComp.createObject(root)
-            d.title = "Unsaved Changes"
-            d.message = "You have unsaved changes in: " + root.selectedFilePath
-            d.saved.connect(() => {
-                root.saveFile()
-                callback(true)
-            })
-            d.aborted.connect(() => { callback(true) })
-            d.cancelled.connect(() => { callback(false) })
-            d.open()
+            root.showSaveDialog(() => callback(true), { cancelled: () => callback(false) })
         }
     }
 
@@ -459,10 +447,11 @@ Page {
                     showSaveDialog: root.showSaveDialog
 
                     onFileSelected: function(filePath, isStaged) {
-                        if (filePath === root.selectedFilePath)
+                        if (filePath === root.selectedFilePath && isStaged === root.selectedFileIsStaged)
                         {
-                            root.selectedFilePath = filePath
-                            root.updateDiff(isStaged)
+                            // A refresh would replace the unsaved edits with the file on disk
+                            if (!root.currentFileEdited)
+                                root.updateDiff(isStaged)
                             return
                         }
 
@@ -470,6 +459,9 @@ Page {
                                     () => {
                                         root.selectedFilePath = filePath
                                         root.updateDiff(isStaged)
+                                    },
+                                    {
+                                        cancelled: () => changesFileLists.selectCurrentFile(root.selectedFileIsStaged)
                                     }
                         )
                     }
@@ -573,7 +565,7 @@ Page {
 
     Component {
         id: unsavedChangesDialogComp
-        UnsavedChangesDialog { }
+        ConflictConfirmationDialog { }
     }
 
     Shortcut {
@@ -673,6 +665,8 @@ Page {
     }
 
     function updateDiff(isStaged) {
+        root.selectedFileIsStaged = isStaged
+
         diffView.repositoryPath = root.appModel?.currentRepository?.path ?? ""
         diffView.imageSource = isStaged ? "index" : "workdir"
         diffView.imageOldRevision = "HEAD"
@@ -715,31 +709,44 @@ Page {
         Qt.callLater(() => { diffView.scrollPosition = oldY })
     }
 
-    function showSaveDialog(nextAction) {
+    function showSaveDialog(nextAction, options = {}) {
         if (!root.currentFileEdited) {
             nextAction()
             return
         }
 
-        let d = unsavedChangesDialogComp.createObject(root)
+        const cancelled = options.cancelled ?? (() => {})
+        const d = unsavedChangesDialogComp.createObject(root, { hostItem: options.hostItem ?? null })
 
-        d.title = "Unsaved Changes"
-        d.message = "You have unsaved changes in: " + root.selectedFilePath
+        const escape = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        const path   = `<span style="font-family:'${Style.fontTypes.jetBrainsMono}'; font-weight:600; ` +
+                       `color:${Style.colors.popupTitleText}">${escape(root.selectedFilePath)}</span>`
+
+        d.title         = "Unsaved Changes"
+        d.messageFormat = Text.RichText
+        d.message       = `You have unsaved changes in ${path}.<br><br>Save them before you continue?`
+
+        d.hasSave           = true
+        d.saveTitle         = "Save"
+        d.saveDescription   = "Write the changes to the file, then continue"
+        d.acceptTitle       = "Discard"
+        d.acceptDescription = "Throw the changes away, then continue"
+        d.cancelTitle       = "Cancel"
+        d.cancelDescription = "Stay here and keep the changes in the editor"
 
         d.saved.connect(() => {
-            root.saveFile()
-            d.destroy()
-            nextAction()
+            if (root.saveFile())
+                nextAction()
+            else
+                cancelled()
         })
 
         d.aborted.connect(() => {
-            d.destroy()
+            diffView.discardEdits()
             nextAction()
         })
 
-        d.cancelled.connect(() => {
-            d.destroy()
-        })
+        d.cancelled.connect(cancelled)
 
         d.open()
     }
