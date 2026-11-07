@@ -60,7 +60,7 @@ Page {
     property var                     activeFetchRemotes:     remoteOperationsSession ? remoteOperationsSession.activeFetchRemotes : []
     property var                     pendingFetchRemoteNames: remoteOperationsSession ? remoteOperationsSession.pendingFetchRemoteNames : []
     property var                     fetchBatchResults:      remoteOperationsSession ? remoteOperationsSession.fetchBatchResults : []
-    property bool                    currentFileEdited: false
+    readonly property bool           currentFileEdited:       diffView.fileIsEdited
 
     property string                  selectedFilePath:        ""
 
@@ -475,7 +475,7 @@ Page {
                     }
 
                     onChangesAborted: {
-                        root.currentFileEdited = false
+                        diffView.discardEdits()
                     }
                 }
             }
@@ -552,10 +552,6 @@ Page {
                                 changesFileLists.updateStatus()
                             }
                 )
-            }
-
-            onFileEdited: function (isEdited) {
-                root.currentFileEdited = isEdited
             }
 
             onRequestStash: function (start, end, type) {
@@ -688,7 +684,6 @@ Page {
             diffView.editedFileBuffer = []
             diffView.selectedFile = root.selectedFilePath
             diffView.readOnly = isStaged
-            root.currentFileEdited = false
             return
         }
 
