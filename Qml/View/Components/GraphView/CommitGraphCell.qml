@@ -43,11 +43,21 @@ Item {
         edges: root.graphRow ? root.graphRow.edges : []
     }
 
+    // Soft column edge so Branch/Tag lines up visually with the header divider
+    Rectangle {
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: 1
+        color: Style.colors.primaryBorder
+        opacity: 0.35
+    }
+
     // Connector between the node and the ref labels
     Rectangle {
         visible: root.refs.length > 0
-        x: root.nodeCenterX
-        width: Math.max(0, refsRow.x + refsRow.labelsEndX - root.nodeCenterX)
+        x: Math.min(root.nodeCenterX, root.refsStartX)
+        width: Math.max(0, refsRow.x + refsRow.labelsEndX - x)
         height: 5
         anchors.verticalCenter: parent.verticalCenter
         color: root.laneColor

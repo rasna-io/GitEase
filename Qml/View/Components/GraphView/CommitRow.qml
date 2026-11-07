@@ -114,128 +114,159 @@ Rectangle {
             contentPadding: 8
         }
 
-        RowLayout {
+        Item {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
             Layout.fillHeight: true
-            spacing: 0
 
-            Rectangle {
-                Layout.preferredWidth: 3
-                Layout.preferredHeight: root.height * 0.6
-                Layout.alignment: Qt.AlignVCenter
-                Layout.leftMargin: 8
-                radius: 6
-                color: root.laneColor
-            }
+            RowLayout {
+                anchors.fill: parent
+                anchors.rightMargin: 1
+                spacing: 0
 
-            Rectangle {
-                visible: root.isStash
-                Layout.preferredWidth: stashBadgeRow.implicitWidth + 10
-                Layout.preferredHeight: 17
-                Layout.alignment: Qt.AlignVCenter
-                Layout.leftMargin: 4
-                radius: 2
-                color: root.laneColor
+                Rectangle {
+                    Layout.preferredWidth: 3
+                    Layout.preferredHeight: root.height * 0.6
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: 8
+                    radius: 6
+                    color: root.laneColor
+                }
 
-                Row {
-                    id: stashBadgeRow
-                    anchors.centerIn: parent
-                    spacing: 3
+                Rectangle {
+                    visible: root.isStash
+                    Layout.preferredWidth: stashBadgeRow.implicitWidth + 10
+                    Layout.preferredHeight: 17
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: 4
+                    radius: 2
+                    color: root.laneColor
 
-                    Text {
-                        text: Style.icons.archive
-                        font.family: Style.fontTypes.font6Pro
-                        font.styleName: "Solid"
-                        font.pixelSize: Style.appFont.captionPt
-                        color: GraphUtils.getContrastColor(root.laneColor.toString())
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    Row {
+                        id: stashBadgeRow
+                        anchors.centerIn: parent
+                        spacing: 3
 
-                    Text {
-                        text: root.commitData ? (root.commitData.stashLabel || "stash") : ""
-                        font.family: Style.fontTypes.inter
-                        font.pixelSize: Style.appFont.captionPt
-                        color: GraphUtils.getContrastColor(root.laneColor.toString())
-                        verticalAlignment: Text.AlignVCenter
+                        Text {
+                            text: Style.icons.archive
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
+                            font.pixelSize: Style.appFont.captionPt
+                            color: GraphUtils.getContrastColor(root.laneColor.toString())
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        Text {
+                            text: root.commitData ? (root.commitData.stashLabel || "stash") : ""
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.captionPt
+                            color: GraphUtils.getContrastColor(root.laneColor.toString())
+                            verticalAlignment: Text.AlignVCenter
+                        }
                     }
                 }
-            }
 
-            Label {
-                Layout.fillWidth: true
-                Layout.leftMargin: 6
-                text: root.commitData && root.commitData.summary ? root.commitData.summary : ""
-                color: Style.colors.foreground
-                verticalAlignment: Text.AlignVCenter
-                font.pixelSize: Style.appFont.smallPt
-                font.family: Style.fontTypes.inter
-                font.weight: root.isUncommitted ? 700 : (root.isHead ? 900 : 400)
-                font.letterSpacing: 0.2
-                elide: Text.ElideRight
-            }
-
-            // Reset HEAD~1 button, only on the HEAD commit
-            Rectangle {
-                visible: root.isHead
-                Layout.preferredWidth: 22
-                Layout.preferredHeight: 18
-                Layout.alignment: Qt.AlignVCenter
-                Layout.leftMargin: 4
-                Layout.rightMargin: 6
-                radius: 3
-                color: resetButtonArea.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.06)
-                border.color: Qt.rgba(1, 1, 1, 0.15)
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "~"
-                    color: resetButtonArea.containsMouse ? Style.colors.foreground : Qt.rgba(1, 1, 1, 0.55)
-                    font.pixelSize: Style.appFont.defaultPt
+                Label {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 6
+                    text: root.commitData && root.commitData.summary ? root.commitData.summary : ""
+                    color: Style.colors.foreground
+                    verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: Style.appFont.smallPt
                     font.family: Style.fontTypes.inter
-                    font.weight: Font.Medium
+                    font.weight: root.isUncommitted ? 700 : (root.isHead ? 900 : 400)
+                    font.letterSpacing: 0.2
+                    elide: Text.ElideRight
                 }
 
-                MouseArea {
-                    id: resetButtonArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.resetHeadOne()
+                // Reset HEAD~1 button, only on the HEAD commit
+                Rectangle {
+                    visible: root.isHead
+                    Layout.preferredWidth: 22
+                    Layout.preferredHeight: 18
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: 4
+                    Layout.rightMargin: 6
+                    radius: 3
+                    color: resetButtonArea.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.06)
+                    border.color: Qt.rgba(1, 1, 1, 0.15)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "~"
+                        color: resetButtonArea.containsMouse ? Style.colors.foreground : Qt.rgba(1, 1, 1, 0.55)
+                        font.pixelSize: Style.appFont.defaultPt
+                        font.family: Style.fontTypes.inter
+                        font.weight: Font.Medium
+                    }
+
+                    MouseArea {
+                        id: resetButtonArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.resetHeadOne()
+                    }
                 }
+            }
+
+            Rectangle {
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: 1
+                color: Style.colors.primaryBorder
+                opacity: 0.35
             }
         }
 
-        Label {
+        Item {
             Layout.preferredWidth: root.authorWidth
             Layout.minimumWidth: Layout.preferredWidth
             Layout.maximumWidth: Layout.preferredWidth
             Layout.fillHeight: true
-            leftPadding: 8
-            rightPadding: 4
-            text: root.commitData ? (root.commitData.author || "") : ""
-            color: Style.colors.foreground
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignLeft
-            font.pixelSize: Style.appFont.mediumPt
-            elide: Text.ElideRight
+
+            Label {
+                anchors.fill: parent
+                leftPadding: 8
+                rightPadding: 4
+                text: root.commitData ? (root.commitData.author || "") : ""
+                color: Style.colors.foreground
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignLeft
+                font.pixelSize: Style.appFont.mediumPt
+                elide: Text.ElideRight
+            }
+
+            Rectangle {
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: 1
+                color: Style.colors.primaryBorder
+                opacity: 0.35
+            }
         }
 
-        Label {
+        Item {
             Layout.preferredWidth: root.dateWidth
             Layout.minimumWidth: Layout.preferredWidth
             Layout.maximumWidth: Layout.preferredWidth
             Layout.fillHeight: true
-            leftPadding: 8
-            rightPadding: 4
-            text: root.commitData ? GraphUtils.formatDate(root.commitData.authorDate) + " "
-                                    + GraphUtils.formatTime(root.commitData.authorDate) : ""
-            color: Style.colors.foreground
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignLeft
-            font.pixelSize: Style.appFont.smallPt
-            wrapMode: Text.NoWrap
-            elide: Text.ElideRight
+
+            Label {
+                anchors.fill: parent
+                leftPadding: 8
+                rightPadding: 4
+                text: root.commitData ? GraphUtils.formatDate(root.commitData.authorDate) + " "
+                                        + GraphUtils.formatTime(root.commitData.authorDate) : ""
+                color: Style.colors.foreground
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignLeft
+                font.pixelSize: Style.appFont.smallPt
+                wrapMode: Text.NoWrap
+                elide: Text.ElideRight
+            }
         }
     }
 }

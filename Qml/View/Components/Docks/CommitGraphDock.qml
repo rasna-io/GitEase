@@ -91,10 +91,16 @@ DetachablePanel {
 
     // Fixed columns are user-resizable; Message always fills the remaining width so
     // header cells and row cells stay pixel-aligned (ratios never sum over/under 100%).
-    property int commitsColGraphWidth       : 96
-    property int commitsColBranchTagWidth   : 168
-    property int commitsColAuthorWidth      : 110
-    property int commitsColDateWidth        : 140
+    readonly property int defaultColGraphWidth     : 96
+    readonly property int defaultColBranchTagWidth : 168
+    readonly property int defaultColAuthorWidth    : 110
+    readonly property int defaultColDateWidth      : 140
+
+    property int commitsColGraphWidth       : root.defaultColGraphWidth
+    property int commitsColBranchTagWidth   : root.defaultColBranchTagWidth
+    property int commitsColAuthorWidth      : root.defaultColAuthorWidth
+    property int commitsColDateWidth        : root.defaultColDateWidth
+    property bool graphWidthUserAdjusted    : false
 
     readonly property int minColGraphWidth      : 60
     readonly property int minColBranchTagWidth  : 80
@@ -112,7 +118,11 @@ DetachablePanel {
 
     readonly property int commitsColPad         : 8
 
+    property bool columnResizing                : false
+    property real columnResizeGuideX            : -1
+
     onCommitsColContentWidthChanged: root.ensureColumnsFit()
+    onGraphRowsChanged: root.autoFitGraphWidth()
 
     readonly property bool hasAnyFilter         : Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter)
 
@@ -150,8 +160,21 @@ DetachablePanel {
     }
 
     Rectangle {
+        id: commitGraphBody
         anchors.fill: parent
         color: Style.colors.primaryBackground
+
+        // Full-height guide while a column divider is dragged
+        Rectangle {
+            visible: root.columnResizing && root.columnResizeGuideX >= 0
+            x: root.columnResizeGuideX - 1
+            width: 2
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            z: 200
+            color: Style.colors.accent
+            opacity: 0.55
+        }
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -192,62 +215,105 @@ DetachablePanel {
                     spacing: 0
 
                     ResizableColumnHeader {
+                        id: graphColHeader
                         Layout.preferredWidth: root.commitsColGraphWidth
                         label: "Graph"
                         contentPadding: root.commitsColPad
+                        defaultWidth: root.defaultColGraphWidth
                         property real messageStart: 0
-                        onResizeStarted: messageStart = root.commitsColMessageWidth
+                        onResizeStarted: {
+                            messageStart = root.commitsColMessageWidth
+                            root.beginColumnResize(graphColHeader)
+                        }
                         onResized: function(delta, startWidth) {
+                            root.graphWidthUserAdjusted = true
                             root.commitsColGraphWidth = root.clampedFlexResize(
                                         startWidth, delta,
                                         root.minColGraphWidth,
                                         messageStart - root.minColMessageWidth)
+                            root.updateColumnResizeGuide(graphColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onResetRequested: {
+                            root.graphWidthUserAdjusted = false
+                            root.commitsColGraphWidth = root.preferredGraphWidth()
+                            root.ensureColumnsFit()
                         }
                     }
 
                     ResizableColumnHeader {
+                        id: branchColHeader
                         Layout.preferredWidth: root.commitsColBranchTagWidth
                         label: "Branch/Tag"
                         contentPadding: root.commitsColPad
+                        defaultWidth: root.defaultColBranchTagWidth
                         property real messageStart: 0
-                        onResizeStarted: messageStart = root.commitsColMessageWidth
+                        onResizeStarted: {
+                            messageStart = root.commitsColMessageWidth
+                            root.beginColumnResize(branchColHeader)
+                        }
                         onResized: function(delta, startWidth) {
                             root.commitsColBranchTagWidth = root.clampedFlexResize(
                                         startWidth, delta,
                                         root.minColBranchTagWidth,
                                         messageStart - root.minColMessageWidth)
+                            root.updateColumnResizeGuide(branchColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onResetRequested: {
+                            root.commitsColBranchTagWidth = root.defaultColBranchTagWidth
+                            root.ensureColumnsFit()
                         }
                     }
 
                     ResizableColumnHeader {
+                        id: messageColHeader
                         Layout.preferredWidth: root.minColMessageWidth
                         Layout.minimumWidth: root.minColMessageWidth
                         fillWidth: true
                         label: "Message"
                         contentPadding: root.commitsColPad
+                        defaultWidth: 0
                         property real neighborStart: 0
-                        onResizeStarted: neighborStart = root.commitsColAuthorWidth
+                        onResizeStarted: {
+                            neighborStart = root.commitsColAuthorWidth
+                            root.beginColumnResize(messageColHeader)
+                        }
                         onResized: function(delta, startWidth) {
                             // Message is the flex column; dragging its right edge trades with Author.
                             root.commitsColAuthorWidth = root.clampedPairResize(
                                         neighborStart, -delta,
                                         root.minColAuthorWidth,
                                         startWidth - root.minColMessageWidth)
+                            root.updateColumnResizeGuide(messageColHeader)
                         }
+                        onResizeFinished: root.endColumnResize()
                     }
 
                     ResizableColumnHeader {
+                        id: authorColHeader
                         Layout.preferredWidth: root.commitsColAuthorWidth
                         label: "Author"
                         contentPadding: root.commitsColPad
+                        defaultWidth: root.defaultColAuthorWidth
                         property real neighborStart: 0
-                        onResizeStarted: neighborStart = root.commitsColDateWidth
+                        onResizeStarted: {
+                            neighborStart = root.commitsColDateWidth
+                            root.beginColumnResize(authorColHeader)
+                        }
                         onResized: function(delta, startWidth) {
                             var pair = root.clampedTradeResize(
                                         startWidth, neighborStart, delta,
                                         root.minColAuthorWidth, root.minColDateWidth)
                             root.commitsColAuthorWidth = pair.left
                             root.commitsColDateWidth = pair.right
+                            root.updateColumnResizeGuide(authorColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onResetRequested: {
+                            root.commitsColAuthorWidth = root.defaultColAuthorWidth
+                            root.commitsColDateWidth = root.defaultColDateWidth
+                            root.ensureColumnsFit()
                         }
                     }
 
@@ -658,6 +724,47 @@ DetachablePanel {
         take("commitsColAuthorWidth", root.minColAuthorWidth)
         take("commitsColBranchTagWidth", root.minColBranchTagWidth)
         take("commitsColGraphWidth", root.minColGraphWidth)
+    }
+
+    function beginColumnResize(headerItem) {
+        root.columnResizing = true
+        root.updateColumnResizeGuide(headerItem)
+    }
+
+    function updateColumnResizeGuide(headerItem) {
+        if (!headerItem || !commitGraphBody)
+            return
+        root.columnResizeGuideX = headerItem.mapToItem(commitGraphBody, headerItem.width, 0).x
+    }
+
+    function endColumnResize() {
+        root.columnResizing = false
+        root.columnResizeGuideX = -1
+    }
+
+    function maxGraphLaneColumn() {
+        var maxCol = 0
+        var rows = root.graphRows || []
+        for (var i = 0; i < rows.length; ++i) {
+            var row = rows[i]
+            if (row && row.column > maxCol)
+                maxCol = row.column
+        }
+        return maxCol
+    }
+
+    //! Leave room for the rightmost node plus a little padding before Branch/Tag.
+    function preferredGraphWidth() {
+        var fitted = root.columnSpacing * (root.maxGraphLaneColumn() + 1)
+                      + Math.ceil(root.commitItemHeight / 2) + 12
+        return Math.max(root.defaultColGraphWidth, fitted)
+    }
+
+    function autoFitGraphWidth() {
+        if (root.graphWidthUserAdjusted)
+            return
+        root.commitsColGraphWidth = root.preferredGraphWidth()
+        root.ensureColumnsFit()
     }
 
     function emptyStateDetailsText() {
