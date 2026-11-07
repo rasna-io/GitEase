@@ -744,18 +744,24 @@ Page {
         d.open()
     }
 
-    function saveFile() {
+    //! Writes the edited file to disk. Returns false, and keeps the edits, when that fails.
+    function saveFile() : bool {
         if (diffView.prefersImageViewer(root.selectedFilePath))
-            return
+            return true
 
         let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
 
-        if (res.success) {
-            root.currentFileEdited = false
-            root.notificationController.success("File saved successfully", "Save", 3000)
-        } else {
-            root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
+        if (!res.success) {
+            root.notificationController.error(res.errorMessage || "Failed to save changes to the file", "Save Error", 5000)
+            return false
         }
+
+        diffView.markSaved()
+        root.notificationController.success("File saved successfully", "Save", 3000)
+
+        root.updateDiff(root.selectedFileIsStaged)
+        changesFileLists.updateStatus()
+        return true
     }
 
     function onPageActivated() {
