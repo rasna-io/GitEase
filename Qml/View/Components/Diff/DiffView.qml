@@ -123,25 +123,7 @@ DetachablePanel {
         if (chunkMode)
             return
 
-        fileModel.clear()
-
-        for(var i = 0; i < diffData.length; i++) {
-            var diff = diffData[i];
-
-            var left = diff.content;
-            var right = (diff.type === GitDiff.Modified) ? diff.newContent : diff.content;
-
-            // Visual "Gaps"
-            if (diff.type === GitDiff.Added)
-                left = "";
-            if (diff.type === GitDiff.Deleted)
-                right = "";
-
-            appendRow(fileModel, diff.type, left, right, diff.oldLine, diff.newLine);
-
-            updateMaxContentWidth(left);
-            updateMaxContentWidth(right);
-        }
+        buildFileModel()
 
         root.fileIsEdited = false
         root.clearSelection()
@@ -161,28 +143,8 @@ DetachablePanel {
 
     onChunkModeChanged: {
         if (!chunkMode)
-        {
-            fileModel.clear()
-
-            for(var i = 0; i < diffData.length; i++) {
-                var diff = diffData[i];
-
-                var left = diff.content;
-                var right = (diff.type === GitDiff.Modified) ? diff.newContent : diff.content;
-
-                // Visual "Gaps"
-                if (diff.type === GitDiff.Added)
-                    left = "";
-                if (diff.type === GitDiff.Deleted)
-                    right = "";
-
-                appendRow(fileModel, diff.type, left, right, diff.oldLine, diff.newLine);
-
-                updateMaxContentWidth(left);
-                updateMaxContentWidth(right);
-            }
-        }
-        else {
+            buildFileModel()
+        else
             buildChunkModel()
         }
 
@@ -983,6 +945,29 @@ DetachablePanel {
         }
 
         return allAdded ? DiffView.DiffViewSelectionSide.Right : DiffView.DiffViewSelectionSide.Left
+    }
+
+    //! Fills the file view from diffData, which drops any edits made in it.
+    function buildFileModel() {
+        fileModel.clear()
+
+        for (let i = 0; i < diffData.length; i++) {
+            let diff = diffData[i]
+
+            let left = diff.content
+            let right = (diff.type === GitDiff.Modified) ? diff.newContent : diff.content
+
+            // Visual "Gaps"
+            if (diff.type === GitDiff.Added)
+                left = ""
+            if (diff.type === GitDiff.Deleted)
+                right = ""
+
+            appendRow(fileModel, diff.type, left, right, diff.oldLine, diff.newLine)
+
+            updateMaxContentWidth(left)
+            updateMaxContentWidth(right)
+        }
     }
 
     function appendRow(model, type, lTxt, rTxt, lNum, rNum) {
