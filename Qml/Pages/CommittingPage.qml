@@ -573,19 +573,8 @@ Page {
         context: Qt.ApplicationShortcut
 
         onActivated: {
-            if (diffView.prefersImageViewer(root.selectedFilePath))
-                return
-
-            let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
-
-            if (res.success) {
-                root.currentFileEdited = false
-                root.notificationController.success("File saved successfully", "Save", 3000)
-            } else {
-                root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
-            }
-
-            changesFileLists.updateStatus()
+            if (root.currentFileEdited)
+                root.saveFile()
         }
     }
 
