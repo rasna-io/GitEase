@@ -168,16 +168,14 @@ GitRepository {
     }
 
     /**
-     * Remove a repository from the recent list and the path history
+     * Remove a repository from the recent list. The path history is a record of what was opened, so
+     * it is left alone.
      */
     function removeRecent(path) {
         const target = root.normalizeRepoPath(path)
 
         appModel.recentRepositories = (appModel.recentRepositories || []).filter(r =>
             r && root.normalizeRepoPath(r.path) !== target
-        )
-        appModel.repositoriesHistory = (appModel.repositoriesHistory || []).filter(p =>
-            root.normalizeRepoPath(p) !== target
         )
         appModel.save()
     }
