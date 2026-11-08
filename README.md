@@ -121,7 +121,7 @@ Clean up history before you share it, without editing a TODO file.
 
 Everything around your commits lives in the utility panel, one filterable dock per topic.
 
-![Commit graph with the utility panel open: the Branches dock lists local branches and the Recent Activity dock lists the git commands GitEase ran](docs/images/workspace/utility-panel.png)
+![Commit graph with the utility panel open: the Branches dock lists local branches and the Tags dock lists the repository's tags](docs/images/workspace/utility-panel.png)
 
 - Clone over HTTPS or SSH (the URL is checked as you type), open existing repositories, and keep several open at once, each with its own color.
 - Drag a repository out of the sidebar to open it in its own window.
