@@ -680,14 +680,7 @@ Page {
         if (res.success)
             diffView.diffData = res.data.lines
 
-        let fileRows = []
-        for(var i =0;i<res.data.lines.length;i++)
-        {
-            let line = res.data.lines[i]
-            let right   = (line.type === GitDiff.Deleted)   ? "" :
-                          (line.type === GitDiff.Modified   ? line.newContent : line.content)
-            fileRows.push(right)
-        }
+        let fileRows = root.rightSideRows(res.data.lines)
 
         diffView.selectedFile = root.selectedFilePath
         diffView.originalFileBuffer = fileRows.slice()
@@ -758,6 +751,17 @@ Page {
         root.updateDiff(root.selectedFileIsStaged)
         changesFileLists.updateStatus()
         return true
+    }
+    //! The text of the right-hand side of each diff line: the file as the editor shows it.
+    function rightSideRows(lines) {
+        let rows = []
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i]
+            rows.push(line.type === GitDiff.Deleted  ? ""
+                    : line.type === GitDiff.Modified ? line.newContent
+                                                     : line.content)
+        }
+        return rows
     }
 
     function onPageActivated() {
