@@ -15,6 +15,9 @@ Rectangle {
     /* Property Declarations
      * ****************************************************************************************/
     property WindowController windowController
+    /* Signals
+     * ****************************************************************************************/
+    signal closeRequested()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -65,7 +68,10 @@ Rectangle {
         // Close Button
         WindowsButton {
             id: closeButton
-            onClicked: windowController.closeWindow()
+            onClicked: {
+                root.closeRequested()
+                windowController.closeWindow()
+            }
             Material.accent: Style.colors.windowsClose
             content: Item {
                 anchors.centerIn: parent
