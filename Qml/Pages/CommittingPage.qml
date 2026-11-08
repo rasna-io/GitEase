@@ -65,6 +65,8 @@ Page {
     property string                  selectedFilePath:        ""
     property bool                    selectedFileIsStaged:    false
 
+    property var                     externalChangeDialog:    null
+
     // Exposed to MainWindow's header area (see MainWindow.qml)
     headerContent: CommittingPageHeader {
         branchController: root.branchController
