@@ -35,11 +35,17 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    WindowMotion {
+        id: windowMotion
+        window: root.Window.window
+        windowController: root.windowController
+    }
+
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
         onPressed: root.windowController?.startSystemMove()
-        onDoubleClicked: root.windowController?.toggleMaxRestore()
+        onDoubleClicked: windowMotion.toggleMaximize()
     }
 
     ColumnLayout {
