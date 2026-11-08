@@ -53,8 +53,8 @@ Git is powerful, but its best features hide behind commands that are easy to get
 
 | Platform | Get it | Notes |
 | :-- | :-- | :-- |
-| **Windows 10 / 11** (64-bit) | [Installer (.exe)](https://github.com/rasna-io/GitEase/releases/latest) | Installs for the current user, no admin rights needed |
-| **Linux** (x86-64, Debian / Ubuntu) | [Package (.deb)](https://github.com/rasna-io/GitEase/releases/latest) | `sudo apt install ./GitEase-*-Linux.deb` |
+| **Windows 10 / 11** (64-bit) | [Download v0.9.0 (.exe)](https://github.com/rasna-io/GitEase/releases/download/v0.9.0/GitEase-V-0.9.0.exe) · [All releases](https://github.com/rasna-io/GitEase/releases) | Installs for the current user, no admin rights needed |
+| **Linux** (x86-64, Debian / Ubuntu) | [Download v0.9.0 (.deb)](https://github.com/rasna-io/GitEase/releases/download/v0.9.0/GitEase-0.9.0-Linux.deb) · [All releases](https://github.com/rasna-io/GitEase/releases) | `sudo apt install ./GitEase-*-Linux.deb` |
 | **macOS** and other distributions | | [Build from source](#build-from-source) |
 
 GitEase checks for updates when it starts and can download and install a new version for you (**Settings → Updates**).
