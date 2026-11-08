@@ -183,7 +183,8 @@ GitRepository {
     /**
      * Point a recent entry whose folder was moved at its new location. The entry keeps its place in
      * the list, its name and its colour. Nothing is opened: the folder is validated by open() when
-     * the user presses Continue, like for any other entry.
+     * the user presses Continue, like for any other entry. The path history is a record of what was
+     * opened, so it is left alone; the new path is added to it when the repository is opened.
      *
      * Returns false when the entry is no longer in the list.
      */
@@ -209,12 +210,6 @@ GitRepository {
         const next = recents.slice()
         next[idx] = { id: old.id, name: old.name, path: newPath, color: old.color }
         appModel.recentRepositories = next
-
-        const history = appModel.repositoriesHistory || []
-        appModel.repositoriesHistory = history.some(p => root.normalizeRepoPath(p) === newKey)
-                ? history.filter(p => root.normalizeRepoPath(p) !== oldKey)
-                : history.map(p => root.normalizeRepoPath(p) === oldKey ? newPath : p)
-
         appModel.save()
         return true
     }
