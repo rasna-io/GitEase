@@ -59,9 +59,6 @@ Git is powerful, but its best features hide behind commands that are easy to get
 
 GitEase checks for updates when it starts and can download and install a new version for you (**Settings → Updates**).
 
-> [!NOTE]
-> This README describes the `develop` branch. Features merged after the latest release ship in the next one; the [releases page](https://github.com/rasna-io/GitEase/releases) lists what each version contains.
-
 ## Features
 
 ### Commit graph
