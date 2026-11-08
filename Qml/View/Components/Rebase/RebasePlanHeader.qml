@@ -38,12 +38,18 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    WindowMotion {
+        id: windowMotion
+        window: root.Window.window
+        windowController: root.windowController
+    }
+
     // Drag-to-move header (buttons on top still receive clicks)
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
         onPressed: root.windowController?.startSystemMove()
-        onDoubleClicked: root.windowController?.toggleMaxRestore()
+        onDoubleClicked: windowMotion.toggleMaximize()
     }
 
     ColumnLayout {
