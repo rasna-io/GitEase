@@ -80,35 +80,13 @@ Item {
                 onClicked: root.adviseRequested()
             }
 
-            // A sized target rather than the bare glyph: a 14px icon is a hard thing to hit.
-            Rectangle {
-                id: closeButton
-
+            WindowsHeader {
                 Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: Style.dp(26)
-                Layout.preferredHeight: Style.dp(26)
-
-                radius: 4
-                color: closeHover.hovered ? Style.colors.cardBackground : "transparent"
-
-                HoverHandler {
-                    id: closeHover
-                    cursorShape: Qt.PointingHandCursor
-                }
-
-                TapHandler {
-                    gesturePolicy: TapHandler.ReleaseWithinBounds
-                    onTapped: root.closeRequested()
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: Style.icons.close
-                    color: closeHover.hovered ? Style.colors.foreground : Style.colors.mutedText
-                    font.family: Style.fontTypes.font6Pro
-                    font.styleName: "Solid"
-                    font.pixelSize: Style.appFont.mediumPt
-                }
+                Layout.preferredWidth: 92
+                Layout.preferredHeight: 28
+                windowController: root.windowController
+                closesWindow: false
+                onCloseRequested: root.closeRequested()
             }
         }
 
