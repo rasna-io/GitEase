@@ -700,13 +700,10 @@ Page {
         const cancelled = options.cancelled ?? (() => {})
         const d = unsavedChangesDialogComp.createObject(root, { hostItem: options.hostItem ?? null })
 
-        const escape = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-        const path   = `<span style="font-family:'${Style.fontTypes.jetBrainsMono}'; font-weight:600; ` +
-                       `color:${Style.colors.popupTitleText}">${escape(root.selectedFilePath)}</span>`
-
         d.title         = "Unsaved Changes"
         d.messageFormat = Text.RichText
-        d.message       = `You have unsaved changes in ${path}.<br><br>Save them before you continue?`
+        d.message       = `You have unsaved changes in ${root.selectedPathMarkup()}.<br><br>` +
+                          "Save them before you continue?"
 
         d.hasSave           = true
         d.saveTitle         = "Save"
@@ -762,6 +759,13 @@ Page {
                                                      : line.content)
         }
         return rows
+    }
+
+    function selectedPathMarkup() {
+        const escaped = root.selectedFilePath.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+
+        return `<span style="font-family:'${Style.fontTypes.jetBrainsMono}'; font-weight:600; ` +
+               `color:${Style.colors.popupTitleText}">${escaped}</span>`
     }
 
     function onPageActivated() {
