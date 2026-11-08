@@ -317,15 +317,12 @@ On Windows, also pass `-DCMAKE_CXX_COMPILER=<MinGW>/bin/g++.exe`, and put Qt's a
 
 GitEase is a Qt Quick application on top of a C++ core.
 
-```mermaid
-flowchart LR
-    V["QML views<br/>Qml/View · Qml/Pages"] --> C["Controllers<br/>Qml/Core/Controllers"]
-    C --> G["Git layer (C++)<br/>Src/Git"]
-    G --> L["libgit2 · libssh2 · OpenSSL"]
-    C --> T["Terminal sessions<br/>Src/Terminal"]
-    C --> P["Plugin manager<br/>Src/Plugins"]
-    P --> X["C++ and QML plugins"]
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/architecture/architecture-dark.svg">
+    <img src="docs/images/architecture/architecture-light.svg" width="880" alt="Architecture: QML views talk to controllers. Controllers use the Git layer, which wraps libgit2, libssh2 and OpenSSL, the terminal sessions, and the plugin manager, which loads C++ and QML plugins.">
+  </picture>
+</p>
 
 - **Views** render the UI with GitEase's own control style ([`Qml/Style`](Qml/Style)).
 - **Controllers** hold each window's state and report every Git command they run, which feeds the command previews and Recent Activity.
@@ -342,7 +339,7 @@ GitEase/
 ├── Scripts/         Build, packaging and plugin tools
 ├── installer/       Inno Setup script for the Windows installer
 ├── tests/           Qt Test unit tests, run with ctest
-└── docs/images/     README images: brand, overview, git, workspace, plugins
+└── docs/images/     README images: brand, overview, git, workspace, plugins, architecture
 ```
 
 ## Roadmap
