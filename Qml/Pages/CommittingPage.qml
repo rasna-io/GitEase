@@ -451,9 +451,11 @@ Page {
                     onFileSelected: function(filePath, isStaged) {
                         if (filePath === root.selectedFilePath && isStaged === root.selectedFileIsStaged)
                         {
-                            // A refresh would replace the unsaved edits with the file on disk
+                            // A refresh would replace the unsaved edits, so with edits the user decides
                             if (!root.currentFileEdited)
                                 root.updateDiff(isStaged)
+                            else
+                                root.askAboutExternalChange()
                             return
                         }
 
@@ -751,6 +753,41 @@ Page {
         changesFileLists.updateStatus()
         return true
     }
+
+    function askAboutExternalChange() {
+        if (root.externalChangeDialog || root.selectedFileIsStaged
+                || diffView.prefersImageViewer(root.selectedFilePath))
+            return
+
+        const res = root.statusController.getDiffView(root.selectedFilePath, false)
+        if (!res.success)
+            return
+
+        const diskRows = root.rightSideRows(res.data.lines)
+        if (JSON.stringify(diskRows) === JSON.stringify(diffView.originalFileBuffer))
+            return
+
+        const d = unsavedChangesDialogComp.createObject(root, { hostItem: diffView.activeItem })
+
+        d.title         = "File Changed on Disk"
+        d.messageFormat = Text.RichText
+        d.message       = `${root.selectedPathMarkup()} was changed outside GitEase.<br><br>` +
+                          "Reload it? Your unsaved changes will be lost. Ignore keeps them."
+
+        d.acceptTitle       = "Reload"
+        d.acceptDescription = "Load the file from disk and discard your unsaved changes"
+        d.cancelTitle       = "Ignore"
+        d.cancelDescription = "Keep your unsaved changes and ignore the change on disk"
+
+        d.aborted.connect(() => root.updateDiff(root.selectedFileIsStaged))
+
+        // The disk version becomes the one the edits are compared with, so it isn't asked about again
+        d.cancelled.connect(() => { diffView.originalFileBuffer = diskRows })
+
+        root.externalChangeDialog = d
+        d.open()
+    }
+
     //! The text of the right-hand side of each diff line: the file as the editor shows it.
     function rightSideRows(lines) {
         let rows = []
