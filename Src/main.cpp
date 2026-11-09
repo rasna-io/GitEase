@@ -12,6 +12,13 @@ int main(int argc, char *argv[])
 {
     git_libgit2_init();
 
+#if defined(Q_OS_LINUX)
+    if(!qEnvironmentVariableIsSet("QT_QPA_PLATFORM"))
+    {
+        qputenv("QT_QPA_PLATFORM", "xcb;wayland");
+    }
+#endif
+
     QGuiApplication app(argc, argv);
     app.setApplicationVersion(QStringLiteral(GITEASE_VERSION));
 
