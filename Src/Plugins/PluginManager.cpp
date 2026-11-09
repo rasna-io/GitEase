@@ -576,7 +576,13 @@ namespace {
         if(placement.result == GepPlaceResult::Ok) {
             placement.prepared.info = readManifestFile(targetDir);
             const PluginInfo& info = placement.prepared.info;
-            if(info.isValid() && info.enabled && info.hasCppEntry()) {
+
+            const QString library = info.hasCppEntry() ? resolveLibraryPath(targetDir, info.cppEntry) : QString();
+            if(!library.isEmpty() && !QFileInfo::exists(library)) {
+                placement.result         = GepPlaceResult::LibraryMissing;
+                placement.missingLibrary = QFileInfo(library).fileName();
+                QDir(targetDir).removeRecursively();
+            } else if(info.isValid() && info.enabled && info.hasCppEntry()) {
                 placement.prepared.libraryPath = prepareHotLibrary(targetDir, info.cppEntry);
             }
         } else {
@@ -1728,6 +1734,13 @@ void PluginManager::finishGepInstall(const GepRequest& request, const GepPlaceme
     case GepPlaceResult::ExtractFailed:
         emit pluginsChanged();
         emit pluginInstallFailed(placement.id, QStringLiteral("Failed to extract GEP package"));
+        break;
+    case GepPlaceResult::LibraryMissing:
+        emit pluginsChanged();
+        emit pluginInstallFailed(placement.id,
+                                 QStringLiteral("The package is missing its plugin library \"%1\". "
+                                                "It must contain this file for this platform.")
+                                     .arg(placement.missingLibrary));
         break;
     }
 

@@ -56,7 +56,8 @@ enum class GepPlaceResult
 {
     Ok,
     PlaceFailed,
-    ExtractFailed
+    ExtractFailed,
+    LibraryMissing
 };
 
 struct GepPlacement
@@ -66,6 +67,7 @@ struct GepPlacement
     QString        id;
     QString        name;
     QString        targetDir;
+    QString        missingLibrary;
 };
 
 struct GepRequest
