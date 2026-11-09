@@ -137,7 +137,7 @@ Drawer {
             Text {
                 Layout.fillWidth: true
                 text: "Notifications"
-                font.pointSize: Style.appFont.h4Pt
+                font.pixelSize: Style.appFont.mediumPt
                 font.weight: Font.DemiBold
                 color: Style.colors.foreground
             }

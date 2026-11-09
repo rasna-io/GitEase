@@ -223,7 +223,7 @@ IPopup {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
                     text: "Settings"
-                    font.pointSize: Style.appFont.h4Pt
+                    font.pixelSize: Style.appFont.mediumPt
                     font.weight: Font.DemiBold
                     color: Style.colors.foreground
                 }

@@ -69,7 +69,7 @@ Rectangle {
         onTapped: root.clicked()
     }
 
-    ToolTip {
+    AppToolTip {
         visible: root.tooltip !== "" && hoverHandler.hovered
         text: root.tooltip
         delay: 400

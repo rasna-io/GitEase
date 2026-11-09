@@ -43,7 +43,9 @@ RowLayout {
         Text {
             Layout.fillWidth: true
             text: root.title
-            font.pointSize: Style.appFont.h4Pt
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.mediumPt
+            font.weight: Font.DemiBold
             color: Style.colors.foreground
             wrapMode: Text.WordWrap
         }
@@ -51,7 +53,8 @@ RowLayout {
         Text {
             Layout.fillWidth: true
             text: root.description
-            font.pointSize: Style.appFont.secondaryPt
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.smallPt
             color: Style.colors.mutedText
             wrapMode: Text.WordWrap
         }

@@ -59,15 +59,17 @@ IPopup {
             Text {
                 text: "Export SSH key"
                 color: Style.colors.foreground
-                font.pointSize: Style.appFont.h3Pt
-                font.bold: true
+                font.family: Style.fontTypes.inter
+                font.weight: Font.DemiBold
+                font.pixelSize: Style.appFont.mediumPt
                 Layout.alignment: Qt.AlignHCenter
             }
 
             Text {
                 text: "\"" + root.targetKeyName + "\" — the public key (.pub) will be saved to the folder you choose. It is safe to share."
                 color: Style.colors.mutedText
-                font.pointSize: Style.appFont.defaultPt
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }
@@ -81,7 +83,7 @@ IPopup {
                     leftPadding: includePrivateBox.indicator.width + 8
                     text: includePrivateBox.text
                     color: Style.colors.foreground
-                    font.pointSize: Style.appFont.defaultPt
+                    font.pixelSize: Style.appFont.mediumPt
                     verticalAlignment: Text.AlignVCenter
                 }
             }
@@ -90,7 +92,7 @@ IPopup {
                 visible: root.includePrivate
                 text: "Warning: anyone with the private key can sign in as you on every host it is registered with. Only export it to a place you trust, such as a backup drive or your own new machine."
                 color: Style.colors.deletededFile
-                font.pointSize: Style.appFont.secondaryPt
+                font.pixelSize: Style.appFont.smallPt
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }

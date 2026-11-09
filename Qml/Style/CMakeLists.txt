@@ -58,6 +58,7 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style_Impl
 
     QML_FILES
     impl/RTextIcon.qml
+        impl/AppToolTip.qml
         impl/Button.qml
         impl/IconButton.qml
         impl/ComboBox.qml

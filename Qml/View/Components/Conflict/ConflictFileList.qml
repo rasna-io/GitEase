@@ -178,7 +178,7 @@ color: delegateItem.hasMarkers
                     font.pixelSize: Style.appFont.smallPt
                     elide: Text.ElideLeft
 
-                    ToolTip {
+                    AppToolTip {
                         visible: hoverHandler.hovered && parent.truncated
                         text: delegateItem.modelData.path || ""
                         delay: 500
