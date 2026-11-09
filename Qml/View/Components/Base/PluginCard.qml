@@ -695,9 +695,11 @@ Rectangle {
             id: compatDotHover
         }
 
-        ToolTip.visible: compatDotHover.hovered
-        ToolTip.text: root.compatLabel
-        ToolTip.delay: 500
+        AppToolTip {
+            visible: compatDotHover.hovered
+            text: root.compatLabel
+            delay: 500
+        }
     }
 
     /* Functions

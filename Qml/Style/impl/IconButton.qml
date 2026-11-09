@@ -150,20 +150,11 @@ T.Button {
         border.color: control.borderColor
     }
 
-    ToolTip {
+    AppToolTip {
         visible: (control.hovered || (!control.enabled && control.hoveredWhileDisabled))
                  && control.tooltip !== ""
         text: control.tooltip
         delay: 600
-        x: (parent.width - width) / 2
-        y: -height - 6
-        padding: 6
-        background: Rectangle {
-            radius: 6
-            color: Qt.rgba(0, 0, 0, 0.85)
-            border.color: Qt.rgba(1, 1, 1, 0.12)
-            border.width: 1
-        }
     }
 
     /* Animations
