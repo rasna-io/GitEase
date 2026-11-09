@@ -649,15 +649,14 @@ QtObject {
     }
 
     function installPlugin(pluginId, phase) {
-        let listed = root.findListedPlugin(pluginId)
-        if(listed && listed.incompatibleReason) {
-            root.notificationController.error("Installation is not possible: " + listed.incompatibleReason,
-                                              "Plugins")
+        let cached = root.usableCachedPackage(root.findListedPlugin(pluginId))
+
+        if(cached && cached.compatible === false) {
+            let reason = cached.incompatibleReason || "This package does not support this platform."
+            root.notificationController.error("Installation is not possible: " + reason, "Plugins")
             return
         }
 
-        // A copy in the downloads folder is installed without going online.
-        let cached = root.usableCachedPackage(listed)
         if(cached) {
             root.setInstallState(pluginId, true, phase || "Installing", -1)
             if(pluginManager.installDownloadedPackage(pluginId, cached.packagePath)) {
