@@ -70,8 +70,9 @@ IPopup {
                 }
 
                 Text {
-                    text: "\u00d7"
-                    font.family: Style.fontTypes.inter
+                    text: Style.icons.close
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     font.pixelSize: Style.appFont.mediumPt
                     color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
                                                     : Style.colors.popupCloseButton

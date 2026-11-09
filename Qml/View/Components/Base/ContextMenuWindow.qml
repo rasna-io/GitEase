@@ -259,8 +259,10 @@ Window {
                 }
 
                 Text {
-                    text: "❯"
+                    text: Style.icons.angleRight
                     visible: menuOption.hasSub
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     font.pixelSize: Style.appFont.smallPt
                     color: Style.colors.foreground
                 }

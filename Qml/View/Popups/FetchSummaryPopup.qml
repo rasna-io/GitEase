@@ -86,13 +86,14 @@ IPopup {
 
                 // Close Button
                 Text {
-                    text: "\u00d7"
+                    text: Style.icons.close
 
                     color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
                                                     : Style.colors.popupCloseButton
 
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.h2Pt
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
+                    font.pixelSize: Style.appFont.mediumPt
 
                     width: 18
                     height: 18
@@ -669,7 +670,7 @@ IPopup {
 
                 if (isNewBranch) {
                     newBranches.push({
-                        icon: "+",
+                        icon: Style.icons.plus,
                         name: branchName.length > 0 ? remoteBranchName(result.remote, branchName) : summary,
                         meta: "",
                         hasAction: true
@@ -687,7 +688,7 @@ IPopup {
                 }
 
                 updatedBranches.push({
-                    icon: "↓",
+                    icon: Style.icons.arrowDown,
                     name: branchName.length > 0
                           ? remoteBranchName(result.remote, branchName)
                           : summary,

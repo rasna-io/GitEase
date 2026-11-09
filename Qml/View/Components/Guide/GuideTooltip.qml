@@ -273,7 +273,7 @@ Item {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: parent.copied ? "✓" : Style.icons.copy
+                                    text: parent.copied ? Style.icons.check : Style.icons.copy
                                     font.family: Style.fontTypes.font6Pro
                                     font.styleName: "Solid"
                                     font.pixelSize: 10
@@ -379,8 +379,9 @@ Item {
                         spacing: 5
 
                         Text {
-                            text: "←"
-                            font.family: Style.fontTypes.inter
+                            text: Style.icons.arrowLeft
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: 11
                             color: Style.colors.secondaryText
                         }
@@ -433,8 +434,9 @@ Item {
 
                         Text {
                             visible: root.stepData ? !root._isLast : false
-                            text: "→"
-                            font.family: Style.fontTypes.inter
+                            text: Style.icons.arrowRight
+                            font.family: Style.fontTypes.font6Pro
+                            font.styleName: "Solid"
                             font.pixelSize: 11
                             color: Style.colors.onAccentText
                         }

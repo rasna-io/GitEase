@@ -159,8 +159,9 @@ PopupDialog {
                 }
 
                 Text {
-                    text: "▾"
-                    font.family: Style.fontTypes.inter
+                    text: Style.icons.caretDown
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     font.pixelSize: Style.appFont.extraSmallPt
                     color: Style.colors.popupRadioBorder
                 }
@@ -248,7 +249,9 @@ PopupDialog {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "\u2713"
+                    text: Style.icons.check
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     color: Style.colors.popupCheckboxCheckmark
                     font.pixelSize: Style.appFont.smallPt
                     visible: checkoutCheckbox.checked
@@ -290,7 +293,9 @@ PopupDialog {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "\u2713"
+                    text: Style.icons.check
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
                     color: Style.colors.popupCheckboxCheckmark
                     font.pixelSize: Style.appFont.smallPt
                     visible: pushCheckbox.checked

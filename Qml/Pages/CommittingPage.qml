@@ -408,7 +408,9 @@ Page {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "\u22EF"
+                                    text: Style.icons.ellipsis
+                                    font.family: Style.fontTypes.font6Pro
+                                    font.styleName: "Solid"
                                     font.pixelSize: Style.appFont.h2Pt
                                     color: commitOptionsDotMouse.containsMouse ? Style.colors.foreground : Style.colors.chipText
                                     horizontalAlignment: Text.AlignHCenter
