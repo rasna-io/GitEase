@@ -838,7 +838,10 @@ QtObject {
     function installGepFile(gepPath) {
         if (!gepPath)
             return
-        pluginManager.installGepFile(gepPath)
+
+        if (!pluginManager.installGepFile(gepPath)) {
+            root.notificationController.error("Could not open the package \"" + gepPath + "\".", "Plugins")
+        }
     }
 
     function describePlugin(info, fallbackName) {
