@@ -795,18 +795,13 @@ PluginManager::~PluginManager()
             job->plugin->shutdown();
         }
 
-        if(job->loader) {
-            job->loader->unload();
-            delete job->loader;
-        }
+        delete job->loader;
     }
 
     for (auto* plugin : std::as_const(m_plugins))
         plugin->shutdown();
-    for (auto* loader : std::as_const(m_loaders)) {
-        loader->unload();
+    for (auto* loader : std::as_const(m_loaders))
         delete loader;
-    }
 }
 
 QObject* PluginManager::backgroundContext() const
