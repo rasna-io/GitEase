@@ -134,7 +134,9 @@ Item {
             if (Style.motionEnabled) {
                 contentRoot.opacity = 0
                 contentRoot.scale = 0.96
-                detachedWindow.opacity = 0
+                if (Style.windowOpacitySupported) {
+                    detachedWindow.opacity = 0
+                }
                 detachEnterAnimation.restart()
             } else {
                 contentRoot.opacity = 1
@@ -212,7 +214,7 @@ Item {
         }
 
         NumberAnimation {
-            target: detachedWindow
+            target: Style.windowOpacitySupported ? detachedWindow : null
             property: "opacity"
             from: 0
             to: 1

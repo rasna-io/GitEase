@@ -35,10 +35,18 @@ ApplicationWindow {
     width: 523
     height: 475
     visible: window.contentReady
-    opacity: 0
+    opacity: Style.windowOpacitySupported ? 0 : 1
     color: Style.colors.primaryBackground
     title: qsTr("GitEase")
-    
+
+    readonly property var fadeTarget: Style.windowOpacitySupported ? window : window.contentItem
+
+    Component.onCompleted: {
+        if(!Style.windowOpacitySupported) {
+            window.contentItem.opacity = 0
+        }
+    }
+
     /* Functions
      * ****************************************************************************************/
     function preloadMainWindow() {
@@ -94,7 +102,7 @@ ApplicationWindow {
     NumberAnimation {
         id: windowRevealAnimation
 
-        target: window
+        target: window.fadeTarget
         property: "opacity"
         from: 0
         to: 1
@@ -143,7 +151,7 @@ ApplicationWindow {
         id: windowCloseAnimation
 
         NumberAnimation {
-            target: window
+            target: window.fadeTarget
             property: "opacity"
             to: 0
             duration: Style.motionMedium
