@@ -361,10 +361,15 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
         mmi->ptMaxSize.x     = wa.right  - wa.left;
         mmi->ptMaxSize.y     = wa.bottom - wa.top;
 
-        if (m_minimumSize.width()  > 0)
-            mmi->ptMinTrackSize.x = std::max<LONG>(mmi->ptMinTrackSize.x, m_minimumSize.width());
-        if (m_minimumSize.height() > 0)
-            mmi->ptMinTrackSize.y = std::max<LONG>(mmi->ptMinTrackSize.y, m_minimumSize.height());
+        const qreal scale = m_window->devicePixelRatio();
+        if (m_minimumSize.width() > 0) {
+            const LONG width = std::min<LONG>(qRound(m_minimumSize.width() * scale), wa.right - wa.left);
+            mmi->ptMinTrackSize.x = std::max<LONG>(mmi->ptMinTrackSize.x, width);
+        }
+        if (m_minimumSize.height() > 0) {
+            const LONG height = std::min<LONG>(qRound(m_minimumSize.height() * scale), wa.bottom - wa.top);
+            mmi->ptMinTrackSize.y = std::max<LONG>(mmi->ptMinTrackSize.y, height);
+        }
 
 
         *result = 0;
