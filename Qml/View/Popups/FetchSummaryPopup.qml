@@ -210,10 +210,12 @@ IPopup {
                         color: Style.colors.popupHeaderSeparator
                     }
 
+                    // Space below the separator, so the content never sits right on the line
                     Item {
-                        visible: root.updatedBranches.length > 0 ||
-                                 root.newBranches.length > 0
-                        Layout.preferredHeight: root.sectionSpacing
+                        Layout.preferredHeight: root.updatedBranches.length > 0 ||
+                                                root.newBranches.length > 0
+                                                ? root.sectionSpacing
+                                                : Style.dp(16)
                     }
 
                     // Show one compact empty state only when fetch produced no branches.
@@ -507,9 +509,9 @@ IPopup {
             color: modelData.iconColor
                    || root.successAccent
 
-            font.family: Style.fontTypes.inter
-            font.pixelSize: Style.appFont.mediumPt
-            font.weight: Font.Bold
+            font.family: Style.fontTypes.font6Pro
+            font.styleName: "Solid"
+            font.pixelSize: Style.appFont.smallPt
 
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
