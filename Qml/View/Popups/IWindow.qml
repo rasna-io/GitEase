@@ -22,6 +22,9 @@ Window {
     readonly property WindowController  windowController:       windowController
     property          int               animationDuration:      150
     property          bool              _minimumSizeApplied:    false
+
+    property          bool              fadeOnClose:            true
+
     readonly property bool              maximized:              root.visibility === Window.Maximized
 
     property          real              cornerRadius:           8
@@ -76,7 +79,7 @@ Window {
     }
 
     onClosing: (close) => {
-        if (close.accepted && root.opacity > 0) {
+        if (close.accepted && root.fadeOnClose && root.opacity > 0) {
             close.accepted = false
             root.opacity = 0
 
