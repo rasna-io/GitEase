@@ -59,6 +59,10 @@ QtObject {
                                                                  || Qt.platform.pluginName === "cocoa"
                                                                  || Qt.platform.pluginName === "xcb"
 
+    readonly property bool          floatingWindowsSupported:    Qt.platform.pluginName === "windows"
+                                                                 || Qt.platform.pluginName === "cocoa"
+                                                                 || Qt.platform.pluginName === "xcb"
+
     readonly property int           motionFast:                  style.motionEnabled ? 140 : 0
 
     readonly property int           motionMedium:                style.motionEnabled ? 240 : 0

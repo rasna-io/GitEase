@@ -200,6 +200,8 @@ set(RESOURCES_COMPONENTS
     # Notifications
     Qml/View/Components/Notification/NotificationItem.qml
     Qml/View/Components/Notification/NotificationCloseAllHeader.qml
+    Qml/View/Components/Notification/NotificationCloseAllBar.qml
+    Qml/View/Components/Notification/NotificationOverlayToast.qml
 
     # Conflict Components
     Qml/View/Components/Conflict/ConflictAssistSlot.qml

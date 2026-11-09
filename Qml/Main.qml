@@ -223,6 +223,12 @@ ApplicationWindow {
         }
     }
 
+    Binding {
+        target: uiSession.notificationController
+        property: "overlayHost"
+        value: window.Overlay.overlay
+    }
+
     Loader {
         id: popupsLoader
 
