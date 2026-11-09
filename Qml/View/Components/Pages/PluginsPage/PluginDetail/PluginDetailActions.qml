@@ -122,7 +122,7 @@ ColumnLayout {
 
         PluginDetailButton {
             visible: !root.isInstalled
-            enabled: root.isCompatible && !!(root.plugin?.pluginId)
+            enabled: !!(root.plugin?.pluginId)
             iconText: Style.icons.download
             label: "Install"
             fill: Style.colors.accent

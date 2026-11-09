@@ -405,7 +405,6 @@ Rectangle {
                 Button {
                     visible: !(root.plugin?.isInstalled ?? false) && !root.pluginBusy
                     enabled: !root.pluginBusy
-                             && (root.plugin?.isCompatible ?? true)
                     topInset: 0
                     bottomInset: 0
                     leftInset: 0
