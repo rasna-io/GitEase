@@ -22,6 +22,12 @@ Window {
     readonly property WindowController  windowController:       windowController
     property          int               animationDuration:      150
     property          bool              _minimumSizeApplied:    false
+    readonly property bool              maximized:              root.visibility === Window.Maximized
+
+    property          real              cornerRadius:           8
+
+    readonly property real              backgroundRadius:       root.maximized ? 0 : root.cornerRadius
+    readonly property real              backgroundBorderWidth:  root.maximized ? 0 : 1
 
     /* Object Properties
      * ****************************************************************************************/
@@ -77,6 +83,8 @@ Window {
             Qt.callLater(function() {
                 root.close()
             }, root.animationDuration)
+        } else if (close.accepted && root.maximized) {
+            root.windowController.toggleMaxRestore()
         }
     }
 
