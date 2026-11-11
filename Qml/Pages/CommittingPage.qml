@@ -702,7 +702,13 @@ Page {
         }
 
         const cancelled = options.cancelled ?? (() => {})
-        const d = unsavedChangesDialogComp.createObject(root, { hostItem: options.hostItem ?? null })
+
+        if (root.changesDialog) {
+            cancelled()
+            return
+        }
+
+        const d = unsavedChangesDialogComp.createObject(root)
 
         d.title         = "Unsaved Changes"
         d.messageFormat = Text.RichText
@@ -731,7 +737,8 @@ Page {
 
         d.cancelled.connect(cancelled)
 
-        d.open()
+        root.showChangesDialog(d)
+    }
     }
 
     //! Writes the edited file to disk. Returns false, and keeps the edits, when that fails.
