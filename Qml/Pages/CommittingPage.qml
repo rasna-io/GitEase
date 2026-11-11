@@ -65,7 +65,7 @@ Page {
     property string                  selectedFilePath:        ""
     property bool                    selectedFileIsStaged:    false
 
-    property var                     externalChangeDialog:    null
+    property var                     changesDialog:           null
 
     // Exposed to MainWindow's header area (see MainWindow.qml)
     headerContent: CommittingPageHeader {
@@ -755,7 +755,7 @@ Page {
     }
 
     function askAboutExternalChange() {
-        if (root.externalChangeDialog || root.selectedFileIsStaged
+        if (root.changesDialog || root.selectedFileIsStaged
                 || diffView.prefersImageViewer(root.selectedFilePath))
             return
 
