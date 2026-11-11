@@ -1542,7 +1542,7 @@ DetachablePanel {
         const apply = () => { root.chunkMode = desired }
 
         if (root.fileIsEdited && root.showSaveDialog)
-            root.showSaveDialog(apply, { hostItem: root.activeItem })
+            root.showSaveDialog(apply)
         else
             apply()
     }
