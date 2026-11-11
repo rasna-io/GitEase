@@ -739,6 +739,19 @@ Page {
 
         root.showChangesDialog(d)
     }
+
+    function showChangesDialog(d) {
+        root.changesDialog = d
+        diffView.openPopup(d)
+
+        const diffWindow = diffView.detached ? diffView.activeItem.Window.window : null
+        if (diffWindow) {
+            if (diffWindow.visibility === Window.Minimized)
+                diffWindow.showNormal()
+
+            diffWindow.raise()
+            diffWindow.requestActivate()
+        }
     }
 
     //! Writes the edited file to disk. Returns false, and keeps the edits, when that fails.
@@ -774,7 +787,7 @@ Page {
         if (JSON.stringify(diskRows) === JSON.stringify(diffView.originalFileBuffer))
             return
 
-        const d = unsavedChangesDialogComp.createObject(root, { hostItem: diffView.activeItem })
+        const d = unsavedChangesDialogComp.createObject(root)
 
         d.title         = "File Changed on Disk"
         d.messageFormat = Text.RichText
@@ -791,8 +804,7 @@ Page {
         // The disk version becomes the one the edits are compared with, so it isn't asked about again
         d.cancelled.connect(() => { diffView.originalFileBuffer = diskRows })
 
-        root.externalChangeDialog = d
-        d.open()
+        root.showChangesDialog(d)
     }
 
     //! The text of the right-hand side of each diff line: the file as the editor shows it.
