@@ -20,6 +20,7 @@ Rectangle {
     property string repoPath:    ""
     property color  avatarColor: Style.colors.repositoryAvatarDefault
     property bool   selected:    false
+    property bool   isExists:    true
 
     readonly property string initial: repoName.length >= 1 ? repoName.charAt(0).toUpperCase() : "?"
 
@@ -27,6 +28,8 @@ Rectangle {
      * ****************************************************************************************/
     signal clicked()
     signal doubleClicked()
+    signal relocateRequested()
+    signal removeRequested()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -34,6 +37,10 @@ Rectangle {
     radius: 8
     color: {
         var accent = Style.colors.accent
+        if (!root.isExists){
+            var warn = Style.colors.utilitiesRowMissingText
+            return Qt.rgba(warn.r, warn.g, warn.b, 0.06)
+        }
         if (root.selected)
             return Qt.rgba(accent.r, accent.g, accent.b, rowMouse.containsMouse ? 0.25 : 0.12)
         if (rowMouse.containsMouse)
@@ -63,7 +70,7 @@ Rectangle {
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 10
-        anchors.rightMargin: 12
+        anchors.rightMargin: root.isExists ? 12 : (missingActions.width + 20)
         spacing: 10
 
         // Initial avatar
@@ -73,6 +80,7 @@ Rectangle {
             height: 32
             radius: width / 2
             color: root.avatarColor
+            opacity: root.isExists ? 1.0 : 0.5
 
             Text {
                 anchors.centerIn: parent
@@ -101,7 +109,8 @@ Rectangle {
                     font.family: Style.fontTypes.inter
                     font.weight: Font.DemiBold
                     font.pixelSize: 12
-                    color: Style.colors.foreground
+                    font.strikeout: !root.isExists
+                    color: root.isExists ? Style.colors.foreground : Style.colors.utilitiesRowMissingText
                 }
 
                 Text {
@@ -122,9 +131,10 @@ Rectangle {
                 Layout.preferredHeight: implicitHeight
                 text: root.repoPath
                 running: rowMouse.containsMouse
-                color: Style.colors.mutedText
+                color: root.isExists ? Style.colors.mutedText : Style.colors.utilitiesRowMissingText
                 font.family: Style.fontTypes.inter
                 font.pixelSize: 10
+                font.strikeout: !root.isExists
             }
         }
     }
@@ -132,9 +142,39 @@ Rectangle {
     MouseArea {
         id: rowMouse
         anchors.fill: parent
+        enabled: root.isExists
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: root.isExists ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.clicked()
         onDoubleClicked: root.doubleClicked()
+    }
+
+    Row {
+        id: missingActions
+        visible: !root.isExists
+        anchors.right: parent.right
+        anchors.rightMargin: 10
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 4
+
+        ActionIconButton {
+            width: 24
+            height: 24
+            iconText: Style.icons.edit
+            tooltip: "Locate the new folder"
+            textColor: Style.colors.accent
+            backgroundColor: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.12)
+            onClicked: root.relocateRequested()
+        }
+
+        ActionIconButton {
+            width: 24
+            height: 24
+            iconText: Style.icons.trash
+            tooltip: "Remove from recents"
+            textColor: Style.colors.utilitiesRowMissingText
+            backgroundColor: Qt.rgba(Style.colors.utilitiesRowMissingText.r, Style.colors.utilitiesRowMissingText.g, Style.colors.utilitiesRowMissingText.b, 0.12)
+            onClicked: root.removeRequested()
+        }
     }
 }

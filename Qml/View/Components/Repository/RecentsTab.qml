@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 
 import GitEase
 import GitEase_Style
@@ -40,12 +41,38 @@ Item {
      * ****************************************************************************************/
     implicitHeight: 320
 
+    property var missingPaths: ({})
+
+    property string missingPath: ""
+
+    onRecentRepositoriesChanged     : root.checkFolders()
+    onRepositoryControllerChanged   : root.checkFolders()
+    Component.onCompleted           : root.checkFolders()
+
     /* Functions
      * ****************************************************************************************/
     function reset() {
         root.selectedPath = ""
         root.search = ""
         searchField.text = ""
+        root.checkFolders()
+    }
+
+    function relocate(path) {
+        root.missingPath = path
+        folderDialog.open()
+    }
+
+    function checkFolders() {
+        var missing = {}
+        var ctrl = root.repositoryController
+        if (ctrl) {
+            for (var r of (root.recentRepositories || [])) {
+                if (r && !ctrl.folderExists(r.path))
+                    missing[r.path] = true
+            }
+        }
+        root.missingPaths = missing
     }
 
     function colorOf(m) {
@@ -80,7 +107,7 @@ Item {
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
-                width: recentsScroll.availableWidth
+                width: recentsScroll.availableWidth - (recentsScroll.ScrollBar.vertical.size < 1 ? 14 : 0)
                 spacing: 6
 
                 Text {
@@ -102,16 +129,52 @@ Item {
                         repoName: modelData?.name ?? ""
                         repoPath: modelData?.path ?? ""
                         avatarColor: root.colorOf(modelData)
-                        selected: root.selectedPath !== "" && root.selectedPath === (modelData?.path ?? "")
+                        isExists: !root.missingPaths[modelData?.path ?? ""]
+                        selected: isExists && root.selectedPath !== "" && root.selectedPath === (modelData?.path ?? "")
 
-                        onClicked: root.selectedPath = modelData?.path ?? ""
+                        onClicked: {
+                            if (isExists)
+                                root.selectedPath = modelData?.path ?? ""
+                        }
                         onDoubleClicked: {
+                            if (!isExists)
+                                return
                             root.selectedPath = modelData?.path ?? ""
                             root.accepted()
                         }
+                        onRelocateRequested: root.relocate(modelData?.path ?? "")
+                        onRemoveRequested: root.repositoryController.removeRecent(modelData?.path ?? "")
                     }
                 }
             }
         }
+    }
+
+    FolderDialog {
+        id: folderDialog
+        title: root.missingPath !== "" ? "Select the new location of " + root.missingPath
+                                       : "Select Repository Folder"
+        currentFolder: root.repositoryController?.appModel?.appSettings?.generalSettings?.defaultPath ?? ""
+
+        onAccepted: {
+            const oldPath = root.missingPath
+            root.missingPath = ""
+
+            if (!folderDialog.selectedFolder)
+                return
+
+            const controller = root.repositoryController
+            const newPath = controller.appModel.fileIO.pathNormalizer(folderDialog.selectedFolder.toString())
+
+            // Fix the entry in place; the user then confirms with Continue like any other entry
+            if (controller.relocateRecent(oldPath, newPath)) {
+                root.checkFolders()   // the list may be unchanged (same folder picked again)
+                root.selectedPath = newPath
+            } else if (controller.notificationController) {
+                controller.notificationController.error("This repository is no longer in the recent list.", "Repository relocate failed", 5000)
+            }
+        }
+
+        onRejected: root.missingPath = ""
     }
 }
