@@ -56,7 +56,7 @@ Item {
             color: Style.colors.foreground
             font.family: Style.fontTypes.inter
             font.weight: Font.DemiBold
-            font.pointSize: Style.appFont.h4Pt
+            font.pixelSize: Style.appFont.mediumPt
             elide: Text.ElideRight
         }
 

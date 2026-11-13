@@ -1,6 +1,7 @@
 ﻿import QtQuick
 
 import GitEase
+import GitEase_Style
 
 /*! ***********************************************************************************************
  * NotificationController
@@ -11,6 +12,9 @@ QtObject {
 
     required property FileIO fileIO
     required property var    appSettings
+
+    //! Item of the main window that hosts notification cards when floating windows are unsupported.
+    property Item overlayHost: null
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -40,9 +44,21 @@ QtObject {
     property int topMargin: 16
     property int notificationSpacing: 5
     readonly property string baseFilePath: fileIO.configFilePath + "/notifications"
-    
+    readonly property bool   useOverlay: !Style.floatingWindowsSupported && overlayHost !== null
+    property bool            closeAllHeaderInOverlay: false
+
     /* Signal Handlers
      * ****************************************************************************************/
+    onOverlayHostChanged: {
+        if(!root.overlayHost) {
+            return
+        }
+
+        root.overlayHost.widthChanged.connect(root.onHostResized)
+        root.overlayHost.heightChanged.connect(root.onHostResized)
+    }
+
+
     onCurrentRepositoryKeyChanged: {
         if (root.notificationHistory.length > 0) {
             saveNotificationsForRepository(root.previousRepositoryKey)
@@ -69,7 +85,29 @@ QtObject {
 
     /* Functions
      * ****************************************************************************************/
-    
+
+    function updateBounds() {
+        if(root.useOverlay) {
+            screenWidth = root.overlayHost.width
+            screenHeight = root.overlayHost.height
+            return
+        }
+
+        if(Qt.application.screens.length > 0) {
+            screenWidth = Qt.application.screens[0].width
+            screenHeight = Qt.application.screens[0].height
+        }
+    }
+
+    function onHostResized() {
+        if(!root.useOverlay) {
+            return
+        }
+
+        updateBounds()
+        repositionNotifications()
+    }
+
     /**
      * Show a notification message
      */
@@ -79,12 +117,8 @@ QtObject {
         title = title || ""
         autoHide = autoHide !== undefined ? autoHide : true
         
-        // Update screen dimensions
-        if (Qt.application.screens.length > 0) {
-            screenWidth = Qt.application.screens[0].width
-            screenHeight = Qt.application.screens[0].height
-        }
-        
+        updateBounds()
+
         // Create notification data
         var notificationData = {
             "id": "notification_" + Date.now() + "_" + Math.random(),
@@ -215,11 +249,7 @@ QtObject {
         }
         activeNotifications = []
 
-        if (closeAllHeader) {
-            closeAllHeader.close()
-            closeAllHeader.destroy()
-            closeAllHeader = null
-        }
+        destroyCloseAllHeader()
     }
 
     function saveNotificationsForRepository(repositoryKey) {
@@ -298,13 +328,18 @@ QtObject {
     
 
     function createNotificationWindow(notificationData) {
-        var component = Qt.createComponent("qrc:/GitEase/Qml/View/FloatingNotificationWindow.qml")
+        var inOverlay = root.useOverlay
+        var url = inOverlay
+                ? "qrc:/GitEase/Qml/View/Components/Notification/NotificationOverlayToast.qml"
+                : "qrc:/GitEase/Qml/View/FloatingNotificationWindow.qml"
+
+        var component = Qt.createComponent(url)
         if (component.status !== Component.Ready) {
             console.error("[NotificationController] Failed to create notification:", component.errorString())
             return
         }
-        
-        var window = component.createObject(root, {
+
+        var window = component.createObject(inOverlay ? root.overlayHost : root, {
                                                 "notification": notificationData,
                                                 "notificationIndex": activeNotifications.length,
                                                 "notificationController": root,
@@ -316,11 +351,18 @@ QtObject {
             return
         }
 
-        window.visibleChanged.connect(function () {
-            if (!window.visible) {
+        if (inOverlay) {
+            // An Item's visible flag also follows its parent, so use an explicit signal instead
+            window.closed.connect(function () {
                 onNotificationClosed(window)
-            }
-        })
+            })
+        } else {
+            window.visibleChanged.connect(function () {
+                if (!window.visible) {
+                    onNotificationClosed(window)
+                }
+            })
+        }
 
         window.heightChanged.connect(function () {
             repositionNotifications()
@@ -437,13 +479,15 @@ QtObject {
     
     function updateCloseAllHeader() {
         var totalCount = activeNotifications.length + queuedNotifications.length
-        
+
         if (totalCount > 1) {
-            if (closeAllHeader) {
-                closeAllHeader.notificationCount = totalCount
-                closeAllHeader.visible = true
-                repositionNotifications()
+            if (!ensureCloseAllHeader()) {
+                return
             }
+
+            closeAllHeader.notificationCount = totalCount
+            closeAllHeader.visible = true
+            repositionNotifications()
         } else {
             if (closeAllHeader) {
                 closeAllHeader.visible = false
@@ -451,21 +495,53 @@ QtObject {
         }
     }
 
-    Component.onCompleted: {
-        var component = Qt.createComponent("qrc:/GitEase/Qml/View/Components/Notification/NotificationCloseAllHeader.qml")
+    function ensureCloseAllHeader() {
+        if (closeAllHeader && root.closeAllHeaderInOverlay === root.useOverlay) {
+            return true
+        }
+
+        destroyCloseAllHeader()
+
+        var inOverlay = root.useOverlay
+        var url = inOverlay
+                ? "qrc:/GitEase/Qml/View/Components/Notification/NotificationCloseAllBar.qml"
+                : "qrc:/GitEase/Qml/View/Components/Notification/NotificationCloseAllHeader.qml"
+
+        var component = Qt.createComponent(url)
         if (component.status !== Component.Ready) {
             console.error("[NotificationController] Failed to load close all header:", component.errorString())
-            return
+            return false
         }
-        
-        closeAllHeader = component.createObject(root)
+
+        var header = component.createObject(inOverlay ? root.overlayHost : root, {
+                                                "visible": false
+                                            })
+        if (!header) {
+            console.error("[NotificationController] Failed to create close all header")
+            return false
+        }
+
+        header.closeAllRequested.connect(clearAllNotifications)
+
+        closeAllHeader = header
+        root.closeAllHeaderInOverlay = inOverlay
+        return true
+    }
+
+    function destroyCloseAllHeader() {
         if (!closeAllHeader) {
-            console.error("[NotificationController] Failed to create close all header window")
             return
         }
-        
-        closeAllHeader.closeAllRequested.connect(clearAllNotifications)
-        
+
+        if (typeof closeAllHeader.close === "function") {
+            closeAllHeader.close()
+        }
+
+        closeAllHeader.destroy()
+        closeAllHeader = null
+    }
+
+    Component.onCompleted: {
         loadNotifications()
     }
 }

@@ -103,8 +103,9 @@ Rectangle {
             Text {
                 visible: !root.editing
                 text: root.keyData.name
-                font.pointSize: Style.appFont.h4Pt
-                font.bold: true
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.mediumPt
+                font.weight: Font.DemiBold
                 color: Style.colors.foreground
                 elide: Text.ElideRight
                 Layout.fillWidth: true
@@ -115,7 +116,7 @@ Rectangle {
                 visible: root.editing
                 Layout.fillWidth: true
                 color: Style.colors.foreground
-                font.pixelSize: Style.appFont.defaultPt
+                font.pixelSize: Style.appFont.mediumPt
                 font.family: Style.fontTypes.jetBrainsMono
                 selectByMouse: true
                 maximumLength: 64
@@ -141,7 +142,8 @@ Rectangle {
                     id: typeText
                     anchors.centerIn: parent
                     text: root.keyType
-                    font.pointSize: Style.appFont.secondaryPt
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
                     font.bold: true
                     color: Style.colors.accent
                 }
@@ -158,7 +160,7 @@ Rectangle {
 
             ActionIconButton {
                 id: copyKeyBtn
-                iconText: copyKeyBtn._copied ? "✓" : Style.icons.copy
+                iconText: copyKeyBtn._copied ? Style.icons.check : Style.icons.copy
                 tooltip: copyKeyBtn._copied ? "Copied!" : "Copy Public Key"
                 textColor: copyKeyBtn._copied ? Style.colors.notificationSuccessIcon : Style.colors.accent
                 width: 24
@@ -219,7 +221,8 @@ Rectangle {
 
             Text {
                 text: "Use for"
-                font.pointSize: Style.appFont.secondaryPt
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
                 color: Style.colors.mutedText
                 Layout.preferredWidth: 80
             }
@@ -252,7 +255,8 @@ Rectangle {
                         id: chipText
                         anchors.centerIn: parent
                         text: (chip.assigned ? "✓ " : "") + chip.modelData.label
-                        font.pointSize: Style.appFont.secondaryPt
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
                         font.bold: chip.assigned
                         color: chip.assigned ? Style.colors.accent : Style.colors.mutedText
                     }
@@ -262,9 +266,11 @@ Rectangle {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        ToolTip.visible: containsMouse && chip.modelData.provider === ""
-                        ToolTip.delay: 400
-                        ToolTip.text: "Used for every remote that has no key of its own"
+                        AppToolTip {
+                            visible: chipArea.containsMouse && chip.modelData.provider === ""
+                            delay: 400
+                            text: "Used for every remote that has no key of its own"
+                        }
                         onClicked: root.assignRequested(chip.modelData.provider,
                                                          chip.modelData.label,
                                                          root.keyData.name,
@@ -285,14 +291,16 @@ Rectangle {
             Text {
                 visible: root.keyComment.length > 0
                 text: "Comment"
-                font.pointSize: Style.appFont.secondaryPt
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
                 color: Style.colors.mutedText
                 Layout.preferredWidth: 80
             }
             Text {
                 visible: root.keyComment.length > 0
                 text: root.keyComment
-                font.pointSize: Style.appFont.secondaryPt
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
                 color: Style.colors.foreground
                 elide: Text.ElideRight
                 Layout.fillWidth: true
@@ -301,14 +309,15 @@ Rectangle {
             Text {
                 visible: root.keyData.fingerprint.length > 0
                 text: "Fingerprint"
-                font.pointSize: Style.appFont.secondaryPt
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
                 color: Style.colors.mutedText
                 Layout.preferredWidth: 80
             }
             Text {
                 visible: root.keyData.fingerprint.length > 0
                 text: root.keyData.fingerprint
-                font.pointSize: Style.appFont.secondaryPt
+                font.pixelSize: Style.appFont.defaultPt
                 font.family: Style.fontTypes.jetBrainsMono
                 color: Style.colors.foreground
                 elide: Text.ElideMiddle
@@ -317,13 +326,14 @@ Rectangle {
 
             Text {
                 text: "Path"
-                font.pointSize: Style.appFont.secondaryPt
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
                 color: Style.colors.mutedText
                 Layout.preferredWidth: 80
             }
             Text {
                 text: root.keyData.privateKeyPath
-                font.pointSize: Style.appFont.secondaryPt
+                font.pixelSize: Style.appFont.defaultPt
                 font.family: Style.fontTypes.jetBrainsMono
                 color: Style.colors.secondaryText
                 elide: Text.ElideMiddle

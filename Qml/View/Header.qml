@@ -111,9 +111,11 @@ Item {
                     font.pixelSize: 14
                     Layout.preferredWidth: 36
                     Layout.preferredHeight: 36
-                    ToolTip.text: modelData.tooltip
-                    ToolTip.visible: hovered
-                    ToolTip.delay: 500
+                    AppToolTip {
+                        text: modelData.tooltip
+                        visible: parent.hovered
+                        delay: 500
+                    }
                     onClicked: root.pluginManager.executeToolbarAction(modelData.pluginId, modelData.id, {})
                 }
             }

@@ -405,7 +405,6 @@ Rectangle {
                 Button {
                     visible: !(root.plugin?.isInstalled ?? false) && !root.pluginBusy
                     enabled: !root.pluginBusy
-                             && (root.plugin?.isCompatible ?? true)
                     topInset: 0
                     bottomInset: 0
                     leftInset: 0
@@ -695,9 +694,11 @@ Rectangle {
             id: compatDotHover
         }
 
-        ToolTip.visible: compatDotHover.hovered
-        ToolTip.text: root.compatLabel
-        ToolTip.delay: 500
+        AppToolTip {
+            visible: compatDotHover.hovered
+            text: root.compatLabel
+            delay: 500
+        }
     }
 
     /* Functions

@@ -165,9 +165,11 @@ ColumnLayout {
                         rightInset: 0
                         padding: Style.dp(6)
 
-                        ToolTip.visible: hovered
-                        ToolTip.text: root.idCopied ? "Copied" : "Copy plugin ID"
-                        ToolTip.delay: 400
+                        AppToolTip {
+                            visible: copyIdButton.hovered
+                            text: root.idCopied ? "Copied" : "Copy plugin ID"
+                            delay: 400
+                        }
 
                         background: Rectangle {
                             radius: Style.dp(5)

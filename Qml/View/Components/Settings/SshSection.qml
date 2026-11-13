@@ -115,15 +115,17 @@ Item {
 
                 Text {
                     text: "No SSH keys found"
-                    font.pointSize: Style.appFont.h4Pt
-                    font.bold: true
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.h3Pt
+                    font.weight: Font.DemiBold
                     color: Style.colors.foreground
                     Layout.fillWidth: true
                 }
 
                 Text {
                     text: "SSH keys let you sign in to GitHub, GitLab and other Git hosts without entering credentials every time."
-                    font.pointSize: Style.appFont.defaultPt
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.defaultPt
                     color: Style.colors.mutedText
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
@@ -133,7 +135,8 @@ Item {
                     text: "1. Click “Generate New Key” above.\n"
                         + "2. Copy the public key with the copy button.\n"
                         + "3. Paste it into your Git host:"
-                    font.pointSize: Style.appFont.defaultPt
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.defaultPt
                     color: Style.colors.foreground
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
@@ -145,7 +148,8 @@ Item {
                         + "<a href=\"https://gitlab.com/-/user_settings/ssh_keys\">Add key on GitLab</a>"
                     textFormat: Text.RichText
                     linkColor: Style.colors.accent
-                    font.pointSize: Style.appFont.defaultPt
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.defaultPt
                     Layout.fillWidth: true
                     onLinkActivated: (link) => Qt.openUrlExternally(link)
 
@@ -156,7 +160,8 @@ Item {
 
                 Text {
                     text: "Self-hosted GitLab? Use Settings → SSH Keys on your instance."
-                    font.pointSize: Style.appFont.secondaryPt
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
                     color: Style.colors.mutedText
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
@@ -173,7 +178,9 @@ Item {
 
             Text {
                 text: "Available Keys"
-                font.pointSize: Style.appFont.h4Pt
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.largePt
+                font.weight: Font.DemiBold
                 color: Style.colors.foreground
             }
 
@@ -189,7 +196,8 @@ Item {
                     id: countText
                     anchors.centerIn: parent
                     text: root.sshKeyController.allKeys.length
-                    font.pointSize: Style.appFont.secondaryPt
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
                     color: Style.colors.mutedText
                 }
             }

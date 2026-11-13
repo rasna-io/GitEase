@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QDir>
+#include <QFileInfo>
 #include <QStandardPaths>
 
 #include <thread>
@@ -127,6 +128,8 @@ void FileIO::write(bool async)
     auto writeTask {[this]()
         {
             QFile file{m_fileName};
+
+            QDir{}.mkpath(QFileInfo{m_fileName}.absolutePath());
 
             if(!file.open(QIODevice::WriteOnly))
             {

@@ -284,7 +284,9 @@ PopupDialog {
 
             Text {
                 anchors.centerIn: parent
-                text: "\u2713"
+                text: Style.icons.check
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
                 color: Style.colors.popupCheckboxCheckmark
                 font.pixelSize: Style.appFont.smallPt
                 visible: checkRow.checked

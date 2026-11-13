@@ -649,8 +649,14 @@ QtObject {
     }
 
     function installPlugin(pluginId, phase) {
-        // A copy in the downloads folder is installed without going online.
         let cached = root.usableCachedPackage(root.findListedPlugin(pluginId))
+
+        if(cached && cached.compatible === false) {
+            let reason = cached.incompatibleReason || "This package does not support this platform."
+            root.notificationController.error("Installation is not possible: " + reason, "Plugins")
+            return
+        }
+
         if(cached) {
             root.setInstallState(pluginId, true, phase || "Installing", -1)
             if(pluginManager.installDownloadedPackage(pluginId, cached.packagePath)) {
@@ -802,16 +808,26 @@ QtObject {
             }
         }
 
+        let installFromCache = !p.isInstalled && cacheStatus !== "" && cacheStatus !== "older"
+
+        let incompatibleReason = ""
+        if(installFromCache && pkg && pkg.compatible === false) {
+            incompatibleReason = pkg.incompatibleReason || "This package does not support this platform."
+            note = incompatibleReason
+        }
+
         return Object.assign({}, p, {
-            latestVersion:    latestVersion,
-            isLocal:          isLocal,
-            hasCachedPackage: !!pkg,
-            cachedVersion:    pkg ? pkg.version : "",
-            cachedPath:       pkg ? pkg.packagePath : "",
-            cacheStatus:      cacheStatus,
-            installFromCache: !p.isInstalled && cacheStatus !== "" && cacheStatus !== "older",
-            sourceLabel:      label,
-            sourceNote:       note
+            latestVersion:      latestVersion,
+            isLocal:            isLocal,
+            hasCachedPackage:   !!pkg,
+            cachedVersion:      pkg ? pkg.version : "",
+            cachedPath:         pkg ? pkg.packagePath : "",
+            cacheStatus:        cacheStatus,
+            installFromCache:   installFromCache,
+            isCompatible:       incompatibleReason === "" ? p.isCompatible : false,
+            incompatibleReason: incompatibleReason,
+            sourceLabel:        label,
+            sourceNote:         note
         })
     }
 
@@ -838,7 +854,10 @@ QtObject {
     function installGepFile(gepPath) {
         if (!gepPath)
             return
-        pluginManager.installGepFile(gepPath)
+
+        if (!pluginManager.installGepFile(gepPath)) {
+            root.notificationController.error("Could not open the package \"" + gepPath + "\".", "Plugins")
+        }
     }
 
     function describePlugin(info, fallbackName) {

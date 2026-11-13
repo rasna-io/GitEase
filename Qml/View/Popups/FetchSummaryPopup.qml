@@ -86,13 +86,14 @@ IPopup {
 
                 // Close Button
                 Text {
-                    text: "\u00d7"
+                    text: Style.icons.close
 
                     color: closeMouse.containsMouse ? Style.colors.popupCloseButtonHover
                                                     : Style.colors.popupCloseButton
 
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.h2Pt
+                    font.family: Style.fontTypes.font6Pro
+                    font.styleName: "Solid"
+                    font.pixelSize: Style.appFont.mediumPt
 
                     width: 18
                     height: 18
@@ -209,10 +210,12 @@ IPopup {
                         color: Style.colors.popupHeaderSeparator
                     }
 
+                    // Space below the separator, so the content never sits right on the line
                     Item {
-                        visible: root.updatedBranches.length > 0 ||
-                                 root.newBranches.length > 0
-                        Layout.preferredHeight: root.sectionSpacing
+                        Layout.preferredHeight: root.updatedBranches.length > 0 ||
+                                                root.newBranches.length > 0
+                                                ? root.sectionSpacing
+                                                : Style.dp(16)
                     }
 
                     // Show one compact empty state only when fetch produced no branches.
@@ -506,9 +509,9 @@ IPopup {
             color: modelData.iconColor
                    || root.successAccent
 
-            font.family: Style.fontTypes.inter
-            font.pixelSize: Style.appFont.mediumPt
-            font.weight: Font.Bold
+            font.family: Style.fontTypes.font6Pro
+            font.styleName: "Solid"
+            font.pixelSize: Style.appFont.smallPt
 
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -669,7 +672,7 @@ IPopup {
 
                 if (isNewBranch) {
                     newBranches.push({
-                        icon: "+",
+                        icon: Style.icons.plus,
                         name: branchName.length > 0 ? remoteBranchName(result.remote, branchName) : summary,
                         meta: "",
                         hasAction: true
@@ -687,7 +690,7 @@ IPopup {
                 }
 
                 updatedBranches.push({
-                    icon: "↓",
+                    icon: Style.icons.arrowDown,
                     name: branchName.length > 0
                           ? remoteBranchName(result.remote, branchName)
                           : summary,

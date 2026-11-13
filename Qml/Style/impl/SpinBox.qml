@@ -44,7 +44,7 @@ T.SpinBox {
             readOnly: !control.editable
             validator: control.validator
             inputMethodHints: control.inputMethodHints
-            font.pointSize: Style.appFont.h4Pt
+            font.pixelSize: Style.appFont.mediumPt
 
             Rectangle {
                 anchors.fill: parent

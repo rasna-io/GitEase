@@ -4,6 +4,7 @@ import QtQuick.Layouts
 
 import GitEase
 import GitEase_Style
+import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * CommandPreview
@@ -65,9 +66,11 @@ Rectangle {
             maximumLineCount: 2
             elide: Text.ElideRight
 
-            ToolTip.visible: hoverArea.containsMouse && commandText.truncated
-            ToolTip.text: root.command
-            ToolTip.delay: 400
+            AppToolTip {
+                visible: hoverArea.containsMouse && commandText.truncated
+                text: root.command
+                delay: 400
+            }
 
             MouseArea {
                 id: hoverArea

@@ -42,7 +42,9 @@ RowLayout {
         nameFilters: ["GitEase Package (*.gep)"]
 
         onAccepted: {
-            let path = selectedFile.toString().replace(new RegExp("^file://+"), "")
+            let path = decodeURIComponent(selectedFile.toString())
+            path = path.replace(new RegExp("^file:///([A-Za-z]:)"), "$1")
+            path = path.replace(new RegExp("^file://"), "")
             headerRow.installGepRequested(path)
         }
     }

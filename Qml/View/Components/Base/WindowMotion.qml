@@ -18,6 +18,10 @@ QtObject {
 
     property bool minimizing: false
 
+    readonly property var fadeTarget: !root.window ? null
+                                      : Style.windowOpacitySupported ? root.window
+                                                                     : root.window.contentItem
+
     /* Functions
      * ****************************************************************************************/
     function toggleMaximize() {
@@ -43,7 +47,7 @@ QtObject {
             return
         }
 
-        root.window.opacity = 1
+        root.fadeTarget.opacity = 1
         root.window.contentItem.scale = 1
         root.minimizing = true
         minimizeOutAnimation.restart()
@@ -56,7 +60,7 @@ QtObject {
 
         // Fade out window opacity
         NumberAnimation {
-            target: root.window
+            target: root.fadeTarget
             property: "opacity"
             to: 0
             duration: Style.motionMedium
@@ -83,7 +87,7 @@ QtObject {
 
         // Fade in window opacity
         NumberAnimation {
-            target: root.window
+            target: root.fadeTarget
             property: "opacity"
             to: 1
             duration: Style.motionMedium
@@ -116,7 +120,7 @@ QtObject {
                 return
 
             root.minimizing = false
-            root.window.opacity = 0
+            root.fadeTarget.opacity = 0
             root.window.contentItem.scale = 0.985
             restoreAnimation.restart()
         }

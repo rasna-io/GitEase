@@ -59,15 +59,17 @@ IPopup {
             Text {
                 text: "Delete SSH Key"
                 color: Style.colors.foreground
-                font.pointSize: Style.appFont.h3Pt
-                font.bold: true
+                font.family: Style.fontTypes.inter
+                font.weight: Font.DemiBold
+                font.pixelSize: Style.appFont.mediumPt
                 Layout.alignment: Qt.AlignHCenter
             }
 
             Text {
                 text: "Are you sure you want to delete this SSH key?\n\n\"" + root.targetKeyName + "\"\n\nThis action cannot be undone."
                 color: Style.colors.mutedText
-                font.pointSize: Style.appFont.defaultPt
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }
@@ -76,7 +78,7 @@ IPopup {
                 visible: root.requiresTypedConfirm
                 text: "This looks like a standard OpenSSH key that other tools may rely on. Type its name to confirm:"
                 color: Style.colors.deletededFile
-                font.pointSize: Style.appFont.secondaryPt
+                font.pixelSize: Style.appFont.smallPt
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }

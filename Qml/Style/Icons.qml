@@ -79,6 +79,9 @@ QtObject{
     property string arrowDownToLine:   "\uf33d"
 
     property string close:              "\uf00d" // close
+    property string angleRight:        "\uf105" // angle-right
+    property string ellipsis:          "\uf141" // ellipsis
+    property string arrowsUpDown:      "\uf07d" // arrows-up-down
 
     property string reset:             "\uf2ea" // reset
     property string resetSoft:         "\uf0e2" // undo

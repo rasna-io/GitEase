@@ -47,9 +47,11 @@ Button {
     rightPadding: 16
     hoverEnabled: true
 
-    ToolTip.visible: root.hovered && root.tooltip !== ""
-    ToolTip.text: root.tooltip
-    ToolTip.delay: 400
+    AppToolTip {
+        visible: root.hovered && root.tooltip !== ""
+        text: root.tooltip
+        delay: 400
+    }
 
     /* Children
      * ****************************************************************************************/

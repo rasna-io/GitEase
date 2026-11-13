@@ -99,8 +99,9 @@ IPopup {
             Text {
                 text: root.importing ? "Name the imported key" : "Name your new SSH key"
                 color: Style.colors.foreground
-                font.pointSize: Style.appFont.h3Pt
-                font.bold: true
+                font.family: Style.fontTypes.inter
+                font.weight: Font.DemiBold
+                font.pixelSize: Style.appFont.mediumPt
                 Layout.alignment: Qt.AlignHCenter
             }
 
@@ -109,7 +110,8 @@ IPopup {
                       ? "The key will be copied into ~/.ssh under this name. The original file is left untouched."
                       : "A name helps you tell your keys apart, e.g. work-gitlab or personal-github."
                 color: Style.colors.mutedText
-                font.pointSize: Style.appFont.defaultPt
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.defaultPt
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }
@@ -145,7 +147,7 @@ IPopup {
 
                 Text {
                     text: "Suggestion:"
-                    font.pointSize: Style.appFont.secondaryPt
+                    font.pixelSize: Style.appFont.smallPt
                     color: Style.colors.mutedText
                 }
 
@@ -163,7 +165,7 @@ IPopup {
                         id: suggestionText
                         anchors.centerIn: parent
                         text: root.suggestion
-                        font.pointSize: Style.appFont.secondaryPt
+                        font.pixelSize: Style.appFont.smallPt
                         font.family: Style.fontTypes.jetBrainsMono
                         color: Style.colors.accent
                     }
@@ -188,7 +190,7 @@ IPopup {
                 visible: root.nameError.length > 0
                 text: root.nameError
                 color: Style.colors.deletededFile
-                font.pointSize: Style.appFont.secondaryPt
+                font.pixelSize: Style.appFont.smallPt
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }

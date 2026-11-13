@@ -36,6 +36,8 @@ Window {
     color: "transparent"
     visible: false
     
+    readonly property var fadeTarget: Style.windowOpacitySupported ? root : root.contentItem
+
     /* Signals
      * ****************************************************************************************/
     signal closeRequested()
@@ -211,7 +213,7 @@ Window {
      * ****************************************************************************************/
     NumberAnimation {
         id: fadeInAnimation
-        target: root
+        target: root.fadeTarget
         property: "opacity"
         from: 0
         to: 1
@@ -221,7 +223,7 @@ Window {
 
     NumberAnimation {
         id: fadeOutAnimation
-        target: root
+        target: root.fadeTarget
         property: "opacity"
         from: 1
         to: 0

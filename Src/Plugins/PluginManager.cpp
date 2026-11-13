@@ -576,7 +576,13 @@ namespace {
         if(placement.result == GepPlaceResult::Ok) {
             placement.prepared.info = readManifestFile(targetDir);
             const PluginInfo& info = placement.prepared.info;
-            if(info.isValid() && info.enabled && info.hasCppEntry()) {
+
+            const QString library = info.hasCppEntry() ? resolveLibraryPath(targetDir, info.cppEntry) : QString();
+            if(!library.isEmpty() && !QFileInfo::exists(library)) {
+                placement.result         = GepPlaceResult::LibraryMissing;
+                placement.missingLibrary = QFileInfo(library).fileName();
+                QDir(targetDir).removeRecursively();
+            } else if(info.isValid() && info.enabled && info.hasCppEntry()) {
                 placement.prepared.libraryPath = prepareHotLibrary(targetDir, info.cppEntry);
             }
         } else {
@@ -646,6 +652,39 @@ namespace {
                + QStringLiteral("/downloads/plugins");
     }
 
+    bool packageHasPlatformLibrary(const QString& gepPath, const QString& cppEntry,
+                                   QString* expectedName)
+    {
+        const QString relative = QDir::cleanPath(resolveLibraryPath(QStringLiteral("."), cppEntry));
+        if(expectedName) {
+            *expectedName = QFileInfo(relative).fileName();
+        }
+
+        struct archive* reader = archive_read_new();
+        if(!reader) {
+            return true; // cannot tell; let the install report any problem
+        }
+
+        archive_read_support_format_all(reader);
+        archive_read_support_filter_all(reader);
+        if(archive_read_open_filename(reader, gepPath.toUtf8().constData(), 10240) != ARCHIVE_OK) {
+            archive_read_free(reader);
+            return true;
+        }
+
+        bool found = false;
+        struct archive_entry* entry = nullptr;
+        while(!found && archive_read_next_header(reader, &entry) == ARCHIVE_OK) {
+            const QString name = QDir::cleanPath(QString::fromUtf8(archive_entry_pathname(entry)));
+            // The files may sit in a top-level folder of the package.
+            found = name == relative || name.endsWith(QLatin1Char('/') + relative);
+            archive_read_data_skip(reader);
+        }
+
+        archive_read_free(reader);
+        return found;
+    }
+
     // Reads the manifest of every package in the downloads folder. When several versions of one
     // plugin are kept, only the newest one is reported.
     QVariantList scanDownloadedPackages(const QString& downloadsDir)
@@ -656,6 +695,8 @@ namespace {
             QString    path;
             qint64     bytes = 0;
             QDateTime  modified;
+            bool       compatible = true;
+            QString    incompatibleReason;
         };
 
         QMap<QString, Package> best;
@@ -672,6 +713,16 @@ namespace {
             package.path     = file.absoluteFilePath();
             package.bytes    = file.size();
             package.modified = file.lastModified();
+
+            if(info.hasCppEntry()) {
+                QString libraryName;
+                if(!packageHasPlatformLibrary(package.path, info.cppEntry, &libraryName)) {
+                    package.compatible = false;
+                    package.incompatibleReason =
+                        QStringLiteral("This package is missing \"%1\", the plugin library for this "
+                                       "platform, so it cannot be installed here.").arg(libraryName);
+                }
+            }
 
             auto it = best.find(info.id);
             if(it == best.end()) {
@@ -690,6 +741,8 @@ namespace {
             QVariantMap map = it->info.toVariantMap();
             map.insert(QStringLiteral("packagePath"), it->path);
             map.insert(QStringLiteral("packageSizeKb"), int((it->bytes + 1023) / 1024));
+            map.insert(QStringLiteral("compatible"), it->compatible);
+            map.insert(QStringLiteral("incompatibleReason"), it->incompatibleReason);
             result << map;
         }
 
@@ -789,18 +842,13 @@ PluginManager::~PluginManager()
             job->plugin->shutdown();
         }
 
-        if(job->loader) {
-            job->loader->unload();
-            delete job->loader;
-        }
+        delete job->loader;
     }
 
     for (auto* plugin : std::as_const(m_plugins))
         plugin->shutdown();
-    for (auto* loader : std::as_const(m_loaders)) {
-        loader->unload();
+    for (auto* loader : std::as_const(m_loaders))
         delete loader;
-    }
 }
 
 QObject* PluginManager::backgroundContext() const
@@ -1728,6 +1776,13 @@ void PluginManager::finishGepInstall(const GepRequest& request, const GepPlaceme
     case GepPlaceResult::ExtractFailed:
         emit pluginsChanged();
         emit pluginInstallFailed(placement.id, QStringLiteral("Failed to extract GEP package"));
+        break;
+    case GepPlaceResult::LibraryMissing:
+        emit pluginsChanged();
+        emit pluginInstallFailed(placement.id,
+                                 QStringLiteral("The package is missing its plugin library \"%1\". "
+                                                "It must contain this file for this platform.")
+                                     .arg(placement.missingLibrary));
         break;
     }
 

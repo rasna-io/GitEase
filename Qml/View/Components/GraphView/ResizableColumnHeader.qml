@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import GitEase_Style
+import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * ResizableColumnHeader – a column header with a draggable right divider.
@@ -108,11 +109,13 @@ Item {
             property real startGlobalX: 0
             property bool moved: false
 
-            ToolTip.visible: containsMouse && !pressed
-            ToolTip.delay: 600
-            ToolTip.text: root.autoFitEnabled
-                          ? qsTr("Drag to resize · double-click to auto-fit")
-                          : qsTr("Drag to resize")
+            AppToolTip {
+                visible: dividerMouse.containsMouse && !dividerMouse.pressed
+                delay: 600
+                text: root.autoFitEnabled
+                      ? qsTr("Drag to resize · double-click to auto-fit")
+                      : qsTr("Drag to resize")
+            }
 
             onPressed: (mouse) => {
                 startGlobalX = dividerMouse.mapToItem(null, mouse.x, mouse.y).x

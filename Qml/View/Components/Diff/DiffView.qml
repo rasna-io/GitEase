@@ -704,18 +704,32 @@ DetachablePanel {
                                       : Style.colors.diffPillBorder
                         border.width: 1
 
-                        Text {
+                        Row {
                             id: stepBtnText
 
                             anchors.centerIn: parent
+                            spacing: 4
 
-                            text: "↕ " + root.expandLines
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: Style.icons.arrowsUpDown
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.appFont.secondaryPt
+                                color: stepBtnMouse.containsMouse
+                                       ? Style.colors.accent
+                                       : Style.colors.mutedText
+                            }
 
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.secondaryPt
-                            color: stepBtnMouse.containsMouse
-                                   ? Style.colors.accent
-                                   : Style.colors.mutedText
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: root.expandLines
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: Style.appFont.secondaryPt
+                                color: stepBtnMouse.containsMouse
+                                       ? Style.colors.accent
+                                       : Style.colors.mutedText
+                            }
                         }
 
                         MouseArea {
@@ -743,18 +757,32 @@ DetachablePanel {
                                       : Style.colors.diffPillBorder
                         border.width: 1
 
-                        Text {
+                        Row {
                             id: allBtnText
 
                             anchors.centerIn: parent
+                            spacing: 4
 
-                            text: "↕ All"
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: Style.icons.arrowsUpDown
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.appFont.secondaryPt
+                                color: allBtnMouse.containsMouse
+                                       ? Style.colors.accent
+                                       : Style.colors.mutedText
+                            }
 
-                            font.family: Style.fontTypes.inter
-                            font.pixelSize: Style.appFont.secondaryPt
-                            color: allBtnMouse.containsMouse
-                                   ? Style.colors.accent
-                                   : Style.colors.mutedText
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "All"
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: Style.appFont.secondaryPt
+                                color: allBtnMouse.containsMouse
+                                       ? Style.colors.accent
+                                       : Style.colors.mutedText
+                            }
                         }
 
                         MouseArea {

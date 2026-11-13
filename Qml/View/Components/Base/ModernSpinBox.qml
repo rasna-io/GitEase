@@ -89,8 +89,8 @@ Rectangle {
 
             Repeater {
                 model: [
-                    { glyph: "\u25B2", step: 1 },
-                    { glyph: "\u25BC", step: -1 }
+                    { glyph: Style.icons.caretUp, step: 1 },
+                    { glyph: Style.icons.caretDown, step: -1 }
                 ]
 
                 delegate: Rectangle {
@@ -104,6 +104,8 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: modelData.glyph
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
                         font.pixelSize: Style.appFont.microPt
                         color: stepArea.containsMouse ? Style.colors.accent : Style.colors.placeholderText
                     }
