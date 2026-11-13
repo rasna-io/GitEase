@@ -89,17 +89,40 @@ DetachablePanel {
     property int commitItemSpacing  : 4
     property int columnSpacing      : 30
 
-    property int commitsColGraphWidth       : root.activeItem.width * 0.08
-    property int commitsColBranchTagWidth   : root.activeItem.width * 0.17
-    property int commitsColMessageWidth     : root.activeItem.width * 0.6
-    property int commitsColAuthorWidth      : root.activeItem.width * 0.08
-    property int commitsColDateWidth        : root.activeItem.width * 0.17
+    // Fixed columns are user-resizable; Message always fills the remaining width so
+    // header cells and row cells stay pixel-aligned (ratios never sum over/under 100%).
+    readonly property int defaultColGraphWidth     : 96
+    readonly property int defaultColBranchTagWidth : 168
+    readonly property int defaultColAuthorWidth    : 110
+    readonly property int defaultColDateWidth      : 140
+
+    property int commitsColGraphWidth       : root.defaultColGraphWidth
+    property int commitsColBranchTagWidth   : root.defaultColBranchTagWidth
+    property int commitsColAuthorWidth      : root.defaultColAuthorWidth
+    property int commitsColDateWidth        : root.defaultColDateWidth
+    property bool graphWidthUserAdjusted    : false
 
     readonly property int minColGraphWidth      : 60
     readonly property int minColBranchTagWidth  : 80
-    readonly property int minColMessageWidth    : 100
-    readonly property int minColAuthorWidth     : 60
-    readonly property int minColDateWidth       : 80
+    readonly property int minColMessageWidth    : 120
+    readonly property int minColAuthorWidth     : 70
+    readonly property int minColDateWidth       : 100
+
+    readonly property int commitsColContentWidth: Math.max(0, Math.floor(root.activeItem.width))
+    readonly property int commitsColFixedWidth  : root.commitsColGraphWidth
+                                                  + root.commitsColBranchTagWidth
+                                                  + root.commitsColAuthorWidth
+                                                  + root.commitsColDateWidth
+    readonly property int commitsColMessageWidth: Math.max(root.minColMessageWidth,
+                                                           root.commitsColContentWidth - root.commitsColFixedWidth)
+
+    readonly property int commitsColPad         : 8
+
+    property bool columnResizing                : false
+    property real columnResizeGuideX            : -1
+
+    onCommitsColContentWidthChanged: root.ensureColumnsFit()
+    onGraphRowsChanged: root.autoFitGraphWidth()
 
     readonly property bool hasAnyFilter         : Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter)
 
@@ -136,9 +159,51 @@ DetachablePanel {
         }
     }
 
+    TextMetrics {
+        id: headerColMetrics
+        font.pixelSize: Style.appFont.defaultPt
+        font.bold: true
+    }
+
+    TextMetrics {
+        id: branchTagMetrics
+        font.family: Style.fontTypes.inter
+        font.weight: Font.Bold
+        font.pixelSize: 11
+    }
+
+    TextMetrics {
+        id: authorColMetrics
+        font.pixelSize: Style.appFont.mediumPt
+    }
+
+    TextMetrics {
+        id: messageColMetrics
+        font.family: Style.fontTypes.inter
+        font.pixelSize: Style.appFont.smallPt
+    }
+
+    TextMetrics {
+        id: dateColMetrics
+        font.pixelSize: Style.appFont.smallPt
+    }
+
     Rectangle {
+        id: commitGraphBody
         anchors.fill: parent
         color: Style.colors.primaryBackground
+
+        // Full-height guide while a column divider is dragged
+        Rectangle {
+            visible: root.columnResizing && root.columnResizeGuideX >= 0
+            x: root.columnResizeGuideX - 1
+            width: 2
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            z: 200
+            color: Style.colors.accent
+            opacity: 0.55
+        }
 
         GuideHoverTrigger {
             guideController: root.guideController
@@ -179,81 +244,99 @@ DetachablePanel {
                     spacing: 0
 
                     ResizableColumnHeader {
+                        id: graphColHeader
                         Layout.preferredWidth: root.commitsColGraphWidth
                         label: "Graph"
-                        onResized: function(delta, startWidth) {
-                            var newWidth = Math.max(root.minColGraphWidth, startWidth + delta)
-                            var actualDelta = newWidth - root.commitsColGraphWidth
-                            var nextWidth = root.commitsColBranchTagWidth - actualDelta
-                            if (nextWidth < root.minColBranchTagWidth) {
-                                nextWidth = root.minColBranchTagWidth
-                                newWidth = root.commitsColGraphWidth + (root.commitsColBranchTagWidth - root.minColBranchTagWidth)
-                            }
-                            root.commitsColGraphWidth = newWidth
-                            root.commitsColBranchTagWidth = nextWidth
+                        contentPadding: root.commitsColPad
+                        property real messageStart: 0
+                        onResizeStarted: {
+                            messageStart = root.commitsColMessageWidth
+                            root.beginColumnResize(graphColHeader)
                         }
+                        onResized: function(delta, startWidth) {
+                            root.graphWidthUserAdjusted = true
+                            root.commitsColGraphWidth = root.clampedFlexResize(
+                                        startWidth, delta,
+                                        root.minColGraphWidth,
+                                        messageStart - root.minColMessageWidth)
+                            root.updateColumnResizeGuide(graphColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onAutoFitRequested: root.autoFitGraphColumn()
                     }
 
                     ResizableColumnHeader {
+                        id: branchColHeader
                         Layout.preferredWidth: root.commitsColBranchTagWidth
                         label: "Branch/Tag"
-                        onResized: function(delta, startWidth) {
-                            var newWidth = Math.max(root.minColBranchTagWidth, startWidth + delta)
-                            var actualDelta = newWidth - root.commitsColBranchTagWidth
-                            var nextWidth = root.commitsColMessageWidth - actualDelta
-                            if (nextWidth < root.minColMessageWidth) {
-                                nextWidth = root.minColMessageWidth
-                                newWidth = root.commitsColBranchTagWidth + (root.commitsColMessageWidth - root.minColMessageWidth)
-                            }
-                            root.commitsColBranchTagWidth = newWidth
-                            root.commitsColMessageWidth = nextWidth
+                        contentPadding: root.commitsColPad
+                        property real messageStart: 0
+                        onResizeStarted: {
+                            messageStart = root.commitsColMessageWidth
+                            root.beginColumnResize(branchColHeader)
                         }
+                        onResized: function(delta, startWidth) {
+                            root.commitsColBranchTagWidth = root.clampedFlexResize(
+                                        startWidth, delta,
+                                        root.minColBranchTagWidth,
+                                        messageStart - root.minColMessageWidth)
+                            root.updateColumnResizeGuide(branchColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onAutoFitRequested: root.autoFitBranchTagColumn()
                     }
 
                     ResizableColumnHeader {
-                        Layout.preferredWidth: root.commitsColMessageWidth
+                        id: messageColHeader
+                        Layout.preferredWidth: root.minColMessageWidth
+                        Layout.minimumWidth: root.minColMessageWidth
+                        fillWidth: true
                         label: "Message"
-                        onResized: function(delta, startWidth) {
-                            var newWidth = Math.max(root.minColMessageWidth, startWidth + delta)
-                            var actualDelta = newWidth - root.commitsColMessageWidth
-                            var nextWidth = root.commitsColAuthorWidth - actualDelta
-                            if (nextWidth < root.minColAuthorWidth) {
-                                nextWidth = root.minColAuthorWidth
-                                newWidth = root.commitsColMessageWidth + (root.commitsColAuthorWidth - root.minColAuthorWidth)
-                            }
-                            root.commitsColMessageWidth = newWidth
-                            root.commitsColAuthorWidth = nextWidth
+                        contentPadding: root.commitsColPad
+                        property real neighborStart: 0
+                        onResizeStarted: {
+                            neighborStart = root.commitsColAuthorWidth
+                            root.beginColumnResize(messageColHeader)
                         }
+                        onResized: function(delta, startWidth) {
+                            // Message is the flex column; dragging its right edge trades with Author.
+                            root.commitsColAuthorWidth = root.clampedPairResize(
+                                        neighborStart, -delta,
+                                        root.minColAuthorWidth,
+                                        startWidth - root.minColMessageWidth)
+                            root.updateColumnResizeGuide(messageColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onAutoFitRequested: root.autoFitMessageColumn()
                     }
 
                     ResizableColumnHeader {
+                        id: authorColHeader
                         Layout.preferredWidth: root.commitsColAuthorWidth
                         label: "Author"
-                        onResized: function(delta, startWidth) {
-                            var newWidth = Math.max(root.minColAuthorWidth, startWidth + delta)
-                            var actualDelta = newWidth - root.commitsColAuthorWidth
-                            var nextWidth = root.commitsColDateWidth - actualDelta
-                            if (nextWidth < root.minColDateWidth) {
-                                nextWidth = root.minColDateWidth
-                                newWidth = root.commitsColAuthorWidth + (root.commitsColDateWidth - root.minColDateWidth)
-                            }
-                            root.commitsColAuthorWidth = newWidth
-                            root.commitsColDateWidth = nextWidth
+                        contentPadding: root.commitsColPad
+                        property real neighborStart: 0
+                        onResizeStarted: {
+                            neighborStart = root.commitsColDateWidth
+                            root.beginColumnResize(authorColHeader)
                         }
+                        onResized: function(delta, startWidth) {
+                            var pair = root.clampedTradeResize(
+                                        startWidth, neighborStart, delta,
+                                        root.minColAuthorWidth, root.minColDateWidth)
+                            root.commitsColAuthorWidth = pair.left
+                            root.commitsColDateWidth = pair.right
+                            root.updateColumnResizeGuide(authorColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onAutoFitRequested: root.autoFitAuthorColumn()
                     }
 
-                    Rectangle {
+                    ResizableColumnHeader {
                         Layout.preferredWidth: root.commitsColDateWidth
-                        Layout.fillHeight: true
-                        color: Style.colors.primaryBackground
-                        Label {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Date"
-                            color: Style.colors.foreground
-                            font.pixelSize: Style.appFont.defaultPt
-                            font.bold: true
-                        }
+                        label: "Date"
+                        contentPadding: root.commitsColPad
+                        resizable: false
                     }
                 }
             }
@@ -602,6 +685,235 @@ DetachablePanel {
 
     /* Functions
      * ****************************************************************************************/
+    //! Resize a column that steals/returns space from the flex Message column.
+    //! spareRoom is how many px Message can still give up (messageWidth - minMessage).
+    function clampedFlexResize(startWidth, delta, minWidth, spareRoom) {
+        var maxWidth = startWidth + Math.max(0, spareRoom)
+        return Math.round(Math.max(minWidth, Math.min(maxWidth, startWidth + delta)))
+    }
+
+    //! Resize one side of a pair from its own drag-start baseline (used when Message
+    //! trades with Author: only Author's stored width changes; Message fills the rest).
+    function clampedPairResize(startWidth, delta, minWidth, spareRoom) {
+        return root.clampedFlexResize(startWidth, delta, minWidth, spareRoom)
+    }
+
+    //! Trade width between two fixed columns from both drag-start baselines.
+    function clampedTradeResize(startLeft, startRight, delta, minLeft, minRight) {
+        var newLeft = Math.max(minLeft, startLeft + delta)
+        var newRight = startRight - (newLeft - startLeft)
+        if (newRight < minRight) {
+            newRight = minRight
+            newLeft = startLeft + (startRight - minRight)
+            if (newLeft < minLeft) {
+                newLeft = minLeft
+                newRight = startLeft + startRight - minLeft
+            }
+        }
+        return { left: Math.round(newLeft), right: Math.round(newRight) }
+    }
+
+    //! Keep fixed columns from overflowing a narrow dock; Message stays at least min width.
+    function ensureColumnsFit() {
+        var available = root.commitsColContentWidth
+        if (available <= 0)
+            return
+
+        var deficit = root.commitsColFixedWidth + root.minColMessageWidth - available
+        if (deficit <= 0)
+            return
+
+        function take(propName, minWidth) {
+            if (deficit <= 0)
+                return
+            var current = root[propName]
+            var room = Math.max(0, current - minWidth)
+            var cut = Math.min(room, deficit)
+            if (cut > 0) {
+                root[propName] = current - cut
+                deficit -= cut
+            }
+        }
+
+        take("commitsColDateWidth", root.minColDateWidth)
+        take("commitsColAuthorWidth", root.minColAuthorWidth)
+        take("commitsColBranchTagWidth", root.minColBranchTagWidth)
+        take("commitsColGraphWidth", root.minColGraphWidth)
+    }
+
+    function beginColumnResize(headerItem) {
+        root.columnResizing = true
+        root.updateColumnResizeGuide(headerItem)
+    }
+
+    function updateColumnResizeGuide(headerItem) {
+        if (!headerItem || !commitGraphBody)
+            return
+        root.columnResizeGuideX = headerItem.mapToItem(commitGraphBody, headerItem.width, 0).x
+    }
+
+    function endColumnResize() {
+        root.columnResizing = false
+        root.columnResizeGuideX = -1
+    }
+
+    function maxGraphLaneColumn() {
+        var maxCol = 0
+        var rows = root.graphRows || []
+        for (var i = 0; i < rows.length; ++i) {
+            var row = rows[i]
+            if (row && row.column > maxCol)
+                maxCol = row.column
+        }
+        return maxCol
+    }
+
+    //! Leave room for the rightmost node plus a little padding before Branch/Tag.
+    function preferredGraphWidth() {
+        var fitted = root.columnSpacing * (root.maxGraphLaneColumn() + 1)
+                      + Math.ceil(root.commitItemHeight / 2) + 12
+        headerColMetrics.text = "Graph"
+        fitted = Math.max(fitted, Math.ceil(headerColMetrics.width + root.commitsColPad * 2))
+        return Math.max(root.minColGraphWidth, fitted)
+    }
+
+    function autoFitGraphWidth() {
+        if (root.graphWidthUserAdjusted)
+            return
+        root.commitsColGraphWidth = root.preferredGraphWidth()
+        root.ensureColumnsFit()
+    }
+
+    function flexRoomFor(excludeProp) {
+        var used = root.commitsColGraphWidth
+                 + root.commitsColBranchTagWidth
+                 + root.commitsColAuthorWidth
+                 + root.commitsColDateWidth
+                 - (root[excludeProp] || 0)
+        return Math.max(root.minColMessageWidth,
+                        root.commitsColContentWidth - used) - root.minColMessageWidth
+    }
+
+    function measureRefWidth(ref) {
+        if (!ref)
+            return 0
+        branchTagMetrics.text = ref.text || ""
+        var width = branchTagMetrics.width + 8
+        if (ref.isTag)
+            width += 14
+        return Math.max(ref.isTag ? 44 : 26, width)
+    }
+
+    function preferredBranchTagWidth() {
+        var maxContent = 0
+        var rows = root.graphRows || []
+        for (var i = 0; i < rows.length; ++i) {
+            var refs = rows[i] && rows[i].refs ? rows[i].refs : []
+            if (!refs.length)
+                continue
+            var rowWidth = 0
+            for (var j = 0; j < refs.length; ++j) {
+                if (j > 0)
+                    rowWidth += 8
+                rowWidth += root.measureRefWidth(refs[j])
+            }
+            if (rowWidth > maxContent)
+                maxContent = rowWidth
+        }
+
+        headerColMetrics.text = "Branch/Tag"
+        var fitted = Math.ceil(Math.max(maxContent, headerColMetrics.width) + root.commitsColPad * 2)
+        var maxAllowed = root.minColBranchTagWidth + root.flexRoomFor("commitsColBranchTagWidth")
+        return Math.round(Math.max(root.minColBranchTagWidth, Math.min(fitted, maxAllowed, 420)))
+    }
+
+    function preferredAuthorWidth() {
+        var maxContent = 0
+        var items = root.commits || []
+        for (var i = 0; i < items.length; ++i) {
+            authorColMetrics.text = items[i] && items[i].author ? items[i].author : ""
+            if (authorColMetrics.width > maxContent)
+                maxContent = authorColMetrics.width
+        }
+        headerColMetrics.text = "Author"
+        var fitted = Math.ceil(Math.max(maxContent, headerColMetrics.width) + root.commitsColPad * 2)
+        var pairBudget = root.commitsColAuthorWidth + root.commitsColDateWidth - root.minColDateWidth
+        return Math.round(Math.max(root.minColAuthorWidth, Math.min(fitted, pairBudget, 280)))
+    }
+
+    function preferredDateWidth() {
+        var maxContent = 0
+        var items = root.commits || []
+        for (var i = 0; i < items.length; ++i) {
+            if (!items[i] || items[i].authorDate === undefined || items[i].authorDate === null)
+                continue
+            dateColMetrics.text = GraphUtils.formatDate(items[i].authorDate) + " "
+                                  + GraphUtils.formatTime(items[i].authorDate)
+            if (dateColMetrics.width > maxContent)
+                maxContent = dateColMetrics.width
+        }
+        headerColMetrics.text = "Date"
+        var fitted = Math.ceil(Math.max(maxContent, headerColMetrics.width) + root.commitsColPad * 2)
+        return Math.round(Math.max(root.minColDateWidth, Math.min(fitted, 200)))
+    }
+
+    function preferredMessageWidth() {
+        var maxContent = 0
+        var items = root.commits || []
+        for (var i = 0; i < items.length; ++i) {
+            messageColMetrics.text = items[i] && items[i].summary ? items[i].summary : ""
+            if (messageColMetrics.width > maxContent)
+                maxContent = messageColMetrics.width
+        }
+        // color bar + margins roughly match the row chrome
+        var fitted = Math.ceil(maxContent + root.commitsColPad + 3 + 6 + 8)
+        headerColMetrics.text = "Message"
+        fitted = Math.max(fitted, Math.ceil(headerColMetrics.width + root.commitsColPad * 2))
+        return Math.max(root.minColMessageWidth, fitted)
+    }
+
+    function autoFitGraphColumn() {
+        root.graphWidthUserAdjusted = false
+        root.commitsColGraphWidth = root.preferredGraphWidth()
+        root.ensureColumnsFit()
+    }
+
+    function autoFitBranchTagColumn() {
+        root.commitsColBranchTagWidth = root.preferredBranchTagWidth()
+        root.ensureColumnsFit()
+    }
+
+    function autoFitMessageColumn() {
+        // Excel fits the column left of the divider: grow/shrink Author so Message matches content.
+        var idealMessage = root.preferredMessageWidth()
+        var fixedWithoutAuthor = root.commitsColGraphWidth
+                               + root.commitsColBranchTagWidth
+                               + root.commitsColDateWidth
+        var maxMessage = Math.max(root.minColMessageWidth,
+                                  root.commitsColContentWidth - fixedWithoutAuthor - root.minColAuthorWidth)
+        var targetMessage = Math.min(idealMessage, maxMessage)
+        root.commitsColAuthorWidth = Math.round(Math.max(
+                    root.minColAuthorWidth,
+                    root.commitsColContentWidth - fixedWithoutAuthor - targetMessage))
+        root.ensureColumnsFit()
+    }
+
+    function autoFitAuthorColumn() {
+        var fittedAuthor = root.preferredAuthorWidth()
+        var fittedDate = root.preferredDateWidth()
+        var pairTotal = root.commitsColAuthorWidth + root.commitsColDateWidth
+        // Keep the Author|Date pair budget stable; prefer content-fit author then give rest to date.
+        var author = Math.min(fittedAuthor, pairTotal - root.minColDateWidth)
+        var date = Math.max(root.minColDateWidth, pairTotal - author)
+        if (date > fittedDate && author < fittedAuthor) {
+            date = Math.max(root.minColDateWidth, Math.min(fittedDate, pairTotal - root.minColAuthorWidth))
+            author = pairTotal - date
+        }
+        root.commitsColAuthorWidth = Math.round(author)
+        root.commitsColDateWidth = Math.round(date)
+        root.ensureColumnsFit()
+    }
+
     function emptyStateDetailsText() {
         if (!root.allCommits || root.allCommits.length === 0)
             return "This repository has no commits."
