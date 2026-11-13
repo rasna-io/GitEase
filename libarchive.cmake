@@ -17,6 +17,19 @@ if (APPLE)
     target_link_libraries(libarchive INTERFACE z bz2 lzma iconv xml2)
 
     message(STATUS "libarchive lib : ${LIBARCHIVE_LIB}")
+elseif (UNIX)
+    # Built statically by Ext/libarchive/build-linux.sh (PIC, LZ4/ZSTD/LZO
+    # disabled), so no runtime deployment is needed.
+    set(LIBARCHIVE_LIB "${LIBARCHIVE_ROOT}/lib/Linux/libarchive.a")
+
+    add_library(libarchive STATIC IMPORTED GLOBAL)
+    set_target_properties(libarchive PROPERTIES
+        IMPORTED_LOCATION             "${LIBARCHIVE_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "${LIBARCHIVE_ROOT}/include"
+    )
+    target_link_libraries(libarchive INTERFACE z bz2 lzma xml2)
+
+    message(STATUS "libarchive lib : ${LIBARCHIVE_LIB}")
 else()
     set(LIBARCHIVE_DLL "${LIBARCHIVE_ROOT}/bin/archive.dll")
     set(LIBARCHIVE_LIB "${LIBARCHIVE_ROOT}/lib/archive.lib")
