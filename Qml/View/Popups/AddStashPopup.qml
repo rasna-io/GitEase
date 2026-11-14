@@ -20,6 +20,7 @@ IWindow {
     property NotificationController  notificationController:  null
     property StatusController        statusController:        null
     property TextDirectionController textDirectionController: null
+    property IdentityGuard           identityGuard:           null
 
     property var    stashFiles:       []
     property var    stashDiffData:    []
