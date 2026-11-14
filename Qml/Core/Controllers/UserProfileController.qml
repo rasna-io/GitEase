@@ -34,11 +34,37 @@ QtObject {
 
         loadGitConfigProfiles()
 
-        let localProfile = root.appModel.userProfiles.find(p => p.levels.includes(Config.Local))
-        if(localProfile){
-            root.appModel.currentUserProfile = localProfile
+        refreshIdentity()
+    }
+
+    /**
+     * Asks git who it will commit as and points currentUserProfile at that user.
+     * Returns the new identity.
+     */
+    function refreshIdentity() {
+        const result = root.configController.resolveIdentity()
+        const data = result.data ?? {}
+
+        root.identity = {
+            found:      result.success,
+            name:       data.name ?? "",
+            email:      data.email ?? "",
+            level:      data.level ?? -1,
+            blankLevel: data.blankLevel ?? -1,
+            reason:     result.success ? "" : (result.errorMessage ?? "")
         }
 
+        root.appModel.currentUserProfile = result.success ? findProfileByKey(data.name, data.email)
+                                                          : null
+        return root.identity
+    }
+
+    function refreshFromGit() {
+        const before = JSON.stringify(root.identity)
+        root.refreshIdentity()
+
+        if (JSON.stringify(root.identity) !== before)
+            root.loadAllProfiles()
     }
 
     function loadGitConfigProfiles() {
