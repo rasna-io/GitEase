@@ -410,6 +410,10 @@ GitResult GitRebase::skipOp()
         return GitResult(false, QVariant(), "No rebase is in progress.");
     }
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     if (repositoryHasConflicts()) {
         GitResult resetResult = resetWorktreeToHead();
         if (!resetResult.success()) {
