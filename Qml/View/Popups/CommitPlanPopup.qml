@@ -776,6 +776,9 @@ IWindow {
         if (root.currentRebaseState === rebaseState.running)
             return;
 
+        if (!root.identityGuard.check("rebase", root.beginRebase))
+            return;
+
         // TODO(GE-xxx): drop this once GitRebase applies reword and squash. Until then those rows
         // replay unchanged, and saying so is better than letting the plan quietly not happen.
         let unsupported = 0
