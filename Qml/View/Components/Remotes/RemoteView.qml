@@ -41,7 +41,7 @@ UtilitiesCard {
     property var activeFetchRemotes: []
     property string authPurpose: "fetch" // "fetch" | "pull"
 
-    property Remote remote: null
+    property var remote: null
 
     property var remoteList: []
 
@@ -217,7 +217,7 @@ UtilitiesCard {
                     id: remoteRow
 
                     property Item fetchButton: fetchBtn
-                    property Remote currentRemote: modelData
+                    property var currentRemote: modelData
 
                     readonly property bool isDefault: root.remoteOperationsSession !== null
                                                       && currentRemote.name === root.remoteOperationsSession.defaultRemote
