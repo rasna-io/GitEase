@@ -513,12 +513,13 @@ GitResult GitRebase::runRebase(git_rebase* rebase,
         return GitResult(false, QVariant(), "Invalid rebase state.");
     }
 
-    git_signature* signature = nullptr;
-    int result = git_signature_default(&signature, activeRepo());
-    if (result != GIT_OK || !signature) {
-        return GitResult(false, QVariant(),
-                         "Failed to load Git user identity (user.name / user.email).");
+    QString identityReason;
+    git_signature* signature = defaultSignature(activeRepo(), &identityReason);
+    if (!signature) {
+        return identityMissingResult(identityReason);
     }
+
+    int result = GIT_OK;
 
     QVariantList rebasedCommits;
     QVariantList skippedCommitList;
