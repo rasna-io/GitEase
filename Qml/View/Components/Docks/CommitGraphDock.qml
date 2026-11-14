@@ -1790,6 +1790,15 @@ DetachablePanel {
         var hashes  = selectedCommitHashesInOrder();
         var res     = cherryPickController.cherryPickCommits(hashes);
 
+        if (root.identityGuard.handle(res, "cherry-pick", function() { root.cherryPickCommits(hashes) }))
+            return;
+
+        handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
+    }
+
+    //! Picks exactly these commits again, e.g. after "Who is making this commit?" was answered.
+    function cherryPickCommits(hashes) {
+        var res = cherryPickController.cherryPickCommits(hashes);
         handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
     }
 
