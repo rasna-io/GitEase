@@ -303,8 +303,13 @@ Page {
                                         text: "Commit & Push",
                                         icon: Style.icons.arrowUp,
                                         action: function() {
-                                            if (!root.commitAndUpdate()) return
-                                            root.pushAndUpdate()
+                                            const commitAndPush = function() {
+                                                if (!root.commitAndUpdate()) 
+                                                    return
+                                                root.pushAndUpdate()
+                                            }
+                                            if (root.identityGuard.check("commit", commitAndPush))
+                                                commitAndPush()
                                         }
                                     })
                                 }
