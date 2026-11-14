@@ -78,6 +78,19 @@ public:
 
     //! GitResult::errorCode() of an action refused because git has no name and email to use.
     static const QString IdentityMissing;
+
+    /**
+     * @brief The name and email git uses for new commits in @p repo.
+     *
+     * Read the way git reads them: the repository's own config, then the global one, then the
+     * system one. Returns nullptr when git has no usable name and email, because GitEase never
+     * makes one up. Free the result with git_signature_free().
+     *
+     * @param reason Set when nullptr is returned: empty when nothing is set, otherwise git's
+     *               reason for not accepting what is set (an empty name, for example).
+     */
+    static git_signature *defaultSignature(git_repository *repo, QString *reason = nullptr);
+
     /**
      * @brief The result for an action that needs a name and email git does not have.
      *
@@ -86,6 +99,9 @@ public:
      */
     static GitResult identityMissingResult(const QString &reason = QString(),
                                            const QVariant &data = QVariant());
+
+    //! Whether git has a usable name and email for @p repo (see defaultSignature()).
+    static bool hasIdentity(git_repository *repo, QString *reason = nullptr);
 
     /**
      * @brief Binds activeRepo() to one handle for as long as it exists, on this thread only.
