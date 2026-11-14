@@ -7,6 +7,7 @@
 class Commit
 {
     Q_GADGET
+    QML_ANONYMOUS
 
     Q_PROPERTY(QString message READ message CONSTANT FINAL)
     Q_PROPERTY(QString hash READ hash CONSTANT FINAL)
