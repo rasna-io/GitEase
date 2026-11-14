@@ -42,6 +42,19 @@ public:
     Q_INVOKABLE GitResult setConfig(int level, const QString &name, const QString &email);
 
     /**
+     * \brief Who git will commit as: the same name and email a commit made now would get.
+     *
+     * Read the way git reads them: the open repository's config first, then the global one,
+     * then the system one. With no repository open, only the global and system configs count.
+     *
+     * \return On success, data holds name, email and level (the Config level the values come
+     *         from; with a name and email from different levels, the more specific one).
+     *         When git has no usable name and email, success is false, errorCode is
+     *         "identityMissing", and data still holds whatever is set.
+     */
+    Q_INVOKABLE GitResult resolveIdentity();
+
+    /**
      * \brief Get user name from a specific config level
      * \param level Config level
      * \return GitResult with QString value
