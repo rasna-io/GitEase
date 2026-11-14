@@ -54,6 +54,8 @@ Page {
 
     property GitTreeController       gitTreeController:       null
 
+    property IdentityGuard           identityGuard:           null
+
     // Remote actions (Pull / Push / Fetch) are owned by the shared RemoteOperationsSession so
     property RemoteOperationsSession remoteOperationsSession:              null
     property bool                    isFetching:             remoteOperationsSession ? remoteOperationsSession.isFetching : false
@@ -109,6 +111,7 @@ Page {
 
         commitController        : root.commitController
         notificationController  : root.notificationController
+        identityGuard           : root.identityGuard
         changeCommitMessage     : changesFileLists.stagedModel.length == 0
 
         onAmendSuccessful: {
@@ -445,6 +448,7 @@ Page {
                     statusController: root.statusController
                     notificationController: root.notificationController
                     stashController: root.stashController
+                    identityGuard: root.identityGuard
                     currentFile: root.selectedFilePath
                     showSaveDialog: root.showSaveDialog
 
