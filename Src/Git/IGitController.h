@@ -76,6 +76,17 @@ public:
      */
     static QString workdirOf(git_repository *repo);
 
+    //! GitResult::errorCode() of an action refused because git has no name and email to use.
+    static const QString IdentityMissing;
+    /**
+     * @brief The result for an action that needs a name and email git does not have.
+     *
+     * Its errorCode is IdentityMissing; the UI then asks who is committing and runs the action
+     * again. Return it before anything in the repository has changed.
+     */
+    static GitResult identityMissingResult(const QString &reason = QString(),
+                                           const QVariant &data = QVariant());
+
     /**
      * @brief Binds activeRepo() to one handle for as long as it exists, on this thread only.
      *
