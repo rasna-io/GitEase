@@ -280,10 +280,12 @@ Item {
             }
 
             onStashAllRequested: function() {
-                root.showSaveDialog(
-                            () => {
+                const stashUnstaged = () => {
                                 let message = "Stash unstaged changes"
                                 let result = stashController.save(message, false);
+
+                                if (root.identityGuard.handle(result, "stash", stashUnstaged))
+                                    return
 
                                 if (result.success) {
                                     root.notificationController.success("Changes stashed successfully", "Stash", 3000)
@@ -293,7 +295,7 @@ Item {
                                     errorMessageLabel.text = result.errorMessage ?? "Stash failed";
                                 }
                             }
-                )
+                root.showSaveDialog(stashUnstaged)
             }
 
             onFileSelected: function(filePath, fileStatus) {
