@@ -379,14 +379,9 @@ QtObject {
 
         root.appModel.userProfiles = root.appModel.userProfiles.slice(0, idx).concat(root.appModel.userProfiles.slice(idx + 1))
 
-        let localProfile = root.appModel.userProfiles.find(p => p.levels.includes(Config.Local))
-        if(localProfile){
-            root.appModel.currentUserProfile = localProfile
-        }
-
-
         root.appModel.save()
-        
+        root.loadAllProfiles()
+
         if (notificationController) {
             notificationController.success("User profile '" + username + "' deleted successfully", "Profile", 3000)
         }
