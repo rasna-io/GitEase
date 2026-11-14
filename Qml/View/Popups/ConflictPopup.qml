@@ -855,6 +855,9 @@ IWindow {
 
         let res = currentController.continueOp()
 
+        if (root.identityGuard.handle(res, "continue", root.continueOperation))
+            return
+
         if (res.success) {
             notificationController.success(`${currentOperationName} completed`, currentOperationName, 2500)
             operationCompleted()
