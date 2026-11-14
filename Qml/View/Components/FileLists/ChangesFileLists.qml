@@ -262,6 +262,8 @@ Item {
             }
 
             onDiscardAllRequested: function() {
+                root.changesAborted()
+
                 let res = statusController.revertAll()
                 if (res.success) {
                     root.notificationController.success("All changes discarded successfully", "Discard All", 3000)
@@ -333,6 +335,16 @@ Item {
      * ****************************************************************************************/
     function updateStatus() {
         statusCoalesceTimer.restart()
+    }
+
+    //! Highlights currentFile again, e.g. after switching to another file was cancelled.
+    function selectCurrentFile(isStaged) {
+        unstagedSection.selectedFilePath = isStaged ? "" : root.currentFile
+        stagedSection.selectedFilePath   = isStaged ? root.currentFile : ""
+
+        const file = root.unstagedModel.find(entry => entry.path === root.currentFile)
+        if (!isStaged && file)
+            root.currentFileStatus = file.unstagedStatus ? file.unstagedStatus : GitFileStatus.Unknown
     }
 
     function confirmConflictStaging(paths, stageAction, stagingAll = false) {

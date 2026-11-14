@@ -234,7 +234,6 @@ set(RESOURCES_COMPONENTS
 
     # Pages Components
     Qml/View/Components/Pages/CommittingPage/CommittingPageHeader.qml
-    Qml/View/Components/Pages/CommittingPage/UnsavedChangesDialog.qml
     Qml/View/Components/Pages/PluginsPage/PluginsPageHeader.qml
     Qml/View/Components/Pages/PluginsPage/PluginsLeftPanel.qml
     Qml/View/Components/Pages/PluginsPage/PluginDetailView.qml

@@ -60,9 +60,12 @@ Page {
     property var                     activeFetchRemotes:     remoteOperationsSession ? remoteOperationsSession.activeFetchRemotes : []
     property var                     pendingFetchRemoteNames: remoteOperationsSession ? remoteOperationsSession.pendingFetchRemoteNames : []
     property var                     fetchBatchResults:      remoteOperationsSession ? remoteOperationsSession.fetchBatchResults : []
-    property bool                    currentFileEdited: false
+    readonly property bool           currentFileEdited:       diffView.fileIsEdited
 
     property string                  selectedFilePath:        ""
+    property bool                    selectedFileIsStaged:    false
+
+    property var                     changesDialog:           null
 
     // Exposed to MainWindow's header area (see MainWindow.qml)
     headerContent: CommittingPageHeader {
@@ -85,20 +88,7 @@ Page {
 
     Component.onCompleted: {
         root.onPageChange = function(callback) {
-            if (!root.currentFileEdited) {
-                callback(true)
-                return
-            }
-            var d = unsavedChangesDialogComp.createObject(root)
-            d.title = "Unsaved Changes"
-            d.message = "You have unsaved changes in: " + root.selectedFilePath
-            d.saved.connect(() => {
-                root.saveFile()
-                callback(true)
-            })
-            d.aborted.connect(() => { callback(true) })
-            d.cancelled.connect(() => { callback(false) })
-            d.open()
+            root.showSaveDialog(() => callback(true), { cancelled: () => callback(false) })
         }
     }
 
@@ -459,10 +449,13 @@ Page {
                     showSaveDialog: root.showSaveDialog
 
                     onFileSelected: function(filePath, isStaged) {
-                        if (filePath === root.selectedFilePath)
+                        if (filePath === root.selectedFilePath && isStaged === root.selectedFileIsStaged)
                         {
-                            root.selectedFilePath = filePath
-                            root.updateDiff(isStaged)
+                            // A refresh would replace the unsaved edits, so with edits the user decides
+                            if (!root.currentFileEdited)
+                                root.updateDiff(isStaged)
+                            else
+                                root.askAboutExternalChange()
                             return
                         }
 
@@ -470,12 +463,15 @@ Page {
                                     () => {
                                         root.selectedFilePath = filePath
                                         root.updateDiff(isStaged)
+                                    },
+                                    {
+                                        cancelled: () => changesFileLists.selectCurrentFile(root.selectedFileIsStaged)
                                     }
                         )
                     }
 
                     onChangesAborted: {
-                        root.currentFileEdited = false
+                        diffView.discardEdits()
                     }
                 }
             }
@@ -514,6 +510,7 @@ Page {
             contextLines: 0
             expandLines: 10
             selectedFileStatus: changesFileLists.currentFileStatus
+            showSaveDialog: root.showSaveDialog
 
             guideController: root.guideController
             currentRepositoryName: root.appModel.currentRepository.name || ""
@@ -554,10 +551,6 @@ Page {
                 )
             }
 
-            onFileEdited: function (isEdited) {
-                root.currentFileEdited = isEdited
-            }
-
             onRequestStash: function (start, end, type) {
                 if (changesFileLists.listsBusy) {
                     return
@@ -576,7 +569,7 @@ Page {
 
     Component {
         id: unsavedChangesDialogComp
-        UnsavedChangesDialog { }
+        ConflictConfirmationDialog { }
     }
 
     Shortcut {
@@ -584,19 +577,8 @@ Page {
         context: Qt.ApplicationShortcut
 
         onActivated: {
-            if (diffView.prefersImageViewer(root.selectedFilePath))
-                return
-
-            let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
-
-            if (res.success) {
-                root.currentFileEdited = false
-                root.notificationController.success("File saved successfully", "Save", 3000)
-            } else {
-                root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
-            }
-
-            changesFileLists.updateStatus()
+            if (root.currentFileEdited)
+                root.saveFile()
         }
     }
 
@@ -676,6 +658,8 @@ Page {
     }
 
     function updateDiff(isStaged) {
+        root.selectedFileIsStaged = isStaged
+
         diffView.repositoryPath = root.appModel?.currentRepository?.path ?? ""
         diffView.imageSource = isStaged ? "index" : "workdir"
         diffView.imageOldRevision = "HEAD"
@@ -688,7 +672,6 @@ Page {
             diffView.editedFileBuffer = []
             diffView.selectedFile = root.selectedFilePath
             diffView.readOnly = isStaged
-            root.currentFileEdited = false
             return
         }
 
@@ -701,14 +684,7 @@ Page {
         if (res.success)
             diffView.diffData = res.data.lines
 
-        let fileRows = []
-        for(var i =0;i<res.data.lines.length;i++)
-        {
-            let line = res.data.lines[i]
-            let right   = (line.type === GitDiff.Deleted)   ? "" :
-                          (line.type === GitDiff.Modified   ? line.newContent : line.content)
-            fileRows.push(right)
-        }
+        let fileRows = root.rightSideRows(res.data.lines)
 
         diffView.selectedFile = root.selectedFilePath
         diffView.originalFileBuffer = fileRows.slice()
@@ -719,47 +695,135 @@ Page {
         Qt.callLater(() => { diffView.scrollPosition = oldY })
     }
 
-    function showSaveDialog(nextAction) {
+    function showSaveDialog(nextAction, options = {}) {
         if (!root.currentFileEdited) {
             nextAction()
             return
         }
 
-        let d = unsavedChangesDialogComp.createObject(root)
+        const cancelled = options.cancelled ?? (() => {})
 
-        d.title = "Unsaved Changes"
-        d.message = "You have unsaved changes in: " + root.selectedFilePath
+        if (root.changesDialog) {
+            cancelled()
+            return
+        }
+
+        const d = unsavedChangesDialogComp.createObject(root)
+
+        d.title         = "Unsaved Changes"
+        d.messageFormat = Text.RichText
+        d.message       = `You have unsaved changes in ${root.selectedPathMarkup()}.<br><br>` +
+                          "Save them before you continue?"
+
+        d.hasSave           = true
+        d.saveTitle         = "Save"
+        d.saveDescription   = "Write the changes to the file, then continue"
+        d.acceptTitle       = "Discard"
+        d.acceptDescription = "Throw the changes away, then continue"
+        d.cancelTitle       = "Cancel"
+        d.cancelDescription = "Stay here and keep the changes in the editor"
 
         d.saved.connect(() => {
-            root.saveFile()
-            d.destroy()
-            nextAction()
+            if (root.saveFile())
+                nextAction()
+            else
+                cancelled()
         })
 
         d.aborted.connect(() => {
-            d.destroy()
+            diffView.discardEdits()
             nextAction()
         })
 
-        d.cancelled.connect(() => {
-            d.destroy()
-        })
+        d.cancelled.connect(cancelled)
 
-        d.open()
+        root.showChangesDialog(d)
     }
 
-    function saveFile() {
+    function showChangesDialog(d) {
+        root.changesDialog = d
+        diffView.openPopup(d)
+
+        const diffWindow = diffView.detached ? diffView.activeItem.Window.window : null
+        if (diffWindow) {
+            if (diffWindow.visibility === Window.Minimized)
+                diffWindow.showNormal()
+
+            diffWindow.raise()
+            diffWindow.requestActivate()
+        }
+    }
+
+    //! Writes the edited file to disk. Returns false, and keeps the edits, when that fails.
+    function saveFile() : bool {
         if (diffView.prefersImageViewer(root.selectedFilePath))
-            return
+            return true
 
         let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
 
-        if (res.success) {
-            root.currentFileEdited = false
-            root.notificationController.success("File saved successfully", "Save", 3000)
-        } else {
-            root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
+        if (!res.success) {
+            root.notificationController.error(res.errorMessage || "Failed to save changes to the file", "Save Error", 5000)
+            return false
         }
+
+        diffView.markSaved()
+        root.notificationController.success("File saved successfully", "Save", 3000)
+
+        root.updateDiff(root.selectedFileIsStaged)
+        changesFileLists.updateStatus()
+        return true
+    }
+
+    function askAboutExternalChange() {
+        if (root.changesDialog || root.selectedFileIsStaged
+                || diffView.prefersImageViewer(root.selectedFilePath))
+            return
+
+        const res = root.statusController.getDiffView(root.selectedFilePath, false)
+        if (!res.success)
+            return
+
+        const diskRows = root.rightSideRows(res.data.lines)
+        if (JSON.stringify(diskRows) === JSON.stringify(diffView.originalFileBuffer))
+            return
+
+        const d = unsavedChangesDialogComp.createObject(root)
+
+        d.title         = "File Changed on Disk"
+        d.messageFormat = Text.RichText
+        d.message       = `${root.selectedPathMarkup()} was changed outside GitEase.<br><br>` +
+                          "Reload it? Your unsaved changes will be lost. Ignore keeps them."
+
+        d.acceptTitle       = "Reload"
+        d.acceptDescription = "Load the file from disk and discard your unsaved changes"
+        d.cancelTitle       = "Ignore"
+        d.cancelDescription = "Keep your unsaved changes and ignore the change on disk"
+
+        d.aborted.connect(() => root.updateDiff(root.selectedFileIsStaged))
+
+        // The disk version becomes the one the edits are compared with, so it isn't asked about again
+        d.cancelled.connect(() => { diffView.originalFileBuffer = diskRows })
+
+        root.showChangesDialog(d)
+    }
+
+    //! The text of the right-hand side of each diff line: the file as the editor shows it.
+    function rightSideRows(lines) {
+        let rows = []
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i]
+            rows.push(line.type === GitDiff.Deleted  ? ""
+                    : line.type === GitDiff.Modified ? line.newContent
+                                                     : line.content)
+        }
+        return rows
+    }
+
+    function selectedPathMarkup() {
+        const escaped = root.selectedFilePath.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+
+        return `<span style="font-family:'${Style.fontTypes.jetBrainsMono}'; font-weight:600; ` +
+               `color:${Style.colors.popupTitleText}">${escaped}</span>`
     }
 
     function onPageActivated() {
