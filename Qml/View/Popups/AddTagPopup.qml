@@ -15,6 +15,7 @@ PopupDialog {
     /* Property Declarations */
     property TagController tagController: null
     property NotificationController notificationController: null
+    property IdentityGuard identityGuard: null
     property string targetHash: ""
     property string targetLabel: ""
     property bool pushAfterCreate: true
