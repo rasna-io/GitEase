@@ -275,9 +275,13 @@ GitResult GitCherryPick::createCommitFromPick(git_commit* pickedCommit)
         authorCopy = nullptr;
     }
 
-    git_signature* committer = nullptr;
-    if (git_signature_default(&committer, activeRepo()) != GIT_OK) {
-        git_signature_now(&committer, "CherryPick", "CherryPick@example.com");
+    git_signature* committer = defaultSignature(activeRepo());
+    if (!committer) {
+        git_signature_free(authorCopy);
+        git_tree_free(tree);
+        git_index_free(index);
+        git_commit_free(headCommit);
+        return identityMissingResult();
     }
 
     const char* message = git_commit_message(pickedCommit);
