@@ -480,6 +480,10 @@ GitResult GitCommit::revertCommit(const QString &commitHash)
         return GitResult(false, QVariant(), "Commit hash cannot be empty");
     }
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     // Convert commit hash to OID
     git_oid oid;
     int result = git_oid_fromstr(&oid, commitHash.toUtf8().constData());
