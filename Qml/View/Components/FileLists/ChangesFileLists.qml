@@ -22,6 +22,7 @@ Item {
     property NotificationController  notificationController:  null
     property StashController         stashController:         null
     property GuideController         guideController:         null
+    property IdentityGuard           identityGuard:           null
 
     property var unstagedModel: []
     property var stagedModel: []
