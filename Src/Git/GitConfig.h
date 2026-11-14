@@ -55,6 +55,15 @@ public:
     Q_INVOKABLE GitResult resolveIdentity();
 
     /**
+     * \brief Removes user.name and user.email from one config level.
+     *
+     * Unlike writing empty values, this lets git fall back to the next level again.
+     * Values that are not set count as removed.
+     * \param level Config level
+     */
+    Q_INVOKABLE GitResult unsetIdentity(int level);
+
+    /**
      * \brief Get user name from a specific config level
      * \param level Config level
      * \return GitResult with QString value
@@ -88,6 +97,9 @@ public:
 private:
     Config getConfigAtLevel(git_config *cfg, Config::ConfigLevel level);
     QString getConfigValue(git_config *cfg, const QString &key);
+
+    //! Opens the config file of one level for writing. Free both outputs on success.
+    GitResult openLevelConfig(Config::ConfigLevel level, git_config **root, git_config **levelCfg);
 
     QString configLevelFlag(Config::ConfigLevel level);
 };
