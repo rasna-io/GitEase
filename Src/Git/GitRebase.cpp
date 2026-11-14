@@ -283,6 +283,10 @@ GitResult GitRebase::startRebase(const QString& onto,
                          "A rebase is already in progress. Continue or abort it first.");
     }
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     QString originalBranch  = branch;
     bool hasBranch          = !branch.trimmed().isEmpty();
 
