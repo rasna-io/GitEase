@@ -257,7 +257,10 @@ GitResult GitCommit::commit(const QString& message,
     if (!author)
         return identityMissingResult();
 
+    git_tree* tree = createTreeFromStagedChanges();
+
     if (!tree) {
+        git_signature_free(author);
         return GitResult(false, QVariant(),
                          "Failed to create tree from staged changes.");
     }
