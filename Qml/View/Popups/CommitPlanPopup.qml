@@ -803,6 +803,12 @@ IWindow {
         var branch      = planData.branch   || "";
 
         var res = rebaseController.startInteractiveRebase(onto, upstream, branch, ops);
+
+        if (root.identityGuard.handle(res, "rebase", root.beginRebase)) {
+            root.currentRebaseState = rebaseState.idle;
+            return;
+        }
+
         if (!res.success) {
             root.currentRebaseState = rebaseState.failed;
             notificationController.error(res.errorMessage || "Rebased failed", "Rebase", 5000);
