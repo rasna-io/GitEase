@@ -44,6 +44,7 @@ DetachablePanel {
     property var                    pluginController        : null
     property GitTreeController      gitTreeController       : null
     property TextDirectionController textDirectionController : null
+    property IdentityGuard          identityGuard           : null
 
 
     property AddBranchPopup          addBranchPopup         : null
@@ -605,6 +606,7 @@ DetachablePanel {
         commitController        : root.commitController
         guideController         : root.guideController
         textDirectionController : root.textDirectionController
+        identityGuard           : root.identityGuard
         pluginManager           : root.pluginController?.pluginManager ?? null
         // onOperationCompleted    : reloadAll()        //TODO
     }
@@ -645,6 +647,7 @@ DetachablePanel {
         commitController        : root.commitController
         guideController         : root.guideController
         textDirectionController : root.textDirectionController
+        identityGuard           : root.identityGuard
         pluginManager           : root.pluginController?.pluginManager ?? null
         // onOperationCompleted    : reloadAll()        //TODO
     }
@@ -668,6 +671,7 @@ DetachablePanel {
         layoutController: root.layoutController
         guideController: root.guideController
         textDirectionController: root.textDirectionController
+        identityGuard: root.identityGuard
         pluginManager: root.pluginController?.pluginManager ?? null
         gitTree: root.gitTreeController
         repositoryPath: root.appModel?.currentRepository?.path ?? ""
