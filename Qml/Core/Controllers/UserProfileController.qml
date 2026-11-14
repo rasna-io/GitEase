@@ -206,6 +206,54 @@ QtObject {
         return userProfile
     }
 
+    //! Why git would refuse this name and email, or "" when they are fine.
+    function identityProblem(name, email) {
+        const trimmedName  = (name ?? "").trim()
+        const trimmedEmail = (email ?? "").trim()
+
+        if (trimmedName.length === 0)
+            return qsTr("Enter your full name.")
+        if (trimmedEmail.length === 0)
+            return qsTr("Enter your email address.")
+        if (/[<>\n]/.test(trimmedName) || /[<>\n]/.test(trimmedEmail))
+            return qsTr("The name and email can't contain < or >.")
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail))
+            return qsTr("Enter a valid email address.")
+
+        return ""
+    }
+
+    /**
+     * Saves a user in the list and writes it to git config: Config.Global for all repositories,
+     * Config.Local for the open repository only (Config.App keeps it in the list only).
+     * Returns "" on success, otherwise what went wrong.
+     */
+    function saveUser(name, email, level, avatarColor) {
+        const problem = root.identityProblem(name, email)
+        if (problem !== "")
+            return problem
+
+        const trimmedName  = name.trim()
+        const trimmedEmail = email.trim()
+
+        if (!root.createUserProfile(trimmedName, "", trimmedEmail, Config.App, avatarColor ?? ""))
+            return qsTr("The user couldn't be saved.")
+
+        if (level === Config.Global || level === Config.Local) {
+            const result = root.configController.setConfig(level, trimmedName, trimmedEmail)
+            if (!result.success) {
+                root.loadAllProfiles()
+                return result.errorMessage || qsTr("Git config couldn't be changed.")
+            }
+
+            if (level === Config.Global)
+                root.clearBlankRepositoryUser()
+        }
+
+        root.loadAllProfiles()
+        return ""
+    }
+
     /**
      * Older GitEase versions wrote empty values when a user was deleted. In the open repository
      * they hide the global user, so they are removed once there is a global user to fall back to.
