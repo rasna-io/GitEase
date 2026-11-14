@@ -888,6 +888,9 @@ IWindow {
 
         let res = currentController.skipOp()
 
+        if (root.identityGuard.handle(res, "skip", root.skipOperation))
+            return
+
         if (res.success) {
             notificationController.success("Commit skipped", currentOperationName, 2500)
             operationCompleted()
