@@ -636,6 +636,9 @@ Page {
         }
 
         let res = commitController.commit(commitTextArea.text, amend, false)
+        if (root.identityGuard.handle(res, amend ? "amend" : "commit", function() { root.commitAndUpdate(amend) }))
+            return false
+
         if (res.success) {
             commitTextArea.text = ""
             root.notificationController.success(`Commit ${amend ? "amended" : ""} successfully`, `Commit ${amend ? "Amend" : "" }`, 3000)
