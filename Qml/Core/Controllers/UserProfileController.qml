@@ -206,6 +206,18 @@ QtObject {
         return userProfile
     }
 
+    /**
+     * Older GitEase versions wrote empty values when a user was deleted. In the open repository
+     * they hide the global user, so they are removed once there is a global user to fall back to.
+     */
+    function clearBlankRepositoryUser() {
+        const resolved = root.configController.resolveIdentity()
+        const blankLevel = resolved.data?.blankLevel ?? -1
+
+        if (!resolved.success && (blankLevel === Config.Local || blankLevel === Config.Worktree))
+            root.configController.unsetIdentity(blankLevel)
+    }
+
     function remove(username, email) {
         if(username === "" || email === "")
             return
@@ -294,7 +306,7 @@ QtObject {
         const targetLevel = (level === undefined || level === null) ? Config.Local : level
 
         const profile = findProfileByKey(username, email)
-        
+
         if (!profile) {
             console.warn("Profile with username '" + username + "' and email '" + email + "' not found. Please select a valid profile.")
             return
@@ -303,6 +315,9 @@ QtObject {
         var result = configController.setConfig(targetLevel, profile.username, profile.email)
 
         if (result.success) {
+            if (targetLevel === Config.Global)
+                root.clearBlankRepositoryUser()
+
             loadAllProfiles()
             if (notificationController) {
                 let scopeLabel = targetLevel === Config.Global ? "applied globally" : "applied to repository"
