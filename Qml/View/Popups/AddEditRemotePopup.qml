@@ -266,10 +266,14 @@ PopupDialog {
                         font.pixelSize: Style.appFont.defaultPt
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
+                    HoverHandler {
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: root.authMethod = authOption.modelData.value
+                    }
+
+                    TapHandler {
+                        onTapped: {
+                            root.authMethod = authOption.modelData.value
+                        }
                     }
                 }
             }
