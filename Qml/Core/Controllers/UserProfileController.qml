@@ -32,6 +32,8 @@ QtObject {
         }
     }
 
+    Component.onCompleted: root.loadAllProfiles()
+
     /* Functions
      * ****************************************************************************************/
     function loadAllProfiles() {
