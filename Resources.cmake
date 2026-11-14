@@ -327,6 +327,7 @@ set(RESOURCES_PAGES
 set(RESOURCES_SERVICES
     Qml/Core/Services/GitService.qml
     Qml/Core/Services/GitStateNotifier.qml   # Single "repository changed" broadcast
+    Qml/Core/Services/IdentityGuard.qml      # Asks who is committing when git has no name and email
 )
 
 # Define View Resources
