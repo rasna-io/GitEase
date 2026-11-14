@@ -14,6 +14,7 @@ class GitResult
     Q_PROPERTY(bool success READ success CONSTANT FINAL)
     Q_PROPERTY(QString errorMessage READ errorMessage CONSTANT FINAL)
     Q_PROPERTY(QVariant data READ data CONSTANT FINAL)
+    Q_PROPERTY(QString errorCode READ errorCode CONSTANT FINAL)
 
 public:
     GitResult()
@@ -45,8 +46,19 @@ public:
         return m_data;
     }
 
+    QString errorCode() const
+    {
+        return m_errorCode;
+    }
+
+    void setErrorCode(const QString& errorCode)
+    {
+        m_errorCode = errorCode;
+    }
+
 private:
     bool m_success = true;
     QString m_errorMessage;
     QVariant m_data;
+    QString m_errorCode;
 };
