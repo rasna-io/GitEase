@@ -338,7 +338,7 @@ GitResult GitMerge::createMergeCommit(const QString& message,
     git_signature* sig = createSignature();
     if (!sig) {
         git_tree_free(tree);
-        return GitResult(false, QVariant(), "Failed to create commit signature.");
+        return identityMissingResult();
     }
 
     const git_commit* parents[] = { targetCommit, sourceCommit };
@@ -404,11 +404,7 @@ git_signature* GitMerge::createSignature() const
     if (!m_currentRepo || !activeRepo())
         return nullptr;
 
-    git_signature* sig = nullptr;
-
-    if (git_signature_default(&sig, activeRepo()) != GIT_OK)
-        git_signature_now(&sig, "Unknown", "unknown@example.com");
-    return sig;
+    return defaultSignature(activeRepo());
 }
 
 QString GitMerge::currentBranchName() const
