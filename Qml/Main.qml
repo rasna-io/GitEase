@@ -120,6 +120,7 @@ ApplicationWindow {
 
             if(window.hasActivatedBefore) {
                 uiSession?.gitStateNotifier?.notifyChanged()
+                uiSession?.userProfileController?.refreshFromGit()
             }
 
             window.hasActivatedBefore = true
