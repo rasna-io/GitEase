@@ -16,6 +16,7 @@ IPopup {
      * ****************************************************************************************/
     property NotificationController notificationController  : null
     property CommitController       commitController        : null
+    property IdentityGuard          identityGuard           : null
     property bool                   changeCommitMessage     : false
 
     readonly property bool          canAccept               : messageInput.text.trim().length > 0
