@@ -89,23 +89,31 @@ QtObject {
     function loadAppProfiles() {
         let path = root.appModel.fileIO.configFilePath + "/" + root.appModel.fileName
 
-        if (root.appModel.fileIO.isFileExist(path)) {
-            root.appModel.fileIO.fileName = path
-            let res = root.appModel.fileIO.read()
+        if (!root.appModel.fileIO.isFileExist(path))
+            return
 
-            let jsonContent = JSON.parse(root.appModel.fileIO.fileContent)
-            let profiles = jsonContent.userProfiles || []
+        root.appModel.fileIO.fileName = path
+        root.appModel.fileIO.read()
 
-            for (let i = 0; i < profiles.length; i++) {
-                let userProfile = root.createUserProfile(
-                    profiles[i].username,
-                    profiles[i].password,
-                    profiles[i].email,
-                    profiles[i].levels,
-                    profiles[i].avatarColor ?? ""
-                )
-            }
+        let profiles = []
+        try {
+            profiles = JSON.parse(root.appModel.fileIO.fileContent).userProfiles || []
+        } catch (error) {
+            console.warn("[UserProfileController] Could not read saved users:", error)
+            return
         }
+
+        root._loading = true
+        for (let i = 0; i < profiles.length; i++) {
+            root.createUserProfile(
+                profiles[i].username,
+                profiles[i].password ?? "",
+                profiles[i].email,
+                Config.App,
+                profiles[i].avatarColor ?? ""
+            )
+        }
+        root._loading = false
     }
 
 
@@ -154,18 +162,18 @@ QtObject {
                     if (levelToAdd !== Config.App) {
                         removeLevelFromOtherProfiles(levelToAdd, username, email)
                     }
-                    
+
                     existing.levels.push(levelToAdd)
                 }
             }
             existing.levels = existing.levels.slice(0)
-            
+
             if (color !== "" && existing.avatarColor === "")
                 existing.avatarColor = color
 
-            if(levelsArray.includes(Config.App))
+            if(levelsArray.includes(Config.App) && !root._loading)
                 root.appModel.save()
-                
+
             return existing
         }
 
