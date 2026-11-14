@@ -236,6 +236,9 @@ IWindow {
             return
 
         let result = root.stashController.save(stashMessageField.text.trim(), keepIndexCheckBox.checked)
+        if (root.identityGuard.handle(result, "stash", root.createStash))
+            return
+
         if (result.success) {
             root.closePopUp()
             return
