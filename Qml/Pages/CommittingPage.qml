@@ -566,6 +566,9 @@ Page {
                 }
 
                 let res = root.stashController.stashLines(root.selectedFilePath, start, end, type)
+                if (root.identityGuard.handle(res, "stash", function() { diffView.requestStash(start, end, type) }))
+                    return
+
                 if (res.success) {
                     root.notificationController.success("Selected lines stashed", "Stash", 2000)
                 } else {
