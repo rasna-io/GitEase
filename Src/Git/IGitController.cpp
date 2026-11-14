@@ -9,6 +9,20 @@ namespace
     thread_local git_repository *t_activeRepo = nullptr;
 }
 
+const QString IGitController::IdentityMissing = QStringLiteral("identityMissing");
+
+GitResult IGitController::identityMissingResult(const QString &reason, const QVariant &data)
+{
+    const QString message = reason.isEmpty()
+        ? QStringLiteral("No name and email are set for this repository. Git needs them to record "
+                         "who made the change.")
+        : QStringLiteral("Git can't use the name and email that are set: %1").arg(reason);
+
+    GitResult result(false, data, message);
+    result.setErrorCode(IdentityMissing);
+    return result;
+}
+
 IGitController::IGitController(QObject *parent)
     : QObject{parent}
 {
