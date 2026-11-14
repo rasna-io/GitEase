@@ -1736,6 +1736,11 @@ DetachablePanel {
     function performMerge(source, noFF, deleteBranch = false, pushRemote = false) {
         var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
 
+        if (root.identityGuard.handle(res, "merge", function() {
+            root.performMerge(source, noFF, deleteBranch, pushRemote)
+        }))
+            return
+
         if (root.mergeController.isMergeInProgress() && root.mergeController.hasMergeConflicts()) {
             root.showConflictWindow(mergeConflictPopup)
             root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
