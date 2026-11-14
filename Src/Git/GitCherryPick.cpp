@@ -39,6 +39,10 @@ GitResult GitCherryPick::cherryPickCommits(const QStringList& commitHashes)
                          "Repository is busy (merge/rebase/cherry-pick in progress).");
     }
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     m_startHeadHash = headHash();
     if (m_startHeadHash.isEmpty())
         return GitResult(false, QVariant(), "Failed to resolve HEAD.");
