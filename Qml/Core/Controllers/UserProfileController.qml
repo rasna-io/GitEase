@@ -299,6 +299,17 @@ QtObject {
             root.configController.unsetIdentity(blankLevel)
     }
 
+    //! The git config levels this user is written in, which Delete removes it from.
+    function writableLevelsOf(username, email) {
+        const profile = findProfileByKey(username, email)
+        if (!profile)
+            return []
+
+        return profile.levels.filter(level => level === Config.Local
+                                              || level === Config.Global
+                                              || level === Config.Worktree)
+    }
+
     function remove(username, email) {
         if(username === "" || email === "")
             return
@@ -307,15 +318,15 @@ QtObject {
         if (idx < 0)
             return
 
-        const profile = root.appModel.userProfiles[idx]
 
-        for (let i = 0; i < profile.levels.length; i++) {
-            if(profile.levels[i] !== Config.App){
-                var result = configController.setConfig(profile.levels[i], "", "")
-                if (!result.success) {
-                    console.error("[UserProfileController] Failed to update git config:", result.errorMessage)
-                    return
-                }
+        const levels = root.writableLevelsOf(username, email)
+        for (let i = 0; i < levels.length; i++) {
+            var result = configController.unsetIdentity(levels[i])
+            if (!result.success) {
+                console.error("[UserProfileController] Failed to update git config:", result.errorMessage)
+                if (notificationController)
+                    notificationController.error(result.errorMessage || "Failed to update git config", "Profile Error", 5000)
+                return
             }
         }
 
