@@ -4,7 +4,11 @@ import GitEase
 
 /*! ***********************************************************************************************
  * UserProfileController
- * Manages the creation, register, remove Profiles from both Git config and Application storage.
+ * Keeps the list of saved users and writes the one in use to git config.
+ *
+ * Git config decides who commits: one global user, and optionally a different user per
+ * repository. GitEase.json only keeps the list of saved users, so you can switch between them.
+ * identity is who git will commit as right now, and the bottom-left always shows it.
  * ************************************************************************************************/
 
 QtObject {
@@ -149,7 +153,7 @@ QtObject {
                 profile.levels = profile.levels.slice(0)
             }
         }
-        
+
         root.appModel.userProfiles = root.appModel.userProfiles.slice(0)
     }
 
