@@ -20,6 +20,10 @@ Item {
 
     property TextDirectionController textDirectionController: null
 
+    property UserProfileController  userProfileController:  null
+
+    property IdentityGuard          identityGuard:          null
+
     property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {
         appModel: root.appModel
         notificationController: root.notificationController
@@ -64,6 +68,8 @@ Item {
 
     property ConfirmCommandDialog       remoteConfirmDialog:        ConfirmCommandDialog {}
 
-    property CommitAmendPopup commitAmendPopup: CommitAmendPopup{}
+    property IdentityPromptPopup        identityPromptPopup:        IdentityPromptPopup {
+        userProfileController: root.userProfileController
+    }
 
 }
