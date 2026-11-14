@@ -346,16 +346,7 @@ bool GitCommit::validateCommitMessage(const QString &message)
 
 git_signature* GitCommit::getAuthorSignature(git_repository* repo)
 {
-    git_signature* signature = nullptr;
-
-    // Try to get default signature from Git config
-    int result = git_signature_default(&signature, repo);
-
-    if (result != GIT_OK) {
-        return nullptr;
-    }
-
-    return signature;
+    return defaultSignature(repo);
 }
 
 git_tree* GitCommit::createTreeFromStagedChanges()
