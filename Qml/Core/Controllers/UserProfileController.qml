@@ -209,7 +209,7 @@ QtObject {
         root.appModel.userProfiles.push(userProfile)
         root.appModel.userProfiles = root.appModel.userProfiles.slice(0)
 
-        if(levelsArray.includes(Config.App))
+        if(levelsArray.includes(Config.App) && !root._loading)
             root.appModel.save()
 
         return userProfile
