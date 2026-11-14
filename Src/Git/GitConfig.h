@@ -20,7 +20,8 @@ public:
      * - System config (git config --system)
      * - Global config (git config --global)
      * - Local config (git config --local) - if repository is open
-     * - Worktree config (if applicable)
+     *
+     * Works without an open repository too; the local level is then left out.
      */
     Q_INVOKABLE GitResult getAllConfigs();
 

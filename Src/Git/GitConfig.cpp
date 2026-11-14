@@ -10,11 +10,6 @@ GitConfig::GitConfig(QObject *parent)
 
 GitResult GitConfig::getAllConfigs()
 {
-    // Check if the repository is open
-    if (!m_currentRepo || !activeRepo()) {
-        return GitResult(false, QVariant(), "Repository not found.");
-    }
-
     QVariantList configList;
     git_config *cfg = nullptr;
     int error = 0;
