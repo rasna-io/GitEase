@@ -284,6 +284,10 @@ GitResult GitMerge::continueOp(const QString& commitMessage)
     if (m_pendingSourceHash.isEmpty() || m_pendingTargetHash.isEmpty())
         return GitResult(false, QVariant(), "Merge metadata is missing.");
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     git_oid sourceOid, targetOid;
     if (git_oid_fromstr(&sourceOid, m_pendingSourceHash.toUtf8().constData()) != GIT_OK ||
         git_oid_fromstr(&targetOid, m_pendingTargetHash.toUtf8().constData()) != GIT_OK) {
