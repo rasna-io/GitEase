@@ -235,9 +235,16 @@ GitResult GitCommit::commit(const QString& message,
                                 bool amend,
                                 bool allowEmpty)
 {
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, QVariant(), "Repository not found.");
+
     if (!validateCommitMessage(message))
         return GitResult(false, QVariant(),
                          "Commit failed: The commit message is invalid. Ensure it is properly formatted.");
+
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
 
     ActionContext context;
     context.type = ActionType::Commit_msg;
@@ -247,12 +254,8 @@ GitResult GitCommit::commit(const QString& message,
         return rulesResult;
 
     git_signature* author = getAuthorSignature(activeRepo());
-    if (!author) {
-        return GitResult(false, QVariant(),
-                         "Failed to create author signature. Check Git config.");
-    }
-
-    git_tree* tree = createTreeFromStagedChanges();
+    if (!author)
+        return identityMissingResult();
 
     if (!tree) {
         return GitResult(false, QVariant(),
