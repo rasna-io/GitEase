@@ -1805,6 +1805,9 @@ DetachablePanel {
     function executeCherryPickSingle(commitHash) {
         var res = cherryPickController.cherryPickCommit(commitHash);
 
+        if (root.identityGuard.handle(res, "cherry-pick", function() { root.executeCherryPickSingle(commitHash) }))
+            return;
+
         handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
     }
 
