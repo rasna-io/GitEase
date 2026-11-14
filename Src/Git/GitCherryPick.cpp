@@ -453,6 +453,10 @@ GitResult GitCherryPick::skipOp()
     if (m_currentIndex < 0 || m_currentIndex >= m_pendingCommits.size())
         return GitResult(false, QVariant(), "Cherry-pick state is invalid.");
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     git_object* headObj = nullptr;
     if (git_revparse_single(&headObj, activeRepo(), "HEAD") == GIT_OK) {
         git_reset(activeRepo(), headObj, GIT_RESET_HARD, nullptr);
