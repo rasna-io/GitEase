@@ -299,6 +299,46 @@ QtObject {
             root.configController.unsetIdentity(blankLevel)
     }
 
+    //! The open repository's own user, or null when it follows the global one.
+    function repositoryUser() {
+        if (!root.configController.currentRepo)
+            return null
+
+        const result = root.configController.getConfig(Config.Local)
+        const config = result.success ? result.data : null
+        if (!config || (config.name === "" && config.email === ""))
+            return null
+
+        return { name: config.name, email: config.email }
+    }
+
+    /**
+     * "Use as default": writes the user to the global config, so every repository without its
+     * own user commits as them. With alsoHere, the open repository's own user is removed, so the
+     * repository follows the default as well.
+     */
+    function useAsDefault(username, email, alsoHere) {
+        const profile = findProfileByKey(username, email)
+        if (!profile)
+            return
+
+        let result = root.configController.setConfig(Config.Global, profile.username, profile.email)
+        if (result.success && alsoHere)
+            result = root.configController.unsetIdentity(Config.Local)
+        if (result.success)
+            root.clearBlankRepositoryUser()
+
+        root.loadAllProfiles()
+
+        if (!notificationController)
+            return
+
+        if (result.success)
+            notificationController.success("'" + username + "' is now the default user", "Profile", 3000)
+        else
+            notificationController.error(result.errorMessage || "Failed to set the default user", "Profile Error", 5000)
+    }
+
     //! The git config levels this user is written in, which Delete removes it from.
     function writableLevelsOf(username, email) {
         const profile = findProfileByKey(username, email)
