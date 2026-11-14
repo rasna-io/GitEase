@@ -108,7 +108,12 @@ GitResult GitMerge::analyzeAndPerformMerge(git_commit* targetCommit,
     }
     else if ((analysis & GIT_MERGE_ANALYSIS_FASTFORWARD) ||
              (analysis & GIT_MERGE_ANALYSIS_NORMAL)) {
-        result = performNormalMerge(sourceRef);
+
+        QString identityReason;
+        if (hasIdentity(activeRepo(), &identityReason))
+            result = performNormalMerge(sourceRef);
+        else
+            result = identityMissingResult(identityReason);
     }
     else {
         result = GitResult(false, QVariant(), "Unsupported merge scenario.");
