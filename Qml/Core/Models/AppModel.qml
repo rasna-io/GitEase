@@ -52,10 +52,13 @@ Item {
         for(let i = 0 ; i < root.userProfiles.length ; ++i){
             let profile = root.userProfiles[i]
             if(profile.levels.includes(Config.App)) {
-                if (!profile.levels.includes(Config.App)) {
-                    profile.levels.push(Config.App)
-                }
-                profilesSerialized.push(profile)
+                profilesSerialized.push({
+                    username:    profile.username,
+                    password:    profile.password,
+                    email:       profile.email,
+                    avatarColor: profile.avatarColor,
+                    levels:      [Config.App]
+                })
             }
         }
 
