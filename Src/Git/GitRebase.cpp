@@ -380,6 +380,10 @@ GitResult GitRebase::continueOp()
         return GitResult(false, QVariant(), "No rebase is in progress.");
     }
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     git_rebase* rebase = nullptr;
     GitResult openResult = openRebase(&rebase);
     if (!openResult.success()) {
