@@ -246,6 +246,8 @@ ApplicationWindow {
             guideController: uiSession.guideController
             sshKeyController: uiSession.sshKeyController
             textDirectionController: uiSession.textDirectionController
+            userProfileController: uiSession.userProfileController
+            identityGuard: uiSession.identityGuard
         }
     }
 
