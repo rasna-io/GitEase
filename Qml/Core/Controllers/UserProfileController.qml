@@ -15,12 +15,14 @@ QtObject {
     required property            AppModel                         appModel
     required property            ConfigController                 configController
     property                     NotificationController           notificationController: null
+    property var pendingRepositoryUser: null
 
     /* Signals
      * ****************************************************************************************/
     property Connections configConnections: Connections {
         target: configController
         function onCurrentRepoChanged(){
+            root.applyPendingRepositoryUser()
             root.loadAllProfiles()
         }
     }
@@ -252,6 +254,37 @@ QtObject {
 
         root.loadAllProfiles()
         return ""
+    }
+
+    /**
+     * Welcome screen, "Only the repository I open next": saves the user in the list now and
+     * writes it to the repository's own config as soon as one is opened or cloned.
+     * Returns "" on success, otherwise what went wrong.
+     */
+    function rememberForNextRepository(name, email) {
+        const problem = root.identityProblem(name, email)
+        if (problem !== "")
+            return problem
+
+        if (!root.createUserProfile(name.trim(), "", email.trim(), Config.App, ""))
+            return qsTr("The user couldn't be saved.")
+
+        root.pendingRepositoryUser = { name: name.trim(), email: email.trim() }
+        return ""
+    }
+
+    function applyPendingRepositoryUser() {
+        const pending = root.pendingRepositoryUser
+        if (!pending || !root.configController.currentRepo)
+            return
+
+        root.pendingRepositoryUser = null
+
+        const result = root.configController.setConfig(Config.Local, pending.name, pending.email)
+        if (!result.success && notificationController) {
+            notificationController.error(result.errorMessage || "Failed to set the user for this repository",
+                                         "Profile Error", 5000)
+        }
     }
 
     /**
