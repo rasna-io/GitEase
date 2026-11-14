@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Controls.Material
 import QtQuick.Layouts
 
 import GitEase
@@ -35,11 +34,17 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    WindowMotion {
+        id: windowMotion
+        window: root.Window.window
+        windowController: root.windowController
+    }
+
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
         onPressed: root.windowController?.startSystemMove()
-        onDoubleClicked: root.windowController?.toggleMaxRestore()
+        onDoubleClicked: windowMotion.toggleMaximize()
     }
 
     ColumnLayout {
@@ -127,63 +132,14 @@ Item {
         }
     }
 
-    RowLayout {
+    WindowsHeader {
         id: commandRow
         anchors.right: parent.right
         anchors.top: parent.top
-        spacing: 6
-
-        WindowsButton {
-            id: minimizeButton
-            Layout.alignment: Qt.AlignTop
-            Layout.preferredWidth: 28
-            Layout.preferredHeight: 28
-            Material.accent: Style.colors.windowsMinimize
-            onClicked: root.windowController?.minimize()
-
-            content: Rectangle {
-                anchors.centerIn: parent
-                width: 10
-                height: 2
-                radius: 1
-                color: minimizeButton.containsMouse ? Style.colors.primaryBackground
-                                                    : Style.colors.foreground
-            }
-        }
-
-        WindowsButton {
-            id: closeButton
-            Layout.alignment: Qt.AlignTop
-            Layout.preferredWidth: 28
-            Layout.preferredHeight: 28
-            Material.accent: Style.colors.windowsClose
-            onClicked: root.closeRequested()
-
-            content: Item {
-                anchors.centerIn: parent
-                width: 10
-                height: 10
-
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: 12
-                    height: 2
-                    radius: 1
-                    rotation: 45
-                    color: closeButton.containsMouse ? Style.colors.primaryBackground
-                                                     : Style.colors.foreground
-                }
-
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: 12
-                    height: 2
-                    radius: 1
-                    rotation: -45
-                    color: closeButton.containsMouse ? Style.colors.primaryBackground
-                                                     : Style.colors.foreground
-                }
-            }
-        }
+        width: 92
+        height: 28
+        windowController: root.windowController
+        closesWindow: false
+        onCloseRequested: root.closeRequested()
     }
 }
