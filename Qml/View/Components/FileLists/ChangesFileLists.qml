@@ -210,6 +210,9 @@ Item {
             onStashFileRequested: function(filePath) {
                 let message = "Stashing file: " + filePath
                 let res = stashController.stashFile(filePath, message)
+                if (root.identityGuard.handle(res, "stash", function() { unstagedSection.stashFileRequested(filePath) }))
+                    return
+
                 if (res.success) {
                     root.notificationController.success("File stashed: " + filePath, "Stash File", 3000)
                 } else {
