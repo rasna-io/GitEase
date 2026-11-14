@@ -391,6 +391,9 @@ PopupDialog {
 
         let res = ctrl.create(tagName, commitToTag, tagMessage);
 
+        if (root.identityGuard.handle(res, "tag", root.createTag))
+            return;
+
         if (res && res.success) {
             if (root.pushAfterCreate && root.remoteOperationsSession) {
                 root.remoteOperationsSession.pushTag(tagName, function(pushResult, remote) {
