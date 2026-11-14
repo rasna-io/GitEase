@@ -138,11 +138,6 @@ public:
      */
     Q_INVOKABLE QString getLastCommitMessage();
 
-
-    Repository *currentRepo() const;
-
-    void setCurrentRepo(Repository *newCurrentRepo);
-
 private:
     QStringList getAllParents(git_commit* gitCommit);
 
