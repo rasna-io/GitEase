@@ -63,6 +63,7 @@ IWindow {
     property LayoutController       layoutController: null
     property GuideController        guideController: null
     property TextDirectionController textDirectionController: null
+    property IdentityGuard          identityGuard: null
     property var pluginManager: null
     property GitTree gitTree: null
     property string repositoryPath: ""
@@ -428,6 +429,7 @@ IWindow {
         commitController: root.commitController
         guideController: root.guideController
         textDirectionController: root.textDirectionController
+        identityGuard: root.identityGuard
         pluginManager: root.pluginManager
     }
 
