@@ -113,4 +113,5 @@ public:
      * ****************************************************************************************/
     //! \a levelFlag is "--global", "--local", "--system" or empty for the default level.
     Q_INVOKABLE static QString setUserIdentity(const QString &name, const QString &email, const QString &levelFlag);
+    Q_INVOKABLE static QString unsetUserIdentity(const QString &levelFlag);
 };
