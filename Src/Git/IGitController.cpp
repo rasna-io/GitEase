@@ -1,6 +1,10 @@
 #include "IGitController.h"
 #include <QDir>
 #include "Async/GitAsyncRunner.h"
+#include "GitUtils.h"
+
+#include <git2/errors.h>
+#include <git2/signature.h>
 
 #include <QThread>
 
@@ -10,6 +14,38 @@ namespace
 }
 
 const QString IGitController::IdentityMissing = QStringLiteral("identityMissing");
+
+git_signature *IGitController::defaultSignature(git_repository *repo, QString *reason)
+{
+    if (reason)
+        reason->clear();
+
+    if (!repo) {
+        if (reason)
+            *reason = QStringLiteral("Repository not open.");
+        return nullptr;
+    }
+
+    git_signature *signature = nullptr;
+    const int error = git_signature_default(&signature, repo);
+    if (error != GIT_OK) {
+        if (reason && error != GIT_ENOTFOUND)
+            *reason = GitUtils::getLastError();
+        return nullptr;
+    }
+
+    return signature;
+}
+
+bool IGitController::hasIdentity(git_repository *repo, QString *reason)
+{
+    git_signature *signature = defaultSignature(repo, reason);
+    if (!signature)
+        return false;
+
+    git_signature_free(signature);
+    return true;
+}
 
 GitResult IGitController::identityMissingResult(const QString &reason, const QVariant &data)
 {
