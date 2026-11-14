@@ -15,7 +15,12 @@ QtObject {
     required property            AppModel                         appModel
     required property            ConfigController                 configController
     property                     NotificationController           notificationController: null
+
+    property var identity: ({ found: false, name: "", email: "", level: -1, blankLevel: -1, reason: "" })
+
     property var pendingRepositoryUser: null
+
+    property bool _loading: false
 
     /* Signals
      * ****************************************************************************************/
