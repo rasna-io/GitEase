@@ -6,7 +6,6 @@
 class Remote
 {
     Q_GADGET
-    QML_ELEMENT
 
     Q_PROPERTY(QString name READ name CONSTANT FINAL)
     Q_PROPERTY(QString url READ url WRITE setUrl CONSTANT FINAL)
