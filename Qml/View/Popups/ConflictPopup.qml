@@ -42,6 +42,7 @@ IWindow {
     property NotificationController notificationController  : null
     property GuideController        guideController         : null
     property TextDirectionController textDirectionController : null
+    property IdentityGuard          identityGuard           : null
 
     property var    conflicts       : []
     property var    selectedConflict: null
