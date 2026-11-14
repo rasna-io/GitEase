@@ -70,6 +70,10 @@ GitResult GitCherryPick::continueOp()
     if (m_currentIndex < 0 || m_currentIndex >= m_pendingCommits.size())
         return GitResult(false, QVariant(), "Cherry-pick state is invalid.");
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     // Finalize the commit that previously conflicted
     QString currentHash = m_pendingCommits[m_currentIndex];
     QString error;
