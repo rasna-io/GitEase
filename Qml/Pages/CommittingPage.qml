@@ -596,6 +596,10 @@ Page {
         }
 
         amend = amend || false
+
+        if (!root.identityGuard.check(amend ? "amend" : "commit", function() { root.commitAndUpdate(amend) }))
+            return false
+
         const pm = root.pluginController?.pluginManager
         if (pm && pm.hasWorkflowPluginsFor("pre-commit")) {
             root._pendingCommitAmend = amend
