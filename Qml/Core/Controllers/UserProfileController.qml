@@ -354,7 +354,7 @@ QtObject {
             return
 
         const profile = root.appModel.userProfiles[idx]
-        
+
         if (avatarColor !== undefined && avatarColor !== "")
             profile.avatarColor = avatarColor
 
@@ -368,27 +368,23 @@ QtObject {
             profile.email = newEmail
         }
 
-        for (let i = 0; i < profile.levels.length; i++) {
-            if(profile.levels[i] !== Config.App){
-                removeLevelFromOtherProfiles(profile.levels[i], newUsername, newEmail)
-                var result = configController.setConfig(profile.levels[i], newUsername, newEmail)
-                if (!result.success) {
-                    console.error("[UserProfileController] Failed to update git config:", result.errorMessage)
-                    return
-                }
+        const levels = profile.levels.filter(level => level === Config.Local
+                                                      || level === Config.Global
+                                                      || level === Config.Worktree)
+        for (let i = 0; i < levels.length; i++) {
+            removeLevelFromOtherProfiles(levels[i], newUsername, newEmail)
+            var result = configController.setConfig(levels[i], newUsername, newEmail)
+            if (!result.success) {
+                console.error("[UserProfileController] Failed to update git config:", result.errorMessage)
+                return
             }
         }
 
         root.appModel.userProfiles = root.appModel.userProfiles.slice(0)
 
-        if(root.appModel.currentUserProfile && 
-           root.appModel.currentUserProfile.username === oldUsername && 
-           root.appModel.currentUserProfile.email === oldEmail){
-            root.appModel.currentUserProfile = profile
-        }
-
         root.appModel.save()
-        
+        root.loadAllProfiles()
+
         if (notificationController) {
             notificationController.success("User profile updated successfully", "Profile", 3000)
         }
