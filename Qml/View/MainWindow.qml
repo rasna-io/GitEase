@@ -83,6 +83,7 @@ Rectangle {
             terminalController: root.uiSession?.terminalController
             guideController: root.uiSession?.guideController
             gitStateNotifier: root.uiSession?.gitStateNotifier
+            identityGuard: root.uiSession?.identityGuard
             textDirectionController: root.uiSession?.textDirectionController
             gitTreeController: root.uiSession?.gitTreeController
         }
@@ -523,6 +524,7 @@ Rectangle {
                             guideController: root.uiSession?.guideController
                             layoutController: root.uiSession?.layoutController
                             gitStateNotifier: root.uiSession?.gitStateNotifier
+                            identityGuard: root.uiSession?.identityGuard
                             textDirectionController: root.uiSession?.textDirectionController
                         }
 
@@ -576,6 +578,7 @@ Rectangle {
                                 pluginController        : root.uiSession?.pluginController
                                 gitTreeController       : root.uiSession?.gitTreeController
                                 gitStateNotifier        : root.uiSession?.gitStateNotifier
+                                identityGuard           : root.uiSession?.identityGuard
                                 textDirectionController : root.uiSession?.textDirectionController
                             }
                         }
