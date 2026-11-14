@@ -50,10 +50,12 @@ Item {
     property AddStashPopup              addStashPopup:              AddStashPopup {
         notificationController: root.notificationController
         textDirectionController: root.textDirectionController
+        identityGuard: root.identityGuard
     }
 
     property AddTagPopup                addTagPopup:                AddTagPopup {
         notificationController: root.notificationController
+        identityGuard: root.identityGuard
     }
 
     property NotificationCenterPopup    notificationCenterPopup:    NotificationCenterPopup {}
@@ -67,6 +69,10 @@ Item {
     property RemoteTargetPopup          remoteTargetPopup:          RemoteTargetPopup {}
 
     property ConfirmCommandDialog       remoteConfirmDialog:        ConfirmCommandDialog {}
+
+    property CommitAmendPopup commitAmendPopup: CommitAmendPopup{
+        identityGuard: root.identityGuard
+    }
 
     property IdentityPromptPopup        identityPromptPopup:        IdentityPromptPopup {
         userProfileController: root.userProfileController
