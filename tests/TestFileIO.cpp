@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <QDir>
 #include <QFile>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -15,6 +16,7 @@ private slots:
     void pathNormalizer();
     void createDirBehavior();
     void isFileExistBehavior();
+    void isGitRepositoryBehavior();
 };
 
 void TestFileIO::writeReadRoundTrip()
@@ -89,6 +91,32 @@ void TestFileIO::isFileExistBehavior()
     file.close();
 
     QVERIFY(fileIo.isFileExist(filePath));
+}
+
+void TestFileIO::isGitRepositoryBehavior()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+
+    FileIO fileIo;
+
+    QVERIFY(!fileIo.isGitRepository(""));
+    QVERIFY(!fileIo.isGitRepository(dir.path() + "/missing"));
+    QVERIFY(!fileIo.isGitRepository(dir.path()));
+
+    QVERIFY(QDir{dir.path()}.mkdir(".git"));
+    QVERIFY(fileIo.isGitRepository(dir.path()));
+
+    // A worktree or submodule has a `.git` file instead of a directory.
+    QTemporaryDir worktree;
+    QVERIFY(worktree.isValid());
+
+    QFile gitFile(worktree.path() + "/.git");
+    QVERIFY(gitFile.open(QIODevice::WriteOnly));
+    gitFile.write("gitdir: ../elsewhere");
+    gitFile.close();
+
+    QVERIFY(fileIo.isGitRepository(worktree.path()));
 }
 
 QTEST_MAIN(TestFileIO)
