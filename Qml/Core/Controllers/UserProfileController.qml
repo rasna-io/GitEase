@@ -268,7 +268,7 @@ QtObject {
     }
 
     /**
-     * Welcome screen, "Only the repository I open next": saves the user in the list now and
+     * Welcome screen, "Only the repository I open next (Local)": saves the user in the list now and
      * writes it to the repository's own config as soon as one is opened or cloned.
      * Returns "" on success, otherwise what went wrong.
      */

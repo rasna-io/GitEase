@@ -169,14 +169,14 @@ Item {
 
                 RepoRadio {
                     ButtonGroup.group: scopeGroup
-                    text: "All repositories"
+                    text: "All repositories (Global)"
                     checked: true
                 }
 
                 RepoRadio {
                     id: nextRepositoryRadio
                     ButtonGroup.group: scopeGroup
-                    text: "Only the repository I open next"
+                    text: "Only the repository I open next (Local)"
                 }
             }
         }

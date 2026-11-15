@@ -286,13 +286,13 @@ IPopup {
 
                         RepoRadio {
                             id: allRepositoriesRadio
-                            text: qsTr("All repositories")
+                            text: qsTr("All repositories (Global)")
                             checked: true
                         }
 
                         RepoRadio {
                             id: thisRepositoryRadio
-                            text: qsTr("Only this repository")
+                            text: qsTr("Only this repository (Local)")
                         }
 
                         Item { Layout.fillWidth: true }
@@ -430,7 +430,7 @@ IPopup {
         if (!identity.found) {
             root.errorText = identity.level === Config.Local
                     ? qsTr("This repository has its own name and email, and git can't use them. "
-                           + "Choose “Only this repository” to replace them.")
+                           + "Choose “Only this repository (Local)” to replace them.")
                     : (identity.reason || qsTr("Git still has no name and email for this repository."))
             return
         }
