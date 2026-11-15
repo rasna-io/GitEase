@@ -21,6 +21,8 @@ Item {
     property var  existingUser: null
 
     readonly property bool hasExistingUser: root.existingUser !== null
+
+    readonly property bool useExisting: root.hasExistingUser && existingUserRadio.checked
     property string fullName: fullNameField.text
     property string email: emailField.text
     property bool showHint: true
@@ -31,6 +33,7 @@ Item {
 
     /* Children
      * ****************************************************************************************/
+    ButtonGroup { id: userChoiceGroup }
     ColumnLayout {
         anchors.centerIn: parent
         width: Math.min(parent.width - 40, 420)
@@ -39,9 +42,12 @@ Item {
         // Description text
         Text {
             Layout.fillWidth: true
-            Layout.bottomMargin: 28
+            Layout.bottomMargin: root.hasExistingUser ? 14 : 18
             Layout.alignment: Qt.AlignHCenter
-            text: "This information will be used for your Git commits and identify you in the repository history"
+            text: root.hasExistingUser
+                  ? "Git on this computer already has a user, and your commits will use it. "
+                    + "You can also add a different name and email."
+                  : "This information will be used for your Git commits and identify you in the repository history"
             wrapMode: Text.WordWrap
             color: Style.colors.secondaryText
             horizontalAlignment: Text.AlignHCenter
@@ -52,7 +58,57 @@ Item {
             lineHeight: 1.45
         }
 
-        // Input sections
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.bottomMargin: root.useExisting ? 0 : 10
+            visible: root.hasExistingUser
+            spacing: 4
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                RepoRadio {
+                    id: existingUserRadio
+                    Layout.fillWidth: true
+                    ButtonGroup.group: userChoiceGroup
+                    text: root.existingUser ? root.existingUser.name + " <" + root.existingUser.email + ">" : ""
+                    checked: true
+                    onClicked: root.errorMessage = ""
+                }
+
+                // Where git found this user
+                Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredHeight: 18
+                    Layout.preferredWidth: levelText.implicitWidth + 12
+                    radius: 9
+                    color: root.existingUser?.level === Config.System ? Style.colors.levelSystemBadge
+                                                                      : Style.colors.levelGlobalBadge
+
+                    Text {
+                        id: levelText
+                        anchors.centerIn: parent
+                        text: root.existingUser?.level === Config.System ? "System" : "Global"
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                        font.weight: 600
+                        color: Style.colors.onColorText
+                    }
+                }
+            }
+
+            RepoRadio {
+                Layout.fillWidth: true
+                ButtonGroup.group: userChoiceGroup
+                text: "Add a different name and email"
+                onClicked: {
+                    root.errorMessage = ""
+                    fullNameField.field.forceActiveFocus()
+                }
+            }
+        }
+
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 18
@@ -152,5 +208,4 @@ Item {
         root.existingUser = identity && identity.found
                             ? { name: identity.name, email: identity.email, level: identity.level }
                             : null
-        existingUserRadio.checked = true // keeping the user git already has is the default
-    }
+        existingUserRadio.checked = true
