@@ -218,11 +218,15 @@ Item {
                             }
 
                             onDeleteUser: function(username, email) {
-                                parentRoot.userProfileController.remove(username, email)
+                                parentRoot.requestDelete(username, email)
                             }
 
                             onSelectForRepository: function(username, email) {
                                 parentRoot.userProfileController.applyUserToRepository(username, email)
+                            }
+
+                            onUseAsDefault: function(username, email) {
+                                parentRoot.requestUseAsDefault(username, email)
                             }
                         }
                     }
@@ -589,8 +593,39 @@ Item {
         }
     }
 
+    UseAsDefaultDialog {
+        id: useAsDefaultDialog
+
+        property string username: ""
+        property string email:    ""
+
+        onKeepRepositoryUser: root.userProfileController.useAsDefault(username, email, false)
+        onUseHereToo:         root.userProfileController.useAsDefault(username, email, true)
+    }
+
     /* Functions
      * ****************************************************************************************/
+
+    //! "Use as default": asks first when the open repository has a different user of its own,
+    //! because git keeps using that one there.
+    function requestUseAsDefault(username, email) {
+        let repositoryUser = root.userProfileController.repositoryUser()
+        let differentHere = repositoryUser !== null
+                            && (repositoryUser.name !== username || repositoryUser.email !== email)
+
+        if (!differentHere) {
+            root.userProfileController.useAsDefault(username, email, false)
+            return
+        }
+
+        useAsDefaultDialog.username           = username
+        useAsDefaultDialog.email              = email
+        useAsDefaultDialog.defaultUserName    = username
+        useAsDefaultDialog.repositoryUserName = repositoryUser.name !== "" ? repositoryUser.name
+                                                                           : repositoryUser.email
+        useAsDefaultDialog.repositoryName     = root.userProfileController.appModel?.currentRepository?.name ?? ""
+        useAsDefaultDialog.open()
+    }
     function openAddForm() {
         root.isEditing = false
         root.editingUsername = ""
