@@ -5,21 +5,26 @@ import GitEase_Style
 
 /*! ***********************************************************************************************
  * RepoValidationLine
- * Green "✓ <strong> <muted>" inline validation row used by the Open local / Clone tabs.
+ * "✓ <strong> <muted>" inline validation row used by the Open local / Clone tabs. Green when `valid`,
+ * red with a warning icon otherwise.
  * ************************************************************************************************/
 RowLayout {
     id: root
 
     property string strong: ""
     property string muted:  ""
+    property bool   valid:  true
+
+    readonly property color accentColor: root.valid ? Style.colors.notificationSuccessIcon
+                                                    : Style.colors.notificationErrorIcon
 
     spacing: 6
 
     Text {
-        text: Style.icons.check
+        text: root.valid ? Style.icons.check : Style.icons.warning
         font.family: Style.fontTypes.font6Pro
         font.pixelSize: 10
-        color: Style.colors.notificationSuccessIcon
+        color: root.accentColor
     }
 
     Text {
@@ -27,7 +32,7 @@ RowLayout {
         font.family: Style.fontTypes.inter
         font.weight: Font.DemiBold
         font.pixelSize: 11
-        color: Style.colors.notificationSuccessIcon
+        color: root.accentColor
     }
 
     Text {
