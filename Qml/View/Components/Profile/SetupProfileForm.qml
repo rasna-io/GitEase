@@ -245,3 +245,33 @@ Item {
                             ? { name: identity.name, email: identity.email, level: identity.level }
                             : null
         existingUserRadio.checked = true
+    }
+
+    /**
+     * Saves the choice made on this step. Returns "" on success, otherwise what to fix.
+     * Skipping doesn't call this: nothing is saved then.
+     */
+    function save() : string {
+        const profiles = root.userProfileController
+
+        if (root.asksForName) {
+            const problem = profiles.identityProblem(root.fullName, root.email)
+            if (problem !== "")
+                return problem
+        }
+
+        if (root.hasExistingUser) {
+            profiles.createUserProfile(root.existingUser.name, "", root.existingUser.email, Config.App, "")
+
+            if (root.useExisting) {
+                profiles.loadAllProfiles()
+                return ""
+            }
+        }
+
+        if (root.scope === Config.Local)
+            return profiles.rememberForNextRepository(root.fullName, root.email)
+
+        return profiles.saveUser(root.fullName, root.email, Config.Global, "")
+    }
+}
