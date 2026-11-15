@@ -176,63 +176,88 @@ Item {
             }
         }
 
+        // Hint row
+        Rectangle {
+            id: hintRectangle
             visible: root.showHint && root.errorMessage.length === 0 && !root.asksForName
+            Layout.fillWidth: true
+            Layout.topMargin: 16
+            Layout.preferredHeight: hintRow.implicitHeight + 20
+            radius: 8
+            color: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.12)
+            border.width: 1
+            border.color: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.25)
 
-                RowLayout {
-                    id: hintRow
-                    anchors.fill: parent
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    spacing: 10
+            RowLayout {
+                id: hintRow
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 10
 
-                    Text {
-                        Layout.alignment: Qt.AlignVCenter
-                        text: Style.icons.lightbulb
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.smallPt
-                        color: Style.colors.secondaryText
-                    }
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: Style.icons.lightbulb
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.secondaryText
+                }
 
-                    Text {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
+                Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
                     text: "You can add more users or switch between them later, from your profile at the bottom-left"
-                        wrapMode: Text.WordWrap
-                        font.pixelSize: Style.appFont.smallPt
-                        font.family: Style.fontTypes.inter
-                        font.weight: 400
-                        font.letterSpacing: 0
-                        color: Style.colors.secondaryText
-                    }
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: Style.appFont.smallPt
+                    font.family: Style.fontTypes.inter
+                    font.weight: 400
+                    font.letterSpacing: 0
+                    color: Style.colors.secondaryText
                 }
             }
+        }
 
-            // Error row
-            Rectangle {
-                id: errorRectangle
-                visible: root.errorMessage.length > 0
-                Layout.fillWidth: true
-                Layout.preferredHeight: errorRow.implicitHeight + 20
-                radius: 8
-                color: Qt.rgba(Style.colors.error.r, Style.colors.error.g, Style.colors.error.b, 0.12)
-                border.width: 1
-                border.color: Qt.rgba(Style.colors.error.r, Style.colors.error.g, Style.colors.error.b, 0.4)
+        // Error row
+        Rectangle {
+            id: errorRectangle
+            visible: root.errorMessage.length > 0
+            Layout.fillWidth: true
+            Layout.topMargin: 14
+            Layout.preferredHeight: errorRow.implicitHeight + 20
+            radius: 8
+            color: Qt.rgba(Style.colors.error.r, Style.colors.error.g, Style.colors.error.b, 0.12)
+            border.width: 1
+            border.color: Qt.rgba(Style.colors.error.r, Style.colors.error.g, Style.colors.error.b, 0.4)
 
-                RowLayout {
-                    id: errorRow
-                    anchors.fill: parent
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    spacing: 10
+            RowLayout {
+                id: errorRow
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 10
 
-                    Text {
-                        Layout.alignment: Qt.AlignVCenter
-                        text: Style.icons.circleExclamation
-                        font.family: Style.fontTypes.font6Pro
-                        font.pixelSize: Style.appFont.smallPt
-                        color: Style.colors.error
-                    }
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: Style.icons.circleExclamation
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.error
+                }
 
+                Text {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: root.errorMessage
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: Style.appFont.smallPt
+                    font.family: Style.fontTypes.inter
+                    font.weight: 400
+                    font.letterSpacing: 0
+                    color: Style.colors.error
+                }
+            }
+        }
+    }
 
     /* Functions
      * ****************************************************************************************/
