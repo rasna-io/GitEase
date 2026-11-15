@@ -7,6 +7,7 @@ import GitEase
 import GitEase_Style
 import GitEase.Resources
 import GitEase_Style_Impl
+import Logger
 
 
 
@@ -42,6 +43,8 @@ ApplicationWindow {
     readonly property var fadeTarget: Style.windowOpacitySupported ? window : window.contentItem
 
     Component.onCompleted: {
+        Log.info("App", "Main window created")
+
         if(!Style.windowOpacitySupported) {
             window.contentItem.opacity = 0
         }

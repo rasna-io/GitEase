@@ -7,6 +7,15 @@ set(SOURCES_BACKEND
     Src/Utilities/UpdateManager/UpdateManager.cpp
     Src/Utilities/TextDirectionManager/TextDirectionManager.cpp
 
+    Src/Utilities/Logger/Level.cpp
+    Src/Utilities/Logger/Formatter.cpp
+    Src/Utilities/Logger/ConsoleSink.cpp
+    Src/Utilities/Logger/FileSink.cpp
+    Src/Utilities/Logger/LogModel.cpp
+    Src/Utilities/Logger/Logger.cpp
+    Src/Utilities/Logger/SignalHandler.cpp
+    Src/Utilities/Logger/QmlBridge.cpp
+
     Src/Git/IGitController.cpp
     Src/Git/Async/GitAsyncRunner.cpp
     Src/Git/GitRepository.cpp
@@ -57,6 +66,17 @@ set(HEADERS_BACKEND
     Src/Utilities/NetworkManager/NetworkManager.hpp
     Src/Utilities/UpdateManager/UpdateManager.hpp
     Src/Utilities/TextDirectionManager/TextDirectionManager.h
+
+    Src/Utilities/Logger/Level.h
+    Src/Utilities/Logger/Record.h
+    Src/Utilities/Logger/Formatter.h
+    Src/Utilities/Logger/Sink.h
+    Src/Utilities/Logger/ConsoleSink.h
+    Src/Utilities/Logger/FileSink.h
+    Src/Utilities/Logger/LogModel.h
+    Src/Utilities/Logger/Logger.h
+    Src/Utilities/Logger/SignalHandler.h
+    Src/Utilities/Logger/QmlBridge.h
 
     Src/Git/IGitController.h
     Src/Git/Async/GitAsyncRunner.h
