@@ -335,28 +335,27 @@ namespace {
         return extractOk;
     }
 
-    QString resolveLibraryPath(const QString& pluginDir, const QString& entry)
+    QString libraryRelativePath(const QString& entry)
     {
         if(entry.endsWith(QStringLiteral(".dll"), Qt::CaseInsensitive) ||
            entry.endsWith(QStringLiteral(".so"),  Qt::CaseInsensitive) ||
            entry.endsWith(QStringLiteral(".dylib"), Qt::CaseInsensitive))
         {
-            return QDir(pluginDir).filePath(entry);
+            return entry;
         }
 
 #if defined(Q_OS_WIN)
-        return QDir(pluginDir).filePath(entry + QStringLiteral(".dll"));
+        return entry + QStringLiteral(".dll");
 #elif defined(Q_OS_MACOS)
-        const QFileInfo fi(entry);
-        const QString dir  = fi.path();
-        const QString base = fi.fileName();
-        return QDir(pluginDir).filePath(dir + QStringLiteral("/lib") + base + QStringLiteral(".dylib"));
+        return entry + QStringLiteral(".dylib");
 #else
-        const QFileInfo fi(entry);
-        const QString dir  = fi.path();
-        const QString base = fi.fileName();
-        return QDir(pluginDir).filePath(dir + QStringLiteral("/lib") + base + QStringLiteral(".so"));
+        return entry + QStringLiteral(".so");
 #endif
+    }
+
+    QString resolveLibraryPath(const QString& pluginDir, const QString& entry)
+    {
+        return QDir(pluginDir).filePath(libraryRelativePath(entry));
     }
 
     PluginInfo readManifestFile(const QString& pluginDir)
@@ -655,7 +654,7 @@ namespace {
     bool packageHasPlatformLibrary(const QString& gepPath, const QString& cppEntry,
                                    QString* expectedName)
     {
-        const QString relative = QDir::cleanPath(resolveLibraryPath(QStringLiteral("."), cppEntry));
+        const QString relative = QDir::cleanPath(libraryRelativePath(cppEntry));
         if(expectedName) {
             *expectedName = QFileInfo(relative).fileName();
         }
