@@ -1202,6 +1202,10 @@ DetachablePanel {
             return
         }
 
+        if(preserveScrollPosition === false || root.allCommits.length === 0) {
+            root.isLoadingRepo = true
+        }
+
         if (commitsListView && (commitsListView.moving || commitsListView.dragging)) {
             root.deferredReload = { preserveScrollPosition: preserveScrollPosition }
             return
