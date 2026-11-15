@@ -16,10 +16,18 @@ Item {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property UserProfileController userProfileController: null
+
+    property var  existingUser: null
+
+    readonly property bool hasExistingUser: root.existingUser !== null
     property string fullName: fullNameField.text
     property string email: emailField.text
     property bool showHint: true
     property string errorMessage: ""
+
+    onUserProfileControllerChanged: root.refresh()
+    Component.onCompleted: root.refresh()
 
     /* Children
      * ****************************************************************************************/
@@ -133,20 +141,16 @@ Item {
                         color: Style.colors.error
                     }
 
-                    Text {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
-                        text: root.errorMessage
-                        wrapMode: Text.WordWrap
-                        font.pixelSize: Style.appFont.smallPt
-                        font.family: Style.fontTypes.inter
-                        font.weight: 400
-                        font.letterSpacing: 0
-                        color: Style.colors.error
-                    }
-                }
-            }
-        }
-    }
-}
 
+    /* Functions
+     * ****************************************************************************************/
+
+    //! Reads who git already commits as. No repository is open yet, so that is the global
+    //! (or system) user.
+    function refresh() {
+        const identity = root.userProfileController?.refreshIdentity() ?? null
+        root.existingUser = identity && identity.found
+                            ? { name: identity.name, email: identity.email, level: identity.level }
+                            : null
+        existingUserRadio.checked = true // keeping the user git already has is the default
+    }
