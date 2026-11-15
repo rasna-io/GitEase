@@ -23,6 +23,10 @@ Item {
     readonly property bool hasExistingUser: root.existingUser !== null
 
     readonly property bool useExisting: root.hasExistingUser && existingUserRadio.checked
+
+    readonly property int  scope: nextRepositoryRadio.checked ? Config.Local : Config.Global
+    readonly property bool asksForName: !root.hasExistingUser || !root.useExisting
+
     property string fullName: fullNameField.text
     property string email: emailField.text
     property bool showHint: true
@@ -34,6 +38,8 @@ Item {
     /* Children
      * ****************************************************************************************/
     ButtonGroup { id: userChoiceGroup }
+    ButtonGroup { id: scopeGroup }
+
     ColumnLayout {
         anchors.centerIn: parent
         width: Math.min(parent.width - 40, 420)
@@ -111,36 +117,66 @@ Item {
 
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 18
+            Layout.leftMargin: root.hasExistingUser ? 23 : 0
+            visible: root.asksForName
+            spacing: root.hasExistingUser ? 10 : 14
 
-            // First input section: Full Name
-            FormInputField {
-                id: fullNameField
-                label: "Full Name"
-                placeholderText: "John Doe"
-                icon: Style.icons.user
-                helperText: "This will appear as the author on all your commits"
-            }
-
-            // Second input section: Email Address
-            FormInputField {
-                id: emailField
-                label: "Email Address"
-                placeholderText: "john@example.com"
-                icon: Style.icons.envelope
-                helperText: "Use the same email as your GitHub/GitLab account to link commits"
-            }
-
-            // Hint row
-            Rectangle {
-                id: hintRectangle
-                visible: root.showHint && root.errorMessage.length === 0
+            GridLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: hintRow.implicitHeight + 20
-                radius: 8
-                color: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.12)
-                border.width: 1
-                border.color: Qt.rgba(Style.colors.accent.r, Style.colors.accent.g, Style.colors.accent.b, 0.25)
+                columns: root.hasExistingUser ? 2 : 1
+                columnSpacing: 12
+                rowSpacing: 14
+
+                // First input section: Full Name
+                FormInputField {
+                    id: fullNameField
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    label: "Full Name"
+                    placeholderText: "John Doe"
+                    icon: Style.icons.user
+                    helperText: root.hasExistingUser ? "" : "This will appear as the author on all your commits"
+                }
+
+                // Second input section: Email Address
+                FormInputField {
+                    id: emailField
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    label: "Email Address"
+                    placeholderText: "john@example.com"
+                    icon: Style.icons.envelope
+                    helperText: root.hasExistingUser ? "" : "Use the same email as your GitHub/GitLab account to link commits"
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 0
+
+                Text {
+                    text: "Use for:"
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.smallPt
+                    font.weight: 600
+                    color: Style.colors.secondaryText
+                }
+
+                RepoRadio {
+                    ButtonGroup.group: scopeGroup
+                    text: "All repositories"
+                    checked: true
+                }
+
+                RepoRadio {
+                    id: nextRepositoryRadio
+                    ButtonGroup.group: scopeGroup
+                    text: "Only the repository I open next"
+                }
+            }
+        }
+
+            visible: root.showHint && root.errorMessage.length === 0 && !root.asksForName
 
                 RowLayout {
                     id: hintRow
@@ -160,7 +196,7 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
-                        text: "You can change these settings later in the Settings page"
+                    text: "You can add more users or switch between them later, from your profile at the bottom-left"
                         wrapMode: Text.WordWrap
                         font.pixelSize: Style.appFont.smallPt
                         font.family: Style.fontTypes.inter
