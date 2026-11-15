@@ -703,19 +703,10 @@ Item {
     }
 
     function submitForm() {
-        if (fullNameField.field.text.trim().length === 0) {
-            errorMessage.text = "Full name cannot be empty"
-            return
-        }
-
-        if (emailField.field.text.trim().length === 0) {
-            errorMessage.text = "Email cannot be empty"
-            return
-        }
-
-        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(emailField.field.text.trim())) {
-            errorMessage.text = "Please enter a valid email address"
+        let problem = root.userProfileController.identityProblem(fullNameField.field.text,
+                                                                 emailField.field.text)
+        if (problem !== "") {
+            errorMessage.text = problem
             return
         }
 
