@@ -603,6 +603,14 @@ Item {
         onUseHereToo:         root.userProfileController.useAsDefault(username, email, true)
     }
 
+    ConfirmCommandDialog {
+        id: deleteDialog
+
+        onConfirmed: function(context) {
+            root.userProfileController.remove(context.username, context.email)
+        }
+    }
+
     /* Functions
      * ****************************************************************************************/
 
@@ -626,6 +634,35 @@ Item {
         useAsDefaultDialog.repositoryName     = root.userProfileController.appModel?.currentRepository?.name ?? ""
         useAsDefaultDialog.open()
     }
+
+    //! Deleting a user that is written in git config also removes it from there, so ask first.
+    function requestDelete(username, email) {
+        let levels = root.userProfileController.writableLevelsOf(username, email)
+        if (levels.length === 0) {
+            root.userProfileController.remove(username, email)
+            return
+        }
+
+        let places = []
+        let commands = []
+        if (levels.includes(Config.Local) || levels.includes(Config.Worktree)) {
+            places.push(qsTr("this repository's git config"))
+            commands.push(GitCommandText.unsetUserIdentity("--local"))
+        }
+        if (levels.includes(Config.Global)) {
+            places.push(qsTr("your global git config"))
+            commands.push(GitCommandText.unsetUserIdentity("--global"))
+        }
+
+        deleteDialog.ask(qsTr("Delete %1?").arg(username),
+                         qsTr("%1 is set in %2. Deleting removes it from there too, and git uses the "
+                              + "next name and email it finds. If there is none, you'll be asked at "
+                              + "the next commit.").arg(username).arg(places.join(qsTr(" and "))),
+                         commands.join(" && "),
+                         qsTr("Delete"),
+                         { username: username, email: email })
+    }
+
     function openAddForm() {
         root.isEditing = false
         root.editingUsername = ""
