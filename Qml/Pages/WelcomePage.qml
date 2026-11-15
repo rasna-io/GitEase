@@ -370,32 +370,15 @@ Rectangle {
                                 break
                             }
 
-                            if(setupProfileForm.fullName.length === 0
-                                    && setupProfileForm.email.length === 0)
-                                root.controller.nextPage()
-                            else{
-                                if(setupProfileForm.fullName.length === 0){
-                                    setupProfileForm.errorMessage = "full name can't empty"
-                                    break
-                                }
-
-                                if(setupProfileForm.email.length === 0){
-                                    setupProfileForm.errorMessage = "email can't empty"
-                                    break
-                                }
-
-                                let userProfile = userProfileController.createUserProfile(
-                                                    setupProfileForm.fullName,
-                                                    "", // Password
-                                                    setupProfileForm.email)
-
-                                if(userProfile) {
-                                    root.controller.nextPage()
-                                    setupProfileForm.errorMessage = ""
-                                }else
-                                    setupProfileForm.errorMessage = "can't register profile"
+                            // Skipping is its own button now; Continue always saves the choice.
+                            let problem = setupProfileForm.save()
+                            if (problem !== "") {
+                                setupProfileForm.errorMessage = problem
+                                break
                             }
 
+                            setupProfileForm.errorMessage = ""
+                            root.controller.nextPage()
                             break
                         case Enums.WelcomePages.OpenRepository:
                             if(repositorySelector.submit())
