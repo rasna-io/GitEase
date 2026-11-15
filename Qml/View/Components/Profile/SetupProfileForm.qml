@@ -8,8 +8,13 @@ import GitEase
 
 /*! ***********************************************************************************************
  * SetupProfileForm
- * Reusable profile setup form component
- * Can be used in welcome flow or settings
+ * The "Set Up Your Profile" step of the welcome flow. Optional: with no user yet it can be
+ * skipped, and GitEase asks later, the first time a commit needs a name.
+ *
+ * - Git already has a user (global or system): keep it, or add a different name and email.
+ * - Git has no user: type a name and email, or skip.
+ * A new name and email is used for all repositories (global config) or only for the repository
+ * opened in the next step.
  * ************************************************************************************************/
 Item {
     id: root
