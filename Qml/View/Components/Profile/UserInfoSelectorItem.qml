@@ -27,6 +27,8 @@ AccentCard {
     signal deleteUser(string username, string email)
     signal selectForRepository(string username, string email)
 
+    signal useAsDefault(string username, string email)
+
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillWidth: true
@@ -248,8 +250,13 @@ AccentCard {
 
                 ContextMenu {
                     id: overflowMenu
-                    implicitWidth: 150
+                    implicitWidth: 170
                     menuModel: [
+                        {
+                            text: "Use as default",
+                            icon: Style.icons.check,
+                            action: function() { root.useAsDefault(root.username, root.email) }
+                        },
                         {
                             text: "Edit Profile",
                             icon: Style.icons.penToSquare,
