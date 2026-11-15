@@ -226,6 +226,41 @@ Rectangle {
                 onClicked: repositorySelector.cancelClone()
             }
 
+            // Setting up a user is optional; GitEase asks the first time a commit needs one.
+            Button {
+                id: skipProfileButton
+                anchors.right: continueButton.left
+                anchors.rightMargin: 10
+                width: 120
+                height: 40
+                flat: true
+                visible: root.controller?.currentPageIndex === Enums.WelcomePages.SetupProfle
+                         && !(setupProfileLoader.item?.hasExistingUser ?? false)
+                text: "Skip for now"
+                font.family: Style.fontTypes.inter
+                font.pixelSize: 12
+
+                background: Rectangle {
+                    radius: 8
+                    color: skipProfileButton.hovered ? Style.colors.controlBackgroundHover : "transparent"
+                    border.width: 1
+                    border.color: Style.colors.controlBorder
+                }
+
+                contentItem: Text {
+                    text: skipProfileButton.text
+                    font: skipProfileButton.font
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    setupProfileLoader.item.errorMessage = ""
+                    root.controller.nextPage()
+                }
+            }
+
             ProgressButton {
                 id: continueButton
                 anchors.right: parent.right
