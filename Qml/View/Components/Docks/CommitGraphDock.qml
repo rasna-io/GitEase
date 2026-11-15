@@ -44,6 +44,7 @@ DetachablePanel {
     property var                    pluginController        : null
     property GitTreeController      gitTreeController       : null
     property TextDirectionController textDirectionController : null
+    property IdentityGuard          identityGuard           : null
 
 
     property AddBranchPopup          addBranchPopup         : null
@@ -605,6 +606,7 @@ DetachablePanel {
         commitController        : root.commitController
         guideController         : root.guideController
         textDirectionController : root.textDirectionController
+        identityGuard           : root.identityGuard
         pluginManager           : root.pluginController?.pluginManager ?? null
         // onOperationCompleted    : reloadAll()        //TODO
     }
@@ -645,6 +647,7 @@ DetachablePanel {
         commitController        : root.commitController
         guideController         : root.guideController
         textDirectionController : root.textDirectionController
+        identityGuard           : root.identityGuard
         pluginManager           : root.pluginController?.pluginManager ?? null
         // onOperationCompleted    : reloadAll()        //TODO
     }
@@ -668,6 +671,7 @@ DetachablePanel {
         layoutController: root.layoutController
         guideController: root.guideController
         textDirectionController: root.textDirectionController
+        identityGuard: root.identityGuard
         pluginManager: root.pluginController?.pluginManager ?? null
         gitTree: root.gitTreeController
         repositoryPath: root.appModel?.currentRepository?.path ?? ""
@@ -1732,6 +1736,11 @@ DetachablePanel {
     function performMerge(source, noFF, deleteBranch = false, pushRemote = false) {
         var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
 
+        if (root.identityGuard.handle(res, "merge", function() {
+            root.performMerge(source, noFF, deleteBranch, pushRemote)
+        }))
+            return
+
         if (root.mergeController.isMergeInProgress() && root.mergeController.hasMergeConflicts()) {
             root.showConflictWindow(mergeConflictPopup)
             root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
@@ -1781,11 +1790,23 @@ DetachablePanel {
         var hashes  = selectedCommitHashesInOrder();
         var res     = cherryPickController.cherryPickCommits(hashes);
 
+        if (root.identityGuard.handle(res, "cherry-pick", function() { root.cherryPickCommits(hashes) }))
+            return;
+
+        handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
+    }
+
+    //! Picks exactly these commits again, e.g. after "Who is making this commit?" was answered.
+    function cherryPickCommits(hashes) {
+        var res = cherryPickController.cherryPickCommits(hashes);
         handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
     }
 
     function executeCherryPickSingle(commitHash) {
         var res = cherryPickController.cherryPickCommit(commitHash);
+
+        if (root.identityGuard.handle(res, "cherry-pick", function() { root.executeCherryPickSingle(commitHash) }))
+            return;
 
         handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
     }

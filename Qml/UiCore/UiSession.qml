@@ -16,6 +16,11 @@ QtObject {
 
     property GitStateNotifier     gitStateNotifier:     GitStateNotifier {}
 
+    property IdentityGuard        identityGuard:        IdentityGuard {
+        userProfileController: root.userProfileController
+        prompt:                root.popups?.identityPromptPopup ?? null
+    }
+
     property GuideController      guideController:      GuideController {
         appModel: root.appModel
     }

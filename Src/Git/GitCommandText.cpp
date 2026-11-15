@@ -348,3 +348,12 @@ QString GitCommandText::setUserIdentity(const QString &name, const QString &emai
     return QString("git config %1 user.name %2 && git config %1 user.email %3")
         .arg(levelFlag, quote(name), quote(email));
 }
+
+QString GitCommandText::unsetUserIdentity(const QString &levelFlag)
+{
+    if (levelFlag.isEmpty())
+        return QString("git config --unset user.name && git config --unset user.email");
+
+    return QString("git config %1 --unset user.name && git config %1 --unset user.email")
+        .arg(levelFlag);
+}

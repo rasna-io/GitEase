@@ -70,9 +70,11 @@ GitResult GitTag::create(const QString &name, const QString &targetId, const QSt
     if (message.isEmpty()) {
         error = git_tag_create_lightweight(&tag_oid, activeRepo(), name.toUtf8().constData(), target_obj, force ? 1 : 0);
     } else {
-        if (git_signature_default(&signature, activeRepo()) < 0) {
+        QString identityReason;
+        signature = defaultSignature(activeRepo(), &identityReason);
+        if (!signature) {
             git_object_free(target_obj);
-            return GitResult(false, QVariant(), "Git signature not found (set user.name and user.email)");
+            return identityMissingResult(identityReason);
         }
 
         error = git_tag_create(&tag_oid, activeRepo(), name.toUtf8().constData(), target_obj, signature, message.toUtf8().constData(), force ? 1 : 0);

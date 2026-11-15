@@ -39,6 +39,7 @@ Rectangle {
     property GitTreeController       gitTreeController       : null
     property GitStateNotifier        gitStateNotifier        : null
     property TextDirectionController textDirectionController : null
+    property IdentityGuard           identityGuard           : null
     property real                    animatedWidth           : root.open ? expandedWidth : 0
 
     /* Object Properties
@@ -299,6 +300,7 @@ Rectangle {
                     guideController         : root.guideController
                     textDirectionController : root.textDirectionController
                     gitTreeController       : root.gitTreeController
+                    identityGuard           : root.identityGuard
                     repositoryPath          : root.repositoryController?.appModel?.currentRepository?.path ?? ""
                     pluginManager           : root.pluginController?.pluginManager ?? null
                 }

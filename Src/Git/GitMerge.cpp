@@ -108,7 +108,12 @@ GitResult GitMerge::analyzeAndPerformMerge(git_commit* targetCommit,
     }
     else if ((analysis & GIT_MERGE_ANALYSIS_FASTFORWARD) ||
              (analysis & GIT_MERGE_ANALYSIS_NORMAL)) {
-        result = performNormalMerge(sourceRef);
+
+        QString identityReason;
+        if (hasIdentity(activeRepo(), &identityReason))
+            result = performNormalMerge(sourceRef);
+        else
+            result = identityMissingResult(identityReason);
     }
     else {
         result = GitResult(false, QVariant(), "Unsupported merge scenario.");
@@ -279,6 +284,10 @@ GitResult GitMerge::continueOp(const QString& commitMessage)
     if (m_pendingSourceHash.isEmpty() || m_pendingTargetHash.isEmpty())
         return GitResult(false, QVariant(), "Merge metadata is missing.");
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     git_oid sourceOid, targetOid;
     if (git_oid_fromstr(&sourceOid, m_pendingSourceHash.toUtf8().constData()) != GIT_OK ||
         git_oid_fromstr(&targetOid, m_pendingTargetHash.toUtf8().constData()) != GIT_OK) {
@@ -338,7 +347,7 @@ GitResult GitMerge::createMergeCommit(const QString& message,
     git_signature* sig = createSignature();
     if (!sig) {
         git_tree_free(tree);
-        return GitResult(false, QVariant(), "Failed to create commit signature.");
+        return identityMissingResult();
     }
 
     const git_commit* parents[] = { targetCommit, sourceCommit };
@@ -404,11 +413,7 @@ git_signature* GitMerge::createSignature() const
     if (!m_currentRepo || !activeRepo())
         return nullptr;
 
-    git_signature* sig = nullptr;
-
-    if (git_signature_default(&sig, activeRepo()) != GIT_OK)
-        git_signature_now(&sig, "Unknown", "unknown@example.com");
-    return sig;
+    return defaultSignature(activeRepo());
 }
 
 QString GitMerge::currentBranchName() const

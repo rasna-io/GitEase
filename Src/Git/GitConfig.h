@@ -20,7 +20,8 @@ public:
      * - System config (git config --system)
      * - Global config (git config --global)
      * - Local config (git config --local) - if repository is open
-     * - Worktree config (if applicable)
+     *
+     * Works without an open repository too; the local level is then left out.
      */
     Q_INVOKABLE GitResult getAllConfigs();
 
@@ -39,6 +40,28 @@ public:
      * \return GitResult
      */
     Q_INVOKABLE GitResult setConfig(int level, const QString &name, const QString &email);
+
+    /**
+     * \brief Who git will commit as: the same name and email a commit made now would get.
+     *
+     * Read the way git reads them: the open repository's config first, then the global one,
+     * then the system one. With no repository open, only the global and system configs count.
+     *
+     * \return On success, data holds name, email and level (the Config level the values come
+     *         from; with a name and email from different levels, the more specific one).
+     *         When git has no usable name and email, success is false, errorCode is
+     *         "identityMissing", and data still holds whatever is set.
+     */
+    Q_INVOKABLE GitResult resolveIdentity();
+
+    /**
+     * \brief Removes user.name and user.email from one config level.
+     *
+     * Unlike writing empty values, this lets git fall back to the next level again.
+     * Values that are not set count as removed.
+     * \param level Config level
+     */
+    Q_INVOKABLE GitResult unsetIdentity(int level);
 
     /**
      * \brief Get user name from a specific config level
@@ -74,6 +97,9 @@ public:
 private:
     Config getConfigAtLevel(git_config *cfg, Config::ConfigLevel level);
     QString getConfigValue(git_config *cfg, const QString &key);
+
+    //! Opens the config file of one level for writing. Free both outputs on success.
+    GitResult openLevelConfig(Config::ConfigLevel level, git_config **root, git_config **levelCfg);
 
     QString configLevelFlag(Config::ConfigLevel level);
 };

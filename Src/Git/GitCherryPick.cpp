@@ -39,6 +39,10 @@ GitResult GitCherryPick::cherryPickCommits(const QStringList& commitHashes)
                          "Repository is busy (merge/rebase/cherry-pick in progress).");
     }
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     m_startHeadHash = headHash();
     if (m_startHeadHash.isEmpty())
         return GitResult(false, QVariant(), "Failed to resolve HEAD.");
@@ -65,6 +69,10 @@ GitResult GitCherryPick::continueOp()
 
     if (m_currentIndex < 0 || m_currentIndex >= m_pendingCommits.size())
         return GitResult(false, QVariant(), "Cherry-pick state is invalid.");
+
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
 
     // Finalize the commit that previously conflicted
     QString currentHash = m_pendingCommits[m_currentIndex];
@@ -275,9 +283,13 @@ GitResult GitCherryPick::createCommitFromPick(git_commit* pickedCommit)
         authorCopy = nullptr;
     }
 
-    git_signature* committer = nullptr;
-    if (git_signature_default(&committer, activeRepo()) != GIT_OK) {
-        git_signature_now(&committer, "CherryPick", "CherryPick@example.com");
+    git_signature* committer = defaultSignature(activeRepo());
+    if (!committer) {
+        git_signature_free(authorCopy);
+        git_tree_free(tree);
+        git_index_free(index);
+        git_commit_free(headCommit);
+        return identityMissingResult();
     }
 
     const char* message = git_commit_message(pickedCommit);
@@ -440,6 +452,10 @@ GitResult GitCherryPick::skipOp()
 
     if (m_currentIndex < 0 || m_currentIndex >= m_pendingCommits.size())
         return GitResult(false, QVariant(), "Cherry-pick state is invalid.");
+
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
 
     git_object* headObj = nullptr;
     if (git_revparse_single(&headObj, activeRepo(), "HEAD") == GIT_OK) {

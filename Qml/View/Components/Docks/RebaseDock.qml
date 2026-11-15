@@ -27,6 +27,7 @@ UtilitiesCard {
     property GuideController        guideController:        null
     property TextDirectionController textDirectionController: null
     property GitTreeController       gitTreeController:       null
+    property IdentityGuard           identityGuard:           null
     property string                  repositoryPath:         ""
     property var                     pluginManager:          null
 
@@ -232,6 +233,7 @@ UtilitiesCard {
         notificationController: root.notificationController
         layoutController: root.layoutController
         guideController: root.guideController
+        identityGuard: root.identityGuard
         textDirectionController: root.textDirectionController
         pluginManager: root.pluginManager
         gitTree: root.gitTreeController

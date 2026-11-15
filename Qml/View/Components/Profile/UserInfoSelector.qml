@@ -218,11 +218,15 @@ Item {
                             }
 
                             onDeleteUser: function(username, email) {
-                                parentRoot.userProfileController.remove(username, email)
+                                parentRoot.requestDelete(username, email)
                             }
 
                             onSelectForRepository: function(username, email) {
                                 parentRoot.userProfileController.applyUserToRepository(username, email)
+                            }
+
+                            onUseAsDefault: function(username, email) {
+                                parentRoot.requestUseAsDefault(username, email)
                             }
                         }
                     }
@@ -589,8 +593,76 @@ Item {
         }
     }
 
+    UseAsDefaultDialog {
+        id: useAsDefaultDialog
+
+        property string username: ""
+        property string email:    ""
+
+        onKeepRepositoryUser: root.userProfileController.useAsDefault(username, email, false)
+        onUseHereToo:         root.userProfileController.useAsDefault(username, email, true)
+    }
+
+    ConfirmCommandDialog {
+        id: deleteDialog
+
+        onConfirmed: function(context) {
+            root.userProfileController.remove(context.username, context.email)
+        }
+    }
+
     /* Functions
      * ****************************************************************************************/
+
+    //! "Use as default": asks first when the open repository has a different user of its own,
+    //! because git keeps using that one there.
+    function requestUseAsDefault(username, email) {
+        let repositoryUser = root.userProfileController.repositoryUser()
+        let differentHere = repositoryUser !== null
+                            && (repositoryUser.name !== username || repositoryUser.email !== email)
+
+        if (!differentHere) {
+            root.userProfileController.useAsDefault(username, email, false)
+            return
+        }
+
+        useAsDefaultDialog.username           = username
+        useAsDefaultDialog.email              = email
+        useAsDefaultDialog.defaultUserName    = username
+        useAsDefaultDialog.repositoryUserName = repositoryUser.name !== "" ? repositoryUser.name
+                                                                           : repositoryUser.email
+        useAsDefaultDialog.repositoryName     = root.userProfileController.appModel?.currentRepository?.name ?? ""
+        useAsDefaultDialog.open()
+    }
+
+    //! Deleting a user that is written in git config also removes it from there, so ask first.
+    function requestDelete(username, email) {
+        let levels = root.userProfileController.writableLevelsOf(username, email)
+        if (levels.length === 0) {
+            root.userProfileController.remove(username, email)
+            return
+        }
+
+        let places = []
+        let commands = []
+        if (levels.includes(Config.Local) || levels.includes(Config.Worktree)) {
+            places.push(qsTr("this repository's git config"))
+            commands.push(GitCommandText.unsetUserIdentity("--local"))
+        }
+        if (levels.includes(Config.Global)) {
+            places.push(qsTr("your global git config"))
+            commands.push(GitCommandText.unsetUserIdentity("--global"))
+        }
+
+        deleteDialog.ask(qsTr("Delete %1?").arg(username),
+                         qsTr("%1 is set in %2. Deleting removes it from there too, and git uses the "
+                              + "next name and email it finds. If there is none, you'll be asked at "
+                              + "the next commit.").arg(username).arg(places.join(qsTr(" and "))),
+                         commands.join(" && "),
+                         qsTr("Delete"),
+                         { username: username, email: email })
+    }
+
     function openAddForm() {
         root.isEditing = false
         root.editingUsername = ""
@@ -631,19 +703,10 @@ Item {
     }
 
     function submitForm() {
-        if (fullNameField.field.text.trim().length === 0) {
-            errorMessage.text = "Full name cannot be empty"
-            return
-        }
-
-        if (emailField.field.text.trim().length === 0) {
-            errorMessage.text = "Email cannot be empty"
-            return
-        }
-
-        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(emailField.field.text.trim())) {
-            errorMessage.text = "Please enter a valid email address"
+        let problem = root.userProfileController.identityProblem(fullNameField.field.text,
+                                                                 emailField.field.text)
+        if (problem !== "") {
+            errorMessage.text = problem
             return
         }
 

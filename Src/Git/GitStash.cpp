@@ -21,13 +21,12 @@ GitResult GitStash::save(const QString &message, bool keepIndex)
         return GitResult(false, QVariant(), "Repository not found.");
     }
 
-    git_signature *signature = nullptr;
-    int result = git_signature_default(&signature, activeRepo());
+    QString identityReason;
+    git_signature *signature = defaultSignature(activeRepo(), &identityReason);
+    if (!signature)
+        return identityMissingResult(identityReason);
 
-    if (result != GIT_OK) {
-        return GitResult(false, QVariant(), "Failed to create signature.");
-    }
-
+    int result = GIT_OK;
     git_stash_flags flags = keepIndex ? GIT_STASH_KEEP_INDEX : GIT_STASH_DEFAULT;
 
     QByteArray msgArray = message.toUtf8();
@@ -107,9 +106,11 @@ static GitResult getHeadContext(git_repository *repo, git_commit **headCommit,
     git_object_free(headObj);
     *headCommit = (git_commit *)peeled;
 
-    if (git_signature_default(sig, repo) != GIT_OK) {
+    QString identityReason;
+    *sig = IGitController::defaultSignature(repo, &identityReason);
+    if (!*sig) {
         git_commit_free(*headCommit);
-        return GitResult(false, {}, "Failed to create signature.");
+        return IGitController::identityMissingResult(identityReason);
     }
 
     if (git_commit_tree(headTree, *headCommit) != GIT_OK) {
