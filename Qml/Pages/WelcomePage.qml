@@ -155,6 +155,7 @@ Rectangle {
 
                     sourceComponent: SetupProfileForm {
                         showHint: true
+                        userProfileController: root.userProfileController
                     }
                 }
 
