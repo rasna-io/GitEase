@@ -19,9 +19,19 @@ Item {
     property AppModel appModel
     property string   selectedPath: ""
 
+    readonly property string typedPath:   pathField.text
+    readonly property bool   isGitRepo:   root.typedPath !== ""
+                                          && (root.appModel?.fileIO?.isGitRepository(root.typedPath) ?? false)
+
     /* Object Properties
      * ****************************************************************************************/
     implicitHeight: col.implicitHeight + 32
+
+    /* Signal Handlers
+     * ****************************************************************************************/
+    onIsGitRepoChanged: root.selectedPath = root.isGitRepo ? root.typedPath : ""
+
+    onTypedPathChanged: root.selectedPath = root.isGitRepo ? root.typedPath : ""
 
     /* Functions
      * ****************************************************************************************/
@@ -51,7 +61,6 @@ Item {
             RepoTextField {
                 id: pathField
                 placeholderText: "C:/Users/Username/Documents/MyRepository"
-                onTextChanged: root.selectedPath = text
             }
 
             RepoBrowseButton {
@@ -70,21 +79,26 @@ Item {
             Layout.fillWidth: true
             Layout.topMargin: 6
             Layout.preferredHeight: 38
-            visible: root.selectedPath !== ""
+            visible: root.typedPath !== ""
             radius: 8
-            color: Qt.rgba(Style.colors.notificationSuccessIcon.r, Style.colors.notificationSuccessIcon.g, Style.colors.notificationSuccessIcon.b, 0.10)
+            color: Qt.rgba(accent.r, accent.g, accent.b, 0.10)
             border.width: 1
-            border.color: Qt.rgba(Style.colors.notificationSuccessIcon.r, Style.colors.notificationSuccessIcon.g, Style.colors.notificationSuccessIcon.b, 0.45)
+            border.color: Qt.rgba(accent.r, accent.g, accent.b, 0.45)
+
+            readonly property color accent: root.isGitRepo ? Style.colors.notificationSuccessIcon
+                                                           : Style.colors.notificationErrorIcon
 
             RepoValidationLine {
                 anchors.fill: parent
                 anchors.leftMargin: 12
                 anchors.rightMargin: 12
+                valid: root.isGitRepo
                 strong: {
-                    var p = root.selectedPath.replace(/[\/\\]+$/, "")
+                    var p = root.typedPath.replace(/[\/\\]+$/, "")
                     return p.split(/[\/\\]/).pop() || "Repository"
                 }
-                muted: "— Git repository, ready to open"
+                muted: root.isGitRepo ? "— Git repository, ready to open"
+                                      : "— Not a Git repository (no .git directory found)"
             }
         }
     }

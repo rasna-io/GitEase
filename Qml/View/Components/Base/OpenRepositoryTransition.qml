@@ -20,6 +20,7 @@ Item {
     property Item       mainWindow: null
     property bool       opening: false
     property var        incubator: null
+    property bool       failed: false
 
     // Fixed on purpose: this transition also plays with Reduced motion, where Style.motionMedium is 0
     readonly property int duration: 100
@@ -48,12 +49,41 @@ Item {
     }
 
     function startIncubation() {
+        root.failed = false
+
         let component = root.preload
-        if(!component || component.status !== Component.Ready) {
+        if(!component || component.status === Component.Error) {
             component = Qt.createComponent("qrc:/GitEase/Qml/View/MainWindow.qml")
         }
 
+        if(component.status === Component.Loading) {
+            component.statusChanged.connect(function() {
+                if(component.status !== Component.Loading) {
+                    root.incubate(component)
+                }
+            })
+            return
+        }
+
+        root.incubate(component)
+    }
+
+    function incubate(component) {
+        if(component.status !== Component.Ready) {
+            console.warn("[OpenRepositoryTransition] Failed to load MainWindow:", component.errorString())
+            root.failed = true
+            root.finish()
+            return
+        }
+
         let incubator = component.incubateObject(host, { "uiSession": root.session }, Qt.Asynchronous)
+        if(!incubator) {
+            console.warn("[OpenRepositoryTransition] Failed to start incubating MainWindow")
+            root.failed = true
+            root.finish()
+            return
+        }
+
         root.incubator = incubator
 
         if(incubator.status === Component.Loading) {
@@ -65,17 +95,18 @@ Item {
 
     function finish() {
         let incubator = root.incubator
-        if(resizeAnimation.running || !incubator) {
+        if(resizeAnimation.running || (!incubator && !root.failed)) {
             return
         }
 
-        if(incubator.status === Component.Loading) {
+        if(incubator && incubator.status === Component.Loading) {
             incubator.forceCompletion()
         }
 
         root.incubator = null
+        root.failed = false
 
-        if(incubator.status === Component.Ready) {
+        if(incubator && incubator.status === Component.Ready) {
             root.mainWindow = incubator.object
         }
 
