@@ -13,12 +13,15 @@
 namespace Log
 {
     /**
-     * \brief Writes records to UTF-8 log files with size based rotation and clean-up
+     * \brief Writes records to UTF-8 log files with rotation and clean-up
      *
-     * Every session gets its own file, "<baseName>_<yyyyMMdd_HHmmss>.log". When a file would grow
-     * past maxFileSize the sink continues in "<baseName>_<yyyyMMdd_HHmmss>.<n>.log". Files matching
-     * "<baseName>_*.log" are removed when more than maxFiles exist or when they are older than
-     * maxAgeDays. The file being written is never removed.
+     * Every session starts a file, "<baseName>_<yyyyMMdd_HHmmss>.log". When a file would pass
+     * maxLines lines (or maxFileSize bytes) the sink continues in
+     * "<baseName>_<yyyyMMdd_HHmmss>.<n>.log", so one long session can span several files.
+     *
+     * The clean-up counts sessions, not files. Only the newest maxSessions sessions are kept, with
+     * all of their files, and sessions older than maxAgeDays are removed. The current session is
+     * never removed.
      */
     class FileSink final : public ISink
     {
@@ -27,8 +30,11 @@ namespace Log
         {
             QString directory;
             QString baseName = QStringLiteral("app");
+            // Lines per file, 0 disables the limit
+            int maxLines = 2000;
+            // Safety cap in bytes, for records with very long lines
             qint64 maxFileSize = 10 * 1024 * 1024;
-            int maxFiles = 10;
+            int maxSessions = 5;
             int maxAgeDays = 30;
         };
 
@@ -48,12 +54,14 @@ namespace Log
         bool openNextFile();
         void cleanupOldFiles();
         QString fileNameFor(int index) const;
+        static qint64 countLines(const QString &path);
 
         Options m_options;
         std::shared_ptr<IFormatter> m_formatter;
 
         QFile m_file;
         qint64 m_fileSize = 0;
+        qint64 m_lineCount = 0;
         int m_fileIndex = 0;
         QString m_sessionStamp;
 

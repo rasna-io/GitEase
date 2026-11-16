@@ -284,8 +284,9 @@ namespace Log
             FileSink::Options options;
             options.directory = config.directory;
             options.baseName = config.appName;
+            options.maxLines = config.maxLinesPerFile;
             options.maxFileSize = config.maxFileSize;
-            options.maxFiles = config.maxFiles;
+            options.maxSessions = config.maxSessions;
             options.maxAgeDays = config.maxAgeDays;
 
             auto fileSink = std::make_shared<FileSink>(options, formatter);

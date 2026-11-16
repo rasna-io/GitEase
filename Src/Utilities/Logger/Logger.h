@@ -51,8 +51,16 @@ namespace Log
         // See PatternFormatter, ignored when json is set
         QString pattern = PatternFormatter::defaultPattern();
 
+        // Start a new file after this many lines, 0 disables the limit
+        int maxLinesPerFile = 2000;
+
+        // Safety cap for a single file in bytes, for records with very long lines
         qint64 maxFileSize = 10 * 1024 * 1024;
-        int maxFiles = 10;
+
+        // Sessions kept on disk. A session spans several files when it passes maxLinesPerFile.
+        int maxSessions = 5;
+
+        // Sessions older than this are removed, 0 disables the limit
         int maxAgeDays = 30;
 
         // Route qDebug(), qWarning(), qCDebug() and QML console.log() into the logger
