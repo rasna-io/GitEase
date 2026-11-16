@@ -2,6 +2,8 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QMap>
+#include <QRegularExpression>
 
 #include <algorithm>
 #include <cstdio>
@@ -13,14 +15,19 @@ namespace Log
         : m_options(options)
         , m_formatter(std::move(formatter))
     {
+        if(m_options.maxLines < 0)
+        {
+            m_options.maxLines = 0;
+        }
+
         if(m_options.maxFileSize < 1024)
         {
             m_options.maxFileSize = 1024;
         }
 
-        if(m_options.maxFiles < 1)
+        if(m_options.maxSessions < 1)
         {
-            m_options.maxFiles = 1;
+            m_options.maxSessions = 1;
         }
     }
 
@@ -71,6 +78,26 @@ namespace Log
         return QStringLiteral("%1_%2.%3.log").arg(m_options.baseName, m_sessionStamp).arg(index);
     }
 
+    qint64 FileSink::countLines(const QString &path)
+    {
+        QFile file(path);
+
+        if(!file.open(QIODevice::ReadOnly))
+        {
+            return 0;
+        }
+
+        qint64 lines = 0;
+
+        while(!file.atEnd())
+        {
+            const QByteArray chunk = file.read(64 * 1024);
+            lines += std::count(chunk.constBegin(), chunk.constEnd(), '\n');
+        }
+
+        return lines;
+    }
+
     bool FileSink::openNextFile()
     {
         if(m_file.isOpen())
@@ -92,7 +119,9 @@ namespace Log
             return false;
         }
 
+        // A file left by a session that started in the same second is continued, not restarted
         m_fileSize = m_file.size();
+        m_lineCount = m_fileSize > 0 ? countLines(path) : 0;
 
         std::lock_guard<std::mutex> lock(m_pathMutex);
         m_currentPath = path;
@@ -106,10 +135,18 @@ namespace Log
             return;
         }
 
-        QByteArray line = m_formatter->format(record).toUtf8();
-        line.append('\n');
+        QByteArray text = m_formatter->format(record).toUtf8();
+        text.append('\n');
 
-        if(m_fileSize > 0 && m_fileSize + line.size() > m_options.maxFileSize)
+        // A record with a multi-line message counts as several lines
+        const qint64 lines = std::count(text.constBegin(), text.constEnd(), '\n');
+
+        const bool tooManyLines = m_options.maxLines > 0
+            && m_lineCount > 0
+            && m_lineCount + lines > m_options.maxLines;
+        const bool tooBig = m_fileSize > 0 && m_fileSize + text.size() > m_options.maxFileSize;
+
+        if(tooManyLines || tooBig)
         {
             ++m_fileIndex;
 
@@ -121,11 +158,12 @@ namespace Log
             cleanupOldFiles();
         }
 
-        const qint64 written = m_file.write(line);
+        const qint64 written = m_file.write(text);
 
         if(written > 0)
         {
             m_fileSize += written;
+            m_lineCount += lines;
         }
     }
 
@@ -141,18 +179,26 @@ namespace Log
     {
         const QDir directory(m_options.directory);
         const QStringList filters { QStringLiteral("%1_*.log").arg(m_options.baseName) };
+        const QFileInfoList files = directory.entryInfoList(filters, QDir::Files, QDir::NoSort);
 
-        QFileInfoList files = directory.entryInfoList(filters, QDir::Files, QDir::NoSort);
+        // "<baseName>_<yyyyMMdd_HHmmss>[.<n>].log", the stamp identifies the session
+        const QString expression = QStringLiteral("^%1_(\\d{8}_\\d{6})(?:\\.\\d+)?\\.log$")
+                                       .arg(QRegularExpression::escape(m_options.baseName));
+        const QRegularExpression namePattern(expression);
 
-        // Newest first, so everything after maxFiles entries is the oldest
-        auto newerFirst = [](const QFileInfo &a, const QFileInfo &b)
+        // The stamp sorts chronologically, so the map is ordered from the oldest session
+        QMap<QString, QFileInfoList> sessions;
+
+        for(const QFileInfo &info : files)
         {
-            return a.lastModified() > b.lastModified();
-        };
+            const QRegularExpressionMatch match = namePattern.match(info.fileName());
 
-        std::sort(files.begin(), files.end(), newerFirst);
+            if(match.hasMatch())
+            {
+                sessions[match.captured(1)].append(info);
+            }
+        }
 
-        const QString current = currentFilePath();
         QDateTime threshold;
 
         if(m_options.maxAgeDays > 0)
@@ -160,26 +206,38 @@ namespace Log
             threshold = QDateTime::currentDateTime().addDays(-m_options.maxAgeDays);
         }
 
-        int kept = 0;
+        // Newest session first. The current one is always kept and takes one of the slots.
+        int keptSessions = 0;
 
-        for(const QFileInfo &info : std::as_const(files))
+        for(auto it = sessions.crbegin(); it != sessions.crend(); ++it)
         {
-            // The file in use is never removed and always takes one of the maxFiles slots
-            if(info.absoluteFilePath() == current)
+            const QFileInfoList &sessionFiles = it.value();
+
+            if(it.key() == m_sessionStamp)
             {
+                ++keptSessions;
                 continue;
             }
 
-            const bool tooMany = kept >= m_options.maxFiles - 1;
-            const bool tooOld = threshold.isValid() && info.lastModified() < threshold;
+            QDateTime lastWrite;
 
-            if(tooMany || tooOld)
+            for(const QFileInfo &info : sessionFiles)
+            {
+                lastWrite = std::max(lastWrite, info.lastModified());
+            }
+
+            const bool tooMany = keptSessions >= m_options.maxSessions;
+            const bool tooOld = threshold.isValid() && lastWrite < threshold;
+
+            if(!tooMany && !tooOld)
+            {
+                ++keptSessions;
+                continue;
+            }
+
+            for(const QFileInfo &info : sessionFiles)
             {
                 QFile::remove(info.absoluteFilePath());
-            }
-            else
-            {
-                ++kept;
             }
         }
     }
