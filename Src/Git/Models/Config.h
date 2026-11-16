@@ -6,7 +6,6 @@
 class Config
 {
     Q_GADGET
-    QML_ELEMENT
 
     Q_PROPERTY(QString name READ name CONSTANT FINAL)
     Q_PROPERTY(QString email READ email CONSTANT FINAL)
@@ -39,3 +38,11 @@ private:
 };
 
 Q_DECLARE_METATYPE(Config)
+
+// Exposes the enums of Config to QML as "Config" (gadget names can't be uppercase value types)
+namespace ConfigQml
+{
+    Q_NAMESPACE
+    QML_NAMED_ELEMENT(Config)
+    QML_FOREIGN_NAMESPACE(Config)
+}

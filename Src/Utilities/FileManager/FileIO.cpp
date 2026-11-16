@@ -184,3 +184,20 @@ bool FileIO::isFileExist(const QString &path)
 {
     return QFile::exists(path);
 }
+
+bool FileIO::isGitRepository(const QString &path)
+{
+    if(path.isEmpty())
+    {
+        return false;
+    }
+
+    const QDir dir{path};
+
+    if(!dir.exists())
+    {
+        return false;
+    }
+
+    return QFileInfo::exists(dir.filePath(".git"));
+}
