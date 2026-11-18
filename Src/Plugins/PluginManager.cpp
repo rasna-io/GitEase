@@ -1161,7 +1161,13 @@ bool PluginManager::loadCppPlugin(const PluginInfo& info, const QString& prepare
     loader->setLoadHints(QLibrary::ExportExternalSymbolsHint);
     QObject* obj = loader->instance();
     if(!obj) {
-        emit pluginError(info.id, loader->errorString());
+        QString error = loader->errorString();
+        if(error.contains(QStringLiteral("incompatible Qt library"))) {
+            error += QStringLiteral(" GitEase runs on Qt %1; rebuild the plugin with Qt %1 or older.")
+                         .arg(QString::fromLatin1(qVersion()));
+        }
+        qWarning().noquote() << "[PluginManager] Failed to load" << libPath << ":" << error;
+        emit pluginError(info.id, error);
         delete loader;
         return false;
     }
