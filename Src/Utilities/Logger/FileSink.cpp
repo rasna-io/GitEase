@@ -209,8 +209,9 @@ namespace Log
         // Newest session first. The current one is always kept and takes one of the slots.
         int keptSessions = 0;
 
-        for(auto it = sessions.crbegin(); it != sessions.crend(); ++it)
+        for(auto it = sessions.cend(); it != sessions.cbegin();)
         {
+            --it;
             const QFileInfoList &sessionFiles = it.value();
 
             if(it.key() == m_sessionStamp)
