@@ -25,6 +25,7 @@ public:
     Q_INVOKABLE void write(bool async = false);
     Q_INVOKABLE bool createDir(QString path);
     Q_INVOKABLE bool isFileExist(const QString &path);
+    Q_INVOKABLE bool isGitRepository(const QString &path);
 
     void setFileName(QString filename);
     void setFileContent(QString fileContent);

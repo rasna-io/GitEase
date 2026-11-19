@@ -55,19 +55,14 @@ elseif(APPLE)
     )
 elseif(UNIX)
     target_link_libraries(libgit2 INTERFACE
-        libssh2              
-        "${SSL_LIBRARY}"      
-        "${CRYPTO_LIBRARY}"   
-        "${ZLIB_LIBRARY}"     
-        gssapi_krb5
-        krb5
-        k5crypto
-        com_err
-        pthread               
+        libssh2
+        "${SSL_LIBRARY}"
+        "${CRYPTO_LIBRARY}"
+        "${ZLIB_LIBRARY}"
+        pthread
         dl
         rt
         m
-        pcre
     )
 endif()
 

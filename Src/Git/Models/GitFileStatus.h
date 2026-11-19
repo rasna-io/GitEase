@@ -7,7 +7,6 @@
 class GitFileStatus
 {
     Q_GADGET
-    QML_ELEMENT
 
     Q_PROPERTY(QString path READ path CONSTANT FINAL)
     Q_PROPERTY(Status status READ status CONSTANT FINAL)
@@ -105,3 +104,11 @@ private:
     int m_additionsCount = 0;
     DeltaStatus m_deltaStatus = static_cast<DeltaStatus>(0);
 };
+
+// Exposes the enums of GitFileStatus to QML as "GitFileStatus" (gadget names can't be uppercase value types)
+namespace GitFileStatusQml
+{
+    Q_NAMESPACE
+    QML_NAMED_ELEMENT(GitFileStatus)
+    QML_FOREIGN_NAMESPACE(GitFileStatus)
+}
