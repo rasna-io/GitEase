@@ -95,18 +95,18 @@ T.Button {
                 Image {
                     id: iconImage
                     anchors.fill: parent
-                    visible: control.icon.name === "" && control.icon.source.toString() !== ""
+                    visible: false
                     source: control.icon.source
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit
                     smooth: true
+                }
 
-                    ColorOverlay {
-                        anchors.fill: iconImage
-                        source: iconImage
-                        color: control.icon.color
-                        visible: iconImage.visible
-                    }
+                ColorOverlay {
+                    anchors.fill: iconImage
+                    source: iconImage
+                    color: control.icon.color
+                    visible: control.icon.name === "" && control.icon.source.toString() !== ""
                 }
             }
 
