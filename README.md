@@ -276,7 +276,7 @@ For example, `GitEase --path="C:\code\my-app" --page=committing` opens straight 
 **Requirements**
 
 - CMake 3.16 or newer, and Ninja (or another CMake generator)
-- Qt 6 with Qt Quick, Qt Quick Controls, Qt SVG and Qt Concurrent, plus Qt Test for the unit tests. GitEase is developed against Qt 6.10.
+- Qt 6 with Qt Quick, Qt Quick Controls, Qt SVG and Qt Concurrent, plus Qt Test for the unit tests. GitEase is developed against Qt 6.10; Qt 6.5 is the minimum (untested), and the Qt 5 Compatibility module is needed.
 - A C++17 compiler:
   - **Windows:** MinGW 13.1 (64-bit). The prebuilt libgit2, libssh2, OpenSSL and zlib in [`Ext`](Ext) are MinGW libraries, so MSVC builds aren't supported.
   - **Linux:** GCC or Clang.
@@ -298,7 +298,21 @@ The script expects Qt in `C:\Qt\6.10.1\mingw_64` and MinGW in `C:\Qt\Tools\mingw
 ./Scripts/build.sh    # builds build/release and creates a .deb
 ```
 
-The script uses the newest Qt it finds under `~/Qt` or `/opt/Qt`; set `QT_PATH` (for example `QT_PATH=~/Qt/6.10.1`) to choose one.
+The script uses the newest Qt it finds under `~/Qt` or `/opt/Qt`. Choose one with `--qt 6.5.3` or `QT_PATH` (for example `QT_PATH=~/Qt/6.10.1`). Use `--glibc <version>` to set the oldest glibc the `.deb` supports; by default it is the chosen Qt's floor (see `./Scripts/build.sh --help`).
+
+A `.deb` built this way only runs on distros with a glibc at least as new as the build machine's. For a package that installs on Ubuntu 20.04+ and Debian 11+, build it in Docker instead:
+
+```bash
+./Scripts/docker-build.sh    # needs only Docker; --qt 6.x.y picks another Qt 6.5 - 6.9
+```
+
+It builds in an `ubuntu:20.04` container (glibc 2.31) with Qt 6.8.3 downloaded into the image. The static libraries in `Ext` are rebuilt there, and the sample plugins are built with the same Qt (Qt rejects a plugin built with a newer Qt than the app). The script then installs the `.deb` on Ubuntu 20.04–26.04 and Debian 11–13 and starts GitEase with the plugins loaded. The `.deb` and the plugins' `.gep` files end up in `dist/linux`. Qt 6.10+ needs glibc 2.34, so it cannot be used for this build.
+
+Install the package with apt, which also installs its dependencies:
+
+```bash
+sudo apt install ./GitEase-0.9.0-linux-glibc2.31-amd64.deb
+```
 
 **Any platform, step by step**
 
