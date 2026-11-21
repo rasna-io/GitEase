@@ -327,7 +327,12 @@ GitResult GitStatus::status(bool withLineStats)
             deltaStatus = GitFileStatus::MODIFIED;
         }
 
-        fileInfos.append(GitFileStatus(entry, add, del, deltaStatus));
+        const bool isBinary = matched
+            && ((matched->flags & GIT_DIFF_FLAG_BINARY)
+                || (matched->old_file.flags & GIT_DIFF_FLAG_BINARY)
+                || (matched->new_file.flags & GIT_DIFF_FLAG_BINARY));
+
+        fileInfos.append(GitFileStatus(entry, add, del, deltaStatus, isBinary));
     }
 
     git_status_list_free(status_list);
@@ -771,12 +776,22 @@ GitResult GitStatus::getWorkingDirectoryDiff(const QString &headCommitHash, cons
     for (const auto &line : rawLines)
         result.append(line);
 
+    bool isBinary = false;
+    if (git_diff_num_deltas(diff) > 0) {
+        const git_diff_delta *delta = git_diff_get_delta(diff, 0);
+        isBinary = delta
+            && ((delta->flags & GIT_DIFF_FLAG_BINARY)
+                || (delta->old_file.flags & GIT_DIFF_FLAG_BINARY)
+                || (delta->new_file.flags & GIT_DIFF_FLAG_BINARY));
+    }
+
     git_diff_free(diff);
     git_tree_free(headTree);
     git_object_free(headObj);
 
     // Same fallback as getDiff(): libgit2 can still yield an empty patch for untracked files.
-    if (result.isEmpty()) {
+    // Skip for binary files — there is no useful text content to show as additions.
+    if (result.isEmpty() && !isBinary) {
         uint32_t mode = 0;
         if (!getIndexBlob(activeRepo(), filePath, &mode)) {
             std::vector<QString> lines = readWorkdirLines(activeRepo(), filePath);
@@ -791,7 +806,9 @@ GitResult GitStatus::getWorkingDirectoryDiff(const QString &headCommitHash, cons
                        .arg(quoteCommandArg(headCommitHash),
                             quoteCommandArg(filePath)));
 
-    return GitResult(true, QVariant::fromValue(result), "Working directory diff retrieved successfully.");
+    return GitResult(true, QVariant::fromValue(result),
+                     isBinary ? QStringLiteral("binary")
+                              : QStringLiteral("Working directory diff retrieved successfully."));
 }
 
 GitResult GitStatus::getCommitFileChanges(const QString &commitHash)

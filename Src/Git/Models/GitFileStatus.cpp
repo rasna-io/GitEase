@@ -46,21 +46,35 @@ GitFileStatus::GitFileStatus(const git_status_entry *entry)
     m_isUntracked = entry->status & GIT_STATUS_WT_NEW;
 }
 
+static bool deltaIsBinary(const git_diff_delta *delta)
+{
+    if (!delta)
+        return false;
+
+    return (delta->flags & GIT_DIFF_FLAG_BINARY)
+        || (delta->old_file.flags & GIT_DIFF_FLAG_BINARY)
+        || (delta->new_file.flags & GIT_DIFF_FLAG_BINARY);
+}
+
 GitFileStatus::GitFileStatus(const git_diff_delta *delta, int additions, int deletions)
 {
     if (!delta)
         return;
 
-    m_path = QString::fromUtf8(delta->new_file.path);
+    const char *path = delta->new_file.path ? delta->new_file.path : delta->old_file.path;
+    if (path)
+        m_path = QString::fromUtf8(path);
     m_additionsCount = additions;
     m_deletionsCount = deletions;
     m_deltaStatus = static_cast<DeltaStatus>(delta->status);
+    m_isBinary = deltaIsBinary(delta);
 }
 
 GitFileStatus::GitFileStatus(const git_status_entry *entry,
                              int additions,
                              int deletions,
-                             DeltaStatus deltaStatus)
+                             DeltaStatus deltaStatus,
+                             bool isBinary)
 {
     if (!entry) return;
 
@@ -86,6 +100,7 @@ GitFileStatus::GitFileStatus(const git_status_entry *entry,
     m_additionsCount = additions;
     m_deletionsCount = deletions;
     m_deltaStatus = deltaStatus;
+    m_isBinary = isBinary;
 }
 
 QString GitFileStatus::path() const
@@ -118,6 +133,10 @@ bool GitFileStatus::isConflicted() const
     return m_isConflicted;
 }
 
+bool GitFileStatus::isBinary() const
+{
+    return m_isBinary;
+}
 
 int GitFileStatus::deletionsCount() const
 {

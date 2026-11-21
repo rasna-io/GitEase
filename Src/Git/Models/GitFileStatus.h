@@ -18,6 +18,7 @@ class GitFileStatus
     Q_PROPERTY(int deletionsCount READ deletionsCount CONSTANT FINAL)
     Q_PROPERTY(int additionsCount READ additionsCount CONSTANT FINAL)
     Q_PROPERTY(DeltaStatus deltaStatus READ deltaStatus CONSTANT FINAL)
+    Q_PROPERTY(bool isBinary READ isBinary CONSTANT FINAL)
 
     Q_PROPERTY(QString indexStatus READ indexStatus CONSTANT)
 
@@ -69,7 +70,7 @@ public:
     GitFileStatus(const git_diff_delta *delta, int additions, int deletions);
 
     GitFileStatus(const git_status_entry *entry, int additions, int deletions,
-                  DeltaStatus deltaStatus);
+                  DeltaStatus deltaStatus, bool isBinary = false);
 
 
     QString path() const;
@@ -83,6 +84,8 @@ public:
     bool isUntracked() const;
 
     bool isConflicted() const;
+
+    bool isBinary() const;
 
     int deletionsCount() const;
 
@@ -110,6 +113,7 @@ private:
     int m_deletionsCount = 0;
     int m_additionsCount = 0;
     DeltaStatus m_deltaStatus = static_cast<DeltaStatus>(0);
+    bool m_isBinary = false;
 };
 
 // Exposes the enums of GitFileStatus to QML as "GitFileStatus" (gadget names can't be uppercase value types)
