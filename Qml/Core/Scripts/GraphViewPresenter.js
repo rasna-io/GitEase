@@ -58,11 +58,7 @@ function handleCommitClicked(commitId) {
     var node = commitGraph.commits.find(function(c) { return c.hash === commitId; });
     if (node && node.isUncommitted) {
         var res = statusController.status();
-        if (!res.success || !res.data) {
-            fileChangesDock.files = [];
-            return;
-        }
-        fileChangesDock.files = res.data;
+        fileChangesDock.showFiles(res.success && res.data ? res.data : []);
     }
 }
 
@@ -76,6 +72,13 @@ function handleFileSelected(filePath) {
     var commitId = selectedCommit;
     if (!commitId)
         return;
+
+    if (!filePath) {
+        diffView.selectedFile = "";
+        diffView.isBinaryFile = false;
+        diffView.diffData = [];
+        return;
+    }
 
     // Also picks the syntax colorizer, or an image viewer, for the file.
     diffView.selectedFile = filePath;

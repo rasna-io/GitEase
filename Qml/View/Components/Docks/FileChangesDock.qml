@@ -432,13 +432,17 @@ DetachablePanel {
 
         let res = statusController.getCommitFileChanges(root.commitHash)
 
-        root.files = res.success ? res.data : []
-        root.selectedFile = root.files.length > 0 ? root.files[0] : null
-        root.fileSelected(root.selectedFile ? root.selectedFile.path : "")
+        root.showFiles(res.success ? res.data : [])
     }
 
     /* Functions
      * ****************************************************************************************/
+    function showFiles(fileList) {
+        root.files = fileList || []
+        root.selectedFile = root.files.length > 0 ? root.files[0] : null
+        root.fileSelected(root.selectedFile ? root.selectedFile.path : "")
+    }
+
     function getFileExtension(path) {
        // Ensure the path is a valid string
        if (typeof path !== "string" || path.length === 0) {
