@@ -44,6 +44,7 @@ DetachablePanel {
     property bool fileIsEdited: false
     property string selectedFile: ""
     property int selectedFileStatus: -1
+    property bool isBinaryFile: false
     property bool hasHeaderMiddleComponent: false
 
     // Properties used for selection
@@ -191,8 +192,11 @@ DetachablePanel {
     }
 
     EmptyStateView {
-        title: "No file changes to show"
-        details: "Select a file to view the Diff"
+        title: root.isBinaryFile ? qsTr("Binary file")
+                                 : qsTr("No file changes to show")
+        details: root.isBinaryFile ? qsTr("Text diff is not available for binary files.")
+                                   : (root.selectedFile ? qsTr("This file has no textual changes to display.")
+                                                        : qsTr("Select a file to view the Diff"))
         visible: !imageDiff.active && (chunkMode ? (!chunkData || chunkData.length === 0)
                            : (!root.diffData || root.diffData.length === 0))
     }
