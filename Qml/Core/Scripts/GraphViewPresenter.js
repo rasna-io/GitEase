@@ -36,6 +36,7 @@ function clearSelection() {
     selectedCommit          = "";
     selectedFilePath        = "";
     diffView.selectedFile   = "";
+    diffView.isBinaryFile   = false;
     diffView.diffData       = null;
 }
 
@@ -78,6 +79,7 @@ function handleFileSelected(filePath) {
 
     // Also picks the syntax colorizer, or an image viewer, for the file.
     diffView.selectedFile = filePath;
+    diffView.isBinaryFile = !!(fileChangesDock.selectedFile && fileChangesDock.selectedFile.isBinary);
 
     var node = commitGraph.commits ? commitGraph.commits.find(function(c) { return c.hash === commitId; }) : null;
 
@@ -87,6 +89,7 @@ function handleFileSelected(filePath) {
         diffView.imageOldRevision = "HEAD";
         diffView.imageNewRevision = "";
         if (diffView.prefersImageViewer && diffView.prefersImageViewer(filePath)) {
+            diffView.isBinaryFile = false;
             diffView.diffData = [];
             diffView.chunkData = [];
             return;
@@ -97,8 +100,11 @@ function handleFileSelected(filePath) {
             return;
         }
         var res = statusController.getWorkingDirectoryDiff(headHash, filePath);
-        if (res && res.success)
+        if (res && res.success) {
+            if (res.errorMessage === "binary")
+                diffView.isBinaryFile = true;
             diffView.diffData = res.data;
+        }
         return;
     }
 
@@ -128,6 +134,7 @@ function handleFileSelected(filePath) {
     }
 
     if (diffView.prefersImageViewer && diffView.prefersImageViewer(filePath)) {
+        diffView.isBinaryFile = false;
         diffView.diffData = [];
         diffView.chunkData = [];
         return;

@@ -363,8 +363,10 @@ DetachablePanel {
                                 spacing: 0
 
                                 Label {
-                                    text: fileData.additionsCount  || "0"
-                                    color: Style.colors.compatible
+                                    text: fileData.isBinary ? qsTr("bin")
+                                                            : (fileData.additionsCount || "0")
+                                    color: fileData.isBinary ? Style.colors.mutedText
+                                                             : Style.colors.compatible
                                     verticalAlignment: Text.AlignVCenter
                                     font.pixelSize: Style.appFont.smallPt
                                     Layout.fillWidth: true
@@ -383,8 +385,10 @@ DetachablePanel {
                                 spacing: 0
 
                                 Label {
-                                    text: fileData.deletionsCount  || "0"
-                                    color: Style.colors.incompatible
+                                    text: fileData.isBinary ? qsTr("bin")
+                                                            : (fileData.deletionsCount || "0")
+                                    color: fileData.isBinary ? Style.colors.mutedText
+                                                             : Style.colors.incompatible
                                     verticalAlignment: Text.AlignVCenter
                                     font.pixelSize: Style.appFont.smallPt
                                     Layout.fillWidth: true
@@ -420,6 +424,10 @@ DetachablePanel {
 
     onCommitHashChanged:{
         if(!statusController)
+            return
+
+        // Uncommitted node is filled by GraphViewPresenter via status(), not a commit diff.
+        if (!root.commitHash || root.commitHash === "__uncommitted__")
             return
 
         let res = statusController.getCommitFileChanges(root.commitHash)

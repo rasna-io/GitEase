@@ -19,6 +19,7 @@ class GitFileStatus
     Q_PROPERTY(int deletionsCount READ deletionsCount CONSTANT FINAL)
     Q_PROPERTY(int additionsCount READ additionsCount CONSTANT FINAL)
     Q_PROPERTY(DeltaStatus deltaStatus READ deltaStatus CONSTANT FINAL)
+    Q_PROPERTY(bool isBinary READ isBinary CONSTANT FINAL)
 
     Q_PROPERTY(QString indexStatus READ indexStatus CONSTANT)
 
@@ -42,12 +43,19 @@ public:
 
     Q_ENUM(Status)
 
+    // Values must match libgit2 git_delta_t so casts from delta->status stay valid.
     enum DeltaStatus {
+        UNMODIFIED = GIT_DELTA_UNMODIFIED,
         ADDED = GIT_DELTA_ADDED,
         DELETED = GIT_DELTA_DELETED,
         MODIFIED = GIT_DELTA_MODIFIED,
-        RENAMED = GIT_STATUS_WT_TYPECHANGE,
-        UNTRACKED,
+        RENAMED = GIT_DELTA_RENAMED,
+        COPIED = GIT_DELTA_COPIED,
+        IGNORED = GIT_DELTA_IGNORED,
+        UNTRACKED = GIT_DELTA_UNTRACKED,
+        TYPECHANGE = GIT_DELTA_TYPECHANGE,
+        UNREADABLE = GIT_DELTA_UNREADABLE,
+        CONFLICTED = GIT_DELTA_CONFLICTED,
     };
 
     Q_ENUM(DeltaStatus)
@@ -63,7 +71,7 @@ public:
     GitFileStatus(const git_diff_delta *delta, int additions, int deletions);
 
     GitFileStatus(const git_status_entry *entry, int additions, int deletions,
-                  DeltaStatus deltaStatus);
+                  DeltaStatus deltaStatus, bool isBinary = false);
 
 
     QString path() const;
@@ -77,6 +85,8 @@ public:
     bool isUntracked() const;
 
     bool isConflicted() const;
+
+    bool isBinary() const;
 
     int deletionsCount() const;
 
@@ -104,4 +114,5 @@ private:
     int m_deletionsCount = 0;
     int m_additionsCount = 0;
     DeltaStatus m_deltaStatus = static_cast<DeltaStatus>(0);
+    bool m_isBinary = false;
 };
