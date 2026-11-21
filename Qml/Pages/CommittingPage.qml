@@ -685,6 +685,7 @@ Page {
         diffView.imageNewRevision = ""
 
         if (diffView.prefersImageViewer(root.selectedFilePath)) {
+            diffView.isBinaryFile = false
             diffView.chunkData = []
             diffView.diffData = []
             diffView.originalFileBuffer = []
@@ -697,6 +698,20 @@ Page {
         let oldY = diffView.scrollPosition
 
         let res = root.statusController.getChunkedDiffView(root.selectedFilePath, isStaged)
+
+        // A binary file has no text diff: show the binary state instead of its bytes as text.
+        if (res.success && res.data.isBinary) {
+            diffView.isBinaryFile = true
+            diffView.chunkData = []
+            diffView.diffData = []
+            diffView.originalFileBuffer = []
+            diffView.editedFileBuffer = []
+            diffView.selectedFile = root.selectedFilePath
+            diffView.readOnly = true
+            return
+        }
+
+        diffView.isBinaryFile = false
         if (res.success)
             diffView.chunkData = res.data.chunks
         res = root.statusController.getDiffView(root.selectedFilePath, isStaged)
@@ -799,7 +814,7 @@ Page {
             return
 
         const res = root.statusController.getDiffView(root.selectedFilePath, false)
-        if (!res.success)
+        if (!res.success || res.data.isBinary)
             return
 
         const diskRows = root.rightSideRows(res.data.lines)
