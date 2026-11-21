@@ -250,7 +250,11 @@ GitResult GitStatus::status(bool withLineStats)
 
     if (withLineStats) {
         git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
-        diffOpts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
+        // SHOW_UNTRACKED_CONTENT is required for git_patch_line_stats() to count
+        // lines on untracked files; without it, additions stay 0 in File Changes.
+        diffOpts.flags |= GIT_DIFF_INCLUDE_UNTRACKED
+                       | GIT_DIFF_RECURSE_UNTRACKED_DIRS
+                       | GIT_DIFF_SHOW_UNTRACKED_CONTENT;
 
         git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &diffOpts);
 
@@ -282,7 +286,7 @@ GitResult GitStatus::status(bool withLineStats)
         const git_diff_delta *matched = nullptr;
 
         if (!withLineStats) {
-            matched = entry->index_to_workdir;
+            matched = entry->index_to_workdir ? entry->index_to_workdir : entry->head_to_index;
         } else if (diff && entryPath) {
             const auto found = deltaIndexByPath.find(entryPath);
 
@@ -302,11 +306,28 @@ GitResult GitStatus::status(bool withLineStats)
             }
         }
 
-        fileInfos.append(
-            matched
-                ? GitFileStatus(entry, add, del, static_cast<GitFileStatus::DeltaStatus>(matched->status))
-                : GitFileStatus(entry)
-            );
+        if (!matched)
+            matched = entry->index_to_workdir ? entry->index_to_workdir : entry->head_to_index;
+
+        GitFileStatus::DeltaStatus deltaStatus = GitFileStatus::UNMODIFIED;
+        if (matched) {
+            deltaStatus = static_cast<GitFileStatus::DeltaStatus>(matched->status);
+        } else if (entry->status & GIT_STATUS_WT_NEW) {
+            deltaStatus = GitFileStatus::UNTRACKED;
+        } else if (entry->status & GIT_STATUS_INDEX_NEW) {
+            deltaStatus = GitFileStatus::ADDED;
+        } else if (entry->status & (GIT_STATUS_WT_DELETED | GIT_STATUS_INDEX_DELETED)) {
+            deltaStatus = GitFileStatus::DELETED;
+        } else if (entry->status & (GIT_STATUS_WT_RENAMED | GIT_STATUS_INDEX_RENAMED)) {
+            deltaStatus = GitFileStatus::RENAMED;
+        } else if (entry->status & GIT_STATUS_CONFLICTED) {
+            deltaStatus = GitFileStatus::CONFLICTED;
+        } else if (entry->status & (GIT_STATUS_WT_MODIFIED | GIT_STATUS_INDEX_MODIFIED
+                                    | GIT_STATUS_WT_TYPECHANGE | GIT_STATUS_INDEX_TYPECHANGE)) {
+            deltaStatus = GitFileStatus::MODIFIED;
+        }
+
+        fileInfos.append(GitFileStatus(entry, add, del, deltaStatus));
     }
 
     git_status_list_free(status_list);
@@ -691,8 +712,10 @@ GitResult GitStatus::getWorkingDirectoryDiff(const QString &headCommitHash, cons
     }
 
     git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+    // SHOW_UNTRACKED_CONTENT is required so DiffView gets lines for new untracked files.
     opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED |
                   GIT_DIFF_RECURSE_UNTRACKED_DIRS |
+                  GIT_DIFF_SHOW_UNTRACKED_CONTENT |
                   GIT_DIFF_PATIENCE |
                   GIT_DIFF_INDENT_HEURISTIC;
 
@@ -751,6 +774,18 @@ GitResult GitStatus::getWorkingDirectoryDiff(const QString &headCommitHash, cons
     git_diff_free(diff);
     git_tree_free(headTree);
     git_object_free(headObj);
+
+    // Same fallback as getDiff(): libgit2 can still yield an empty patch for untracked files.
+    if (result.isEmpty()) {
+        uint32_t mode = 0;
+        if (!getIndexBlob(activeRepo(), filePath, &mode)) {
+            std::vector<QString> lines = readWorkdirLines(activeRepo(), filePath);
+            if (!lines.empty() && lines.back().isEmpty())
+                lines.pop_back();
+            for (size_t i = 0; i < lines.size(); ++i)
+                result.append(GitDiff(GitDiff::Added, -1, static_cast<int>(i) + 1, lines[i]));
+        }
+    }
 
     emitGitCommand(QString("git diff %1 -- %2")
                        .arg(quoteCommandArg(headCommitHash),

@@ -41,12 +41,19 @@ public:
 
     Q_ENUM(Status)
 
+    // Values must match libgit2 git_delta_t so casts from delta->status stay valid.
     enum DeltaStatus {
+        UNMODIFIED = GIT_DELTA_UNMODIFIED,
         ADDED = GIT_DELTA_ADDED,
         DELETED = GIT_DELTA_DELETED,
         MODIFIED = GIT_DELTA_MODIFIED,
-        RENAMED = GIT_STATUS_WT_TYPECHANGE,
-        UNTRACKED,
+        RENAMED = GIT_DELTA_RENAMED,
+        COPIED = GIT_DELTA_COPIED,
+        IGNORED = GIT_DELTA_IGNORED,
+        UNTRACKED = GIT_DELTA_UNTRACKED,
+        TYPECHANGE = GIT_DELTA_TYPECHANGE,
+        UNREADABLE = GIT_DELTA_UNREADABLE,
+        CONFLICTED = GIT_DELTA_CONFLICTED,
     };
 
     Q_ENUM(DeltaStatus)

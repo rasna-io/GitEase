@@ -422,6 +422,10 @@ DetachablePanel {
         if(!statusController)
             return
 
+        // Uncommitted node is filled by GraphViewPresenter via status(), not a commit diff.
+        if (!root.commitHash || root.commitHash === "__uncommitted__")
+            return
+
         let res = statusController.getCommitFileChanges(root.commitHash)
 
         root.files = res.success ? res.data : []
