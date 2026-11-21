@@ -123,6 +123,7 @@ IWindow {
     height  : 760
     minimumWidth: 720
     minimumHeight: 560
+    cornerRadius: 12
 
     Connections {
         target: root
@@ -198,10 +199,10 @@ IWindow {
     Rectangle {
         anchors.fill: parent
         color: Style.colors.primaryBackground
-        radius: 12
+        radius: root.backgroundRadius
         clip: true
         border.color: Style.colors.primaryBorder
-        border.width: 1
+        border.width: root.backgroundBorderWidth
 
         /* Guide
          * ****************************************************************************************/

@@ -1299,9 +1299,13 @@ void PluginManager::deactivatePlugin(const QString& id, std::function<void()> do
         for (auto it = list.begin(); it != list.end(); )
             it = ((*it)->id() == id) ? list.erase(it) : ++it;
     };
-    eraseByPluginId(m_contextMenuPlugins);
     eraseByPluginId(m_workflowPlugins);
     eraseByPluginId(m_toolbarPlugins);
+
+    for (auto it = m_contextMenuPlugins.begin(); it != m_contextMenuPlugins.end(); ) {
+        auto* owner = dynamic_cast<IPlugin*>(*it);
+        it = (owner && owner->id() == id) ? m_contextMenuPlugins.erase(it) : ++it;
+    }
 
     for (auto it = m_rulePlugins.begin(); it != m_rulePlugins.end(); ) {
         auto* ruleOwner = dynamic_cast<IPlugin*>(*it);
@@ -1611,7 +1615,71 @@ bool PluginManager::installDownloadedPackage(const QString& pluginId, const QStr
     return true;
 }
 
-bool PluginManager::installGepFromBase64(const QString& base64Data, const QString& pluginId)
+bool PluginManager::removeDownloadedPackage(const QString& pluginId)
+{
+    if(pluginId.isEmpty()) {
+        return false;
+    }
+
+    const QString downloadsDir = downloadsDirectory();
+    const QString canonicalDir = QFileInfo(downloadsDir).canonicalFilePath();
+    if(canonicalDir.isEmpty()) {
+        emit pluginDownloadRemoveFailed(pluginId, QStringLiteral("Downloads folder is not available"));
+        return false;
+    }
+
+    QStringList pathsToRemove;
+    for(const QVariant& entry : m_downloadedPackages) {
+        const QVariantMap map = entry.toMap();
+        if(map.value(QStringLiteral("id")).toString() != pluginId) {
+            continue;
+        }
+        const QString path = map.value(QStringLiteral("packagePath")).toString();
+        if(!path.isEmpty()) {
+            pathsToRemove << path;
+        }
+    }
+
+    // Also remove any other .gep versions for this id that were not the "best" scan entry.
+    const QDir dir(downloadsDir);
+    const auto files = dir.entryInfoList({ QStringLiteral("*.gep") }, QDir::Files);
+    for(const QFileInfo& file : files) {
+        const PluginInfo info = readGepManifest(file.absoluteFilePath());
+        if(info.id == pluginId) {
+            pathsToRemove << file.absoluteFilePath();
+        }
+    }
+    pathsToRemove.removeDuplicates();
+
+    if(pathsToRemove.isEmpty()) {
+        emit pluginDownloadRemoveFailed(pluginId, QStringLiteral("No downloaded package found"));
+        return false;
+    }
+
+    int removed = 0;
+    for(const QString& path : pathsToRemove) {
+        const QString canonicalPackage = QFileInfo(path).canonicalFilePath();
+        if(canonicalPackage.isEmpty()
+           || !canonicalPackage.startsWith(canonicalDir + QLatin1Char('/'))) {
+            continue;
+        }
+        if(QFile::remove(canonicalPackage)) {
+            ++removed;
+        }
+    }
+
+    if(removed == 0) {
+        emit pluginDownloadRemoveFailed(pluginId, QStringLiteral("Could not delete the downloaded package"));
+        return false;
+    }
+
+    emit pluginDownloadRemoved(pluginId);
+    scanDownloads();
+    return true;
+}
+
+bool PluginManager::installGepFromBase64(const QString& base64Data, const QString& pluginId,
+                                         const QString& expectedMd5)
 {
     if(base64Data.isEmpty()) {
         return false;
@@ -1623,26 +1691,42 @@ bool PluginManager::installGepFromBase64(const QString& base64Data, const QStrin
 
     // Decoding and writing a package takes a while; do it away from the UI thread.
     runInBackground(this,
-                    [base64Data, tempPath]() {
+                    [base64Data, tempPath, expectedMd5, pluginId]() -> QString {
                         const QByteArray archiveData = QByteArray::fromBase64(base64Data.toLatin1());
                         if(archiveData.isEmpty()) {
-                            return false;
+                            return QStringLiteral("empty");
+                        }
+
+                        if(!expectedMd5.isEmpty()) {
+                            const QString actualMd5 = QCryptographicHash::hash(
+                                                          archiveData, QCryptographicHash::Md5)
+                                                          .toHex();
+                            if(actualMd5 != expectedMd5.trimmed().toLower()) {
+                                return QStringLiteral("checksum");
+                            }
                         }
 
                         QFile tempFile(tempPath);
                         if(!tempFile.open(QIODevice::WriteOnly)) {
-                            return false;
+                            return QStringLiteral("write");
                         }
 
                         const bool written = tempFile.write(archiveData) == archiveData.size();
                         tempFile.close();
-                        return written;
+                        return written ? QString() : QStringLiteral("write");
                     },
-                    [this, tempPath, pluginId](bool written) {
-                        if(!written) {
+                    [this, tempPath, pluginId](const QString& error) {
+                        if(!error.isEmpty()) {
                             QFile::remove(tempPath);
-                            emit pluginInstallFailed(pluginId.isEmpty() ? QStringLiteral("unknown") : pluginId,
-                                                     QStringLiteral("Could not read the downloaded package"));
+                            const QString id = pluginId.isEmpty() ? QStringLiteral("unknown") : pluginId;
+                            if(error == QLatin1String("checksum")) {
+                                emit pluginInstallFailed(
+                                    id,
+                                    QStringLiteral("Checksum mismatch — file may be corrupted or tampered"));
+                            } else {
+                                emit pluginInstallFailed(
+                                    id, QStringLiteral("Could not read the downloaded package"));
+                            }
                             return;
                         }
 
@@ -1907,9 +1991,11 @@ QVariantList PluginManager::pluginContextMenuItems(const QString& target,
     QVariantList result;
     for (auto* plugin : m_contextMenuPlugins) {
         if (!plugin->targets().contains(t)) continue;
+        auto* owner = dynamic_cast<IPlugin*>(plugin);
+        const QString pluginId = owner ? owner->id() : QString();
         for (const auto& item : plugin->menuItems(t, ctx)) {
             result.append(QVariantMap {
-                { QStringLiteral("pluginId"),  plugin->id()   },
+                { QStringLiteral("pluginId"),  pluginId      },
                 { QStringLiteral("id"),        item.id        },
                 { QStringLiteral("label"),     item.label     },
                 { QStringLiteral("icon"),      item.icon      },
@@ -1936,7 +2022,8 @@ void PluginManager::executeContextMenuAction(const QString& pluginId,
     const IContextMenuPlugin::MenuTarget t = menuTargetFor(target);
 
     for (auto* plugin : m_contextMenuPlugins) {
-        if (plugin->id() == pluginId) {
+        auto* owner = dynamic_cast<IPlugin*>(plugin);
+        if (owner && owner->id() == pluginId) {
             plugin->executeAction(itemId, t, ctx);
             return;
         }

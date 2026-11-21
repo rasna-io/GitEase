@@ -23,6 +23,15 @@ Window {
     property          int               animationDuration:      150
     property          bool              _minimumSizeApplied:    false
 
+    property          bool              fadeOnClose:            true
+
+    readonly property bool              maximized:              root.visibility === Window.Maximized
+
+    property          real              cornerRadius:           8
+
+    readonly property real              backgroundRadius:       root.maximized ? 0 : root.cornerRadius
+    readonly property real              backgroundBorderWidth:  root.maximized ? 0 : 1
+
     /* Object Properties
      * ****************************************************************************************/
     modality: Qt.ApplicationModal
@@ -70,13 +79,15 @@ Window {
     }
 
     onClosing: (close) => {
-        if (close.accepted && root.opacity > 0) {
+        if (close.accepted && root.fadeOnClose && root.opacity > 0) {
             close.accepted = false
             root.opacity = 0
 
             Qt.callLater(function() {
                 root.close()
             }, root.animationDuration)
+        } else if (close.accepted && root.maximized) {
+            root.windowController.toggleMaxRestore()
         }
     }
 

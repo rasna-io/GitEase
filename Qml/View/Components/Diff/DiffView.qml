@@ -30,6 +30,7 @@ DetachablePanel {
     property int  expandLines   : 10        // lines to reveal when expanding a hidden block
 
     property bool readOnly: false
+    property var  showSaveDialog: null
     property var  textColorizer: null   // JS function (text) => richHtml, set by host
     //! Looks up a diff plugin colorizer for selectedFile when textColorizer is not set.
     property var  pluginManager: null
@@ -72,8 +73,6 @@ DetachablePanel {
     signal requestStage(int start, int end, int type)
     signal requestRevert(int start, int end, int type)
     signal requestStash(int start, int end, int type)
-    signal fileEdited(bool isEdited)
-    signal saveFile()
 
     /* Children
      * ****************************************************************************************/
@@ -123,25 +122,7 @@ DetachablePanel {
         if (chunkMode)
             return
 
-        fileModel.clear()
-
-        for(var i = 0; i < diffData.length; i++) {
-            var diff = diffData[i];
-
-            var left = diff.content;
-            var right = (diff.type === GitDiff.Modified) ? diff.newContent : diff.content;
-
-            // Visual "Gaps"
-            if (diff.type === GitDiff.Added)
-                left = "";
-            if (diff.type === GitDiff.Deleted)
-                right = "";
-
-            appendRow(fileModel, diff.type, left, right, diff.oldLine, diff.newLine);
-
-            updateMaxContentWidth(left);
-            updateMaxContentWidth(right);
-        }
+        buildFileModel()
 
         root.fileIsEdited = false
         root.clearSelection()
@@ -161,32 +142,10 @@ DetachablePanel {
 
     onChunkModeChanged: {
         if (!chunkMode)
-        {
-            fileModel.clear()
-
-            for(var i = 0; i < diffData.length; i++) {
-                var diff = diffData[i];
-
-                var left = diff.content;
-                var right = (diff.type === GitDiff.Modified) ? diff.newContent : diff.content;
-
-                // Visual "Gaps"
-                if (diff.type === GitDiff.Added)
-                    left = "";
-                if (diff.type === GitDiff.Deleted)
-                    right = "";
-
-                appendRow(fileModel, diff.type, left, right, diff.oldLine, diff.newLine);
-
-                updateMaxContentWidth(left);
-                updateMaxContentWidth(right);
-            }
-        }
-        else {
+            buildFileModel()
+        else
             buildChunkModel()
-        }
 
-        root.fileIsEdited = false
         root.clearSelection()
         root.animateDiffSwap()
     }
@@ -495,13 +454,48 @@ DetachablePanel {
                 anchors.left: parent.left
                 anchors.leftMargin: 4
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.min(implicitWidth, parent.width * 0.55)
+                width: Math.max(0, Math.min(implicitWidth, parent.width * 0.55,
+                                            parent.width - headerActions.width - 12))
             }
 
             RowLayout {
+                id: headerActions
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 6
+
+                Rectangle {
+                    Layout.preferredHeight: 20
+                    Layout.preferredWidth: readOnlyLabel.width + 12
+                    radius: 3
+                    color: Qt.rgba(1,0,0,0.1)
+                    border.color: Qt.rgba(248/255,113/255,113/255,0.2)
+                    border.width: 1
+
+                    readonly property bool leadsToFileView: root.chunkMode && !root.readOnly
+                    visible: diffContent.visible && (root.readOnly || root.chunkMode)
+
+
+                    HoverHandler {
+                        id: readOnlyHover
+                    }
+
+                    ToolTip.visible: readOnlyHover.hovered
+                    ToolTip.delay: 400
+                    ToolTip.text: leadsToFileView
+                                  ? qsTr("Chunk view is read-only.")
+                                  : qsTr("Staged changes can't be edited here.")
+
+                    Label {
+                        id: readOnlyLabel
+                        anchors.centerIn: parent
+                        text: "READ ONLY"
+                        color: Style.colors.error
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                        font.bold: true
+                    }
+                }       
 
                 Text {
                     visible: root.selectedFile !== "" && (root.addedLineCount > 0 || root.deletedLineCount > 0)
@@ -553,28 +547,13 @@ DetachablePanel {
                         id: chunkViewCheck
                         Layout.fillWidth: true
                         title: "Chunk View"
-                        description: "Enable chunk-based diff display"
+                        description: "Per-block actions, read-only. Turn off to edit."
                         checked: root.chunkMode
 
-                        onCheckedChanged: {
-                            if (root.fileIsEdited) {
-                                var d = unsavedChangesDialogComp.createObject(root.activeItem)
-                                d.title = "Unsaved Changes"
-                                d.message = "You have unsaved changes in: " + root.selectedFile
-                                d.saved.connect(() => {
-                                    root.saveFile()
-                                    root.chunkMode = checked
-                                })
-                                d.aborted.connect(() => {
-                                    root.chunkMode = checked
-                                })
-                                d.cancelled.connect(() => {
-                                    checked = Qt.binding(() => root.chunkMode)
-                                })
-                                d.open()
-                            } else {
-                                root.chunkMode = checked
-                            }
+                        onClicked: {
+                            const desired = checked                              // what the user wants
+                            checked = Qt.binding(() => root.chunkMode)           // re-staple to reality
+                            root.requestChunkMode(desired)                       // let the parent decide
                         }
                     }
 
@@ -799,11 +778,6 @@ DetachablePanel {
         }
     }
 
-    Component {
-        id: unsavedChangesDialogComp
-        UnsavedChangesDialog { }
-    }
-
     /* Guide
      * Two independent guides — one per mode — so seeing the read-only tour doesn't mark the
      * editable tour (or vice versa) as already shown.
@@ -832,6 +806,12 @@ DetachablePanel {
                     description: "This diff shows a historical commit snapshot. You can read and copy lines but nothing can be staged, reverted, or edited from here."
                 })
             } else if (root.chunkMode) {
+                steps.push({
+                    targetProvider: function() { return diffContent },
+                    icon: Style.icons.penToSquare,
+                    title: "Read-only in Chunk View",
+                    description: "You can't type in Chunk View. To edit the file, turn off Chunk View in the diff settings (gear icon)."
+                })
                 steps.push({
                     targetProvider: function() {
                         var item = root.findActionableDelegate()
@@ -872,9 +852,15 @@ DetachablePanel {
             } else {
                 steps.push({
                     targetProvider: function() { return diffContent },
+                    icon: Style.icons.penToSquare,
+                    title: "Edit the File",
+                    description: "The right-hand side is the file itself: type to change it, then press Ctrl+S to save. You can edit only here, outside Chunk View."
+                })
+                steps.push({
+                    targetProvider: function() { return diffContent },
                     icon: Style.icons.arrowRight,
                     title: "Chunk View",
-                    description: "Enable Chunk View in the header to switch to per-block mode. Each changed block gets Stage, Revert, and Stash buttons — commit exactly the lines you want, nothing more."
+                    description: "Turn on Chunk View in the diff settings (gear icon) to switch to per-block mode. Each changed block gets Stage, Revert, and Stash buttons — commit exactly the lines you want, nothing more. Chunk View is read-only."
                 })
             }
             return steps
@@ -983,6 +969,29 @@ DetachablePanel {
         }
 
         return allAdded ? DiffView.DiffViewSelectionSide.Right : DiffView.DiffViewSelectionSide.Left
+    }
+
+    //! Fills the file view from diffData, which drops any edits made in it.
+    function buildFileModel() {
+        fileModel.clear()
+
+        for (let i = 0; i < diffData.length; i++) {
+            let diff = diffData[i]
+
+            let left = diff.content
+            let right = (diff.type === GitDiff.Modified) ? diff.newContent : diff.content
+
+            // Visual "Gaps"
+            if (diff.type === GitDiff.Added)
+                left = ""
+            if (diff.type === GitDiff.Deleted)
+                right = ""
+
+            appendRow(fileModel, diff.type, left, right, diff.oldLine, diff.newLine)
+
+            updateMaxContentWidth(left)
+            updateMaxContentWidth(right)
+        }
     }
 
     function appendRow(model, type, lTxt, rTxt, lNum, rNum) {
@@ -1106,7 +1115,6 @@ DetachablePanel {
         }
 
         root.fileIsEdited = isFileEdited()
-        root.fileEdited(root.fileIsEdited)
     }
 
     // Called by Delegate when user presses Enter
@@ -1154,7 +1162,6 @@ DetachablePanel {
         }
 
         root.fileIsEdited = isFileEdited()
-        root.fileEdited(root.fileIsEdited)
     }
 
     // Called by Delegate when user presses Backspace at start
@@ -1213,7 +1220,6 @@ DetachablePanel {
         root.currentIndex = index - 1
 
         root.fileIsEdited = isFileEdited()
-        root.fileEdited(root.fileIsEdited)
     }
 
     function updateMaxContentWidth(newText) {
@@ -1525,6 +1531,39 @@ DetachablePanel {
         }
 
         return false
+    }
+
+    //! Switches between chunk and file view. Unsaved edits are saved or discarded first, through
+    //! the host's showSaveDialog, and the view stays as it is if the user cancels.
+    function requestChunkMode(desired) {
+        if (desired === root.chunkMode)
+            return
+
+        const apply = () => { root.chunkMode = desired }
+
+        if (root.fileIsEdited && root.showSaveDialog)
+            root.showSaveDialog(apply)
+        else
+            apply()
+    }
+
+    //! Throws the unsaved edits away and shows the file as it was loaded.
+    function discardEdits() {
+        if (!root.fileIsEdited)
+            return
+
+        if (!root.chunkMode)
+            buildFileModel()
+
+        root.editedFileBuffer = root.originalFileBuffer.slice()
+        root.fileIsEdited = false
+        root.clearSelection()
+    }
+
+    //! Takes the edited text as the saved state, once the host has written it to disk.
+    function markSaved() {
+        root.originalFileBuffer = root.editedFileBuffer.slice()
+        root.fileIsEdited = false
     }
 
     function persistSettings() {

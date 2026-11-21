@@ -1,9 +1,10 @@
 #pragma once
 
 #include <QObject>
+#include "IPlugin.h"
 #include "IContextMenuPlugin.h"
 
-class CopyHashPlugin : public QObject, public IContextMenuPlugin
+class CopyHashPlugin : public QObject, public IPlugin, public IContextMenuPlugin
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.gitease.IContextMenuPlugin/1.0" FILE "plugin.json")

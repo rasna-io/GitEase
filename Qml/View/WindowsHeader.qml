@@ -16,6 +16,13 @@ Rectangle {
      * ****************************************************************************************/
     property WindowController windowController
 
+    //! When false, the close button only emits closeRequested() so the window can ask first.
+    property bool closesWindow: true
+
+    /* Signals
+     * ****************************************************************************************/
+    signal closeRequested()
+
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
@@ -65,7 +72,11 @@ Rectangle {
         // Close Button
         WindowsButton {
             id: closeButton
-            onClicked: windowController.closeWindow()
+            onClicked: {
+                root.closeRequested()
+                if (root.closesWindow)
+                    windowController.closeWindow()
+            }
             Material.accent: Style.colors.windowsClose
             content: Item {
                 anchors.centerIn: parent

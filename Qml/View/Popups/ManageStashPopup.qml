@@ -94,6 +94,7 @@ IWindow {
     height: 650
     minimumWidth: 560
     minimumHeight: 440
+    cornerRadius: 6
 
     onStashEntryChanged: {
         if (!root.stashEntry || !root.statusController) {
@@ -131,10 +132,10 @@ IWindow {
     Rectangle {
         anchors.fill: parent
         color: Style.colors.primaryBackground
-        radius: 6
+        radius: root.backgroundRadius
         clip: true
         border.color: Style.colors.primaryBorder
-        border.width: 1
+        border.width: root.backgroundBorderWidth
 
         ColumnLayout {
             anchors.fill: parent

@@ -13,7 +13,7 @@ import "qrc:/GitEase/Qml/Core/Scripts/ConflictPopupUtils.js" as ConflictUtils
  * ConflictPopup
  * ************************************************************************************************/
 
-Window {
+IWindow {
     id: root
 
     enum InteractiveAction {
@@ -42,10 +42,6 @@ Window {
     property NotificationController notificationController  : null
     property GuideController        guideController         : null
     property TextDirectionController textDirectionController : null
-
-    property Item hostItem: null
-
-    readonly property var hostWindow: root.hostItem ? root.hostItem.Window.window : null
 
     property var    conflicts       : []
     property var    selectedConflict: null
@@ -182,63 +178,51 @@ Window {
 
     /* Object Properties
      * ****************************************************************************************/
-    modality: Qt.ApplicationModal
-    flags: Qt.Window | Qt.FramelessWindowHint
-    color: "transparent"
-
     width: 1100
     height: 720
+    minimumWidth: 940
+    minimumHeight: 620
+    cornerRadius: 6
 
-    onHostWindowChanged: {
-        if (root.hostWindow && !root.visible)
-            root.transientParent = root.hostWindow
-    }
+    // A rebase closes this window and shows it again for the next conflicting commit right away,
+    // so it must close at once instead of fading out.
+    fadeOnClose: false
 
-    onVisibleChanged: {
-        if(!visible)
-            return
+    Connections {
+        target: root
 
-        Qt.callLater(function() {
-            let host = root.hostWindow
-            if (host) {
-                root.x = host.x + Math.round((host.width  - root.width)  / 2)
-                root.y = host.y + Math.round((host.height - root.height) / 2)
-            } else {
-                root.x = Math.round((Screen.width  - root.width)  / 2)
-                root.y = Math.round((Screen.height - root.height) / 2)
+        function onVisibleChanged() {
+            if (!root.visible)
+                return
+
+            if (!root.notificationController) {
+                console.error("ConflictPopup: missing required controllers")
+                root.close()
+                return
             }
-        })
 
-        if (!notificationController) {
-            console.error("ConflictPopup: missing required controllers")
-            close()
-            return
+            if (!root.conflictController || !root.statusController) {
+                root.notificationController.error("Cannot start conflict resolution: required Git controllers (conflict/status) are missing.",
+                                                  "Initialization Error", 4000)
+                root.close()
+                return
+            }
+
+            if (!root.currentController) {
+                root.notificationController.error(`Cannot start ${root.currentOperationName.toLowerCase()} conflict resolution: the ${root.currentOperationName} controller is not available.`,
+                                                  "Initialization Error", 4000)
+                root.close()
+                return
+            }
+
+            root.clearFileCaches()
+            root.selectedPath = ""
+            root.refreshOperationContext()
+            root.loadConflicts()
         }
-
-        if (!conflictController || !statusController) {
-            notificationController.error("Cannot start conflict resolution: required Git controllers (conflict/status) are missing.",
-                                         "Initialization Error", 4000)
-            close()
-            return
-        }
-
-        if (!currentController) {
-            notificationController.error(`Cannot start ${currentOperationName.toLowerCase()} conflict resolution: the ${currentOperationName} controller is not available.`,
-                                         "Initialization Error", 4000)
-            close()
-            return
-        }
-
-        root.clearFileCaches()
-        selectedPath = ""
-        refreshOperationContext()
-        loadConflicts()
     }
 
     Component.onCompleted: {
-        conflictWindowController.window = root
-        conflictWindowController.setMinimumSize(940, 620)
-
         editorPane.scheduleMarkerUpdate()
     }
 
@@ -252,17 +236,13 @@ Window {
         font.pixelSize: Style.appFont.captionPt
     }
 
-    WindowController {
-        id: conflictWindowController
-    }
-
     Rectangle {
         anchors.fill: parent
         color: Style.colors.primaryBackground
-        radius: 6
+        radius: root.backgroundRadius
         clip: true
         border.color: Style.colors.primaryBorder
-        border.width: 1
+        border.width: root.backgroundBorderWidth
 
         /* Guide
          * ****************************************************************************************/
@@ -317,7 +297,7 @@ Window {
                 commitHash: root.shortCommitHash
                 ontoRef: root.ontoRef
                 positionText: root.positionText
-                windowController: conflictWindowController
+                windowController: root.windowController
                 onCloseRequested: root.requestClose()
             }
 

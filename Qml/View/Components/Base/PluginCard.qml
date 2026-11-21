@@ -67,6 +67,7 @@ Rectangle {
      * ****************************************************************************************/
     signal installClicked  (string pluginId)
     signal uninstallClicked(string pluginId)
+    signal removeDownloadClicked(string pluginId)
     signal updateClicked   (string pluginId)
     signal enableToggled   (string pluginId, bool enabled)
     signal detailsClicked  (string pluginId)
@@ -368,6 +369,44 @@ Rectangle {
                     }
 
                     onClicked: root.uninstallClicked(root.plugin.pluginId)
+                }
+
+                // Remove cached .gep (downloaded filter / available downloads)
+                Button {
+                    id: removeDownloadButton
+                    visible: !!(root.plugin?.hasCachedPackage) && !(root.plugin?.isInstalled ?? false)
+                             && !root.pluginBusy
+                    enabled: !root.pluginBusy
+                    topInset: 0
+                    bottomInset: 0
+                    leftInset: 0
+                    rightInset: 0
+                    topPadding: 3
+                    bottomPadding: 3
+                    leftPadding: 9
+                    rightPadding: 9
+                    hoverEnabled: true
+
+                    background: Rectangle {
+                        radius: 5
+                        color: "transparent"
+                        border.width: 1
+                        border.color: removeDownloadButton.hovered
+                                      ? Style.colors.softCoralMist
+                                      : Style.colors.pluginBtnSecondaryBorder
+                    }
+
+                    contentItem: Label {
+                        text: "Remove"
+                        color: removeDownloadButton.hovered ? Style.colors.softCoralMist
+                                                            : Style.colors.pluginBtnSecondaryText
+                        font.pixelSize: Style.appFont.h4Pt
+                        font.family: Style.fontTypes.inter
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    onClicked: root.removeDownloadClicked(root.plugin.pluginId)
                 }
 
                 // Update (installed plugins with pending update)

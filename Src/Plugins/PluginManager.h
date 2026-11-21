@@ -123,12 +123,15 @@ public:
     Q_INVOKABLE bool installPluginFromBase64Zip(const QString& pluginId, const QString& base64Data,
                                                 const QString& expectedMd5 = {});
     Q_INVOKABLE bool installGepFile(const QString& gepPath);
-    Q_INVOKABLE bool installGepFromBase64(const QString& base64Data, const QString& pluginId = {});
+    Q_INVOKABLE bool installGepFromBase64(const QString& base64Data, const QString& pluginId = {},
+                                          const QString& expectedMd5 = {});
     Q_INVOKABLE bool removePlugin(const QString& id);
 
     // ── Downloads folder ─────────────────────────────────────────────────────
     Q_INVOKABLE void scanDownloads();
     Q_INVOKABLE bool installDownloadedPackage(const QString& pluginId, const QString& packagePath);
+    //! Deletes cached .gep package(s) for pluginId under downloads/plugins (not the install).
+    Q_INVOKABLE bool removeDownloadedPackage(const QString& pluginId);
 
     // ── Diff plugin lookup ────────────────────────────────────────────────────
     Q_INVOKABLE QUrl diffPluginUrlFor(const QString& extension) const;
@@ -207,6 +210,8 @@ signals:
     void pluginInstallQueued(const QString& pendingId, const QString& displayName);
     void pluginInstallResolved(const QString& pendingId, const QString& id, const QString& name);
     void pluginRemoveFailed(const QString& id, const QString& error);
+    void pluginDownloadRemoved(const QString& id);
+    void pluginDownloadRemoveFailed(const QString& id, const QString& error);
 
     // Forwarded from PluginContext — consumed by PluginController
     void notifyRequested  (const QString& message, const QString& type);
