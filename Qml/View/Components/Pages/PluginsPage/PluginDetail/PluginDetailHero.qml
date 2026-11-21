@@ -34,6 +34,7 @@ Rectangle {
     signal tabSelected(string tabId)
     signal installClicked(string pluginId)
     signal uninstallClicked(string pluginId)
+    signal removeDownloadClicked(string pluginId)
     signal updateClicked(string pluginId)
     signal enableToggled(string pluginId, bool enabled)
 
@@ -272,6 +273,10 @@ Rectangle {
 
                 onUninstallClicked: function(pluginId) {
                     root.uninstallClicked(pluginId)
+                }
+
+                onRemoveDownloadClicked: function(pluginId) {
+                    root.removeDownloadClicked(pluginId)
                 }
 
                 onUpdateClicked: function(pluginId) {

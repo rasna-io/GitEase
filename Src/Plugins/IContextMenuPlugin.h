@@ -1,6 +1,5 @@
 #pragma once
 
-#include "IPlugin.h"
 #include <QList>
 #include <QVariantMap>
 #include <QtPlugin>
@@ -10,10 +9,12 @@
  *
  * Implement this to add items to commit graph, branch, or file right-click menus.
  * Call ctx->registerContextMenu(this) inside initialize().
+ * Does not inherit IPlugin so it can be mixed with IPagePlugin without a diamond.
  */
-class IContextMenuPlugin : public IPlugin
+class IContextMenuPlugin
 {
 public:
+    virtual ~IContextMenuPlugin() = default;
     enum class MenuTarget {
         CommitGraph,  // right-click on a commit row in the graph
         Branch,       // right-click on a branch item

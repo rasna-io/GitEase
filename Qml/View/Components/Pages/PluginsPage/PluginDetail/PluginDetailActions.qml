@@ -100,8 +100,11 @@ ColumnLayout {
      * ****************************************************************************************/
     signal installClicked(string pluginId)
     signal uninstallClicked(string pluginId)
+    signal removeDownloadClicked(string pluginId)
     signal updateClicked(string pluginId)
     signal enableToggled(string pluginId, bool enabled)
+
+    readonly property bool hasCachedPackage: !!(root.plugin?.hasCachedPackage)
 
     /* Object Properties
      * ****************************************************************************************/
@@ -151,6 +154,17 @@ ColumnLayout {
             hoverTint: Style.colors.softCoralMist
 
             onClicked: root.uninstallClicked(root.plugin.pluginId)
+        }
+
+        PluginDetailButton {
+            visible: root.hasCachedPackage
+            iconText: Style.icons.uninstall
+            label: "Remove download"
+            outlined: true
+            textColor: Style.colors.pluginBtnSecondaryText
+            hoverTint: Style.colors.softCoralMist
+
+            onClicked: root.removeDownloadClicked(root.plugin.pluginId)
         }
     }
 

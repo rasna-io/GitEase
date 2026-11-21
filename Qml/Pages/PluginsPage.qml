@@ -317,6 +317,7 @@ Page {
                                             onDetailsClicked: function(pluginId) { root.openPluginDetails(pluginId) }
                                             onInstallClicked: function(pluginId) { root.pluginController?.installPlugin(pluginId) }
                                             onUninstallClicked: function(pluginId) { root.pluginController?.uninstallPlugin(pluginId) }
+                                            onRemoveDownloadClicked: function(pluginId) { root.pluginController?.removeDownloadedPackage(pluginId) }
                                             onUpdateClicked: function(pluginId) { root.pluginController?.updatePlugin(pluginId) }
                                             onEnableToggled: function(pluginId, enabled) { root.pluginController?.togglePlugin(pluginId, enabled) }
                                         }
@@ -439,6 +440,7 @@ Page {
                                             onDetailsClicked: function(pluginId) { root.openPluginDetails(pluginId) }
                                             onInstallClicked: function(pluginId) { root.pluginController?.installPlugin(pluginId) }
                                             onUninstallClicked: function(pluginId) { root.pluginController?.uninstallPlugin(pluginId) }
+                                            onRemoveDownloadClicked: function(pluginId) { root.pluginController?.removeDownloadedPackage(pluginId) }
                                             onUpdateClicked: function(pluginId) { root.pluginController?.updatePlugin(pluginId) }
                                             onEnableToggled: function(pluginId, enabled) { root.pluginController?.togglePlugin(pluginId, enabled) }
                                         }
@@ -462,6 +464,7 @@ Page {
             onBackRequested: root.closePluginDetails()
             onInstallClicked: function(pluginId) { root.pluginController?.installPlugin(pluginId) }
             onUninstallClicked: function(pluginId) { root.pluginController?.uninstallPlugin(pluginId) }
+            onRemoveDownloadClicked: function(pluginId) { root.pluginController?.removeDownloadedPackage(pluginId) }
             onUpdateClicked: function(pluginId) { root.pluginController?.updatePlugin(pluginId) }
             onEnableToggled: function(pluginId, enabled) { root.pluginController?.togglePlugin(pluginId, enabled) }
         }

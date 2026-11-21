@@ -59,7 +59,7 @@ QtObject {
     property string pluginDetailError:    ""
 
 
-    readonly property string pluginApiBaseUrl:               "http://localhost/api"
+    readonly property string pluginApiBaseUrl:               "http://127.0.0.1:8080/api"
     readonly property string fetchPluginsRequestKey:         "plugin-fetch"
     readonly property string fetchCategoriesRequestKey:      "plugin-fetch-categories"
     readonly property string checkUpdatesRequestKey:         "plugin-check-updates"
@@ -414,7 +414,9 @@ QtObject {
         root.networkController.sendRequest(
             root.fetchPluginsRequestKey,
             url,
-            root.networkController.GET
+            root.networkController.GET,
+            ({}),
+            ({})
         )
     }
 
@@ -438,7 +440,9 @@ QtObject {
         root.networkController.sendRequest(
             root.fetchPluginsRequestKey,
             url,
-            root.networkController.GET
+            root.networkController.GET,
+            ({}),
+            ({})
         )
     }
 
@@ -598,7 +602,9 @@ QtObject {
         root.networkController.sendRequest(
             root.fetchPluginDetailKeyPrefix + pluginId,
             root.pluginApiBaseUrl + "/plugins/" + encodeURIComponent(pluginId),
-            root.networkController.GET
+            root.networkController.GET,
+            ({}),
+            ({})
         )
     }
 
@@ -649,7 +655,9 @@ QtObject {
     }
 
     function installPlugin(pluginId, phase) {
-        let cached = root.usableCachedPackage(root.findListedPlugin(pluginId))
+        let listed = root.findListedPlugin(pluginId)
+
+        let cached = root.usableCachedPackage(listed)
 
         if(cached && cached.compatible === false) {
             let reason = cached.incompatibleReason || "This package does not support this platform."
@@ -679,7 +687,9 @@ QtObject {
         root.networkController.sendRequest(
             requestKey,
             root.pluginApiBaseUrl + "/plugins/" + encodeURIComponent(pluginId) + "/download",
-            root.networkController.GET
+            root.networkController.GET,
+            ({}),
+            ({})
         )
     }
 
@@ -888,6 +898,37 @@ QtObject {
         root.beginRemoval(pluginId)
     }
 
+    // Deletes the cached .gep under downloads/plugins. Does not uninstall an installed plugin.
+    function removeDownloadedPackage(pluginId) {
+        if (!pluginId) {
+            return
+        }
+
+        if (!root.downloadedMap[pluginId]) {
+            root.notificationController.error("No downloaded package found for this plugin.", "Plugins")
+            return
+        }
+
+        if (!pluginManager.removeDownloadedPackage(pluginId)) {
+            root.notificationController.error("Could not remove the downloaded package.", "Plugins")
+            return
+        }
+
+        if (root.pluginDetail && root.pluginDetail.pluginId === pluginId) {
+            root.pluginDetail = root.decorateEntry(Object.assign({}, root.pluginDetail, {
+                hasCachedPackage: false,
+                cachedPath: "",
+                cachedVersion: "",
+                cacheStatus: "",
+                installFromCache: false,
+                sourceLabel: root.pluginDetail.isInstalled ? (root.pluginDetail.sourceLabel || "") : "",
+                sourceNote: ""
+            }), !!root.serverPluginIds[pluginId])
+        }
+
+        root.notificationController.info("Downloaded package removed.", "Plugins")
+    }
+
     function beginRemoval(pluginId) {
         root.removingNow = pluginId
         root.setInstallState(pluginId, true, "Uninstalling", -1)
@@ -965,6 +1006,7 @@ QtObject {
         } else {
             mergePlugins(serverPlugins)
         }
+
     }
 
     function handleFetchPluginsCategoriesResponse(response) {
@@ -1080,7 +1122,7 @@ QtObject {
         }
 
         root.setInstallState(pluginId, true, "Installing", 100)
-        if (!pluginManager.installGepFromBase64(base64Data, pluginId))
+        if (!pluginManager.installGepFromBase64(base64Data, pluginId, expectedMd5))
             root.setInstallState(pluginId, false)
     }
 
@@ -1328,6 +1370,7 @@ QtObject {
             mainColor:        getCategoryColor(sp.category),
             donwloadsCount:   downloads,
             downloadsCount:   downloads,
+            visibility:       sp.visibility || "public",
             isInstalled:      !!local,
             isEnabled:        local ? local.enabled : false,
             isCompatible:     local ? local.loaded  : true,
@@ -1409,6 +1452,7 @@ QtObject {
             releaseDate:      local.releaseDate || "",
             donwloadsCount:   0,
             downloadsCount:   0,
+            visibility:       "public",
             isInstalled:      true,
             isEnabled:        local.enabled,
             isCompatible:     local.loaded,
