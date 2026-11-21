@@ -32,8 +32,11 @@ Rectangle {
             case GitFileStatus.ADDED:       return "added"
             case GitFileStatus.DELETED:     return "deleted"
             case GitFileStatus.MODIFIED:    return "modified"
+            case GitFileStatus.TYPECHANGE:  return "modified"
             case GitFileStatus.RENAMED:     return "renamed"
+            case GitFileStatus.COPIED:      return "renamed"
             case GitFileStatus.UNTRACKED:   return "untracked"
+            case GitFileStatus.CONFLICTED:  return "conflicted"
             }
             return ""
         }
