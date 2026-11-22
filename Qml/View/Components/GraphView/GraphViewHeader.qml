@@ -17,6 +17,7 @@ RowLayout {
     property GuideController guideController : null
     property RemoteController remoteController : null
     property RemoteOperationsSession remoteOperationsSession : null
+    property RepositoryController repositoryController : null
 
     property bool   showHeading     : true
     property bool   isGraphReady    : false
@@ -28,6 +29,7 @@ RowLayout {
     property var    branchNames     : []
     property string branchFilter    : ""
     property bool   restoreFocusOnClose : false
+    property bool   suppressFilterRequests : false
 
     readonly property bool  compact         : headerRow.parent ? headerRow.parent.width < 650 : false
     readonly property bool  tight           : headerRow.parent ? headerRow.parent.width < 820 : false
@@ -47,6 +49,7 @@ RowLayout {
     signal pullRequested()
     signal pushRequested(bool force)
     signal fetchRequested()
+    signal filterPanelOpening()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -171,6 +174,7 @@ RowLayout {
         }
 
         onClicked: {
+            headerRow.filterPanelOpening()
             filterPopup.filterField = headerRow.filterModes && headerRow.filterModes.length > 0 ? headerRow.filterModes[0] : ""
             filterPopup.startDate = headerRow.filterStartDate
             filterPopup.endDate = headerRow.filterEndDate
@@ -230,6 +234,14 @@ RowLayout {
 
         onNavigationRuleSelected: function(rule) {
             headerRow.navigationRule = rule
+        }
+    }
+
+    Connections {
+        target: headerRow.repositoryController
+
+        function onRepositorySelected() {
+            headerRow.resetFilters()
         }
     }
 
@@ -483,7 +495,24 @@ RowLayout {
 
     /* Functions
      * ****************************************************************************************/
+    function resetFilters() {
+        headerRow.restoreFocusOnClose = false
+        filterPopup.close()
+        calendarPopup.close()
+
+        headerRow.suppressFilterRequests = true
+        headerRow.filterText = ""
+        headerRow.filterStartDate = ""
+        headerRow.filterEndDate = ""
+        headerRow.filterModes = []
+        headerRow.navigationRule = headerRow.navigationRules[0]
+        headerRow.suppressFilterRequests = false
+    }
+
     function applyFilter() {
+        if (headerRow.suppressFilterRequests)
+            return
+
         headerRow.filterRequested(headerRow.filterText,
                                   headerRow.filterStartDate,
                                   headerRow.filterEndDate,

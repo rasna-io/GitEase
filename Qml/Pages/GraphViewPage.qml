@@ -53,6 +53,8 @@ Page {
 
     property alias                   graphRef                : commitGraph
 
+    property var                     availableBranchNames    : []
+
     // Remote actions (Pull / Push / Fetch) are owned by the shared RemoteOperationsSession so
     property RemoteOperationsSession remoteOperationsSession               : null
     property bool                    isFetching              : remoteOperationsSession ? remoteOperationsSession.isFetching : false
@@ -102,12 +104,15 @@ Page {
             filterStartDate: root.graphRef ? root.graphRef.filterStartDate : (root.activePageState()?.commitGraph?.filterStartDate || "")
             filterEndDate: root.graphRef ? root.graphRef.filterEndDate : (root.activePageState()?.commitGraph?.filterEndDate || "")
             filterModes: root.graphRef ? root.graphRef.filterMode : (root.activePageState()?.commitGraph?.filterMode || [])
-            branchNames: root.branchNames()
+            branchNames: root.availableBranchNames
             branchFilter: root.graphRef ? root.graphRef.branchFilter : (root.activePageState()?.commitGraph?.branchFilter || "")
             navigationRule: root.graphRef ? root.graphRef.navigationRule : (root.activePageState()?.commitGraph?.navigationRule || navigationRules[0])
             guideController: root.guideController
             remoteController: root.remoteController
             remoteOperationsSession: root.remoteOperationsSession
+            repositoryController: root.repositoryController
+
+            onFilterPanelOpening: root.refreshBranchNames()
 
             //! The arrow keys on the graph use the dock's rule, so keep it in step with the "Navigate by" choice.
             onNavigationRuleChanged: {
@@ -174,6 +179,7 @@ Page {
      * ****************************************************************************************/
     Component.onCompleted: {
         Qt.callLater(initPresenter)
+        root.refreshBranchNames()
 
         root.onPageChange = function(callback) {
             root.saveCommitGraphState()
@@ -191,8 +197,13 @@ Page {
         target: repositoryController
         function onRepositorySelected() {
             Presenter.clearSelection()
+            root.refreshBranchNames()
+
+            Qt.callLater(root.saveCommitGraphState)
         }
     }
+
+    onBranchControllerChanged: root.refreshBranchNames()
 
     onAutoUpdateChanged: {
         if (root.autoUpdate)
@@ -203,6 +214,8 @@ Page {
         target: root.gitStateNotifier
 
         function onRepositoryChanged() {
+            root.refreshBranchNames()
+
             if (root.autoUpdate)
                 root.reloadGraph()
         }
@@ -407,6 +420,12 @@ Page {
         }
 
         return names
+    }
+
+    function refreshBranchNames() {
+        var names = root.branchNames()
+        if (names.join("\n") !== root.availableBranchNames.join("\n"))
+            root.availableBranchNames = names
     }
 
     function fetch() {
