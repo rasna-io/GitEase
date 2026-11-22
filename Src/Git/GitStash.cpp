@@ -182,7 +182,11 @@ static GitResult createStashCommits(
     if (rc != GIT_OK)
         return GitResult(false, {}, "Failed to create stash commit.");
 
-    // Update refs/stash
+    // Update refs/stash. The stash list is read from its reflog, which libgit2 only writes for
+    // refs/stash when one already exists - so make sure it does, or the first stash is invisible.
+    if (git_reference_ensure_log(repo, "refs/stash") != GIT_OK)
+        return GitResult(false, {}, "Failed to create the stash reflog.");
+
     git_reference *stashRef = nullptr;
     int refRc = git_reference_create(&stashRef, repo, "refs/stash", &wipOid, 1,
                                      stashMsg.toUtf8().constData());
