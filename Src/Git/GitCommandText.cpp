@@ -152,12 +152,15 @@ QString GitCommandText::setDefaultRemote(const QString &remoteName)
     return QString("git config remote.pushDefault %1").arg(quote(remoteName));
 }
 
-QString GitCommandText::stashPush(const QString &message, bool keepIndex)
+QString GitCommandText::stashPush(const QString &message, bool keepIndex, bool includeUntracked)
 {
     QString command = "git stash push";
 
     if (keepIndex)
         command += " --keep-index";
+
+    if (includeUntracked)
+        command += " --include-untracked";
 
     if (!message.trimmed().isEmpty())
         command += " -m " + quote(message.trimmed());

@@ -45,6 +45,8 @@ IWindow {
     readonly property int stagedCount:    root.stashFiles.filter(file => file.isStaged).length
     readonly property int untrackedCount: root.stashFiles.filter(file => file.isUntracked).length
 
+    readonly property bool includeUntracked: root.untrackedCount > 0
+
     readonly property var fileEntries: root.stashFiles.map(file => ({
         path:        file.path,
         statusText:  root.statusLabel(file),
@@ -136,7 +138,7 @@ IWindow {
                     id: keepIndexCheckBox
                     Layout.alignment: Qt.AlignVCenter
                     padding: 0
-                    checked: true
+                    checked: false
                     text: "Keep staged changes in index"
 
                     font.family: Style.fontTypes.inter
@@ -203,7 +205,8 @@ IWindow {
                 //! The command this window is about to run, built by the same code GitStash::save() reports with
                 CommandPreview {
                     Layout.fillWidth: true
-                    command: GitCommandText.stashPush(stashMessageField.text, keepIndexCheckBox.checked)
+                    command: GitCommandText.stashPush(stashMessageField.text, keepIndexCheckBox.checked,
+                                                      root.includeUntracked)
                 }
 
                 ConflictPillButton {
@@ -235,7 +238,8 @@ IWindow {
         if (!root.canAccept)
             return
 
-        let result = root.stashController.save(stashMessageField.text.trim(), keepIndexCheckBox.checked)
+        let result = root.stashController.save(stashMessageField.text.trim(), keepIndexCheckBox.checked,
+                                               root.includeUntracked)
         if (root.identityGuard.handle(result, "stash", root.createStash))
             return
 
@@ -300,7 +304,7 @@ IWindow {
 
     function closePopUp() {
         stashMessageField.text = ""
-        keepIndexCheckBox.checked = true
+        keepIndexCheckBox.checked = false
         root.selectedFilePath = ""
         root.stashDiffData = []
         root.stashFiles = []

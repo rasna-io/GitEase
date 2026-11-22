@@ -19,7 +19,7 @@ GitStash::GitStash(QObject *parent)
     : IGitController{parent}
 {}
 
-GitResult GitStash::save(const QString &message, bool keepIndex)
+GitResult GitStash::save(const QString &message, bool keepIndex, bool includeUntracked)
 {
     if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository not found.");
@@ -31,7 +31,11 @@ GitResult GitStash::save(const QString &message, bool keepIndex)
         return identityMissingResult(identityReason);
 
     int result = GIT_OK;
-    git_stash_flags flags = keepIndex ? GIT_STASH_KEEP_INDEX : GIT_STASH_DEFAULT;
+    unsigned int flags = GIT_STASH_DEFAULT;
+    if (keepIndex)
+        flags |= GIT_STASH_KEEP_INDEX;
+    if (includeUntracked)
+        flags |= GIT_STASH_INCLUDE_UNTRACKED;
 
     QByteArray msgArray = message.toUtf8();
     const char* msg = msgArray.isEmpty() ? nullptr : msgArray.constData();
@@ -50,7 +54,7 @@ GitResult GitStash::save(const QString &message, bool keepIndex)
     if (result != GIT_OK)
         return GitResult(false, {}, git_error_last()->message);
 
-    emitGitCommand(GitCommandText::stashPush(message, keepIndex));
+    emitGitCommand(GitCommandText::stashPush(message, keepIndex, includeUntracked));
 
     return GitResult(true, {}, "Stash saved successfully.");
 }
