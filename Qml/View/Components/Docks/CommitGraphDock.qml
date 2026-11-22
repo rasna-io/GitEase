@@ -76,6 +76,7 @@ DetachablePanel {
     property bool   hasMoreCommits  : true
 
     property bool   isLoadingRepo   : false
+    property bool   loadingRepoVisible: false
 
     property real   lastContentY            : 0
     property var    deferredReload          : null
@@ -149,6 +150,17 @@ DetachablePanel {
         context: Qt.WindowShortcut
         enabled: root.canRebaseSelected
         onActivated: root.executeRebase(root.selectedCommit.hash)
+    }
+
+    onIsLoadingRepoChanged: {
+        if (!root.isLoadingRepo)
+            root.loadingRepoVisible = false
+    }
+
+    Timer {
+        interval: 250
+        running: root.isLoadingRepo
+        onTriggered: root.loadingRepoVisible = true
     }
 
     Timer {
@@ -232,27 +244,25 @@ DetachablePanel {
             visible: !root.isLoadingRepo && (!root.commits || root.commits.length === 0)
         }
 
-        Column {
-            anchors.centerIn: parent
-            spacing: 8
-            visible: root.isLoadingRepo
+        Loader {
+            anchors.fill: parent
             z: 100
+            active: root.loadingRepoVisible || opacity > 0
+            opacity: root.loadingRepoVisible ? 1 : 0
 
-            BusyIndicator {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 40
-                height: 40
-                running: root.isLoadingRepo
-                Material.accent: Style.colors.accent
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
+                }
             }
 
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: qsTr("Loading repository…")
-                color: Style.colors.secondaryText
-                font.family: Style.fontTypes.inter
-                font.pixelSize: Style.appFont.smallPt
-                font.weight: Font.Medium
+            sourceComponent: BusyWaiter {
+                message: qsTr("Loading repository")
+
+                MouseArea {
+                    anchors.fill: parent
+                }
             }
         }
 
@@ -500,53 +510,31 @@ DetachablePanel {
             }
         }
 
-        Rectangle {
+        BusyWaiter {
             id: loadMoreIndicator
 
             anchors {
+                fill: undefined
                 horizontalCenter: parent.horizontalCenter
-                bottom: parent.bottom
-                bottomMargin: 10
+                verticalCenter: parent.verticalCenter
             }
 
-            width: loadMoreIndicatorRow.implicitWidth + 20
-            height: 30
-            radius: 5
+            width: 260
+            height: 170
+            radius: 8
             color: Style.colors.headerButtonBackground
             border.width: 1
             border.color: Style.colors.headerButtonBorder
             z: 100
+            message: qsTr("Loading more commits")
+            running: root.loadMoreIndicatorVisible
             opacity: root.loadMoreIndicatorVisible ? 1 : 0
             visible: opacity > 0
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 120
+                    duration: Style.motionMedium
                     easing.type: Easing.OutCubic
-                }
-            }
-
-            Row {
-                id: loadMoreIndicatorRow
-
-                anchors.centerIn: parent
-                spacing: 6
-
-                BusyIndicator {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 30
-                    height: 30
-                    running: root.loadMoreIndicatorVisible
-                    Material.accent: Style.colors.accent
-                }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Loading more commits…")
-                    color: Style.colors.secondaryText
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.smallPt
-                    font.weight: Font.Medium
                 }
             }
         }
