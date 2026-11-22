@@ -165,6 +165,16 @@ QString GitCommandText::stashPush(const QString &message, bool keepIndex)
     return command;
 }
 
+QString GitCommandText::stashPushStaged(const QString &message)
+{
+    QString command = "git stash push --staged";
+
+    if (!message.trimmed().isEmpty())
+        command += " -m " + quote(message.trimmed());
+
+    return command;
+}
+
 QString GitCommandText::stashApply(int index, bool reinstateIndex)
 {
     QString command = QString("git stash apply stash@{%1}").arg(index);

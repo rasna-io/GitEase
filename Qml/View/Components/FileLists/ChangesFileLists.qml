@@ -163,7 +163,7 @@ Item {
             onStashAllRequested: function() {
                 const stashStaged = () => {
                                 let message = "Stash staged changes";
-                                let result = stashController.save(message, true);
+                                let result = stashController.saveStaged(message);
 
                                 if (root.identityGuard.handle(result, "stash", stashStaged))
                                     return

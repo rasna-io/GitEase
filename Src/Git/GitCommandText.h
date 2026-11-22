@@ -64,6 +64,7 @@ public:
     /* Stash
      * ****************************************************************************************/
     Q_INVOKABLE static QString stashPush(const QString &message, bool keepIndex);
+    Q_INVOKABLE static QString stashPushStaged(const QString &message);
     Q_INVOKABLE static QString stashApply(int index, bool reinstateIndex);
     Q_INVOKABLE static QString stashPop(int index, bool reinstateIndex);
     Q_INVOKABLE static QString stashDrop(int index);

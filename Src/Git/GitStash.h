@@ -29,6 +29,15 @@ public:
     Q_INVOKABLE GitResult save(const QString &message = "", bool keepIndex = false);
 
     /**
+     * \brief Stash only the staged changes, like "git stash push --staged"
+     *
+     * Unstaged and untracked changes stay in the working tree.
+     * \param message Optional stash message
+     * \return GitResult
+     */
+    Q_INVOKABLE GitResult saveStaged(const QString &message = "");
+
+    /**
      * \brief Stahes the selected file
      * \param filePath Selected file path
      * \param message Optional stash message

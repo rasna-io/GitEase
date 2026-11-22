@@ -10,6 +10,7 @@
 #include <git2/tree.h>
 #include <git2/oid.h>
 #include <git2/diff.h>
+#include <git2/apply.h>
 
 #include <QDir>
 #include <QFile>
@@ -52,6 +53,113 @@ GitResult GitStash::save(const QString &message, bool keepIndex)
     emitGitCommand(GitCommandText::stashPush(message, keepIndex));
 
     return GitResult(true, {}, "Stash saved successfully.");
+}
+
+//! Declared here, defined further down next to the other stash-commit helpers.
+static GitResult getHeadContext(git_repository *repo, git_commit **headCommit,
+                                git_signature **sig, git_tree **headTree);
+static GitResult createStashCommits(git_repository *repo, git_commit *headCommit, git_signature *sig,
+                                    const git_oid *wipTreeOid, const git_oid *indexTreeOid,
+                                    const QString &message);
+
+GitResult GitStash::saveStaged(const QString &message)
+{
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, {}, "Repository not found.");
+
+    git_repository *repo = activeRepo();
+
+    git_commit    *headCommit = nullptr;
+    git_signature *sig        = nullptr;
+    git_tree      *headTree   = nullptr;
+    GitResult ctx = getHeadContext(repo, &headCommit, &sig, &headTree);
+    if (!ctx.success())
+        return ctx;
+
+    git_index *index   = nullptr;
+    git_diff  *reverse = nullptr;
+
+    auto cleanup = [&]() {
+        git_diff_free(reverse);
+        git_index_free(index);
+        git_tree_free(headTree);
+        git_signature_free(sig);
+        git_commit_free(headCommit);
+    };
+
+    auto fail = [&](const QString &fallback) {
+        const git_error *error = git_error_last();
+        QString text = (error && error->message) ? QString::fromUtf8(error->message) : fallback;
+        cleanup();
+        return GitResult(false, {}, text);
+    };
+
+    if (git_repository_index(&index, repo) != GIT_OK || git_index_read(index, 1) != GIT_OK)
+        return fail("Failed to read the index.");
+
+    if (git_index_has_conflicts(index)) {
+        cleanup();
+        return GitResult(false, {}, "Resolve the merge conflicts before stashing.");
+    }
+
+    git_oid indexTreeOid;
+    if (git_index_write_tree(&indexTreeOid, index) != GIT_OK)
+        return fail("Failed to write the index tree.");
+
+    if (git_oid_equal(&indexTreeOid, git_tree_id(headTree))) {
+        cleanup();
+        return GitResult(false, {}, "There are no staged changes to stash.");
+    }
+
+    // The staged changes turned around (index -> HEAD). Applied to the working tree it takes the
+    // staged edits out and leaves any unstaged edits made on top of them, like git does.
+    git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
+    diffOpts.flags = GIT_DIFF_REVERSE | GIT_DIFF_SHOW_BINARY;
+    if (git_diff_tree_to_index(&reverse, repo, headTree, index, &diffOpts) != GIT_OK)
+        return fail("Failed to diff the staged changes.");
+
+    // Dry run first, so a stash is only created when the working tree can be cleaned up afterwards.
+    git_apply_options applyOpts = GIT_APPLY_OPTIONS_INIT;
+    applyOpts.flags = GIT_APPLY_CHECK;
+    if (git_apply(repo, reverse, GIT_APPLY_LOCATION_WORKDIR, &applyOpts) != GIT_OK) {
+        cleanup();
+        return GitResult(false, {}, "Some staged files have unstaged edits in the same lines, so the staged "
+                                    "changes cannot be taken out on their own. Stash all changes instead.");
+    }
+
+    // A --staged stash records the index as both its index and its working tree.
+    GitResult created = createStashCommits(repo, headCommit, sig, &indexTreeOid, &indexTreeOid, message);
+    if (!created.success()) {
+        cleanup();
+        return created;
+    }
+
+    applyOpts.flags = 0;
+    if (git_apply(repo, reverse, GIT_APPLY_LOCATION_WORKDIR, &applyOpts) != GIT_OK)
+        return fail("The stash was created, but the staged changes could not be removed from the working tree.");
+
+    // Put the staged paths in the index back to HEAD.
+    QList<QByteArray> pathBytes;
+    const size_t deltaCount = git_diff_num_deltas(reverse);
+    for (size_t i = 0; i < deltaCount; ++i) {
+        const git_diff_delta *delta = git_diff_get_delta(reverse, i);
+        pathBytes.append(QByteArray(delta->old_file.path));
+        if (qstrcmp(delta->old_file.path, delta->new_file.path) != 0)
+            pathBytes.append(QByteArray(delta->new_file.path));
+    }
+
+    QVector<char *> pathPointers;
+    for (QByteArray &bytes : pathBytes)
+        pathPointers.append(bytes.data());
+
+    git_strarray paths = { pathPointers.data(), static_cast<size_t>(pathPointers.size()) };
+    if (git_reset_default(repo, reinterpret_cast<git_object *>(headCommit), &paths) != GIT_OK)
+        return fail("The stash was created, but the staged changes could not be unstaged.");
+
+    cleanup();
+
+    emitGitCommand(GitCommandText::stashPushStaged(message));
+    return GitResult(true, {}, "Staged changes stashed successfully.");
 }
 
 
