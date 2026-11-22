@@ -11,6 +11,9 @@
 #include <git2/oid.h>
 #include <git2/diff.h>
 
+#include <QDir>
+#include <QFile>
+
 GitStash::GitStash(QObject *parent)
     : IGitController{parent}
 {}
@@ -242,18 +245,20 @@ GitResult GitStash::stashFile(const QString &filePath, const QString &message)
     git_oid indexTreeOid;
     bool hasDistinctStagedVersion = false;
 
+    git_tree_entry *headFileEntry = nullptr;
+    const bool fileInHead = git_tree_entry_bypath(&headFileEntry, headTree, path) == GIT_OK;
+
     if (staged) {
-        // Look up the blob OID for this path in the HEAD tree
-        git_tree_entry *headEntry = nullptr;
-        if (git_tree_entry_bypath(&headEntry, headTree, path) == GIT_OK) {
+        // Compare against the blob OID for this path in the HEAD tree
+        if (fileInHead) {
             hasDistinctStagedVersion =
-                git_oid_cmp(&staged->id, git_tree_entry_id(headEntry)) != 0;
-            git_tree_entry_free(headEntry);
+                git_oid_cmp(&staged->id, git_tree_entry_id(headFileEntry)) != 0;
         } else {
             // File didn't exist in HEAD, so staging it is definitely a change
             hasDistinctStagedVersion = true;
         }
     }
+    git_tree_entry_free(headFileEntry);
 
     if (hasDistinctStagedVersion) {
         if (!buildModifiedTree(&indexTreeOid, repo, headTree, path, &staged->id)) {
@@ -286,6 +291,14 @@ GitResult GitStash::stashFile(const QString &filePath, const QString &message)
     coOpts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
     coOpts.paths = pathArr;
     git_checkout_index(repo, nullptr, &coOpts);
+
+    // A file HEAD doesn't have (untracked, or newly added) is not in the index any more, so the
+    // checkout above leaves it alone - remove it, the stash now holds its content.
+    if (!fileInHead) {
+        const QString workdir = workdirOf(repo);
+        if (!workdir.isEmpty())
+            QFile::remove(QDir(workdir).filePath(filePath));
+    }
 
     emitGitCommand(QString("git stash push -- %1").arg(filePath));
     return GitResult(true, {}, QString("File stashed: %1").arg(filePath));
