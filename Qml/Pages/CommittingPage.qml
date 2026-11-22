@@ -121,6 +121,14 @@ Page {
     }
 
     Connections {
+        target: root.gitStateNotifier
+
+        function onRepositoryChanged() {
+            changesFileLists.updateStatus()
+        }
+    }
+
+    Connections {
         target: terminalController
 
         function onGitStateChanged(workingDirectory) {
