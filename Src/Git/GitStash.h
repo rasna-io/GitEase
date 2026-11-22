@@ -40,6 +40,15 @@ public:
     Q_INVOKABLE GitResult saveStaged(const QString &message = "");
 
     /**
+     * \brief Stash only the unstaged and untracked files - what the Unstaged section lists
+     *
+     * Staged changes are neither recorded in the stash nor touched.
+     * \param message Optional stash message
+     * \return GitResult
+     */
+    Q_INVOKABLE GitResult saveUnstaged(const QString &message = "");
+
+    /**
      * \brief Stahes the selected file
      * \param filePath Selected file path
      * \param message Optional stash message

@@ -11,9 +11,12 @@
 #include <git2/oid.h>
 #include <git2/diff.h>
 #include <git2/apply.h>
+#include <git2/status.h>
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
+#include <QSet>
 
 GitStash::GitStash(QObject *parent)
     : IGitController{parent}
@@ -164,6 +167,159 @@ GitResult GitStash::saveStaged(const QString &message)
 
     emitGitCommand(GitCommandText::stashPushStaged(message));
     return GitResult(true, {}, "Staged changes stashed successfully.");
+}
+
+GitResult GitStash::saveUnstaged(const QString &message)
+{
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, {}, "Repository not found.");
+
+    git_repository *repo = activeRepo();
+
+    git_commit    *headCommit = nullptr;
+    git_signature *sig        = nullptr;
+    git_tree      *headTree   = nullptr;
+    GitResult ctx = getHeadContext(repo, &headCommit, &sig, &headTree);
+    if (!ctx.success())
+        return ctx;
+
+    git_status_list *statuses = nullptr;
+    git_index       *wipIndex = nullptr;
+    git_diff        *recorded = nullptr;
+    git_tree        *wipTree  = nullptr;
+
+    auto cleanup = [&]() {
+        git_tree_free(wipTree);
+        git_diff_free(recorded);
+        git_index_free(wipIndex);
+        git_status_list_free(statuses);
+        git_tree_free(headTree);
+        git_signature_free(sig);
+        git_commit_free(headCommit);
+    };
+
+    auto fail = [&](const QString &fallback) {
+        const git_error *error = git_error_last();
+        QString text = (error && error->message) ? QString::fromUtf8(error->message) : fallback;
+        cleanup();
+        return GitResult(false, {}, text);
+    };
+
+    // The files of the Unstaged section: working tree changes against the index, plus untracked files.
+    git_status_options statusOpts = GIT_STATUS_OPTIONS_INIT;
+    statusOpts.show  = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
+    statusOpts.flags = GIT_STATUS_OPT_INCLUDE_UNTRACKED | GIT_STATUS_OPT_RECURSE_UNTRACKED_DIRS;
+    if (git_status_list_new(&statuses, repo, &statusOpts) != GIT_OK)
+        return fail("Failed to read the repository status.");
+
+    // The stash's working tree: HEAD with only the unstaged and untracked files laid over it.
+    // Staged-only files are left out, so they are neither recorded nor touched.
+    if (git_index_new(&wipIndex) != GIT_OK || git_index_read_tree(wipIndex, headTree) != GIT_OK)
+        return fail("Failed to prepare the stash tree.");
+
+    const unsigned int unstagedFlags = GIT_STATUS_WT_NEW | GIT_STATUS_WT_MODIFIED
+                                       | GIT_STATUS_WT_DELETED | GIT_STATUS_WT_TYPECHANGE;
+
+    QSet<QString> untracked;
+    const size_t count = git_status_list_entrycount(statuses);
+    for (size_t i = 0; i < count; ++i) {
+        const git_status_entry *entry = git_status_byindex(statuses, i);
+
+        if (entry->status & GIT_STATUS_CONFLICTED) {
+            cleanup();
+            return GitResult(false, {}, "Resolve the merge conflicts before stashing.");
+        }
+
+        if (!(entry->status & unstagedFlags) || !entry->index_to_workdir)
+            continue;
+
+        const git_diff_file &file = entry->index_to_workdir->new_file;
+        const char *path = file.path;
+
+        if (entry->status & GIT_STATUS_WT_NEW)
+            untracked.insert(QString::fromUtf8(path));
+
+        if (entry->status & GIT_STATUS_WT_DELETED) {
+            git_index_remove_bypath(wipIndex, path);
+            continue;
+        }
+
+        git_oid blobOid;
+        if (git_blob_create_from_workdir(&blobOid, repo, path) != GIT_OK)
+            return fail(QString("Failed to read %1.").arg(QString::fromUtf8(path)));
+
+        git_index_entry indexEntry = {};
+        indexEntry.mode = file.mode ? file.mode : GIT_FILEMODE_BLOB;
+        indexEntry.path = path;
+        git_oid_cpy(&indexEntry.id, &blobOid);
+        if (git_index_add(wipIndex, &indexEntry) != GIT_OK)
+            return fail(QString("Failed to add %1 to the stash.").arg(QString::fromUtf8(path)));
+    }
+
+    git_oid wipTreeOid;
+    if (git_index_write_tree_to(&wipTreeOid, wipIndex, repo) != GIT_OK
+        || git_tree_lookup(&wipTree, repo, &wipTreeOid) != GIT_OK)
+        return fail("Failed to write the stash tree.");
+
+    // What the stash ends up holding; only these paths are cleaned out of the working tree, so
+    // nothing is removed that the stash couldn't give back.
+    if (git_diff_tree_to_tree(&recorded, repo, headTree, wipTree, nullptr) != GIT_OK)
+        return fail("Failed to diff the stash tree.");
+
+    const size_t recordedCount = git_diff_num_deltas(recorded);
+    if (recordedCount == 0) {
+        cleanup();
+        return GitResult(false, {}, "There are no unstaged changes to stash.");
+    }
+
+    // No staged changes are recorded: the index commit is HEAD's tree.
+    GitResult created = createStashCommits(repo, headCommit, sig, &wipTreeOid, git_tree_id(headTree), message);
+    if (!created.success()) {
+        cleanup();
+        return created;
+    }
+
+    // Put the tracked files back to their index version and delete the untracked ones.
+    QStringList paths;
+    QList<QByteArray> trackedBytes;
+    for (size_t i = 0; i < recordedCount; ++i) {
+        const git_diff_delta *delta = git_diff_get_delta(recorded, i);
+        const QString path = QString::fromUtf8(delta->new_file.path ? delta->new_file.path
+                                                                    : delta->old_file.path);
+        paths.append(path);
+
+        if (untracked.contains(path)) {
+            const QString workdir = workdirOf(repo);
+            if (!workdir.isEmpty()) {
+                QFile::remove(QDir(workdir).filePath(path));
+
+                // Untracked folders left empty go too, as with git; rmpath stops at the first
+                // folder that still holds something.
+                const QString folder = QFileInfo(path).path();
+                if (folder != ".")
+                    QDir(workdir).rmpath(folder);
+            }
+        } else {
+            trackedBytes.append(path.toUtf8());
+        }
+    }
+
+    if (!trackedBytes.isEmpty()) {
+        QVector<char *> pointers;
+        for (QByteArray &bytes : trackedBytes)
+            pointers.append(bytes.data());
+
+        git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
+        checkoutOpts.checkout_strategy = GIT_CHECKOUT_FORCE | GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+        checkoutOpts.paths = { pointers.data(), static_cast<size_t>(pointers.size()) };
+        if (git_checkout_index(repo, nullptr, &checkoutOpts) != GIT_OK)
+            return fail("The stash was created, but the unstaged changes could not be removed from the working tree.");
+    }
+
+    cleanup();
+
+    emitGitCommand(GitCommandText::stashPushUnstaged(message, paths, !untracked.isEmpty()));
+    return GitResult(true, {}, "Unstaged changes stashed successfully.");
 }
 
 

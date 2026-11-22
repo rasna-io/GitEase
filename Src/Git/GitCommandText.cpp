@@ -178,6 +178,24 @@ QString GitCommandText::stashPushStaged(const QString &message)
     return command;
 }
 
+//! The closest git command: stashing exactly the unstaged paths (git has no "unstaged only" flag)
+QString GitCommandText::stashPushUnstaged(const QString &message, const QStringList &paths, bool includeUntracked)
+{
+    QString command = "git stash push";
+
+    if (includeUntracked)
+        command += " --include-untracked";
+
+    if (!message.trimmed().isEmpty())
+        command += " -m " + quote(message.trimmed());
+
+    command += " --";
+    for (const QString &path : paths)
+        command += " " + quote(path);
+
+    return command;
+}
+
 QString GitCommandText::stashApply(int index, bool reinstateIndex)
 {
     QString command = QString("git stash apply stash@{%1}").arg(index);

@@ -65,6 +65,8 @@ public:
      * ****************************************************************************************/
     Q_INVOKABLE static QString stashPush(const QString &message, bool keepIndex, bool includeUntracked = false);
     Q_INVOKABLE static QString stashPushStaged(const QString &message);
+    Q_INVOKABLE static QString stashPushUnstaged(const QString &message, const QStringList &paths,
+                                                 bool includeUntracked);
     Q_INVOKABLE static QString stashApply(int index, bool reinstateIndex);
     Q_INVOKABLE static QString stashPop(int index, bool reinstateIndex);
     Q_INVOKABLE static QString stashDrop(int index);
