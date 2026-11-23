@@ -8,6 +8,41 @@
 #include <string>
 #include <unordered_map>
 
+namespace {
+
+//! Marks a diff result whose file has no text form, so callers show the binary state.
+const QString kBinaryDiffMessage = QStringLiteral("binary");
+
+//! Whether libgit2 flagged the diff's single delta as binary (set while the patch is built).
+bool diffHasBinaryDelta(git_diff *diff)
+{
+    if (!diff || git_diff_num_deltas(diff) == 0)
+        return false;
+
+    const git_diff_delta *delta = git_diff_get_delta(diff, 0);
+    return delta
+        && ((delta->flags & GIT_DIFF_FLAG_BINARY)
+            || (delta->old_file.flags & GIT_DIFF_FLAG_BINARY)
+            || (delta->new_file.flags & GIT_DIFF_FLAG_BINARY));
+}
+
+//! Whether a working-tree file looks binary, judged from its first bytes as git does.
+bool isWorkdirFileBinary(git_repository *repo, const QString &filePath)
+{
+    const char *workdir = git_repository_workdir(repo);
+    if (!workdir)
+        return false;
+
+    QFile file(QDir(QString::fromUtf8(workdir)).filePath(filePath));
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+
+    const QByteArray head = file.read(8000);
+    return git_blob_data_is_binary(head.constData(), static_cast<size_t>(head.size())) != 0;
+}
+
+} // namespace
+
 GitStatus::GitStatus(QObject *parent)
     : IGitController{parent}
 {}
@@ -250,7 +285,11 @@ GitResult GitStatus::status(bool withLineStats)
 
     if (withLineStats) {
         git_diff_options diffOpts = GIT_DIFF_OPTIONS_INIT;
-        diffOpts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
+        // SHOW_UNTRACKED_CONTENT is required for git_patch_line_stats() to count
+        // lines on untracked files; without it, additions stay 0 in File Changes.
+        diffOpts.flags |= GIT_DIFF_INCLUDE_UNTRACKED
+                       | GIT_DIFF_RECURSE_UNTRACKED_DIRS
+                       | GIT_DIFF_SHOW_UNTRACKED_CONTENT;
 
         git_diff_index_to_workdir(&diff, activeRepo(), nullptr, &diffOpts);
 
@@ -282,7 +321,7 @@ GitResult GitStatus::status(bool withLineStats)
         const git_diff_delta *matched = nullptr;
 
         if (!withLineStats) {
-            matched = entry->index_to_workdir;
+            matched = entry->index_to_workdir ? entry->index_to_workdir : entry->head_to_index;
         } else if (diff && entryPath) {
             const auto found = deltaIndexByPath.find(entryPath);
 
@@ -302,11 +341,33 @@ GitResult GitStatus::status(bool withLineStats)
             }
         }
 
-        fileInfos.append(
-            matched
-                ? GitFileStatus(entry, add, del, static_cast<GitFileStatus::DeltaStatus>(matched->status))
-                : GitFileStatus(entry)
-            );
+        if (!matched)
+            matched = entry->index_to_workdir ? entry->index_to_workdir : entry->head_to_index;
+
+        GitFileStatus::DeltaStatus deltaStatus = GitFileStatus::UNMODIFIED;
+        if (matched) {
+            deltaStatus = static_cast<GitFileStatus::DeltaStatus>(matched->status);
+        } else if (entry->status & GIT_STATUS_WT_NEW) {
+            deltaStatus = GitFileStatus::UNTRACKED;
+        } else if (entry->status & GIT_STATUS_INDEX_NEW) {
+            deltaStatus = GitFileStatus::ADDED;
+        } else if (entry->status & (GIT_STATUS_WT_DELETED | GIT_STATUS_INDEX_DELETED)) {
+            deltaStatus = GitFileStatus::DELETED;
+        } else if (entry->status & (GIT_STATUS_WT_RENAMED | GIT_STATUS_INDEX_RENAMED)) {
+            deltaStatus = GitFileStatus::RENAMED;
+        } else if (entry->status & GIT_STATUS_CONFLICTED) {
+            deltaStatus = GitFileStatus::CONFLICTED;
+        } else if (entry->status & (GIT_STATUS_WT_MODIFIED | GIT_STATUS_INDEX_MODIFIED
+                                    | GIT_STATUS_WT_TYPECHANGE | GIT_STATUS_INDEX_TYPECHANGE)) {
+            deltaStatus = GitFileStatus::MODIFIED;
+        }
+
+        const bool isBinary = matched
+            && ((matched->flags & GIT_DIFF_FLAG_BINARY)
+                || (matched->old_file.flags & GIT_DIFF_FLAG_BINARY)
+                || (matched->new_file.flags & GIT_DIFF_FLAG_BINARY));
+
+        fileInfos.append(GitFileStatus(entry, add, del, deltaStatus, isBinary));
     }
 
     git_status_list_free(status_list);
@@ -473,6 +534,7 @@ GitResult GitStatus::getDiff(const QString &filePath)
 
     // This compares the Staging Area (Index) to the Local File (Workdir)
     const bool unmerged = isUnmerged(filePath);
+    bool isBinary = false;
     int error = GIT_OK;
     if (unmerged) {
         git_object* headTree = nullptr;
@@ -525,9 +587,14 @@ GitResult GitStatus::getDiff(const QString &filePath)
                 result.append(GitDiff(GitDiff::Context, rawLines[i].old_no, rawLines[i].new_no, rawLines[i].content));
             }
         }
+
+        isBinary = diffHasBinaryDelta(diff);
     }
 
-    if (unmerged && result.isEmpty()) {
+    if (result.isEmpty() && !isBinary)
+        isBinary = isWorkdirFileBinary(activeRepo(), filePath);
+
+    if (unmerged && result.isEmpty() && !isBinary) {
         std::vector<QString> lines = readWorkdirLines(activeRepo(), filePath);
         if (!lines.empty() && lines.back().isEmpty())
             lines.pop_back();
@@ -540,7 +607,7 @@ GitResult GitStatus::getDiff(const QString &filePath)
         git_diff_free(diff);
 
     // libgit2 may yield no patch for an untracked file; show its whole content as additions
-    if (result.isEmpty()) {
+    if (result.isEmpty() && !isBinary) {
         uint32_t mode = 0;
         if (!getIndexBlob(activeRepo(), filePath, &mode)) {
             std::vector<QString> lines = readWorkdirLines(activeRepo(), filePath);
@@ -553,7 +620,7 @@ GitResult GitStatus::getDiff(const QString &filePath)
 
     emitGitCommand(QString(unmerged ? "git diff HEAD -- %1" : "git diff -- %1").arg(quoteCommandArg(filePath)));
 
-    return GitResult(true, QVariant::fromValue(result));
+    return GitResult(true, QVariant::fromValue(result), isBinary ? kBinaryDiffMessage : QString());
 }
 
 GitResult GitStatus::getDiff(const QString &oldCommitHash, const QString &newCommitHash, const QString &filePath)
@@ -691,8 +758,10 @@ GitResult GitStatus::getWorkingDirectoryDiff(const QString &headCommitHash, cons
     }
 
     git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+    // SHOW_UNTRACKED_CONTENT is required so DiffView gets lines for new untracked files.
     opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED |
                   GIT_DIFF_RECURSE_UNTRACKED_DIRS |
+                  GIT_DIFF_SHOW_UNTRACKED_CONTENT |
                   GIT_DIFF_PATIENCE |
                   GIT_DIFF_INDENT_HEURISTIC;
 
@@ -748,15 +817,35 @@ GitResult GitStatus::getWorkingDirectoryDiff(const QString &headCommitHash, cons
     for (const auto &line : rawLines)
         result.append(line);
 
+    bool isBinary = diffHasBinaryDelta(diff);
+
     git_diff_free(diff);
     git_tree_free(headTree);
     git_object_free(headObj);
+
+    if (result.isEmpty() && !isBinary)
+        isBinary = isWorkdirFileBinary(activeRepo(), filePath);
+
+    // Same fallback as getDiff(): libgit2 can still yield an empty patch for untracked files.
+    // Skip for binary files — there is no useful text content to show as additions.
+    if (result.isEmpty() && !isBinary) {
+        uint32_t mode = 0;
+        if (!getIndexBlob(activeRepo(), filePath, &mode)) {
+            std::vector<QString> lines = readWorkdirLines(activeRepo(), filePath);
+            if (!lines.empty() && lines.back().isEmpty())
+                lines.pop_back();
+            for (size_t i = 0; i < lines.size(); ++i)
+                result.append(GitDiff(GitDiff::Added, -1, static_cast<int>(i) + 1, lines[i]));
+        }
+    }
 
     emitGitCommand(QString("git diff %1 -- %2")
                        .arg(quoteCommandArg(headCommitHash),
                             quoteCommandArg(filePath)));
 
-    return GitResult(true, QVariant::fromValue(result), "Working directory diff retrieved successfully.");
+    return GitResult(true, QVariant::fromValue(result),
+                     isBinary ? kBinaryDiffMessage
+                              : QStringLiteral("Working directory diff retrieved successfully."));
 }
 
 GitResult GitStatus::getCommitFileChanges(const QString &commitHash)
@@ -869,28 +958,31 @@ GitResult GitStatus::saveFile(const QString& filePath, const QStringList& rows)
 
 GitResult GitStatus::getUnstagedDiffView(const QString &filePath)
 {
-    // old/index text
-    uint32_t mode = 0;
-    auto indexBlob = getIndexBlob(activeRepo(), filePath, &mode);
-    QString oldText;
-    if (indexBlob) {
-        oldText = joinLines(readBlobLines(indexBlob.get()));
-    } else {
-        oldText = "";
-    }
-
-    // new/workdir text
-    QString newText = joinLines(readWorkdirLines(activeRepo(), filePath));
-
     // diff lines (existing)
     GitResult diffRes = getDiff(filePath);
     if (!diffRes.success())
         return diffRes;
 
+    const bool isBinary = diffRes.errorMessage() == kBinaryDiffMessage;
+
     QVariantMap out;
-    out["oldText"] = oldText;
-    out["newText"] = newText;
+    out["oldText"] = QString();
+    out["newText"] = QString();
     out["lines"] = diffRes.data();
+    out["isBinary"] = isBinary;
+
+    // A binary file has no text to compare or edit.
+    if (isBinary)
+        return GitResult(true, out);
+
+    // old/index text
+    uint32_t mode = 0;
+    auto indexBlob = getIndexBlob(activeRepo(), filePath, &mode);
+    if (indexBlob)
+        out["oldText"] = joinLines(readBlobLines(indexBlob.get()));
+
+    // new/workdir text
+    out["newText"] = joinLines(readWorkdirLines(activeRepo(), filePath));
 
     return GitResult(true, out);
 }
@@ -1025,6 +1117,21 @@ GitResult GitStatus::resetIndexToHead(const QStringList &paths)
 
 GitResult GitStatus::getStagedDiffView(const QString &filePath)
 {
+    // diff lines (HEAD to index)
+    GitResult diffRes = getStagedDiff(filePath);
+    if (!diffRes.success())
+        return diffRes;
+
+    // A binary file has no text to compare, so skip reading its blobs as lines.
+    if (diffRes.errorMessage() == kBinaryDiffMessage) {
+        QVariantMap out;
+        out["oldText"] = QString();
+        out["newText"] = QString();
+        out["lines"] = diffRes.data();
+        out["isBinary"] = true;
+        return GitResult(true, out);
+    }
+
     // old/head text
     QString oldText;
     git_object *headObj = nullptr;
@@ -1075,15 +1182,11 @@ GitResult GitStatus::getStagedDiffView(const QString &filePath)
         newText = "";
     }
 
-    // diff lines (HEAD to index)
-    GitResult diffRes = getStagedDiff(filePath);
-    if (!diffRes.success())
-        return diffRes;
-
     QVariantMap out;
     out["oldText"] = oldText;
     out["newText"] = newText;
     out["lines"] = diffRes.data();
+    out["isBinary"] = false;
 
     return GitResult(true, out);
 }
@@ -1152,6 +1255,8 @@ GitResult GitStatus::getStagedDiff(const QString &filePath)
         return 0;
     }, &rawLines);
 
+    const bool isBinary = diffHasBinaryDelta(diff);
+
     // Convert raw lines to GitDiff objects
     for (size_t i = 0; i < rawLines.size(); ++i) {
         if (rawLines[i].origin == GIT_DIFF_LINE_DELETION &&
@@ -1180,7 +1285,7 @@ GitResult GitStatus::getStagedDiff(const QString &filePath)
 
     emitGitCommand(QString("git diff --cached -- %1").arg(quoteCommandArg(filePath)));
 
-    return GitResult(true, QVariant::fromValue(result));
+    return GitResult(true, QVariant::fromValue(result), isBinary ? kBinaryDiffMessage : QString());
 }
 
 GitResult GitStatus::getChunkedDiffView(const QString &filePath, bool staged)
@@ -1248,6 +1353,7 @@ GitResult GitStatus::getChunkedDiffView(const QString &filePath, bool staged)
 
     QVariantMap resultData;
     resultData["chunks"] = chunks;
+    resultData["isBinary"] = diffRes.errorMessage() == kBinaryDiffMessage;
     return GitResult(true, resultData);
 }
 

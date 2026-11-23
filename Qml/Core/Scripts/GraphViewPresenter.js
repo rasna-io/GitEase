@@ -36,6 +36,7 @@ function clearSelection() {
     selectedCommit          = "";
     selectedFilePath        = "";
     diffView.selectedFile   = "";
+    diffView.isBinaryFile   = false;
     diffView.diffData       = null;
 }
 
@@ -57,11 +58,7 @@ function handleCommitClicked(commitId) {
     var node = commitGraph.commits.find(function(c) { return c.hash === commitId; });
     if (node && node.isUncommitted) {
         var res = statusController.status();
-        if (!res.success || !res.data) {
-            fileChangesDock.files = [];
-            return;
-        }
-        fileChangesDock.files = res.data;
+        fileChangesDock.showFiles(res.success && res.data ? res.data : []);
     }
 }
 
@@ -76,8 +73,16 @@ function handleFileSelected(filePath) {
     if (!commitId)
         return;
 
+    if (!filePath) {
+        diffView.selectedFile = "";
+        diffView.isBinaryFile = false;
+        diffView.diffData = [];
+        return;
+    }
+
     // Also picks the syntax colorizer, or an image viewer, for the file.
     diffView.selectedFile = filePath;
+    diffView.isBinaryFile = !!(fileChangesDock.selectedFile && fileChangesDock.selectedFile.isBinary);
 
     var node = commitGraph.commits ? commitGraph.commits.find(function(c) { return c.hash === commitId; }) : null;
 
@@ -87,6 +92,7 @@ function handleFileSelected(filePath) {
         diffView.imageOldRevision = "HEAD";
         diffView.imageNewRevision = "";
         if (diffView.prefersImageViewer && diffView.prefersImageViewer(filePath)) {
+            diffView.isBinaryFile = false;
             diffView.diffData = [];
             diffView.chunkData = [];
             return;
@@ -97,8 +103,11 @@ function handleFileSelected(filePath) {
             return;
         }
         var res = statusController.getWorkingDirectoryDiff(headHash, filePath);
-        if (res && res.success)
+        if (res && res.success) {
+            if (res.errorMessage === "binary")
+                diffView.isBinaryFile = true;
             diffView.diffData = res.data;
+        }
         return;
     }
 
@@ -128,6 +137,7 @@ function handleFileSelected(filePath) {
     }
 
     if (diffView.prefersImageViewer && diffView.prefersImageViewer(filePath)) {
+        diffView.isBinaryFile = false;
         diffView.diffData = [];
         diffView.chunkData = [];
         return;
