@@ -75,6 +75,9 @@ DetachablePanel {
     property bool   loadMoreIndicatorVisible: false
     property bool   hasMoreCommits  : true
 
+    property bool   isLoadingRepo   : false
+    property bool   loadingRepoVisible: false
+
     property real   lastContentY            : 0
     property var    deferredReload          : null
     property real   pendingRestoreContentY  : -1
@@ -147,6 +150,17 @@ DetachablePanel {
         context: Qt.WindowShortcut
         enabled: root.canRebaseSelected
         onActivated: root.executeRebase(root.selectedCommit.hash)
+    }
+
+    onIsLoadingRepoChanged: {
+        if (!root.isLoadingRepo)
+            root.loadingRepoVisible = false
+    }
+
+    Timer {
+        interval: 250
+        running: root.isLoadingRepo
+        onTriggered: root.loadingRepoVisible = true
     }
 
     Timer {
@@ -227,7 +241,29 @@ DetachablePanel {
         EmptyStateView {
             title: "no commit to show"
             details: root.emptyStateDetailsText()
-            visible: !root.commits || root.commits.length === 0
+            visible: !root.isLoadingRepo && (!root.commits || root.commits.length === 0)
+        }
+
+        Loader {
+            anchors.fill: parent
+            z: 100
+            active: root.loadingRepoVisible || opacity > 0
+            opacity: root.loadingRepoVisible ? 1 : 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            sourceComponent: BusyWaiter {
+                message: qsTr("Loading repository")
+
+                MouseArea {
+                    anchors.fill: parent
+                }
+            }
         }
 
         ColumnLayout {
@@ -474,53 +510,31 @@ DetachablePanel {
             }
         }
 
-        Rectangle {
+        BusyWaiter {
             id: loadMoreIndicator
 
             anchors {
+                fill: undefined
                 horizontalCenter: parent.horizontalCenter
-                bottom: parent.bottom
-                bottomMargin: 10
+                verticalCenter: parent.verticalCenter
             }
 
-            width: loadMoreIndicatorRow.implicitWidth + 20
-            height: 30
-            radius: 5
+            width: 260
+            height: 170
+            radius: 8
             color: Style.colors.headerButtonBackground
             border.width: 1
             border.color: Style.colors.headerButtonBorder
             z: 100
+            message: qsTr("Loading more commits")
+            running: root.loadMoreIndicatorVisible
             opacity: root.loadMoreIndicatorVisible ? 1 : 0
             visible: opacity > 0
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 120
+                    duration: Style.motionMedium
                     easing.type: Easing.OutCubic
-                }
-            }
-
-            Row {
-                id: loadMoreIndicatorRow
-
-                anchors.centerIn: parent
-                spacing: 6
-
-                BusyIndicator {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 30
-                    height: 30
-                    running: root.loadMoreIndicatorVisible
-                    Material.accent: Style.colors.accent
-                }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Loading more commits…")
-                    color: Style.colors.secondaryText
-                    font.family: Style.fontTypes.inter
-                    font.pixelSize: Style.appFont.smallPt
-                    font.weight: Font.Medium
                 }
             }
         }
@@ -543,6 +557,7 @@ DetachablePanel {
     Connections {
         target: root.repositoryController
         function onRepositorySelected() {
+            root.clearForRepositorySwitch()
             root.reloadAll(false)
         }
     }
@@ -1139,12 +1154,45 @@ DetachablePanel {
         root.reloadAll(request.preserveScrollPosition)
     }
 
-    function reloadAll(preserveScrollPosition) {
-        if (!root.appModel || !root.appModel.currentRepository)
-            return
+    function clearForRepositorySwitch() {
+        root.reloadToken++
+        root.deferredReload = null
 
-        if (!root.statusController || !root.commitController)
+        if(commitsListView) {
+            commitsListView.cancelFlick()
+        }
+
+        root.clearGraphData()
+        root.isLoadingRepo = true
+    }
+
+    function clearGraphData() {
+        root.allCommits             = []
+        root.commitPositions        = ({})
+        root.commits                = []
+        root.graphRows              = []
+        root.headHash               = ""
+        root.commitsOffset          = 0
+        root.hasMoreCommits         = true
+        root.selectedCommit         = null
+        root.selectedCommitHashes   = []
+        root.lastSelectedIndex      = -1
+    }
+
+    function reloadAll(preserveScrollPosition) {
+        if(!root.appModel || !root.appModel.currentRepository) {
+            root.isLoadingRepo = false
             return
+        }
+
+        if(!root.statusController || !root.commitController) {
+            root.isLoadingRepo = false
+            return
+        }
+
+        if(preserveScrollPosition === false || root.allCommits.length === 0) {
+            root.isLoadingRepo = true
+        }
 
         if (commitsListView && (commitsListView.moving || commitsListView.dragging)) {
             root.deferredReload = { preserveScrollPosition: preserveScrollPosition }
@@ -1179,11 +1227,25 @@ DetachablePanel {
     function reloadFetchCommits(token) {
         AsyncGit.call(root.commitController, "getCommits", [root.pageSize, 0],
             function (commitRes) {
-                if (token !== root.reloadToken) return
-                if (!commitRes || !commitRes.success || !commitRes.data)
+                if(token !== root.reloadToken) {
                     return
+                }
+
+                if(!commitRes || !commitRes.success || !commitRes.data) {
+                    root.clearGraphData()
+                    root.isLoadingRepo = false
+                    return
+                }
 
                 root.reloadFetchBranches(token, commitRes.data)
+            },
+            function () {
+                if(token !== root.reloadToken) {
+                    return
+                }
+
+                root.clearGraphData()
+                root.isLoadingRepo = false
             })
     }
 
@@ -1259,6 +1321,7 @@ DetachablePanel {
         let previousUncommitted = root.allCommits.filter(function (c) { return c.isUncommitted })
         root.allCommits = previousUncommitted.concat(compiled)
         root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
+        root.isLoadingRepo = false
 
         root.reloadFetchStatus(token)
     }
