@@ -194,10 +194,14 @@ PopupDialog {
                         visible: modelData.hint.length > 0
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
+                    HoverHandler {
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: root.isAnnotated = modelData.value
+                    }
+
+                    TapHandler {
+                        onTapped: {
+                            root.isAnnotated = modelData.value
+                        }
                     }
                 }
             }
@@ -298,11 +302,10 @@ PopupDialog {
                     font.pixelSize: Style.appFont.defaultPt
                 }
 
-                MouseArea {
-                    anchors.fill: parent
+                HoverHandler {
                     cursorShape: Qt.PointingHandCursor
-                    // TODO: open commit picker to change target
                 }
+                // TODO: open commit picker to change target (add a TapHandler here)
             }
         }
     }
@@ -343,10 +346,14 @@ PopupDialog {
             font.pixelSize: Style.appFont.defaultPt
         }
 
-        MouseArea {
-            anchors.fill: parent
+        HoverHandler {
             cursorShape: Qt.PointingHandCursor
-            onClicked: root.pushAfterCreate = !root.pushAfterCreate
+        }
+
+        TapHandler {
+            onTapped: {
+                root.pushAfterCreate = !root.pushAfterCreate
+            }
         }
     }
 

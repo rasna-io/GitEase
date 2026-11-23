@@ -518,7 +518,7 @@ IWindow {
         commitModel.clear()
 
         root.planData               = {}
-        diffView.diffData           = null
+        diffView.diffData           = []
         fileChangesDock.files       = []
         root.selectedCommitHash     = ""
         root.selectedCommitSummary  = ""
@@ -572,7 +572,7 @@ IWindow {
         var commit                  = commitModel.get(index)
         root.selectedCommitHash     = commit.hash
         root.selectedCommitSummary  = commit.summary
-        diffView.diffData           = null
+        diffView.diffData           = []
         fileChangesDock.commitHash  = commit.hash
     }
 

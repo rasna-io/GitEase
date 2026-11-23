@@ -216,10 +216,14 @@ PopupDialog {
                         font.pixelSize: Style.appFont.defaultPt
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
+                    HoverHandler {
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: root.baseBranchType = modelData.value
+                    }
+
+                    TapHandler {
+                        onTapped: {
+                            root.baseBranchType = modelData.value
+                        }
                     }
                 }
             }
@@ -265,10 +269,14 @@ PopupDialog {
                 font.pixelSize: Style.appFont.defaultPt
             }
 
-            MouseArea {
-                anchors.fill: parent
+            HoverHandler {
                 cursorShape: Qt.PointingHandCursor
-                onClicked: checkoutCheckbox.checked = !checkoutCheckbox.checked
+            }
+
+            TapHandler {
+                onTapped: {
+                    checkoutCheckbox.checked = !checkoutCheckbox.checked
+                }
             }
         }
 
@@ -309,10 +317,14 @@ PopupDialog {
                 font.pixelSize: Style.appFont.defaultPt
             }
 
-            MouseArea {
-                anchors.fill: parent
+            HoverHandler {
                 cursorShape: Qt.PointingHandCursor
-                onClicked: pushCheckbox.checked = !pushCheckbox.checked
+            }
+
+            TapHandler {
+                onTapped: {
+                    pushCheckbox.checked = !pushCheckbox.checked
+                }
             }
         }
     }

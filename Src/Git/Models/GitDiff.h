@@ -6,7 +6,6 @@
 class GitDiff
 {
     Q_GADGET
-    QML_ELEMENT
 
     Q_PROPERTY(DiffType type READ type CONSTANT FINAL)
     Q_PROPERTY(int oldLine READ oldLine CONSTANT FINAL)
@@ -46,3 +45,11 @@ private:
     QString m_content;
     QString m_newContent;
 };
+
+// Exposes the enums of GitDiff to QML as "GitDiff" (gadget names can't be uppercase value types)
+namespace GitDiffQml
+{
+    Q_NAMESPACE
+    QML_NAMED_ELEMENT(GitDiff)
+    QML_FOREIGN_NAMESPACE(GitDiff)
+}

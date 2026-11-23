@@ -104,16 +104,18 @@ DetachablePanel {
                                                              root.chunkMode)
 
     readonly property int addedLineCount: {
+        let data = root.diffData ?? []
         let n = 0
-        for (let i = 0; i < diffData.length; i++)
-            if (diffData[i].type === GitDiff.Added || diffData[i].type === GitDiff.Modified)
+        for (let i = 0; i < data.length; i++)
+            if (data[i].type === GitDiff.Added || data[i].type === GitDiff.Modified)
                 n++
         return n
     }
     readonly property int deletedLineCount: {
+        let data = root.diffData ?? []
         let n = 0
-        for (let i = 0; i < diffData.length; i++)
-            if (diffData[i].type === GitDiff.Deleted || diffData[i].type === GitDiff.Modified)
+        for (let i = 0; i < data.length; i++)
+            if (data[i].type === GitDiff.Deleted || data[i].type === GitDiff.Modified)
                 n++
         return n
     }
@@ -975,8 +977,9 @@ DetachablePanel {
     function buildFileModel() {
         fileModel.clear()
 
-        for (let i = 0; i < diffData.length; i++) {
-            let diff = diffData[i]
+        let data = root.diffData ?? []
+        for (let i = 0; i < data.length; i++) {
+            let diff = data[i]
 
             let left = diff.content
             let right = (diff.type === GitDiff.Modified) ? diff.newContent : diff.content
