@@ -557,6 +557,7 @@ DetachablePanel {
     Connections {
         target: root.repositoryController
         function onRepositorySelected() {
+            root.resetFilters()
             root.clearForRepositorySwitch()
             root.reloadAll(false)
         }
@@ -1733,6 +1734,16 @@ DetachablePanel {
         root.branchFilter = branchName || ""
         refreshBranchFilterHeadHash()
         root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
+    }
+
+    function resetFilters() {
+        root.filterText             = ""
+        root.filterStartDate        = ""
+        root.filterEndDate          = ""
+        root.filterMode             = []
+        root.branchFilter           = ""
+        root.branchFilterHeadHash   = ""
+        root.navigationRule         = "Commit"
     }
 
     function executeShowAllBranches() {
