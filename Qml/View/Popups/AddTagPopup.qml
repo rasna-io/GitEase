@@ -15,6 +15,7 @@ PopupDialog {
     /* Property Declarations */
     property TagController tagController: null
     property NotificationController notificationController: null
+    property IdentityGuard identityGuard: null
     property string targetHash: ""
     property string targetLabel: ""
     property bool pushAfterCreate: true
@@ -389,6 +390,9 @@ PopupDialog {
         let tagMessage = root.isAnnotated ? messageInput.text.trim() : "";
 
         let res = ctrl.create(tagName, commitToTag, tagMessage);
+
+        if (root.identityGuard.handle(res, "tag", root.createTag))
+            return;
 
         if (res && res.success) {
             if (root.pushAfterCreate && root.remoteOperationsSession) {

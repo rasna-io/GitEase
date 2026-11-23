@@ -235,9 +235,16 @@ GitResult GitCommit::commit(const QString& message,
                                 bool amend,
                                 bool allowEmpty)
 {
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, QVariant(), "Repository not found.");
+
     if (!validateCommitMessage(message))
         return GitResult(false, QVariant(),
                          "Commit failed: The commit message is invalid. Ensure it is properly formatted.");
+
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
 
     ActionContext context;
     context.type = ActionType::Commit_msg;
@@ -247,14 +254,13 @@ GitResult GitCommit::commit(const QString& message,
         return rulesResult;
 
     git_signature* author = getAuthorSignature(activeRepo());
-    if (!author) {
-        return GitResult(false, QVariant(),
-                         "Failed to create author signature. Check Git config.");
-    }
+    if (!author)
+        return identityMissingResult();
 
     git_tree* tree = createTreeFromStagedChanges();
 
     if (!tree) {
+        git_signature_free(author);
         return GitResult(false, QVariant(),
                          "Failed to create tree from staged changes.");
     }
@@ -346,16 +352,7 @@ bool GitCommit::validateCommitMessage(const QString &message)
 
 git_signature* GitCommit::getAuthorSignature(git_repository* repo)
 {
-    git_signature* signature = nullptr;
-
-    // Try to get default signature from Git config
-    int result = git_signature_default(&signature, repo);
-
-    if (result != GIT_OK) {
-        return nullptr;
-    }
-
-    return signature;
+    return defaultSignature(repo);
 }
 
 git_tree* GitCommit::createTreeFromStagedChanges()
@@ -482,6 +479,10 @@ GitResult GitCommit::revertCommit(const QString &commitHash)
     if (commitHash.isEmpty()) {
         return GitResult(false, QVariant(), "Commit hash cannot be empty");
     }
+
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
 
     // Convert commit hash to OID
     git_oid oid;

@@ -283,6 +283,10 @@ GitResult GitRebase::startRebase(const QString& onto,
                          "A rebase is already in progress. Continue or abort it first.");
     }
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     QString originalBranch  = branch;
     bool hasBranch          = !branch.trimmed().isEmpty();
 
@@ -376,6 +380,10 @@ GitResult GitRebase::continueOp()
         return GitResult(false, QVariant(), "No rebase is in progress.");
     }
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
+
     git_rebase* rebase = nullptr;
     GitResult openResult = openRebase(&rebase);
     if (!openResult.success()) {
@@ -401,6 +409,10 @@ GitResult GitRebase::skipOp()
     if (!isRebaseInProgress()) {
         return GitResult(false, QVariant(), "No rebase is in progress.");
     }
+
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
 
     if (repositoryHasConflicts()) {
         GitResult resetResult = resetWorktreeToHead();
@@ -513,12 +525,13 @@ GitResult GitRebase::runRebase(git_rebase* rebase,
         return GitResult(false, QVariant(), "Invalid rebase state.");
     }
 
-    git_signature* signature = nullptr;
-    int result = git_signature_default(&signature, activeRepo());
-    if (result != GIT_OK || !signature) {
-        return GitResult(false, QVariant(),
-                         "Failed to load Git user identity (user.name / user.email).");
+    QString identityReason;
+    git_signature* signature = defaultSignature(activeRepo(), &identityReason);
+    if (!signature) {
+        return identityMissingResult(identityReason);
     }
+
+    int result = GIT_OK;
 
     QVariantList rebasedCommits;
     QVariantList skippedCommitList;
@@ -906,6 +919,12 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
                 return GitResult(false, {}, "A rebase is already in progress. Abort or continue it first.");
     }
 
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason)) {
+        emit rebaseFinished(false);
+        return identityMissingResult(identityReason);
+    }
+
     // Check for uncommitted changes
     git_status_list* statusList = nullptr;
     git_status_options statusOpts = GIT_STATUS_OPTIONS_INIT;
@@ -1012,11 +1031,11 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
     }
 
     // Create default committer signature
-    git_signature* sig = nullptr;
-    if (git_signature_default(&sig, activeRepo()) != GIT_OK) {
+    git_signature* sig = defaultSignature(activeRepo(), &identityReason);
+    if (!sig) {
         cleanupInteractiveState();
         emit rebaseFinished(false);
-        return GitResult(false, {}, "Could not read Git user identity (user.name / user.email).");
+        return identityMissingResult(identityReason);
     }
     m_defaultSignature = sig;
 

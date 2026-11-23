@@ -155,6 +155,7 @@ Rectangle {
 
                     sourceComponent: SetupProfileForm {
                         showHint: true
+                        userProfileController: root.userProfileController
                     }
                 }
 
@@ -223,6 +224,41 @@ Rectangle {
                 }
 
                 onClicked: repositorySelector.cancelClone()
+            }
+
+            // Setting up a user is optional; GitEase asks the first time a commit needs one.
+            Button {
+                id: skipProfileButton
+                anchors.right: continueButton.left
+                anchors.rightMargin: 10
+                width: 120
+                height: 40
+                flat: true
+                visible: root.controller?.currentPageIndex === Enums.WelcomePages.SetupProfle
+                         && !(setupProfileLoader.item?.hasExistingUser ?? false)
+                text: "Skip for now"
+                font.family: Style.fontTypes.inter
+                font.pixelSize: 12
+
+                background: Rectangle {
+                    radius: 8
+                    color: skipProfileButton.hovered ? Style.colors.controlBackgroundHover : "transparent"
+                    border.width: 1
+                    border.color: Style.colors.controlBorder
+                }
+
+                contentItem: Text {
+                    text: skipProfileButton.text
+                    font: skipProfileButton.font
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    setupProfileLoader.item.errorMessage = ""
+                    root.controller.nextPage()
+                }
             }
 
             ProgressButton {
@@ -334,32 +370,15 @@ Rectangle {
                                 break
                             }
 
-                            if(setupProfileForm.fullName.length === 0
-                                    && setupProfileForm.email.length === 0)
-                                root.controller.nextPage()
-                            else{
-                                if(setupProfileForm.fullName.length === 0){
-                                    setupProfileForm.errorMessage = "full name can't empty"
-                                    break
-                                }
-
-                                if(setupProfileForm.email.length === 0){
-                                    setupProfileForm.errorMessage = "email can't empty"
-                                    break
-                                }
-
-                                let userProfile = userProfileController.createUserProfile(
-                                                    setupProfileForm.fullName,
-                                                    "", // Password
-                                                    setupProfileForm.email)
-
-                                if(userProfile) {
-                                    root.controller.nextPage()
-                                    setupProfileForm.errorMessage = ""
-                                }else
-                                    setupProfileForm.errorMessage = "can't register profile"
+                            // Skipping is its own button now; Continue always saves the choice.
+                            let problem = setupProfileForm.save()
+                            if (problem !== "") {
+                                setupProfileForm.errorMessage = problem
+                                break
                             }
 
+                            setupProfileForm.errorMessage = ""
+                            root.controller.nextPage()
                             break
                         case Enums.WelcomePages.OpenRepository:
                             if(repositorySelector.submit())

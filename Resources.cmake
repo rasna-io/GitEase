@@ -301,7 +301,9 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/ConflictPopup.qml
     Qml/View/Popups/MergeMethodPopup.qml
     Qml/View/Popups/CommitAmendPopup.qml
-    Qml/View/Popups/ConfirmCommandDialog.qml          
+    Qml/View/Popups/ConfirmCommandDialog.qml
+    Qml/View/Popups/IdentityPromptPopup.qml         # "Who is making this commit?" when git has no name and email
+    Qml/View/Popups/UseAsDefaultDialog.qml          # "Use as default" when the repository has its own user
     Qml/View/Popups/RemoteTargetPopup.qml           # Choose the remote for push/pull/tag when the upstream does not say
     Qml/View/Popups/AddTagPopup.qml
     Qml/View/Popups/CalendarPopup.qml
@@ -327,6 +329,7 @@ set(RESOURCES_PAGES
 set(RESOURCES_SERVICES
     Qml/Core/Services/GitService.qml
     Qml/Core/Services/GitStateNotifier.qml   # Single "repository changed" broadcast
+    Qml/Core/Services/IdentityGuard.qml      # Asks who is committing when git has no name and email
 )
 
 # Define View Resources

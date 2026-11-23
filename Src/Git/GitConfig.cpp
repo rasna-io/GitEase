@@ -1,7 +1,40 @@
 ﻿#include "GitConfig.h"
 #include "GitCommandText.h"
+#include "GitUtils.h"
 #include <git2.h>
 #include <QDebug>
+
+namespace
+{
+    //! The Config level GitEase shows for a libgit2 config level.
+    Config::ConfigLevel configLevelOf(git_config_level_t level)
+    {
+        switch (level) {
+        case GIT_CONFIG_LEVEL_PROGRAMDATA:
+        case GIT_CONFIG_LEVEL_SYSTEM:
+            return Config::ConfigLevel::System;
+        case GIT_CONFIG_LEVEL_XDG:
+        case GIT_CONFIG_LEVEL_GLOBAL:
+            return Config::ConfigLevel::Global;
+        case GIT_CONFIG_LEVEL_WORKTREE:
+            return Config::ConfigLevel::Worktree;
+        default:
+            return Config::ConfigLevel::Local;
+        }
+    }
+
+    //! Higher for levels that win: a repository's value beats the global one, and so on.
+    int specificity(int level)
+    {
+        switch (static_cast<Config::ConfigLevel>(level)) {
+        case Config::ConfigLevel::System:   return 0;
+        case Config::ConfigLevel::Global:   return 1;
+        case Config::ConfigLevel::Local:    return 2;
+        case Config::ConfigLevel::Worktree: return 3;
+        default:                            return -1;
+        }
+    }
+}
 
 GitConfig::GitConfig(QObject *parent)
     : IGitController{parent}
@@ -10,11 +43,6 @@ GitConfig::GitConfig(QObject *parent)
 
 GitResult GitConfig::getAllConfigs()
 {
-    // Check if the repository is open
-    if (!m_currentRepo || !activeRepo()) {
-        return GitResult(false, QVariant(), "Repository not found.");
-    }
-
     QVariantList configList;
     git_config *cfg = nullptr;
     int error = 0;
@@ -170,6 +198,133 @@ GitResult GitConfig::setConfig(int level, const QString &name, const QString &em
     emitGitCommand(GitCommandText::setUserIdentity(name, email, levelFlag));
 
     return GitResult(true, QVariant(), "Config set successfully");
+}
+
+GitResult GitConfig::resolveIdentity()
+{
+    git_config *cfg = nullptr;
+    const int openError = (m_currentRepo && activeRepo())
+                              ? git_repository_config_snapshot(&cfg, activeRepo())
+                              : git_config_open_default(&cfg);
+    if (openError != GIT_OK) {
+        const QString reason = GitUtils::getLastError();
+        return GitResult(false, QVariant(), reason.isEmpty() ? "Failed to open git config" : reason);
+    }
+
+    QVariantMap data;
+    int level = -1;       // where the values come from: the more specific level of the two
+    int blankLevel = -1;  // a level whose empty value hides any value set below it
+
+    const struct { const char *key; const char *field; } keys[] = {
+        { "user.name",  "name"  },
+        { "user.email", "email" },
+    };
+
+    for (const auto &item : keys) {
+        git_config_entry *entry = nullptr;
+        if (git_config_get_entry(&entry, cfg, item.key) != GIT_OK || !entry)
+            continue;
+
+        const QString value = QString::fromUtf8(entry->value);
+        const int entryLevel = static_cast<int>(configLevelOf(entry->level));
+        git_config_entry_free(entry);
+
+        data[item.field] = value;
+        if (specificity(entryLevel) > specificity(level))
+            level = entryLevel;
+        if (value.trimmed().isEmpty() && specificity(entryLevel) > specificity(blankLevel))
+            blankLevel = entryLevel;
+    }
+    git_config_free(cfg);
+
+    data["level"] = level;
+    data["blankLevel"] = blankLevel;
+
+    const QByteArray name = data.value("name").toString().toUtf8();
+    const QByteArray email = data.value("email").toString().toUtf8();
+    if (name.trimmed().isEmpty() || email.trimmed().isEmpty())
+        return identityMissingResult(QString(), data);
+
+    git_signature *probe = nullptr;
+    if (git_signature_new(&probe, name.constData(), email.constData(), 0, 0) != GIT_OK)
+        return identityMissingResult(GitUtils::getLastError(), data);
+    git_signature_free(probe);
+
+    return GitResult(true, data);
+}
+
+GitResult GitConfig::unsetIdentity(int level)
+{
+    const Config::ConfigLevel configLevel = static_cast<Config::ConfigLevel>(level);
+
+    git_config *root = nullptr;
+    git_config *levelCfg = nullptr;
+    GitResult opened = openLevelConfig(configLevel, &root, &levelCfg);
+    if (!opened.success())
+        return opened;
+
+    for (const char *key : { "user.name", "user.email" }) {
+        int error = git_config_delete_entry(levelCfg, key);
+        if (error != GIT_OK && error != GIT_ENOTFOUND)
+            error = git_config_delete_multivar(levelCfg, key, ".*"); // the key is set more than once
+        if (error != GIT_OK && error != GIT_ENOTFOUND) {
+            const QString reason = GitUtils::getLastError();
+            git_config_free(levelCfg);
+            git_config_free(root);
+            return GitResult(false, QVariant(),
+                             reason.isEmpty() ? QString("Failed to remove %1").arg(key) : reason);
+        }
+    }
+
+    git_config_free(levelCfg);
+    git_config_free(root);
+
+    emitGitCommand(GitCommandText::unsetUserIdentity(configLevelFlag(configLevel)));
+
+    return GitResult(true);
+}
+
+GitResult GitConfig::openLevelConfig(Config::ConfigLevel level, git_config **root, git_config **levelCfg)
+{
+    *root = nullptr;
+    *levelCfg = nullptr;
+
+    git_config_level_t gitLevel;
+    switch (level) {
+    case Config::ConfigLevel::System:
+        gitLevel = GIT_CONFIG_LEVEL_SYSTEM;
+        break;
+    case Config::ConfigLevel::Global:
+        gitLevel = GIT_CONFIG_LEVEL_GLOBAL;
+        break;
+    case Config::ConfigLevel::Local:
+        gitLevel = GIT_CONFIG_LEVEL_LOCAL;
+        break;
+    case Config::ConfigLevel::Worktree:
+        gitLevel = GIT_CONFIG_LEVEL_WORKTREE;
+        break;
+    default:
+        return GitResult(false, QVariant(), "Invalid config level");
+    }
+
+    const bool repositoryLevel = level == Config::ConfigLevel::Local
+                                 || level == Config::ConfigLevel::Worktree;
+    if (repositoryLevel && (!m_currentRepo || !activeRepo()))
+        return GitResult(false, QVariant(), "No repository open");
+
+    int error = repositoryLevel ? git_repository_config(root, activeRepo())
+                                : git_config_open_default(root);
+    if (error == GIT_OK)
+        error = git_config_open_level(levelCfg, *root, gitLevel);
+
+    if (error != GIT_OK) {
+        const QString reason = GitUtils::getLastError();
+        git_config_free(*root);
+        *root = nullptr;
+        return GitResult(false, QVariant(), reason.isEmpty() ? "Failed to open git config" : reason);
+    }
+
+    return GitResult(true);
 }
 
 GitResult GitConfig::getUserName(int level)

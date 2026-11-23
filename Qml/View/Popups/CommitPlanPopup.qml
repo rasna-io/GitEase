@@ -63,6 +63,7 @@ IWindow {
     property LayoutController       layoutController: null
     property GuideController        guideController: null
     property TextDirectionController textDirectionController: null
+    property IdentityGuard          identityGuard: null
     property var pluginManager: null
     property GitTree gitTree: null
     property string repositoryPath: ""
@@ -428,6 +429,7 @@ IWindow {
         commitController: root.commitController
         guideController: root.guideController
         textDirectionController: root.textDirectionController
+        identityGuard: root.identityGuard
         pluginManager: root.pluginManager
     }
 
@@ -774,6 +776,9 @@ IWindow {
         if (root.currentRebaseState === rebaseState.running)
             return;
 
+        if (!root.identityGuard.check("rebase", root.beginRebase))
+            return;
+
         // TODO(GE-xxx): drop this once GitRebase applies reword and squash. Until then those rows
         // replay unchanged, and saying so is better than letting the plan quietly not happen.
         let unsupported = 0
@@ -798,6 +803,12 @@ IWindow {
         var branch      = planData.branch   || "";
 
         var res = rebaseController.startInteractiveRebase(onto, upstream, branch, ops);
+
+        if (root.identityGuard.handle(res, "rebase", root.beginRebase)) {
+            root.currentRebaseState = rebaseState.idle;
+            return;
+        }
+
         if (!res.success) {
             root.currentRebaseState = rebaseState.failed;
             notificationController.error(res.errorMessage || "Rebased failed", "Rebase", 5000);

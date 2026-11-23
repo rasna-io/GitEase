@@ -54,6 +54,8 @@ Page {
 
     property GitTreeController       gitTreeController:       null
 
+    property IdentityGuard           identityGuard:           null
+
     // Remote actions (Pull / Push / Fetch) are owned by the shared RemoteOperationsSession so
     property RemoteOperationsSession remoteOperationsSession:              null
     property bool                    isFetching:             remoteOperationsSession ? remoteOperationsSession.isFetching : false
@@ -109,6 +111,7 @@ Page {
 
         commitController        : root.commitController
         notificationController  : root.notificationController
+        identityGuard           : root.identityGuard
         changeCommitMessage     : changesFileLists.stagedModel.length == 0
 
         onAmendSuccessful: {
@@ -300,8 +303,13 @@ Page {
                                         text: "Commit & Push",
                                         icon: Style.icons.arrowUp,
                                         action: function() {
-                                            if (!root.commitAndUpdate()) return
-                                            root.pushAndUpdate()
+                                            const commitAndPush = function() {
+                                                if (!root.commitAndUpdate()) 
+                                                    return
+                                                root.pushAndUpdate()
+                                            }
+                                            if (root.identityGuard.check("commit", commitAndPush))
+                                                commitAndPush()
                                         }
                                     })
                                 }
@@ -445,6 +453,7 @@ Page {
                     statusController: root.statusController
                     notificationController: root.notificationController
                     stashController: root.stashController
+                    identityGuard: root.identityGuard
                     currentFile: root.selectedFilePath
                     showSaveDialog: root.showSaveDialog
 
@@ -557,6 +566,9 @@ Page {
                 }
 
                 let res = root.stashController.stashLines(root.selectedFilePath, start, end, type)
+                if (root.identityGuard.handle(res, "stash", function() { diffView.requestStash(start, end, type) }))
+                    return
+
                 if (res.success) {
                     root.notificationController.success("Selected lines stashed", "Stash", 2000)
                 } else {
@@ -592,6 +604,10 @@ Page {
         }
 
         amend = amend || false
+
+        if (!root.identityGuard.check(amend ? "amend" : "commit", function() { root.commitAndUpdate(amend) }))
+            return false
+
         const pm = root.pluginController?.pluginManager
         if (pm && pm.hasWorkflowPluginsFor("pre-commit")) {
             root._pendingCommitAmend = amend
@@ -623,6 +639,9 @@ Page {
         }
 
         let res = commitController.commit(commitTextArea.text, amend, false)
+        if (root.identityGuard.handle(res, amend ? "amend" : "commit", function() { root.commitAndUpdate(amend) }))
+            return false
+
         if (res.success) {
             commitTextArea.text = ""
             root.notificationController.success(`Commit ${amend ? "amended" : ""} successfully`, `Commit ${amend ? "Amend" : "" }`, 3000)

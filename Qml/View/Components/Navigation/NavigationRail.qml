@@ -340,6 +340,9 @@ Rectangle {
                 Behavior on color { ColorAnimation { duration: 120 } }
                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
+                readonly property var  identity:    root.userProfileController?.identity ?? null
+                readonly property bool hasIdentity: profileButton.identity?.found ?? false
+
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: 6
@@ -351,36 +354,77 @@ Rectangle {
                     ProfileAvatar {
                         id: profileAvatar
                         Layout.alignment: Qt.AlignVCenter
+                        visible: profileButton.hasIdentity
                         size: 24
-                        username: root.appModel?.currentUserProfile?.username ?? "username"
+                        username: profileButton.identity?.name ?? ""
                         avatarColor: root.appModel?.currentUserProfile?.avatarColor ?? ""
-                        levels: root.appModel?.currentUserProfile?.levels ?? []
-                        excludeLevels: [Config.Local]
+                        levels: profileButton.hasIdentity ? [profileButton.identity.level] : []
+                    }
+
+                    Text {
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredWidth: 24
+                        visible: !profileButton.hasIdentity
+                        text: Style.icons.warning
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
+                        font.pixelSize: 14
+                        color: Style.colors.warning
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
 
                     Text {
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
-                        text: root.appModel?.currentUserProfile?.username ?? "username"
+                        text: profileButton.hasIdentity ? profileButton.identity.name
+                                                        : qsTr("Set up name & email")
                         font.family: Style.fontTypes.inter
                         font.weight: 400
-                        font.pixelSize: 14
+                        font.pixelSize: profileButton.hasIdentity ? 14 : 13
                         elide: Text.ElideRight
-                        color: Style.colors.foreground
+                        color: profileButton.hasIdentity ? Style.colors.foreground : Style.colors.warning
                         horizontalAlignment: Text.AlignLeft
                         verticalAlignment: Text.AlignVCenter
                     }
 
-                    // Config-level indicator dot
+                    // Where git found the user: this repository's config, the global or the system one
                     Rectangle {
                         Layout.alignment: Qt.AlignVCenter
-                        visible: profileAvatar.hasLevel && (root.appModel?.currentUserProfile ?? null) !== null
-                        Layout.preferredWidth: 7
-                        Layout.preferredHeight: 7
-                        radius: 5
+                        visible: profileButton.hasIdentity && profileAvatar.hasLevel
+                        Layout.preferredHeight: 16
+                        Layout.preferredWidth: levelLabel.implicitWidth + 10
+                        radius: 8
                         color: profileAvatar.levelBadgeColor
+
+                        Text {
+                            id: levelLabel
+                            anchors.centerIn: parent
+                            text: {
+                                switch (profileButton.identity?.level ?? -1) {
+                                case Config.Local:
+                                case Config.Worktree:
+                                    return qsTr("This repo")
+                                case Config.System:
+                                    return qsTr("System")
+                                default:
+                                    return qsTr("Global")
+                                }
+                            }
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: 10
+                            font.weight: 600
+                            color: Style.colors.onColorText
+                        }
                     }
                 }
+
+                ToolTip.visible: profileButtonMouse.containsMouse && profileButton.hasIdentity
+                ToolTip.delay: 600
+                ToolTip.text: profileButton.hasIdentity
+                              ? qsTr("Committing as %1 <%2>").arg(profileButton.identity.name)
+                                                             .arg(profileButton.identity.email)
+                              : ""
 
                 // Make the whole row clickable
                 MouseArea {

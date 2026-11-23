@@ -42,6 +42,7 @@ IWindow {
     property NotificationController notificationController  : null
     property GuideController        guideController         : null
     property TextDirectionController textDirectionController : null
+    property IdentityGuard          identityGuard           : null
 
     property var    conflicts       : []
     property var    selectedConflict: null
@@ -854,6 +855,9 @@ IWindow {
 
         let res = currentController.continueOp()
 
+        if (root.identityGuard.handle(res, "continue", root.continueOperation))
+            return
+
         if (res.success) {
             notificationController.success(`${currentOperationName} completed`, currentOperationName, 2500)
             operationCompleted()
@@ -883,6 +887,9 @@ IWindow {
         }
 
         let res = currentController.skipOp()
+
+        if (root.identityGuard.handle(res, "skip", root.skipOperation))
+            return
 
         if (res.success) {
             notificationController.success("Commit skipped", currentOperationName, 2500)

@@ -120,6 +120,7 @@ ApplicationWindow {
 
             if(window.hasActivatedBefore) {
                 uiSession?.gitStateNotifier?.notifyChanged()
+                uiSession?.userProfileController?.refreshFromGit()
             }
 
             window.hasActivatedBefore = true
@@ -245,6 +246,8 @@ ApplicationWindow {
             guideController: uiSession.guideController
             sshKeyController: uiSession.sshKeyController
             textDirectionController: uiSession.textDirectionController
+            userProfileController: uiSession.userProfileController
+            identityGuard: uiSession.identityGuard
         }
     }
 

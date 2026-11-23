@@ -46,6 +46,7 @@ Page {
     property GitTreeController       gitTreeController       : null
     property GitStateNotifier        gitStateNotifier        : null
     property TextDirectionController textDirectionController : null
+    property IdentityGuard           identityGuard           : null
     readonly property bool           autoUpdate              : root.appModel?.appSettings?.generalSettings?.autoUpdate ?? true
 
     signal utilityPanelReloadRequested()
@@ -252,6 +253,7 @@ Page {
                     showDetachedPlaceholder : true
                     detachedPlaceholderDetails: qsTr("The graph and its search, filters, pull, push and fetch controls moved with it.")
                     textDirectionController : root.textDirectionController
+                    identityGuard           : root.identityGuard
 
                     onCommitClicked: function(commitId) { Presenter.handleCommitClicked(commitId) }
                 }

@@ -16,6 +16,7 @@ IPopup {
      * ****************************************************************************************/
     property NotificationController notificationController  : null
     property CommitController       commitController        : null
+    property IdentityGuard          identityGuard           : null
     property bool                   changeCommitMessage     : false
 
     readonly property bool          canAccept               : messageInput.text.trim().length > 0
@@ -220,6 +221,8 @@ IPopup {
      * ****************************************************************************************/
     function amend() {
         let res = commitController.commit(messageInput.text.trim(), true, false)
+        if (root.identityGuard.handle(res, "amend", root.amend))
+            return
 
         if (res.success) {
             notificationController.success(root.changeCommitMessage ? "Commit message changed successfully" : "Commit amended successfully", "Amend Commit", 3000)

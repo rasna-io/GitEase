@@ -20,6 +20,7 @@ IWindow {
     property NotificationController  notificationController:  null
     property StatusController        statusController:        null
     property TextDirectionController textDirectionController: null
+    property IdentityGuard           identityGuard:           null
 
     property var    stashFiles:       []
     property var    stashDiffData:    []
@@ -235,6 +236,9 @@ IWindow {
             return
 
         let result = root.stashController.save(stashMessageField.text.trim(), keepIndexCheckBox.checked)
+        if (root.identityGuard.handle(result, "stash", root.createStash))
+            return
+
         if (result.success) {
             root.closePopUp()
             return
