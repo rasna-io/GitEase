@@ -18,7 +18,7 @@ if (APPLE)
 
     message(STATUS "libarchive lib : ${LIBARCHIVE_LIB}")
 elseif (UNIX)
-    # Built statically by Ext/libarchive/build-linux.sh (PIC, LZ4/ZSTD/LZO
+    # Built statically by Scripts/rebuild_ext.sh (PIC, LZ4/ZSTD/LZO/libxml2
     # disabled), so no runtime deployment is needed.
     set(LIBARCHIVE_LIB "${LIBARCHIVE_ROOT}/lib/Linux/libarchive.a")
 
@@ -27,7 +27,7 @@ elseif (UNIX)
         IMPORTED_LOCATION             "${LIBARCHIVE_LIB}"
         INTERFACE_INCLUDE_DIRECTORIES "${LIBARCHIVE_ROOT}/include"
     )
-    target_link_libraries(libarchive INTERFACE z bz2 lzma xml2)
+    target_link_libraries(libarchive INTERFACE z bz2 lzma)
 
     message(STATUS "libarchive lib : ${LIBARCHIVE_LIB}")
 else()

@@ -21,7 +21,7 @@ include(libarchive.cmake)
 # Flatten generation of all sub-dependent libraries
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Qml)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Quick Gui Concurrent Svg)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Quick Gui Concurrent Svg)
 
 # Dependencies
 add_subdirectory(Res/)
@@ -140,6 +140,42 @@ if(UNIX AND NOT APPLE)
         INSTALL_RPATH "\$ORIGIN/../lib"
         BUILD_WITH_INSTALL_RPATH FALSE
     )
+
+    target_link_options(GitEase PRIVATE "LINKER:--as-needed")
+    find_package(Qt6 QUIET COMPONENTS ShaderTools)
+    if(TARGET Qt6::ShaderTools)
+        get_target_property(_shadertools_file Qt6::ShaderTools IMPORTED_LOCATION_RELEASE)
+        get_target_property(_shadertools_soname Qt6::ShaderTools IMPORTED_SONAME_RELEASE)
+        install(FILES "${_shadertools_file}" DESTINATION lib RENAME "${_shadertools_soname}")
+    else()
+        message(WARNING "Qt6ShaderTools not found; Qt5Compat.GraphicalEffects will not load from the .deb")
+    endif()
+
+    option(GITEASE_BUNDLE_XCB_LIBS "Bundle the xcb helper libraries into the package" ON)
+    if(GITEASE_BUNDLE_XCB_LIBS)
+        set(_gitease_bundled_sonames
+            libxcb-cursor.so.0
+            libxcb-icccm.so.4
+            libxcb-image.so.0
+            libxcb-keysyms.so.1
+            libxcb-render-util.so.0
+            libxcb-util.so.1
+            libxcb-xinerama.so.0
+            libxcb-xkb.so.1
+        )
+        foreach(_soname IN LISTS _gitease_bundled_sonames)
+            string(MAKE_C_IDENTIFIER "GITEASE_BUNDLE_${_soname}" _var)
+            find_file(${_var} NAMES ${_soname}
+                PATHS /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib
+                NO_DEFAULT_PATH)
+            if(${_var})
+                get_filename_component(_real "${${_var}}" REALPATH)
+                install(FILES "${_real}" DESTINATION lib RENAME ${_soname})
+            else()
+                message(WARNING "${_soname} not found; the .deb will need it installed on the system")
+            endif()
+        endforeach()
+    endif()
 
     install(TARGETS ${MAIN_TARGET_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

@@ -148,7 +148,6 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/StashManagerDock.qml
     Qml/View/Components/Docks/RecentActivityDock.qml
 
-    Qml/View/Components/Docks/RecentActivityDock.qml
     Qml/View/Components/Docks/RebaseDock.qml
 
     Qml/View/Components/Docks/RepositoriesHistoryDock.qml       # All Repositories Dock
@@ -311,7 +310,6 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/CommitPlanPopup.qml
     Qml/View/Popups/CommitFileBrowserPopup.qml #browse file tree at a commit
 
-    Qml/View/Popups/CommitFileBrowserPopup.qml #browse file tree at a commit
 
 )
 
