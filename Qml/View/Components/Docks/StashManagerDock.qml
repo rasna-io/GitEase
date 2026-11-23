@@ -278,7 +278,7 @@ UtilitiesCard {
                                "Drop stash@{%1}? The changes it holds are lost.".arg(stashEntry.index),
                                GitCommandText.stashDrop(stashEntry.index),
                                "Drop Stash",
-                               { action: "drop"})
+                               { action: "drop", stash: stashEntry })
     }
 
     function performDropStash(stashEntry) {

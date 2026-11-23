@@ -152,15 +152,46 @@ QString GitCommandText::setDefaultRemote(const QString &remoteName)
     return QString("git config remote.pushDefault %1").arg(quote(remoteName));
 }
 
-QString GitCommandText::stashPush(const QString &message, bool keepIndex)
+QString GitCommandText::stashPush(const QString &message, bool keepIndex, bool includeUntracked)
 {
     QString command = "git stash push";
 
     if (keepIndex)
         command += " --keep-index";
 
+    if (includeUntracked)
+        command += " --include-untracked";
+
     if (!message.trimmed().isEmpty())
         command += " -m " + quote(message.trimmed());
+
+    return command;
+}
+
+QString GitCommandText::stashPushStaged(const QString &message)
+{
+    QString command = "git stash push --staged";
+
+    if (!message.trimmed().isEmpty())
+        command += " -m " + quote(message.trimmed());
+
+    return command;
+}
+
+//! The closest git command: stashing exactly the unstaged paths (git has no "unstaged only" flag)
+QString GitCommandText::stashPushUnstaged(const QString &message, const QStringList &paths, bool includeUntracked)
+{
+    QString command = "git stash push";
+
+    if (includeUntracked)
+        command += " --include-untracked";
+
+    if (!message.trimmed().isEmpty())
+        command += " -m " + quote(message.trimmed());
+
+    command += " --";
+    for (const QString &path : paths)
+        command += " " + quote(path);
 
     return command;
 }
