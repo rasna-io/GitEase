@@ -16,6 +16,10 @@ import QtQuick
  * tab (GuideController.forceShow) as soon as its owning component exists, without requiring the
  * user to have hovered it first.
  *
+ * HoverHandler roots can race method binding during incubation (`_register is not a function`).
+ * Registration / trigger logic is therefore inlined inside Timers — never call JS methods from
+ * Component.onCompleted or Qt.callLater on this type.
+ *
  * `guideName` / `guideIcon` / `guidePage` are optional display metadata forwarded to
  * GuideController.registerGuide() — they don't affect triggering, only how the guide shows up
  * in tutorial-list UI (Settings → Help). See GuideController's header comment for their meaning.
@@ -46,44 +50,47 @@ HoverHandler {
      * ****************************************************************************************/
     onHoveredChanged: hovered ? _delayTimer.restart() : _delayTimer.stop()
 
-    // HoverHandler has no default property (it isn't a QQuickItem), so the Timer must be
-    // attached via an explicit property assignment rather than declared as a plain child.
+    // HoverHandler has no default property (it isn't a QQuickItem), so Timers must be
+    // attached via explicit property assignment rather than declared as plain children.
     property Timer _delayTimer: Timer {
         interval: root.delay
-        repeat:   false
+        repeat: false
         onTriggered: {
-            if (root.hovered)
-                root._trigger()
+            if (!root.hovered || !root.guideController)
+                return
+            if (root.guideController.isShown(root.guideId))
+                return
+            // Register inline (same body as _regTimer) then show — order matters.
+            if (root.stepsFactory && root.guideId.length > 0) {
+                root.guideController.registerGuide({
+                    id:    root.guideId,
+                    name:  root.guideName,
+                    icon:  root.guideIcon,
+                    page:  root.guidePage,
+                    steps: root.stepsFactory()
+                })
+            }
+            root.guideController.tryShow(root.guideId)
         }
     }
 
-    Component.onCompleted: root._register()
-    onGuideControllerChanged: root._register()
-    onGuideIdChanged: root._register()
-
-    /* Functions
-     * ****************************************************************************************/
-    function _register() {
-        if (!root.guideController || !root.stepsFactory || root.guideId.length === 0)
-            return
-
-        root.guideController.registerGuide({
-            id:    root.guideId,
-            name:  root.guideName,
-            icon:  root.guideIcon,
-            page:  root.guidePage,
-            steps: root.stepsFactory()
-        })
+    property Timer _regTimer: Timer {
+        interval: 0
+        repeat: false
+        onTriggered: {
+            if (!root.guideController || !root.stepsFactory || root.guideId.length === 0)
+                return
+            root.guideController.registerGuide({
+                id:    root.guideId,
+                name:  root.guideName,
+                icon:  root.guideIcon,
+                page:  root.guidePage,
+                steps: root.stepsFactory()
+            })
+        }
     }
 
-    function _trigger() {
-        if (!root.guideController)
-            return
-
-        if (root.guideController.isShown(root.guideId))
-            return
-
-        root._register()
-        root.guideController.tryShow(root.guideId)
-    }
+    Component.onCompleted: _regTimer.start()
+    onGuideControllerChanged: _regTimer.restart()
+    onGuideIdChanged: _regTimer.restart()
 }

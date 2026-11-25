@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 
 import GitEase_Style
@@ -119,6 +120,7 @@ Rectangle {
             running: visible
             Layout.preferredWidth: Style.dp(20)
             Layout.preferredHeight: Style.dp(20)
+            Material.accent: Style.colors.accent
         }
     }
 }

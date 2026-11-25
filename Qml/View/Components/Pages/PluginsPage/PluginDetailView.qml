@@ -177,10 +177,79 @@ Rectangle {
             message: root.pluginController?.pluginDetailError ?? ""
         }
 
-        Flickable {
-            id: detailFlick
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            // Skeleton while the rich detail payload is in flight
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: Style.dp(24)
+                spacing: Style.dp(16)
+                visible: !!(root.pluginController?.pluginDetailBusy)
+                         && !(root.plugin?.longDescription)
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Style.dp(16)
+
+                    SkeletonBone {
+                        Layout.preferredWidth: Style.dp(72)
+                        Layout.preferredHeight: Style.dp(72)
+                        radius: Style.dp(16)
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: Style.dp(8)
+
+                        SkeletonBone {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Style.dp(22)
+                            Layout.maximumWidth: Style.dp(280)
+                        }
+                        SkeletonBone {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Style.dp(12)
+                            Layout.maximumWidth: Style.dp(180)
+                        }
+                        SkeletonBone {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Style.dp(12)
+                            Layout.maximumWidth: Style.dp(220)
+                        }
+                    }
+                }
+
+                SkeletonBone {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Style.dp(120)
+                    radius: Style.dp(10)
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Style.dp(10)
+                    Repeater {
+                        model: 3
+                        SkeletonBone {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Style.dp(72)
+                            radius: Style.dp(10)
+                        }
+                    }
+                }
+
+                Item { Layout.fillHeight: true }
+            }
+
+        Flickable {
+            id: detailFlick
+            anchors.fill: parent
+            visible: !(root.pluginController?.pluginDetailBusy)
+                     || !!(root.plugin?.longDescription)
+                     || !!(root.plugin?.description)
+            opacity: visible ? 1 : 0
             contentWidth: width
             contentHeight: pageColumn.implicitHeight
             clip: true
@@ -254,7 +323,8 @@ Rectangle {
                 }
             }
         }
-    }
+        } // content Item (skeleton + flickable)
+    } // page ColumnLayout
 
     Connections {
         target: root.pluginController?.appModel ?? null

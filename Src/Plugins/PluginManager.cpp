@@ -188,6 +188,10 @@ namespace {
     constexpr int kUnloadRetryMs     = 40;
     constexpr int kMaxUnloadAttempts = 25;
     constexpr int kScanIdleRetryMs   = 40;
+    // Gap between QPluginLoader::instance()/initialize() calls so the UI thread
+    // can paint and handle input. Qt plugin objects must be created on the GUI thread.
+    constexpr int kLoadSpacingMs     = 32;
+    constexpr int kPluginsChangedBatchMs = 48;
 
     bool extractPackage(const QString& gepPath, const QString& targetDir);
 
@@ -499,6 +503,15 @@ namespace {
             prepared.info = candidate.info;
             if(candidate.info.enabled && candidate.info.hasCppEntry()) {
                 prepared.libraryPath = prepareHotLibrary(candidate.dir, candidate.info.cppEntry);
+                if(!prepared.libraryPath.isEmpty() && QFileInfo::exists(prepared.libraryPath)) {
+                    // Map the DLL off the UI thread; QPluginLoader on the GUI thread
+                    // then reuses the already-loaded image (refcount).
+                    auto lib = std::make_shared<QLibrary>(prepared.libraryPath);
+                    lib->setLoadHints(QLibrary::ExportExternalSymbolsHint);
+                    if(lib->load()) {
+                        prepared.preloadedLibrary = lib;
+                    }
+                }
             }
             result.plugins.append(prepared);
         }
@@ -583,6 +596,14 @@ namespace {
                 QDir(targetDir).removeRecursively();
             } else if(info.isValid() && info.enabled && info.hasCppEntry()) {
                 placement.prepared.libraryPath = prepareHotLibrary(targetDir, info.cppEntry);
+                if(!placement.prepared.libraryPath.isEmpty()
+                   && QFileInfo::exists(placement.prepared.libraryPath)) {
+                    auto lib = std::make_shared<QLibrary>(placement.prepared.libraryPath);
+                    lib->setLoadHints(QLibrary::ExportExternalSymbolsHint);
+                    if(lib->load()) {
+                        placement.prepared.preloadedLibrary = lib;
+                    }
+                }
             }
         } else {
             QDir(targetDir).removeRecursively();
@@ -988,6 +1009,7 @@ void PluginManager::scanDirectory(const QString& path)
         m_scanQueue.append(path);
     }
 
+    updateLoadingState();
     startNextScan();
 }
 
@@ -1021,6 +1043,7 @@ void PluginManager::startNextScan()
     }
 
     m_scanRunning = true;
+    updateLoadingState();
     runInBackground(this,
                     [path, skipIds]() {
                         return scanPluginDirectory(path, skipIds);
@@ -1037,6 +1060,7 @@ void PluginManager::finishScan(const PluginScanResult& result)
     for(const PreparedPlugin& prepared : result.plugins) {
         m_loadQueue.append(prepared);
     }
+    updateLoadingState();
 
     QStringList staleDirs;
     for(const auto& stale : result.staleDirs) {
@@ -1071,20 +1095,54 @@ void PluginManager::finishScan(const PluginScanResult& result)
     startNextScan();
 }
 
+void PluginManager::schedulePluginsChanged()
+{
+    // Coalesce list updates while several plugins activate back-to-back; QML rebuilds
+    // the whole catalog on every pluginsChanged and that was freezing the UI.
+    if(m_pluginsChangedScheduled) {
+        return;
+    }
+
+    m_pluginsChangedScheduled = true;
+    const int delay = m_loadQueue.isEmpty() ? 0 : kPluginsChangedBatchMs;
+    QTimer::singleShot(delay, this, [this]() {
+        m_pluginsChangedScheduled = false;
+        emit pluginsChanged();
+    });
+}
+
+void PluginManager::updateLoadingState()
+{
+    const bool next = m_scanRunning
+                      || !m_scanQueue.isEmpty()
+                      || !m_loadQueue.isEmpty()
+                      || m_loadPumpActive;
+    if(next == m_loading && !next) {
+        return;
+    }
+
+    m_loading = next;
+    emit loadingChanged();
+}
+
 void PluginManager::pumpLoadQueue()
 {
     if(m_loadPumpActive || m_loadQueue.isEmpty()) {
+        updateLoadingState();
         return;
     }
 
     m_loadPumpActive = true;
-    QTimer::singleShot(0, this, [this]() {
+    updateLoadingState();
+    QTimer::singleShot(kLoadSpacingMs, this, [this]() {
         m_loadPumpActive = false;
         if(m_loadQueue.isEmpty()) {
+            updateLoadingState();
             return;
         }
 
         const PreparedPlugin next = m_loadQueue.takeFirst();
+        updateLoadingState();
         const bool known = isBusy(next.info.id)
                            || std::any_of(m_infos.cbegin(), m_infos.cend(),
                                           [&next](const PluginInfo& info) {
@@ -1094,6 +1152,7 @@ void PluginManager::pumpLoadQueue()
             loadPlugin(next);
         }
 
+        // Keep pumping; spacing above yields to the event loop between plugins.
         pumpLoadQueue();
     });
 }
@@ -1127,9 +1186,11 @@ bool PluginManager::loadPlugin(const PreparedPlugin& prepared)
         return false;
     }
 
-    const bool ok = info.enabled ? activatePlugin(info, prepared.libraryPath) : false;
+    const bool ok = info.enabled
+                        ? activatePlugin(info, prepared.libraryPath, prepared.preloadedLibrary)
+                        : false;
     m_infos.append(info);
-    emit pluginsChanged();
+    schedulePluginsChanged();
     return ok;
 }
 
@@ -1146,7 +1207,8 @@ QString PluginManager::uniquePluginDir(const QString& pluginRoot, const QString&
            + QLatin1Char('-') + QString::number(QDateTime::currentMSecsSinceEpoch());
 }
 
-bool PluginManager::loadCppPlugin(const PluginInfo& info, const QString& preparedLibrary)
+bool PluginManager::loadCppPlugin(const PluginInfo& info, const QString& preparedLibrary,
+                                  std::shared_ptr<QLibrary> preloaded)
 {
     const QString libPath = preparedLibrary.isEmpty()
                                 ? hotLoadLibraryPath(info.pluginDir, info.cppEntry)
@@ -1192,6 +1254,9 @@ bool PluginManager::loadCppPlugin(const PluginInfo& info, const QString& prepare
     }
 
     m_loaders[info.id] = loader;
+    if(preloaded) {
+        m_preloadedLibraries[info.id] = std::move(preloaded);
+    }
     m_plugins[info.id] = plugin;
     return true;
 }
@@ -1228,12 +1293,13 @@ void PluginManager::setCurrentBranch(const QString& branch)
 
 // ── Management ───────────────────────────────────────────────────────────────
 
-bool PluginManager::activatePlugin(PluginInfo& info, const QString& preparedLibrary)
+bool PluginManager::activatePlugin(PluginInfo& info, const QString& preparedLibrary,
+                                   std::shared_ptr<QLibrary> preloaded)
 {
     bool ok = true;
 
     if (info.hasCppEntry())
-        ok = loadCppPlugin(info, preparedLibrary);
+        ok = loadCppPlugin(info, preparedLibrary, std::move(preloaded));
 
     if (info.hasQmlEntry()) {
         if (auto* engine = m_context->qmlEngine())
@@ -1331,6 +1397,7 @@ void PluginManager::deactivatePlugin(const QString& id, std::function<void()> do
     job->id     = id;
     job->plugin = m_plugins.take(id);
     job->loader = m_loaders.take(id);
+    m_preloadedLibraries.remove(id);
     job->done   = std::move(done);
     m_releaseJobs.append(job);
 
@@ -1480,6 +1547,19 @@ QVariantList PluginManager::pluginInfos() const
     for (const auto& info : m_infos)
         result << info.toVariantMap();
     return result;
+}
+
+bool PluginManager::isLoading() const
+{
+    return m_loading;
+}
+
+int PluginManager::pendingLoadCount() const
+{
+    return m_loadQueue.size()
+           + m_scanQueue.size()
+           + (m_scanRunning ? 1 : 0)
+           + (m_loadPumpActive ? 1 : 0);
 }
 
 QVariantList PluginManager::downloadedPackages() const
