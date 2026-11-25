@@ -29,8 +29,15 @@ Rectangle {
     Component {
         id: pluginPageComponent
         Page {
+            id: pluginHostPage
             property url pluginUrl: ""
+            property bool pluginQmlLoaded: false
             isPlugin: true
+
+            // Only compile/load plugin QML when the user opens this page. Eager
+            // loads during PluginManager startup were freezing the UI thread.
+            readonly property bool shouldLoadPlugin: SwipeView.isCurrentItem
+                                                     || pluginHostPage.pluginQmlLoaded
 
             function onPageActivated() {
                 pluginLoader.item?.onPageActivated?.()
@@ -40,12 +47,25 @@ Rectangle {
                 id: pluginLoader
                 anchors.fill: parent
                 asynchronous: true
-                source: parent.pluginUrl
-                onLoaded: root.injectPluginHostProperties(item)
+                active: pluginHostPage.shouldLoadPlugin && pluginHostPage.pluginUrl.toString() !== ""
+                source: active ? pluginHostPage.pluginUrl : ""
+                onLoaded: {
+                    pluginHostPage.pluginQmlLoaded = true
+                    root.injectPluginHostProperties(item)
+                }
                 onStatusChanged: {
                     if (status === Loader.Error)
                         console.error("[MainWindow] Failed to load plugin page:", source)
                 }
+            }
+
+            // Simple waiter only — not the marketplace card grid (that belongs on PluginsPage).
+            BusyWaiter {
+                anchors.fill: parent
+                visible: pluginLoader.status === Loader.Loading
+                running: visible
+                message: "Loading page"
+                color: "transparent"
             }
         }
     }
@@ -228,6 +248,7 @@ Rectangle {
             return
         }
 
+        // Lightweight shell only — plugin QML loads lazily when the page is shown.
         let page = pluginPageComponent.createObject(pageSwipeView, {
             pageId: id, title: title, icon: icon, pluginUrl: qmlUrl
         })
@@ -337,6 +358,17 @@ Rectangle {
             utilityPanelOpen: root.utilityPanelOpen
 
             onUtilityPanelToggleRequested: root.utilityPanelOpen = !root.utilityPanelOpen
+        }
+
+        AppLoadingBanner {
+            Layout.fillWidth: true
+            Layout.leftMargin: Style.dp(12)
+            Layout.rightMargin: Style.dp(12)
+            Layout.topMargin: visible ? Style.dp(8) : 0
+            Layout.bottomMargin: visible ? Style.dp(4) : 0
+            running: !!(root.uiSession?.pluginController?.pluginsLoading)
+            message: "Loading plugins"
+            pendingCount: root.uiSession?.pluginController?.pluginsPendingCount ?? 0
         }
 
         Item {

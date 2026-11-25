@@ -7,6 +7,7 @@
 #include <QQmlEngine>
 #include <QJSValue>
 #include <QPair>
+#include <QLibrary>
 #include <functional>
 #include <memory>
 
@@ -35,6 +36,9 @@ struct PreparedPlugin
 {
     PluginInfo info;
     QString    libraryPath; // hot copy of the library; empty when nothing has to be loaded
+    // Keeps a worker-thread QLibrary::load() mapped until the GUI thread's
+    // QPluginLoader takes over — cuts disk/mapping stalls on the UI thread.
+    std::shared_ptr<QLibrary> preloadedLibrary;
 };
 
 //! Result of looking through one plugin directory on a worker thread.
@@ -102,6 +106,8 @@ class PluginManager : public QObject
     Q_PROPERTY(QVariantList registeredPages      READ registeredPages      NOTIFY pagesChanged)
     Q_PROPERTY(QVariantList registeredToolbarActions READ registeredToolbarActions NOTIFY toolbarActionsChanged)
     Q_PROPERTY(QVariantList registeredConflictAssists READ registeredConflictAssists NOTIFY conflictAssistsChanged)
+    Q_PROPERTY(bool         loading              READ isLoading            NOTIFY loadingChanged)
+    Q_PROPERTY(int          pendingLoadCount     READ pendingLoadCount     NOTIFY loadingChanged)
 
 public:
     explicit PluginManager(QObject* parent = nullptr);
@@ -178,6 +184,8 @@ public:
     QVariantList registeredPages()       const;
     QVariantList registeredToolbarActions() const;
     QVariantList registeredConflictAssists() const;
+    bool         isLoading()             const;
+    int          pendingLoadCount()      const;
 
     QList<IDockPlugin*>          dockPlugins()    const;
     QList<ICommandPlugin*>       commandPlugins() const;
@@ -198,6 +206,7 @@ signals:
     void toolbarActionsChanged();
     void conflictAssistsChanged();
     void contextMenusChanged  ();
+    void loadingChanged   ();
 
     void pluginLoaded     (const QString& id);
     void pluginError      (const QString& id, const QString& error);
@@ -243,9 +252,11 @@ private:
                                const QString& pluginId, bool announce);
     void       continueGepInstall(const GepRequest& request, const GepInspection& inspection);
     void       finishGepInstall(const GepRequest& request, const GepPlacement& placement);
-    bool       loadCppPlugin(const PluginInfo& info, const QString& preparedLibrary = {});
+    bool       loadCppPlugin(const PluginInfo& info, const QString& preparedLibrary = {},
+                             std::shared_ptr<QLibrary> preloaded = {});
     void       wireContext  ();
-    bool       activatePlugin(PluginInfo& info, const QString& preparedLibrary = {});
+    bool       activatePlugin(PluginInfo& info, const QString& preparedLibrary = {},
+                              std::shared_ptr<QLibrary> preloaded = {});
 
     void       deactivatePlugin(const QString& id, std::function<void()> done = {});
     void       tearDownPlugin(const QString& id, std::function<void()> done = {});
@@ -254,6 +265,8 @@ private:
     void       startNextScan();
     void       finishScan(const PluginScanResult& result);
     void       pumpLoadQueue();
+    void       schedulePluginsChanged();
+    void       updateLoadingState();
     void       runWhenScanIdle(std::function<void()> action);
     void       finishRemoval(const QString& id, const PluginRemovalResult& result);
     bool       isBusy(const QString& id) const;
@@ -272,6 +285,7 @@ private:
     QObject*       m_workerContext = nullptr;
 
     QMap<QString, QPluginLoader*> m_loaders;
+    QMap<QString, std::shared_ptr<QLibrary>> m_preloadedLibraries;
     QMap<QString, IPlugin*>       m_plugins;
     QList<PluginInfo>             m_infos;
     QSet<QString>                 m_installingIds; // .gep installs still being placed on disk
@@ -281,6 +295,8 @@ private:
     bool                          m_scanRunning    = false;
     QList<PreparedPlugin>         m_loadQueue;     // scanned plugins waiting to be loaded one by one
     bool                          m_loadPumpActive = false;
+    bool                          m_pluginsChangedScheduled = false;
+    bool                          m_loading                 = false;
     QList<std::shared_ptr<ReleaseJob>> m_releaseJobs;
     int                           m_pendingCounter = 0;
 

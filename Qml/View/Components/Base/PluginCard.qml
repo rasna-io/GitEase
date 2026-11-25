@@ -161,8 +161,8 @@ Rectangle {
                     sourceSize.height: height * 2
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
+                    // mipmap is costly for many small icons created during catalog scroll
                     smooth: true
-                    mipmap: true
                     visible: status === Image.Ready
                 }
 

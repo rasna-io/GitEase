@@ -8,8 +8,15 @@ import GitEase_Style
  * WindowMotion
  * Handles minimize/restore window animations with opacity and scale transitions.
  * ***********************************************************************************************/
-QtObject {
+// Item (not QtObject): animations/Connections need a `data` default property;
+// QtObject roots spam "Cannot find member data" under Qt 6.10+.
+Item {
     id: root
+
+    // Non-visual helper — never size/layout against parents.
+    width: 0
+    height: 0
+    visible: false
 
     /* Property Declarations
      * ****************************************************************************************/
@@ -47,7 +54,8 @@ QtObject {
             return
         }
 
-        root.fadeTarget.opacity = 1
+        if (root.fadeTarget)
+            root.fadeTarget.opacity = 1
         root.window.contentItem.scale = 1
         root.minimizing = true
         minimizeOutAnimation.restart()
@@ -55,7 +63,7 @@ QtObject {
 
     /* Animations
      * ****************************************************************************************/
-    property ParallelAnimation minimizeOutAnimation: ParallelAnimation {
+    ParallelAnimation {
         id: minimizeOutAnimation
 
         // Fade out window opacity
@@ -69,7 +77,7 @@ QtObject {
 
         // Slightly shrink content
         NumberAnimation {
-            target: root.window.contentItem
+            target: root.window ? root.window.contentItem : null
             property: "scale"
             to: 0.985
             duration: Style.motionMedium
@@ -82,7 +90,7 @@ QtObject {
         }
     }
 
-    property ParallelAnimation restoreAnimation: ParallelAnimation {
+    ParallelAnimation {
         id: restoreAnimation
 
         // Fade in window opacity
@@ -96,7 +104,7 @@ QtObject {
 
         // Restore content scale
         NumberAnimation {
-            target: root.window.contentItem
+            target: root.window ? root.window.contentItem : null
             property: "scale"
             to: 1
             duration: Style.motionMedium
@@ -106,12 +114,12 @@ QtObject {
 
     /* Connections
      * ****************************************************************************************/
-    property Connections visibilityConnections: Connections {
+    Connections {
         target: root.window
 
         // Restore animation when window is shown again after minimizing
         function onVisibilityChanged() {
-            if (!root.minimizing)
+            if (!root.minimizing || !root.window)
                 return
 
             const visibility = root.window.visibility
@@ -120,7 +128,8 @@ QtObject {
                 return
 
             root.minimizing = false
-            root.fadeTarget.opacity = 0
+            if (root.fadeTarget)
+                root.fadeTarget.opacity = 0
             root.window.contentItem.scale = 0.985
             restoreAnimation.restart()
         }

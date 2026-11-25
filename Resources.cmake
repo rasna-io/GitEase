@@ -79,6 +79,10 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/EmptyStateView.qml                # Items Empty State View
     Qml/View/Components/Base/DetachedPanelPlaceholder.qml      # Stand-in for a panel shown in its own window
     Qml/View/Components/Base/BusyWaiter.qml                    # Items Busy Wait State View
+    Qml/View/Components/Base/SkeletonBone.qml                  # Shimmer bone for skeleton loaders
+    Qml/View/Components/Base/PluginCardSkeleton.qml            # Plugin card skeleton placeholder
+    Qml/View/Components/Base/PluginsSkeletonView.qml           # Plugins marketplace skeleton grid
+    Qml/View/Components/Base/AppLoadingBanner.qml              # Compact app/plugins loading chip
     Qml/View/Components/Base/UtilitiesCard.qml
     Qml/View/Components/Base/DashedButton.qml                  # Dashed ghost action button for utilities cards
     Qml/View/Components/Base/ContextMenu.qml

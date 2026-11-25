@@ -31,6 +31,12 @@ QtObject {
     property int    currentPage:        1
     property bool   hasMorePages:       false
 
+    // True while PluginManager is scanning/activating local plugins off the UI cadence.
+    readonly property bool pluginsLoading: pluginManager ? pluginManager.loading : false
+    readonly property int  pluginsPendingCount: pluginManager ? pluginManager.pendingLoadCount : 0
+    // Catalog network fetch or local plugin activation — used by PluginsPage skeleton.
+    readonly property bool catalogLoading: root.busy || root.pluginsLoading
+
     // local plugin map: id → PluginInfo variantmap (rebuilt on every pluginsChanged)
     property var    localPluginMap:     ({})
     property bool   appendMode:         false   // true when fetching next page (append vs replace)
@@ -59,7 +65,7 @@ QtObject {
     property string pluginDetailError:    ""
 
 
-    readonly property string pluginApiBaseUrl:               "http://127.0.0.1:8080/api"
+    readonly property string pluginApiBaseUrl:               "https://gitease.app/api"
     readonly property string fetchPluginsRequestKey:         "plugin-fetch"
     readonly property string fetchCategoriesRequestKey:      "plugin-fetch-categories"
     readonly property string checkUpdatesRequestKey:         "plugin-check-updates"
@@ -94,8 +100,14 @@ QtObject {
             root.registeredPages = root.registeredPages.concat([{
                 id: id, title: title, qmlUrl: qmlUrl, icon: icon, pluginId: pluginId || id
             }])
-            if (root.pageController)
-                root.pageController.createPage(id, title, qmlUrl, icon)
+            // Defer host page creation so PluginManager::loadPlugin can return and the
+            // UI thread can paint between plugins (createPage used to run inline).
+            if (root.pageController) {
+                Qt.callLater(function() {
+                    if (root.pageController)
+                        root.pageController.createPage(id, title, qmlUrl, icon)
+                })
+            }
         }
 
         onPluginAboutToUnload: function(id) {
