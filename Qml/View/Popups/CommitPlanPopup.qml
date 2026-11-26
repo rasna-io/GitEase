@@ -67,6 +67,7 @@ IWindow {
     property var pluginManager: null
     property GitTree gitTree: null
     property string repositoryPath: ""
+    property string repositoryName: ""
 
 
     property var    planData            : ({})
@@ -340,6 +341,8 @@ IWindow {
                         icon: Style.icons.list
                         layoutController: root.layoutController
                         layoutId: "commitPlanPopup.fileChangesDock"
+                        currentRepositoryName: root.repositoryName
+                        titleContext: qsTr("Commit Plan")
                         showDetachedPlaceholder: true
                         detachedPlaceholderDetails: qsTr("Select a file there to see its changes in the diff view.")
                         lastWidth: 320
@@ -358,6 +361,8 @@ IWindow {
                         icon: Style.icons.file
                         layoutController: root.layoutController
                         layoutId: "commitPlanPopup.diffView"
+                        currentRepositoryName: root.repositoryName
+                        titleContext: qsTr("Commit Plan")
                         showDetachedPlaceholder: true
                         detachedPlaceholderDetails: qsTr("Select a file in the list to see its changes there.")
                         SplitView.fillWidth: true

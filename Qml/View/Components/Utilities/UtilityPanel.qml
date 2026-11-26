@@ -303,6 +303,7 @@ Rectangle {
                     gitTreeController       : root.gitTreeController
                     identityGuard           : root.identityGuard
                     repositoryPath          : root.repositoryController?.appModel?.currentRepository?.path ?? ""
+                    repositoryName          : root.repositoryController?.appModel?.currentRepository?.name ?? ""
                     pluginManager           : root.pluginController?.pluginManager ?? null
                 }
 

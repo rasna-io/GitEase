@@ -691,6 +691,7 @@ DetachablePanel {
         pluginManager: root.pluginController?.pluginManager ?? null
         gitTree: root.gitTreeController
         repositoryPath: root.appModel?.currentRepository?.path ?? ""
+        repositoryName: root.appModel?.currentRepository?.name ?? ""
     }
 
     CommitFileBrowserPopup {

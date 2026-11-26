@@ -25,6 +25,8 @@ Item {
     property bool                   layoutVisible:           true
     property bool                   minimizable:            false
     property string                 title:                  ""
+    //! Where the panel comes from, shown after the title while detached (e.g. "Commit Plan")
+    property string                 titleContext:           ""
     property int                    headerHeight:           32
     property int                    minWindowWidth:         420
     property int                    minWindowHeight:        320
@@ -52,6 +54,11 @@ Item {
     // never resizes the panel's place in its layout. 0 until the window is first shown.
     property int detachedWidth: 0
     property int detachedHeight: 0
+
+    readonly property string detachedTitle: {
+        let text = root.titleContext !== "" ? root.title + " · " + root.titleContext : root.title
+        return root.currentRepositoryName ? text + ` [${root.currentRepositoryName}]` : text
+    }
     property bool guideDetached: false
     property bool showLocalGuide: false
     property bool transitionInitialized: false
@@ -424,7 +431,7 @@ Item {
         width: root.lastWidth
         height: root.lastHeight
         color: Style.colors.primaryBackground
-        title: root.title
+        title: root.detachedTitle
         flags: Qt.Window | Qt.FramelessWindowHint
 
         onClosing: function(close) {
@@ -467,7 +474,7 @@ Item {
 
                     Label {
                         Layout.alignment: Qt.AlignLeft
-                        text: root.title  + ` [${root.currentRepositoryName}]`
+                        text: root.detachedTitle
                         color: Style.colors.foreground
                         font.family: Style.fontTypes.inter
                         font.weight: 500
