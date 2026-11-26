@@ -134,6 +134,15 @@ set(HEADERS_BACKEND
     Src/Terminal/ShellSession.h
 )
 
+if(UNIX AND NOT APPLE)
+    list(APPEND SOURCES_BACKEND
+        Src/Utilities/windowsManager/WindowCornerMaskLinux.cpp
+        Src/Utilities/windowsManager/WindowResizerLinux.cpp)
+    list(APPEND HEADERS_BACKEND
+        Src/Utilities/windowsManager/WindowCornerMaskLinux.hpp
+        Src/Utilities/windowsManager/WindowResizerLinux.hpp)
+endif()
+
 set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Git/Models
     ${CMAKE_SOURCE_DIR}/Src/Git/Utilities

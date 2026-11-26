@@ -3,6 +3,13 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QOperatingSystemVersion>
 
+#ifdef Q_OS_LINUX
+#include <QtQuick/QQuickWindow>
+
+#include "WindowCornerMaskLinux.hpp"
+#include "WindowResizerLinux.hpp"
+#endif
+
 
 #ifdef Q_OS_WIN
 #include <windowsx.h>
@@ -15,6 +22,17 @@ BorderlessWindowHelper::BorderlessWindowHelper(QWindow* window, QObject* parent)
 {
     if (!m_window)
         return;
+
+#ifdef Q_OS_LINUX
+    auto* quickWindow = qobject_cast<QQuickWindow*>(m_window.data());
+    const bool drawCorners = quickWindow && quickWindow->color().alpha() == 255;
+    if (drawCorners) {
+        if (m_window->handle() && !m_window->isVisible())
+            m_window->destroy();
+        if (!m_window->handle())
+            WindowCornerMaskLinux::requestAlphaChannel(m_window);
+    }
+#endif
 
     // Ensure native handle exists.
     m_window->create();
@@ -29,6 +47,19 @@ BorderlessWindowHelper::BorderlessWindowHelper(QWindow* window, QObject* parent)
 
 #ifdef Q_OS_LINUX
     m_window->setFlags(Qt::Window | Qt::FramelessWindowHint);
+
+    if (drawCorners && m_window->format().alphaBufferSize() > 0)
+        m_cornerMask = new WindowCornerMaskLinux(quickWindow);
+
+    // Owned by the helper; Windows gets the same borders from WM_NCHITTEST.
+    new WindowResizerLinux(m_window, this);
+#endif
+}
+
+BorderlessWindowHelper::~BorderlessWindowHelper()
+{
+#ifdef Q_OS_LINUX
+    delete m_cornerMask;
 #endif
 }
 
