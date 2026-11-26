@@ -663,6 +663,7 @@ Rectangle {
 
                         anchors.fill: parent
                         minimizable: true
+                        isMinimized: true
                         layoutController: root.uiSession?.layoutController
                         layoutId: "mainWindow.terminal"
                         currentRepositoryName: root.uiSession?.appModel?.currentRepository?.name || ""
