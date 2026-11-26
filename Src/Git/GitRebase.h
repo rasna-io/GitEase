@@ -181,6 +181,10 @@ private:
      */
     void processNextOperation();
 
+    /*! Reports the command of the run that just stopped (conflict or end), so the pages re-read
+     *  the repository; the steps of a run change it without reporting anything themselves. */
+    void reportRunCommand();
+
     /**
      * @brief Release all resources held by the interactive rebase session.
      */
@@ -237,6 +241,7 @@ private:
     int             m_currentPlanIndex      = 0;        ///< Current position in m_interactivePlan.
     QString         m_currentOpHash;                    ///< Hash of the commit currently being processed.
     bool            m_isCherryPickActive    = false;    ///< True while a cherry‑pick is in progress (possibly conflicted).
+    QString         m_pendingRunCommand;                ///< Command of the current run (start, --continue, --skip), reported once it stops.
 
     git_oid         m_originalHeadOid;                  ///< Original HEAD commit OID (if detached).
     bool            m_originalHeadDetached;             ///< True if we started from a detached HEAD.
