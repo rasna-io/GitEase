@@ -22,6 +22,9 @@ ListView {
     property var notificationController: null
     property int maxHeight: 220
 
+    property RemoteOperationsSession remoteOperationsSession: null
+    readonly property bool hasRemotes: root.remoteOperationsSession?.hasRemotes ?? false
+
     /* Object Properties
      * ****************************************************************************************/
     Layout.fillWidth: true
@@ -57,6 +60,7 @@ ListView {
 
         readonly property var  branch:     modelData
         readonly property bool isSelected: branchDelegate.branch.name === root.currentBranch
+        readonly property bool canPublish: root.isLocal && root.hasRemotes && !root.isPublished(branchDelegate.branch)
 
         width: root.width
         height: Style.dp(28)
@@ -141,6 +145,25 @@ ListView {
                                                  : Style.colors.utilitiesRowText
             }
 
+            ActionIconButton {
+                Layout.preferredWidth: Style.dp(18)
+                Layout.preferredHeight: Style.dp(18)
+                Layout.alignment: Qt.AlignVCenter
+                visible: branchDelegate.canPublish
+                opacity: hoverHandler.hovered ? 1 : 0
+                iconText: Style.icons.cloudArrowUp
+                textColor: Style.colors.mutedText
+                tooltip: "Publish '" + branchDelegate.branch.name + "': create it on the remote and track it"
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Style.motionFast
+                    }
+                }
+
+                onClicked: root.publishBranch(branchDelegate.branch)
+            }
+
             Text {
                 text: "HEAD"
                 visible: branchDelegate.isSelected
@@ -210,6 +233,20 @@ ListView {
         }
     }
 
+    function isPublished(branch) {
+        let remote = branch.upstreamRemote || ""
+        return remote !== "" && (root.remoteOperationsSession?.remoteNamed(remote) ?? null) !== null
+    }
+
+    function publishBranch(branch) {
+        root.remoteOperationsSession?.publishBranch(branch.name, "", root)
+    }
+
+    function pushBranch(branch) {
+        root.remoteOperationsSession?.pushBranch(branch.name, branch.upstreamRemote || "",
+                                                 branch.upstreamBranch || "", root)
+    }
+
     function copyBranchName(branch) {
         clipboardHelper.text = branch.name
         clipboardHelper.selectAll()
@@ -241,6 +278,27 @@ ListView {
 
                 menu.push({ separator: true })
             }
+
+            if (root.isPublished(branch)) {
+                menu.push({
+                    text: "Push to " + branch.upstreamRemote,
+                    icon: Style.icons.arrowUp,
+                    enabled: root.hasRemotes && !(root.remoteOperationsSession?.pushBusy ?? false),
+                    action: function() { root.pushBranch(branch) }
+                })
+            } else {
+                let remotes = root.remoteOperationsSession?.remotes ?? []
+                let direct  = remotes.length === 1 && !(root.remoteOperationsSession?.alwaysAskRemote ?? false)
+                menu.push({
+                    text: !root.hasRemotes ? "Publish (add a remote first)"
+                                           : direct ? "Publish to " + remotes[0].name : "Publish to Remote...",
+                    icon: Style.icons.cloudArrowUp,
+                    enabled: root.hasRemotes && !(root.remoteOperationsSession?.pushBusy ?? false),
+                    action: function() { root.publishBranch(branch) }
+                })
+            }
+
+            menu.push({ separator: true })
 
             // Rename
             menu.push({

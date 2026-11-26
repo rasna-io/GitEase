@@ -26,6 +26,19 @@ PopupDialog {
 
     readonly property bool    canAccept:   isNameValid
 
+    property RemoteOperationsSession remoteOperationsSession: typeof uiSession !== "undefined" && uiSession
+                                                              ? uiSession.remoteOperationsSession : null
+
+    readonly property var  remoteNames: (root.remoteOperationsSession?.remotes ?? []).map(remote => remote.name)
+    readonly property bool canPublish:  root.remoteNames.length > 0
+
+    //! Also create the branch on a remote and track it (git push -u). Kept between openings.
+    property bool   publish:       false
+    //! The remote to publish to; preselected from the default remote each time the popup opens.
+    property string publishRemote: ""
+
+    readonly property bool publishes: root.canPublish && root.publish && root.publishRemote !== ""
+
     signal branchCreatedSuccessfully()
 
     /* Object Properties
@@ -33,6 +46,12 @@ PopupDialog {
     title: "Create Branch"
     iconText: Style.icons.gitBranch
     initialFocusItem: nameInput
+
+    onAboutToShow: {
+        root.remoteOperationsSession?.refreshTarget()
+        let preferred = root.remoteOperationsSession?.preferredRemote() ?? ""
+        root.publishRemote = preferred !== "" ? preferred : (root.remoteNames[0] ?? "")
+    }
 
     onAboutToHide: {
         nameInput.text  = ""
@@ -280,23 +299,21 @@ PopupDialog {
             }
         }
 
-        // Push to the remote after creating
+        // Publish: create the branch on a remote too, and track it there
         RowLayout {
-            id: pushCheckbox
-            property bool checked: false
+            id: publishCheckbox
+            readonly property bool checked: root.publish
 
             spacing: 8
             Layout.fillWidth: true
-            visible: false  // TODO: Implement GitBranch::pushBranch(branchName) to push the newly created
-                            // branch to its remote. Until then, the push checkbox has no effect.
-
+            visible: root.canPublish
 
             Rectangle {
                 width: 16; height: 16
                 radius: 3
-                color: pushCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
-                border.color: pushCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked
-                                                    : Style.colors.popupCheckboxBorder
+                color: publishCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
+                border.color: publishCheckbox.checked ? Style.colors.popupCheckboxBackgroundChecked
+                                                      : Style.colors.popupCheckboxBorder
                 border.width: 1
 
                 Text {
@@ -306,12 +323,14 @@ PopupDialog {
                     font.styleName: "Solid"
                     color: Style.colors.popupCheckboxCheckmark
                     font.pixelSize: Style.appFont.smallPt
-                    visible: pushCheckbox.checked
+                    visible: publishCheckbox.checked
                 }
             }
 
             Text {
-                text: "Push to remote after creating"
+                Layout.fillWidth: true
+                text: root.remoteNames.length === 1 ? "Publish to " + root.remoteNames[0]
+                                                    : "Publish to a remote"
                 color: Style.colors.popupCheckboxLabelText
                 font.family: Style.fontTypes.inter
                 font.pixelSize: Style.appFont.defaultPt
@@ -322,10 +341,79 @@ PopupDialog {
             }
 
             TapHandler {
-                onTapped: {
-                    pushCheckbox.checked = !pushCheckbox.checked
+                onTapped: root.publish = !root.publish
+            }
+        }
+
+        // Which remote, when there is more than one
+        Flow {
+            Layout.fillWidth: true
+            Layout.leftMargin: 24
+            spacing: 5
+            visible: root.canPublish && root.publish && root.remoteNames.length > 1
+
+            Repeater {
+                model: root.remoteNames
+
+                Rectangle {
+                    id: remoteChip
+                    required property string modelData
+                    readonly property bool selected: root.publishRemote === remoteChip.modelData
+
+                    radius: 4
+                    color: remoteChip.selected ? Style.colors.popupCheckboxBackgroundChecked
+                                               : Style.colors.popupChipBackground
+                    border.color: remoteChip.selected ? Style.colors.popupCheckboxBackgroundChecked
+                                                      : Style.colors.popupChipBorder
+                    border.width: 1
+                    implicitWidth: remoteChipRow.implicitWidth + 16
+                    implicitHeight: 22
+
+                    Row {
+                        id: remoteChipRow
+                        anchors.centerIn: parent
+                        spacing: 5
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: Style.icons.cloud
+                            font.family: Style.fontTypes.font6Pro
+                            font.pixelSize: Style.appFont.extraSmallPt
+                            color: remoteChipName.color
+                        }
+
+                        Text {
+                            id: remoteChipName
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: remoteChip.modelData
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.captionPt
+                            color: remoteChip.selected ? Style.colors.popupCheckboxCheckmark
+                                                       : Style.colors.popupChipText
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.publishRemote = remoteChip.modelData
+                    }
                 }
             }
+        }
+
+        Text {
+            Layout.fillWidth: true
+            Layout.leftMargin: 24
+            visible: root.canPublish && root.publish
+            text: root.isNameValid && root.publishRemote !== ""
+                  ? "Creates " + root.publishRemote + "/" + nameInput.text.trim()
+                    + " and tracks it, so Pull and Push work without asking."
+                  : "Creates the branch on the remote too and tracks it, so Pull and Push work without asking."
+            color: Style.colors.placeholderText
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.captionPt
+            wrapMode: Text.Wrap
         }
     }
 
@@ -340,7 +428,7 @@ PopupDialog {
     actions: [
         PopupButton {
             tone: PopupButton.Primary
-            text: "Create Branch"
+            text: root.publishes ? "Create & Publish" : "Create Branch"
             enabled: root.canAccept
             onClicked: root.createBranch()
         }
@@ -358,6 +446,9 @@ PopupDialog {
         if (checkoutCheckbox.checked)
             command += " && " + GitCommandText.checkoutBranch(branchName)
 
+        if (root.publishes)
+            command += " && " + GitCommandText.push(root.publishRemote, branchName, branchName, false, true)
+
         return command
     }
 
@@ -365,7 +456,7 @@ PopupDialog {
 
         let branchName  = nameInput.text.trim()
         let checkout    = checkoutCheckbox.checked
-        let push        = pushCheckbox.checked
+        let publishTo   = root.publishes ? root.publishRemote : ""
 
         // TODO: Implement "Based on" feature – currently the baseBranch and
         //       baseBranchType are not used. Need GitBranch::createBranchFromBase()
@@ -383,14 +474,13 @@ PopupDialog {
             if (checkout)
                 root.branchController.checkoutBranch(branchName)
 
-            // TODO: Implement GitBranch::pushBranch(branchName) to push the newly created
-            //       branch to its remote. Until then, the push checkbox has no effect.
-            // if (push)
-            //     root.branchController.pushBranch(branchName)
-
             root.branchCreatedSuccessfully()
             notificationController.success("Branch '" + branchName + "' created successfully", "Branch", 3000)
             root.close()
+
+            // Runs in the background; its own notifications report how it went.
+            if (publishTo !== "")
+                root.remoteOperationsSession.publishBranch(branchName, publishTo)
         } else {
             notificationController.error(res.errorMessage || "Failed to create branch", "Branch Error", 5000)
         }

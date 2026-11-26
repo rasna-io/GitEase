@@ -336,8 +336,9 @@ RowLayout {
             border.color: Style.colors.headerButtonBorder
         }
 
-        BusyIndicator {
+        BusyWaiter {
             id: pushBusyIndicator
+            compact: true
             anchors.centerIn: parent
             width: 30
             height: 30
@@ -353,7 +354,7 @@ RowLayout {
         font.family: Style.fontTypes.inter
         font.pixelSize: Style.appFont.defaultPt
         font.weight: Font.Medium
-        text: !isBusy ? "Push" : ""
+        text: !isBusy ? (headerRow.remoteOperationsSession?.pushLabel ?? "Push") : ""
         tooltip: !isBusy ? (headerRow.remoteOperationsSession?.pushTooltip ?? "") : "Pushing..."
         display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
 

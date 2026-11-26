@@ -240,6 +240,7 @@ Rectangle {
                     branchController: root.branchController
                     addBranchPopup: root.uiSessionPopups ? root.uiSessionPopups.addBranchPopup : null
                     notificationController: root.notificationController
+                    remoteOperationsSession: root.remoteOperationsSession
                     guideController: root.guideController
 
                     onHoveredChanged: dockFlow.updateDockHovered()

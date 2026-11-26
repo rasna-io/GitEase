@@ -56,6 +56,10 @@ Item {
     readonly property bool   canFetch:   root.hasRemotes && !root.isFetching
     readonly property bool   canPull:    root.hasRemotes && root.isOnBranch
     readonly property bool   canPush:    root.hasRemotes && root.isOnBranch && !root.pushBusy
+    //! The checked-out branch has no upstream yet: Push creates it on the remote and tracks it.
+    readonly property bool   publishes:  root.isOnBranch && root.target.publish === true
+    //! What Push is called for the checked-out branch: "Publish" until it has an upstream.
+    readonly property string pushLabel:  root.publishes ? "Publish" : "Push"
 
     readonly property string defaultRemote: root.target.defaultRemote || ""
 
@@ -181,6 +185,12 @@ Item {
             return "HEAD is detached. Check out a branch to push."
         if (!root.isOnBranch)
             return "Nothing to push yet. Make a first commit."
+        if (root.publishes && !force) {
+            let to = root.alwaysAskRemote ? "" : (root.target.pushRemote || "")
+            return "Publish '" + root.branch + "'" + (to !== "" ? " to " + to : "")
+                    + ": create it on the remote and track it as upstream"
+                    + (to === "" ? " - you choose the remote" : "")
+        }
         if (root.alwaysAskRemote)
             return verb + " '" + root.branch + "' - you choose the remote each time"
         if (root.target.pushRemote && root.target.pushBranch)
@@ -627,7 +637,7 @@ Item {
                 : root.indexOfChoice(choices, target.suggestedRemote, target.branch)
 
         root.chooseTarget({
-            operation:       force ? "pushForce" : "push",
+            operation:       force ? "pushForce" : (target.publish ? "publish" : "push"),
             subject:         target.branch,
             message:         message,
             choices:         choices,
@@ -641,6 +651,81 @@ Item {
         }, host, function(remote, remoteBranch, setUpstream) {
             root.confirmPush(target.branch, remote, remoteBranch, force, setUpstream, host, true)
         })
+    }
+
+    //! The remote a new branch goes to unless the user picks one: the default, else the suggested one.
+    function preferredRemote(target) {
+        target = target || root.target
+        let remotes = target.remotes || []
+        if (target.defaultRemote && remotes.some(remote => remote.name === target.defaultRemote))
+            return target.defaultRemote
+        if (target.suggestedRemote && remotes.some(remote => remote.name === target.suggestedRemote))
+            return target.suggestedRemote
+        return remotes.length > 0 ? remotes[0].name : ""
+    }
+
+    /*! Publishes a local branch: creates it on a remote under the same name and makes that its
+     *  upstream, like `git push -u <remote> <branch>`. The branch does not have to be checked out.
+     *  Without \a remoteName the user picks the remote, unless there is only one to pick. */
+    function publishBranch(localBranch, remoteName, host) {
+        let target = root.refreshTarget()
+        if (!localBranch)
+            return
+
+        if (!root.hasRemotes) {
+            if (root.notificationController)
+                root.notificationController.error("This repository has no remotes yet. Add a remote first.",
+                                                  "Publish", 5000)
+            return
+        }
+
+        if (remoteName) {
+            root.runPush(localBranch, remoteName, localBranch, false, true, host)
+            return
+        }
+
+        let remotes = target.remotes || []
+        if (remotes.length === 1 && !root.alwaysAskRemote) {
+            root.runPush(localBranch, remotes[0].name, localBranch, false, true, host)
+            return
+        }
+
+        let choices = remotes.map(remote => ({
+            remote: remote.name,
+            branch: localBranch,
+            url:    remote.pushUrl,
+            note:   remote.name === target.defaultRemote ? "default" : ""
+        }))
+
+        root.chooseTarget({
+            operation:     "publish",
+            subject:       localBranch,
+            message:       "'" + localBranch + "' is not on any remote yet. Choose where to create it.",
+            choices:       choices,
+            selectedIndex: root.indexOfChoice(choices, root.preferredRemote(target), localBranch),
+            offerUpstream: true,
+            setUpstream:   true,
+            defaultRemote: target.defaultRemote
+        }, host, function(remote, remoteBranch, setUpstream) {
+            root.runPush(localBranch, remote, remoteBranch, false, setUpstream, host)
+        })
+    }
+
+    /*! Pushes any local branch: to its upstream when it has one, otherwise it is published.
+     *  The checked-out branch goes through push(), which honours the default remote and "Always ask". */
+    function pushBranch(localBranch, upstreamRemote, upstreamBranch, host) {
+        let target = root.refreshTarget()
+        if (localBranch === target.branch) {
+            root.push(false, host)
+            return
+        }
+
+        if (upstreamRemote && root.remoteNamed(upstreamRemote)) {
+            root.runPush(localBranch, upstreamRemote, upstreamBranch || localBranch, false, false, host)
+            return
+        }
+
+        root.publishBranch(localBranch, "", host)
     }
 
     function pushToRemote(remoteName, host) {

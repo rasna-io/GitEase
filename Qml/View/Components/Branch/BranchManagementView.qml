@@ -22,6 +22,8 @@ UtilitiesCard {
 
     property NotificationController notificationController: null
 
+    property RemoteOperationsSession remoteOperationsSession: null
+
     property GuideController  guideController: null
 
     property var              localBranches:    []
@@ -166,6 +168,7 @@ UtilitiesCard {
             currentBranch: root.currentBranch
             branchController: root.branchController
             notificationController: root.notificationController
+            remoteOperationsSession: root.remoteOperationsSession
             model: content.currentIndex === 0 ? root.filteredLocalBranches
                                               : root.filteredRemoteBranches
         }

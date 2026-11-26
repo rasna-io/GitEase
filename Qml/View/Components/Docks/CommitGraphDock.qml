@@ -1566,9 +1566,17 @@ DetachablePanel {
         var currentBranch   = root.branchController.getCurrentBranchName()
         var selected        = selectedCommitsInOrder()
 
-        var localBranches   = root.branchController.getBranches()
+        var branchesHere    = root.branchController.getBranches()
                                   .filter(function(b) { return b.isLocal && b.targetHash === commitData.hash })
-                                  .map(function(b) { return b.name })
+        var localBranches   = branchesHere.map(function(b) { return b.name })
+
+        var session         = root.remoteOperationsSession
+        var unpublished     = (session && session.hasRemotes)
+                                  ? branchesHere.filter(function(b) {
+                                        return b.name !== currentBranch
+                                               && !(b.upstreamRemote && session.remoteNamed(b.upstreamRemote))
+                                    }).map(function(b) { return b.name })
+                                  : []
 
         //! A branch pointing at HEAD is already merged, and a detached HEAD has no branch to merge into.
         var mergeable       = (currentBranch && !isHead)
@@ -1585,6 +1593,9 @@ DetachablePanel {
 
             localBranches       : localBranches,
             pushEnabled         : isHead && (root.remoteOperationsSession?.canPush ?? false),
+            pushPublishes       : isHead && (root.remoteOperationsSession?.publishes ?? false),
+            unpublishedBranches : unpublished,
+            publishEnabled      : !(root.remoteOperationsSession?.pushBusy ?? false),
             isStash             : commitData.isStash || false,
             canCherryPick       : root.canCherryPick(commitData),
             canRebase           : root.canRebaseOnto(commitData, currentBranch),
@@ -1656,6 +1667,10 @@ DetachablePanel {
 
         case "push":
             executePush(item.payload.branch, checked)
+            break
+
+        case "publishBranch":
+            root.remoteOperationsSession?.publishBranch(item.payload.branch, "", root.activeItem)
             break
 
         case "newBranch":

@@ -51,6 +51,7 @@ QtObject{
     property string redo:              "\uf01e" // arrow-rotate-right
     property string tree:              "\uF1BB" // tree
     property string cloud:             "\uf0c2" // cloud
+    property string cloudArrowUp:      "\uf0ee" // cloud-arrow-up
     property string laptop:            "\uf109" // laptop
     property string globe:             "\uf0ac" // globe
 

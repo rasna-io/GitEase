@@ -17,7 +17,7 @@ PopupDialog {
 
     /* Property Declarations
      * ****************************************************************************************/
-    //! One of "fetch", "pull", "push", "pushForce", "pushTag", "deleteTag".
+    //! One of "fetch", "pull", "push", "publish", "pushForce", "pushTag", "deleteTag".
     property string operation:      "push"
 
     property string subject:        ""
@@ -79,6 +79,7 @@ PopupDialog {
         case "pushForce": return "Force Push '" + root.subject + "'"
         case "pushTag":   return "Push Tag '" + root.subject + "'"
         case "deleteTag": return "Delete Tag '" + root.subject + "' From Remote"
+        case "publish":   return "Publish '" + root.subject + "'"
         default:          return "Push '" + root.subject + "'"
         }
     }
@@ -87,6 +88,7 @@ PopupDialog {
             : root.operation === "pull"      ? Style.icons.arrowDown
             : root.operation === "deleteTag" ? Style.icons.trash
             : root.isTag                     ? Style.icons.tag
+            : root.operation === "publish"   ? Style.icons.cloudArrowUp
                                              : Style.icons.arrowUp
 
     iconColor: root.isDanger ? Style.colors.error : Style.colors.accent
@@ -389,6 +391,7 @@ PopupDialog {
                 case "pushForce": return "Force Push"
                 case "pushTag":   return "Push Tag"
                 case "deleteTag": return "Delete Tag"
+                case "publish":   return "Publish"
                 default:          return "Push"
                 }
             }
