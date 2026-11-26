@@ -52,6 +52,13 @@ Item {
     property bool showLocalGuide: false
     property bool transitionInitialized: false
 
+    //! The window this panel sits in, and that window when it is modal (a popup window such as
+    //! CommitPlanPopup). A detached window must be owned by a modal host, or the host blocks it
+    //! and keeps it behind; over the main window it stays independent.
+    readonly property var hostWindow:      root.Window.window
+    readonly property var modalHostWindow: root.hostWindow && root.hostWindow.modality !== Qt.NonModal
+                                           ? root.hostWindow : null
+
     /* Object Properties
      * ****************************************************************************************/
     visible: root.layoutVisible
@@ -408,7 +415,7 @@ Item {
 
     Window {
         id: detachedWindow
-        transientParent: null
+        transientParent: root.modalHostWindow
         visible: root.detached
         width: root.lastWidth
         height: root.lastHeight
@@ -569,6 +576,15 @@ Item {
             anchors.fill: parent
             z: 100
             guideController: localGuideCtrl
+        }
+    }
+
+    Connections {
+        target: root.hostWindow
+
+        function onVisibleChanged() {
+            if (!root.hostWindow.visible && root.detached)
+                root.detached = false
         }
     }
 
