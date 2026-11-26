@@ -186,7 +186,12 @@ UtilitiesCard {
             }
         }
 
+        Component.onCompleted: content.reload()
+
         function reload() {
+            if (!root.branchController)
+                return
+
             root.currentBranch = branchController.getCurrentBranchName()
             let res = branchController.getBranches();
 
