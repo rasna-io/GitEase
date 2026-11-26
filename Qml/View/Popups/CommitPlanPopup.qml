@@ -404,11 +404,13 @@ IWindow {
         }
     }
 
-    BusyIndicator {
+    BusyWaiter {
+        compact: true
         anchors.centerIn: parent
+        width: Style.dp(40)
+        height: Style.dp(40)
         running: commitModel.count === 0
         visible: commitModel.count === 0
-        Material.accent: Style.colors.accent
         z: 10
     }
 

@@ -40,11 +40,11 @@ Item {
             anchors.rightMargin: Style.dp(12)
             spacing: Style.dp(10)
 
-            BusyIndicator {
+            BusyWaiter {
+                compact: true
                 Layout.preferredWidth: Style.dp(16)
                 Layout.preferredHeight: Style.dp(16)
                 running: root.running
-                Material.accent: Style.colors.accent
             }
 
             Label {

@@ -82,12 +82,13 @@ RowLayout {
         contentItem: RowLayout {
             spacing: 6
 
-            BusyIndicator {
+            BusyWaiter {
+                compact: true
                 visible: root.busy
                 running: root.busy
                 implicitWidth: 18
                 implicitHeight: 18
-                Material.accent: Style.colors.onAccentText
+                accentColor: Style.colors.onAccentText
             }
 
             Text {

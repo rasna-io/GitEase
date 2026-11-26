@@ -115,12 +115,12 @@ Rectangle {
             elide: Text.ElideRight
         }
 
-        BusyIndicator {
+        BusyWaiter {
+            compact: true
             visible: root.busy
             running: visible
             Layout.preferredWidth: Style.dp(20)
             Layout.preferredHeight: Style.dp(20)
-            Material.accent: Style.colors.accent
         }
     }
 }

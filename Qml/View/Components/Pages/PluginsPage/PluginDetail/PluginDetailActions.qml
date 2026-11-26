@@ -285,7 +285,8 @@ ColumnLayout {
                 Layout.fillWidth: true
                 spacing: Style.dp(8)
 
-                BusyIndicator {
+                BusyWaiter {
+                    compact: true
                     visible: !root.isDone
                     running: root.pluginBusy && !root.isDone
                     Layout.preferredWidth: Style.dp(16)

@@ -50,8 +50,11 @@ PluginDetailCard {
         color: Style.colors.pluginPreviewBackground
         clip: true
 
-        BusyIndicator {
+        BusyWaiter {
+            compact: true
             anchors.centerIn: parent
+            width: Style.dp(40)
+            height: Style.dp(40)
             running: shotLoader.status === Loader.Loading
                      || (shotLoader.item && shotLoader.item.status === Image.Loading)
             visible: running
