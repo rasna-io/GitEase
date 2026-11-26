@@ -115,8 +115,10 @@ Rectangle {
 
             readonly property bool isStaged  : root.stagedFiles.some(f => f.path === modelData.path)
             readonly property bool isCurrent : root.currentPath === modelData.path
-            readonly property bool hasMarkers: modelData.blocks !== undefined
-                                               && modelData.blocks.length > 0
+            //! Still unresolved: marker blocks left, or a binary file with no side kept yet.
+            readonly property bool hasMarkers: modelData.isBinary === true
+                                               || (modelData.blocks !== undefined
+                                                   && modelData.blocks.length > 0)
 
             Layout.fillWidth: true
             Layout.preferredHeight: Style.dp(30)

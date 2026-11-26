@@ -2,7 +2,44 @@
 #include <git2.h>
 #include <QFile>
 #include <QDir>
+#include <QFileInfo>
 #include <QTextStream>
+
+namespace {
+
+//! Whether one side of a conflict is a binary blob, judged as git does.
+bool isBinaryEntry(git_repository* repo, const git_index_entry* entry)
+{
+    if (!entry)
+        return false;
+
+    git_blob* blob = nullptr;
+    if (git_blob_lookup(&blob, repo, &entry->id) != GIT_OK)
+        return false;
+
+    const bool binary = git_blob_is_binary(blob) != 0;
+    git_blob_free(blob);
+    return binary;
+}
+
+//! Whether a working-tree file looks binary, judged from its first bytes as git does.
+bool isBinaryWorkdirFile(const QString& fullPath)
+{
+    QFile file(fullPath);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+
+    const QByteArray head = file.read(8000);
+    return git_blob_data_is_binary(head.constData(), static_cast<size_t>(head.size())) != 0;
+}
+
+QString lastGitErrorMessage(const QString& fallback)
+{
+    const git_error* error = git_error_last();
+    return (error && error->message) ? QString::fromUtf8(error->message) : fallback;
+}
+
+} // namespace
 
 GitConflict::GitConflict(QObject* parent)
     : IGitController(parent)
@@ -36,6 +73,21 @@ GitResult GitConflict::getConflicts()
 
                 if (path.isEmpty())
                     continue;
+
+                // A binary file has no lines to compare; it is resolved by keeping one side whole.
+                const QString fullPath = workdirPath(path);
+                if (isBinaryEntry(activeRepo(), ours) || isBinaryEntry(activeRepo(), theirs)
+                    || isBinaryEntry(activeRepo(), ancestor) || isBinaryWorkdirFile(fullPath)) {
+                    QVariantMap entry;
+                    entry["path"] = path;
+                    entry["lines"] = QStringList();
+                    entry["blocks"] = QVariantList();
+                    entry["isBinary"] = true;
+                    entry["hasOurs"] = ours != nullptr;
+                    entry["hasTheirs"] = theirs != nullptr;
+                    conflicts.append(entry);
+                    continue;
+                }
 
                 // Read working file lines
                 QStringList lines = readWorkdirLines(path);
@@ -169,6 +221,95 @@ QString GitConflict::repositoryPath() const
     if (!m_currentRepo || !m_currentRepo->repo)
         return {};
     return workdirOf(m_currentRepo->repo);
+}
+
+QString GitConflict::workdirPath(const QString& filePath) const
+{
+    const char* workdir = activeRepo() ? git_repository_workdir(activeRepo()) : nullptr;
+    return workdir ? QDir(QString::fromUtf8(workdir)).filePath(filePath) : QString();
+}
+
+GitResult GitConflict::resolveWithVersion(const QString& filePath, const QString& side)
+{
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, QVariant(), "Repository is not open.");
+
+    const bool useOurs = side == QLatin1String("ours");
+    if (!useOurs && side != QLatin1String("theirs"))
+        return GitResult(false, QVariant(), "Choose either ours or theirs.");
+
+    const QString fullPath = workdirPath(filePath);
+    if (fullPath.isEmpty())
+        return GitResult(false, QVariant(), "The repository has no working tree.");
+
+    git_index* index = nullptr;
+    if (git_repository_index(&index, activeRepo()) != GIT_OK)
+        return GitResult(false, QVariant(), "Failed to read repository index.");
+
+    const QByteArray path = filePath.toUtf8();
+    const git_index_entry* ancestor = nullptr;
+    const git_index_entry* ours = nullptr;
+    const git_index_entry* theirs = nullptr;
+    if (git_index_conflict_get(&ancestor, &ours, &theirs, index, path.constData()) != GIT_OK) {
+        git_index_free(index);
+        return GitResult(false, QVariant(), "This file is no longer in conflict.");
+    }
+
+    // The entry is only valid until the index changes, so the file is written first.
+    const git_index_entry* chosen = useOurs ? ours : theirs;
+    int error = GIT_OK;
+    QString failure;
+
+    if (chosen) {
+        git_blob* blob = nullptr;
+        error = git_blob_lookup(&blob, activeRepo(), &chosen->id);
+        if (error == GIT_OK) {
+            QDir().mkpath(QFileInfo(fullPath).absolutePath());
+            QFile file(fullPath);
+            const auto size = static_cast<qint64>(git_blob_rawsize(blob));
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)
+                || file.write(static_cast<const char*>(git_blob_rawcontent(blob)), size) != size) {
+                failure = file.errorString();
+            }
+            file.close();
+
+            if (failure.isEmpty() && chosen->mode == GIT_FILEMODE_BLOB_EXECUTABLE)
+                file.setPermissions(file.permissions() | QFile::ExeOwner | QFile::ExeGroup | QFile::ExeOther);
+
+            git_blob_free(blob);
+        }
+
+        // Adding the path also drops its conflict entries.
+        if (error == GIT_OK && failure.isEmpty())
+            error = git_index_add_bypath(index, path.constData());
+    } else {
+        // The chosen side deleted the file: keeping it means removing it.
+        if (QFile::exists(fullPath) && !QFile::remove(fullPath))
+            failure = "Failed to remove the file.";
+        if (failure.isEmpty())
+            error = git_index_remove_bypath(index, path.constData());
+    }
+
+    if (error == GIT_OK && failure.isEmpty())
+        error = git_index_write(index);
+
+    if (error != GIT_OK && failure.isEmpty())
+        failure = lastGitErrorMessage("Failed to resolve the file.");
+
+    git_index_free(index);
+
+    if (!failure.isEmpty())
+        return GitResult(false, QVariant(), failure);
+
+    const QString quotedPath = quoteCommandArg(filePath);
+    if (chosen) {
+        emitGitCommand(QString("git checkout --%1 -- %2").arg(useOurs ? "ours" : "theirs", quotedPath));
+        emitGitCommand(QString("git add -- %1").arg(quotedPath));
+    } else {
+        emitGitCommand(QString("git rm -- %1").arg(quotedPath));
+    }
+
+    return GitResult(true);
 }
 
 GitResult GitConflict::acceptBlockOurs(const QString& filePath, int blockIndex)
