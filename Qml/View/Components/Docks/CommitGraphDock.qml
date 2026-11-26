@@ -1971,22 +1971,42 @@ DetachablePanel {
             if (b && b.isLocal) localNames[b.name] = true
         }
 
-        var seen = {}
-        var deduped = []
+        // One entry per branch the checkout would land on. Local branch names may contain slashes
+        // (fix/...), so only a known remote prefix is stripped; a remote branch whose local branch
+        // exists stands for that local branch, which is what checking it out switches to.
+        var seen    = {}
+        var entries = []
         for (var j = 0; j < branches.length; j++) {
             var name = branches[j]
-            var base = name.replace(/^[^/]+\//, "")
-            if (!seen[base]) {
-                seen[base] = true
-                deduped.push(localNames[base] ? base : name)
+            if (name.endsWith("/HEAD"))
+                continue
+
+            var entry
+            if (localNames[name]) {
+                entry = { name: name, isLocal: true, remote: "" }
+            } else {
+                var remote    = root.remoteOfBranch(name)
+                var localName = remote !== "" ? name.substring(remote.length + 1)
+                                              : name.replace(/^[^/]+\//, "")
+                entry = localNames[localName]
+                        ? { name: localName, isLocal: true, remote: "" }
+                        : { name: name, isLocal: false, remote: remote, localName: localName }
             }
+
+            if (seen[entry.name])
+                continue
+            seen[entry.name] = true
+            entries.push(entry)
         }
 
-        if (deduped.length === 1) {
-            handleCheckoutBranchOrCreate(deduped[0], data.hash)
+        if (entries.length === 0)
+            return
+
+        if (entries.length === 1) {
+            handleCheckoutBranchOrCreate(entries[0].name, data.hash)
         } else {
             checkoutBranchSelector.commitHash = data.hash
-            checkoutBranchSelector.branches = deduped
+            checkoutBranchSelector.branches = entries
             checkoutBranchSelector.open()
         }
     }
