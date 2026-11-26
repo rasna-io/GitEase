@@ -48,6 +48,10 @@ Item {
      * ****************************************************************************************/
     property int lastWidth: 600
     property int lastHeight: 400
+    // Size of the detached window, kept apart from lastWidth/lastHeight so resizing the window
+    // never resizes the panel's place in its layout. 0 until the window is first shown.
+    property int detachedWidth: 0
+    property int detachedHeight: 0
     property bool guideDetached: false
     property bool showLocalGuide: false
     property bool transitionInitialized: false
@@ -92,8 +96,8 @@ Item {
     /* Functions
      * ****************************************************************************************/
     function updateWindowGeometry() {
-        detachedWindow.width = Math.max(minWindowWidth, lastWidth)
-        detachedWindow.height = Math.max(minWindowHeight, lastHeight)
+        detachedWindow.width = Math.max(minWindowWidth, root.detachedWidth > 0 ? root.detachedWidth : lastWidth)
+        detachedWindow.height = Math.max(minWindowHeight, root.detachedHeight > 0 ? root.detachedHeight : lastHeight)
 
         // Center on the screen the panel is currently displayed on, not always the primary one.
         let screenWidth  = root.Screen.width  || Qt.application.screens[0]?.width  || 0
@@ -430,13 +434,13 @@ Item {
 
         onWidthChanged: {
             if (root.detached && width > 0) {
-                root.lastWidth = width
+                root.detachedWidth = width
             }
         }
 
         onHeightChanged: {
             if (root.detached && height > 0) {
-                root.lastHeight = height
+                root.detachedHeight = height
             }
         }
 
