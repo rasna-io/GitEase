@@ -10,10 +10,18 @@ import GitEase
  * WindowsHeader
  * ************************************************************************************************/
 Rectangle {
+    id: root
 
     /* Property Declarations
      * ****************************************************************************************/
     property WindowController windowController
+
+    //! When false, the close button only emits closeRequested() so the window can ask first.
+    property bool closesWindow: true
+
+    /* Signals
+     * ****************************************************************************************/
+    signal closeRequested()
 
     /* Object Properties
      * ****************************************************************************************/
@@ -21,6 +29,12 @@ Rectangle {
     
     /* Children
      * ****************************************************************************************/
+    WindowMotion {
+        id: windowMotion
+        window: root.Window.window
+        windowController: root.windowController
+    }
+
     RowLayout {
         anchors.centerIn: parent
         spacing: 4
@@ -28,7 +42,7 @@ Rectangle {
         // Minimize Button
         WindowsButton {
             id: minimizeButton
-            onClicked: windowController.minimize()
+            onClicked: windowMotion.minimize()
             Material.accent: Style.colors.windowsMinimize
             content: Rectangle {
                 anchors.centerIn: parent
@@ -58,7 +72,11 @@ Rectangle {
         // Close Button
         WindowsButton {
             id: closeButton
-            onClicked: windowController.closeWindow()
+            onClicked: {
+                root.closeRequested()
+                if (root.closesWindow)
+                    windowController.closeWindow()
+            }
             Material.accent: Style.colors.windowsClose
             content: Item {
                 anchors.centerIn: parent

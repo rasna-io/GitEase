@@ -8,10 +8,12 @@ import GitEase_Style_Impl
 
 import "qrc:/GitEase/Qml/Core/Scripts/GraphLayout.js"            as GraphLayout
 import "qrc:/GitEase/Qml/Core/Scripts/GraphUtils.js"             as GraphUtils
+import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphRouting.js"     as Routing
 import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphDataLoader.js"  as DataLoader
 import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphFilter.js"      as Filter
 import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphNavigation.js"  as Navigation
 import "qrc:/GitEase/Qml/Core/Scripts/CommitGraphMenuBuilder.js" as MenuBuilder
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js"               as AsyncGit
 
 /*! ***********************************************************************************************
  * CommitGraphDock
@@ -26,7 +28,6 @@ DetachablePanel {
 
     property BranchController       branchController        : null
     property RemoteController        remoteController       : null
-    property UserAuthenticationPopup userAuthenticationPopup : null
     property MergeController        mergeController         : null
     property RebaseController       rebaseController        : null
     property CherryPickController   cherryPickController    : null
@@ -37,11 +38,20 @@ DetachablePanel {
     property RepositoryController   repositoryController    : null
     property NotificationController notificationController  : null
     property StashController        stashController         : null
+    property ResetController        resetController         : null
+    property TerminalController     terminalController      : null
+    property LayoutController       layoutController        : null
+    property var                    pluginController        : null
+    property GitTreeController      gitTreeController       : null
+    property TextDirectionController textDirectionController : null
+    property IdentityGuard          identityGuard           : null
+
 
     property AddBranchPopup          addBranchPopup         : null
     property AddTagPopup             addTagPopup            : null
 
-    property bool   isForcePush: false
+    property RemoteOperationsSession remoteOperationsSession: null
+    property string pendingMergeSource: ""
     property var    allCommits      : []
     property var    commits         : []
     property var    allCommitsHash  : ({})
@@ -51,35 +61,78 @@ DetachablePanel {
     property var selectedCommit         : null
     property int lastSelectedIndex      : -1
 
-    property string navigationRule  : "Message"
+    property string navigationRule  : "Commit"
     property string filterText      : ""
     property string filterStartDate : ""
     property string filterEndDate   : ""
     property var    filterMode      : []
+    property string branchFilter    : ""
+    property string branchFilterHeadHash: ""
 
     property int    pageSize        : 200
     property int    commitsOffset   : 0
     property bool   isLoadingMore   : false
+    property bool   loadMoreIndicatorVisible: false
     property bool   hasMoreCommits  : true
 
+    property bool   isLoadingRepo   : false
+    property bool   loadingRepoVisible: false
+
+    property real   lastContentY            : 0
+    property var    deferredReload          : null
+    property real   pendingRestoreContentY  : -1
+    property real   restoreDestinationY     : -1
+    property bool   suppressContentYTracking: false
+    property bool   scrollRestoreScheduled  : false
+
+    property int    reloadToken     : 0
+
     property var commitPositions    : ({})
+    property var graphRows          : []
     property int commitItemHeight   : 24
     property int commitItemSpacing  : 4
     property int columnSpacing      : 30
 
-    property int commitsColGraphWidth       : parent.width * 0.08
-    property int commitsColBranchTagWidth   : parent.width * 0.17
-    property int commitsColMessageWidth     : parent.width * 0.6
-    property int commitsColAuthorWidth      : parent.width * 0.08
-    property int commitsColDateWidth        : parent.width * 0.17
+    // Fixed columns are user-resizable; Message always fills the remaining width so
+    // header cells and row cells stay pixel-aligned (ratios never sum over/under 100%).
+    readonly property int defaultColGraphWidth     : 96
+    readonly property int defaultColBranchTagWidth : 168
+    readonly property int defaultColAuthorWidth    : 110
+    readonly property int defaultColDateWidth      : 140
+
+    property int commitsColGraphWidth       : root.defaultColGraphWidth
+    property int commitsColBranchTagWidth   : root.defaultColBranchTagWidth
+    property int commitsColAuthorWidth      : root.defaultColAuthorWidth
+    property int commitsColDateWidth        : root.defaultColDateWidth
+    property bool graphWidthUserAdjusted    : false
 
     readonly property int minColGraphWidth      : 60
     readonly property int minColBranchTagWidth  : 80
-    readonly property int minColMessageWidth    : 100
-    readonly property int minColAuthorWidth     : 60
-    readonly property int minColDateWidth       : 80
+    readonly property int minColMessageWidth    : 120
+    readonly property int minColAuthorWidth     : 70
+    readonly property int minColDateWidth       : 100
 
-    readonly property bool hasAnyFilter         : Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate)
+    readonly property int commitsColContentWidth: Math.max(0, Math.floor(root.activeItem.width))
+    readonly property int commitsColFixedWidth  : root.commitsColGraphWidth
+                                                  + root.commitsColBranchTagWidth
+                                                  + root.commitsColAuthorWidth
+                                                  + root.commitsColDateWidth
+    readonly property int commitsColMessageWidth: Math.max(root.minColMessageWidth,
+                                                           root.commitsColContentWidth - root.commitsColFixedWidth)
+
+    readonly property int commitsColPad         : 8
+
+    property bool columnResizing                : false
+    property real columnResizeGuideX            : -1
+
+    onCommitsColContentWidthChanged: root.ensureColumnsFit()
+    onGraphRowsChanged: root.autoFitGraphWidth()
+
+    readonly property bool hasAnyFilter         : Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter)
+
+    readonly property bool canRebaseSelected    : root.selectedCommitHashes.length === 1 && !!root.selectedCommit &&
+                                                  root.isCommitSelected(root.selectedCommit.hash) &&
+                                                  root.canRebaseOnto(root.selectedCommit, root.branchController.getCurrentBranchName())
 
     /* Signals
      * ****************************************************************************************/
@@ -92,14 +145,125 @@ DetachablePanel {
 
     /* Children
      * ****************************************************************************************/
+    Shortcut {
+        sequence: "Ctrl+R"
+        context: Qt.WindowShortcut
+        enabled: root.canRebaseSelected
+        onActivated: root.executeRebase(root.selectedCommit.hash)
+    }
+
+    onIsLoadingRepoChanged: {
+        if (!root.isLoadingRepo)
+            root.loadingRepoVisible = false
+    }
+
+    Timer {
+        interval: 250
+        running: root.isLoadingRepo
+        onTriggered: root.loadingRepoVisible = true
+    }
+
+    Timer {
+        id: loadMoreIndicatorMinimumTimer
+        interval: 600
+        repeat: false
+
+        onTriggered: {
+            if (!root.isLoadingMore)
+                root.loadMoreIndicatorVisible = false
+        }
+    }
+
+    TextMetrics {
+        id: headerColMetrics
+        font.pixelSize: Style.appFont.defaultPt
+        font.bold: true
+    }
+
+    TextMetrics {
+        id: branchTagMetrics
+        font.family: Style.fontTypes.inter
+        font.weight: Font.Bold
+        font.pixelSize: 11
+    }
+
+    TextMetrics {
+        id: authorColMetrics
+        font.pixelSize: Style.appFont.mediumPt
+    }
+
+    TextMetrics {
+        id: messageColMetrics
+        font.family: Style.fontTypes.inter
+        font.pixelSize: Style.appFont.smallPt
+    }
+
+    TextMetrics {
+        id: dateColMetrics
+        font.pixelSize: Style.appFont.smallPt
+    }
+
     Rectangle {
+        id: commitGraphBody
         anchors.fill: parent
         color: Style.colors.primaryBackground
+
+        // Full-height guide while a column divider is dragged
+        Rectangle {
+            visible: root.columnResizing && root.columnResizeGuideX >= 0
+            x: root.columnResizeGuideX - 1
+            width: 2
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            z: 200
+            color: Style.colors.accent
+            opacity: 0.55
+        }
+
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "commit_context_menu_tutorial"
+            guideName: "Commit Context Menu"
+            guideIcon: Style.icons.ellipsisVertical
+            guidePage: "graph"
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return commitsListView },
+                        icon: Style.icons.ellipsisVertical,
+                        title: "Right-Click for Actions",
+                        description: "Right-click any commit to open a context menu — checkout, cherry-pick, create a branch or tag, rebase, push, and more. The available actions depend on the commit you click."
+                    }
+                ]
+            }
+        }
 
         EmptyStateView {
             title: "no commit to show"
             details: root.emptyStateDetailsText()
-            visible: !root.commits || root.commits.length === 0
+            visible: !root.isLoadingRepo && (!root.commits || root.commits.length === 0)
+        }
+
+        Loader {
+            anchors.fill: parent
+            z: 100
+            active: root.loadingRepoVisible || opacity > 0
+            opacity: root.loadingRepoVisible ? 1 : 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            sourceComponent: BusyWaiter {
+                message: qsTr("Loading repository")
+
+                MouseArea {
+                    anchors.fill: parent
+                }
+            }
         }
 
         ColumnLayout {
@@ -117,135 +281,111 @@ DetachablePanel {
                     spacing: 0
 
                     ResizableColumnHeader {
+                        id: graphColHeader
                         Layout.preferredWidth: root.commitsColGraphWidth
                         label: "Graph"
-                        onResized: function(delta, startWidth) {
-                            var newWidth = Math.max(root.minColGraphWidth, startWidth + delta)
-                            var actualDelta = newWidth - root.commitsColGraphWidth
-                            var nextWidth = root.commitsColBranchTagWidth - actualDelta
-                            if (nextWidth < root.minColBranchTagWidth) {
-                                nextWidth = root.minColBranchTagWidth
-                                newWidth = root.commitsColGraphWidth + (root.commitsColBranchTagWidth - root.minColBranchTagWidth)
-                            }
-                            root.commitsColGraphWidth = newWidth
-                            root.commitsColBranchTagWidth = nextWidth
+                        contentPadding: root.commitsColPad
+                        property real messageStart: 0
+                        onResizeStarted: {
+                            messageStart = root.commitsColMessageWidth
+                            root.beginColumnResize(graphColHeader)
                         }
+                        onResized: function(delta, startWidth) {
+                            root.graphWidthUserAdjusted = true
+                            root.commitsColGraphWidth = root.clampedFlexResize(
+                                        startWidth, delta,
+                                        root.minColGraphWidth,
+                                        messageStart - root.minColMessageWidth)
+                            root.updateColumnResizeGuide(graphColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onAutoFitRequested: root.autoFitGraphColumn()
                     }
 
                     ResizableColumnHeader {
+                        id: branchColHeader
                         Layout.preferredWidth: root.commitsColBranchTagWidth
                         label: "Branch/Tag"
-                        onResized: function(delta, startWidth) {
-                            var newWidth = Math.max(root.minColBranchTagWidth, startWidth + delta)
-                            var actualDelta = newWidth - root.commitsColBranchTagWidth
-                            var nextWidth = root.commitsColMessageWidth - actualDelta
-                            if (nextWidth < root.minColMessageWidth) {
-                                nextWidth = root.minColMessageWidth
-                                newWidth = root.commitsColBranchTagWidth + (root.commitsColMessageWidth - root.minColMessageWidth)
-                            }
-                            root.commitsColBranchTagWidth = newWidth
-                            root.commitsColMessageWidth = nextWidth
+                        contentPadding: root.commitsColPad
+                        property real messageStart: 0
+                        onResizeStarted: {
+                            messageStart = root.commitsColMessageWidth
+                            root.beginColumnResize(branchColHeader)
                         }
+                        onResized: function(delta, startWidth) {
+                            root.commitsColBranchTagWidth = root.clampedFlexResize(
+                                        startWidth, delta,
+                                        root.minColBranchTagWidth,
+                                        messageStart - root.minColMessageWidth)
+                            root.updateColumnResizeGuide(branchColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onAutoFitRequested: root.autoFitBranchTagColumn()
                     }
 
                     ResizableColumnHeader {
-                        Layout.preferredWidth: root.commitsColMessageWidth
+                        id: messageColHeader
+                        Layout.preferredWidth: root.minColMessageWidth
+                        Layout.minimumWidth: root.minColMessageWidth
+                        fillWidth: true
                         label: "Message"
-                        onResized: function(delta, startWidth) {
-                            var newWidth = Math.max(root.minColMessageWidth, startWidth + delta)
-                            var actualDelta = newWidth - root.commitsColMessageWidth
-                            var nextWidth = root.commitsColAuthorWidth - actualDelta
-                            if (nextWidth < root.minColAuthorWidth) {
-                                nextWidth = root.minColAuthorWidth
-                                newWidth = root.commitsColMessageWidth + (root.commitsColAuthorWidth - root.minColAuthorWidth)
-                            }
-                            root.commitsColMessageWidth = newWidth
-                            root.commitsColAuthorWidth = nextWidth
+                        contentPadding: root.commitsColPad
+                        property real neighborStart: 0
+                        onResizeStarted: {
+                            neighborStart = root.commitsColAuthorWidth
+                            root.beginColumnResize(messageColHeader)
                         }
+                        onResized: function(delta, startWidth) {
+                            // Message is the flex column; dragging its right edge trades with Author.
+                            root.commitsColAuthorWidth = root.clampedPairResize(
+                                        neighborStart, -delta,
+                                        root.minColAuthorWidth,
+                                        startWidth - root.minColMessageWidth)
+                            root.updateColumnResizeGuide(messageColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onAutoFitRequested: root.autoFitMessageColumn()
                     }
 
                     ResizableColumnHeader {
+                        id: authorColHeader
                         Layout.preferredWidth: root.commitsColAuthorWidth
                         label: "Author"
-                        onResized: function(delta, startWidth) {
-                            var newWidth = Math.max(root.minColAuthorWidth, startWidth + delta)
-                            var actualDelta = newWidth - root.commitsColAuthorWidth
-                            var nextWidth = root.commitsColDateWidth - actualDelta
-                            if (nextWidth < root.minColDateWidth) {
-                                nextWidth = root.minColDateWidth
-                                newWidth = root.commitsColAuthorWidth + (root.commitsColDateWidth - root.minColDateWidth)
-                            }
-                            root.commitsColAuthorWidth = newWidth
-                            root.commitsColDateWidth = nextWidth
+                        contentPadding: root.commitsColPad
+                        property real neighborStart: 0
+                        onResizeStarted: {
+                            neighborStart = root.commitsColDateWidth
+                            root.beginColumnResize(authorColHeader)
                         }
+                        onResized: function(delta, startWidth) {
+                            var pair = root.clampedTradeResize(
+                                        startWidth, neighborStart, delta,
+                                        root.minColAuthorWidth, root.minColDateWidth)
+                            root.commitsColAuthorWidth = pair.left
+                            root.commitsColDateWidth = pair.right
+                            root.updateColumnResizeGuide(authorColHeader)
+                        }
+                        onResizeFinished: root.endColumnResize()
+                        onAutoFitRequested: root.autoFitAuthorColumn()
                     }
 
-                    Rectangle {
+                    ResizableColumnHeader {
                         Layout.preferredWidth: root.commitsColDateWidth
-                        Layout.fillHeight: true
-                        color: Style.colors.primaryBackground
-                        Label {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Date"
-                            color: Style.colors.foreground
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
+                        label: "Date"
+                        contentPadding: root.commitsColPad
+                        resizable: false
                     }
                 }
             }
 
             RowLayout {
+                id: commitViewsLayout
+
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 0
 
-                Item {
-                    Layout.preferredWidth: root.commitsColGraphWidth + root.commitsColBranchTagWidth
-                    Layout.fillHeight: true
-
-                    Flickable {
-                        id: graphFlickable
-                        Layout.preferredWidth: root.commitsColGraphWidth + root.commitsColBranchTagWidth
-                        anchors.fill: parent
-                        contentWidth: children[0].width
-                        contentHeight: commitsListView.contentHeight
-
-                        clip: true
-
-                        interactive: true
-                        flickableDirection: Flickable.VerticalFlick
-
-                        property bool syncScroll: false
-
-                        onContentYChanged: {
-                            if (!syncScroll) {
-                                commitsListView.syncScroll = true
-                                commitsListView.contentY = contentY
-                                commitsListView.syncScroll = false
-                            }
-                        }
-
-                        CommitGraphCanvas {
-                            id: graphCanvas
-                            width: root.commitsColGraphWidth + root.commitsColBranchTagWidth
-                            height: Math.max(commitsListView.contentHeight, graphFlickable.height)
-                            commits: root.commits
-                            commitPositions: root.commitPositions
-                            columnSpacing: root.columnSpacing
-                            commitItemHeight: root.commitItemHeight
-                            commitItemSpacing: root.commitItemSpacing
-                            selectedHashes: root.selectedCommitHashes
-                            headHash: root.headHash
-                            showAvatar: root.appModel?.appSettings?.generalSettings?.showAvatar ?? true
-                            graphColumnWidth: root.commitsColGraphWidth
-                            branchTagColumnWidth: root.commitsColBranchTagWidth
-                            allCommitsHash: root.allCommitsHash
-                            onInfiniteScroll: root.loadMoreCommits()
-                        }
-                    }
-                }
+                readonly property bool canScroll: commitsListView.contentHeight > commitsListView.height + 0.5
 
                 ListView {
                     id: commitsListView
@@ -256,19 +396,51 @@ DetachablePanel {
 
                     model   : root.commits
                     clip    : true
+                    interactive: commitViewsLayout.canScroll && !scrollRestoreAnimation.running
 
-                    property bool syncScroll: false
+                    cacheBuffer: 400
 
-                    // Sync scroll position with graph
-                    onContentYChanged: {
-                        if (!syncScroll) {
-                            graphFlickable.syncScroll = true
-                            graphFlickable.contentY = contentY
-                            graphFlickable.syncScroll = false
+                    //! The arrow keys do what the header's up / down buttons do, using the current navigation rule.
+                    keyNavigationEnabled: false
+
+                    Keys.onUpPressed: function(event) {
+                        event.accepted = true
+                        root.selectNext()
+                    }
+
+                    Keys.onDownPressed: function(event) {
+                        event.accepted = true
+                        root.selectPrevious()
+                    }
+
+                    onMovementStarted: {
+                        commitFocusAnimation.stop()
+                        if (!scrollRestoreAnimation.running) {
+                            root.cancelPendingScrollRestore(commitsListView)
                         }
+                    }
 
-                        // Infinite scroll trigger (list side)
-                        if (!root.isLoadingMore && root.hasMoreCommits) {
+                    onMovementEnded: {
+                        root.rememberScrollPosition(commitsListView)
+                        root.runDeferredReload()
+                    }
+
+                    onContentHeightChanged: root.scheduleScrollRestore()
+
+                    onInteractiveChanged: {
+                        if (!interactive && !commitViewsLayout.canScroll && !root.isLoadingMore) {
+                            cancelFlick()
+                            contentY = originY
+                        }
+                    }
+
+                    onContentYChanged: {
+
+                        // Infinite scroll trigger
+                        if (!root.suppressContentYTracking
+                                && root.pendingRestoreContentY < 0
+                                && !root.isLoadingMore
+                                && root.hasMoreCommits) {
                             var remaining = commitsListView.contentHeight - (commitsListView.contentY + commitsListView.height)
                             if (remaining < 300) {
                                 root.loadMoreCommits()
@@ -276,19 +448,31 @@ DetachablePanel {
                         }
                     }
 
-                    delegate: CommitListDelegate {
-                        height: root.commitItemHeight + root.commitItemSpacing * 2
+                    delegate: CommitRow {
+                        required property var modelData
+                        required property int index
 
-                        messageWidth: root.commitsColMessageWidth
-                        authorWidth : root.commitsColAuthorWidth
-                        dateWidth   : root.commitsColDateWidth
+                        width           : ListView.view.width
+                        implicitHeight  : root.commitItemHeight + root.commitItemSpacing * 2
 
-                        indicatorColor: graphCanvas.commitColor(modelData)
+                        commitData      : modelData
+                        graphRow        : root.graphRows[index] ?? null
+                        rowIndex        : index
+                        parentRoot      : root.activeItem
+                        laneColor       : root.laneColor(modelData)
 
-                        isSelected  : root.isCommitSelected(modelData.hash)
-                        isHead      : modelData ? modelData.hash === root.headHash  : false
-                        isStash     : modelData ? modelData.isStash === true        : false
-                        parentRoot  : root
+                        selected        : root.isCommitSelected(modelData.hash)
+                        isHead          : modelData.hash === root.headHash
+                        isStash         : modelData.isStash === true
+                        showAvatar      : root.appModel?.appSettings?.generalSettings?.showAvatar ?? true
+
+                        columnSpacing   : root.columnSpacing
+                        nodeSize        : root.commitItemHeight
+                        graphWidth      : root.commitsColGraphWidth
+                        refsWidth       : root.commitsColBranchTagWidth
+                        messageWidth    : root.commitsColMessageWidth
+                        authorWidth     : root.commitsColAuthorWidth
+                        dateWidth       : root.commitsColDateWidth
 
                         onItemClicked: function(button, modifiers, idx, mouseX, mouseY) {
                             root.handleItemClick(modelData, button, modifiers, idx, mouseX, mouseY)
@@ -297,7 +481,60 @@ DetachablePanel {
                         onItemDoubleClicked: function(button, modifiers, idx) {
                             root.handleItemDoubleClick(modelData, button, modifiers, idx)
                         }
+
+                        onResetHeadOne: {
+                            root.executeResetHead("HEAD~1", ResetController.ResetMode.Mixed)
+                        }
                     }
+                }
+
+                NumberAnimation {
+                    id: commitFocusAnimation
+                    target: commitsListView
+                    property: "contentY"
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
+
+                    onStopped: root.rememberScrollPosition(commitsListView)
+                }
+
+                NumberAnimation {
+                    id: scrollRestoreAnimation
+                    target: commitsListView
+                    property: "contentY"
+                    duration: 200
+                    easing.type: Easing.InOutCubic
+
+                    onStopped: root.finishScrollRestore()
+                }
+            }
+        }
+
+        BusyWaiter {
+            id: loadMoreIndicator
+
+            anchors {
+                fill: undefined
+                horizontalCenter: parent.horizontalCenter
+                verticalCenter: parent.verticalCenter
+            }
+
+            width: 260
+            height: 170
+            radius: 8
+            color: Style.colors.headerButtonBackground
+            border.width: 1
+            border.color: Style.colors.headerButtonBorder
+            z: 100
+            message: qsTr("Loading more commits")
+            running: root.loadMoreIndicatorVisible
+            opacity: root.loadMoreIndicatorVisible ? 1 : 0
+            visible: opacity > 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
                 }
             }
         }
@@ -306,53 +543,23 @@ DetachablePanel {
     ContextMenu {
         id: contextMenu
         width: 250
+        parent : root.activeItem
     }
 
-    Connections {
-        target: remoteController
-
-        function onPushFinished(result) {
-            if (!result || result.remote !== "origin")
-                return
-
-            if (result.success) {
-                let isForce =  result.data.force === true
-                root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
-            } else {
-                root.notificationController.error(result.errorMessage, "Push Error", 5000)
-            }
-        }
-    }
-
-    Connections {
-        target: userAuthenticationPopup
-
-        function onPasswordConfirm(password){
-            let branchName = branchController.getCurrentBranchName()
-            if(branchName.length === 0){
-                root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
-            }else{
-                remoteController.push(
-                        "origin",
-                        branchName,
-                        password,
-                        isForcePush)
-                root.notificationController.info("Push operation started", "Push", 3000)
-            }
-        }
-    }
 
     Connections {
         target: Style
         function onCurrentThemeChanged() {
-            graphCanvas.requestPaint()
+            root.rebuildGraphRows()
         }
     }
 
     Connections {
         target: root.repositoryController
         function onRepositorySelected() {
-            root.reloadAll()
+            root.resetFilters()
+            root.clearForRepositorySwitch()
+            root.reloadAll(false)
         }
     }
 
@@ -363,7 +570,6 @@ DetachablePanel {
             root.selectedCommit         = null
             root.selectedCommitHashes   = []
             root.lastSelectedIndex      = -1
-            root.reloadAll()
         }
     }
 
@@ -371,32 +577,26 @@ DetachablePanel {
         target: root.addTagPopup
         function onTagCreatedSuccessfully() {
             root.selectedCommit = null
-            root.reloadAll()
-        }
-    }
-
-    Connections {
-        target: root.tagController
-        function onPushTagFinished(result) {
-            if (result.success)
-                notificationController.success("Tag created and pushed", "Success", 3000)
-            else
-                notificationController.warning("Tag created locally but failed to push", "Sync Warning", 5000);
         }
     }
 
     Connections {
         target: root.appModel?.appSettings?.generalSettings ?? null
-        function onShowAvatarChanged() {
-            graphCanvas.requestPaint()
-        }
-
         function onShowStashNodesChanged() {
             root.refreshStashNodes()
         }
     }
 
-    onRepositoryControllerChanged: root.reloadAll()
+    onRepositoryControllerChanged: root.reloadAll(false)
+
+    onIsLoadingMoreChanged: {
+        if (root.isLoadingMore) {
+            root.loadMoreIndicatorVisible = true
+            loadMoreIndicatorMinimumTimer.restart()
+        } else if (!loadMoreIndicatorMinimumTimer.running) {
+            root.loadMoreIndicatorVisible = false
+        }
+    }
 
     onStashControllerChanged: {
         if (root.allCommits.length)
@@ -413,23 +613,58 @@ DetachablePanel {
 
     ConflictPopup {
         id: mergeConflictPopup
+        hostItem                : root.activeItem
         currentOperation        : ConflictPopup.OperationType.Merge
         mergeController         : root.mergeController
         conflictController      : root.conflictController
         notificationController  : root.notificationController
         statusController        : root.statusController
+        commitController        : root.commitController
+        guideController         : root.guideController
+        textDirectionController : root.textDirectionController
+        identityGuard           : root.identityGuard
+        pluginManager           : root.pluginController?.pluginManager ?? null
         // onOperationCompleted    : reloadAll()        //TODO
     }
 
     MergeMethodPopup { id: mergeMethodPopup }
 
+    ConfirmCommandDialog {
+        id: confirmCommandDialog
+
+        onConfirmed: (context) => root.performResetHead(context.commitHash, context.mode)
+    }
+
+    Connections {
+        target: mergeMethodPopup
+
+        function onAccepted(noFF, deleteBranch, pushRemote) {
+            if (root.pendingMergeSource === "")
+                return
+
+            let source = root.pendingMergeSource
+            root.pendingMergeSource = ""
+            root.performMerge(source, noFF, deleteBranch, pushRemote)
+        }
+
+        function onClosed() {
+            root.pendingMergeSource = ""
+        }
+    }
+
     ConflictPopup {
         id: cherryPickConflictPopup
+        hostItem                : root.activeItem
         currentOperation        : ConflictPopup.OperationType.CherryPick
         cherryPickController    : root.cherryPickController
         conflictController      : root.conflictController
         notificationController  : root.notificationController
         statusController        : root.statusController
+        commitController        : root.commitController
+        guideController         : root.guideController
+        textDirectionController : root.textDirectionController
+        identityGuard           : root.identityGuard
+        pluginManager           : root.pluginController?.pluginManager ?? null
         // onOperationCompleted    : reloadAll()        //TODO
     }
 
@@ -443,15 +678,263 @@ DetachablePanel {
 
     CommitPlanPopup {
         id: commitPlanPopup
+        hostItem: root.activeItem
         statusController: root.statusController
         commitController: root.commitController
         rebaseController: root.rebaseController
         conflictController: root.conflictController
         notificationController: root.notificationController
+        layoutController: root.layoutController
+        guideController: root.guideController
+        textDirectionController: root.textDirectionController
+        identityGuard: root.identityGuard
+        pluginManager: root.pluginController?.pluginManager ?? null
+        gitTree: root.gitTreeController
+        repositoryPath: root.appModel?.currentRepository?.path ?? ""
+        repositoryName: root.appModel?.currentRepository?.name ?? ""
+    }
+
+    CommitFileBrowserPopup {
+        id: commitFileBrowserPopup
+        hostItem: root.activeItem
+        gitTreeController       : root.gitTreeController
+        repositoryController    : root.repositoryController
+        notificationController  : root.notificationController
+        statusController        : root.statusController
+        pluginManager           : root.pluginController?.pluginManager ?? null
     }
 
     /* Functions
      * ****************************************************************************************/
+    //! Resize a column that steals/returns space from the flex Message column.
+    //! spareRoom is how many px Message can still give up (messageWidth - minMessage).
+    function clampedFlexResize(startWidth, delta, minWidth, spareRoom) {
+        var maxWidth = startWidth + Math.max(0, spareRoom)
+        return Math.round(Math.max(minWidth, Math.min(maxWidth, startWidth + delta)))
+    }
+
+    //! Resize one side of a pair from its own drag-start baseline (used when Message
+    //! trades with Author: only Author's stored width changes; Message fills the rest).
+    function clampedPairResize(startWidth, delta, minWidth, spareRoom) {
+        return root.clampedFlexResize(startWidth, delta, minWidth, spareRoom)
+    }
+
+    //! Trade width between two fixed columns from both drag-start baselines.
+    function clampedTradeResize(startLeft, startRight, delta, minLeft, minRight) {
+        var newLeft = Math.max(minLeft, startLeft + delta)
+        var newRight = startRight - (newLeft - startLeft)
+        if (newRight < minRight) {
+            newRight = minRight
+            newLeft = startLeft + (startRight - minRight)
+            if (newLeft < minLeft) {
+                newLeft = minLeft
+                newRight = startLeft + startRight - minLeft
+            }
+        }
+        return { left: Math.round(newLeft), right: Math.round(newRight) }
+    }
+
+    //! Keep fixed columns from overflowing a narrow dock; Message stays at least min width.
+    function ensureColumnsFit() {
+        var available = root.commitsColContentWidth
+        if (available <= 0)
+            return
+
+        var deficit = root.commitsColFixedWidth + root.minColMessageWidth - available
+        if (deficit <= 0)
+            return
+
+        function take(propName, minWidth) {
+            if (deficit <= 0)
+                return
+            var current = root[propName]
+            var room = Math.max(0, current - minWidth)
+            var cut = Math.min(room, deficit)
+            if (cut > 0) {
+                root[propName] = current - cut
+                deficit -= cut
+            }
+        }
+
+        take("commitsColDateWidth", root.minColDateWidth)
+        take("commitsColAuthorWidth", root.minColAuthorWidth)
+        take("commitsColBranchTagWidth", root.minColBranchTagWidth)
+        take("commitsColGraphWidth", root.minColGraphWidth)
+    }
+
+    function beginColumnResize(headerItem) {
+        root.columnResizing = true
+        root.updateColumnResizeGuide(headerItem)
+    }
+
+    function updateColumnResizeGuide(headerItem) {
+        if (!headerItem || !commitGraphBody)
+            return
+        root.columnResizeGuideX = headerItem.mapToItem(commitGraphBody, headerItem.width, 0).x
+    }
+
+    function endColumnResize() {
+        root.columnResizing = false
+        root.columnResizeGuideX = -1
+    }
+
+    function maxGraphLaneColumn() {
+        var maxCol = 0
+        var rows = root.graphRows || []
+        for (var i = 0; i < rows.length; ++i) {
+            var row = rows[i]
+            if (row && row.column > maxCol)
+                maxCol = row.column
+        }
+        return maxCol
+    }
+
+    //! Leave room for the rightmost node plus a little padding before Branch/Tag.
+    function preferredGraphWidth() {
+        var fitted = root.columnSpacing * (root.maxGraphLaneColumn() + 1)
+                      + Math.ceil(root.commitItemHeight / 2) + 12
+        headerColMetrics.text = "Graph"
+        fitted = Math.max(fitted, Math.ceil(headerColMetrics.width + root.commitsColPad * 2))
+        return Math.max(root.minColGraphWidth, fitted)
+    }
+
+    function autoFitGraphWidth() {
+        if (root.graphWidthUserAdjusted)
+            return
+        root.commitsColGraphWidth = root.preferredGraphWidth()
+        root.ensureColumnsFit()
+    }
+
+    function flexRoomFor(excludeProp) {
+        var used = root.commitsColGraphWidth
+                 + root.commitsColBranchTagWidth
+                 + root.commitsColAuthorWidth
+                 + root.commitsColDateWidth
+                 - (root[excludeProp] || 0)
+        return Math.max(root.minColMessageWidth,
+                        root.commitsColContentWidth - used) - root.minColMessageWidth
+    }
+
+    function measureRefWidth(ref) {
+        if (!ref)
+            return 0
+        branchTagMetrics.text = ref.text || ""
+        var width = branchTagMetrics.width + 8
+        if (ref.isTag)
+            width += 14
+        return Math.max(ref.isTag ? 44 : 26, width)
+    }
+
+    function preferredBranchTagWidth() {
+        var maxContent = 0
+        var rows = root.graphRows || []
+        for (var i = 0; i < rows.length; ++i) {
+            var refs = rows[i] && rows[i].refs ? rows[i].refs : []
+            if (!refs.length)
+                continue
+            var rowWidth = 0
+            for (var j = 0; j < refs.length; ++j) {
+                if (j > 0)
+                    rowWidth += 8
+                rowWidth += root.measureRefWidth(refs[j])
+            }
+            if (rowWidth > maxContent)
+                maxContent = rowWidth
+        }
+
+        headerColMetrics.text = "Branch/Tag"
+        var fitted = Math.ceil(Math.max(maxContent, headerColMetrics.width) + root.commitsColPad * 2)
+        var maxAllowed = root.minColBranchTagWidth + root.flexRoomFor("commitsColBranchTagWidth")
+        return Math.round(Math.max(root.minColBranchTagWidth, Math.min(fitted, maxAllowed, 420)))
+    }
+
+    function preferredAuthorWidth() {
+        var maxContent = 0
+        var items = root.commits || []
+        for (var i = 0; i < items.length; ++i) {
+            authorColMetrics.text = items[i] && items[i].author ? items[i].author : ""
+            if (authorColMetrics.width > maxContent)
+                maxContent = authorColMetrics.width
+        }
+        headerColMetrics.text = "Author"
+        var fitted = Math.ceil(Math.max(maxContent, headerColMetrics.width) + root.commitsColPad * 2)
+        var pairBudget = root.commitsColAuthorWidth + root.commitsColDateWidth - root.minColDateWidth
+        return Math.round(Math.max(root.minColAuthorWidth, Math.min(fitted, pairBudget, 280)))
+    }
+
+    function preferredDateWidth() {
+        var maxContent = 0
+        var items = root.commits || []
+        for (var i = 0; i < items.length; ++i) {
+            if (!items[i] || items[i].authorDate === undefined || items[i].authorDate === null)
+                continue
+            dateColMetrics.text = GraphUtils.formatDate(items[i].authorDate) + " "
+                                  + GraphUtils.formatTime(items[i].authorDate)
+            if (dateColMetrics.width > maxContent)
+                maxContent = dateColMetrics.width
+        }
+        headerColMetrics.text = "Date"
+        var fitted = Math.ceil(Math.max(maxContent, headerColMetrics.width) + root.commitsColPad * 2)
+        return Math.round(Math.max(root.minColDateWidth, Math.min(fitted, 200)))
+    }
+
+    function preferredMessageWidth() {
+        var maxContent = 0
+        var items = root.commits || []
+        for (var i = 0; i < items.length; ++i) {
+            messageColMetrics.text = items[i] && items[i].summary ? items[i].summary : ""
+            if (messageColMetrics.width > maxContent)
+                maxContent = messageColMetrics.width
+        }
+        // color bar + margins roughly match the row chrome
+        var fitted = Math.ceil(maxContent + root.commitsColPad + 3 + 6 + 8)
+        headerColMetrics.text = "Message"
+        fitted = Math.max(fitted, Math.ceil(headerColMetrics.width + root.commitsColPad * 2))
+        return Math.max(root.minColMessageWidth, fitted)
+    }
+
+    function autoFitGraphColumn() {
+        root.graphWidthUserAdjusted = false
+        root.commitsColGraphWidth = root.preferredGraphWidth()
+        root.ensureColumnsFit()
+    }
+
+    function autoFitBranchTagColumn() {
+        root.commitsColBranchTagWidth = root.preferredBranchTagWidth()
+        root.ensureColumnsFit()
+    }
+
+    function autoFitMessageColumn() {
+        // Excel fits the column left of the divider: grow/shrink Author so Message matches content.
+        var idealMessage = root.preferredMessageWidth()
+        var fixedWithoutAuthor = root.commitsColGraphWidth
+                               + root.commitsColBranchTagWidth
+                               + root.commitsColDateWidth
+        var maxMessage = Math.max(root.minColMessageWidth,
+                                  root.commitsColContentWidth - fixedWithoutAuthor - root.minColAuthorWidth)
+        var targetMessage = Math.min(idealMessage, maxMessage)
+        root.commitsColAuthorWidth = Math.round(Math.max(
+                    root.minColAuthorWidth,
+                    root.commitsColContentWidth - fixedWithoutAuthor - targetMessage))
+        root.ensureColumnsFit()
+    }
+
+    function autoFitAuthorColumn() {
+        var fittedAuthor = root.preferredAuthorWidth()
+        var fittedDate = root.preferredDateWidth()
+        var pairTotal = root.commitsColAuthorWidth + root.commitsColDateWidth
+        // Keep the Author|Date pair budget stable; prefer content-fit author then give rest to date.
+        var author = Math.min(fittedAuthor, pairTotal - root.minColDateWidth)
+        var date = Math.max(root.minColDateWidth, pairTotal - author)
+        if (date > fittedDate && author < fittedAuthor) {
+            date = Math.max(root.minColDateWidth, Math.min(fittedDate, pairTotal - root.minColAuthorWidth))
+            author = pairTotal - date
+        }
+        root.commitsColAuthorWidth = Math.round(author)
+        root.commitsColDateWidth = Math.round(date)
+        root.ensureColumnsFit()
+    }
+
     function emptyStateDetailsText() {
         if (!root.allCommits || root.allCommits.length === 0)
             return "This repository has no commits."
@@ -479,6 +962,10 @@ DetachablePanel {
                 parts.push("date until " + end)
         }
 
+        var branch = (root.branchFilter || "").trim()
+        if (branch.length > 0)
+            parts.push("branch is '" + branch + "'")
+
         if (parts.length === 0)
             return "No commits match your filter."
 
@@ -488,11 +975,106 @@ DetachablePanel {
     function clearGraphCaches() {
         GraphUtils.clearBranchColorCache()
         GraphUtils.clearTagColorCache()
-        GraphUtils.clearCategoryColorCache()
     }
 
     function layoutCommits(items) {
         return GraphLayout.calculateDAGPositions(items, root.columnSpacing, root.commitItemHeight, root.commitItemSpacing)
+    }
+
+    function scrollOffset(view) {
+        if (!view)
+            return 0
+
+        return Math.max(0, view.contentY - view.originY)
+    }
+
+    function rememberScrollPosition(view) {
+        if (root.suppressContentYTracking || root.pendingRestoreContentY >= 0)
+            return
+
+        root.lastContentY = scrollOffset(view)
+    }
+
+    function captureScrollPositionForReload() {
+        if (root.pendingRestoreContentY >= 0)
+            return
+
+        root.lastContentY = scrollOffset(commitsListView)
+        root.pendingRestoreContentY = root.lastContentY
+    }
+
+    function cancelPendingScrollRestore(view) {
+        root.pendingRestoreContentY = -1
+        root.restoreDestinationY = -1
+        scrollRestoreAnimation.stop()
+        root.rememberScrollPosition(view)
+    }
+
+    function resetScrollPosition() {
+        root.pendingRestoreContentY = -1
+        root.restoreDestinationY = -1
+        root.lastContentY = 0
+        scrollRestoreAnimation.stop()
+
+        root.suppressContentYTracking = true
+        if (commitsListView) {
+            commitsListView.cancelFlick()
+            commitsListView.contentY = commitsListView.originY
+        }
+        root.suppressContentYTracking = false
+    }
+
+    function scheduleScrollRestore() {
+        if (root.pendingRestoreContentY < 0 || root.scrollRestoreScheduled)
+            return
+
+        root.scrollRestoreScheduled = true
+        Qt.callLater(function() {
+            root.scrollRestoreScheduled = false
+            root.restoreScrollPosition()
+        })
+    }
+
+    function restoreScrollPosition() {
+        if (root.pendingRestoreContentY < 0 || !commitsListView)
+            return
+
+        if (scrollRestoreAnimation.running)
+            return
+
+        var maximumOffset = Math.max(0, commitsListView.contentHeight - commitsListView.height)
+
+        if (maximumOffset + 0.5 < root.pendingRestoreContentY && root.hasMoreCommits) {
+            if (!root.isLoadingMore)
+                root.loadMoreCommits()
+            return
+        }
+
+        root.restoreDestinationY = Math.min(root.pendingRestoreContentY, maximumOffset)
+        var destinationContentY = commitsListView.originY + root.restoreDestinationY
+        var distance = Math.abs(destinationContentY - commitsListView.contentY)
+
+        if (distance < 0.5) {
+            root.finishScrollRestore()
+            return
+        }
+
+        scrollRestoreAnimation.from = commitsListView.contentY
+        scrollRestoreAnimation.to = destinationContentY
+        scrollRestoreAnimation.restart()
+    }
+
+    function finishScrollRestore() {
+        if (root.pendingRestoreContentY < 0 || root.restoreDestinationY < 0)
+            return
+
+        var currentOffset = scrollOffset(commitsListView)
+        if (Math.abs(currentOffset - root.restoreDestinationY) >= 0.5)
+            return
+
+        root.lastContentY = root.restoreDestinationY
+        root.pendingRestoreContentY = -1
+        root.restoreDestinationY = -1
     }
 
     function applyFilter(text, startDate, endDate, modes) {
@@ -514,7 +1096,9 @@ DetachablePanel {
             root.filterStartDate,
             root.filterEndDate,
             root.filterMode,
-            root.selectedCommitHashes
+            root.selectedCommitHashes,
+            root.branchFilter,
+            root.branchFilterHeadHash
         )
 
         loadData(result.filtered)
@@ -524,57 +1108,247 @@ DetachablePanel {
             root.lastSelectedIndex = -1
         }
 
-        if (Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate)) {
+        if (Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter)) {
             ensureMinimumResults()
         }
-    }
-
-    function clearFilter() {
-        root.filterText         = ""
-        root.filterStartDate    = ""
-        root.filterEndDate      = ""
-        root.filterMode         = []
-        root.navigationRule     = "Message"
-        loadData(root.allCommits.slice(0))
     }
 
     function loadData(items) {
         var positions = layoutCommits(items)
         root.commitPositions = positions
         root.commits = items.slice(0)
+        root.rebuildGraphRows()
+        root.scheduleScrollRestore()
     }
 
     function update() {
-        graphCanvas.requestPaint()
-
+        root.rebuildGraphRows()
     }
 
-    function reloadAll() {
-        if (!root.appModel || !root.appModel.currentRepository)
+    function laneColor(commitData) {
+        if (commitData && commitData.isUncommitted) {
+            return Style.colors.graphUncommittedColor
+        }
+
+        return GraphUtils.getCategoryColor(commitData && commitData.colorKey ? commitData.colorKey : "main")
+    }
+
+    function rebuildGraphRows() {
+        for (let i = 0; i < root.commits.length; i++) {
+            root.laneColor(root.commits[i])
+        }
+
+        root.graphRows = Routing.buildRows(root.commits, root.commitPositions, {
+            columnSpacing: root.columnSpacing,
+            itemHeight: root.commitItemHeight,
+            itemSpacing: root.commitItemSpacing
+        }, {
+            commitColor: root.laneColor
+        })
+    }
+
+    function runDeferredReload() {
+        if (!root.deferredReload)
             return
 
+        let request = root.deferredReload
+        root.deferredReload = null
+        root.reloadAll(request.preserveScrollPosition)
+    }
+
+    function clearForRepositorySwitch() {
+        root.reloadToken++
+        root.deferredReload = null
+
+        if(commitsListView) {
+            commitsListView.cancelFlick()
+        }
+
+        root.clearGraphData()
+        root.isLoadingRepo = true
+    }
+
+    function clearGraphData() {
+        root.allCommits             = []
+        root.commitPositions        = ({})
+        root.commits                = []
+        root.graphRows              = []
+        root.headHash               = ""
+        root.commitsOffset          = 0
+        root.hasMoreCommits         = true
+        root.selectedCommit         = null
+        root.selectedCommitHashes   = []
+        root.lastSelectedIndex      = -1
+    }
+
+    function reloadAll(preserveScrollPosition) {
+        if(!root.appModel || !root.appModel.currentRepository) {
+            root.isLoadingRepo = false
+            return
+        }
+
+        if(!root.statusController || !root.commitController) {
+            root.isLoadingRepo = false
+            return
+        }
+
+        if(preserveScrollPosition === false || root.allCommits.length === 0) {
+            root.isLoadingRepo = true
+        }
+
+        if (commitsListView && (commitsListView.moving || commitsListView.dragging)) {
+            root.deferredReload = { preserveScrollPosition: preserveScrollPosition }
+            return
+        }
+
+        if (preserveScrollPosition === undefined || preserveScrollPosition)
+            root.captureScrollPositionForReload()
+        else
+            root.resetScrollPosition()
+
         clearGraphCaches()
-        commitsOffset   = 0
-        hasMoreCommits  = true
-        isLoadingMore   = false
+        root.commitsOffset  = 0
+        root.hasMoreCommits = true
+        root.isLoadingMore  = false
 
-        root.headHash = root.statusController.getHeadHash()
+        var token = ++root.reloadToken
 
-        var commitRes = root.commitController.getCommits(pageSize, commitsOffset)
-        if (!commitRes.success || !commitRes.data) return
+        AsyncGit.call(root.statusController, "getHeadHash", [],
+            function (headHash) {
+                if (token !== root.reloadToken) return
+                root.headHash = headHash || ""
+                root.reloadFetchCommits(token)
+            },
+            function () {
+                if (token !== root.reloadToken) return
+                root.headHash = ""
+                root.reloadFetchCommits(token)
+            })
+    }
 
-        var page = commitRes.data
-        var compiled = compilePage(page)
+    function reloadFetchCommits(token) {
+        AsyncGit.call(root.commitController, "getCommits", [root.pageSize, 0],
+            function (commitRes) {
+                if(token !== root.reloadToken) {
+                    return
+                }
 
-        var statusRes = root.statusController ? root.statusController.status() : null
-        var uncommitted = DataLoader.createUncommittedNode(statusRes && statusRes.success ? statusRes.data : null, root.headHash)
-        if (uncommitted) compiled.unshift(uncommitted)
+                if(!commitRes || !commitRes.success || !commitRes.data) {
+                    root.clearGraphData()
+                    root.isLoadingRepo = false
+                    return
+                }
 
-        commitsOffset = page.length
-        hasMoreCommits = (page.length === pageSize)
+                root.reloadFetchBranches(token, commitRes.data)
+            },
+            function () {
+                if(token !== root.reloadToken) {
+                    return
+                }
 
-        root.allCommits = compiled.slice(0)
+                root.clearGraphData()
+                root.isLoadingRepo = false
+            })
+    }
+
+    function reloadFetchBranches(token, page) {
+        if (!root.branchController) {
+            root.reloadFetchTags(token, page, [])
+            return
+        }
+
+        AsyncGit.call(root.branchController, "getBranches", [],
+            function (branches) {
+                if (token !== root.reloadToken) return
+
+                // Reuse the list we just fetched instead of asking for the branches again.
+                root.branchFilterHeadHash = root.branchHeadHashFrom(branches, root.branchFilter)
+                root.reloadFetchTags(token, page, branches || [])
+            },
+            function () {
+                if (token !== root.reloadToken) return
+                root.reloadFetchTags(token, page, [])
+            })
+    }
+
+    function reloadFetchTags(token, page, branches) {
+        if (!root.tagController) {
+            root.reloadFetchStashes(token, page, branches, [])
+            return
+        }
+
+        AsyncGit.call(root.tagController, "list", [],
+            function (tagRes) {
+                if (token !== root.reloadToken) return
+                root.reloadFetchStashes(token, page, branches,
+                                        (tagRes && tagRes.success && tagRes.data) ? tagRes.data : [])
+            },
+            function () {
+                if (token !== root.reloadToken) return
+                root.reloadFetchStashes(token, page, branches, [])
+            })
+    }
+
+    function reloadFetchStashes(token, page, branches, tags) {
+        if (!root.stashController) {
+            root.reloadPaintGraph(token, page, branches, tags, [])
+            return
+        }
+
+        AsyncGit.call(root.stashController, "list", [],
+            function (stashRes) {
+                if (token !== root.reloadToken) return
+                root.reloadPaintGraph(token, page, branches, tags,
+                                      (stashRes && stashRes.success && stashRes.data) ? stashRes.data : [])
+            },
+            function () {
+                if (token !== root.reloadToken) return
+                root.reloadPaintGraph(token, page, branches, tags, [])
+            })
+    }
+
+    //! Everything the graph itself needs is in hand — paint it, then go and get status().
+    function reloadPaintGraph(token, page, branches, tags, stashes) {
+        var compiled = DataLoader.compileGraphCommits(
+            page,
+            branches,
+            stashes,
+            tags,
+            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null,
+            page.length !== root.pageSize)
+
+        root.commitsOffset  = page.length
+        root.hasMoreCommits = (page.length === root.pageSize)
+
+        let previousUncommitted = root.allCommits.filter(function (c) { return c.isUncommitted })
+        root.allCommits = previousUncommitted.concat(compiled)
         root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
+        root.isLoadingRepo = false
+
+        root.reloadFetchStatus(token)
+    }
+
+    //! The slow one, on purpose last: the graph is already on screen by the time this runs.
+    function reloadFetchStatus(token) {
+        AsyncGit.call(root.statusController, "status", [],
+            function (statusRes) {
+                if (token !== root.reloadToken) return
+
+                var uncommitted = DataLoader.createUncommittedNode(
+                    (statusRes && statusRes.success) ? statusRes.data : null, root.headHash)
+                let rest = root.allCommits.filter(function (c) { return !c.isUncommitted })
+                let hadUncommitted = rest.length !== root.allCommits.length
+                if (!uncommitted && !hadUncommitted)
+                    return
+
+                if (uncommitted)
+                    rest.unshift(uncommitted)
+                root.allCommits = rest
+
+                root.captureScrollPositionForReload()
+
+                root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
+            })
     }
 
     /*!
@@ -582,7 +1356,7 @@ DetachablePanel {
      * Automatically loads additional pages until we have at least pageSize results or no more commits.
      */
     function ensureMinimumResults() {
-        if (!Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate))
+        if (!Filter.hasAnyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.branchFilter))
             return
 
         if ((root.commits ? root.commits.length : 0) >= pageSize)
@@ -615,12 +1389,21 @@ DetachablePanel {
         if (!page.length) {
             hasMoreCommits = false
             isLoadingMore = false
+            root.scheduleScrollRestore()
             return
         }
 
-        var compiled = compilePage(page)
-        var withoutStashes = root.allCommits.filter(function(c) { return !c.isStash })
-        root.allCommits = withoutStashes.concat(compiled)
+        var placedStashes = {}
+        root.allCommits.forEach(function(c) {
+            if (c.isStash) {
+                placedStashes[c.hash] = true
+            }
+        })
+
+        var compiled = compilePage(page, page.length !== pageSize).filter(function(c) {
+            return !placedStashes[c.hash]
+        })
+        root.allCommits = root.allCommits.concat(compiled)
 
         commitsOffset += page.length
         hasMoreCommits = (page.length === pageSize)
@@ -629,15 +1412,22 @@ DetachablePanel {
         if (commitsListView) commitsListView.contentY = currentContentY
 
         isLoadingMore = false
+
+        if (root.hasAnyFilter
+                && (root.commits ? root.commits.length : 0) < root.pageSize
+                && root.hasMoreCommits) {
+            Qt.callLater(root.ensureMinimumResults)
+        }
     }
 
-    function compilePage(page) {
+    function compilePage(page, appendOrphanStashes) {
         return DataLoader.compileGraphCommits(
             page,
             root.branchController ? root.branchController.getBranches() : [],
             getStashes(),
             getTags(),
-            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null
+            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null,
+            appendOrphanStashes
         )
     }
 
@@ -656,7 +1446,8 @@ DetachablePanel {
             root.branchController ? root.branchController.getBranches() : [],
             getStashes(),
             getTags(),
-            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null
+            root.appModel && root.appModel.appSettings ? root.appModel.appSettings.generalSettings : null,
+            !root.hasMoreCommits
         )
 
         root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
@@ -691,6 +1482,33 @@ DetachablePanel {
         root.lastSelectedIndex = index
     }
 
+    function focusCommitIndex(index) {
+        if (!commitsListView || index < 0 || index >= commitsListView.count)
+            return
+
+        var rowHeight = root.commitItemHeight + root.commitItemSpacing * 2
+        var rowTop = index * rowHeight
+        var rowBottom = rowTop + rowHeight
+
+        if (rowTop >= commitsListView.contentY
+                && rowBottom <= commitsListView.contentY + commitsListView.height)
+            return
+
+        var maxContentY = Math.max(0, commitsListView.contentHeight - commitsListView.height)
+        var targetY = index * rowHeight - (commitsListView.height - rowHeight) * 0.5
+        targetY = Math.max(0, Math.min(maxContentY, targetY))
+
+        if (!Style.motionEnabled) {
+            commitsListView.contentY = targetY
+            return
+        }
+
+        commitFocusAnimation.stop()
+        commitFocusAnimation.from = commitsListView.contentY
+        commitFocusAnimation.to = targetY
+        commitFocusAnimation.restart()
+    }
+
     function selectedCommitsInOrder() {
         var selected = []
         if (!root.commits || !root.selectedCommitHashes) return selected
@@ -705,6 +1523,7 @@ DetachablePanel {
         if (!data)
             return
 
+        commitsListView.forceActiveFocus()
         root.selectedCommit = data
         root.commitClicked(data.isUncommitted ? "__uncommitted__" : data.hash)
 
@@ -719,7 +1538,11 @@ DetachablePanel {
                 setSingleSelection(data, idx)
 
             var state = getMenuState(data)
-            var rawMenu = MenuBuilder.buildMenu(state)
+            var pluginItems = root.pluginController?.pluginManager
+                ? root.pluginController.pluginManager.pluginContextMenuItems(
+                      "commit", { hash: state.fullHash, branch: state.currentBranch })
+                : []
+            var rawMenu = MenuBuilder.buildMenu(state, pluginItems)
 
             contextMenu.menuModel = buildContextMenuModel(rawMenu)
 
@@ -734,28 +1557,51 @@ DetachablePanel {
         if (selection) {
             root.selectedCommitHashes = selection.hashes
             root.lastSelectedIndex = selection.lastIndex
+            root.focusCommitIndex(idx)
         }
     }
 
     function getMenuState(commitData) {
-        var branches        = commitData.branchNames || []
         var shortHash       = commitData.shortHash || commitData.hash.substring(0, 7)
         var isHead          = commitData.hash === root.headHash
         var currentBranch   = root.branchController.getCurrentBranchName()
-        var mergeable       = branches.filter(function(b) { return b !== currentBranch && !b.startsWith("origin/") })
+        var selected        = selectedCommitsInOrder()
+
+        var branchesHere    = root.branchController.getBranches()
+                                  .filter(function(b) { return b.isLocal && b.targetHash === commitData.hash })
+        var localBranches   = branchesHere.map(function(b) { return b.name })
+
+        var session         = root.remoteOperationsSession
+        var unpublished     = (session && session.hasRemotes)
+                                  ? branchesHere.filter(function(b) {
+                                        return b.name !== currentBranch
+                                               && !(b.upstreamRemote && session.remoteNamed(b.upstreamRemote))
+                                    }).map(function(b) { return b.name })
+                                  : []
+
+        //! A branch pointing at HEAD is already merged, and a detached HEAD has no branch to merge into.
+        var mergeable       = (currentBranch && !isHead)
+                                  ? localBranches.filter(function(b) { return b !== currentBranch })
+                                  : []
 
         return {
             currentBranch       : currentBranch,
             isHead              : isHead,
             shortHash           : shortHash,
             fullHash            : commitData.hash,
-            pushEnabled         : !remoteController.pushInProgress && isHead,
-            branchNames         : branches,
+            commitMessage       : commitData.message || "",
+            commitDate          : commitData.authorDate || "",
+
+            localBranches       : localBranches,
+            pushEnabled         : isHead && (root.remoteOperationsSession?.canPush ?? false),
+            pushPublishes       : isHead && (root.remoteOperationsSession?.publishes ?? false),
+            unpublishedBranches : unpublished,
+            publishEnabled      : !(root.remoteOperationsSession?.pushBusy ?? false),
             isStash             : commitData.isStash || false,
-            canCherryPick       : !commitData.isStash && !isHead,
-            canRebase           : !!currentBranch && !isHead,
-            numSelected         : selectedCommitHashesInOrder().length,
-            cherryPickEnabled   : !selectionHasStash() && !selectionHasHead(),
+            canCherryPick       : root.canCherryPick(commitData),
+            canRebase           : root.canRebaseOnto(commitData, currentBranch),
+            numSelected         : selected.length,
+            cherryPickEnabled   : selected.every(function(c) { return root.canCherryPick(c) }),
             hasMergeableBranches: mergeable.length > 0,
             mergeableBranches   : mergeable
         }
@@ -768,16 +1614,14 @@ DetachablePanel {
         return hashes
     }
 
-    function selectionHasStash() {
-        var selected = selectedCommitsInOrder()
-        for (var i = 0; i < selected.length; i++) if (selected[i].isStash) return true
-        return false
+    function canCherryPick(commitData) {
+        return !!commitData && !commitData.isStash && !commitData.isUncommitted
+               && commitData.hash !== root.headHash
     }
 
-    function selectionHasHead() {
-        var selected = selectedCommitsInOrder()
-        for (var i = 0; i < selected.length; i++) if (selected[i].hash === root.headHash) return true
-        return false
+    function canRebaseOnto(commitData, currentBranch) {
+        return !!currentBranch && !!commitData && !commitData.isStash && !commitData.isUncommitted
+               && commitData.hash !== root.headHash
     }
 
     function buildContextMenuModel(raw) {
@@ -791,7 +1635,8 @@ DetachablePanel {
                 icon    : resolveMenuIcon(item.icon),
                 enabled : item.enabled !== false,
                 hasCheckBox: item.hasCheckBox,
-                checkBoxText: item.checkBoxText
+                checkBoxText: item.checkBoxText,
+                shortcut: item.shortcut
             }
 
             if (item.subItems) {
@@ -807,34 +1652,7 @@ DetachablePanel {
     }
 
     function resolveMenuIcon(iconName) {
-        switch (iconName) {
-
-            case "gitBranch":
-                return Style.icons.gitBranch
-
-            case "hash":
-                return Style.icons.hash
-
-            case "arrowUp":
-                return Style.icons.arrowUp
-
-            case "branchPlus":
-                return Style.icons.branchPlus
-
-            case "tag":
-                return Style.icons.tag
-
-            case "arowLeftRight":
-                return Style.icons.arowLeftRight
-
-            case "clockRotateLeft":
-                return Style.icons.clockRotateLeft
-
-            case "copy":
-                return Style.icons.copy
-
-            default: return ""
-        }
+        return Style.icons[iconName]
     }
 
     function executeMenuAction(item, checked) {
@@ -852,12 +1670,20 @@ DetachablePanel {
             executePush(item.payload.branch, checked)
             break
 
+        case "publishBranch":
+            root.remoteOperationsSession?.publishBranch(item.payload.branch, "", root.activeItem)
+            break
+
         case "newBranch":
             executeNewBranch(item.payload.hash)
             break
 
         case "newTag":
             executeNewTag(item.payload.hash)
+            break
+
+        case "browseFiles":
+            browseFilesRequested(item.payload.hash, item.payload.message, item.payload.date)
             break
 
         case "mergeBranch":
@@ -874,6 +1700,27 @@ DetachablePanel {
         case "cherryPickSingle":
             executeCherryPickSingle(item.payload.hash)
             break
+
+        case "resetSoft":
+            executeResetHead(item.payload.hash, ResetController.ResetMode.Soft)
+            break
+
+        case "resetMixed":
+            executeResetHead(item.payload.hash, ResetController.ResetMode.Mixed)
+            break
+
+        case "resetHard":
+            executeResetHead(item.payload.hash, ResetController.ResetMode.Hard)
+            break
+
+        case "pluginAction":
+            if (root.pluginController?.pluginManager)
+                root.pluginController.pluginManager.executeContextMenuAction(
+                    item.payload.pluginId,
+                    item.payload.itemId,
+                    "commit",
+                    { hash: item.payload.hash })
+            break
         }
     }
 
@@ -886,30 +1733,64 @@ DetachablePanel {
     }
 
     function executePush(branchName, force) {
-        isForcePush = force
-        let urlRes = remoteController.getRemoteUrl("origin")
-        if (!urlRes.success) {
-            root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${isForcePush ? "Force" : ""} Push Error`, 5000)
-            return
-        }
-        let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
-        switch (protocol) {
-        case RepositoryController.GitProtocol.SSH: {
-            remoteController.push("origin", branchName, isForcePush)
-            root.notificationController.info("Push operation started", "Push", 3000)
-            break
-        }
-
-        // Fall-through: both HTTP/HTTPS require auth popup
-        case RepositoryController.GitProtocol.HTTPS:
-        case RepositoryController.GitProtocol.HTTP:
-            userAuthenticationPopup.open()
-            break
-        default:
-            root.notificationController.error("Unsupported protocol", `${isForcePush ? "Force" : ""} Push Error`, 5000)
-        }
+        root.remoteOperationsSession?.push(force, root.activeItem)
     }
 
+    function remoteOfBranch(branchName) {
+        let match = ""
+        for (let remote of root.remoteOperationsSession?.remotes ?? []) {
+            if (branchName.startsWith(remote.name + "/") && remote.name.length > match.length)
+                match = remote.name
+        }
+        return match
+    }
+
+
+    function executeShowOnlyBranch(branchName) {
+        root.branchFilter = branchName || ""
+        refreshBranchFilterHeadHash()
+        root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
+    }
+
+    function resetFilters() {
+        root.filterText             = ""
+        root.filterStartDate        = ""
+        root.filterEndDate          = ""
+        root.filterMode             = []
+        root.branchFilter           = ""
+        root.branchFilterHeadHash   = ""
+        root.navigationRule         = "Commit"
+    }
+
+    function executeShowAllBranches() {
+        root.branchFilter = ""
+        root.branchFilterHeadHash = ""
+        root.applyFilter(root.filterText, root.filterStartDate, root.filterEndDate, root.filterMode)
+    }
+
+    function refreshBranchFilterHeadHash() {
+        root.branchFilterHeadHash = findBranchHeadHash(root.branchFilter)
+    }
+
+    function findBranchHeadHash(branchName) {
+        if (!branchName || !root.branchController)
+            return ""
+
+        return root.branchHeadHashFrom(root.branchController.getBranches(), branchName)
+    }
+
+    function branchHeadHashFrom(branches, branchName) {
+        if (!branchName || !branches)
+            return ""
+
+        for (var i = 0; i < branches.length; i++) {
+            var branch = branches[i]
+            if (branch && branch.name === branchName)
+                return branch.targetHash || ""
+        }
+
+        return ""
+    }
 
     function executeNewBranch(commitHash) {
         if (!root.addBranchPopup)
@@ -917,7 +1798,7 @@ DetachablePanel {
 
         root.addBranchPopup.branchController    = root.branchController
         root.addBranchPopup.targetHash          = commitHash
-        root.addBranchPopup.open()
+        root.openPopup(root.addBranchPopup)
     }
 
     function executeNewTag(commitHash) {
@@ -926,59 +1807,145 @@ DetachablePanel {
 
         root.addTagPopup.tagController  = root.tagController || null
         root.addTagPopup.targetHash     = commitHash
-        root.addTagPopup.open()
+        root.openPopup(root.addTagPopup)
+    }
+
+    function browseFilesRequested(commitHash, commitMessage, commitDate) {
+        commitFileBrowserPopup.openForCommit(commitHash, commitMessage, commitDate)
     }
 
     function executeMergeBranch(source, target) {
         mergeMethodPopup.sourceBranch = source
         mergeMethodPopup.targetBranch = target
+        root.pendingMergeSource = source
 
-        mergeMethodPopup.accepted.connect(function(noFF) {
-            var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
-
-            if (root.mergeController.hasMergeConflicts()) {
-                mergeConflictPopup.show()
-
-                root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
-
-                root.reloadAll()
-            } else {
-                handleGitControllerResult(res, "Merge completed", mergeConflictPopup, "Merge")
-            }
-
-            mergeMethodPopup.accepted.disconnect(arguments.callee)
-        })
-
+        // mergeMethodPopup is declared in this panel's content, so it follows the panel by itself.
         mergeMethodPopup.open()
     }
 
+    function performMerge(source, noFF, deleteBranch = false, pushRemote = false) {
+        var res = root.mergeController.mergeBranchIntoCurrent(source, noFF)
+
+        if (root.identityGuard.handle(res, "merge", function() {
+            root.performMerge(source, noFF, deleteBranch, pushRemote)
+        }))
+            return
+
+        if (root.mergeController.isMergeInProgress() && root.mergeController.hasMergeConflicts()) {
+            root.showConflictWindow(mergeConflictPopup)
+            root.notificationController.warning("Merge conflicts detected.", "Merge", 4000)
+            root.reloadAll()
+            return
+        }
+
+        let mergeSucceeded = res && res.success
+        handleGitControllerResult(res, "Merge completed", mergeConflictPopup, "Merge")
+
+        if (mergeSucceeded && res.data && res.data.autoDeleteSourceBranch === true)
+            deleteBranch = true
+
+        if (mergeSucceeded && deleteBranch && source !== root.branchController.getCurrentBranchName()) {
+            let delRes = root.branchController.deleteBranch(source)
+            if (delRes && delRes.success)
+                root.notificationController.success("Branch '" + source + "' deleted", "Merge", 3000)
+            else
+                root.notificationController.error(delRes?.errorMessage || "Failed to delete branch", "Merge", 5000)
+        }
+
+        if (mergeSucceeded && pushRemote)
+            root.executePush(root.branchController.getCurrentBranchName(), false)
+    }
+
     function executeRebase(commitHash) {
-        var res = rebaseController.previewRebasePlan("", commitHash, "");
 
-        if (!res || !res.success) {
-            notificationController.error(res ? res.errorMessage : "Could not prepare rebase plan", "Rebase", 5000);
-            return;
-        }
+        commitPlanPopup.show()
 
-        if (!res.data || !res.data.commits || res.data.commits.length === 0) {
-            notificationController.info("There are no commits to replay for this rebase.", "Rebase", 4000);
-            return;
-        }
-
-        commitPlanPopup.showPlan(res.data);
+        AsyncGit.call(rebaseController, "startPreviewRebasePlan", ["", commitHash, ""],
+            function(result) {
+                if (!result.success) {
+                    root.notificationController.error(result.errorMessage || "Failed to load rebase plan", "Rebase", 5000)
+                    commitPlanPopup.close()
+                    return
+                }
+                commitPlanPopup.showPlan(result.data)
+            },
+            function(error) {
+                root.notificationController.error(error || "Failed to load rebase plan", "Rebase", 5000)
+                commitPlanPopup.close()
+            }
+        )
     }
 
     function executeCherryPickSelected() {
         var hashes  = selectedCommitHashesInOrder();
         var res     = cherryPickController.cherryPickCommits(hashes);
 
+        if (root.identityGuard.handle(res, "cherry-pick", function() { root.cherryPickCommits(hashes) }))
+            return;
+
+        handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
+    }
+
+    //! Picks exactly these commits again, e.g. after "Who is making this commit?" was answered.
+    function cherryPickCommits(hashes) {
+        var res = cherryPickController.cherryPickCommits(hashes);
         handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
     }
 
     function executeCherryPickSingle(commitHash) {
         var res = cherryPickController.cherryPickCommit(commitHash);
 
+        if (root.identityGuard.handle(res, "cherry-pick", function() { root.executeCherryPickSingle(commitHash) }))
+            return;
+
         handleGitControllerResult(res, "Cherry-pick completed", cherryPickConflictPopup, "Cherry-Pick");
+    }
+
+    function executeResetHead(commitHash, mode) {
+        let branch = root.branchController.getCurrentBranchName()
+
+        confirmCommandDialog.ask("Reset " + root.resetModeName(mode),
+                                 root.resetWarning(mode, branch, commitHash),
+                                 GitCommandText.reset(commitHash, mode),
+                                 "Reset " + root.resetModeName(mode),
+                                 { commitHash: commitHash, mode: mode })
+    }
+
+    function resetModeName(mode) {
+        switch (mode) {
+        case ResetController.ResetMode.Soft:  return "Soft"
+        case ResetController.ResetMode.Mixed: return "Mixed"
+        default:                              return "Hard"
+        }
+    }
+
+    function resetWarning(mode, branch, commitHash) {
+        let target = "'" + branch + "' to " + commitHash.substring(0, 7)
+
+        switch (mode) {
+        case ResetController.ResetMode.Soft:
+            return "Move " + target + " and keep every change staged."
+        case ResetController.ResetMode.Mixed:
+            return "Move " + target + " and keep your changes, unstaged."
+        default:
+            return "Move " + target + " and discard every change in the working tree. This cannot be undone."
+        }
+    }
+
+    function performResetHead(commitHash, mode) {
+        let res = root.resetController.resetHead(commitHash, mode)
+
+        if (res.success) {
+            root.notificationController.success("Reset completed successfully", "Reset", 3000)
+            root.reloadAll()
+        } else {
+            root.notificationController.error(res.errorMessage, "Reset", 5000)
+        }
+    }
+
+    function showConflictWindow(conflictPopup) {
+        conflictPopup.ontoRef = root.branchController?.getCurrentBranchName() ?? ""
+        conflictPopup.show()
     }
 
     function handleGitControllerResult(res, successMsg, conflictPopup, commandName) {
@@ -986,7 +1953,7 @@ DetachablePanel {
             notificationController.success(successMsg, commandName, 3000)
         }
         else if (res && res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
-            conflictPopup.show();
+            root.showConflictWindow(conflictPopup);
             notificationController.warning(commandName + " conflicts detected.", commandName, 4000);
         }
         else {
@@ -1003,10 +1970,11 @@ DetachablePanel {
         if (data.isUncommitted || data.isStash || data.hash === root.headHash)
             return
 
+        let isHead      = data.isHead || false
         var branches    = data.branchNames || []
         var shortHash   = data.shortHash || data.hash.substring(0, 7)
 
-        if (!branches.length) {
+        if (!isHead) {
             var checkoutCommitRes = root.branchController.checkoutCommit(data.hash)
             handleContextResponse(checkoutCommitRes, "Checked out commit " + shortHash)
             return
@@ -1019,22 +1987,42 @@ DetachablePanel {
             if (b && b.isLocal) localNames[b.name] = true
         }
 
-        var seen = {}
-        var deduped = []
+        // One entry per branch the checkout would land on. Local branch names may contain slashes
+        // (fix/...), so only a known remote prefix is stripped; a remote branch whose local branch
+        // exists stands for that local branch, which is what checking it out switches to.
+        var seen    = {}
+        var entries = []
         for (var j = 0; j < branches.length; j++) {
             var name = branches[j]
-            var base = name.replace(/^[^/]+\//, "")
-            if (!seen[base]) {
-                seen[base] = true
-                deduped.push(localNames[base] ? base : name)
+            if (name.endsWith("/HEAD"))
+                continue
+
+            var entry
+            if (localNames[name]) {
+                entry = { name: name, isLocal: true, remote: "" }
+            } else {
+                var remote    = root.remoteOfBranch(name)
+                var localName = remote !== "" ? name.substring(remote.length + 1)
+                                              : name.replace(/^[^/]+\//, "")
+                entry = localNames[localName]
+                        ? { name: localName, isLocal: true, remote: "" }
+                        : { name: name, isLocal: false, remote: remote, localName: localName }
             }
+
+            if (seen[entry.name])
+                continue
+            seen[entry.name] = true
+            entries.push(entry)
         }
 
-        if (deduped.length === 1) {
-            handleCheckoutBranchOrCreate(deduped[0], data.hash)
+        if (entries.length === 0)
+            return
+
+        if (entries.length === 1) {
+            handleCheckoutBranchOrCreate(entries[0].name, data.hash)
         } else {
             checkoutBranchSelector.commitHash = data.hash
-            checkoutBranchSelector.branches = deduped
+            checkoutBranchSelector.branches = entries
             checkoutBranchSelector.open()
         }
     }
@@ -1052,12 +2040,17 @@ DetachablePanel {
             return
         }
 
-        var localName = branchName.replace(/^[^/]+\//, "")
+        var remote    = root.remoteOfBranch(branchName)
+        var localName = remote !== "" ? branchName.substring(remote.length + 1)
+                                      : branchName.replace(/^[^/]+\//, "")
         var createRes = root.branchController.createBranch(commitHash, localName)
         if (!createRes.success) {
             handleContextResponse(createRes, "")
             return
         }
+
+        if (remote !== "")
+            root.remoteController?.setUpstream(localName, remote, localName)
 
         handleContextResponse(root.branchController.checkoutBranch(localName), "Created and checked out branch " + localName)
     }
@@ -1075,39 +2068,79 @@ DetachablePanel {
         root.reloadAll()
     }
 
+    /*!
+     * Gives the commit list keyboard focus once the current event (e.g. a popup closing) has settled.
+     */
+    function focusCommitList() {
+        Qt.callLater(function() {
+            commitsListView.forceActiveFocus()
+        })
+    }
+
     function selectNext(rule) {
         var idx     = Navigation.selectedIndex(root.commits, root.selectedCommit)
         var result  = Navigation.selectNext(root.commits, root.selectedCommit, idx, root.navigationRule, rule)
 
-        if (!result)
+        if (!result) {
             return
+        }
 
-        if (rule !== undefined)
+        root.applyNavigationResult(result, rule)
+    }
+
+    /*!
+     * Selects the commit found by the navigation helpers, the same way a click on it would.
+     */
+    function applyNavigationResult(result, rule) {
+        if (rule !== undefined) {
             root.navigationRule = rule
+        }
 
-        setSingleSelection(result.selected, result.index)
+        if (result.selected.isUncommitted) {
+            root.selectedCommitHashes = []
+            root.lastSelectedIndex = result.index
+        } else {
+            setSingleSelection(result.selected, result.index)
+        }
+
         root.selectedCommit = result.selected
-        root.commitClicked(result.selected.hash)
+        root.commitClicked(result.selected.isUncommitted ? "__uncommitted__" : result.selected.hash)
 
-        if (result.scroll)
-            commitsListView.positionViewAtIndex(result.index, ListView.Contain)
+        if (result.scroll) {
+            root.focusCommitIndex(result.index)
+        }
+    }
+
+    /*!
+     * Called when "previous" navigation reaches the end of the loaded commits without a match.
+     * Loads the next page and retries, until a match is found or there is nothing left to load.
+     */
+    function loadMoreAndSelectPrevious(rule) {
+        if(!root.hasMoreCommits || root.isLoadingMore) {
+            return
+        }
+
+        var offsetBefore = root.commitsOffset
+        root.loadMoreCommits()
+
+        if(root.commitsOffset === offsetBefore) {
+            return
+        }
+
+        Qt.callLater(function() {
+            root.selectPrevious(rule)
+        })
     }
 
     function selectPrevious(rule) {
         var idx     = Navigation.selectedIndex(root.commits, root.selectedCommit)
         var result  = Navigation.selectPrevious(root.commits, root.selectedCommit, idx, root.navigationRule, rule)
 
-        if (!result)
+        if (!result) {
+            root.loadMoreAndSelectPrevious(rule)
             return
+        }
 
-        if (rule !== undefined)
-            root.navigationRule = rule
-
-        setSingleSelection(result.selected, result.index)
-        root.selectedCommit = result.selected
-        root.commitClicked(result.selected.hash)
-
-        if (result.scroll)
-            commitsListView.positionViewAtIndex(result.index, ListView.Contain)
+        root.applyNavigationResult(result, rule)
     }
 }

@@ -17,113 +17,240 @@ Item {
      * ****************************************************************************************/
     property var controller: null
 
+    /* Children
+     * ****************************************************************************************/
     ColumnLayout {
-        anchors.fill: parent
-        spacing: 7
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 20, 600)
+        spacing: 0
 
         ColumnLayout {
             id: hero
-            spacing: 20
             Layout.alignment: Qt.AlignHCenter
+            spacing: 12
+            opacity: 0
 
-            Text {
-                text: "Welcome to GitEase"
-                font.family: Style.fontTypes.roboto
-                font.weight: 400
-                font.pixelSize: 32
-                color: Style.colors.foreground
-                horizontalAlignment: Text.AlignHCenter
-                Layout.alignment: Qt.AlignHCenter
-                Layout.fillWidth: true
+            Component.onCompleted: heroFadeIn.start()
+
+            NumberAnimation {
+                id: heroFadeIn
+                target: hero
+                property: "opacity"
+                from: 0; to: 1
+                duration: 400
+                easing.type: Easing.OutCubic
             }
 
             Text {
-                text: "The most advanced Git GUI designed for developers. Manage repositories, resolve conflicts, and collaborate with your team - all with AI-powered assistance."
+                text: "Welcome to GitEase"
+                font.family: Style.fontTypes.inter
+                font.weight: Font.Bold
+                font.pixelSize: Style.appFont.h1Pt
+                color: Style.colors.foreground
+                horizontalAlignment: Text.AlignHCenter
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            Text {
+                text: "A lightweight, fast Git client with a layout you control, support for multiple users, and a plugin system to make it your own."
                 wrapMode: Text.WordWrap
-                font.family: Style.fontTypes.roboto
-                font.weight: 300
-                font.pixelSize: 15
-                font.italic: true
-                font.letterSpacing: 0
-                color: Style.colors.mutedText
+                font.family: Style.fontTypes.inter
+                font.weight: 400
+                font.pixelSize: Style.appFont.defaultPt
+                font.letterSpacing: 0.1
+                color: Style.colors.secondaryText
                 horizontalAlignment: Text.AlignHCenter
                 Layout.alignment: Qt.AlignHCenter
                 Layout.maximumWidth: 360
+                lineHeight: 1.4
+            }
+        }
+
+        Item {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.topMargin: 24
+            Layout.bottomMargin: 24
+            Layout.preferredWidth: 36
+            Layout.preferredHeight: 2
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: parent.width
+                height: parent.height
+                radius: height / 2
+                color: Style.colors.accent
+                opacity: 0.45
             }
         }
 
         RowLayout {
-            id: cardsRow
-            spacing: 20
-            Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: 435
-            Layout.preferredHeight: 149
+            id: cardsColumn
+            Layout.fillWidth: true
+            spacing: 12
+            opacity: 0
+
+            Component.onCompleted: cardsFadeIn.start()
+
+            NumberAnimation {
+                id: cardsFadeIn
+                target: cardsColumn
+                property: "opacity"
+                from: 0; to: 1
+                duration: 300
+                easing.type: Easing.OutCubic
+            }
 
             Repeater {
+                id: cardRepeater
                 model: [
-                    { title: "Powerful & Fast", icon: "🚀", iconBackColor : "#B9D9FA",desc: "Lightning-fast Git operations with intelligent caching." },
-                    { title: "AI-Powered", icon:  "🤖", iconBackColor : "#FAD0B9",desc: "Smart commit messages and conflict resolution." },
-                    { title: "Team First", icon: "👥", iconBackColor : "#B9FAB9",desc: "Built-in collaboration and code review tools." }
+                    { title: "Light & Fast",       icon: Style.icons.rocket,   accentColor: Style.colors.vibrantMint,    bgColor: Style.colors.vibrantMintBg,
+                      desc: "A lightweight native app built on Qt and libgit2, quick to start and quick to respond." },
+                    { title: "Dock & Detach",      icon: Style.icons.detach,   accentColor: Style.colors.cornflowerBlue, bgColor: Style.colors.cornflowerBlueBg,
+                      desc: "Dock panels where you work, or detach any panel into its own window." },
+                    { title: "Plugins & Profiles", icon: Style.icons.plugins,  accentColor: Style.colors.purple,         bgColor: Style.colors.purpleBg,
+                      desc: "Extend GitEase with plugins and switch between multiple user profiles." }
                 ]
 
-                delegate: Rectangle {
-                    width: 127
-                    height: 127
-                    radius: 4
-                    color: Style.colors.secondaryBackground
+                delegate: Item {
+                    id: featureCard
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 200
+                    opacity: 0
 
-                    Column {
+                    transform: Translate {
+                        id: slide
+                        y: 12
+                    }
+
+                    Timer {
+                        id: staggerIn
+                        interval: index * 130
+                        running: false
+                        repeat: false
+                        onTriggered: {
+                            entryAnim.start()
+                            slideAnim.start()
+                        }
+                    }
+
+                    NumberAnimation {
+                        id: entryAnim
+                        target: featureCard
+                        property: "opacity"
+                        from: 0; to: 1
+                        duration: 400
+                        easing.type: Easing.OutCubic
+                    }
+
+                    NumberAnimation {
+                        id: slideAnim
+                        target: slide
+                        property: "y"
+                        from: 12; to: 0
+                        duration: 400
+                        easing.type: Easing.OutCubic
+                    }
+
+                    Component.onCompleted: staggerIn.start()
+
+                    Rectangle {
+                        id: cardBg
                         anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 6
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
+                        radius: 12
+                        color: mouseArea.containsMouse
+                               ? Qt.lighter(Style.colors.cardBackground, 1.05)
+                               : Style.colors.cardBackground
+                        border.width: 1
+                        border.color: mouseArea.containsMouse
+                                      ? Qt.rgba(modelData.accentColor.r,
+                                                modelData.accentColor.g,
+                                                modelData.accentColor.b, 0.6)
+                                      : Qt.rgba(Style.colors.primaryBorder.r,
+                                                Style.colors.primaryBorder.g,
+                                                Style.colors.primaryBorder.b, 0.35)
 
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                        // Accent bar on the top edge
                         Rectangle {
-                            width: 33
-                            height : 33
-                            color : modelData.iconBackColor ?? Style.colors.mutedText
-                            radius: 4
+                            anchors.top: parent.top
+                            anchors.topMargin: 1
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            height: 3
+                            width: mouseArea.containsMouse ? parent.width * 0.6 : parent.width * 0.3
+                            radius: 2
+                            color: modelData.accentColor
 
-                            Text {
-                                width: parent.width
-                                height : parent.height
-                                horizontalAlignment: Qt.AlignHCenter
-                                verticalAlignment: Qt.AlignVCenter
-                                text: modelData.icon ?? ""
-                                font.family: Style.fontTypes.roboto
-                                font.pixelSize: 20
-                                color: Style.colors.accent
+                            Behavior on width {
+                                NumberAnimation {
+                                    duration: 150
+                                    easing.type: Easing.OutCubic
+                                }
                             }
                         }
 
-                        Text {
-                            text: modelData.title ?? ""
-                            wrapMode: Text.WordWrap
-                            font.family: Style.fontTypes.roboto
-                            font.weight: 400
-                            font.pixelSize: 14
-                            font.letterSpacing: 0
-                            color: Style.colors.foreground
-                            width: 106
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 16
+                            anchors.topMargin: 22
+                            spacing: 12
+
+                            // Icon badge
+                            Rectangle {
+                                Layout.preferredWidth: 48
+                                Layout.preferredHeight: 48
+                                Layout.alignment: Qt.AlignHCenter
+                                radius: 14
+                                color: modelData.bgColor
+                                border.width: 1
+                                border.color: Qt.rgba(modelData.accentColor.r,
+                                                      modelData.accentColor.g,
+                                                      modelData.accentColor.b, 0.35)
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData.icon
+                                    font.family: Style.fontTypes.font6Pro
+                                    font.pixelSize: 18
+                                    color: modelData.accentColor
+                                }
+                            }
+
+                            Text {
+                                text: modelData.title
+                                font.family: Style.fontTypes.inter
+                                font.weight: Font.DemiBold
+                                font.pixelSize: Style.appFont.mediumPt
+                                color: Style.colors.foreground
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.WordWrap
+                                Layout.fillWidth: true
+                            }
+
+                            Text {
+                                text: modelData.desc
+                                font.family: Style.fontTypes.inter
+                                font.weight: 400
+                                font.pixelSize: Style.appFont.smallPt
+                                color: Style.colors.mutedText
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.WordWrap
+                                lineHeight: 1.3
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                            }
                         }
 
-                        Text {
-                            id: descText
-                            width: 98
-                            wrapMode: Text.WordWrap
-                            text: modelData.desc ?? ""
-                            font.family: Style.fontTypes.roboto
-                            font.weight: 400
-                            font.pixelSize: 11
-                            font.letterSpacing: 0
-                            color: Style.colors.mutedText
+                        MouseArea {
+                            id: mouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
                         }
-
                     }
                 }
             }
         }
     }
 }
-

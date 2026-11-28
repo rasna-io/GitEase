@@ -4,5 +4,6 @@ Name=GitEase
 Comment=A powerful Git GUI client
 Exec=GitEase
 Icon=gitease
+StartupWMClass=GitEase
 Terminal=false
 Categories=Development;RevisionControl;

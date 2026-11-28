@@ -6,7 +6,7 @@
 #include "GitResult.h"
 #include "IGitController.h"
 #include "Repository.h"
-
+#include "ActionContext.h"
 
 /**
  * \brief Structure to hold parent commit information
@@ -137,11 +137,6 @@ public:
      * \return The message of the last (HEAD) commit, or an empty string on error
      */
     Q_INVOKABLE QString getLastCommitMessage();
-
-
-    Repository *currentRepo() const;
-
-    void setCurrentRepo(Repository *newCurrentRepo);
 
 private:
     QStringList getAllParents(git_commit* gitCommit);

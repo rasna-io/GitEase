@@ -11,16 +11,14 @@ import GitEase
  * Blank placeholder page.
  * ************************************************************************************************/
 
-Item {
+Page {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var page: null
-
-    /* Object Properties
-     * ****************************************************************************************/
-    anchors.fill: parent
+    pageId: "blank"
+    title: "Blank Page"
+    icon: Style.icons.lightbulb
 
     /* Children
      * ****************************************************************************************/
@@ -30,20 +28,20 @@ Item {
 
         Text {
             text: "BlankPage"
-            font.pixelSize: 18
+            font.pixelSize: Style.appFont.xlPt
             font.weight: 600
             color: Style.colors.foreground
             horizontalAlignment: Text.AlignHCenter
         }
 
         Text {
-            text: "title: " + (root.page ? root.page.title : "Blank Page")
+            text: "title: " + root.title
             color: Style.colors.foreground
             horizontalAlignment: Text.AlignHCenter
         }
 
         Text {
-            text: "id: " + (root.page ? root.page.id : "blank")
+            text: "id: " + root.pageId
             color: Style.colors.foreground
             horizontalAlignment: Text.AlignHCenter
         }

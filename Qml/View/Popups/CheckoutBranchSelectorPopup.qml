@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import GitEase
 import GitEase_Style
 import GitEase_Style_Impl
 
@@ -14,7 +15,10 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
+    // [{ name, isLocal, remote, localName (remote entries: the branch checking it out creates) }]
     property var branches: []
+
+    property var hoveredEntry: null
 
     /* Signals
      * ****************************************************************************************/
@@ -54,17 +58,18 @@ IPopup {
 
                     Text {
                         text: Style.icons.gitBranch
-                        font.family: Style.fontTypes.font6ProSolid
-                        font.pixelSize: 16
+                        font.family: Style.fontTypes.font6Pro
+                        font.styleName: "Solid"
+                        font.pixelSize: Style.appFont.h2Pt
                         color: Style.colors.accent
                     }
 
                     Text {
                         text: "Select Branch"
                         color: Style.colors.foreground
-                        font.family: Style.fontTypes.roboto
+                        font.family: Style.fontTypes.inter
                         font.bold: true
-                        font.pixelSize: 15
+                        font.pixelSize: Style.appFont.largerPt
                         Layout.fillWidth: true
                     }
                 }
@@ -77,8 +82,8 @@ IPopup {
                 Layout.bottomMargin: 12
                 text: "Multiple branches point to this commit. Choose which one to check out."
                 color: Style.colors.mutedText
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 12
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.mediumPt
                 wrapMode: Text.WordWrap
             }
 
@@ -105,10 +110,16 @@ IPopup {
                 }
 
                 delegate: Item {
+                    id: branchRow
+
                     width: branchList.width
                     height: 40
 
-                    readonly property bool isHovered: rowMouse.containsMouse
+                    readonly property bool   isHovered:  rowMouse.containsMouse
+                    readonly property string branchName: modelData?.name ?? ""
+                    readonly property bool   isLocal:    modelData?.isLocal ?? false
+                    readonly property color  kindColor:  branchRow.isLocal ? Style.colors.accent
+                                                                           : Style.colors.mutedText
 
                     Rectangle {
                         anchors.fill: parent
@@ -124,27 +135,52 @@ IPopup {
                             spacing: 10
 
                             Text {
-                                text: Style.icons.gitBranch
-                                font.family: Style.fontTypes.font6ProSolid
-                                font.pixelSize: 12
-                                color: Style.colors.accent
+                                text: branchRow.isLocal ? Style.icons.gitBranch : Style.icons.cloud
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.appFont.mediumPt
+                                color: branchRow.kindColor
                                 Layout.preferredWidth: 16
                                 horizontalAlignment: Text.AlignHCenter
                             }
 
                             Text {
                                 Layout.fillWidth: true
-                                text: modelData
-                                font.family: Style.fontTypes.roboto
-                                font.pixelSize: 13
+                                text: branchRow.branchName
+                                font.family: Style.fontTypes.inter
+                                font.pixelSize: Style.appFont.h3Pt
                                 color: Style.colors.foreground
                                 elide: Text.ElideMiddle
                             }
 
+                            // Local / Remote badge
+                            Rectangle {
+                                Layout.alignment: Qt.AlignVCenter
+                                implicitWidth: kindLabel.implicitWidth + 12
+                                implicitHeight: kindLabel.implicitHeight + 4
+                                radius: 4
+                                color: Qt.rgba(branchRow.kindColor.r, branchRow.kindColor.g,
+                                               branchRow.kindColor.b, 0.14)
+                                border.width: 1
+                                border.color: Qt.rgba(branchRow.kindColor.r, branchRow.kindColor.g,
+                                                      branchRow.kindColor.b, 0.35)
+
+                                Text {
+                                    id: kindLabel
+                                    anchors.centerIn: parent
+                                    text: branchRow.isLocal ? qsTr("Local") : qsTr("Remote")
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.smallPt
+                                    font.weight: Font.Medium
+                                    color: branchRow.kindColor
+                                }
+                            }
+
                             Text {
                                 text: Style.icons.arrowRight
-                                font.family: Style.fontTypes.font6ProSolid
-                                font.pixelSize: 11
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.appFont.defaultPt
                                 color: Style.colors.accent
                                 opacity: isHovered ? 1.0 : 0.0
                                 Behavior on opacity {
@@ -162,8 +198,15 @@ IPopup {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            root.branchSelected(modelData)
+                            root.branchSelected(branchRow.branchName)
                             root.close()
+                        }
+
+                        onContainsMouseChanged: {
+                            if (containsMouse)
+                                root.hoveredEntry = modelData
+                            else if (root.hoveredEntry?.name === branchRow.branchName)
+                                root.hoveredEntry = null
                         }
                     }
                 }
@@ -180,6 +223,23 @@ IPopup {
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 56
+
+                CommandPreview {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 30
+                    anchors.right: parent.right
+                    anchors.rightMargin: 140
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    placeholder: qsTr("Point at a branch to see the command")
+                    // A remote branch is checked out by creating its local branch from it.
+                    command: !root.hoveredEntry
+                             ? ""
+                             : root.hoveredEntry.isLocal
+                               ? GitCommandText.checkoutBranch(root.hoveredEntry.name)
+                               : GitCommandText.createBranchAndCheckout(root.hoveredEntry.localName,
+                                                                        root.hoveredEntry.name)
+                }
 
                 Button {
                     anchors.right: parent.right
@@ -203,6 +263,7 @@ IPopup {
     }
 
     onAboutToHide: {
+        root.hoveredEntry = null
         root.branches = []
     }
 }

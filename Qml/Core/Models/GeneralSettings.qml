@@ -15,13 +15,25 @@ QtObject {
 
     property                bool              showStashNodes:           false
 
+    property                bool              autoUpdate:               true    // Graph view
+
+    property                int               chunkContextLines:        0
+
+    property                int               chunkExpandLines:         10
+
+    property                bool              alwaysAskRemote:      false
+
     /* Functions
      * ****************************************************************************************/
     function serialize() {
         let data = {
             defaultPath: root.defaultPath,
             showAvatar: root.showAvatar,
-            showStashNodes: root.showStashNodes
+            showStashNodes: root.showStashNodes,
+            autoUpdate: root.autoUpdate,
+            chunkContextLines: root.chunkContextLines,
+            chunkExpandLines: root.chunkExpandLines,
+            alwaysAskRemote: root.alwaysAskRemote
         }
 
         return data;
@@ -31,6 +43,10 @@ QtObject {
         root.defaultPath = data.defaultPath ?? ""
         root.showAvatar = data.showAvatar ?? true
         root.showStashNodes = data.showStashNodes ?? false
+        root.autoUpdate = data.autoUpdate ?? true
+        root.chunkContextLines = data.chunkContextLines ?? 0
+        root.chunkExpandLines = data.chunkExpandLines ?? 10
+        root.alwaysAskRemote = data.alwaysAskRemote ?? false
     }
 }
 

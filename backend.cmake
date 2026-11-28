@@ -3,11 +3,22 @@ set(SOURCES_BACKEND
     Src/Utilities/windowsManager/borderlesswindowhelper.cpp
     Src/Utilities/windowsManager/TaskbarHelper.cpp
     Src/Utilities/FileManager/FileIO.cpp
-    Src/Utilities/GitScanner/GitScanner.cpp
+    Src/Utilities/NetworkManager/NetworkManager.cpp
+    Src/Utilities/UpdateManager/UpdateManager.cpp
+    Src/Utilities/TextDirectionManager/TextDirectionManager.cpp
+
+    Src/Utilities/Logger/Level.cpp
+    Src/Utilities/Logger/Formatter.cpp
+    Src/Utilities/Logger/ConsoleSink.cpp
+    Src/Utilities/Logger/FileSink.cpp
+    Src/Utilities/Logger/LogModel.cpp
+    Src/Utilities/Logger/Logger.cpp
+    Src/Utilities/Logger/SignalHandler.cpp
+    Src/Utilities/Logger/QmlBridge.cpp
 
     Src/Git/IGitController.cpp
+    Src/Git/Async/GitAsyncRunner.cpp
     Src/Git/GitRepository.cpp
-    Src/Git/GitResult.cpp
     Src/Git/GitUtils.cpp
     Src/Git/GitBranch.cpp
     Src/Git/GitCommit.cpp
@@ -21,6 +32,10 @@ set(SOURCES_BACKEND
     Src/Git/GitMerge.cpp
     Src/Git/GitConflict.cpp
     Src/Git/GitTag.cpp
+    Src/Git/GitIgnore.cpp
+    Src/Git/GitReset.cpp
+    Src/Git/GitTree.cpp
+    Src/Git/GitCommandText.cpp
 
     Src/Git/Models/Remote.cpp
     Src/Git/Models/Commit.cpp
@@ -32,10 +47,14 @@ set(SOURCES_BACKEND
     Src/Git/Auth/GitSshAuth.cpp
     Src/Git/Auth/GitHttpsAuth.cpp
     Src/Git/Utilities/GitProtocolDetector.cpp
+    Src/Git/Utilities/GitIgnoreMatcher.cpp
     Src/Utilities/SshKeyManager/SshKeyManager.cpp
 
     Src/Plugins/PluginContext.cpp
     Src/Plugins/PluginManager.cpp
+
+    Src/Terminal/TerminalManager.cpp
+    Src/Terminal/ShellSession.cpp
 )
 
 set(HEADERS_BACKEND
@@ -44,9 +63,23 @@ set(HEADERS_BACKEND
     Src/Utilities/windowsManager/TaskbarHelper.hpp
     Src/Utilities/windowsManager/borderlesswindowhelper.h
     Src/Utilities/FileManager/FileIO.hpp
-    Src/Utilities/GitScanner/GitScanner.hpp
+    Src/Utilities/NetworkManager/NetworkManager.hpp
+    Src/Utilities/UpdateManager/UpdateManager.hpp
+    Src/Utilities/TextDirectionManager/TextDirectionManager.h
+
+    Src/Utilities/Logger/Level.h
+    Src/Utilities/Logger/Record.h
+    Src/Utilities/Logger/Formatter.h
+    Src/Utilities/Logger/Sink.h
+    Src/Utilities/Logger/ConsoleSink.h
+    Src/Utilities/Logger/FileSink.h
+    Src/Utilities/Logger/LogModel.h
+    Src/Utilities/Logger/Logger.h
+    Src/Utilities/Logger/SignalHandler.h
+    Src/Utilities/Logger/QmlBridge.h
 
     Src/Git/IGitController.h
+    Src/Git/Async/GitAsyncRunner.h
     Src/Git/GitRepository.h
     Src/Git/GitResult.h
     Src/Git/GitUtils.h
@@ -62,6 +95,10 @@ set(HEADERS_BACKEND
     Src/Git/GitMerge.h
     Src/Git/GitConflict.h
     Src/Git/GitTag.h
+    Src/Git/GitIgnore.h
+    Src/Git/GitReset.h
+    Src/Git/GitTree.h
+    Src/Git/GitCommandText.h
 
     Src/Git/Models/Remote.h
     Src/Git/Models/Commit.h
@@ -75,6 +112,7 @@ set(HEADERS_BACKEND
     Src/Git/Auth/GitHttpsAuth.h
 
     Src/Git/Utilities/GitProtocolDetector.h
+    Src/Git/Utilities/GitIgnoreMatcher.h
     Src/Utilities/SshKeyManager/SshKeyManager.h
 
     Src/Plugins/IPluginContext.h
@@ -87,7 +125,23 @@ set(HEADERS_BACKEND
     Src/Plugins/PluginInfo.h
     Src/Plugins/PluginContext.h
     Src/Plugins/PluginManager.h
+    Src/Plugins/ActionContext.h
+    Src/Plugins/IRulePlugin.h
+    Src/Plugins/IConflictAssistPlugin.h
+    Src/Plugins/IRepositoryAwarePlugin.h
+
+    Src/Terminal/TerminalManager.h
+    Src/Terminal/ShellSession.h
 )
+
+if(UNIX AND NOT APPLE)
+    list(APPEND SOURCES_BACKEND
+        Src/Utilities/windowsManager/WindowCornerMaskLinux.cpp
+        Src/Utilities/windowsManager/WindowResizerLinux.cpp)
+    list(APPEND HEADERS_BACKEND
+        Src/Utilities/windowsManager/WindowCornerMaskLinux.hpp
+        Src/Utilities/windowsManager/WindowResizerLinux.hpp)
+endif()
 
 set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Git/Models
@@ -96,10 +150,15 @@ set(INCLUDE_DIRS_BACKEND
     ${CMAKE_SOURCE_DIR}/Src/Utilities/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/SshKeyManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/GitScanner/
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/NetworkManager/
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/UpdateManager/
+    ${CMAKE_SOURCE_DIR}/Src/Utilities/TextDirectionManager/
     ${CMAKE_SOURCE_DIR}/Src/Utilities/windowsManager/
+    ${CMAKE_SOURCE_DIR}/Src/Git/Async/
     ${CMAKE_SOURCE_DIR}/Src
     ${CMAKE_SOURCE_DIR}/Src/Git/
     ${CMAKE_SOURCE_DIR}/Src/Plugins/
+    ${CMAKE_SOURCE_DIR}/Src/Terminal/
 )
 
 #Add libgit2 include path to all backend files

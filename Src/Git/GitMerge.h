@@ -64,6 +64,9 @@ private:
 
     void resetMergeState();
 
+    /*! Puts every path the merge wrote back to HEAD, in the index and the working tree. */
+    GitResult restoreMergedPaths();
+
     void storeMergeMetadata(git_reference* sourceRef);
 
 public:

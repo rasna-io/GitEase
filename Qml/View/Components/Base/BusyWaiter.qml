@@ -8,7 +8,10 @@ import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * BusyWaiter
- * Show animation and message
+ * The app's busy indicator.
+ *  - Default: a panel overlay that fills its parent with the spinner rings and a message.
+ *  - compact: just the spinning ring, sized like any item (16px by default), for buttons, rows and
+ *    headers. It fades out while not running, like a BusyIndicator.
  * ************************************************************************************************/
 
 Rectangle {
@@ -16,14 +19,31 @@ Rectangle {
 
     /* Property Declarations
      * ****************************************************************************************/
-    property alias  message: messageText.text
-    property bool   running: true
+    property alias  message:     messageText.text
+    property bool   running:     true
+    property bool   compact:     false
+    property color  accentColor: Style.colors.accent
+
+    readonly property bool panelAnimating:   root.running && root.visible && !root.compact
+    readonly property bool compactAnimating: root.running && root.visible && root.compact
+    readonly property real compactSize:      Math.min(root.width, root.height)
 
     /* Object Properties
      * ****************************************************************************************/
-    anchors.fill: parent
-    color: Style.colors.primaryBackground
-    z: 999
+    anchors.fill: root.compact ? undefined : parent
+    implicitWidth: root.compact ? 16 : 0
+    implicitHeight: root.compact ? 16 : 0
+    color: root.compact ? "transparent" : Style.colors.primaryBackground
+    z: root.compact ? 0 : 999
+    opacity: !root.compact || root.running ? 1 : 0
+
+    Behavior on opacity {
+        enabled: root.compact
+
+        NumberAnimation {
+            duration: 150
+        }
+    }
 
     /* Internal SpinnerRing Component
      * ****************************************************************************************/
@@ -45,9 +65,13 @@ Rectangle {
             property int  rotateDuration: 2200
             property int  spanDuration: 1800
             property bool running: true
+            property color ringColor: root.accentColor
 
             onAngleChanged: requestPaint()
             onArcSpanChanged: requestPaint()
+            onRadiusChanged: requestPaint()
+            onLineWidthChanged: requestPaint()
+            onRingColorChanged: requestPaint()
 
             onPaint: {
                 var ctx = getContext("2d")
@@ -56,7 +80,7 @@ Rectangle {
                 // Track
                 ctx.beginPath()
                 ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2)
-                ctx.strokeStyle = Style.colors.accent
+                ctx.strokeStyle = ringColor
                 ctx.globalAlpha = trackAlpha
                 ctx.lineWidth = lineWidth
                 ctx.stroke()
@@ -65,7 +89,7 @@ Rectangle {
                 var start = clockwise ? angle : -angle
                 ctx.beginPath()
                 ctx.arc(width / 2, height / 2, radius, start, start + arcSpan)
-                ctx.strokeStyle = Style.colors.accent
+                ctx.strokeStyle = ringColor
                 ctx.globalAlpha = globalAlpha
                 ctx.lineWidth = lineWidth
                 ctx.lineCap = "round"
@@ -101,11 +125,65 @@ Rectangle {
 
     /* Children
      * ****************************************************************************************/
+
+    // Compact: the outer ring alone, plus the counter-rotating middle ring once there is room.
+    Item {
+        id: compactSpinner
+
+        readonly property real lineWidth:   Math.max(1.5, width * 0.11)
+        readonly property real outerRadius: width / 2 - lineWidth / 2 - 0.5
+
+        anchors.centerIn: parent
+        width: root.compactSize
+        height: root.compactSize
+        visible: root.compact
+
+        Loader {
+            anchors.fill: parent
+            active: root.compact
+            sourceComponent: spinnerRingComponent
+            onLoaded: {
+                item.running = Qt.binding(function() { return root.compactAnimating })
+                item.radius = Qt.binding(function() { return compactSpinner.outerRadius })
+                item.lineWidth = Qt.binding(function() { return compactSpinner.lineWidth })
+                item.globalAlpha = 0.95
+                item.trackAlpha = 0.15
+                item.clockwise = true
+                item.arcSpan = Math.PI * 1.1
+                item.spanFrom = Math.PI * 1.4
+                item.spanTo = Math.PI * 0.6
+                item.rotateDuration = 1100
+                item.spanDuration = 1200
+            }
+        }
+
+        Loader {
+            anchors.fill: parent
+            active: root.compact && compactSpinner.width >= 24
+            sourceComponent: spinnerRingComponent
+            onLoaded: {
+                item.running = Qt.binding(function() { return root.compactAnimating })
+                item.radius = Qt.binding(function() { return compactSpinner.outerRadius * 0.55 })
+                item.lineWidth = Qt.binding(function() { return compactSpinner.lineWidth * 0.85 })
+                item.globalAlpha = 0.6
+                item.trackAlpha = 0.0
+                item.clockwise = false
+                item.arcSpan = Math.PI * 0.9
+                item.spanFrom = Math.PI * 0.6
+                item.spanTo = Math.PI * 1.1
+                item.rotateDuration = 900
+                item.spanDuration = 1200
+            }
+        }
+    }
+
+    // Panel: the full spinner and message.
     Column {
         id: busyColumn
         anchors.centerIn: parent
         spacing: 10
         width: Math.min(parent.width, 360)
+        visible: !root.compact
 
         Item {
             id: spinnerRoot
@@ -118,11 +196,11 @@ Rectangle {
                 width: 90
                 height: 90
                 radius: 45
-                color: Style.colors.accent
+                color: root.accentColor
                 opacity: 0
 
                 SequentialAnimation on opacity {
-                    running: root.running && root.visible
+                    running: root.panelAnimating
                     loops: Animation.Infinite
 
                     NumberAnimation {
@@ -141,9 +219,10 @@ Rectangle {
             Loader {
                 anchors.fill: parent
                 sourceComponent: spinnerRingComponent
+                active: !root.compact
                 onLoaded: {
                     item.running = Qt.binding(function() {
-                        return root.running && root.visible
+                        return root.panelAnimating
                     })
                     item.radius = 36
                     item.lineWidth = 3
@@ -161,9 +240,10 @@ Rectangle {
             Loader {
                 anchors.fill: parent
                 sourceComponent: spinnerRingComponent
+                active: !root.compact
                 onLoaded: {
                     item.running = Qt.binding(function() {
-                        return root.running && root.visible
+                        return root.panelAnimating
                     })
                     item.radius = 27
                     item.lineWidth = 3
@@ -181,9 +261,10 @@ Rectangle {
             Loader {
                 anchors.fill: parent
                 sourceComponent: spinnerRingComponent
+                active: !root.compact
                 onLoaded: {
                     item.running = Qt.binding(function() {
-                        return root.running && root.visible
+                        return root.panelAnimating
                     })
                     item.radius = 17
                     item.lineWidth = 2.5
@@ -203,10 +284,10 @@ Rectangle {
                 width: 10
                 height: 10
                 radius: 5
-                color: Style.colors.accent
+                color: root.accentColor
 
                 SequentialAnimation on scale {
-                    running: root.running && root.visible
+                    running: root.panelAnimating
                     loops: Animation.Infinite
 
                     NumberAnimation {
@@ -222,7 +303,7 @@ Rectangle {
                 }
 
                 SequentialAnimation on opacity {
-                    running: root.running && root.visible
+                    running: root.panelAnimating
                     loops: Animation.Infinite
 
                     NumberAnimation {
@@ -247,8 +328,8 @@ Rectangle {
             Text {
                 id: messageText
                 text: "Loading"
-                font.family: Style.fontTypes.roboto
-                font.pixelSize: 13
+                font.family: Style.fontTypes.inter
+                font.pixelSize: Style.appFont.h3Pt
                 font.weight: 400
                 color: Style.colors.mutedText
             }
@@ -261,12 +342,12 @@ Rectangle {
                     model: 3
                     delegate: Text {
                         text: "."
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 13
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.h3Pt
                         color: Style.colors.mutedText
 
                         SequentialAnimation on opacity {
-                            running: root.running && root.visible
+                            running: root.panelAnimating
                             loops: Animation.Infinite
 
                             PauseAnimation  {

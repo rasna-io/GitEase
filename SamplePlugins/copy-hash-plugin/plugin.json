@@ -1,0 +1,10 @@
+{
+  "id": "com.gitease.copy-hash",
+  "name": "Copy Hash",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["contextmenu"],
+  "author": "GitEase",
+  "description": "Adds Copy Hash options to the commit graph right-click menu.",
+  "cppEntry": "lib/copy-hash-plugin"
+}

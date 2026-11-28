@@ -22,6 +22,8 @@ RowLayout {
 
     property     string            buttonTitle: "Click Me"
 
+    property     real              buttonWidth: 0
+
 
     /* Signals
      * ****************************************************************************************/
@@ -31,26 +33,37 @@ RowLayout {
 
     /* Children
      * ****************************************************************************************/
+    spacing: 16
+
     ColumnLayout {
         Layout.fillWidth: true
+        Layout.preferredWidth: 0
+        Layout.alignment: Qt.AlignTop
 
         Text {
             Layout.fillWidth: true
             text: root.title
-            font.pointSize: Style.appFont.h4Pt
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.mediumPt
+            font.weight: Font.DemiBold
             color: Style.colors.foreground
+            wrapMode: Text.WordWrap
         }
 
         Text {
             Layout.fillWidth: true
             text: root.description
-            font.pointSize: Style.appFont.secondaryPt
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.smallPt
             color: Style.colors.mutedText
+            wrapMode: Text.WordWrap
         }
     }
 
     Button {
         id: btn
+        Layout.alignment: Qt.AlignTop
+        Layout.preferredWidth: root.buttonWidth > 0 ? root.buttonWidth : implicitWidth
         flat: true
         text: root.buttonTitle
         enabled: root.enabled
@@ -69,19 +82,20 @@ RowLayout {
         contentItem: RowLayout {
             spacing: 6
 
-            BusyIndicator {
+            BusyWaiter {
+                compact: true
                 visible: root.busy
                 running: root.busy
                 implicitWidth: 18
                 implicitHeight: 18
-                Material.accent: "#ffffff"
+                accentColor: Style.colors.onAccentText
             }
 
             Text {
                 text: root.buttonTitle
                 font: btn.font
                 color: btn.hovered && btn.enabled
-                       ? "#ffffff" : Style.colors.foreground
+                       ? Style.colors.onAccentText : Style.colors.foreground
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true

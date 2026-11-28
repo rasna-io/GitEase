@@ -29,13 +29,15 @@ Window {
      * ****************************************************************************************/
     property int contentHeight: 100
 
-    width: 320
-    height: contentHeight    
+    width: 322
+    height: contentHeight
     
     flags: Qt.ToolTip | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint
     color: "transparent"
     visible: false
     
+    readonly property var fadeTarget: Style.windowOpacitySupported ? root : root.contentItem
+
     /* Signals
      * ****************************************************************************************/
     signal closeRequested()
@@ -184,10 +186,6 @@ Window {
 
             onHeightChanged: {
                 root.contentHeight = height
-                if (root.visible) {
-                    root.positionWindow()
-                    root.heightChanged()
-                }
             }
         }
 
@@ -215,7 +213,7 @@ Window {
      * ****************************************************************************************/
     NumberAnimation {
         id: fadeInAnimation
-        target: root
+        target: root.fadeTarget
         property: "opacity"
         from: 0
         to: 1
@@ -225,7 +223,7 @@ Window {
 
     NumberAnimation {
         id: fadeOutAnimation
-        target: root
+        target: root.fadeTarget
         property: "opacity"
         from: 1
         to: 0

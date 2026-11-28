@@ -21,6 +21,7 @@ Button {
     flat: false
     Material.background: Style.colors.accent
     Material.foreground: "white"
+    scale: root.pressed ? 0.97 : root.hovered ? 1.015 : 1.0
 
     text: busy ? (Math.round(progress) + " %") : idleText
 
@@ -34,7 +35,7 @@ Button {
         Rectangle {
             anchors.fill: parent
             visible: root.busy
-            color: "#CCCCCC"
+            color: Style.colors.progressOverlay
             radius: 3
 
             Rectangle {
@@ -49,5 +50,12 @@ Button {
         }
 
         Behavior on color { ColorAnimation { duration: 150 } }
+    }
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: 120
+            easing.type: Easing.OutCubic
+        }
     }
 }

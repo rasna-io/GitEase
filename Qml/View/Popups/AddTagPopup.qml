@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls.Material
 
 import GitEase
 import GitEase_Style
@@ -10,186 +9,198 @@ import GitEase_Style_Impl
 /*! ***********************************************************************************************
  * AddTagPopup
  * ************************************************************************************************/
-IPopup {
+PopupDialog {
     id: root
 
     /* Property Declarations */
     property TagController tagController: null
     property NotificationController notificationController: null
+    property IdentityGuard identityGuard: null
     property string targetHash: ""
+    property string targetLabel: ""
     property bool pushAfterCreate: true
+    property bool isAnnotated: true
+
+    property RemoteOperationsSession remoteOperationsSession: typeof uiSession !== "undefined" && uiSession
+                                                              ? uiSession.remoteOperationsSession : null
+
+    readonly property string pushRemote: root.remoteOperationsSession && !root.remoteOperationsSession.alwaysAskRemote
+                                         ? (root.remoteOperationsSession.target?.pushRemote ?? "")
+                                         : ""
 
     readonly property bool isNameValid: nameInput.text.trim().length > 0
-    readonly property bool canAccept: isNameValid
+    readonly property bool isMessageValid: !root.isAnnotated || messageInput.text.trim().length > 0
+    readonly property bool canAccept: isNameValid && isMessageValid
 
-    /* Signals */
+    readonly property var versionSuggestions: ["v1.0.1", "v1.1.0", "v2.0.0"]
+
+    /* Signals
+    * ****************************************************************************************/
     signal tagCreatedSuccessfully()
 
-    /* Object Properties */
-    width: 360
-    height: 340
-    padding: 12
+    /* Object Properties
+    * ****************************************************************************************/
+    title: "Create Tag"
+    iconText: Style.icons.tag
+    initialFocusItem: nameInput
 
-    contentItem: Rectangle {
-        color: Style.colors.primaryBackground
-        radius: 12
-        clip: true
-        border.color: Style.colors.accent
-        border.width: 1
+    // Reset state on close
+    onAboutToHide: {
+        nameInput.text = "";
+        messageInput.text = "";
+        targetHash = "";
+        targetLabel = "";
+        pushAfterCreate = true;
+        isAnnotated = true;
+    }
 
-        ColumnLayout {
-            spacing: 16
-            anchors.fill: parent
-            anchors.margins: 24
+    /* Children
+    * ****************************************************************************************/
+    // TAG name
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
 
-            Text {
-                text: "Create New Tag"
-                color: Style.colors.foreground
-                font.family: Style.fontTypes.roboto
-                font.bold: true
-                font.pixelSize: 18
-                Layout.alignment: Qt.AlignLeft
+        Text {
+            text: "TAG NAME"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        TextField {
+            id: nameInput
+            placeholderText: "v1.0.0"
+            Layout.fillWidth: true
+            selectByMouse: true
+            font.family: Style.fontTypes.jetBrainsMono
+            font.pixelSize: Style.appFont.defaultPt
+            color: Style.colors.popupInputText
+            leftPadding: 10
+            rightPadding: 10
+            topPadding: 7
+            bottomPadding: 7
+            Layout.bottomMargin: 6
+
+            background: Rectangle {
+                implicitHeight: 26
+                color: Style.colors.popupInputBackground
+                radius: 5
+                border.color: nameInput.activeFocus ? Style.colors.popupInputBorderFocus
+                                                    : Style.colors.popupInputBorder
+                border.width: 1
             }
+        }
 
-            ColumnLayout {
-                spacing: 12
-                Layout.fillWidth: true
+        RowLayout {
+            spacing: 5
+            Layout.fillWidth: true
 
-                // Tag Name Input
-                TextField {
-                    id: nameInput
-                    placeholderText: "Tag Name (e.g. v1.0)"
-                    Layout.fillWidth: true
-                    selectByMouse: true
-                    focus: true
+            Repeater {
+                model: root.versionSuggestions
 
-                    onAccepted: if(root.canAccept) actionBtn.clicked()
-
-                    background: Rectangle {
-                        implicitHeight: 40
-                        color: Style.colors.secondaryBackground
-                        radius: 5
-                        border.color: nameInput.activeFocus ? Style.colors.accent : "transparent"
-                    }
-                }
-
-                // Tag Message Input
-                TextField {
-                    id: messageInput
-                    placeholderText: "Message (Annotated Tag - Optional)"
-                    Layout.fillWidth: true
-                    selectByMouse: true
-                    onAccepted: if(root.canAccept) actionBtn.clicked()
-
-                    background: Rectangle {
-                        implicitHeight: 40
-                        color: Style.colors.secondaryBackground
-                        radius: 5
-                        border.color: messageInput.activeFocus ? Style.colors.accent : "transparent"
-                    }
-                }
-            }
-
-            // Target Info (Visual hint of what we are tagging)
-            Text {
-                text: root.targetHash !== "" ? "Target: " + root.targetHash.substring(0, 8) : "Target: HEAD"
-                color: "#949494"
-                font.pixelSize: 11
-                Layout.fillWidth: true
-            }
-
-            CheckBox {
-                id: pushCheckBox
-                text: "Push to remote (origin)"
-                checked: root.pushAfterCreate
-                Layout.fillWidth: true
-                implicitHeight: 32
-                spacing: 1
-
-                indicator: Rectangle {
-                    implicitWidth: 20
-                    implicitHeight: 20
-                    y: parent.height / 2 - height / 2
-                    radius: 6
-                    color: pushCheckBox.checked ? Style.colors.accent : Style.colors.secondaryBackground
-                    border.color: pushCheckBox.checked ? Style.colors.accent : Qt.lighter(Style.colors.secondaryBackground, 1.5)
+                Rectangle {
+                    id: chip
+                    required property string modelData
+                    radius: 4
+                    color: Style.colors.popupChipBackground
+                    border.color: Style.colors.popupChipBorder
                     border.width: 1
+                    implicitWidth: chipText.implicitWidth + 12
+                    implicitHeight: 22
 
                     Text {
-                        text: "\uf00c"
-                        font.family: Style.fontTypes.font6ProSolid
-                        font.pixelSize: 12
-                        color: "white"
+                        id: chipText
                         anchors.centerIn: parent
-                        visible: pushCheckBox.checked
+                        text: chip.modelData
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.captionPt
+                        color: Style.colors.popupChipText
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: nameInput.text = chip.modelData
                     }
                 }
-
-                contentItem: Text {
-                    text: pushCheckBox.text
-                    font: pushCheckBox.font
-                    color: Style.colors.foreground
-                    leftPadding: pushCheckBox.indicator.width + pushCheckBox.spacing
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                onCheckedChanged: root.pushAfterCreate = checked
             }
+        }
+    }
 
-            RowLayout {
-                spacing: 12
-                Layout.fillWidth: true
+    // Tag Type section
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
 
-                Button {
-                    text: "Cancel"
-                    Layout.preferredWidth: 100
-                    onClicked: root.close()
+        Text {
+            text: "TYPE"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
 
-                    background: Rectangle {
-                        implicitHeight: 36
-                        color: "transparent"
-                        border.color: Style.colors.accent
-                        border.width: 1
-                        radius: 6
-                        opacity: parent.hovered ? 1.0 : 0.7
-                    }
-                }
+        ColumnLayout {
+            spacing: 6
+            Layout.fillWidth: true
 
-                Button {
-                    id: actionBtn
-                    text: "Create Tag"
+            Repeater {
+                model: [
+                    { label: "Annotated tag",       hint: "(recommended — includes message)",   value: true },
+                    { label: "Lightweight tag",     hint: "",                                   value: false }
+                ]
+
+                RowLayout {
+                    id: typeOption
+                    required property var modelData
+                    readonly property bool checked: root.isAnnotated === modelData.value
                     Layout.fillWidth: true
-                    enabled: root.canAccept
+                    spacing: 8
 
-                    background: Rectangle {
-                        implicitHeight: 36
-                        color: actionBtn.enabled ? (actionBtn.hovered ? Style.colors.accentHover : Style.colors.accent)
-                                                 : Style.colors.disabledButton
-                        radius: 6
+                    Rectangle {
+                        width: 16
+                        height: 16
+                        radius: 8
+                        color: typeOption.checked ? Style.colors.popupRadioBorderChecked : "transparent"
+                        border.width: 1
+                        border.color: typeOption.checked ? Style.colors.popupRadioBorderChecked
+                                                         : Style.colors.popupRadioBorder
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 8
+                            height: 8
+                            radius: 4
+                            color: Style.colors.popupRadioDot
+                            visible: typeOption.checked
+                        }
                     }
 
-                    onClicked: {
-                        let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
-                        let notif = root.notificationController || (typeof uiSession !== "undefined" ? uiSession.notifications : null);
+                    // Label
+                    Text {
+                        text: modelData.label
+                        color: Style.colors.popupCheckboxLabelText
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.defaultPt
+                    }
 
-                        if (!ctrl) return;
+                    // Hint
+                    Text {
+                        text: modelData.hint
+                        color: Style.colors.popupCheckboxLabelText
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.smallPt
+                        visible: modelData.hint.length > 0
+                    }
 
-                        let tagName = nameInput.text.trim();
-                        let commitToTag = root.targetHash === "" ? "HEAD" : root.targetHash;
+                    HoverHandler {
+                        cursorShape: Qt.PointingHandCursor
+                    }
 
-                        let res = ctrl.create(tagName, commitToTag, messageInput.text.trim());
-
-                        if (res && res.success) {
-                            if (root.pushAfterCreate) {
-                                if (notif) notif.info("Pushing tag to GitHub...", "Tag", 1500);
-
-                                ctrl.pushTag(tagName);
-                            }
-
-                            root.tagCreatedSuccessfully();
-                            root.close();
-                        } else {
-                            if (notif) notif.error(res.errorMessage || "Failed to create tag", "Tag Error", 5000);
+                    TapHandler {
+                        onTapped: {
+                            root.isAnnotated = modelData.value
                         }
                     }
                 }
@@ -197,15 +208,217 @@ IPopup {
         }
     }
 
+    // Tag Message
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
 
-    // Reset state on close
-    onAboutToHide: {
-        nameInput.text = "";
-        messageInput.text = "";
-        targetHash = "";
-        pushAfterCreate = true;
+        Text {
+            text: "MESSAGE"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        TextField {
+            id: messageInput
+            placeholderText: "Release v1.0.0"
+            Layout.fillWidth: true
+            selectByMouse: true
+            enabled: root.isAnnotated
+            opacity: root.isAnnotated ? 1.0 : 0.5
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+            color: Style.colors.popupInputText
+            leftPadding: 10
+            rightPadding: 10
+            topPadding: 7
+            bottomPadding: 7
+
+            background: Rectangle {
+                implicitHeight: 26
+                color: Style.colors.popupInputBackground
+                radius: 5
+                border.color: messageInput.activeFocus ? Style.colors.popupInputBorderFocus
+                                                        : Style.colors.popupInputBorder
+                border.width: 1
+            }
+        }
     }
 
-    // Auto-focus logic when popup opens
-    onOpened: nameInput.forceActiveFocus()
+    // Target Commit
+    ColumnLayout {
+        spacing: root.elementSpacing
+        Layout.fillWidth: true
+        visible: false
+        // TODO: Implement commit picker to change the target commit.
+        //       Currently the popup receives targetHash from the caller;
+        //       a future dialog could let the user browse commits and set it.
+
+        Text {
+            text: "TARGET COMMIT"
+            color: Style.colors.popupSectionLabel
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 26
+            radius: 5
+            color: Style.colors.popupInputBackground
+            border.color: Style.colors.popupInputBorder
+            border.width: 1
+
+            RowLayout {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 8
+
+                Text {
+                    text: Style.icons.tag
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: Style.appFont.smallPt
+                    color: Style.colors.mutedText
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    text: root.targetHash !== ""
+                          ? (
+                                root.targetLabel !== ""
+                                ? root.targetHash.substring(0, 8) + " — " + root.targetLabel
+                                : root.targetHash.substring(0, 8)
+                            )
+                          : (
+                                "HEAD" + (root.targetLabel !== "" ? " — " + root.targetLabel : "")
+                            )
+                    color: Style.colors.popupInputText
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.defaultPt
+                }
+
+                HoverHandler {
+                    cursorShape: Qt.PointingHandCursor
+                }
+                // TODO: open commit picker to change target (add a TapHandler here)
+            }
+        }
+    }
+
+    // Push checkbox
+    RowLayout {
+        id: pushCheckBox
+        readonly property bool checked: root.pushAfterCreate
+
+        spacing: 8
+        Layout.fillWidth: true
+
+        Rectangle {
+            width: 16
+            height: 16
+            radius: 3
+            color: pushCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked : "transparent"
+            border.color: pushCheckBox.checked ? Style.colors.popupCheckboxBackgroundChecked
+                                                    : Style.colors.popupCheckboxBorder
+            border.width: 1
+
+            Text {
+                anchors.centerIn: parent
+                text: Style.icons.check
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
+                color: Style.colors.popupCheckboxCheckmark
+                font.pixelSize: Style.appFont.smallPt
+                visible: pushCheckBox.checked
+            }
+        }
+
+        Text {
+            text: root.pushRemote !== "" ? "Push to " + root.pushRemote + " after creating"
+                                         : "Push to a remote after creating"
+            color: Style.colors.popupCheckboxLabelText
+            font.family: Style.fontTypes.inter
+            font.pixelSize: Style.appFont.defaultPt
+        }
+
+        HoverHandler {
+            cursorShape: Qt.PointingHandCursor
+        }
+
+        TapHandler {
+            onTapped: {
+                root.pushAfterCreate = !root.pushAfterCreate
+            }
+        }
+    }
+
+    CommandPreview {
+        Layout.fillWidth: true
+
+        placeholder: qsTr("Name the tag to see the command")
+        command: root.previewCommand()
+    }
+
+    actions: [
+        PopupButton {
+            tone: PopupButton.Primary
+            text: "Create Tag"
+            enabled: root.canAccept
+            onClicked: root.createTag()
+        }
+    ]
+
+    function previewCommand() {
+        let tagName = nameInput.text.trim()
+        if (tagName === "")
+            return ""
+
+        let command = GitCommandText.createTag(tagName, root.isAnnotated ? messageInput.text.trim() : "")
+
+        if (root.pushAfterCreate && root.pushRemote !== "")
+            command += " && " + GitCommandText.pushTag(root.pushRemote, tagName)
+
+        return command
+    }
+
+    function createTag(){
+        let ctrl = root.tagController || (typeof uiSession !== "undefined" ? uiSession.tagController : null);
+        let notif = root.notificationController || (typeof uiSession !== "undefined" ? uiSession.notifications : null);
+
+        if (!ctrl) return;
+
+        let tagName = nameInput.text.trim();
+        let commitToTag = root.targetHash === "" ? "HEAD" : root.targetHash;
+        let tagMessage = root.isAnnotated ? messageInput.text.trim() : "";
+
+        let res = ctrl.create(tagName, commitToTag, tagMessage);
+
+        if (root.identityGuard.handle(res, "tag", root.createTag))
+            return;
+
+        if (res && res.success) {
+            if (root.pushAfterCreate && root.remoteOperationsSession) {
+                root.remoteOperationsSession.pushTag(tagName, function(pushResult, remote) {
+                    if (!notif)
+                        return
+
+                    if (pushResult.success)
+                        notif.success("Tag created and pushed to " + remote, "Success", 3000);
+                    else
+                        notif.warning("Tag created locally but failed to push to " + remote + ": " + pushResult.errorMessage,
+                                      "Sync Warning", 5000);
+                });
+            }
+
+            root.tagCreatedSuccessfully();
+            root.close();
+        } else {
+            if (notif) notif.error(res.errorMessage || "Failed to create tag", "Tag Error", 5000);
+        }
+    }
 }

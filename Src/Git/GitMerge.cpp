@@ -1,4 +1,5 @@
 #include "GitMerge.h"
+#include "GitCommandText.h"
 #include <git2.h>
 #include <QDebug>
 
@@ -11,7 +12,7 @@ GitMerge::GitMerge(QObject* parent)
 
 GitResult GitMerge::mergeBranchIntoCurrent(const QString& sourceBranch, bool noFF)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository is not open.");
 
     if (sourceBranch.trimmed().isEmpty())
@@ -20,7 +21,7 @@ GitResult GitMerge::mergeBranchIntoCurrent(const QString& sourceBranch, bool noF
     // 1. Look up source branch reference (local only, as in original)
     git_reference* sourceRef = nullptr;
     if (git_branch_lookup(&sourceRef,
-                          m_currentRepo->repo,
+                          activeRepo(),
                           sourceBranch.toUtf8().constData(),
                           GIT_BRANCH_LOCAL) != 0) {
         return GitResult(false, QVariant(), QString("Source branch '%1' not found.").arg(sourceBranch));
@@ -33,7 +34,7 @@ GitResult GitMerge::mergeBranchIntoCurrent(const QString& sourceBranch, bool noF
     }
 
     git_reference* headRef = nullptr;
-    if (git_repository_head(&headRef, m_currentRepo->repo) != GIT_OK) {
+    if (git_repository_head(&headRef, activeRepo()) != GIT_OK) {
         git_commit_free(sourceCommit);
         git_reference_free(sourceRef);
         return GitResult(false, QVariant(), "Failed to get HEAD reference.");
@@ -54,11 +55,29 @@ GitResult GitMerge::mergeBranchIntoCurrent(const QString& sourceBranch, bool noF
     git_reference_free(headRef);
     git_reference_free(sourceRef);
 
-    if (result.success()) {
-        QString cmd = noFF
-            ? QString("git merge --no-ff %1").arg(quoteCommandArg(sourceBranch))
-            : QString("git merge %1").arg(quoteCommandArg(sourceBranch));
+    const QString cmd = noFF
+        ? QString("git merge --no-ff %1").arg(quoteCommandArg(sourceBranch))
+        : QString("git merge %1").arg(quoteCommandArg(sourceBranch));
+
+    // A merge that stops on conflicts has still written to the index and the working tree.
+    if (!result.success() && m_mergeInProgress)
         emitGitCommand(cmd);
+
+    if (result.success()) {
+        emitGitCommand(cmd);
+
+        // Rule plugins may ask for the merged branch to be cleaned up (auto-delete after merge).
+        ActionContext postMerge;
+        postMerge.type = ActionType::PostMerge;
+        postMerge.branchName = sourceBranch;
+        GitResult rulesResult = runRuleCheck(postMerge);
+
+        const QVariantMap ruleData = rulesResult.data().toMap();
+        if (ruleData.value("autoDeleteSourceBranch").toBool()) {
+            QVariantMap data = result.data().toMap();
+            data["autoDeleteSourceBranch"] = true;
+            return GitResult(true, data, result.errorMessage());
+        }
     }
 
     return result;
@@ -70,14 +89,14 @@ GitResult GitMerge::analyzeAndPerformMerge(git_commit* targetCommit,
                                            bool noFF)
 {
     git_annotated_commit* annotated = nullptr;
-    if (git_annotated_commit_from_ref(&annotated, m_currentRepo->repo, sourceRef) != GIT_OK)
+    if (git_annotated_commit_from_ref(&annotated, activeRepo(), sourceRef) != GIT_OK)
         return GitResult(false, QVariant(), "Failed to create annotated commit for analysis.");
 
     const git_annotated_commit* heads[] = { annotated };
 
     git_merge_analysis_t analysis = GIT_MERGE_ANALYSIS_NONE;
     git_merge_preference_t preference = GIT_MERGE_PREFERENCE_NONE;
-    int error = git_merge_analysis(&analysis, &preference, m_currentRepo->repo, heads, 1);
+    int error = git_merge_analysis(&analysis, &preference, activeRepo(), heads, 1);
 
     if (error != GIT_OK) {
         git_annotated_commit_free(annotated);
@@ -94,7 +113,12 @@ GitResult GitMerge::analyzeAndPerformMerge(git_commit* targetCommit,
     }
     else if ((analysis & GIT_MERGE_ANALYSIS_FASTFORWARD) ||
              (analysis & GIT_MERGE_ANALYSIS_NORMAL)) {
-        result = performNormalMerge(sourceRef);
+
+        QString identityReason;
+        if (hasIdentity(activeRepo(), &identityReason))
+            result = performNormalMerge(sourceRef);
+        else
+            result = identityMissingResult(identityReason);
     }
     else {
         result = GitResult(false, QVariant(), "Unsupported merge scenario.");
@@ -108,12 +132,12 @@ GitResult GitMerge::performFastForward(git_commit* sourceCommit)
 {
     git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
     opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
-    int error = git_checkout_tree(m_currentRepo->repo, (git_object*)sourceCommit, &opts);
+    int error = git_checkout_tree(activeRepo(), (git_object*)sourceCommit, &opts);
     if (error != GIT_OK)
         return GitResult(false, QVariant(), "Checkout failed during fast-forward.");
 
     git_reference* headRef = nullptr;
-    if (git_repository_head(&headRef, m_currentRepo->repo) != GIT_OK)
+    if (git_repository_head(&headRef, activeRepo()) != GIT_OK)
         return GitResult(false, QVariant(), "Failed to get HEAD.");
 
     git_reference* newRef = nullptr;
@@ -130,7 +154,7 @@ GitResult GitMerge::performFastForward(git_commit* sourceCommit)
 GitResult GitMerge::performNormalMerge(git_reference* sourceRef)
 {
     git_annotated_commit* annotated = nullptr;
-    if (git_annotated_commit_from_ref(&annotated, m_currentRepo->repo, sourceRef) != GIT_OK)
+    if (git_annotated_commit_from_ref(&annotated, activeRepo(), sourceRef) != GIT_OK)
         return GitResult(false, QVariant(), "Failed to create annotated commit for merge.");
 
     const git_annotated_commit* heads[] = { annotated };
@@ -139,7 +163,7 @@ GitResult GitMerge::performNormalMerge(git_reference* sourceRef)
     git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
     checkoutOpts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_ALLOW_CONFLICTS;
 
-    int mergeResult = git_merge(m_currentRepo->repo, heads, 1, &mergeOpts, &checkoutOpts);
+    int mergeResult = git_merge(activeRepo(), heads, 1, &mergeOpts, &checkoutOpts);
 
     // Check if merge started (even with conflicts)
     if (mergeResult != GIT_OK && mergeResult != GIT_ECONFLICT) {
@@ -149,7 +173,7 @@ GitResult GitMerge::performNormalMerge(git_reference* sourceRef)
     }
 
     git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK) {
+    if (git_repository_index(&index, activeRepo()) != GIT_OK) {
         git_annotated_commit_free(annotated);
         return GitResult(false, QVariant(), "Failed to read index after merge.");
     }
@@ -190,7 +214,7 @@ void GitMerge::storeMergeMetadata(git_reference* sourceRef)
 
     // Store target commit SHA (current HEAD before merge)
     git_reference* headRef = nullptr;
-    if (git_repository_head(&headRef, m_currentRepo->repo) == GIT_OK) {
+    if (git_repository_head(&headRef, activeRepo()) == GIT_OK) {
         const git_oid* targetOid = git_reference_target(headRef);
         char targetHash[GIT_OID_HEXSZ + 1] = {0};
         git_oid_tostr(targetHash, sizeof(targetHash), targetOid);
@@ -217,7 +241,7 @@ GitResult GitMerge::finalizeAutomaticMerge(git_reference* sourceRef,
     git_commit* sourceCommit = nullptr;
 
     git_reference* headRef = nullptr;
-    if (git_repository_head(&headRef, m_currentRepo->repo) != GIT_OK) {
+    if (git_repository_head(&headRef, activeRepo()) != GIT_OK) {
         return GitResult(false, QVariant(), "Failed to get HEAD.");
     }
     if (git_reference_peel((git_object**)&targetCommit, headRef, GIT_OBJECT_COMMIT) != GIT_OK) {
@@ -227,7 +251,7 @@ GitResult GitMerge::finalizeAutomaticMerge(git_reference* sourceRef,
     git_reference_free(headRef);
 
     // Get source commit from annotated commit
-    if (git_commit_lookup(&sourceCommit, m_currentRepo->repo,
+    if (git_commit_lookup(&sourceCommit, activeRepo(),
                           git_annotated_commit_id(annotated)) != GIT_OK) {
         git_commit_free(targetCommit);
         return GitResult(false, QVariant(), "Failed to lookup source commit.");
@@ -256,7 +280,7 @@ GitResult GitMerge::continueOp(const QString& commitMessage)
     if (!m_mergeInProgress)
         return GitResult(false, QVariant(), "No merge is currently in progress.");
 
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository is not open.");
 
     if (hasMergeConflicts())
@@ -264,6 +288,10 @@ GitResult GitMerge::continueOp(const QString& commitMessage)
 
     if (m_pendingSourceHash.isEmpty() || m_pendingTargetHash.isEmpty())
         return GitResult(false, QVariant(), "Merge metadata is missing.");
+
+    QString identityReason;
+    if (!hasIdentity(activeRepo(), &identityReason))
+        return identityMissingResult(identityReason);
 
     git_oid sourceOid, targetOid;
     if (git_oid_fromstr(&sourceOid, m_pendingSourceHash.toUtf8().constData()) != GIT_OK ||
@@ -273,8 +301,8 @@ GitResult GitMerge::continueOp(const QString& commitMessage)
 
     git_commit* sourceCommit = nullptr;
     git_commit* targetCommit = nullptr;
-    if (git_commit_lookup(&sourceCommit, m_currentRepo->repo, &sourceOid) != GIT_OK ||
-        git_commit_lookup(&targetCommit, m_currentRepo->repo, &targetOid) != GIT_OK) {
+    if (git_commit_lookup(&sourceCommit, activeRepo(), &sourceOid) != GIT_OK ||
+        git_commit_lookup(&targetCommit, activeRepo(), &targetOid) != GIT_OK) {
         git_commit_free(sourceCommit);
         git_commit_free(targetCommit);
         return GitResult(false, QVariant(), "Could not look up one of the parent commits.");
@@ -282,7 +310,7 @@ GitResult GitMerge::continueOp(const QString& commitMessage)
 
     // Get the current index (which now contains the resolved merge)
     git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK) {
+    if (git_repository_index(&index, activeRepo()) != GIT_OK) {
         git_commit_free(sourceCommit);
         git_commit_free(targetCommit);
         return GitResult(false, QVariant(), "Failed to open repository index.");
@@ -300,7 +328,7 @@ GitResult GitMerge::continueOp(const QString& commitMessage)
 
     if (result.success()) {
         resetMergeState();
-        emitGitCommand("git merge --continue");
+        emitGitCommand(GitCommandText::mergeContinue());
     }
 
     return result;
@@ -317,14 +345,14 @@ GitResult GitMerge::createMergeCommit(const QString& message,
     }
 
     git_tree* tree = nullptr;
-    if (git_tree_lookup(&tree, m_currentRepo->repo, &treeOid) != GIT_OK) {
+    if (git_tree_lookup(&tree, activeRepo(), &treeOid) != GIT_OK) {
         return GitResult(false, QVariant(), "Failed to lookup merge tree.");
     }
 
     git_signature* sig = createSignature();
     if (!sig) {
         git_tree_free(tree);
-        return GitResult(false, QVariant(), "Failed to create commit signature.");
+        return identityMissingResult();
     }
 
     const git_commit* parents[] = { targetCommit, sourceCommit };
@@ -332,7 +360,7 @@ GitResult GitMerge::createMergeCommit(const QString& message,
     git_oid commitOid;
     int error = git_commit_create(
         &commitOid,
-        m_currentRepo->repo,
+        activeRepo(),
         "HEAD",
         sig,
         sig,
@@ -349,18 +377,18 @@ GitResult GitMerge::createMergeCommit(const QString& message,
         return GitResult(false, QVariant(), "Failed to create merge commit.");
     }
 
-    git_repository_state_cleanup(m_currentRepo->repo);
+    git_repository_state_cleanup(activeRepo());
 
     return GitResult(true, QVariant(), "Merge commit created successfully.");
 }
 
 bool GitMerge::hasMergeConflicts() const
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return false;
 
     git_index* index = nullptr;
-    if (git_repository_index(&index, m_currentRepo->repo) != GIT_OK)
+    if (git_repository_index(&index, activeRepo()) != GIT_OK)
         return false;
 
     bool conflicts = (git_index_has_conflicts(index) == 1);
@@ -376,34 +404,30 @@ bool GitMerge::isMergeInProgress() const
     }
 
     // Fallback: Check Git's repository state
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return false;
     }
 
     // Check if Git thinks we're in a merge
-    int state = git_repository_state(m_currentRepo->repo);
+    int state = git_repository_state(activeRepo());
     return (state == GIT_REPOSITORY_STATE_MERGE);
 }
 
 git_signature* GitMerge::createSignature() const
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return nullptr;
 
-    git_signature* sig = nullptr;
-
-    if (git_signature_default(&sig, m_currentRepo->repo) != GIT_OK)
-        git_signature_now(&sig, "Unknown", "unknown@example.com");
-    return sig;
+    return defaultSignature(activeRepo());
 }
 
 QString GitMerge::currentBranchName() const
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return QString();
 
     git_reference* head = nullptr;
-    if (git_repository_head(&head, m_currentRepo->repo) != GIT_OK) {
+    if (git_repository_head(&head, activeRepo()) != GIT_OK) {
         return QString();
     }
 
@@ -427,15 +451,159 @@ void GitMerge::resetMergeState()
     emit mergeStateChanged();  // CRITICAL: Add this line
 }
 
+namespace {
+
+struct MergeHeads
+{
+    QList<git_oid> oids;
+};
+
+int collectMergeHead(const git_oid* oid, void* payload)
+{
+    static_cast<MergeHeads*>(payload)->oids.append(*oid);
+    return 0;
+}
+
+void addPath(QList<QByteArray>& paths, const char* path)
+{
+    if (path && *path && !paths.contains(QByteArray(path)))
+        paths.append(QByteArray(path));
+}
+
+} // namespace
+
+/*! Like `git reset --merge`, which `git merge --abort` runs: the paths the merge wrote are the ones
+ *  still conflicted plus everything the merged-in side changed since the merge base. Those go back to
+ *  HEAD in the index and the working tree, and files the merge added are removed. libgit2 refuses to
+ *  merge into paths with local changes, so local changes anywhere else are left alone. */
+GitResult GitMerge::restoreMergedPaths()
+{
+    git_repository* repo = activeRepo();
+
+    git_index* index = nullptr;
+    if (git_repository_index(&index, repo) != GIT_OK)
+        return GitResult(false, QVariant(), "Failed to read the index.");
+    git_index_read(index, 0);
+
+    QList<QByteArray> paths;
+
+    // Conflicted paths, under every name they carry (renames).
+    git_index_conflict_iterator* conflicts = nullptr;
+    if (git_index_conflict_iterator_new(&conflicts, index) == GIT_OK) {
+        const git_index_entry* ancestor = nullptr;
+        const git_index_entry* ours     = nullptr;
+        const git_index_entry* theirs   = nullptr;
+        while (git_index_conflict_next(&ancestor, &ours, &theirs, conflicts) == GIT_OK) {
+            addPath(paths, ancestor ? ancestor->path : nullptr);
+            addPath(paths, ours     ? ours->path     : nullptr);
+            addPath(paths, theirs   ? theirs->path   : nullptr);
+        }
+        git_index_conflict_iterator_free(conflicts);
+    }
+
+    git_oid headOid;
+    git_commit* headCommit = nullptr;
+    if (git_reference_name_to_id(&headOid, repo, "HEAD") != GIT_OK
+        || git_commit_lookup(&headCommit, repo, &headOid) != GIT_OK) {
+        git_index_free(index);
+        return GitResult(false, QVariant(), "Failed to resolve HEAD.");
+    }
+
+    // Everything each merged-in commit changed since its merge base with HEAD. Without rename
+    // detection a rename shows up as its old and its new path, so both are covered.
+    MergeHeads heads;
+    git_repository_mergehead_foreach(repo, collectMergeHead, &heads);
+
+    for (const git_oid& theirOid : heads.oids) {
+        git_commit* theirCommit = nullptr;
+        git_tree*   theirTree   = nullptr;
+        git_commit* baseCommit  = nullptr;
+        git_tree*   baseTree    = nullptr;
+        git_diff*   diff        = nullptr;
+
+        git_oid baseOid;
+        if (git_commit_lookup(&theirCommit, repo, &theirOid) == GIT_OK
+            && git_commit_tree(&theirTree, theirCommit) == GIT_OK) {
+            // No common ancestor: everything on their side counts (diff from the empty tree).
+            if (git_merge_base(&baseOid, repo, &headOid, &theirOid) == GIT_OK
+                && git_commit_lookup(&baseCommit, repo, &baseOid) == GIT_OK)
+                git_commit_tree(&baseTree, baseCommit);
+
+            if (git_diff_tree_to_tree(&diff, repo, baseTree, theirTree, nullptr) == GIT_OK) {
+                for (size_t i = 0; i < git_diff_num_deltas(diff); ++i) {
+                    const git_diff_delta* delta = git_diff_get_delta(diff, i);
+                    addPath(paths, delta->old_file.path);
+                    addPath(paths, delta->new_file.path);
+                }
+            }
+        }
+
+        git_diff_free(diff);
+        git_tree_free(baseTree);
+        git_commit_free(baseCommit);
+        git_tree_free(theirTree);
+        git_commit_free(theirCommit);
+    }
+
+    if (paths.isEmpty()) {
+        git_commit_free(headCommit);
+        git_index_free(index);
+        return GitResult(true);
+    }
+
+    QList<char*> pathPointers;
+    for (QByteArray& path : paths)
+        pathPointers.append(path.data());
+
+    git_strarray pathspec;
+    pathspec.strings = pathPointers.data();
+    pathspec.count   = size_t(pathPointers.size());
+
+    // Index: drop the conflict entries, then take each path from HEAD (or drop it if HEAD has none).
+    for (const QByteArray& path : paths)
+        git_index_conflict_remove(index, path.constData());
+
+    int error = git_index_write(index);
+    if (error == GIT_OK)
+        error = git_reset_default(repo, reinterpret_cast<git_object*>(headCommit), &pathspec);
+
+    // Working tree: the same paths from HEAD. Files only the merge added are untracked by now and
+    // get removed; the exact path list keeps everything else out of reach.
+    if (error == GIT_OK) {
+        git_checkout_options options = GIT_CHECKOUT_OPTIONS_INIT;
+        options.checkout_strategy = GIT_CHECKOUT_FORCE
+                                    | GIT_CHECKOUT_REMOVE_UNTRACKED
+                                    | GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+        options.paths = pathspec;
+        error = git_checkout_head(repo, &options);
+    }
+
+    git_commit_free(headCommit);
+    git_index_free(index);
+
+    if (error != GIT_OK) {
+        return GitResult(false, QVariant(),
+                         QString("Failed to restore the files the merge changed: %1").arg(GitUtils::getLastError()));
+    }
+
+    return GitResult(true);
+}
+
 GitResult GitMerge::abortOp()
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not found.");
 
     if (!isMergeInProgress())
         return GitResult(false, QVariant(), "No merge in progress.");
 
-    int result = git_repository_state_cleanup(m_currentRepo->repo);
+    // Cleaning up the merge state alone leaves the conflicted index entries and the files with
+    // conflict markers behind; undo what the merge wrote first, as `git merge --abort` does.
+    GitResult restoreResult = restoreMergedPaths();
+    if (!restoreResult.success())
+        return restoreResult;
+
+    int result = git_repository_state_cleanup(activeRepo());
 
     if (result != GIT_OK) {
         return GitResult(false, QVariant(),
@@ -443,7 +611,7 @@ GitResult GitMerge::abortOp()
     }
 
     resetMergeState();
-    emitGitCommand("git merge --abort");
+    emitGitCommand(GitCommandText::mergeAbort());
 
     return GitResult(true, QVariant(), "Merge aborted.");
 }

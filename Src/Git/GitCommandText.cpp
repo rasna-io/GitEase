@@ -1,0 +1,390 @@
+#include "GitCommandText.h"
+
+GitCommandText::GitCommandText(QObject *parent)
+    : QObject{parent}
+{}
+
+QString GitCommandText::quote(const QString &argument)
+{
+    if (argument.isEmpty())
+        return argument;
+
+    QString escaped = argument;
+    escaped.replace("\\", "\\\\");
+    escaped.replace("\"", "\\\"");
+    return "\"" + escaped + "\"";
+}
+
+QString GitCommandText::createBranch(const QString &branchName, const QString &startPoint)
+{
+    if (startPoint.isEmpty())
+        return QString("git branch %1").arg(quote(branchName));
+
+    return QString("git branch %1 %2").arg(quote(branchName), quote(startPoint));
+}
+
+QString GitCommandText::createBranchAndCheckout(const QString &branchName, const QString &startPoint)
+{
+    if (startPoint.isEmpty())
+        return QString("git checkout -b %1").arg(quote(branchName));
+
+    return QString("git checkout -b %1 %2").arg(quote(branchName), quote(startPoint));
+}
+
+QString GitCommandText::deleteBranch(const QString &branchName)
+{
+    return QString("git branch -d %1").arg(quote(branchName));
+}
+
+QString GitCommandText::renameBranch(const QString &oldName, const QString &newName)
+{
+    return QString("git branch -m %1 %2").arg(quote(oldName), quote(newName));
+}
+
+QString GitCommandText::checkoutBranch(const QString &branchName)
+{
+    return QString("git checkout %1").arg(quote(branchName));
+}
+
+QString GitCommandText::checkoutCommit(const QString &commitHash)
+{
+    return QString("git checkout --detach %1").arg(quote(commitHash));
+}
+
+QString GitCommandText::createTag(const QString &name, const QString &message, bool force)
+{
+    QString command = "git tag";
+
+    if (force)
+        command += " -f";
+
+    if (!message.isEmpty())
+        command += " -a -m " + quote(message);
+
+    command += " " + quote(name);
+
+    return command;
+}
+
+QString GitCommandText::deleteTag(const QString &name)
+{
+    return QString("git tag -d %1").arg(quote(name));
+}
+
+QString GitCommandText::pushTag(const QString &remoteName, const QString &name)
+{
+    return QString("git push %1 %2").arg(quote(remoteName), quote(name));
+}
+
+QString GitCommandText::pushDeleteTag(const QString &remoteName, const QString &name)
+{
+    return QString("git push %1 --delete %2").arg(quote(remoteName), quote(name));
+}
+
+QString GitCommandText::addRemote(const QString &name, const QString &url)
+{
+    return QString("git remote add %1 %2").arg(quote(name), quote(url));
+}
+
+QString GitCommandText::removeRemote(const QString &name)
+{
+    return QString("git remote remove %1").arg(quote(name));
+}
+
+QString GitCommandText::renameRemote(const QString &oldName, const QString &newName)
+{
+    return QString("git remote rename %1 %2").arg(quote(oldName), quote(newName));
+}
+
+QString GitCommandText::setRemoteUrl(const QString &name, const QString &url)
+{
+    return QString("git remote set-url %1 %2").arg(quote(name), quote(url));
+}
+
+QString GitCommandText::push(const QString &remoteName, const QString &branchName, bool force)
+{
+    return push(remoteName, branchName, branchName, force, false);
+}
+
+QString GitCommandText::push(const QString &remoteName, const QString &localBranch,
+                             const QString &remoteBranch, bool force, bool setUpstream)
+{
+    QString command = "git push";
+
+    if (force)
+        command += " --force";
+
+    if (setUpstream)
+        command += " -u";
+
+    const QString refspec = (remoteBranch.isEmpty() || remoteBranch == localBranch)
+                                ? localBranch
+                                : localBranch + ":" + remoteBranch;
+
+    return command + " " + quote(remoteName) + " " + quote(refspec);
+}
+
+QString GitCommandText::pull(const QString &remoteName, const QString &branchName)
+{
+    return QString("git pull %1 %2").arg(quote(remoteName), quote(branchName));
+}
+
+QString GitCommandText::fetch(const QString &remoteName)
+{
+    if (remoteName.isEmpty())
+        return "git fetch --all";
+
+    return QString("git fetch %1").arg(quote(remoteName));
+}
+
+QString GitCommandText::setUpstream(const QString &localBranch, const QString &remoteName,
+                                    const QString &remoteBranch)
+{
+    return QString("git branch --set-upstream-to=%1 %2").arg(quote(remoteName + "/" + remoteBranch),
+                                                             quote(localBranch));
+}
+
+QString GitCommandText::setDefaultRemote(const QString &remoteName)
+{
+    if (remoteName.isEmpty())
+        return "git config --unset remote.pushDefault";
+
+    return QString("git config remote.pushDefault %1").arg(quote(remoteName));
+}
+
+QString GitCommandText::stashPush(const QString &message, bool keepIndex, bool includeUntracked)
+{
+    QString command = "git stash push";
+
+    if (keepIndex)
+        command += " --keep-index";
+
+    if (includeUntracked)
+        command += " --include-untracked";
+
+    if (!message.trimmed().isEmpty())
+        command += " -m " + quote(message.trimmed());
+
+    return command;
+}
+
+QString GitCommandText::stashPushStaged(const QString &message)
+{
+    QString command = "git stash push --staged";
+
+    if (!message.trimmed().isEmpty())
+        command += " -m " + quote(message.trimmed());
+
+    return command;
+}
+
+//! The closest git command: stashing exactly the unstaged paths (git has no "unstaged only" flag)
+QString GitCommandText::stashPushUnstaged(const QString &message, const QStringList &paths, bool includeUntracked)
+{
+    QString command = "git stash push";
+
+    if (includeUntracked)
+        command += " --include-untracked";
+
+    if (!message.trimmed().isEmpty())
+        command += " -m " + quote(message.trimmed());
+
+    command += " --";
+    for (const QString &path : paths)
+        command += " " + quote(path);
+
+    return command;
+}
+
+QString GitCommandText::stashApply(int index, bool reinstateIndex)
+{
+    QString command = QString("git stash apply stash@{%1}").arg(index);
+
+    if (reinstateIndex)
+        command += " --index";
+
+    return command;
+}
+
+QString GitCommandText::stashPop(int index, bool reinstateIndex)
+{
+    QString command = QString("git stash pop stash@{%1}").arg(index);
+
+    if (reinstateIndex)
+        command += " --index";
+
+    return command;
+}
+
+QString GitCommandText::stashDrop(int index)
+{
+    return QString("git stash drop stash@{%1}").arg(index);
+}
+
+QString GitCommandText::commit(const QString &message, bool amend, bool allowEmpty)
+{
+    QString command = "git commit";
+
+    if (amend)
+        command += " --amend";
+
+    if (allowEmpty)
+        command += " --allow-empty";
+
+    command += " -m " + quote(message.trimmed());
+
+    return command;
+}
+
+QString GitCommandText::merge(const QString &sourceBranch, bool noFF)
+{
+    return noFF ? QString("git merge --no-ff %1").arg(quote(sourceBranch))
+                : QString("git merge %1").arg(quote(sourceBranch));
+}
+
+QString GitCommandText::mergeContinue()
+{
+    return "git merge --continue";
+}
+
+QString GitCommandText::mergeAbort()
+{
+    return "git merge --abort";
+}
+
+QString GitCommandText::rebaseOnto(const QString &upstream)
+{
+    return QString("git rebase %1").arg(quote(upstream));
+}
+
+QString GitCommandText::rebase(const QString &onto, const QString &upstream, const QString &branch,
+                               bool interactive, int skippedCount)
+{
+    QString command = interactive ? "git rebase -i" : "git rebase";
+
+    if (!onto.trimmed().isEmpty())
+        command += " --onto " + quote(onto);
+
+    command += " " + quote(upstream);
+
+    if (!branch.isEmpty())
+        command += " " + quote(branch);
+
+    if (skippedCount > 0)
+        command += QString("  # skipped %1 commit(s)").arg(skippedCount);
+
+    return command;
+}
+
+QString GitCommandText::rebaseContinue()
+{
+    return "git rebase --continue";
+}
+
+QString GitCommandText::rebaseSkip()
+{
+    return "git rebase --skip";
+}
+
+QString GitCommandText::rebaseAbort()
+{
+    return "git rebase --abort";
+}
+
+QString GitCommandText::rebaseQuit()
+{
+    return "git rebase --quit";
+}
+
+QString GitCommandText::cherryPickContinue()
+{
+    return "git cherry-pick --continue";
+}
+
+QString GitCommandText::cherryPickSkip()
+{
+    return "git cherry-pick --skip";
+}
+
+QString GitCommandText::cherryPickAbort()
+{
+    return "git cherry-pick --abort";
+}
+
+QString GitCommandText::reset(const QString &commitHash, int mode)
+{
+    QString command = "git reset";
+
+    switch (mode) {
+    case 0:  command += " --soft";  break;
+    case 1:  command += " --mixed"; break;
+    case 2:  command += " --hard";  break;
+    default: break;
+    }
+
+    // Refs and hashes never need quoting, and the unquoted form is what git users type
+    return command + " " + commitHash;
+}
+
+QString GitCommandText::statusIgnored()
+{
+    return QStringLiteral("git status --short --ignored");
+}
+
+QString GitCommandText::checkIgnore()
+{
+    return QStringLiteral("git check-ignore -v --no-index");
+}
+
+QString GitCommandText::removeFromIndex(const QStringList &paths)
+{
+    QStringList quoted;
+    for (const QString &path : paths)
+        quoted << quote(path);
+
+    return QString("git rm --cached -r -q --ignore-unmatch -- %1").arg(quoted.join(' '));
+}
+
+QString GitCommandText::init(const QString &path)
+{
+    return QString("git init %1").arg(quote(path));
+}
+
+QString GitCommandText::clone(const QString &url, const QString &localPath)
+{
+    return QString("git clone %1 %2").arg(quote(url), quote(localPath));
+}
+
+QString GitCommandText::bundleCreate(const QString &bundlePath, const QString &targetRef, const QString &baseRef)
+{
+    if (baseRef.isEmpty())
+        return QString("git bundle create %1 %2").arg(quote(bundlePath), quote(targetRef));
+
+    return QString("git bundle create %1 %2 ^%3").arg(quote(bundlePath),
+                                                      quote(targetRef),
+                                                      quote(baseRef));
+}
+
+QString GitCommandText::bundleUnbundle(const QString &bundlePath)
+{
+    return QString("git bundle unbundle %1").arg(quote(bundlePath));
+}
+
+QString GitCommandText::setUserIdentity(const QString &name, const QString &email, const QString &levelFlag)
+{
+    if (levelFlag.isEmpty())
+        return QString("git config user.name %1 && git config user.email %2")
+            .arg(quote(name), quote(email));
+
+    return QString("git config %1 user.name %2 && git config %1 user.email %3")
+        .arg(levelFlag, quote(name), quote(email));
+}
+
+QString GitCommandText::unsetUserIdentity(const QString &levelFlag)
+{
+    if (levelFlag.isEmpty())
+        return QString("git config --unset user.name && git config --unset user.email");
+
+    return QString("git config %1 --unset user.name && git config %1 --unset user.email")
+        .arg(levelFlag);
+}

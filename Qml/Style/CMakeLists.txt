@@ -42,6 +42,8 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style
         Style.qml
         AppFontSize.qml
         Colors.qml
+        ModernDarkColors.qml
+        ModernSoftColors.qml
         FontIconSize.qml
         Icons.qml
 )
@@ -56,14 +58,16 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style_Impl
 
     QML_FILES
     impl/RTextIcon.qml
-    impl/RButton.qml
+        impl/AppToolTip.qml
         impl/Button.qml
+        impl/IconButton.qml
         impl/ComboBox.qml
         impl/TabButton.qml
         impl/TabBar.qml
         impl/ToolButton.qml
         impl/Popup.qml
         impl/ScrollBar.qml
+        impl/ScrollView.qml
         impl/TextField.qml
         impl/Dialog.qml
         impl/RoundButton.qml
@@ -72,6 +76,8 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style_Impl
         impl/SpinBox.qml
         impl/Switch.qml
         impl/Calendar.qml
+        impl/TextArea.qml
+        impl/CheckBox.qml
 )
 
 target_link_libraries(${MAIN_TARGET_NAME}_Style PRIVATE

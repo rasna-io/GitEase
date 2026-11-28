@@ -9,7 +9,7 @@ import GitEase_Style
  * FileListRow
  * Generic row for a file list section.
  * - Handles selection click + hover highlight
- * - Shows mode indicator and optional extra right-side content
+ * - Shows a colored status letter badge and optional extra right-side content
  * ************************************************************************************************/
 
 Rectangle {
@@ -20,7 +20,6 @@ Rectangle {
      * ****************************************************************************************/
     required property string text
     property bool selected: false
-    property bool showSeparator: true
 
     // Optional file status (e.g. "M", "A", "D", "R"). Empty = no indicator.
     property real status
@@ -35,32 +34,17 @@ Rectangle {
     /* Object Properties
      * ****************************************************************************************/
     readonly property bool isHovered: hoverHandler.hovered
-    implicitHeight: 24
-    radius: 4
-    color: root.selected ? Qt.darker(Style.colors.surfaceLight, 1.06)
-                    : (isHovered ? Style.colors.surfaceLight : "transparent")
+    implicitHeight: 28
+    color: root.selected ? Style.colors.subtleAzureGlow
+                    : (isHovered ? Style.colors.rowHoverBg : "transparent")
+    scale: rowMouse.pressed ? 0.985 : 1.0
 
-    // Left change indicator color
-    readonly property color indicatorColor: (function () {
-        switch (root.status) {
-            case GitFileStatus.StagedNew:
-                return Qt.darker(Style.colors.addedFile, 1.5)
-            case GitFileStatus.Deleted:
-            case GitFileStatus.StagedDeleted:
-                return Qt.darker(Style.colors.deletededFile, 1.5)
-            case GitFileStatus.Modified:
-            case GitFileStatus.TypeChange:
-            case GitFileStatus.StagedModified:
-                return Qt.darker(Style.colors.modifiediedFile, 1.5)
-            case GitFileStatus.Renamed:
-            case GitFileStatus.StagedRenamed:
-                return Qt.darker(Style.colors.renamedFile, 1.5)
-            case GitFileStatus.Untracked:
-                return Qt.darker(Style.colors.untrackedFile, 1.5)
-            default:
-                return "transparent"
+    Behavior on scale {
+        NumberAnimation {
+            duration: Style.motionFast
+            easing.type: Easing.OutCubic
         }
-    })()
+    }
 
     /* Signals
      * ****************************************************************************************/
@@ -74,37 +58,34 @@ Rectangle {
     }
 
     MouseArea {
+        id: rowMouse
         anchors.fill: parent
-        hoverEnabled: false
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
-    }
-
-    Rectangle {
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        anchors.topMargin: 4
-        anchors.rightMargin: 4
-        anchors.bottomMargin: 4
-        width: 3
-        radius: 50
-        color: root.indicatorColor
     }
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 8
+        anchors.leftMargin: 12
         anchors.rightMargin: 6
-        spacing: 8
+        spacing: 6
+
+        // Status letter badge
+        FileStatusTag {
+            compact: true
+            showBackground: true
+            fileStatus: root.status
+        }
 
         Text {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
 
             text: root.text
-            font.family: Style.fontTypes.roboto
-            font.pixelSize: 12
-            color: Style.colors.secondaryText
+            font.family: Style.fontTypes.jetBrainsMono
+            font.pixelSize: Style.appFont.smallPt
+            color: Style.colors.filePathText
             elide: Text.ElideRight
         }
 
@@ -115,33 +96,10 @@ Rectangle {
             sourceComponent: root.rightAccessory
         }
 
-        Text {
+        FileStatusTag {
             Layout.alignment: Qt.AlignVCenter
-            text: {
-                switch (root.status) {
-                case GitFileStatus.StagedNew:
-                    return "A";
-                case GitFileStatus.Deleted:
-                case GitFileStatus.StagedDeleted:
-                    return "D";
-                case GitFileStatus.Modified:
-                case GitFileStatus.TypeChange:
-                case GitFileStatus.StagedModified:
-                    return "M";
-                case GitFileStatus.Renamed:
-                case GitFileStatus.StagedRenamed:
-                    return "R";
-                case GitFileStatus.Untracked:
-                    return "U";
-                default:
-                    return ""
-                }
-            }
-            visible: text !== ""
-            font.family: Style.fontTypes.roboto
-            font.pixelSize: 11
-            font.bold: true
-            color: root.indicatorColor
+            compact: true
+            fileStatus: root.status
         }
     }
 

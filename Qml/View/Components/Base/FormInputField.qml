@@ -39,9 +39,9 @@ ColumnLayout {
     Text {
         visible: root.label !== ""
         text: root.label
-        font.pixelSize: 14
+        font.pixelSize: Style.appFont.largePt
         color: Style.colors.foreground
-        font.family: Style.fontTypes.roboto
+        font.family: Style.fontTypes.inter
         font.weight: 400
     }
 
@@ -61,6 +61,10 @@ ColumnLayout {
             echoMode: root.echoMode
             icon: root.icon
             error: root.hasError
+            backgroundColor: Style.colors.controlBackground
+            borderColor: Style.colors.controlBorder
+            focusBorderColor: Style.colors.accent
+            iconColor: Style.colors.mutedText
         }
 
         // Button
@@ -75,7 +79,7 @@ ColumnLayout {
             flat: true
             font.pixelSize: field.baseFontSize
             font.weight: 400
-            font.family: Style.fontTypes.roboto
+            font.family: Style.fontTypes.inter
 
             background: Rectangle {
                 implicitWidth: field.baseFontSize * 7.5
@@ -105,8 +109,8 @@ ColumnLayout {
         visible: helperText !== ""
         text: root.helperText
         color: Style.colors.mutedText
-        font.pixelSize: 8
-        font.family: Style.fontTypes.roboto
+        font.pixelSize: Style.appFont.microPt
+        font.family: Style.fontTypes.inter
         font.weight: 100
         font.styleName: "Thin"
     }

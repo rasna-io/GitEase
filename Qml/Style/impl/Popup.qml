@@ -3,6 +3,8 @@ import QtQuick.Templates as T
 import QtQuick.Controls.Material
 import QtQuick.Controls.Material.impl
 
+import GitEase_Style
+
 T.Popup {
     id: control
 
@@ -20,14 +22,14 @@ T.Popup {
 
     enter: Transition {
         // grow_fade_in
-        NumberAnimation { property: "scale"; from: 0.9; to: 1.0; easing.type: Easing.OutQuint; duration: 220 }
-        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.OutCubic; duration: 150 }
+        NumberAnimation { property: "scale"; from: 0.96; to: 1.0; easing.type: Easing.OutCubic; duration: Style.motionMedium }
+        NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; easing.type: Easing.OutCubic; duration: Style.motionFast }
     }
 
     exit: Transition {
         // shrink_fade_out
-        NumberAnimation { property: "scale"; from: 1.0; to: 0.9; easing.type: Easing.OutQuint; duration: 220 }
-        NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.OutCubic; duration: 150 }
+        NumberAnimation { property: "scale"; from: 1.0; to: 0.96; easing.type: Easing.InCubic; duration: Style.motionFast }
+        NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; easing.type: Easing.InCubic; duration: Style.motionFast }
     }
 
     background: Rectangle {
@@ -44,11 +46,11 @@ T.Popup {
 
     T.Overlay.modal: Rectangle {
         color: control.Material.backgroundDimColor
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+        Behavior on opacity { NumberAnimation { duration: Style.motionFast } }
     }
 
     T.Overlay.modeless: Rectangle {
         color: control.Material.backgroundDimColor
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+        Behavior on opacity { NumberAnimation { duration: Style.motionFast } }
     }
 }

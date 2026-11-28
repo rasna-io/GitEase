@@ -1,0 +1,33 @@
+# Claude Code: local settings and scratch folders (shared commands and CLAUDE.md stay tracked)
+.claude/settings.local.json
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+CLAUDE.local.md
+
+# Cursor
+.cursor/
+.cursorignore
+.cursorindexingignore
+
+# Windsurf and Codeium
+.windsurf/
+.codeium/
+
+# Aider
+.aider*
+.aider.tags.cache.v*/
+
+# OpenAI Codex CLI
+.codex/
+
+# Gemini CLI
+.gemini/
+
+# Cline, Roo Code and Continue
+.cline/
+.roo/
+.continue/
+
+# Local model and agent caches
+.ai/
+.llm-cache/

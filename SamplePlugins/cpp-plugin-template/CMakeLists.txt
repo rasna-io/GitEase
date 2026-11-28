@@ -43,15 +43,8 @@ qt_add_resources(repo-notes-plugin "plugin_qml"
         qml/NotesDock.qml
 )
 
-set(_GITEASE_SRC "${GITEASE_SDK_DIR}/..")
-
 target_include_directories(repo-notes-plugin PRIVATE
     ${GITEASE_SDK_DIR}
-    ${_GITEASE_SRC}
-    ${_GITEASE_SRC}/Git/
-    ${_GITEASE_SRC}/Git/Auth/
-    ${_GITEASE_SRC}/Git/Models/
-    ${_GITEASE_SRC}/Git/Utilities/
 )
 
 target_link_libraries(repo-notes-plugin PRIVATE
@@ -89,3 +82,6 @@ if(GITEASE_PLUGINS_DIR)
 else()
     message(WARNING "GitEase.exe not found — plugin won't auto-deploy.")
 endif()
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/../PackageGep.cmake")
+gitease_package_gep(repo-notes-plugin)

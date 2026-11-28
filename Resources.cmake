@@ -12,11 +12,11 @@ set(RESOURCES_CORE
     Qml/Core/Models/Page.qml
     Qml/Core/Models/UserProfile.qml           # user profile model
     Qml/Core/Models/NotificationSettings.qml
+    Qml/Core/Models/Plugin.qml
 
     # Controllers
     Qml/Core/Controllers/WelcomeController.qml      # Welcome page controller
     Qml/Core/Controllers/DockController.qml         # Dock widget management controller
-    Qml/Core/Controllers/PageController.qml         # Page lifecycle and navigation controller
     Qml/Core/Controllers/LayoutController.qml       # Layout management controller (singleton)
     Qml/Core/Controllers/RepositoryController.qml   # Repository Controller
     Qml/Core/Controllers/BranchController.qml
@@ -36,17 +36,29 @@ set(RESOURCES_CORE
     Qml/Core/Controllers/CherryPickController.qml
     Qml/Core/Controllers/ConflictController.qml
     Qml/Core/Controllers/TagController.qml
+    Qml/Core/Controllers/IgnoreController.qml
+    Qml/Core/Controllers/GitTreeController.qml      # Commit file tree browser controller
     Qml/Core/Controllers/PluginController.qml
+    Qml/Core/Controllers/ResetController.qml
+    Qml/Core/Controllers/NetworkController.qml      # Network Controller
+    Qml/Core/Controllers/UpdateController.qml       # Application Update Controller
+    Qml/Core/Controllers/TerminalController.qml
+    Qml/Core/Controllers/TextDirectionController.qml # Keeps code in the diff editors left to right
+    Qml/Core/Controllers/GuideController.qml
 
     # Scripts
     Qml/Core/Scripts/GraphUtils.js
     Qml/Core/Scripts/GraphLayout.js
+    Qml/Core/Scripts/CommitGraphRouting.js
     Qml/Core/Scripts/ConflictPopupUtils.js
     Qml/Core/Scripts/GraphViewPresenter.js
+    Qml/Core/Scripts/PluginDetailFormat.js
     Qml/Core/Scripts/CommitGraphDataLoader.js
     Qml/Core/Scripts/CommitGraphFilter.js
     Qml/Core/Scripts/CommitGraphNavigation.js
     Qml/Core/Scripts/CommitGraphMenuBuilder.js
+    Qml/Core/Scripts/AsyncGit.js                     # Callback wrapper over IGitController::callAsync
+    Qml/Core/Scripts/RemoteErrorGuide.js             # Step-by-step copy for unreachable remotes
 )
 
 
@@ -65,28 +77,66 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Base/TabbedView.qml                    # Tabbed interface component
     Qml/View/Components/Base/RepositoryListItem.qml            # Repository list item display
     Qml/View/Components/Base/EmptyStateView.qml                # Items Empty State View
+    Qml/View/Components/Base/DetachedPanelPlaceholder.qml      # Stand-in for a panel shown in its own window
     Qml/View/Components/Base/BusyWaiter.qml                    # Items Busy Wait State View
+    Qml/View/Components/Base/SkeletonBone.qml                  # Shimmer bone for skeleton loaders
+    Qml/View/Components/Base/PluginCardSkeleton.qml            # Plugin card skeleton placeholder
+    Qml/View/Components/Base/PluginsSkeletonView.qml           # Plugins marketplace skeleton grid
+    Qml/View/Components/Base/AppLoadingBanner.qml              # Compact app/plugins loading chip
     Qml/View/Components/Base/UtilitiesCard.qml
+    Qml/View/Components/Base/DashedButton.qml                  # Dashed ghost action button for utilities cards
     Qml/View/Components/Base/ContextMenu.qml
+    Qml/View/Components/Base/ContextMenuWindow.qml             # Frameless animated window that renders one menu level
+    Qml/View/Components/Base/AccentCard.qml                    # Card with accent peeking out on the left
     Qml/View/Components/Base/DetachablePanel.qml               # Detachable panel wrapper
+    Qml/View/Components/Base/WindowMotion.qml                  # Window minimize/maximize transition helper
+    Qml/View/Components/Base/OpenRepositoryTransition.qml      # Welcome to main window transition with loading state
+    Qml/View/Components/Base/MinimizedPanels.qml                # Footer bar for minimized DetachablePanel/Terminal instances
+    Qml/View/Components/Base/SplitViewHandle.qml                # Shared SplitView drag handle
     Qml/View/Components/Base/DropZone.qml                      # Dock zone
     Qml/View/Components/Base/ScrollingText.qml                 # Single-line auto-scrolling text
     Qml/View/Components/Base/ModernInputArea.qml               # Modern Input Area
+    Qml/View/Components/Base/CommandPreview.qml                # Shared "command this form will run" strip
+    Qml/View/Components/Base/PopupButton.qml                   # Footer button of a PopupDialog
+    Qml/View/Components/Base/PluginCard.qml
+    Qml/View/Components/Base/ModernSpinBox.qml
+    Qml/View/Components/Base/HorizontalTagInput.qml
+    Qml/View/Components/Base/VerticalTagInput.qml
+    Qml/View/Components/Base/FileStatusTag.qml                 # File change-status tag (compact letter / expanded word)
 
     # Profile Components - User profile management
     Qml/View/Components/Profile/SetupProfileForm.qml           # Profile setup/editing form
+    Qml/View/Components/Profile/ProfileAvatar.qml              # Circular initial+color avatar
     Qml/View/Components/Profile/UserInfoSelector.qml           # Profile Selector
     Qml/View/Components/Profile/UserInfoSelectorItem.qml       # Profile Selector Item
 
     # Repository Components - Git repository management
     Qml/View/Components/Repository/RecentRepositoriesList.qml   # Recent repositories list
+    Qml/View/Components/Repository/RecentRepositoryRow.qml      # Single recent-repository row
     Qml/View/Components/Repository/RepositorySelector.qml       # Repository selection component
     Qml/View/Components/Repository/RepositoriesSidebar.qml      # Repositories Sidebar component
+    Qml/View/Components/Repository/WorktreeCard.qml             # Single worktree entry card
     Qml/View/Components/Repository/SideBySideDiff.qml
 
+    Qml/View/Components/Repository/RepoSectionLabel.qml         # Uppercase field label
+    Qml/View/Components/Repository/RepoTextField.qml            # Compact themed input
+    Qml/View/Components/Repository/RepoBrowseButton.qml         # Outlined Browse/Open button
+    Qml/View/Components/Repository/RepoRadio.qml                # Compact centered radio
+    Qml/View/Components/Repository/RepoValidationLine.qml       # Green validation row
+
+    # Repository selector dialog - tab sections
+    Qml/View/Components/Repository/RecentsTab.qml               # Recents tab
+    Qml/View/Components/Repository/OpenLocalTab.qml             # Open local tab
+    Qml/View/Components/Repository/CloneTab.qml                 # Clone tab
+    Qml/View/Components/Repository/WorktreesTab.qml             # Worktrees tab (UI only)
+    Qml/View/Components/Repository/InitNewTab.qml               # Init new tab
+
     Qml/View/Components/Diff/DiffView.qml
+    Qml/View/Components/Diff/ImageDiffHost.qml                  # Plugin image viewer in place of the text diff
+    Qml/View/Components/Diff/PluginColorizer.qml                # Syntax colours from diff plugins
     Qml/View/Components/Diff/StackedDiff.qml
     Qml/View/Components/Diff/StripedBackground.qml
+    Qml/View/Components/Diff/DiffScrollBar.qml                  # Shared diff/conflict editor scrollbar
 
     # Navigation Components - Side rails / tab bars
     Qml/View/Components/Navigation/NavigationRail.qml           # Combined pages+repos navigation rail
@@ -102,12 +152,11 @@ set(RESOURCES_COMPONENTS
     Qml/View/Components/Docks/StashManagerDock.qml
     Qml/View/Components/Docks/RecentActivityDock.qml
 
-    Qml/View/Components/Docks/RecentActivityDock.qml
     Qml/View/Components/Docks/RebaseDock.qml
 
     Qml/View/Components/Docks/RepositoriesHistoryDock.qml       # All Repositories Dock
 
-    Qml/View/Components/Docks/RepoForestDock.qml                # Fetch/ Pull all Repositories
+    Qml/View/Components/Utilities/UtilityPanel.qml              # Filter field + scrolling dock flow
 
     # File list components (commit UI)
     Qml/View/Components/FileLists/UnstagedFileListSection.qml  # Unstaged File Status Section
@@ -122,14 +171,15 @@ set(RESOURCES_COMPONENTS
     # DockPanel Docks
     Qml/View/Components/Docks/FileChangesDock.qml       # FileChangesDock : show file Changes on commit
 
-
     Qml/View/Components/Settings/CheckboxItem.qml
     Qml/View/Components/Settings/PathSelectorItem.qml
     Qml/View/Components/Settings/TextFieldItem.qml
     Qml/View/Components/Settings/ComboboxItem.qml
     Qml/View/Components/Settings/SpinboxItem.qml
     Qml/View/Components/Settings/ButtonItem.qml
+    Qml/View/Components/Settings/SshSection.qml
     Qml/View/Components/Settings/SshKeyCard.qml
+    Qml/View/Components/Settings/UpdateCard.qml
 
     # Import Export Bundle Components
     Qml/View/Components/ImportExport/ImportExportBundle.qml
@@ -138,7 +188,13 @@ set(RESOURCES_COMPONENTS
 
     Qml/View/Components/Remotes/RemoteView.qml
 
+    # Stash Components
+    Qml/View/Components/Stash/StashCard.qml                     # Single stash entry card
+    Qml/View/Components/Stash/StashPopupHeader.qml              # Title block of the stash windows
+    Qml/View/Components/Stash/StashFileList.qml                 # Stash window file sidebar
+
     Qml/View/Components/Branch/BranchManagementView.qml
+    Qml/View/Components/Branch/BranchesList.qml
     Qml/View/Components/Tag/TagManagementView.qml
 
     # DockPanel Docks
@@ -147,32 +203,81 @@ set(RESOURCES_COMPONENTS
     # Notifications
     Qml/View/Components/Notification/NotificationItem.qml
     Qml/View/Components/Notification/NotificationCloseAllHeader.qml
-
-    # Repo Forest
-    Qml/View/Components/RepoForest/RepoForest.qml
-    Qml/View/Components/RepoForest/RepoForestLogs.qml
-    Qml/View/Components/RepoForest/RepoItem.qml
+    Qml/View/Components/Notification/NotificationCloseAllBar.qml
+    Qml/View/Components/Notification/NotificationOverlayToast.qml
 
     # Conflict Components
+    Qml/View/Components/Conflict/ConflictAssistSlot.qml
     Qml/View/Components/Conflict/ConflictFileList.qml
     Qml/View/Components/Conflict/ConflictConfirmationDialog.qml
     Qml/View/Components/Conflict/ConflictEditorDelegate.qml
+    Qml/View/Components/Conflict/ConflictEditorPane.qml
+    Qml/View/Components/Conflict/ConflictHeader.qml
+    Qml/View/Components/Conflict/ConflictToolbar.qml
+    Qml/View/Components/Conflict/ConflictFooter.qml
+    Qml/View/Components/Conflict/ConflictPillButton.qml
+    Qml/View/Components/Conflict/ConflictProgressBar.qml
+    Qml/View/Components/Conflict/ConflictRegionLabel.qml
+    Qml/View/Components/Conflict/SectionLabel.qml
+
+    # Interactive rebase plan Components
+    Qml/View/Components/Rebase/RebaseActions.qml
+    Qml/View/Components/Rebase/RebaseActionBadge.qml
+    Qml/View/Components/Rebase/RebaseActionSelector.qml
+    Qml/View/Components/Rebase/RebasePlanRow.qml
+    Qml/View/Components/Rebase/RebasePlanTable.qml
+    Qml/View/Components/Rebase/RebasePlanHeader.qml
+    Qml/View/Components/Rebase/CommitPreviewPane.qml
+    Qml/View/Components/Rebase/RebasePlanFooter.qml
+
+    # Guide Components
+    Qml/View/Components/Guide/GuideOverlay.qml
+    Qml/View/Components/Guide/GuideTooltip.qml
+    Qml/View/Components/Guide/GuideHoverTrigger.qml
 
     # Pages Components
     Qml/View/Components/Pages/CommittingPage/CommittingPageHeader.qml
-    Qml/View/Components/Pages/CommittingPage/UnsavedChangesDialog.qml
+    Qml/View/Components/Pages/PluginsPage/PluginsPageHeader.qml
+    Qml/View/Components/Pages/PluginsPage/PluginsLeftPanel.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetailView.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailChip.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailMetaItem.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailInfoRow.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailLink.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailButton.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailRichText.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailCard.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailGalleryArrow.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailTab.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailTabBar.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailTopBar.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailErrorBanner.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailNote.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailActions.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailHero.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailGallery.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailOverview.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailFeatureGrid.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailChangelog.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailSidebar.qml
+    Qml/View/Components/Pages/PluginsPage/PluginDetail/PluginDetailBody.qml
     Qml/View/Components/GraphView/GraphViewHeader.qml
     Qml/View/Components/GraphView/DateField.qml
+    Qml/View/Components/GraphView/GraphFilterPopup.qml
     Qml/View/Components/GraphView/ResizableColumnHeader.qml
-    Qml/View/Components/GraphView/CommitGraphCanvas.qml
-    Qml/View/Components/GraphView/CommitListDelegate.qml
+    Qml/View/Components/GraphView/CommitRow.qml
+    Qml/View/Components/GraphView/CommitGraphCell.qml
+    Qml/View/Components/GraphView/CommitGraphNode.qml
+    Qml/View/Components/GraphView/CommitLaneEdges.qml
+    Qml/View/Components/GraphView/CommitRefLabel.qml
 )
 
 
 # Define UI Core Resources
 set(RESOURCES_UICORE
-    Qml/UiCore/UiSession.qml          # Main UI session manager
-    Qml/UiCore/UiSessionPopups.qml    # Popup management for UI session
+    Qml/UiCore/UiSession.qml                    # Main UI session manager
+    Qml/UiCore/UiSessionPopups.qml              # Popup management for UI session
+    Qml/UiCore/RemoteOperationsSession.qml      # Control Fetch/Push/Pull actions
 )
 
 # Define Popups Resources
@@ -183,7 +288,12 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/RepositorySelectorPopup.qml
     Qml/View/Popups/ItemSelectorPopup.qml           # Select Item popup
     Qml/View/Popups/SettingsPopup.qml
+    Qml/View/Popups/SshKeyNamePopup.qml
+    Qml/View/Popups/SshKeyExportPopup.qml
+    Qml/View/Popups/SshKeyDeletePopup.qml
     Qml/View/Popups/IPopup.qml
+    Qml/View/Popups/PopupDialog.qml                 # Shared frame for dialog popups
+    Qml/View/Popups/IWindow.qml
     Qml/View/Popups/AddEditRemotePopup.qml
     Qml/View/Popups/AddBranchPopup.qml
     Qml/View/Popups/CheckoutBranchSelectorPopup.qml  # Branch picker for double-click checkout
@@ -191,15 +301,19 @@ set(RESOURCES_POPUPS
     Qml/View/Popups/NotificationCenterPopup.qml
     Qml/View/Popups/ManageStashPopup.qml
     Qml/View/Popups/FetchSummaryPopup.qml
-    Qml/View/Popups/RepoForestPopup.qml
     Qml/View/Popups/ConflictPopup.qml
     Qml/View/Popups/MergeMethodPopup.qml
     Qml/View/Popups/CommitAmendPopup.qml
-
+    Qml/View/Popups/ConfirmCommandDialog.qml
+    Qml/View/Popups/IdentityPromptPopup.qml         # "Who is making this commit?" when git has no name and email
+    Qml/View/Popups/UseAsDefaultDialog.qml          # "Use as default" when the repository has its own user
+    Qml/View/Popups/RemoteTargetPopup.qml           # Choose the remote for push/pull/tag when the upstream does not say
     Qml/View/Popups/AddTagPopup.qml
     Qml/View/Popups/CalendarPopup.qml
 
     Qml/View/Popups/CommitPlanPopup.qml
+    Qml/View/Popups/CommitFileBrowserPopup.qml #browse file tree at a commit
+
 
 )
 
@@ -209,17 +323,20 @@ set(RESOURCES_PAGES
     Qml/Pages/WelcomePage.qml       # Initial welcome/onboarding page
     Qml/Pages/GraphViewPage.qml     # Main graph view page
     Qml/Pages/CommittingPage.qml    # Commit Page
-    Qml/Pages/UtilitiesPage.qml     # UtilitiesPage, import/export
     Qml/Pages/BlankPage.qml         # Blank placeholder page
+    Qml/Pages/PluginsPage.qml       # Plugins page
 )
 
 # Define QML Services
 set(RESOURCES_SERVICES
     Qml/Core/Services/GitService.qml
+    Qml/Core/Services/GitStateNotifier.qml   # Single "repository changed" broadcast
+    Qml/Core/Services/IdentityGuard.qml      # Asks who is committing when git has no name and email
 )
 
 # Define View Resources
 set(RESOURCES_VIEW
     Qml/View/MainWindow.qml
     Qml/View/FloatingNotificationWindow.qml     # show notifications
+    Qml/View/Terminal.qml
 )

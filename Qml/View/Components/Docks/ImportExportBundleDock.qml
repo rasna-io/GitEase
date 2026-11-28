@@ -15,9 +15,17 @@ Item {
 
     property BranchController branchController: null
     property BundleController bundleController: null
+    property NotificationController notificationController: null
+    property GuideController  guideController:  null
+    property string           filterText:       ""
 
     /* Property Declarations
      * ****************************************************************************************/
+    visible: bundleCard.matchesFilter
+    implicitWidth: bundleCard.width
+    implicitHeight: bundleCard.height
+    width: implicitWidth
+    height: implicitHeight
 
     /* Signals
      * ****************************************************************************************/
@@ -25,12 +33,18 @@ Item {
     /* Children
      * ****************************************************************************************/
     ImportExportBundle {
-        anchors.fill: parent
+        id: bundleCard
 
+        filterText: root.filterText
         branchController: root.branchController
         bundleController: root.bundleController
+        notificationController: root.notificationController
+        guideController: root.guideController
     }
 
     /* Functions
      * ****************************************************************************************/
+    function reload() {
+        bundleCard.reload()
+    }
 }

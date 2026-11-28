@@ -20,7 +20,7 @@ function recomputeLineNumbers(displayModel) {
     for (var i = 0; i < displayModel.count; i++) {
         var row = displayModel.get(i);
 
-        if (row.type === "blockButton")
+        if (row.type === "blockButton" || row.type === "aiPreview")
             continue;
 
         displayModel.setProperty(i, "lineNumber", lineNum);
@@ -61,7 +61,7 @@ function buildFullContent(displayModel) {
     for (var i = 0; i < displayModel.count; i++) {
         var row = displayModel.get(i);
 
-        if (row.type === "blockButton")
+        if (row.type === "blockButton" || row.type === "aiPreview")
             continue
 
         lines.push(row.text)
@@ -110,15 +110,19 @@ function buildDisplayModel(selectedConflict, modifiedFiles, selectedPath, displa
     var i = 0;
     var runningLine = 1;
 
+    var cardNumber = 0;
+
     while (i < lines.length) {
         var lineNumber = i + 1;
 
         if (blockMap[lineNumber]) {
             var block = blockMap[lineNumber];
+            cardNumber++;
 
             displayModel.append({
                 type: "blockButton",
-                blockIndex: block.index
+                blockIndex: block.index,
+                cardNumber: cardNumber
             });
 
             for (var j = 0; j < block.lines.length; j++) {
@@ -162,7 +166,7 @@ function buildDisplayModel(selectedConflict, modifiedFiles, selectedPath, displa
 function splitLine(displayModel, rowIndex, cursorPos, conflictListView) {
     var row = displayModel.get(rowIndex);
 
-    if (!row || row.type === "blockButton")
+    if (!row || row.type === "blockButton" || row.type === "aiPreview")
         return;
 
     if (row.type === "blockLine" && (row.role === "marker-start" || row.role === "separator" || row.role === "marker-end"))
@@ -205,6 +209,9 @@ function mergeLineUp(displayModel, rowIndex, conflictListView) {
     if (!current || !prev)
         return;
 
+    if (current.type === "aiPreview" || prev.type === "aiPreview")
+        return;
+
     if (current.type !== prev.type)
         return;
 
@@ -223,3 +230,255 @@ function mergeLineUp(displayModel, rowIndex, conflictListView) {
     conflictListView.currentIndex = rowIndex - 1;
 }
 
+/**
+ * Finds the start and end indices of a conflict block in the display model.
+ * @param model      - ListModel to search
+ * @param blockIndex - The block's index property (1‑based)
+ * @returns { start: number, end: number } or { start: -1, end: -1 } if not found
+ */
+function findBlockRowRange(model, blockIndex) {
+    let start = -1, end = -1
+    for (let i = 0; i < model.count; ++i) {
+        if (model.get(i).blockIndex === blockIndex) {
+            if (start < 0) start = i
+            end = i
+        }
+    }
+    return { start, end }
+}
+
+/**
+ * Shows or clears the AI result band inside one open conflict card.
+ * Rows use type "aiPreview" so they are drawn with the card but never written to the file.
+ * @param displayModel - The conflict ListModel
+ * @param blockIndex   - Card to attach the band to, or < 0 to clear
+ * @param text         - Replacement text. null clears the band. "" is an empty replacement.
+ * @param widthCalculator - Optional TextMetrics
+ * @param conflictListView - Optional ListView whose maxContentWidth should track long lines
+ */
+function syncAiPreview(displayModel, blockIndex, text, widthCalculator, conflictListView) {
+    if (!displayModel)
+        return
+
+    var lines = []
+    var active = text !== null && text !== undefined && blockIndex > 0
+    if (active)
+        lines = String(text).split("\n")
+
+    var existing = []
+    var existingBlock = -1
+    for (var i = 0; i < displayModel.count; ++i) {
+        var row = displayModel.get(i)
+        if (row.type !== "aiPreview")
+            continue
+        existingBlock = row.blockIndex
+        if (row.role === "ai")
+            existing.push(row.text)
+    }
+
+    var same = active && existingBlock === blockIndex && existing.length === lines.length
+    if (same) {
+        for (var j = 0; j < lines.length; ++j) {
+            if (existing[j] !== lines[j]) {
+                same = false
+                break
+            }
+        }
+    }
+    if (same)
+        return
+    if (!active && existingBlock < 0)
+        return
+
+    for (var k = displayModel.count - 1; k >= 0; --k) {
+        if (displayModel.get(k).type === "aiPreview")
+            displayModel.remove(k)
+    }
+    if (!active)
+        return
+
+    var insertAt = -1
+    var cardNumber = 0
+    for (var n = 0; n < displayModel.count; ++n) {
+        var marker = displayModel.get(n)
+        if (marker.type === "blockLine" && marker.role === "marker-end" && marker.blockIndex === blockIndex) {
+            insertAt = n
+            cardNumber = marker.cardNumber || 0
+            break
+        }
+    }
+    if (insertAt < 0)
+        return
+
+    displayModel.insert(insertAt, {
+        type: "aiPreview",
+        role: "ai-label",
+        text: "",
+        blockIndex: blockIndex,
+        cardNumber: cardNumber,
+        lineNumber: 0
+    })
+    for (var p = 0; p < lines.length; ++p) {
+        displayModel.insert(insertAt + 1 + p, {
+            type: "aiPreview",
+            role: "ai",
+            text: lines[p],
+            blockIndex: blockIndex,
+            cardNumber: cardNumber,
+            lineNumber: p + 1
+        })
+        if (widthCalculator && conflictListView)
+            updateMaxContentWidth(lines[p], widthCalculator, conflictListView)
+    }
+}
+
+/**
+ * Finds a block object in an array by its index property.
+ * @param blocks - Array of block objects (from selectedConflict.blocks)
+ * @param idx    - The index property to look for
+ * @returns { block: object, pos: number } or null
+ */
+function findBlockByIndex(blocks, idx) {
+    for (let i = 0; i < blocks.length; ++i) {
+        if (blocks[i].index === idx)
+            return { block: blocks[i], pos: i }
+    }
+    return null
+}
+
+/**
+ * Reads a conflict block's two sides off its rows as they stand in the editor, so lines edited
+ * inside the card by hand are what an accepted side keeps. The texts Git reported for the block
+ * (block.currentText / block.incomingText) predate any such edit.
+ * @param displayModel - The ListModel
+ * @param blockIndex   - The block's index (1‑based)
+ * @returns { currentText, incomingText }, shaped like a block for computeResolvedLines
+ */
+function readBlockSides(displayModel, blockIndex) {
+    let ours   = []
+    let theirs = []
+
+    for (let i = 0; i < displayModel.count; ++i) {
+        let row = displayModel.get(i)
+        if (row.type !== "blockLine" || row.blockIndex !== blockIndex)
+            continue
+
+        if (row.role === "ours")
+            ours.push(row.text)
+        else if (row.role === "theirs")
+            theirs.push(row.text)
+    }
+
+    return { currentText: ours.join("\n"), incomingText: theirs.join("\n") }
+}
+
+/**
+ * Returns the lines that should replace a resolved conflict block.
+ * @param block - The block object (with currentText, incomingText), see readBlockSides
+ * @param mode  - "ours", "theirs", or "both"
+ * @returns String[] of resolved lines
+ */
+function computeResolvedLines(block, mode) {
+    if (mode === "ours")
+        return block.currentText  ? block.currentText.split("\n")  : []
+
+    if (mode === "theirs")
+        return block.incomingText ? block.incomingText.split("\n") : []
+
+    if (mode === "both") {
+        let ours   = block.currentText  ? block.currentText.split("\n")  : []
+        let theirs = block.incomingText ? block.incomingText.split("\n") : []
+        return ours.concat(theirs)
+    }
+
+    return []
+}
+
+/**
+ * Replaces a conflict block's rows in the displayModel with resolved lines.
+ * Also updates line numbers and blockIndex values of subsequent rows.
+ * @param displayModel  - The ListModel
+ * @param blockIndex    - The block's index (1‑based)
+ * @param resolvedLines - The resolved text lines to insert
+ * @param mode          - "ours", "theirs" or "both": which side settled the block
+ */
+function replaceBlockInModel(displayModel, blockIndex, resolvedLines, mode) {
+    let { start, end } = findBlockRowRange(displayModel, blockIndex)
+    if (start < 0)
+        return
+
+    let cardNumber = displayModel.get(start).cardNumber
+
+    // Remove old conflict rows
+    displayModel.remove(start, end - start + 1)
+
+    // Card header for the resolved block. Type "blockButton" so it is skipped when the file content
+    // is rebuilt, exactly like the header of an unresolved block.
+    displayModel.insert(start, {
+        type: "blockButton",
+        blockIndex: -1,
+        cardNumber: cardNumber,
+        resolvedGroup: blockIndex,
+        resolvedMode: mode || ""
+    })
+
+    // Insert resolved rows. They are numbered below.
+    for (let i = 0; i < resolvedLines.length; ++i) {
+        displayModel.insert(start + 1 + i, {
+            type: "line",
+            text: resolvedLines[i],
+            blockIndex: -1,
+            role: "resolved",
+            cardNumber: cardNumber,
+            resolvedGroup: blockIndex,
+            resolvedMode: mode || ""
+        })
+    }
+
+    recomputeLineNumbers(displayModel)
+
+    // Decrement blockIndex for later blocks
+    for (let i = 0; i < displayModel.count; ++i) {
+        let bi = displayModel.get(i).blockIndex
+        if (bi !== undefined && bi > blockIndex) {
+            displayModel.setProperty(i, "blockIndex", bi - 1)
+        }
+    }
+}
+
+/**
+ * Updates the remaining blocks array after one block is resolved.
+ * Renumbers indices and re-reads each block's line span from the displayModel, which
+ * replaceBlockInModel has already updated: spans shifted by arithmetic on the spans Git reported
+ * would go wrong as soon as lines were added or removed by hand.
+ * @param selectedConflict  - The conflict object (must have a blocks array)
+ * @param blockIndex        - The resolved block's original index
+ * @param resolvedPos       - Position of the resolved block in the array
+ * @param displayModel      - The ListModel, after replaceBlockInModel
+ */
+function updateRemainingBlocks(selectedConflict, blockIndex, resolvedPos, displayModel) {
+    let spans = {}
+    for (let i = 0; i < displayModel.count; ++i) {
+        let row = displayModel.get(i)
+        if (row.type !== "blockLine")
+            continue
+
+        if (spans[row.blockIndex])
+            spans[row.blockIndex].endLine = row.lineNumber
+        else
+            spans[row.blockIndex] = { startLine: row.lineNumber, endLine: row.lineNumber }
+    }
+
+    selectedConflict.blocks.splice(resolvedPos, 1)
+
+    for (let b of selectedConflict.blocks) {
+        if (b.index > blockIndex)
+            b.index -= 1
+
+        let span = spans[b.index]
+        if (span) {
+            b.startLine = span.startLine
+            b.endLine   = span.endLine
+        }
+    }
+}

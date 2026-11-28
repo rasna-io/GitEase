@@ -7,17 +7,23 @@
 class GitFileStatus
 {
     Q_GADGET
-    QML_ELEMENT
 
     Q_PROPERTY(QString path READ path CONSTANT FINAL)
     Q_PROPERTY(Status status READ status CONSTANT FINAL)
     Q_PROPERTY(bool isStaged READ isStaged CONSTANT FINAL)
     Q_PROPERTY(bool isUnstaged READ isUnstaged CONSTANT FINAL)
     Q_PROPERTY(bool isUntracked READ isUntracked CONSTANT FINAL)
+    Q_PROPERTY(bool isConflicted READ isConflicted CONSTANT FINAL)
 
     Q_PROPERTY(int deletionsCount READ deletionsCount CONSTANT FINAL)
     Q_PROPERTY(int additionsCount READ additionsCount CONSTANT FINAL)
     Q_PROPERTY(DeltaStatus deltaStatus READ deltaStatus CONSTANT FINAL)
+    Q_PROPERTY(bool isBinary READ isBinary CONSTANT FINAL)
+
+    Q_PROPERTY(QString indexStatus READ indexStatus CONSTANT)
+
+    Q_PROPERTY(Status stagedStatus READ stagedStatus CONSTANT FINAL)
+    Q_PROPERTY(Status unstagedStatus READ unstagedStatus CONSTANT FINAL)
 
 public:
     enum Status {
@@ -30,17 +36,25 @@ public:
         StagedModified = GIT_STATUS_INDEX_MODIFIED,
         StagedDeleted = GIT_STATUS_INDEX_DELETED,
         StagedRenamed = GIT_STATUS_INDEX_RENAMED,
+        Conflicted = GIT_STATUS_CONFLICTED,
         Unknown = 0
     };
 
     Q_ENUM(Status)
 
+    // Values must match libgit2 git_delta_t so casts from delta->status stay valid.
     enum DeltaStatus {
+        UNMODIFIED = GIT_DELTA_UNMODIFIED,
         ADDED = GIT_DELTA_ADDED,
         DELETED = GIT_DELTA_DELETED,
         MODIFIED = GIT_DELTA_MODIFIED,
-        RENAMED = GIT_STATUS_WT_TYPECHANGE,
-        UNTRACKED,
+        RENAMED = GIT_DELTA_RENAMED,
+        COPIED = GIT_DELTA_COPIED,
+        IGNORED = GIT_DELTA_IGNORED,
+        UNTRACKED = GIT_DELTA_UNTRACKED,
+        TYPECHANGE = GIT_DELTA_TYPECHANGE,
+        UNREADABLE = GIT_DELTA_UNREADABLE,
+        CONFLICTED = GIT_DELTA_CONFLICTED,
     };
 
     Q_ENUM(DeltaStatus)
@@ -56,7 +70,7 @@ public:
     GitFileStatus(const git_diff_delta *delta, int additions, int deletions);
 
     GitFileStatus(const git_status_entry *entry, int additions, int deletions,
-                  DeltaStatus deltaStatus);
+                  DeltaStatus deltaStatus, bool isBinary = false);
 
 
     QString path() const;
@@ -69,19 +83,43 @@ public:
 
     bool isUntracked() const;
 
+    bool isConflicted() const;
+
+    bool isBinary() const;
+
     int deletionsCount() const;
 
     int additionsCount() const;
 
     DeltaStatus deltaStatus() const;
 
+    QString indexStatus() const;
+
+    // The change between HEAD and the index: StagedNew / StagedModified / StagedDeleted /
+    // StagedRenamed, or Unknown when nothing is staged.
+    Status stagedStatus() const;
+
+    // The change between the index and the working tree: Untracked / Modified / Deleted /
+    // Renamed / TypeChange, or Unknown when the working tree matches the index.
+    Status unstagedStatus() const;
+
 private:
     QString m_path;
-    Status m_status;
-    bool m_isStaged;
-    bool m_isUnstaged;
-    bool m_isUntracked;
-    int m_deletionsCount;
-    int m_additionsCount;
-    DeltaStatus m_deltaStatus;
+    Status m_status = static_cast<Status>(0);
+    bool m_isStaged = false;
+    bool m_isUnstaged = false;
+    bool m_isUntracked = false;
+    bool m_isConflicted = false;
+    int m_deletionsCount = 0;
+    int m_additionsCount = 0;
+    DeltaStatus m_deltaStatus = static_cast<DeltaStatus>(0);
+    bool m_isBinary = false;
 };
+
+// Exposes the enums of GitFileStatus to QML as "GitFileStatus" (gadget names can't be uppercase value types)
+namespace GitFileStatusQml
+{
+    Q_NAMESPACE
+    QML_NAMED_ELEMENT(GitFileStatus)
+    QML_FOREIGN_NAMESPACE(GitFileStatus)
+}

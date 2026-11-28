@@ -24,9 +24,29 @@ public:
      * \brief Save current changes to a stash
      * \param message Optional stash message
      * \param keepIndex Whether to keep staged changes in index
+     * \param includeUntracked Whether to stash, and then remove, the untracked files too
      * \return GitResult
      */
-    Q_INVOKABLE GitResult save(const QString &message = "", bool keepIndex = false);
+    Q_INVOKABLE GitResult save(const QString &message = "", bool keepIndex = false,
+                               bool includeUntracked = false);
+
+    /**
+     * \brief Stash only the staged changes, like "git stash push --staged"
+     *
+     * Unstaged and untracked changes stay in the working tree.
+     * \param message Optional stash message
+     * \return GitResult
+     */
+    Q_INVOKABLE GitResult saveStaged(const QString &message = "");
+
+    /**
+     * \brief Stash only the unstaged and untracked files - what the Unstaged section lists
+     *
+     * Staged changes are neither recorded in the stash nor touched.
+     * \param message Optional stash message
+     * \return GitResult
+     */
+    Q_INVOKABLE GitResult saveUnstaged(const QString &message = "");
 
     /**
      * \brief Stahes the selected file

@@ -8,8 +8,8 @@ import GitEase_Style_Impl
 /*! ***********************************************************************************************
  * FileListSection
  * Collapsible section containing a file list:
- * - Header: title, count badge
- * - Body: ListView, empty-state text, scrollbar
+ * - Header: uppercase title, count badge, optional actions
+ * - Body: ListView, empty-state (icon + text), scrollbar
  * ************************************************************************************************/
 
 Rectangle {
@@ -19,35 +19,45 @@ Rectangle {
      * ****************************************************************************************/
     property string title: ""
     property string emptyText: ""
+    property string emptySubText: ""
     property var model: []
     property string selectedFilePath: ""
     property bool expanded: true
-    property int headerHeight: 32
-    property int emptyExpandedHeight: 32
+    property int headerHeight: 30
+    property int emptyExpandedHeight: 110
+
+    property bool fillWhenEmpty: false
+
+    property bool animated: true
 
     // Optional custom row delegate. If not set, a default delegate is used.
     property Component rowDelegate: null
     // Optional header actions content (rendered on the right side of the header)
     property Component headerActions: null
 
-    readonly property bool needsVScroll: listView.contentHeight > (listView.height + 1)
-    readonly property bool wantsFillHeight: expanded && !(listView.count === 0)
+    readonly property bool needsVScroll: root.expanded && listView.contentHeight > (listView.height + 1)
+    readonly property bool wantsFillHeight: expanded && (listView.count > 0 || root.fillWhenEmpty)
     readonly property int count: listView.count
 
     /* Object Properties
      * ****************************************************************************************/
-    implicitHeight: headerHeight + ((expanded && (listView.count === 0)) ? emptyExpandedHeight : 0)
+    color: "transparent"
+    clip: true
+    implicitHeight: headerHeight + ((expanded && (listView.count === 0) && !root.fillWhenEmpty) ? emptyExpandedHeight : 0)
 
     /* Signals
      * ****************************************************************************************/
-    signal fileSelected(string filePath)
+    signal fileSelected(string filePath, int fileStatus)
     signal toggled(bool expanded)
 
     /* Children
      * ****************************************************************************************/
-    Behavior on implicitHeight {
+    Behavior on height {
+        enabled: root.animated
+
         NumberAnimation {
-            duration: 120
+            duration: Style.motionMedium
+            easing.type: Easing.OutCubic
         }
     }
 
@@ -59,14 +69,15 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: root.headerHeight
-            color: headerMouseArea.containsMouse ^ Style.theme == Style.Light ?
-                       Qt.lighter(Style.colors.secondaryBackground, 1.3) :
-                       Qt.darker(Style.colors.secondaryBackground, 1.3)
+            color: headerMouseArea.containsMouse ? Style.colors.hoverTitle : Style.colors.sectionHeaderBg
+            border.width: 1
+            border.color: Style.colors.primaryBorder
 
             MouseArea {
                 id: headerMouseArea
                 anchors.fill: parent
                 hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     root.expanded = !root.expanded
                     root.toggled(root.expanded)
@@ -75,26 +86,56 @@ Rectangle {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                spacing: 8
+                anchors.leftMargin: 12
+                anchors.rightMargin: 6
+                spacing: 7
 
                 Text {
-                    text: root.expanded ? Style.icons.caretDown : Style.icons.caretRight
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 17
-                    color: Style.colors.mutedText
-                    verticalAlignment: Text.AlignVCenter
+                    Layout.alignment: Qt.AlignVCenter
+                    text: root.title.toUpperCase()
+                    font.family: Style.fontTypes.inter
+                    font.pixelSize: Style.appFont.secondaryPt
+                    font.bold: true
+                    font.letterSpacing: 0.6
+                    color: Style.colors.sectionLabel
                 }
 
                 Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: Style.icons.caretDown
+                    font.family: Style.fontTypes.font6Pro
+                    font.pixelSize: Style.appFont.secondaryPt
+                    color: Style.colors.sectionLabel
+                    rotation: root.expanded ? 0 : -90
+
+                    Behavior on rotation {
+                        NumberAnimation {
+                            duration: Style.motionMedium
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
+
+                // Count badge
+                Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitHeight: 15
+                    implicitWidth: Math.max(15, countText.implicitWidth + 10)
+                    radius: 3
+                    color: Style.colors.countBg
+
+                    Text {
+                        id: countText
+                        anchors.centerIn: parent
+                        text: listView.count
+                        font.family: Style.fontTypes.jetBrainsMono
+                        font.pixelSize: Style.appFont.secondaryPt
+                        color: Style.colors.countText
+                    }
+                }
+
+                Item {
                     Layout.fillWidth: true
-                    text: root.title
-                    font.family: Style.fontTypes.roboto
-                    font.pixelSize: 11
-                    font.bold: true
-                    color: Style.colors.foreground
-                    elide: Text.ElideRight
                 }
 
                 Loader {
@@ -103,32 +144,6 @@ Rectangle {
                     active: root.headerActions !== null
                     sourceComponent: root.headerActions
                 }
-
-                // Count badge
-                Rectangle {
-                    implicitHeight: 18
-                    implicitWidth: Math.max(18, countText.implicitWidth + 10)
-                    radius: 9
-                    color: Style.colors.surfaceMuted
-
-                    Text {
-                        id: countText
-                        anchors.centerIn: parent
-                        text: listView.count
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 11
-                        color: Style.colors.secondaryText
-                    }
-                }
-            }
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                height: 1
-                color: Style.colors.primaryBorder
-                opacity: 0.7
             }
         }
 
@@ -136,18 +151,10 @@ Rectangle {
         Rectangle {
             id: listArea
             Layout.fillWidth: true
-            Layout.fillHeight: root.wantsFillHeight
-            Layout.preferredHeight: !root.expanded ? 0 : ((listView.count === 0) ? root.emptyExpandedHeight : -1)
-            visible: root.expanded
-            opacity: root.expanded ? 1 : 0
-            color: Style.colors.secondaryBackground
-            clip: true
 
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 100
-                }
-            }
+            Layout.fillHeight: true
+            color: "transparent"
+            clip: true
 
             RowLayout {
                 anchors.fill: parent
@@ -163,7 +170,6 @@ Rectangle {
                         text: modelData && modelData.path ? modelData.path : ""
                         status: modelData && modelData.status ? modelData.status : GitFileStatus.Unknown
                         selected: root.selectedFilePath !== "" && root.selectedFilePath === (modelData && modelData.path ? modelData.path : "")
-                        showSeparator: index < (listView.count - 1)
 
                         onClicked: {
                             root.selectFile(modelData.path)
@@ -184,7 +190,7 @@ Rectangle {
 
                     delegate: Item {
                         width: ListView.view.width
-                        height: (rowLoader.item && rowLoader.item.implicitHeight) ? rowLoader.item.implicitHeight : 24
+                        height: (rowLoader.item && rowLoader.item.implicitHeight) ? rowLoader.item.implicitHeight : 28
 
                         Loader {
                             id: rowLoader
@@ -197,23 +203,74 @@ Rectangle {
 
                                 item.rowModelData = modelData
                                 item.rowIndex = index
-
-                                if (item.hasOwnProperty("showSeparator"))
-                                    item.showSeparator = index < (listView.count - 1)
                             }
                         }
                     }
 
                     // Empty state
-                    Text {
-                        anchors.centerIn: parent
-                        visible: listView.count === 0
+                    ColumnLayout {
+                        id: emptyState
 
-                        text: root.emptyText
-                        font.family: Style.fontTypes.roboto
-                        font.pixelSize: 11
-                        color: Style.colors.mutedText
-                        opacity: 0.9
+                        property real shown: listView.count === 0 ? 1 : 0
+
+                        anchors.centerIn: parent
+                        width: parent.width - 40
+                        visible: shown > 0
+                        opacity: shown
+                        spacing: 8
+
+                        transform: Translate {
+                            y: (1 - emptyState.shown) * 10
+                        }
+
+                        Behavior on shown {
+                            enabled: root.animated
+
+                            NumberAnimation {
+                                duration: Style.motionMedium
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.alignment: Qt.AlignHCenter
+                            width: 36
+                            height: 36
+                            radius: 18
+                            color: Style.colors.emptyCircleBg
+                            border.width: 1
+                            border.color: Style.colors.emptyCircleBorder
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: Style.icons.plus
+                                font.family: Style.fontTypes.font6Pro
+                                font.styleName: "Solid"
+                                font.pixelSize: Style.appFont.mediumPt
+                                color: Style.colors.emptyStateSubText
+                            }
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: root.emptyText
+                            horizontalAlignment: Text.AlignHCenter
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.mediumPt
+                            color: Style.colors.emptyStateText
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            visible: root.emptySubText !== ""
+                            text: root.emptySubText
+                            horizontalAlignment: Text.AlignHCenter
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.defaultPt
+                            color: Style.colors.emptyStateSubText
+                            elide: Text.ElideRight
+                        }
                     }
 
                     ScrollBar.vertical: vBar
@@ -242,11 +299,11 @@ Rectangle {
 
     /* Functions
      * ****************************************************************************************/
-    function selectFile(filePath) {
+    function selectFile(filePath, fileStatus) {
         if (!filePath || filePath === "")
             return
 
         root.selectedFilePath = filePath
-        root.fileSelected(filePath)
+        root.fileSelected(filePath, fileStatus)
     }
 }

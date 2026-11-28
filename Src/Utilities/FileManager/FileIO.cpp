@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QDir>
+#include <QFileInfo>
 #include <QStandardPaths>
 
 #include <thread>
@@ -128,6 +129,8 @@ void FileIO::write(bool async)
         {
             QFile file{m_fileName};
 
+            QDir{}.mkpath(QFileInfo{m_fileName}.absolutePath());
+
             if(!file.open(QIODevice::WriteOnly))
             {
                 qDebug() << tr("[FileIO][readFile]: Could not open the following file for writing:\n%1").arg(m_fileName);
@@ -180,4 +183,21 @@ bool FileIO::createDir(QString path)
 bool FileIO::isFileExist(const QString &path)
 {
     return QFile::exists(path);
+}
+
+bool FileIO::isGitRepository(const QString &path)
+{
+    if(path.isEmpty())
+    {
+        return false;
+    }
+
+    const QDir dir{path};
+
+    if(!dir.exists())
+    {
+        return false;
+    }
+
+    return QFileInfo::exists(dir.filePath(".git"));
 }

@@ -1,4 +1,63 @@
 #include "IGitController.h"
+#include <QDir>
+#include "Async/GitAsyncRunner.h"
+#include "GitUtils.h"
+
+#include <git2/errors.h>
+#include <git2/signature.h>
+
+#include <QThread>
+
+namespace
+{
+    thread_local git_repository *t_activeRepo = nullptr;
+}
+
+const QString IGitController::IdentityMissing = QStringLiteral("identityMissing");
+
+git_signature *IGitController::defaultSignature(git_repository *repo, QString *reason)
+{
+    if (reason)
+        reason->clear();
+
+    if (!repo) {
+        if (reason)
+            *reason = QStringLiteral("Repository not open.");
+        return nullptr;
+    }
+
+    git_signature *signature = nullptr;
+    const int error = git_signature_default(&signature, repo);
+    if (error != GIT_OK) {
+        if (reason && error != GIT_ENOTFOUND)
+            *reason = GitUtils::getLastError();
+        return nullptr;
+    }
+
+    return signature;
+}
+
+bool IGitController::hasIdentity(git_repository *repo, QString *reason)
+{
+    git_signature *signature = defaultSignature(repo, reason);
+    if (!signature)
+        return false;
+
+    git_signature_free(signature);
+    return true;
+}
+
+GitResult IGitController::identityMissingResult(const QString &reason, const QVariant &data)
+{
+    const QString message = reason.isEmpty()
+        ? QStringLiteral("No name and email are set for this repository. Git needs them to record "
+                         "who made the change.")
+        : QStringLiteral("Git can't use the name and email that are set: %1").arg(reason);
+
+    GitResult result(false, data, message);
+    result.setErrorCode(IdentityMissing);
+    return result;
+}
 
 IGitController::IGitController(QObject *parent)
     : QObject{parent}
@@ -15,7 +74,46 @@ void IGitController::setCurrentRepo(Repository *newCurrentRepo)
     if (m_currentRepo == newCurrentRepo)
         return;
     m_currentRepo = newCurrentRepo;
+
     emit currentRepoChanged();
+}
+
+QRecursiveMutex *IGitController::repoMutex(Repository *repo)
+{
+    static QRecursiveMutex fallback;
+
+    return repo ? &repo->mutex : &fallback;
+}
+
+QRecursiveMutex *IGitController::networkMutex(Repository *repo)
+{
+    static QRecursiveMutex fallback;
+
+    return repo ? &repo->netMutex : &fallback;
+}
+
+qint64 IGitController::callAsync(const QString &method, const QVariantList &args)
+{
+    return GitAsyncRunner::instance()->submit(this, method, args);
+}
+
+void IGitController::emitAsyncFinished(qint64 requestId, const QString &method, const QVariant &result, Repository *jobRepo)
+{
+    emit asyncFinished(requestId, method, result, jobRepo != m_currentRepo);
+}
+
+void IGitController::emitAsyncFailed(qint64 requestId, const QString &method, const QString &error, Repository *jobRepo)
+{
+    emit asyncFailed(requestId, method, error, jobRepo != m_currentRepo);
+}
+
+QString IGitController::workdirOf(git_repository *repo)
+{
+    const char *workdir = repo ? git_repository_workdir(repo) : nullptr;
+    if (!workdir)
+        return QString();
+
+    return QDir::cleanPath(QString::fromUtf8(workdir));
 }
 
 QString IGitController::gitOidToString(const git_oid *oid)
@@ -28,6 +126,15 @@ QString IGitController::gitOidToString(const git_oid *oid)
     oidStr[GIT_OID_HEXSZ] = '\0';
 
     return QString::fromUtf8(oidStr, GIT_OID_HEXSZ);
+}
+
+GitResult IGitController::runRuleCheck(ActionContext &context)
+{
+    if (QThread::currentThread() != thread())
+        return GitResult(true);
+
+    emit beforeAction(&context);
+    return context.result;
 }
 
 void IGitController::emitGitCommand(const QString &command)
@@ -44,4 +151,23 @@ QString IGitController::quoteCommandArg(const QString &argument)
     escaped.replace("\\", "\\\\");
     escaped.replace("\"", "\\\"");
     return "\"" + escaped + "\"";
+}
+
+IGitController::ActiveRepoScope::ActiveRepoScope(git_repository *repo)
+    : m_previous(t_activeRepo)
+{
+    t_activeRepo = repo;
+}
+
+IGitController::ActiveRepoScope::~ActiveRepoScope()
+{
+    t_activeRepo = m_previous;
+}
+
+git_repository *IGitController::activeRepo() const
+{
+    if (t_activeRepo)
+        return t_activeRepo;
+
+    return m_currentRepo ? m_currentRepo->repo : nullptr;
 }

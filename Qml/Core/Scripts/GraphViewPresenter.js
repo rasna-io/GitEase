@@ -33,9 +33,11 @@ function init(deps) {
  * @brief Clears the currently selected commit and file, and resets the diff view.
  */
 function clearSelection() {
-    selectedCommit      = "";
-    selectedFilePath    = "";
-    diffView.diffData   = null;
+    selectedCommit          = "";
+    selectedFilePath        = "";
+    diffView.selectedFile   = "";
+    diffView.isBinaryFile   = false;
+    diffView.diffData       = null;
 }
 
 /**
@@ -43,6 +45,9 @@ function clearSelection() {
  * @param {string} commitId - The hash of the selected commit, or "__uncommitted__".
  */
 function handleCommitClicked(commitId) {
+    if (!fileChangesDock)
+        return;
+
     selectedCommit = commitId;
 
     fileChangesDock.commitHash = commitId;
@@ -53,11 +58,7 @@ function handleCommitClicked(commitId) {
     var node = commitGraph.commits.find(function(c) { return c.hash === commitId; });
     if (node && node.isUncommitted) {
         var res = statusController.status();
-        if (!res.success || !res.data) {
-            fileChangesDock.files = [];
-            return;
-        }
-        fileChangesDock.files = res.data;
+        fileChangesDock.showFiles(res.success && res.data ? res.data : []);
     }
 }
 
@@ -72,17 +73,41 @@ function handleFileSelected(filePath) {
     if (!commitId)
         return;
 
+    if (!filePath) {
+        diffView.selectedFile = "";
+        diffView.isBinaryFile = false;
+        diffView.diffData = [];
+        return;
+    }
+
+    // Also picks the syntax colorizer, or an image viewer, for the file.
+    diffView.selectedFile = filePath;
+    diffView.isBinaryFile = !!(fileChangesDock.selectedFile && fileChangesDock.selectedFile.isBinary);
+
     var node = commitGraph.commits ? commitGraph.commits.find(function(c) { return c.hash === commitId; }) : null;
 
     // uncommitted diff
     if (commitId === "__uncommitted__" || (node && node.isUncommitted)) {
+        diffView.imageSource = "workdir";
+        diffView.imageOldRevision = "HEAD";
+        diffView.imageNewRevision = "";
+        if (diffView.prefersImageViewer && diffView.prefersImageViewer(filePath)) {
+            diffView.isBinaryFile = false;
+            diffView.diffData = [];
+            diffView.chunkData = [];
+            return;
+        }
+
         var headHash = statusController.getHeadHash();
         if (!headHash) {
             return;
         }
         var res = statusController.getWorkingDirectoryDiff(headHash, filePath);
-        if (res && res.success)
+        if (res && res.success) {
+            if (res.errorMessage === "binary")
+                diffView.isBinaryFile = true;
             diffView.diffData = res.data;
+        }
         return;
     }
 
@@ -102,7 +127,19 @@ function handleFileSelected(filePath) {
         parentHash = node.parentHashes[0];
     }
 
+    diffView.imageSource = "commit";
+    diffView.imageOldRevision = parentHash || "";
+    diffView.imageNewRevision = commitId;
+
     if (!parentHash) {
+        diffView.diffData = [];
+        return;
+    }
+
+    if (diffView.prefersImageViewer && diffView.prefersImageViewer(filePath)) {
+        diffView.isBinaryFile = false;
+        diffView.diffData = [];
+        diffView.chunkData = [];
         return;
     }
 

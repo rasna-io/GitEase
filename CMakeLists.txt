@@ -16,11 +16,12 @@ set(MAIN_TARGET_URI ${MAIN_TARGET_NAME})
 set(THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/Ext" CACHE PATH "Path to third-party libraries")
 
 include(libgit.cmake)
+include(libarchive.cmake)
 
 # Flatten generation of all sub-dependent libraries
 set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Qml)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Quick Gui Concurrent Svg)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Quick Gui Concurrent Svg)
 
 # Dependencies
 add_subdirectory(Res/)
@@ -29,8 +30,8 @@ add_subdirectory(Qml/Style/)
 # Extra QML File properties
 set_source_files_properties(
     Qml/Core/Models/Enums.qml
-    Qml/Core/Controllers/LayoutController.qml
     Qml/Core/Services/GitService.qml
+    Qml/View/Components/Rebase/RebaseActions.qml
 
     PROPERTIES
         QT_QML_SINGLETON_TYPE True
@@ -59,6 +60,7 @@ endif()
 
 target_link_libraries(GitEase PRIVATE Qt6::Core)
 target_include_directories(${MAIN_TARGET_NAME} PRIVATE ${INCLUDE_DIRS_BACKEND})
+target_compile_definitions(${MAIN_TARGET_NAME} PRIVATE GITEASE_VERSION="${PROJECT_VERSION_SHORT}")
 
 # NO_CACHEGEN is set for qt_add_qml_module() in DEBUG mode so we can have a better QML Preview
 # functionality (Only Qt6.6 and later)
@@ -98,6 +100,7 @@ target_link_libraries(${MAIN_TARGET_NAME} PRIVATE
     Qt6::Gui
     Qt6::Concurrent
     Qt6::Svg
+    libarchive
     ${MAIN_TARGET_NAME}_Styleplugin
     ${MAIN_TARGET_NAME}_Style_Implplugin
     ${MAIN_TARGET_NAME}.Resourcesplugin
@@ -114,6 +117,14 @@ install(TARGETS ${MAIN_TARGET_NAME}
 
 if (WIN32)
     target_link_libraries(${MAIN_TARGET_NAME} PRIVATE dwmapi shell32 ole32)
+
+    # Copy archive.dll next to the executable after every build
+    add_custom_command(TARGET ${MAIN_TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${LIBARCHIVE_DLL}"
+            "$<TARGET_FILE_DIR:${MAIN_TARGET_NAME}>/archive.dll"
+        COMMENT "Copying archive.dll to output directory"
+    )
 endif()
 
 # Make Qt Creator aware of where the QML modules live
@@ -130,6 +141,42 @@ if(UNIX AND NOT APPLE)
         BUILD_WITH_INSTALL_RPATH FALSE
     )
 
+    target_link_options(GitEase PRIVATE "LINKER:--as-needed")
+    find_package(Qt6 QUIET COMPONENTS ShaderTools)
+    if(TARGET Qt6::ShaderTools)
+        get_target_property(_shadertools_file Qt6::ShaderTools IMPORTED_LOCATION_RELEASE)
+        get_target_property(_shadertools_soname Qt6::ShaderTools IMPORTED_SONAME_RELEASE)
+        install(FILES "${_shadertools_file}" DESTINATION lib RENAME "${_shadertools_soname}")
+    else()
+        message(WARNING "Qt6ShaderTools not found; Qt5Compat.GraphicalEffects will not load from the .deb")
+    endif()
+
+    option(GITEASE_BUNDLE_XCB_LIBS "Bundle the xcb helper libraries into the package" ON)
+    if(GITEASE_BUNDLE_XCB_LIBS)
+        set(_gitease_bundled_sonames
+            libxcb-cursor.so.0
+            libxcb-icccm.so.4
+            libxcb-image.so.0
+            libxcb-keysyms.so.1
+            libxcb-render-util.so.0
+            libxcb-util.so.1
+            libxcb-xinerama.so.0
+            libxcb-xkb.so.1
+        )
+        foreach(_soname IN LISTS _gitease_bundled_sonames)
+            string(MAKE_C_IDENTIFIER "GITEASE_BUNDLE_${_soname}" _var)
+            find_file(${_var} NAMES ${_soname}
+                PATHS /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib
+                NO_DEFAULT_PATH)
+            if(${_var})
+                get_filename_component(_real "${${_var}}" REALPATH)
+                install(FILES "${_real}" DESTINATION lib RENAME ${_soname})
+            else()
+                message(WARNING "${_soname} not found; the .deb will need it installed on the system")
+            endif()
+        endforeach()
+    endif()
+
     install(TARGETS ${MAIN_TARGET_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
     # install(PROGRAMS gitease-launcher.sh DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -143,7 +190,7 @@ if(UNIX AND NOT APPLE)
 
     install(FILES gitease.desktop DESTINATION share/applications)
 
-    install(FILES Res/Images/LogoSVG.svg DESTINATION share/icons/hicolor/256x256/apps RENAME LogoSVG.svg)
+    install(FILES Res/Images/LogoSVG.svg DESTINATION share/icons/hicolor/scalable/apps RENAME gitease.svg)
 endif()
 
 include(packaging.cmake)

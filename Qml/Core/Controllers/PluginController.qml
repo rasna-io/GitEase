@@ -7,18 +7,79 @@ import GitEase
  * - Initialises the manager after the QML engine is ready
  * - Forwards repo / branch state into the plugin context
  * - Routes plugin notifications to NotificationController
+ * - Fetches available plugins and update info from the server
  * ************************************************************************************************/
 QtObject {
     id: root
 
+    required property var appModel
     required property var notificationController
+    required property var networkController
+    property var          pageController:  null  // set by MainWindow after SwipeView is ready
+    property CommitController          commitController: null
+    property BranchController          branchController: null
+    property RemoteController          remoteController: null
+    property MergeController           mergeController:  null
 
-    property var    currentRepo:   null
-    property string currentBranch: ""
+    // All pages that have been registered so far (populated before pageController exists).
+    // MainWindow reads this list after setting pageController to drain any early registrations.
+    property var registeredPages: []
+
+    property var    currentRepo:        null
+    property string currentBranch:      ""
+    property bool   busy:               false
+    property int    currentPage:        1
+    property bool   hasMorePages:       false
+
+    // True while PluginManager is scanning/activating local plugins off the UI cadence.
+    readonly property bool pluginsLoading: pluginManager ? pluginManager.loading : false
+    readonly property int  pluginsPendingCount: pluginManager ? pluginManager.pendingLoadCount : 0
+    // Catalog network fetch or local plugin activation — used by PluginsPage skeleton.
+    readonly property bool catalogLoading: root.busy || root.pluginsLoading
+
+    // local plugin map: id → PluginInfo variantmap (rebuilt on every pluginsChanged)
+    property var    localPluginMap:     ({})
+    property bool   appendMode:         false   // true when fetching next page (append vs replace)
+    property string lastFetchedSearch:  ""      // used to filter local-only appends on search
+
+    // server plugin IDs seen so far — used in syncLocalPlugins to distinguish server vs local-only entries
+    property var    serverPluginIds:    ({})
+    // true once the catalog was fetched; before that a plugin is not known to be local-only
+    property bool   serverListLoaded:   false
+    // packages found in the downloads folder: id → package (manifest plus packagePath)
+    property var    downloadedMap:      ({})
+    // map of in-progress install requests: requestKey → pluginId
+    property var    pendingInstallKeys:   ({})
+    // map of expected MD5 hashes for in-progress downloads: requestKey → md5 hex string
+    property var    pendingInstallHashes: ({})
+    property var    removingPlugins:      ({})
+    property var    installStates:        ({})
+
+    property var    uninstallLinger:      ({})
+
+    property string removingNow:          ""
+    property var    removeQueue:          []
+    readonly property int uninstallLingerMs: 1600
+    property var    pluginDetail:         null  // rich detail payload for the detail page
+    property bool   pluginDetailBusy:     false
+    property string pluginDetailError:    ""
+
+
+    readonly property string pluginApiBaseUrl:               "https://gitease.app/api"
+    readonly property string fetchPluginsRequestKey:         "plugin-fetch"
+    readonly property string fetchCategoriesRequestKey:      "plugin-fetch-categories"
+    readonly property string checkUpdatesRequestKey:         "plugin-check-updates"
+    readonly property string fetchPluginDetailKeyPrefix:     "plugin-detail-"
+    readonly property string getPluginDownloadKeyPrefix:     "plugin-get-download-"
+    readonly property string downloadPluginKeyPrefix:        "plugin-download-"
 
     /* Plugin manager instance
      * ****************************************************************************************/
     property PluginManager pluginManager: PluginManager {
+
+        onPluginsChanged: Qt.callLater(root.syncLocalPlugins)
+
+        onDownloadedPackagesChanged: Qt.callLater(root.refreshDownloadedPackages)
 
         onPluginLoaded: function(id) {
             console.log("[PluginController] Plugin loaded:", id)
@@ -26,10 +87,41 @@ QtObject {
 
         onPluginError: function(id, error) {
             console.warn("[PluginController] Plugin error —", id, ":", error)
+            const name = id && id.length > 0 ? id : "Plugin"
+            root.notificationController.error(error, name, 8000)
         }
 
         onDockRegistered: function(id, qmlUrl, title, icon) {
             console.log("[PluginController] Dock registered:", id, "→", qmlUrl)
+        }
+
+        onPageRegistered: function(id, qmlUrl, title, icon, order, pluginId) {
+            console.log("[PluginController] Page registered:", id, "→", qmlUrl)
+            root.registeredPages = root.registeredPages.concat([{
+                id: id, title: title, qmlUrl: qmlUrl, icon: icon, pluginId: pluginId || id
+            }])
+            // Defer host page creation so PluginManager::loadPlugin can return and the
+            // UI thread can paint between plugins (createPage used to run inline).
+            if (root.pageController) {
+                Qt.callLater(function() {
+                    if (root.pageController)
+                        root.pageController.createPage(id, title, qmlUrl, icon)
+                })
+            }
+        }
+
+        onPluginAboutToUnload: function(id) {
+            let kept = []
+            for (let i = 0; i < root.registeredPages.length; i++) {
+                let p = root.registeredPages[i]
+                if (p.pluginId === id || p.id === id) {
+                    if (root.pageController && root.pageController.removePage)
+                        root.pageController.removePage(p.id)
+                } else {
+                    kept.push(p)
+                }
+            }
+            root.registeredPages = kept
         }
 
         onNotifyRequested: function(message, type) {
@@ -40,6 +132,80 @@ QtObject {
                 default:        root.notificationController.info(message);    break
             }
         }
+
+        onPluginInstallQueued: function(pendingId, displayName) {
+            console.log("[PluginController] Plugin install queued:", pendingId, displayName)
+            root.addInstallPlaceholder(pendingId, displayName)
+            root.setInstallState(pendingId, true, "Preparing", -1)
+        }
+
+        onPluginInstallResolved: function(pendingId, id, name) {
+            console.log("[PluginController] Plugin install resolved:", pendingId, "->", id, name)
+            root.resolveInstallPlaceholder(pendingId, id, name)
+            root.renameInstallState(pendingId, id)
+        }
+
+        onPluginInstallStarted: function(id, name) {
+            console.log("[PluginController] Plugin install started:", id, name)
+            root.setInstallState(id, true, "Installing", -1, name)
+        }
+
+        onPluginInstalled: function(id) {
+            console.log("[PluginController] Plugin installed:", id)
+            root.syncLocalPlugins()
+            let installedLabel = root.describePlugin(root.localPluginMap[id], root.installStates[id]?.name || id)
+            root.setInstallState(id, false)
+            if (root.appModel) {
+                let ids = root.appModel.enabledPluginIds ? root.appModel.enabledPluginIds.slice() : []
+                if (ids.indexOf(id) === -1)
+                    ids.push(id)
+                root.appModel.enabledPluginIds = ids
+                root.appModel.save()
+            }
+            root.notificationController.success(installedLabel + " was installed.", "Plugins")
+        }
+
+        onPluginRemoved: function(id) {
+            console.log("[PluginController] Plugin removed:", id)
+            let removedLabel = root.describePlugin(root.removingPlugins[id], id)
+            delete root.removingPlugins[id]
+            root.showUninstalled(id)
+            root.startNextRemoval(id)
+
+            if (root.appModel) {
+                let ids = (root.appModel.enabledPluginIds || []).filter(function(x) {
+                    return x !== id
+                })
+                root.appModel.enabledPluginIds = ids
+                root.appModel.save()
+            }
+
+            root.notificationController.info(removedLabel + " was uninstalled.", "Plugins")
+        }
+
+        onPluginInstallFailed: function(id, error) {
+            console.warn("[PluginController] Plugin install failed:", id, error)
+            root.setInstallState(id, false)
+            root.removeInstallPlaceholder(id)
+            if (error)
+                root.notificationController.error("Could not install plugin: " + error, "Plugins")
+        }
+
+        onPluginRemoveFailed: function(id, error) {
+            console.warn("[PluginController] Plugin removal failed:", id, error)
+            delete root.removingPlugins[id]
+            root.setInstallState(id, false)
+            root.notificationController.error("Could not uninstall plugin: " + error, "Plugins")
+            root.startNextRemoval(id)
+        }
+    }
+
+    // Drops the cards that were shown as "Uninstalled" long enough
+    property Timer uninstallLingerTimer: Timer {
+        interval: 150
+        repeat: true
+
+        onTriggered: root.releaseUninstalled()
     }
 
     /* State forwarding
@@ -51,7 +217,1372 @@ QtObject {
      * ****************************************************************************************/
     Component.onCompleted: {
         pluginManager.initialize()
+        pluginManager.scanDownloads()
+        // Defer scanning one event-loop tick so that all Component.onCompleted handlers fire
+        // first — including MainWindow's SwipeView which sets pageController. Without this
+        // deferral, pageRegistered signals arrive before pageController is available.
+        Qt.callLater(function() {
+            pluginManager.scanDefaultDirectory()
+            pluginManager.scanApplicationPluginsDirectory()
+        })
+    }
+
+    property Connections commitConnections: Connections {
+        target: root.commitController
+
+        function onBeforeAction(ccc) {
+            pluginManager.runBeforeAction(ccc)
+        }
+    }
+
+    property Connections branchConnections: Connections {
+        target: root.branchController
+
+        function onBeforeAction(context) {
+            pluginManager.runBeforeAction(context)
+        }
+    }
+
+    property Connections remoteConnections: Connections {
+        target: root.remoteController
+
+        function onBeforeAction(context) {
+            pluginManager.runBeforeAction(context)
+        }
+    }
+
+    property Connections mergeConnections: Connections {
+        target: root.mergeController
+
+        function onBeforeAction(context) {
+            pluginManager.runBeforeAction(context)
+        }
+    }
+
+    /* Network connections
+     * ****************************************************************************************/
+    property Connections networkConnections: Connections {
+        target: root.networkController
+
+        function onRequestFinished(requestKey, response) {
+            if (requestKey === root.fetchPluginsRequestKey) {
+                root.handleFetchPluginsResponse(response)
+            } else if (requestKey === root.fetchCategoriesRequestKey) {
+                root.handleFetchPluginsCategoriesResponse(response)
+            } else if (requestKey === root.checkUpdatesRequestKey) {
+                root.handleCheckUpdatesResponse(response)
+            } else if (requestKey.startsWith(root.fetchPluginDetailKeyPrefix)) {
+                root.handleFetchPluginDetailResponse(requestKey, response)
+            } else if (requestKey.startsWith(root.getPluginDownloadKeyPrefix)) {
+                root.handleGetPluginDownloadResponse(requestKey, response)
+            } else if (requestKey.startsWith(root.downloadPluginKeyPrefix)) {
+                root.handlePluginDownloadResponse(requestKey, response)
+            }
+        }
+
+        function onRequestError(requestKey, code, message) {
+            if (requestKey === root.fetchPluginsRequestKey || requestKey === root.checkUpdatesRequestKey) {
+                root.busy       = false
+                root.appendMode = false
+                console.warn("[PluginController] Request error:", requestKey, code, message)
+                return
+            }
+
+            if (requestKey.startsWith(root.fetchPluginDetailKeyPrefix)) {
+                root.pluginDetailBusy = false
+                root.pluginDetailError = message || "Failed to load plugin details."
+                console.warn("[PluginController] Plugin detail error:", requestKey, code, message)
+                return
+            }
+
+            if (requestKey.startsWith(root.getPluginDownloadKeyPrefix)
+                    || requestKey.startsWith(root.downloadPluginKeyPrefix)) {
+                let pluginId = root.pendingInstallKeys[requestKey] ?? ""
+
+                delete root.pendingInstallKeys[requestKey]
+                delete root.pendingInstallHashes[requestKey]
+
+                if (pluginId) {
+                    root.setInstallState(pluginId, false)
+                    root.notificationController.error("Plugin operation failed: " + message, "Plugins")
+                }
+            }
+        }
+
+        function onTimeout(requestKey) {
+            if (requestKey === root.fetchPluginsRequestKey || requestKey === root.checkUpdatesRequestKey) {
+                root.busy       = false
+                root.appendMode = false
+                console.warn("[PluginController] Request timed out:", requestKey)
+                return
+            }
+
+            if (requestKey.startsWith(root.fetchPluginDetailKeyPrefix)) {
+                root.pluginDetailBusy = false
+                root.pluginDetailError = "Request timed out."
+                return
+            }
+
+            if (requestKey.startsWith(root.getPluginDownloadKeyPrefix)
+                    || requestKey.startsWith(root.downloadPluginKeyPrefix)) {
+                let pluginId = root.pendingInstallKeys[requestKey] ?? ""
+
+                delete root.pendingInstallKeys[requestKey]
+                delete root.pendingInstallHashes[requestKey]
+
+                if (pluginId) {
+                    root.setInstallState(pluginId, false)
+                    root.notificationController.error("Plugin operation timed out.", "Plugins")
+                }
+            }
+        }
+
+        function onDownloadProgress(requestKey, bytesReceived, bytesTotal) {
+            if (!requestKey.startsWith(root.downloadPluginKeyPrefix))
+                return
+
+            let pluginId = root.pendingInstallKeys[requestKey] ?? ""
+            let state = pluginId ? root.installStates[pluginId] : undefined
+            if(!state) {
+                return
+            }
+
+            if(bytesTotal > 0) {
+                let progress = Math.max(0, Math.min(100, Math.round((bytesReceived / bytesTotal) * 100)))
+                if(progress === state.progress) {
+                    return
+                }
+
+                root.putInstallState(pluginId, "Downloading", progress)
+            } else {
+                root.putInstallState(pluginId, "Downloading", -1)
+            }
+        }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    // The catalog returns root-relative paths ("/api/plugins/..."). Image and
+    // QNetworkAccessManager need an absolute URL; a leading slash otherwise
+    // becomes qrc:/... or a request whose scheme is empty.
+    function resolveApiUrl(url) {
+        if (!url)
+            return ""
+
+        if (url.indexOf("://") !== -1 || url.startsWith("qrc:") || url.startsWith("file:"))
+            return url
+
+        let base = root.pluginApiBaseUrl
+        if (url.charAt(0) === "/") {
+            let schemeEnd = base.indexOf("://")
+            let hostStart = schemeEnd === -1 ? 0 : schemeEnd + 3
+            let pathStart = base.indexOf("/", hostStart)
+            let origin = pathStart === -1 ? base : base.substring(0, pathStart)
+            return origin + url
+        }
+
+        if (base.charAt(base.length - 1) === "/")
+            return base + url
+        return base + "/" + url
+    }
+
+    // Fetches plugins categories
+    function fetchPluginsCategories() {
+        console.warn("[fetchPluginsCategories]")
+
+        if (!root.networkController || root.busy)
+            return
+
+        root.busy = true
+
+        let url = root.pluginApiBaseUrl + "/plugins/categories"
+
+        root.networkController.sendRequest(
+            root.fetchCategoriesRequestKey,
+            url,
+            root.networkController.GET
+        )
+    }
+
+    // Fetches page 1 and REPLACES the current list (initial load or new search).
+    function fetchAvailablePlugins(page, search) {
+        console.warn("[fetchAvailablePlugins]", page, search)
+
+        if (!root.networkController)
+            return
+
+        page   = page   || 1
+        search = search || ""
+
+        root.appendMode        = false
+        root.currentPage       = page
+        root.lastFetchedSearch = search
+        root.busy              = true
+
+        let url = root.pluginApiBaseUrl + "/plugins?page=" + page
+        if (search !== "")
+            url += "&search=" + encodeURIComponent(search)
+
+        root.networkController.sendRequest(
+            root.fetchPluginsRequestKey,
+            url,
+            root.networkController.GET,
+            ({}),
+            ({})
+        )
+    }
+
+    // Fetches the next page and APPENDS to the current list (pagination).
+    function fetchNextPage(page, search) {
+        if (!root.networkController || root.busy)
+            return
+
+        page   = page   || root.currentPage + 1
+        search = search || root.lastFetchedSearch
+
+        root.appendMode        = true
+        root.currentPage       = page
+        root.lastFetchedSearch = search
+        root.busy              = true
+
+        let url = root.pluginApiBaseUrl + "/plugins?page=" + page
+        if (search !== "")
+            url += "&search=" + encodeURIComponent(search)
+
+        root.networkController.sendRequest(
+            root.fetchPluginsRequestKey,
+            url,
+            root.networkController.GET,
+            ({}),
+            ({})
+        )
+    }
+
+    function setPluginBusy(pluginId, busy) {
+        if (!root.appModel)
+            return
+
+        root.appModel.plugins = root.appModel.plugins.map(function(p) {
+            if (p.pluginId !== pluginId)
+                return p
+
+            return Object.assign({}, p, { busy: busy })
+        })
+    }
+
+    function putInstallState(pluginId, phase, progress, name) {
+        let states = Object.assign({}, root.installStates)
+        let previous = states[pluginId]
+
+        let updating = (previous && previous.updating) || phase === "Updating"
+        if(updating && (phase === "Downloading" || phase === "Installing")) {
+            phase = "Updating"
+        }
+
+        states[pluginId] = {
+            phase: phase || "Preparing",
+            progress: (progress === undefined || progress === null) ? -1 : progress,
+            name: name || (previous ? previous.name : "") || root.knownPluginName(pluginId),
+            updating: updating
+        }
+        root.installStates = states
+    }
+
+    function isLingering(pluginId) {
+        return root.installStates[pluginId]?.phase === "Uninstalled"
+    }
+
+    function isBeingRemoved(pluginId) {
+        let phase = root.installStates[pluginId]?.phase
+        return phase === "Waiting" || phase === "Uninstalling" || phase === "Uninstalled"
+    }
+
+    function showUninstalled(pluginId) {
+        root.putInstallState(pluginId, "Uninstalled", 100)
+
+        let linger = Object.assign({}, root.uninstallLinger)
+        linger[pluginId] = Date.now() + root.uninstallLingerMs
+        root.uninstallLinger = linger
+        root.uninstallLingerTimer.start()
+    }
+
+    function releaseUninstalled() {
+        let now = Date.now()
+        let linger = Object.assign({}, root.uninstallLinger)
+        let released = false
+
+        for(let pluginId in linger) {
+            if(linger[pluginId] > now) {
+                continue
+            }
+
+            delete linger[pluginId]
+            released = true
+
+            if(root.isLingering(pluginId)) {
+                root.setInstallState(pluginId, false)
+            }
+        }
+
+        root.uninstallLinger = linger
+        if(Object.keys(linger).length === 0) {
+            root.uninstallLingerTimer.stop()
+        }
+
+        if(released) {
+            root.syncLocalPlugins()
+        }
+    }
+
+    function renameInstallState(fromId, toId) {
+        let state = root.installStates[fromId]
+        if(!state) {
+            return
+        }
+
+        let states = Object.assign({}, root.installStates)
+        delete states[fromId]
+        states[toId] = state
+        root.installStates = states
+    }
+
+    function knownPluginName(pluginId) {
+        if(!root.appModel || !root.appModel.plugins) {
+            return ""
+        }
+
+        for(let i = 0; i < root.appModel.plugins.length; i++) {
+            if(root.appModel.plugins[i].pluginId === pluginId) {
+                return root.appModel.plugins[i].name || ""
+            }
+        }
+
+        return ""
+    }
+
+    function setInstallState(pluginId, busy, phase, progress, name) {
+        if(!pluginId) {
+            return
+        }
+
+        if(busy) {
+            root.putInstallState(pluginId, phase, progress, name)
+            root.setPluginBusy(pluginId, true)
+        } else {
+            let states = Object.assign({}, root.installStates)
+            delete states[pluginId]
+            root.installStates = states
+            root.setPluginBusy(pluginId, false)
+        }
+    }
+
+    function togglePlugin(pluginId, enabled) {
+        pluginManager.enablePlugin(pluginId, enabled)
+
+        let ids = root.appModel.enabledPluginIds ? root.appModel.enabledPluginIds.slice() : []
+        if (enabled) {
+            if (ids.indexOf(pluginId) === -1)
+                ids.push(pluginId)
+        } else {
+            ids = ids.filter(function(id) {
+                return id !== pluginId
+            })
+        }
+        root.appModel.enabledPluginIds = ids
+        root.appModel.save()
+    }
+
+    function fetchPluginDetails(pluginId) {
+        if (!root.networkController || !pluginId)
+            return
+
+        // Seed from the catalog entry so the page can render immediately.
+        let local = null
+        if (root.appModel) {
+            for (let i = 0; i < root.appModel.plugins.length; i++) {
+                if (root.appModel.plugins[i].pluginId === pluginId) {
+                    local = root.appModel.plugins[i]
+                    break
+                }
+            }
+        }
+
+        root.pluginDetailError = ""
+        root.pluginDetailBusy = true
+        root.pluginDetail = local ? Object.assign({}, local) : { pluginId: pluginId, name: pluginId }
+
+        root.networkController.sendRequest(
+            root.fetchPluginDetailKeyPrefix + pluginId,
+            root.pluginApiBaseUrl + "/plugins/" + encodeURIComponent(pluginId),
+            root.networkController.GET,
+            ({}),
+            ({})
+        )
+    }
+
+    function clearPluginDetails() {
+        root.pluginDetail = null
+        root.pluginDetailBusy = false
+        root.pluginDetailError = ""
+    }
+
+    function handleFetchPluginDetailResponse(requestKey, response) {
+        root.pluginDetailBusy = false
+        let payload = response?.data ?? {}
+
+        if (payload?.success === false) {
+            root.pluginDetailError = payload?.error || "Failed to load plugin details."
+            return
+        }
+
+        let sp = payload?.data ?? null
+        if (!sp) {
+            root.pluginDetailError = "Plugin details were empty."
+            return
+        }
+
+        let local = root.localPluginMap[sp.id]
+        let existing = null
+        if (root.appModel) {
+            for (let i = 0; i < root.appModel.plugins.length; i++) {
+                if (root.appModel.plugins[i].pluginId === sp.id) {
+                    existing = root.appModel.plugins[i]
+                    break
+                }
+            }
+        }
+
+        let entry = buildPluginEntry(sp, local)
+        if (existing) {
+            entry.isInstalled = existing.isInstalled
+            entry.isEnabled = existing.isEnabled
+            entry.isCompatible = existing.isCompatible
+            entry.updateAvailable = existing.updateAvailable
+            entry.busy = existing.busy
+            if (existing.latestVersion && !entry.latestVersion)
+                entry.latestVersion = existing.latestVersion
+        }
+
+        root.pluginDetail = root.decorateEntry(entry, true)
+    }
+
+    function installPlugin(pluginId, phase) {
+        let listed = root.findListedPlugin(pluginId)
+
+        let cached = root.usableCachedPackage(listed)
+
+        if(cached && cached.compatible === false) {
+            let reason = cached.incompatibleReason || "This package does not support this platform."
+            root.notificationController.error("Installation is not possible: " + reason, "Plugins")
+            return
+        }
+
+        if(cached) {
+            root.setInstallState(pluginId, true, phase || "Installing", -1)
+            if(pluginManager.installDownloadedPackage(pluginId, cached.packagePath)) {
+                return
+            }
+
+            root.setInstallState(pluginId, false)
+        }
+
+        if (!root.networkController) {
+            root.notificationController.error("Could not install plugin: no package is available.", "Plugins")
+            return
+        }
+
+        root.setInstallState(pluginId, true, phase || "Preparing", 0)
+
+        let requestKey = root.getPluginDownloadKeyPrefix + pluginId
+        root.pendingInstallKeys[requestKey] = pluginId
+
+        root.networkController.sendRequest(
+            requestKey,
+            root.pluginApiBaseUrl + "/plugins/" + encodeURIComponent(pluginId) + "/download",
+            root.networkController.GET,
+            ({}),
+            ({})
+        )
+    }
+
+    // Picks up plugin folders copied into the plugin directories while the app is running.
+    function rescanLocalPlugins() {
         pluginManager.scanDefaultDirectory()
-        pluginManager.scanApplicationPluginsDirectory() // picks up <appDir>/plugins in dev/portable mode
+        pluginManager.scanApplicationPluginsDirectory()
+        pluginManager.scanDownloads()
+    }
+
+    function refreshDownloadedPackages() {
+        let map = {}
+        let packages = pluginManager.downloadedPackages
+        for(let i = 0; i < packages.length; i++) {
+            map[packages[i].id] = packages[i]
+        }
+
+        root.downloadedMap = map
+        root.syncLocalPlugins()
+    }
+
+    function compareVersions(a, b) {
+        let partsA = String(a || "").split(".")
+        let partsB = String(b || "").split(".")
+        let count = Math.max(partsA.length, partsB.length)
+
+        for(let i = 0; i < count; i++) {
+            let x = parseInt(partsA[i]) || 0
+            let y = parseInt(partsB[i]) || 0
+            if(x !== y) {
+                return x < y ? -1 : 1
+            }
+        }
+
+        return 0
+    }
+
+    function findListedPlugin(pluginId) {
+        let plugins = root.appModel ? root.appModel.plugins : null
+        if(!plugins) {
+            return null
+        }
+
+        for(let i = 0; i < plugins.length; i++) {
+            if(plugins[i].pluginId === pluginId) {
+                return plugins[i]
+            }
+        }
+
+        return null
+    }
+
+    // The downloaded package an install should use, or null when the plugin has to be downloaded.
+    // A plugin that is also online only uses its downloaded copy when that is not older than the
+    // catalog's latest version.
+    function usableCachedPackage(entry) {
+        if(!entry) {
+            return null
+        }
+
+        let pkg = root.downloadedMap[entry.pluginId]
+        if(!pkg) {
+            return null
+        }
+
+        if(!root.serverPluginIds[entry.pluginId]) {
+            return pkg
+        }
+
+        return root.compareVersions(pkg.version, entry.latestVersion) >= 0 ? pkg : null
+    }
+
+    // Adds what the cards need to tell where a plugin comes from: the catalog, the downloads
+    // folder or only this machine.
+    function decorateEntry(p, forceOnline) {
+        if(p.isPlaceholder) {
+            return p
+        }
+
+        let pkg = root.downloadedMap[p.pluginId] || null
+        let online = !!forceOnline || !!root.serverPluginIds[p.pluginId]
+        let isLocal = root.serverListLoaded && !online
+
+        let latestVersion = p.latestVersion
+        if(pkg && !online && !p.isInstalled) {
+            latestVersion = pkg.version
+        }
+
+        // "same" | "newer" | "older" | "only" (not online) | "" (no downloaded copy)
+        let cacheStatus = ""
+        if(pkg) {
+            if(!online) {
+                cacheStatus = "only"
+            } else {
+                let order = root.compareVersions(pkg.version, latestVersion)
+                cacheStatus = order === 0 ? "same" : (order > 0 ? "newer" : "older")
+            }
+        }
+
+        let label = ""
+        let note = ""
+        if(p.isInstalled) {
+            if(isLocal) {
+                label = "Installed locally"
+                note = "This plugin is not in the online catalog. It was installed from this computer."
+            }
+        } else if(pkg) {
+            switch(cacheStatus) {
+            case "only":
+                label = isLocal ? "Local package" : "Downloaded"
+                note = "Installs from the copy in your downloads folder (v" + pkg.version + ")."
+                break
+            case "same":
+                label = "Downloaded"
+                note = "Installs from the copy in your downloads folder, no download needed."
+                break
+            case "newer":
+                label = "Downloaded"
+                note = "Your downloaded copy (v" + pkg.version + ") is newer than the catalog's v"
+                       + latestVersion + " and is used to install."
+                break
+            case "older":
+                note = "Your downloaded copy (v" + pkg.version + ") is older than the catalog's v"
+                       + latestVersion + ". The latest version is downloaded instead."
+                break
+            }
+        }
+
+        let installFromCache = !p.isInstalled && cacheStatus !== "" && cacheStatus !== "older"
+
+        let incompatibleReason = ""
+        if(installFromCache && pkg && pkg.compatible === false) {
+            incompatibleReason = pkg.incompatibleReason || "This package does not support this platform."
+            note = incompatibleReason
+        }
+
+        return Object.assign({}, p, {
+            latestVersion:      latestVersion,
+            isLocal:            isLocal,
+            hasCachedPackage:   !!pkg,
+            cachedVersion:      pkg ? pkg.version : "",
+            cachedPath:         pkg ? pkg.packagePath : "",
+            cacheStatus:        cacheStatus,
+            installFromCache:   installFromCache,
+            isCompatible:       incompatibleReason === "" ? p.isCompatible : false,
+            incompatibleReason: incompatibleReason,
+            sourceLabel:        label,
+            sourceNote:         note
+        })
+    }
+
+    function decorateAll(list) {
+        return list.map(function(p) {
+            return root.decorateEntry(p, false)
+        })
+    }
+
+    // Builds a card for a package that only exists in the downloads folder.
+    function buildCachedEntry(pkg) {
+        let entry = root.buildLocalEntry(pkg)
+        let sizeKb = pkg.packageSizeKb || 0
+
+        return Object.assign(entry, {
+            size:            pkg.size || (sizeKb ? (sizeKb + " KB") : ""),
+            sizeKb:          sizeKb,
+            isInstalled:     false,
+            isEnabled:       false,
+            isCompatible:    true
+        })
+    }
+
+    function installGepFile(gepPath) {
+        if (!gepPath)
+            return
+
+        if (!pluginManager.installGepFile(gepPath)) {
+            root.notificationController.error("Could not open the package \"" + gepPath + "\".", "Plugins")
+        }
+    }
+
+    function describePlugin(info, fallbackName) {
+        let name = (info && info.name) ? info.name : fallbackName
+        if(info && info.version) {
+            return name + " " + info.version
+        }
+
+        return name
+    }
+
+    function uninstallPlugin(pluginId) {
+        if(!pluginId || root.installStates[pluginId]) {
+            return
+        }
+
+        // The plugin is gone from the list once it is removed; keep a copy of its name and version for the message.
+        // The map entry can't be kept as is, because it may read the list by index and show the next plugin.
+        let local = root.localPluginMap[pluginId]
+        root.removingPlugins[pluginId] = local ? { name: local.name, version: local.version } : null
+
+        if(root.removingNow !== "") {
+            root.setInstallState(pluginId, true, "Waiting", -1)
+            root.removeQueue = root.removeQueue.concat([pluginId])
+            return
+        }
+
+        root.beginRemoval(pluginId)
+    }
+
+    // Deletes the cached .gep under downloads/plugins. Does not uninstall an installed plugin.
+    function removeDownloadedPackage(pluginId) {
+        if (!pluginId) {
+            return
+        }
+
+        if (!root.downloadedMap[pluginId]) {
+            root.notificationController.error("No downloaded package found for this plugin.", "Plugins")
+            return
+        }
+
+        if (!pluginManager.removeDownloadedPackage(pluginId)) {
+            root.notificationController.error("Could not remove the downloaded package.", "Plugins")
+            return
+        }
+
+        if (root.pluginDetail && root.pluginDetail.pluginId === pluginId) {
+            root.pluginDetail = root.decorateEntry(Object.assign({}, root.pluginDetail, {
+                hasCachedPackage: false,
+                cachedPath: "",
+                cachedVersion: "",
+                cacheStatus: "",
+                installFromCache: false,
+                sourceLabel: root.pluginDetail.isInstalled ? (root.pluginDetail.sourceLabel || "") : "",
+                sourceNote: ""
+            }), !!root.serverPluginIds[pluginId])
+        }
+
+        root.notificationController.info("Downloaded package removed.", "Plugins")
+    }
+
+    function beginRemoval(pluginId) {
+        root.removingNow = pluginId
+        root.setInstallState(pluginId, true, "Uninstalling", -1)
+
+        if(!pluginManager.removePlugin(pluginId)) {
+            delete root.removingPlugins[pluginId]
+            root.setInstallState(pluginId, false)
+            root.notificationController.error("Could not uninstall plugin.", "Plugins")
+            root.startNextRemoval(pluginId)
+        }
+    }
+
+    function startNextRemoval(finishedId) {
+        if(root.removingNow !== finishedId) {
+            return
+        }
+
+        root.removingNow = ""
+        if(root.removeQueue.length === 0) {
+            return
+        }
+
+        let queue = root.removeQueue.slice()
+        let next = queue.shift()
+        root.removeQueue = queue
+        root.beginRemoval(next)
+    }
+
+    function updatePlugin(pluginId) {
+        root.installPlugin(pluginId, "Updating")
+    }
+
+    function checkUpdates() {
+        if (!root.networkController)
+            return
+
+        let installed = []
+        let infos = pluginManager.pluginInfos
+
+        for (var i = 0; i < infos.length; i++) {
+            let info = infos[i]
+
+            if (info.loaded && info.version)
+                installed.push({ "id": info.id, "version": info.version })
+        }
+
+        if (installed.length === 0)
+            return
+
+        root.networkController.sendRequest(
+            root.checkUpdatesRequestKey,
+            root.pluginApiBaseUrl + "/plugins/check-updates",
+            NetworkManager.POST,
+            { "installed_plugins": installed }
+        )
+    }
+
+    function handleFetchPluginsResponse(response) {
+        root.busy = false
+        let payload = response?.data ?? {}
+
+        if (payload?.success === false) {
+            console.warn("[PluginController] Fetch plugins failed:", payload?.error ?? "unknown error")
+            root.appendMode = false
+            return
+        }
+
+        let serverPlugins = payload?.data ?? []
+        let pagination     = payload?.pagination ?? {}
+        root.hasMorePages  = (pagination.page ?? 1) < (pagination.total_pages ?? 1)
+
+        if (root.appendMode) {
+            root.appendMode = false
+            appendPlugins(serverPlugins)
+        } else {
+            mergePlugins(serverPlugins)
+        }
+
+    }
+
+    function handleFetchPluginsCategoriesResponse(response) {
+        if (!root.appModel)
+            return
+
+        root.busy = false
+        let payload = response?.data ?? {}
+
+        if (payload?.success === false) {
+            console.warn("[PluginController] Fetch plugins categories failed:", payload?.error ?? "unknown error")
+            return
+        }
+
+        let categories = payload?.data ?? []
+        let addedCategories = {}
+        let next = []
+
+        for (let i = 0; i < categories.length; i++) {
+            let category = categories[i]
+            if (!category || addedCategories[category.id])
+                continue
+
+            addedCategories[category.id] = true
+            next.push({
+                id: category.id,
+                name: category.name,
+                color: category.color,
+                iconUrl: root.resolveApiUrl(category.icon_url)
+            })
+        }
+
+        root.appModel.pluginsCategories = next
+    }
+
+    function handleCheckUpdatesResponse(response) {
+        let payload = response?.data ?? {}
+
+        if (payload?.success === false)
+            return
+
+        let updates = payload?.data?.updates_available ?? []
+        if (!root.appModel || updates.length === 0)
+            return
+
+        let updateMap = {}
+        for (var i = 0; i < updates.length; i++)
+            updateMap[updates[i].id] = updates[i]
+
+        root.appModel.plugins = root.appModel.plugins.map(function(p) {
+            let update = updateMap[p.pluginId]
+            if (!update)
+                return p
+
+            return Object.assign({}, p, {
+                updateAvailable: true,
+                latestVersion:   update.latest_version
+            })
+        })
+    }
+
+    function handleGetPluginDownloadResponse(requestKey, response) {
+        let pluginId = root.pendingInstallKeys[requestKey] ?? ""
+
+        delete root.pendingInstallKeys[requestKey]
+
+        if (!pluginId)
+            return
+
+        let payload = response?.data ?? {}
+        if (payload?.success === false) {
+            console.warn("[PluginController] Get plugin download failed:", payload?.error ?? "unknown error")
+            root.setInstallState(pluginId, false)
+            root.notificationController.error("Failed to get download link for plugin.", "Plugins")
+            return
+        }
+
+        let downloadUrl = root.resolveApiUrl(payload?.data?.download_url ?? "")
+        if (!downloadUrl) {
+            console.warn("[PluginController] No download URL in response for:", pluginId)
+            root.setInstallState(pluginId, false)
+            root.notificationController.error("Server returned no download URL.", "Plugins")
+            return
+        }
+
+        let expectedMd5 = payload?.data?.checksum_md5 ?? ""
+
+        let dlKey = root.downloadPluginKeyPrefix + pluginId
+        root.pendingInstallKeys[dlKey] = pluginId
+        root.pendingInstallHashes[dlKey] = expectedMd5  // store for verification after download
+        root.setInstallState(pluginId, true, "Downloading", 0)
+        root.networkController.downloadRequest(dlKey, downloadUrl)
+    }
+
+    function handlePluginDownloadResponse(requestKey, response) {
+        let pluginId = root.pendingInstallKeys[requestKey]   ?? ""
+        let expectedMd5 = root.pendingInstallHashes[requestKey] ?? ""
+
+        delete root.pendingInstallKeys[requestKey]
+        delete root.pendingInstallHashes[requestKey]
+
+        if (!pluginId)
+            return
+
+        let payload = response?.data ?? {}
+        let base64Data = payload?.file_data_base64 ?? ""
+
+        if (!base64Data) {
+            console.warn("[PluginController] Empty download data for:", pluginId)
+            root.setInstallState(pluginId, false)
+            root.notificationController.error("Download failed for plugin: " + pluginId, "Plugins")
+            return
+        }
+
+        root.setInstallState(pluginId, true, "Installing", 100)
+        if (!pluginManager.installGepFromBase64(base64Data, pluginId, expectedMd5))
+            root.setInstallState(pluginId, false)
+    }
+
+    // A stand-in card for a package whose manifest is not read yet.
+    function buildPlaceholderEntry(pluginId, name) {
+        return {
+            pluginId:         pluginId,
+            name:             name || "Plugin",
+            description:      "Installing plugin…",
+            longDescription:  "",
+            features:         [],
+            installGuide:     "",
+            changelog:        [],
+            tags:             [],
+            screenshots:      [],
+            githubUrl:        "",
+            author:           "Local package",
+            latestVersion:    "",
+            minAppVersion:    "",
+            category:         "",
+            mainColor:        "",
+            size:             "",
+            sizeKb:           0,
+            iconUrl:          "",
+            releaseDate:      "",
+            donwloadsCount:   0,
+            downloadsCount:   0,
+            isInstalled:      true,
+            isEnabled:        false,
+            isCompatible:     true,
+            updateAvailable:  false,
+            busy:             true,
+            isPlaceholder:    true
+        }
+    }
+
+    function addInstallPlaceholder(pluginId, name) {
+        if(!root.appModel) {
+            return
+        }
+
+        let plugins = root.appModel.plugins ? root.appModel.plugins.slice() : []
+        for(let i = 0; i < plugins.length; i++) {
+            if(plugins[i].pluginId === pluginId) {
+                return
+            }
+        }
+
+        plugins.unshift(root.buildPlaceholderEntry(pluginId, name))
+        root.appModel.plugins = plugins
+    }
+
+    function resolveInstallPlaceholder(pendingId, pluginId, name) {
+        if(!root.appModel) {
+            return
+        }
+
+        let plugins = root.appModel.plugins ? root.appModel.plugins : []
+        let hasRealCard = false
+        for(let i = 0; i < plugins.length; i++) {
+            if(plugins[i].pluginId === pluginId) {
+                hasRealCard = true
+                break
+            }
+        }
+
+        let next = []
+        for(let j = 0; j < plugins.length; j++) {
+            let p = plugins[j]
+            if(p.pluginId !== pendingId) {
+                next.push(p)
+                continue
+            }
+
+            if(hasRealCard) {
+                continue
+            }
+
+            next.push(Object.assign({}, p, {
+                pluginId: pluginId,
+                name: name || p.name
+            }))
+        }
+
+        root.appModel.plugins = next
+    }
+
+    function removeInstallPlaceholder(pluginId) {
+        if(!root.appModel || !root.appModel.plugins) {
+            return
+        }
+
+        let plugins = root.appModel.plugins
+        let next = plugins.filter(function(p) {
+            return !(p.isPlaceholder && p.pluginId === pluginId)
+        })
+
+        if(next.length !== plugins.length) {
+            root.appModel.plugins = next
+        }
+    }
+
+    // Replaces appModel.plugins with the server list merged with local state.
+    function mergePlugins(serverPlugins) {
+        if (!root.appModel)
+            return
+
+        let searchLower = root.lastFetchedSearch.toLowerCase()
+        let newServerIds = {}
+
+        let merged = serverPlugins.map(function(sp) {
+            newServerIds[sp.id] = true
+            let local = root.localPluginMap[sp.id]
+            return buildPluginEntry(sp, local)
+        })
+
+        root.serverPluginIds = newServerIds
+        root.serverListLoaded = true
+
+        // Append locally-installed plugins absent from the server list.
+        for (var id in root.localPluginMap) {
+            if (newServerIds[id])
+                continue
+
+            let local = root.localPluginMap[id]
+            if (searchLower !== "") {
+                let nameMatch = local.name.toLowerCase().indexOf(searchLower) !== -1
+                let descMatch = local.description.toLowerCase().indexOf(searchLower) !== -1
+
+                if (!nameMatch && !descMatch)
+                    continue
+            }
+            merged.push(buildLocalEntry(local))
+        }
+
+        // Append packages from the downloads folder that are neither online nor installed.
+        for (var packageId in root.downloadedMap) {
+            if (newServerIds[packageId] || root.localPluginMap[packageId]) {
+                continue
+            }
+
+            let pkg = root.downloadedMap[packageId]
+            if (!root.matchesSearch(pkg, searchLower)) {
+                continue
+            }
+
+            merged.push(root.buildCachedEntry(pkg))
+        }
+
+        let current = root.appModel.plugins ? root.appModel.plugins : []
+        for(let k = 0; k < current.length; k++) {
+            let existing = current[k]
+            if(existing.isPlaceholder
+                    && !newServerIds[existing.pluginId]
+                    && !root.localPluginMap[existing.pluginId]) {
+                merged.unshift(existing)
+            }
+        }
+
+        root.appModel.plugins = root.decorateAll(merged)
+        checkUpdates()
+    }
+
+    function matchesSearch(info, searchLower) {
+        if(searchLower === "") {
+            return true
+        }
+
+        return (info.name || "").toLowerCase().indexOf(searchLower) !== -1
+               || (info.description || "").toLowerCase().indexOf(searchLower) !== -1
+    }
+
+    // Appends new server results to the existing list (pagination).
+    function appendPlugins(serverPlugins) {
+        if (!root.appModel)
+            return
+
+        let existingIds = {}
+        let offlineIds = {}
+        root.appModel.plugins.forEach(function(p) {
+            existingIds[p.pluginId] = true
+            if (!p.isPlaceholder && !root.serverPluginIds[p.pluginId]) {
+                offlineIds[p.pluginId] = true
+            }
+        })
+
+        // A card that was only known from this computer is replaced by the catalog's entry.
+        let replaced = {}
+        serverPlugins.forEach(function(sp) {
+            if (offlineIds[sp.id]) {
+                replaced[sp.id] = sp
+            }
+        })
+
+        let newItems = serverPlugins
+            .filter(function(sp) { return !existingIds[sp.id] })
+            .map(function(sp) {
+                root.serverPluginIds[sp.id] = true
+                return buildPluginEntry(sp, root.localPluginMap[sp.id])
+            })
+
+        let replacedIds = Object.keys(replaced)
+        if (newItems.length > 0 || replacedIds.length > 0) {
+            let current = root.appModel.plugins
+            if (replacedIds.length > 0) {
+                current = current.map(function(p) {
+                    let sp = replaced[p.pluginId]
+                    if (!sp) {
+                        return p
+                    }
+
+                    root.serverPluginIds[sp.id] = true
+                    return Object.assign(root.buildPluginEntry(sp, root.localPluginMap[sp.id]), { busy: p.busy })
+                })
+            }
+
+            root.appModel.plugins = root.decorateAll(current.concat(newItems))
+            checkUpdates()
+        }
+    }
+
+    // Builds a display object from a server plugin entry and optional local info.
+    function buildPluginEntry(sp, local) {
+        let downloads = sp.downloads_count ?? sp.donwloads_count ?? 0
+        let sizeKb = sp.size_kb || 0
+        return {
+            pluginId:         sp.id,
+            name:             sp.name,
+            description:      sp.description || "",
+            longDescription:  sp.long_description || "",
+            features:         sp.features || [],
+            installGuide:     sp.install_guide || "",
+            changelog:        sp.changelog || [],
+            tags:             sp.tags || [],
+            screenshots:      root.normalizeScreenshots(sp.screenshots),
+            githubUrl:        sp.github_url || "",
+            author:           sp.author,
+            latestVersion:    sp.latest_version   || "",
+            minAppVersion:    sp.min_app_version  || "",
+            size:             sizeKb ? (sizeKb + " KB") : "",
+            sizeKb:           sizeKb,
+            iconUrl:          sp.icon_url ? root.resolveApiUrl(sp.icon_url) : root.localIconUrl(local),
+            releaseDate:      sp.release_date     || "",
+            category:         sp.category || "",
+            mainColor:        getCategoryColor(sp.category),
+            donwloadsCount:   downloads,
+            downloadsCount:   downloads,
+            visibility:       sp.visibility || "public",
+            isInstalled:      !!local,
+            isEnabled:        local ? local.enabled : false,
+            isCompatible:     local ? local.loaded  : true,
+            updateAvailable:  false,
+            busy:             false,
+            isPlaceholder:    false
+        }
+    }
+
+    // Accepts string URLs or {url,src,image_url,caption} objects from the catalog.
+    function normalizeScreenshots(raw) {
+        let list = raw || []
+        let out = []
+
+        for (let i = 0; i < list.length; i++) {
+            let item = list[i]
+            let url = ""
+            let caption = ""
+
+            if (typeof item === "string") {
+                url = item
+            } else if (item && typeof item === "object") {
+                url = item.url || item.src || item.image_url || item.path || item.file || ""
+                caption = item.caption || item.title || item.alt || ""
+            }
+
+            url = root.resolveApiUrl(url)
+            if (!url)
+                continue
+
+            let lower = url.toLowerCase()
+            let isGif = lower.indexOf(".gif") !== -1
+                        || lower.indexOf("image/gif") !== -1
+                        || (item && item.type === "gif")
+
+            out.push({
+                url: url,
+                caption: caption,
+                isGif: isGif
+            })
+        }
+
+        return out
+    }
+
+    function localIconUrl(local) {
+        if (!local)
+            return ""
+        if (local.iconUrl)
+            return local.iconUrl
+        if (!local.icon || !local.pluginDir)
+            return ""
+
+        let dir = String(local.pluginDir).replace(/\\/g, "/").replace(/^\/+/, "").replace(/\/+$/, "")
+        return "file:///" + dir + "/" + local.icon
+    }
+
+    // Builds a display object from a locally-installed plugin only.
+    function buildLocalEntry(local) {
+        return {
+            pluginId:         local.id,
+            name:             local.name,
+            description:      local.description || "",
+            longDescription:  local.longDescription || "",
+            features:         local.features || [],
+            installGuide:     local.installGuide || "",
+            changelog:        local.changelog || [],
+            tags:             (local.tags && local.tags.length > 0) ? local.tags : (local.capabilities || []),
+            screenshots:      [],
+            githubUrl:        local.githubUrl || "",
+            author:           local.author,
+            latestVersion:    local.version    || "",
+            minAppVersion:    local.minAppVersion || local.apiVersion || "",
+            category:         local.category || "",
+            mainColor:        getCategoryColor(local.category),
+            size:             local.size       || "",
+            sizeKb:           0,
+            iconUrl:          root.localIconUrl(local),
+            releaseDate:      local.releaseDate || "",
+            donwloadsCount:   0,
+            downloadsCount:   0,
+            visibility:       "public",
+            isInstalled:      true,
+            isEnabled:        local.enabled,
+            isCompatible:     local.loaded,
+            updateAvailable:  false,
+            busy:             false,
+            isPlaceholder:    false
+        }
+    }
+
+    // Called whenever PluginManager.pluginsChanged fires.
+    function syncLocalPlugins() {
+        if (!root.appModel)
+            return
+
+        let infos = pluginManager.pluginInfos
+        let localMap = {}
+
+        for (var i = 0; i < infos.length; i++)
+            localMap[infos[i].id] = infos[i]
+
+        root.localPluginMap = localMap
+
+        if (root.appModel.plugins.length > 0) {
+            let listedIds = {}
+            let searchLower = root.lastFetchedSearch.toLowerCase()
+
+            let updated = root.appModel.plugins
+                .map(function(p) {
+                    listedIds[p.pluginId] = true
+                    let local = localMap[p.pluginId]
+                    if(!local) {
+                        if(p.isPlaceholder || root.isBeingRemoved(p.pluginId)) {
+                            return p
+                        }
+
+                        return Object.assign({}, p, {
+                                                 isInstalled: false,
+                                                 isEnabled: false,
+                                                 isCompatible: true,
+                                                 updateAvailable: false,
+                                                 busy: false })
+                    }
+
+                    if(p.isPlaceholder) {
+                        return Object.assign(root.buildLocalEntry(local), { busy: p.busy })
+                    }
+
+                    return Object.assign({}, p, {
+                        isInstalled: true,
+                        isEnabled: local.enabled,
+                        isCompatible: local.loaded,
+                        iconUrl: p.iconUrl || root.localIconUrl(local)
+                    })
+                })
+
+                // Drop local-only entries that are no longer installed
+                .filter(function(p) {
+                    return p.isPlaceholder
+                            || root.isBeingRemoved(p.pluginId)
+                            || root.serverPluginIds[p.pluginId]
+                            || root.downloadedMap[p.pluginId]
+                            || p.isInstalled
+                })
+
+            // Add newly installed plugins that aren't listed yet (e.g. imported .gep files
+            // or plugins that aren't published on the server).
+            for (let j = 0; j < infos.length; j++) {
+                let info = infos[j]
+                if (listedIds[info.id])
+                    continue
+
+                if (searchLower !== "") {
+                    let nameMatch = (info.name || "").toLowerCase().indexOf(searchLower) !== -1
+                    let descMatch = (info.description || "").toLowerCase().indexOf(searchLower) !== -1
+                    if (!nameMatch && !descMatch)
+                        continue
+                }
+                updated.push(buildLocalEntry(info))
+            }
+
+            // Packages from the downloads folder that are not listed yet
+            for (var packageId in root.downloadedMap) {
+                if (listedIds[packageId] || localMap[packageId]) {
+                    continue
+                }
+
+                let pkg = root.downloadedMap[packageId]
+                if (root.matchesSearch(pkg, searchLower)) {
+                    updated.push(root.buildCachedEntry(pkg))
+                }
+            }
+
+            root.appModel.plugins = root.decorateAll(updated)
+            return
+        }
+
+        // No server data yet — show local plugins as an immediate fallback
+        let fallback = infos.map(function(info) {
+            return buildLocalEntry(info)
+        })
+
+        for (var cachedId in root.downloadedMap) {
+            if (!localMap[cachedId]) {
+                fallback.push(root.buildCachedEntry(root.downloadedMap[cachedId]))
+            }
+        }
+
+        root.appModel.plugins = root.decorateAll(fallback)
+    }
+
+    // Get plugin main color based on its categoryId
+    function getCategoryColor(categoryId) {
+        let cats = root.appModel?.pluginsCategories ?? []
+        for (let i = 0; i < cats.length; i++) {
+            if (cats[i].id === categoryId)
+                return cats[i].color
+        }
+
+        return ""
     }
 }

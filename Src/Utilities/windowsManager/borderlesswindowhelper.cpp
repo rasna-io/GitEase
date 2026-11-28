@@ -3,6 +3,13 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QOperatingSystemVersion>
 
+#ifdef Q_OS_LINUX
+#include <QtQuick/QQuickWindow>
+
+#include "WindowCornerMaskLinux.hpp"
+#include "WindowResizerLinux.hpp"
+#endif
+
 
 #ifdef Q_OS_WIN
 #include <windowsx.h>
@@ -15,6 +22,17 @@ BorderlessWindowHelper::BorderlessWindowHelper(QWindow* window, QObject* parent)
 {
     if (!m_window)
         return;
+
+#ifdef Q_OS_LINUX
+    auto* quickWindow = qobject_cast<QQuickWindow*>(m_window.data());
+    const bool drawCorners = quickWindow && quickWindow->color().alpha() == 255;
+    if (drawCorners) {
+        if (m_window->handle() && !m_window->isVisible())
+            m_window->destroy();
+        if (!m_window->handle())
+            WindowCornerMaskLinux::requestAlphaChannel(m_window);
+    }
+#endif
 
     // Ensure native handle exists.
     m_window->create();
@@ -29,6 +47,19 @@ BorderlessWindowHelper::BorderlessWindowHelper(QWindow* window, QObject* parent)
 
 #ifdef Q_OS_LINUX
     m_window->setFlags(Qt::Window | Qt::FramelessWindowHint);
+
+    if (drawCorners && m_window->format().alphaBufferSize() > 0)
+        m_cornerMask = new WindowCornerMaskLinux(quickWindow);
+
+    // Owned by the helper; Windows gets the same borders from WM_NCHITTEST.
+    new WindowResizerLinux(m_window, this);
+#endif
+}
+
+BorderlessWindowHelper::~BorderlessWindowHelper()
+{
+#ifdef Q_OS_LINUX
+    delete m_cornerMask;
 #endif
 }
 
@@ -90,6 +121,18 @@ void BorderlessWindowHelper::setupDwmShadow()
         const int backdrop = 2; // DWMSBT_MAINWINDOW (if available)
         ::DwmSetWindowAttribute(m_hwnd, 38 /*DWMWA_SYSTEMBACKDROP_TYPE*/, (void*)&backdrop, sizeof(backdrop));
     }
+}
+#endif
+
+#ifdef Q_OS_WIN
+void BorderlessWindowHelper::applyRoundedCorners()
+{
+    if (!m_hwnd) return;
+
+    // Windows 11 rounds the window natively (anti-aliased, keeps the DWM shadow) and drops the
+    // rounding by itself when maximized or snapped. Older Windows ignores the attribute.
+    const int preference = 2; // DWMWCP_ROUND
+    ::DwmSetWindowAttribute(m_hwnd, 33 /*DWMWA_WINDOW_CORNER_PREFERENCE*/, &preference, sizeof(preference));
 }
 #endif
 
@@ -158,6 +201,7 @@ void BorderlessWindowHelper::applyBorderlessNow()
     const MARGINS m = (maximized || fullscreen) ? MARGINS{0,0,0,0} : MARGINS{1,1,1,1};
     ::DwmExtendFrameIntoClientArea(m_hwnd, &m);
 
+    applyRoundedCorners();
 }
 #endif
 
@@ -171,6 +215,50 @@ void BorderlessWindowHelper::setMinimumSize(const QSize &newSize)
     m_minimumSize = newSize;
 }
 
+void BorderlessWindowHelper::refreshBorderless()
+{
+#ifdef Q_OS_WIN
+    if (!m_window)
+        return;
+
+    HWND hwnd = reinterpret_cast<HWND>(m_window->winId());
+    if (!hwnd)
+        return;
+
+    if (hwnd != m_hwnd)
+        m_hwnd = hwnd;
+
+    applyBorderlessNow();
+
+    ::EnableWindow(m_hwnd, TRUE);
+#endif
+}
+
+#ifdef Q_OS_WIN
+bool BorderlessWindowHelper::minimizePreservingState()
+{
+    if (!m_hwnd)
+        return false;
+
+    WINDOWPLACEMENT wp{ sizeof(WINDOWPLACEMENT) };
+    if (!::GetWindowPlacement(m_hwnd, &wp))
+        return false;
+
+    if (::IsZoomed(m_hwnd))
+        wp.flags |= WPF_RESTORETOMAXIMIZED;
+    else
+        wp.flags &= ~WPF_RESTORETOMAXIMIZED;
+    wp.showCmd = SW_SHOWMINIMIZED;
+
+    return ::SetWindowPlacement(m_hwnd, &wp);
+}
+#else
+bool BorderlessWindowHelper::minimizePreservingState()
+{
+    return false;
+}
+#endif
+
 
 bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result)
 {
@@ -182,6 +270,15 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
         return false;
 
     MSG* msg = static_cast<MSG*>(message);
+
+    if (msg->hwnd != m_hwnd && msg->message == WM_SHOWWINDOW && msg->wParam) {
+        HWND currentHwnd = reinterpret_cast<HWND>(m_window->winId());
+        if (currentHwnd && currentHwnd != m_hwnd)
+            m_hwnd = currentHwnd;
+    }
+
+    if (msg->hwnd != m_hwnd)
+        return false;
 
     switch (msg->message)
     {
@@ -241,6 +338,8 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
 
             DWORD borderColor = RGB(0,0,0);
             ::DwmSetWindowAttribute(m_hwnd, 34, &borderColor, sizeof(borderColor));
+
+            applyRoundedCorners();
         }
         return false;
     }
@@ -250,9 +349,6 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
         // Provide native resize borders. We *don’t* return HTCAPTION here,
         // because we want QML to initiate move via startSystemMove(), so buttons remain clickable.
         // This keeps resizing 100% native while your header logic stays in QML.
-        if (msg->hwnd != m_hwnd)
-            return false;
-
         const LONG x = GET_X_LPARAM(msg->lParam);
         const LONG y = GET_Y_LPARAM(msg->lParam);
 
@@ -296,10 +392,15 @@ bool BorderlessWindowHelper::nativeEventFilter(const QByteArray& eventType, void
         mmi->ptMaxSize.x     = wa.right  - wa.left;
         mmi->ptMaxSize.y     = wa.bottom - wa.top;
 
-        if (m_minimumSize.width()  > 0)
-            mmi->ptMinTrackSize.x = std::max<LONG>(mmi->ptMinTrackSize.x, m_minimumSize.width());
-        if (m_minimumSize.height() > 0)
-            mmi->ptMinTrackSize.y = std::max<LONG>(mmi->ptMinTrackSize.y, m_minimumSize.height());
+        const qreal scale = m_window->devicePixelRatio();
+        if (m_minimumSize.width() > 0) {
+            const LONG width = std::min<LONG>(qRound(m_minimumSize.width() * scale), wa.right - wa.left);
+            mmi->ptMinTrackSize.x = std::max<LONG>(mmi->ptMinTrackSize.x, width);
+        }
+        if (m_minimumSize.height() > 0) {
+            const LONG height = std::min<LONG>(qRound(m_minimumSize.height() * scale), wa.bottom - wa.top);
+            mmi->ptMinTrackSize.y = std::max<LONG>(mmi->ptMinTrackSize.y, height);
+        }
 
 
         *result = 0;

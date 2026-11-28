@@ -73,8 +73,8 @@ Item {
             implicitHeight: visible ? (topRow.implicitHeight + root.padV * 2) : 0
 
             color: (root.isRemovedOnly || root.isModified)
-                   ? Style.colors.diffRemovedBg
-                   : Style.colors.primaryBackground
+                   ? Style.colors.diffRowRemovedBg
+                   : Style.colors.diffContextBackground
 
             Loader {
                 anchors.fill: parent
@@ -95,8 +95,8 @@ Item {
                 Text {
                     width: root.gutterWidth
                     text: root.hasOld ? modelData.oldLine : ""
-                    color: Style.colors.mutedText
-                    font.pixelSize: 10
+                    color: Style.colors.diffLineNumberText
+                    font.pixelSize: Style.appFont.smallPt
                     horizontalAlignment: Text.AlignRight
                     verticalAlignment: Text.AlignTop
                 }
@@ -104,9 +104,9 @@ Item {
                 Text {
                     width: parent.width - root.gutterWidth - topRow.spacing
                     text: root.oldText
-                    color: Style.colors.foreground
-                    font.family: "Consolas"
-                    font.pixelSize: 12
+                    color: Style.colors.diffTextStacked
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.mediumPt
                     wrapMode: Text.WrapAnywhere
                     textFormat: Text.PlainText
                 }
@@ -120,8 +120,8 @@ Item {
             implicitHeight: visible ? (bottomRow.implicitHeight + root.padV * 2) : 0
 
             color: (root.isAddedOnly || root.isModified)
-                   ? Style.colors.diffAddedBg
-                   : Style.colors.primaryBackground
+                   ? Style.colors.diffRowAddedBg
+                   : Style.colors.diffContextBackground
 
 
             Loader {
@@ -143,8 +143,8 @@ Item {
                 Text {
                     width: root.gutterWidth
                     text: root.hasNew ? modelData.newLine : ""
-                    color: Style.colors.mutedText
-                    font.pixelSize: 10
+                    color: Style.colors.diffLineNumberText
+                    font.pixelSize: Style.appFont.smallPt
                     horizontalAlignment: Text.AlignRight
                     verticalAlignment: Text.AlignTop
                 }
@@ -154,9 +154,9 @@ Item {
                     text: root.isModified
                           ? root.newText
                           : (root.isAddedOnly ? root.effectiveNewText : "")
-                    color: Style.colors.foreground
-                    font.family: "Consolas"
-                    font.pixelSize: 12
+                    color: Style.colors.diffTextStacked
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.mediumPt
                     wrapMode: Text.WrapAnywhere
                     textFormat: Text.PlainText
                 }

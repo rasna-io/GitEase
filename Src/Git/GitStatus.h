@@ -37,9 +37,10 @@ public:
     /**
      * \brief Stage a file for commit
      * \param filePath Path to the file to stage
+     * \param isDeleted Flag indicating whether the file is deleted
      * \return GitResult with operation result
      */
-    Q_INVOKABLE GitResult stageFile(const QString &filePath);
+    Q_INVOKABLE GitResult stageFile(const QString &filePath, bool isDeleted = false);
 
     /**
      * \brief Unstage a file
@@ -50,10 +51,24 @@ public:
 
     /**
      * \brief Stage all unstaged changes
+     *
+     * Reads the status once and updates the index in memory, so the index is written a single
+     * time however many files change. Safe to call through callAsync().
+     *
      * \param includeUntrackedFiles Include new files not yet tracked by git
      * \return GitResult with count of staged files
      */
     Q_INVOKABLE GitResult stageAll(bool includeUntrackedFiles = true);
+
+    /**
+     * \brief Unstage everything in the index, keeping the working tree as it is
+     *
+     * Equivalent of `git reset`. The index is written a single time. Safe to call through
+     * callAsync().
+     *
+     * \return GitResult with count of unstaged files
+     */
+    Q_INVOKABLE GitResult unstageAll();
 
     /**
      * \brief Get list of currently staged files
@@ -68,6 +83,13 @@ public:
     Q_INVOKABLE GitResult status();
 
     /**
+     * \brief Get repository status, optionally without per-file line counts.
+     * \param withLineStats false leaves additionsCount and deletionsCount at 0, which skips a
+     *        diff of every changed file and makes the call much faster on large change sets.
+     */
+    Q_INVOKABLE GitResult status(bool withLineStats);
+
+    /**
      * \brief Stage or unstage a file in the repository index
      *
      * This method stages or unstages a file depending on the `isRemove` parameter. If `isRemove` is `false`,
@@ -78,6 +100,17 @@ public:
      * \return GitResult containing success status, file path, and operation message
      */
     GitResult addToIndex(const QString& filePath, bool isRemove = false);
+
+    /**
+     * Removes files or whole folders from the index and keeps them on disk.
+     *
+     * Equivalent of `git rm --cached -r -q --ignore-unmatch`. A path that is not in the index is
+     * not an error, and the index is written once for the whole batch.
+     *
+     * @param paths Files or folders relative to the repository root
+     * @return GitResult with data as the number of paths handled
+     */
+    Q_INVOKABLE GitResult removeFromIndex(const QStringList &paths);
 
     /**
     * @brief Retrieves a processed diff for a specific file.
@@ -184,8 +217,9 @@ public:
 
     /**
      * @brief Discards all unstaged modifications in the repository.
-     * * Resets the working directory to match the HEAD commit. This will not
-     * delete untracked files but will restore deleted tracked files.
+     * * Restores the working directory from the index, so staged changes are kept, restores
+     * deleted tracked files and removes untracked ones. Unmerged files are reset to HEAD,
+     * which also ends their conflicts.
      * * @return GitResult indicating success.
      */
     Q_INVOKABLE GitResult revertAll();
@@ -195,12 +229,39 @@ public:
     /// Returns a QVariantList of chunk objects ready for QML
     Q_INVOKABLE GitResult getChunkedDiffView(const QString &filePath, bool staged);
 
-private:
     /**
      * @brief Get unstaged diff view (index to workdir).
      * @param filePath Path to the file to inspect.
      */
-    GitResult getUnstagedDiffView(const QString &filePath);
+    Q_INVOKABLE GitResult getUnstagedDiffView(const QString &filePath);
+
+    /**
+     * @brief Whether the working copy of a file still holds a complete conflict block
+     *        (`<<<<<<<`, `=======`, `>>>>>>>`), i.e. staging it would record the markers.
+     * @param filePath Path to the file to inspect.
+     */
+    Q_INVOKABLE bool hasConflictMarkers(const QString &filePath);
+
+private:
+
+    /**
+     * @brief Whether the index holds conflict entries for a file instead of a single stage-0
+     *        entry, e.g. after a conflicted merge or a quit rebase.
+     * @param filePath Path to the file to inspect.
+     */
+    bool isUnmerged(const QString &filePath) const;
+
+    /**
+     * @brief Paths the index currently holds as conflicts rather than single entries.
+     */
+    QStringList unmergedPaths() const;
+
+    /**
+     * @brief Puts HEAD's version of each path back into the index, which also clears any
+     *        conflict recorded for it. A path HEAD doesn't have is dropped from the index.
+     * @param paths Paths to reset; nothing happens when empty.
+     */
+    GitResult resetIndexToHead(const QStringList &paths);
 
     /**
      * @brief Get staged diff view (HEAD to index).
@@ -300,4 +361,6 @@ private:
 
     QVariantMap gitDiffToMap(const GitDiff &d);
     bool isContextLine(const QVariantMap &line) const;
+
+    QByteArray smudgeText(git_repository* repo, const QString& path, const QString& lfContent);
 };

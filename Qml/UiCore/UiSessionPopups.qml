@@ -13,12 +13,16 @@ Item {
     id: root
 
     property AppModel               appModel:               null
+    property GuideController        guideController:        null
 
     property NotificationController notificationController: null
+    property SshKeyController       sshKeyController:       null
 
-    SshKeyController {
-        id: sshKeyCtrl
-    }
+    property TextDirectionController textDirectionController: null
+
+    property UserProfileController  userProfileController:  null
+
+    property IdentityGuard          identityGuard:          null
 
     property RepositorySelectorPopup    repositorySelectorPopup:    RepositorySelectorPopup {
         appModel: root.appModel
@@ -27,7 +31,8 @@ Item {
 
     property SettingsPopup              settingsPopup:              SettingsPopup {
         notificationController: root.notificationController
-        sshKeyController:       sshKeyCtrl
+        sshKeyController:       root.sshKeyController
+        guideController:        root.guideController
     }
 
     property UserAuthenticationPopup    userAuthenticationPopup:    UserAuthenticationPopup {}
@@ -44,22 +49,33 @@ Item {
 
     property AddStashPopup              addStashPopup:              AddStashPopup {
         notificationController: root.notificationController
+        textDirectionController: root.textDirectionController
+        identityGuard: root.identityGuard
     }
 
     property AddTagPopup                addTagPopup:                AddTagPopup {
         notificationController: root.notificationController
+        identityGuard: root.identityGuard
     }
 
     property NotificationCenterPopup    notificationCenterPopup:    NotificationCenterPopup {}
 
-    property ManageStashPopup           manageStashPopup:           ManageStashPopup {}
+    property ManageStashPopup           manageStashPopup:           ManageStashPopup {
+        textDirectionController: root.textDirectionController
+    }
 
     property FetchSummaryPopup          fetchSummaryPopup:          FetchSummaryPopup {}
 
-    property RepoForestPopup            repoForestPopup:            RepoForestPopup {
-        userAuthenticationPopup: root.userAuthenticationPopup
+    property RemoteTargetPopup          remoteTargetPopup:          RemoteTargetPopup {}
+
+    property ConfirmCommandDialog       remoteConfirmDialog:        ConfirmCommandDialog {}
+
+    property CommitAmendPopup commitAmendPopup: CommitAmendPopup{
+        identityGuard: root.identityGuard
     }
 
-    property CommitAmendPopup commitAmendPopup: CommitAmendPopup{}
+    property IdentityPromptPopup        identityPromptPopup:        IdentityPromptPopup {
+        userProfileController: root.userProfileController
+    }
 
 }

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 
 import GitEase
 import GitEase_Style
@@ -12,14 +13,22 @@ import "qrc:/GitEase/Qml/Core/Scripts/ConflictPopupUtils.js" as ConflictUtils
  * ConflictPopup
  * ************************************************************************************************/
 
-Window {
+IWindow {
     id: root
 
     enum InteractiveAction {
         None,
         Continue,
         Skip,
-        Abort
+        Abort,
+        Quit
+    }
+
+    enum OperationType {
+        None,
+        Merge,
+        Rebase,
+        CherryPick
     }
 
     /* Property Declarations
@@ -29,44 +38,138 @@ Window {
     property ConflictController     conflictController      : null
     property CherryPickController   cherryPickController    : null
     property StatusController       statusController        : null
+    property CommitController       commitController        : null
     property NotificationController notificationController  : null
+    property GuideController        guideController         : null
+    property TextDirectionController textDirectionController : null
+    property IdentityGuard          identityGuard           : null
 
     property var    conflicts       : []
     property var    selectedConflict: null
     property string selectedPath    : ""
     property var    modifiedFiles   : ({})
+    property var    stagedFiles     : []
+    property bool   selectedStagedBinary: false
 
+    //! path -> the file's contents as Git first reported them to this window, markers and all.
+    property var    originalContent : ({})
+    //! path -> how many conflicts that file had when this window first saw it.
+    property var    originalConflictCounts : ({})
     property string headerText          : `${currentOperationName} Conflicts`
-    property string continueButtonText  : `Continue ${currentOperationName}`
+    property string applyingSubject     : ""
+    property string commitHash          : ""
+    property string ontoRef             : ""
+    property string operationCommitHash : ""
+    property int    modelRevision       : 0
+    readonly property string shortCommitHash: root.commitHash.substring(0, 7)
+
+    readonly property string positionText: {
+        let total = root.conflicts.length + root.stagedFiles.length
+        if (total === 0 || root.selectedPath === "")
+            return ""
+
+        let index = root.conflicts.findIndex(c => c.path === root.selectedPath)
+        if (index < 0)
+            return ""
+
+        return `Conflict ${index + 1} of ${total}`
+    }
+
+    readonly property int openChunkCount: {
+        root.modelRevision
+        return root.selectedConflict?.blocks?.length ?? 0
+    }
+
+    readonly property int resolvedChunkCount: {
+        root.modelRevision
+        let count = 0
+        for (let i = 0; i < conflictRows.count; ++i) {
+            let row = conflictRows.get(i)
+            if (row.type === "blockButton" && row.resolvedGroup > 0)
+                count++
+        }
+        return count
+    }
+
+    readonly property int openConflictTotal: {
+        root.modelRevision
+        let total = 0
+        for (let conflict of root.conflicts)
+            total += root.conflictCountOf(conflict)
+        return total
+    }
+
+    readonly property int conflictTotal: {
+        let total = 0
+        for (let path in root.originalConflictCounts)
+            total += root.originalConflictCounts[path]
+        return total
+    }
+
+    readonly property int resolvedConflictTotal:
+        Math.max(0, root.conflictTotal - root.openConflictTotal)
+
+    readonly property int totalChunkCount: root.openChunkCount + root.resolvedChunkCount
 
     readonly property bool canContinue: {
         return conflicts.length === 0
     }
 
-    enum OperationType {
-        None,
-        Merge,
-        Rebase,
-        CherryPick
-    }
     property int currentOperation: ConflictPopup.OperationType.None
+
+    property var pluginManager: null
+
+    readonly property var conflictAssists: root.pluginManager
+                                           ? root.pluginManager.registeredConflictAssists
+                                           : []
+
+    property var activeAssist: null
+    property bool assistOpen: false
+    property string assistRepo: ""
+    property string assistPath: ""
+    property int assistRegion: -1
+    property int assistGeneration: 0
+    property int assistBlock: -1
+    property bool assistReady: false
+    property string assistText: assistSlot.recommendationText
+
+    onAssistReadyChanged: root.refreshAiPreview()
+    onAssistTextChanged: root.refreshAiPreview()
+    onAssistBlockChanged: root.refreshAiPreview()
+    onSelectedPathChanged: root.refreshAiPreview()
+    onModelRevisionChanged: root.refreshAiPreview()
+
+    readonly property string cardAssistLabel: root.conflictAssists.length === 1
+                                              ? (root.conflictAssists[0].action || "Ask")
+                                              : "Ask"
 
     readonly property var currentController:{
         switch(currentOperation){
-            case ConflictPopup.OperationType.Merge      : return mergeController
-            case ConflictPopup.OperationType.Rebase     : return rebaseController
-            case ConflictPopup.OperationType.CherryPick : return cherryPickController
-            default                                     : return null
+            case ConflictPopup.OperationType.Merge:
+                return mergeController
+            case ConflictPopup.OperationType.Rebase:
+                return rebaseController
+            case ConflictPopup.OperationType.CherryPick:
+                return cherryPickController
+            default:
+                return null
         }
     }
+
     readonly property string currentOperationName:{
         switch(currentOperation){
-            case ConflictPopup.OperationType.Merge      : return "Merge"
-            case ConflictPopup.OperationType.Rebase     : return "Rebase"
-            case ConflictPopup.OperationType.CherryPick : return "Cherry-pick"
-            default                                     : return ""
+            case ConflictPopup.OperationType.Merge:
+                return "Merge"
+            case ConflictPopup.OperationType.Rebase:
+                return "Rebase"
+            case ConflictPopup.OperationType.CherryPick:
+                return "Cherry-pick"
+            default:
+                return ""
         }
     }
+
+    readonly property bool canQuit: currentOperation === ConflictPopup.OperationType.Rebase
 
     property bool interactiveMode: false
 
@@ -77,301 +180,249 @@ Window {
 
     /* Object Properties
      * ****************************************************************************************/
-    modality: Qt.ApplicationModal
-    color: "transparent"
+    width: 1100
+    height: 720
+    minimumWidth: 940
+    minimumHeight: 620
+    cornerRadius: 6
 
-    width: 800
-    height: 650
+    // A rebase closes this window and shows it again for the next conflicting commit right away,
+    // so it must close at once instead of fading out.
+    fadeOnClose: false
 
-    onWidthChanged: {
-        if (visible && width != 800)
-            width = 800
-    }
-    onHeightChanged: {
-        if (visible && height != 650)
-            height = 650
-    }
+    Connections {
+        target: root
 
-    onVisibleChanged: {
-        if(!visible)
-            return
+        function onVisibleChanged() {
+            if (!root.visible)
+                return
 
-        Qt.callLater(function() {
-            x = (Screen.width - width) / 2
-            y = (Screen.height - height) / 2
-        })
+            if (!root.notificationController) {
+                console.error("ConflictPopup: missing required controllers")
+                root.close()
+                return
+            }
 
-        if (!notificationController) {
-            console.error("ConflictPopup: missing required controllers")
-            close()
-            return
+            if (!root.conflictController || !root.statusController) {
+                root.notificationController.error("Cannot start conflict resolution: required Git controllers (conflict/status) are missing.",
+                                                  "Initialization Error", 4000)
+                root.close()
+                return
+            }
+
+            if (!root.currentController) {
+                root.notificationController.error(`Cannot start ${root.currentOperationName.toLowerCase()} conflict resolution: the ${root.currentOperationName} controller is not available.`,
+                                                  "Initialization Error", 4000)
+                root.close()
+                return
+            }
+
+            root.clearFileCaches()
+            root.selectedPath = ""
+            root.refreshOperationContext()
+            root.loadConflicts()
         }
-
-        if (!conflictController || !statusController) {
-            notificationController.error("Cannot start conflict resolution: required Git controllers (conflict/status) are missing.",
-                                         "Initialization Error", 4000)
-            close()
-            return
-        }
-
-        if (!currentController) {
-            notificationController.error(`Cannot start ${currentOperationName.toLowerCase()} conflict resolution: the ${currentOperationName} controller is not available.`,
-                                         "Initialization Error", 4000)
-            close()
-            return
-        }
-
-        modifiedFiles = ({})
-        selectedPath = ""
-        loadConflicts()
     }
 
     Component.onCompleted: {
-        windowController.window = root
-        windowController.setMinimumSize(width, height)
+        editorPane.scheduleMarkerUpdate()
     }
 
-    ListModel { id: displayModel }
+    ListModel {
+        id: conflictRows
+    }
 
     TextMetrics {
         id: widthCalculator
-        font.family: Style.fontTypes.roboto
-        font.pixelSize: 13
-    }
-
-    WindowController {
-        id: windowController
+        font.family: Style.fontTypes.jetBrainsMono
+        font.pixelSize: Style.appFont.captionPt
     }
 
     Rectangle {
         anchors.fill: parent
         color: Style.colors.primaryBackground
-        radius: 5
+        radius: root.backgroundRadius
         clip: true
-        border.color: Style.colors.accent
-        border.width: 1
+        border.color: Style.colors.primaryBorder
+        border.width: root.backgroundBorderWidth
+
+        /* Guide
+         * ****************************************************************************************/
+        GuideHoverTrigger {
+            guideController: root.guideController
+            guideId: "conflict_resolution_tutorial"
+            guideName: "Resolving Conflicts"
+            guideIcon: Style.icons.warning
+            stepsFactory: function() {
+                return [
+                    {
+                        targetProvider: function() { return fileListComp },
+                        icon: Style.icons.file,
+                        title: "Conflicted Files",
+                        description: "Files still carrying conflict markers are listed at the top, files you have already settled below them. Click one to open it on the right."
+                    },
+                    {
+                        targetProvider: function() { return editorPane },
+                        icon: Style.icons.penToSquare,
+                        title: "Resolve a Conflict",
+                        description: "Each conflict becomes a card showing both versions side by side. Keep ours, keep theirs, keep both, ask the local model, or edit the lines directly — the card turns green once it is settled."
+                    },
+                    {
+                        targetProvider: function() { return toolbar },
+                        icon: Style.icons.caretDown,
+                        title: "Move Between Chunks",
+                        description: "Jump straight to the next unresolved card instead of scrolling for it. The counter tells you how many are left in this file."
+                    },
+                    {
+                        targetProvider: function() { return footer },
+                        icon: Style.icons.check,
+                        title: "Finish Up",
+                        description: "The bars track how far you are through the files and their chunks. Continue once everything is resolved, skip this commit, or abort the whole operation."
+                    }
+                ]
+            }
+        }
 
         ColumnLayout {
-            spacing: 8
             anchors.fill: parent
-            anchors.margins: 20
+            anchors.margins: Style.dp(3)
+            spacing: 0
 
-            // Header
-            RowLayout {
+            ConflictHeader {
+                id: header
                 Layout.fillWidth: true
-
-                Text {
-                    text: root.headerText
-                    color: Style.colors.secondaryText
-                    font.family: Style.fontTypes.roboto
-                    font.bold: true
-                    font.pixelSize: 14
-                }
-
-                MouseArea {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 27
-                    Layout.leftMargin: 20
-                    Layout.rightMargin: 20
-                    cursorShape: Qt.SizeAllCursor
-
-                    property point clickPos
-
-                    onPressed: function(mouse) {
-                        clickPos = Qt.point(mouse.x, mouse.y)
-                    }
-
-                    onPositionChanged: function(mouse) {
-                        root.x += mouse.x - clickPos.x
-                        root.y += mouse.y - clickPos.y
-                    }
-                }
-
-                WindowsButton {
-                    id: minimizeButton
-                    onClicked: windowController.minimize()
-                    Material.accent: Style.colors.windowsMinimize
-                    content: Rectangle {
-                        anchors.centerIn: parent
-                        width: 10
-                        height: 2
-                        radius: 1
-                        color: minimizeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                    }
-                }
-
-                // Close Button
-                WindowsButton {
-                    id: closeButton
-                    Material.accent: Style.colors.windowsClose
-                    content: Item {
-                        anchors.centerIn: parent
-                        width: 10; height: 10
-                        Rectangle {
-                            width: 12; height: 2; radius: 1
-                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                            anchors.centerIn: parent; rotation: 45
-                        }
-                        Rectangle {
-                            width: 12; height: 2; radius: 1
-                            color: closeButton.containsMouse ? Style.colors.primaryBackground : Style.colors.foreground
-                            anchors.centerIn: parent; rotation: -45
-                        }
-                    }
-                    onClicked: {
-                        var d = conflictConfirmationDialogComp.createObject(root)
-                        d.title = `Abort ${currentOperationName}?`
-                        d.message = "You have unresolved conflicts.\n" +
-                                    `Closing this window will abort the ${currentOperationName} and discard all progress.\n\n` +
-                                    "Are you sure you want to abort?"
-                        d.saved.connect(() => { root.saveAllModifications() })
-                        d.aborted.connect(() => { root.abortOperation() })
-                        d.open()
-                    }
-                }
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.topMargin: 10
+                title: root.headerText
+                applyingSubject: root.applyingSubject
+                commitHash: root.shortCommitHash
+                ontoRef: root.ontoRef
+                positionText: root.positionText
+                windowController: root.windowController
+                onCloseRequested: root.requestClose()
             }
 
-            // Content
+            ConflictToolbar {
+                id: toolbar
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.topMargin: 10
+                Layout.bottomMargin: 10
+                resolvedChunks: root.resolvedChunkCount
+                totalChunks: root.totalChunkCount
+                canNavigate: editorPane.canNavigate
+                assists: root.conflictAssists
+                canAssist: root.openChunkCount > 0
+                onPreviousChunkRequested: editorPane.goToPreviousChunk()
+                onNextChunkRequested: editorPane.goToNextChunk()
+                onAssistRequested: (assist) => root.askAssist(assist, editorPane.focusedOpenBlock())
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: Style.colors.primaryBorder
+            }
+
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                Layout.fillHeight: true
+                spacing: 0
 
-                // Left panel: file list
                 ConflictFileList {
                     id: fileListComp
                     conflictFiles: root.conflicts
                     currentPath: root.selectedPath
-                    onFileSelected  : (path) => root.selectFile(path)
+                    stagedFiles: root.stagedFiles
+                    onFileSelected: (path) => root.selectFile(path)
                     onStageRequested: (path) => root.saveAndStage(path)
                 }
 
-                // Right panel: conflict editor
                 Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.fillHeight: true
+                    color: Style.colors.primaryBorder
+                }
+
+                Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    color: Style.colors.editorBackgroound
-                    border.width: 1
-                    border.color: Style.colors.primaryBorder
-                    radius: 4
 
-                    ListView {
-                        id: conflictListView
-                        property real horizontalScrollOffset: 0
-                        property real maxContentWidth: 0
-
+                    ConflictEditorPane {
+                        id: editorPane
                         anchors.fill: parent
-                        clip: true
-                        model: displayModel
+                        displayModel: conflictRows
+                        selectedPath: root.selectedPath
+                        selectedConflict: root.selectedConflict
+                        revision: root.modelRevision
+                        textDirectionController: root.textDirectionController
 
-                        cacheBuffer: 5000
-                        reuseItems: true
-                        anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
-                        ScrollBar.vertical: ScrollBar { active: true }
-
-                        delegate: ConflictEditorDelegate {
-                            width: conflictListView.width
-                            horizontalOffset: conflictListView.horizontalScrollOffset
-                            isCurrentItem: ListView.isCurrentItem
-
-                            onSplitRequested        : (cursorPos)           => ConflictUtils.splitLine(displayModel, index, cursorPos, conflictListView)
-                            onMergeUpRequested      : ()                    => ConflictUtils.mergeLineUp(displayModel, index, conflictListView)
-                            onAcceptBlockRequested  : (blockIndex, mode)    => root.acceptBlock(blockIndex, mode)
-                            onMoveFocusUp           : conflictListView.currentIndex = Math.max(0, index - 1)
-                            onMoveFocusDown         : conflictListView.currentIndex = Math.min(displayModel.count - 1, index + 1)
+                        aiAvailable: root.conflictAssists.length > 0
+                        assistLabel: root.cardAssistLabel
+                        recommendationReady: root.assistReady && root.assistPath === root.selectedPath
+                        recommendationBlock: root.assistBlock
+                        onAcceptBlockRequested: (blockIndex, mode) => root.acceptBlock(blockIndex, mode)
+                        onAskAiRequested: (blockIndex) => {
+                            if (root.conflictAssists.length > 0)
+                                root.askAssist(root.conflictAssists[0], blockIndex)
                         }
-                    }
-
-                    ScrollBar {
-                        id: hScrollBar
-                        orientation: Qt.Horizontal
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-                        size: conflictListView.maxContentWidth === 0 ? 1 : (conflictListView.width * 0.5) / conflictListView.maxContentWidth
-                        active: true
-                        visible: size < 1.0
-
-                        onPositionChanged: {
-                            conflictListView.horizontalScrollOffset = position * conflictListView.maxContentWidth
-                        }
+                        onUseAiRecommendationRequested: (blockIndex) => root.applyAssistRecommendation(blockIndex)
+                        stagedBinary: root.selectedStagedBinary
+                        onResetRequested: root.resetSelectedFile()
+                        onResolveBinaryRequested: (side) => root.resolveBinary(root.selectedPath, side)
+                        onContentChanged: editorPane.scheduleMarkerUpdate()
                     }
                 }
             }
 
-            // Footer buttons
-            RowLayout {
+            ConflictAssistSlot {
+                id: assistSlot
                 Layout.fillWidth: true
-                spacing: 12
-
-                Item { Layout.fillWidth: true }
-
-                Button {
-                    flat: true
-                    text: "Skip"
-                    visible: currentOperation !== ConflictPopup.OperationType.Merge
-                    Material.foreground: hovered ? Style.colors.secondaryForeground : Style.colors.foreground
-                    background: Rectangle {
-                        color: parent.hovered ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: skipOperation()
-                    }
-                }
-
-                Button {
-                    id: continueBtn
-                    flat: true
-                    text: root.continueButtonText
-
-                    Material.foreground: root.canContinue && mouse.containsMouse ? Style.colors.secondaryForeground : Style.colors.foreground
-
-                    background: Rectangle {
-                        color: root.canContinue && mouse.containsMouse ? Style.colors.accent : Style.colors.secondaryBackground
-                        border.color: Style.colors.accent
-                        radius: 5
-                        opacity: root.canContinue ? 1.0 : 0.5
-                    }
-
-                    ToolTip {
-                        id: tip
-                        parent: continueBtn
-                        visible: mouse.containsMouse
-                        delay: 100
-                        timeout: 2000
-                        text: root.canContinue ? "Click to continue" : "Resolve all files to continue"
-                        x: (continueBtn.width - width) / 2
-                        y: -height - 6
-                        padding: 6
-                        contentItem: Text {
-                            text: tip.text
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 11
-                            color: "#ffffff"
-                        }
-                        background: Rectangle {
-                            radius: 6
-                            color: Qt.rgba(0, 0, 0, 0.85)
-                            border.color: Qt.rgba(1, 1, 1, 0.12)
-                            border.width: 1
-                        }
-                    }
-
-                    MouseArea {
-                        id: mouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: root.canContinue ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                        onClicked: {
-                            if (root.canContinue)
-                                continueOperation()
-                        }
-                    }
-                }
+                open: root.assistOpen
+                assist: root.activeAssist
+                repositoryPath: root.assistRepo
+                filePath: root.assistPath
+                regionIndex: root.assistRegion
+                onApplied: (message) => root.finishAssist(message)
+                onDismissed: root.closeAssist()
+                onFailed: (message) => root.noteAssistFailure(message)
+                onRecommendationChanged: (ready) => { root.assistReady = ready }
             }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: Style.colors.primaryBorder
+            }
+
+            ConflictFooter {
+                id: footer
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.topMargin: 10
+                Layout.bottomMargin: 10
+                operationName: root.currentOperationName
+                canContinue: root.canContinue
+                canSkip: root.currentOperation !== ConflictPopup.OperationType.Merge
+                canQuit: root.canQuit
+                resolvedFiles: root.stagedFiles.length
+                totalFiles: root.conflicts.length + root.stagedFiles.length
+                resolvedConflicts: root.resolvedConflictTotal
+                totalConflicts: root.conflictTotal
+                onAbortRequested: root.requestAbort()
+                onQuitRequested: root.requestQuit()
+                onSkipRequested: root.skipOperation()
+                onContinueRequested: root.continueOperation()
+            }
+        }
+
+        GuideOverlay {
+            anchors.fill: parent
+            z: 1000
+            guideController: root.guideController
         }
     }
 
@@ -382,6 +433,105 @@ Window {
 
     /* Functions
      * ****************************************************************************************/
+
+    function askAssist(assist, blockIndex) {
+        if (!assist || !root.selectedPath || blockIndex < 0)
+            return
+
+        let region = root.openRegionIndex(blockIndex)
+        const title = assist.title || "Conflict assist"
+        if (region < 0) {
+            root.notificationController.error("Choose an open conflict first.", title, 4000)
+            return
+        }
+
+        let repoPath = root.conflictController.repositoryPath()
+        if (!repoPath) {
+            root.notificationController.error("Open a repository before asking for help.", title, 4000)
+            return
+        }
+
+        let content = ConflictUtils.buildFullContent(conflictRows)
+        let written = root.conflictController.writeWorkingFile(root.selectedPath, content)
+        if (!written.success) {
+            root.notificationController.error(written.errorMessage || "Could not save the file.", title, 4000)
+            return
+        }
+
+        root.assistReady = false
+        root.assistBlock = blockIndex
+        root.activeAssist = assist
+        root.assistRepo = repoPath
+        root.assistPath = root.selectedPath
+        root.assistRegion = region
+        root.assistOpen = true
+        const generation = ++root.assistGeneration
+        Qt.callLater(function() {
+            if (root.assistGeneration === generation)
+                assistSlot.restart()
+        })
+    }
+
+    function refreshAiPreview() {
+        if (!editorPane || !editorPane.contentMetrics)
+            return
+        const show = root.assistReady
+                     && root.assistPath === root.selectedPath
+                     && root.assistBlock > 0
+        ConflictUtils.syncAiPreview(conflictRows,
+                                    root.assistBlock,
+                                    show ? root.assistText : null,
+                                    widthCalculator,
+                                    editorPane.contentMetrics)
+        editorPane.scheduleMarkerUpdate()
+    }
+
+    function applyAssistRecommendation(blockIndex) {
+        if (!root.assistReady || blockIndex !== root.assistBlock)
+            return
+        if (root.assistPath !== root.selectedPath)
+            return
+        assistSlot.applyRecommendation()
+    }
+
+    function closeAssist() {
+        root.assistReady = false
+        const generation = ++root.assistGeneration
+        assistSlot.dismissPlugin()
+        Qt.callLater(function() {
+            if (root.assistGeneration === generation)
+                root.assistOpen = false
+        })
+    }
+
+    function finishAssist(message) {
+        const title = root.activeAssist ? root.activeAssist.title : "Conflict assist"
+        root.assistReady = false
+        Qt.callLater(function() { root.assistOpen = false })
+        let copy = Object.assign({}, root.modifiedFiles)
+        delete copy[root.assistPath]
+        root.modifiedFiles = copy
+        root.notificationController.success(message || "The conflict region was updated.", title, 4000)
+        root.loadConflicts(true)
+    }
+
+    function noteAssistFailure(message) {
+        const title = root.activeAssist ? root.activeAssist.title : "Conflict assist"
+        root.notificationController.error(message || "The assistant could not resolve this conflict.", title, 6000)
+    }
+
+    function openRegionIndex(blockIndex) {
+        let seen = 0
+        for (let i = 0; i < conflictRows.count; ++i) {
+            let row = conflictRows.get(i)
+            if (row.role !== "marker-start" || row.resolvedGroup > 0)
+                continue
+            if (row.blockIndex === blockIndex)
+                return seen
+            seen++
+        }
+        return -1
+    }
 
     function loadConflicts(keepSelection = false) {
         if (!conflictController)
@@ -394,23 +544,124 @@ Window {
             return
         }
 
-        conflicts = res.data || []
+        let rawConflicts    = res.data || []
+        let newStaged       = []
+        let stagedPaths     = ({})
 
-        if (conflicts.length == 0){
+        root.captureOriginals(rawConflicts)
+
+        let statusRes = statusController.status()
+        if (statusRes.success) {
+            for (let file of statusRes.data) {
+                if (file.isStaged || file.isUntracked) {
+                    stagedPaths[file.path] = true
+                    newStaged.push({ path: file.path, status: labelFor(file) })
+                }
+            }
+        }
+
+        conflicts   = rawConflicts.filter(c => c && c.path && !stagedPaths[c.path])
+        stagedFiles = newStaged
+
+        if (conflicts.length === 0) {
             selectedConflict = null
             selectedPath = ""
-            displayModel.clear()
+            selectedStagedBinary = false
+            conflictRows.clear()
+            root.modelRevision++
             return
         }
 
-        if (keepSelection && selectedPath) {
-            let exists = conflicts.some(c => c.path === selectedPath)
-            if (exists)
-                selectFile(selectedPath, true)
-            else
-                selectFile(conflicts[0].path)
-        } else {
-            selectFile(conflicts[0].path)
+        let target = (keepSelection && selectedPath && conflicts.some(c => c.path === selectedPath))
+                     ? selectedPath
+                     : conflicts[0].path
+        selectFile(target, true)
+    }
+
+    function refreshOperationContext() {
+        root.commitHash      = ""
+        root.applyingSubject = ""
+
+        if (root.operationCommitHash !== "") {
+            root.describeCommit(root.operationCommitHash)
+            return
+        }
+
+        let statusRes = null
+
+        switch (root.currentOperation) {
+        case ConflictPopup.OperationType.Rebase:
+            statusRes = root.rebaseController?.rebaseStatus()
+            break
+
+        case ConflictPopup.OperationType.CherryPick:
+            statusRes = root.cherryPickController?.cherryPickStatus()
+            break
+
+        default:
+            return
+        }
+
+        if (!statusRes || !statusRes.success || !statusRes.data)
+            return
+
+        root.describeCommit(statusRes.data.currentCommit || "")
+    }
+
+    function describeCommit(hash) {
+        if (!hash)
+            return
+
+        root.commitHash = hash
+
+        let commitRes = root.commitController?.getCommit(hash)
+        if (commitRes && commitRes.success && commitRes.data)
+            root.applyingSubject = commitRes.data.summary || ""
+    }
+
+    function captureOriginals(rawConflicts) {
+        let baselines = Object.assign({}, root.originalContent)
+        let counts = Object.assign({}, root.originalConflictCounts)
+        let added = false
+
+        for (let conflict of rawConflicts) {
+            if (!conflict || !conflict.path || baselines[conflict.path] !== undefined)
+                continue
+
+            baselines[conflict.path] = (conflict.lines || []).join("\n")
+            counts[conflict.path] = root.conflictCountOf(conflict)
+            added = true
+        }
+
+        if (added) {
+            root.originalContent = baselines
+            root.originalConflictCounts = counts
+        }
+    }
+
+    //! A binary file has no marker blocks; it counts as one conflict until a side is kept.
+    function conflictCountOf(conflict) {
+        if (!conflict)
+            return 0
+        return conflict.isBinary ? 1 : (conflict.blocks?.length ?? 0)
+    }
+
+    function clearFileCaches() {
+        root.modifiedFiles = ({})
+        root.originalContent = ({})
+        root.originalConflictCounts = ({})
+    }
+
+    function labelFor(file) {
+        if (file.isUntracked)
+            return GitFileStatus.Untracked
+
+        switch (file.indexStatus) {
+            case "A": return GitFileStatus.StagedNew
+            case "M": return GitFileStatus.StagedModified
+            case "D": return GitFileStatus.StagedDeleted
+            case "R": return GitFileStatus.StagedRenamed
+            default:  return GitFileStatus.StagedModified
         }
     }
 
@@ -418,17 +669,20 @@ Window {
         if (selectedPath === path && !forceRebuild)
             return
 
-        // 1. Save current displayModel state before switching
-        if (selectedPath && selectedPath !== path && displayModel.count > 0) {
+        if (selectedPath && selectedPath !== path && conflictRows.count > 0) {
             let currentState = []
-            for (let i = 0; i < displayModel.count; ++i) {
-                let row = displayModel.get(i)
+            for (let i = 0; i < conflictRows.count; ++i) {
+                let row = conflictRows.get(i)
+
                 currentState.push({
                     type: row.type,
                     text: row.text || "",
                     lineNumber: row.lineNumber || 0,
                     blockIndex: row.blockIndex !== undefined ? row.blockIndex : -1,
-                    role: row.role || ""
+                    role: row.role || "",
+                    cardNumber: row.cardNumber !== undefined ? row.cardNumber : 0,
+                    resolvedGroup: row.resolvedGroup !== undefined ? row.resolvedGroup : -1,
+                    resolvedMode: row.resolvedMode || ""
                 })
             }
             let copy = Object.assign({}, modifiedFiles)
@@ -436,29 +690,72 @@ Window {
             modifiedFiles = copy
         }
 
-        // 2. Switch File
+        if (stagedFiles.some(f => f.path === path)) {
+            selectedConflict = null
+            selectedPath = path
+
+            let statusRes = statusController.getUnstagedDiffView(path)
+            conflictRows.clear()
+            root.selectedStagedBinary = !!(statusRes && statusRes.success && statusRes.data
+                                           && statusRes.data.isBinary)
+            if (statusRes && statusRes.success && !root.selectedStagedBinary) {
+                let liveContent = statusRes.data && statusRes.data.newText
+                if (liveContent) {
+                    let linesArray = liveContent.split('\n')
+                    for (let i = 0; i < linesArray.length; ++i) {
+                        conflictRows.append({
+                            type: "contextLine",
+                            text: linesArray[i],
+                            lineNumber: i + 1
+                        })
+                    }
+                }
+            }
+
+            root.modelRevision++
+            editorPane.scheduleMarkerUpdate()
+            return
+        }
+
+        root.selectedStagedBinary = false
+
         for (let i = 0; i < conflicts.length; ++i) {
             if (conflicts[i].path === path) {
                 selectedConflict = conflicts[i]
                 selectedPath = path
+
+                // A binary file is never read as text: the pane shows a keep-a-side panel instead.
+                if (selectedConflict.isBinary) {
+                    conflictRows.clear()
+                    break
+                }
+
                 ConflictUtils.buildDisplayModel(
                     selectedConflict,
                     modifiedFiles,
                     selectedPath,
-                    displayModel,
-                    conflictListView,
+                    conflictRows,
+                    editorPane.contentMetrics,
                     widthCalculator
                 );
                 break
             }
         }
+
+        root.modelRevision++
+        editorPane.scheduleMarkerUpdate()
     }
 
     function acceptBlock(blockIndex, mode) {
-        if (!selectedPath)
+        if (!selectedPath || !selectedConflict)
             return
 
-        let currentContent = ConflictUtils.buildFullContent(displayModel)
+        let found = ConflictUtils.findBlockByIndex(selectedConflict.blocks, blockIndex)
+        if (!found)
+            return
+
+        // Write current editor content and perform C++ resolution
+        let currentContent = ConflictUtils.buildFullContent(conflictRows)
         conflictController.writeWorkingFile(selectedPath, currentContent)
 
         let res
@@ -466,30 +763,46 @@ Window {
             case "ours":
                 res = conflictController.acceptBlockOurs(selectedPath, blockIndex)
                 break
+
             case "theirs":
                 res = conflictController.acceptBlockTheirs(selectedPath, blockIndex)
                 break
+
             case "both":
                 res = conflictController.acceptBlockBoth(selectedPath, blockIndex)
                 break
-            default:
-                break
-        }
 
+            default:
+                return
+        }
         if (!res.success) {
             notificationController.error(res.errorMessage, "Conflict Resolution", 4000)
+            return
         }
 
-        else {
-            notificationController.success("Conflicts Resolved", "Conflict", 2500)
+        let resolvedLines = ConflictUtils.computeResolvedLines(
+                                ConflictUtils.readBlockSides(conflictRows, blockIndex), mode)
 
-            // Clear memory state so fresh Git changes load
-            let copy = Object.assign({}, modifiedFiles)
-            delete copy[selectedPath]
-            modifiedFiles = copy
+        // Update the ListModel in place
+        ConflictUtils.replaceBlockInModel(conflictRows, blockIndex, resolvedLines, mode)
 
-            loadConflicts(true)
+        // Update the cached block objects
+        ConflictUtils.updateRemainingBlocks(selectedConflict, blockIndex, found.pos, conflictRows)
+
+        // Keep the raw lines array in sync
+        selectedConflict.lines = ConflictUtils.buildFullContent(conflictRows).split("\n")
+
+        let idx = conflicts.findIndex(c => c.path === selectedPath)
+        if (idx >= 0) {
+            let updated = conflicts.slice()
+            updated[idx] = selectedConflict
+            conflicts = updated
         }
+
+        root.modelRevision++
+        editorPane.scheduleMarkerUpdate()
+
+        notificationController.success("Conflicts Resolved", "Conflict", 2000)
     }
 
     function saveAndStage(path) {
@@ -500,6 +813,11 @@ Window {
         for (let i = 0; i < conflicts.length; ++i) {
             if (conflicts[i].path === path)
                 selectedConflict = conflicts[i]
+        }
+
+        if (selectedConflict && selectedConflict.isBinary) {
+            showBinaryStageHint()
+            return
         }
 
         if (selectedConflict && selectedConflict.blocks && selectedConflict.blocks.length > 0) {
@@ -517,11 +835,12 @@ Window {
         d.message = "This file still contains unresolved conflict markers.\n" +
                     "Stage it anyway?"
 
-        d.saveTitle = "Stage Anyway"
-        d.saveDescription = "The modification will be saved"
+        d.saveTitle = "Save & Stage"
+        d.saveDescription = "Save the file with conflicts and stage it"
+        d.hasSave = true
 
         d.cancelTitle = "Cancel"
-        d.cancelDescription = "Don't save The modification"
+        d.cancelDescription = "Keep editing without saving or staging"
 
         d.hasAbort = false
 
@@ -532,11 +851,34 @@ Window {
         d.open()
     }
 
+    function showBinaryStageHint() {
+        if (notificationController)
+            notificationController.warning("Binary files can't be merged line by line. "
+                                           + "Choose Use Ours or Use Theirs for this file.",
+                                           "Conflict", 4000)
+    }
+
+    //! Keeps one side of a conflicted binary file whole and stages it.
+    function resolveBinary(path, side) {
+        if (!path || !conflictController)
+            return
+
+        let res = conflictController.resolveWithVersion(path, side)
+        if (!res.success) {
+            notificationController.error(res.errorMessage || "Could not resolve the file", "Conflict", 4000)
+            return
+        }
+
+        notificationController.success(side === "ours" ? "Kept our version" : "Took their version",
+                                       "Conflict", 2500)
+        loadConflicts(true)
+    }
+
     function performStage(path) {
         if (!path)
             return
 
-        let content = ConflictUtils.buildFullContent(displayModel)
+        let content = ConflictUtils.buildFullContent(conflictRows)
 
         let res = conflictController.writeWorkingFile(path, content)
         if (!res.success){
@@ -552,11 +894,6 @@ Window {
 
         notificationController.success("File staged", "Conflict", 2500)
 
-        // Clear memory state since changes are successfully staged
-        let copy = Object.assign({}, modifiedFiles)
-        delete copy[path]
-        modifiedFiles = copy
-
         loadConflicts(true)
     }
 
@@ -568,6 +905,9 @@ Window {
 
         let res = currentController.continueOp()
 
+        if (root.identityGuard.handle(res, "continue", root.continueOperation))
+            return
+
         if (res.success) {
             notificationController.success(`${currentOperationName} completed`, currentOperationName, 2500)
             operationCompleted()
@@ -578,7 +918,9 @@ Window {
             if (res.data && (res.data.status === "conflict" || res.data.hasConflicts)) {
                 notificationController.warning("Continuing... but new conflicts found.", currentOperationName, 4000)
 
-                modifiedFiles = ({})
+                // A different commit is being replayed now, so the header has to catch up too.
+                root.clearFileCaches()
+                refreshOperationContext()
                 loadConflicts(true)
             }
 
@@ -596,6 +938,9 @@ Window {
 
         let res = currentController.skipOp()
 
+        if (root.identityGuard.handle(res, "skip", root.skipOperation))
+            return
+
         if (res.success) {
             notificationController.success("Commit skipped", currentOperationName, 2500)
             operationCompleted()
@@ -606,7 +951,8 @@ Window {
             if (res.data && (res.data.status === "conflict" || res.data.hasConflicts)){
                 notificationController.warning("Skipped, but new conflicts found in the next commit.", currentOperationName, 2500)
 
-                modifiedFiles = ({})
+                root.clearFileCaches()
+                refreshOperationContext()
                 loadConflicts(true)
             }
 
@@ -624,32 +970,35 @@ Window {
 
         let res = currentController.abortOp()
 
-        if (res.success) {
+        if (res.success)
             notificationController.success(`${currentOperationName} aborted`, currentOperationName, 2500)
+        else
+            notificationController.error(res.errorMessage, currentOperationName, 5000)
 
-            // WIPE CACHE AND VIEW
-            modifiedFiles = ({})
-            displayModel.clear()
-            selectedPath = ""
+        root.clearFileCaches()
+        conflictRows.clear()
+        selectedPath = ""
+        stagedFiles = []
 
-            close()
-        }
-
-        else {
-            notificationController.error(res.errorMessage, currentOperationName, 4000)
-        }
+        close()
     }
 
     function quitOperation() {
+        if (interactiveMode) {
+            interactiveActionRequested(ConflictPopup.InteractiveAction.Quit);
+            return;
+        }
+
         let res = currentController.quitOp()
 
         if (res.success) {
-            notificationController.success(`${currentOperationName} quitted`, currentOperationName, 2500)
+            notificationController.warning(`${currentOperationName} quit. HEAD is left detached and unresolved files keep their conflict markers.`,
+                                           currentOperationName, 10000)
 
-            // WIPE CACHE AND VIEW
-            modifiedFiles = ({})
-            displayModel.clear()
+            root.clearFileCaches()
+            conflictRows.clear()
             selectedPath = ""
+            stagedFiles = []
 
             close()
         }
@@ -661,13 +1010,11 @@ Window {
 
     function saveAllModifications() {
 
-        // 1. Save the currently active file on screen
         if (selectedPath) {
-            let currentContent = ConflictUtils.buildFullContent(displayModel);
+            let currentContent = ConflictUtils.buildFullContent(conflictRows);
             conflictController.writeWorkingFile(selectedPath, currentContent)
         }
 
-        // 2. Save any other files cached in memory
         for (let path in modifiedFiles) {
             if (path === selectedPath)
                 continue
@@ -676,7 +1023,7 @@ Window {
             let fileModel = modifiedFiles[path]
             for (let i = 0; i < fileModel.length; ++i) {
                 let row = fileModel[i]
-                if (row.type !== "blockButton") {
+                if (row.type !== "blockButton" && row.type !== "aiPreview") {
                     lines.push(row.text)
                 }
             }
@@ -688,5 +1035,110 @@ Window {
             notificationController.success("All modifications saved locally", "Save", 2500)
 
         root.close()
+    }
+
+    function requestAbort() {
+        let operation = currentOperationName.toLowerCase()
+        let dialog    = conflictConfirmationDialogComp.createObject(root)
+
+        dialog.title   = `Abort ${currentOperationName}?`
+        dialog.message = "Aborting discards all progress, including the conflicts you already resolved, " +
+                         `and returns the repository to the state before the ${operation} started.\n\n` +
+                         "Are you sure you want to abort?"
+
+        dialog.acceptTitle       = `Abort ${currentOperationName}`
+        dialog.acceptDescription = "Discard all progress and return to the state before the operation started"
+
+        dialog.aborted.connect(() => root.abortOperation())
+        dialog.open()
+    }
+
+    function requestClose() {
+        let operation = currentOperationName.toLowerCase()
+        let dialog    = conflictConfirmationDialogComp.createObject(root)
+
+        if (root.canQuit) {
+            dialog.title   = `Stop the ${currentOperationName}?`
+            dialog.message = `Closing this window ends the ${operation}. You can:\n\n` +
+                             `•  Abort to discard all progress and return to the state before the ${operation} started.\n` +
+                             "•  Quit to stop here and finish by hand. Nothing is rewound: HEAD stays detached, " +
+                             "unresolved files keep their conflict markers, the remaining commits are not replayed, " +
+                             `and the ${operation} can no longer be continued or aborted.`
+        } else {
+            dialog.title   = `Abort ${currentOperationName}?`
+            dialog.message = "You have unresolved conflicts.\n" +
+                             `Closing this window will abort the ${currentOperationName} and discard all progress.\n\n` +
+                             "Are you sure you want to abort?"
+        }
+
+        dialog.hasQuit         = root.canQuit
+        dialog.quitTitle       = `Quit ${currentOperationName}`
+        dialog.quitDescription = "Stop here and leave HEAD, the index and every file exactly as they are"
+
+        dialog.acceptTitle       = `Abort ${currentOperationName}`
+        dialog.acceptDescription = "Discard all progress and return to the state before the operation started"
+
+        dialog.saved.connect(() => root.saveAllModifications())
+        dialog.aborted.connect(() => root.abortOperation())
+        dialog.quitRequested.connect(() => root.quitOperation())
+        dialog.open()
+    }
+
+    function requestQuit() {
+        let operation   = currentOperationName.toLowerCase()
+        let unresolved  = root.conflicts.length
+
+        let leftovers = unresolved > 0
+            ? `${unresolved} unresolved file${unresolved === 1 ? " stays" : "s stay"} unmerged, with any ` +
+              "conflict markers still in them. Staging and committing them as they are records the markers."
+            : "What you resolved here stays staged, but nothing is committed."
+
+        let dialog = conflictConfirmationDialogComp.createObject(root)
+
+        dialog.title   = `Quit ${currentOperationName}?`
+        dialog.message = `GitEase stops tracking the ${operation} but rewinds nothing, so you can finish by hand:\n\n` +
+                         `•  HEAD stays detached where the ${operation} stopped, so you are not on any branch. ` +
+                         `Your branch keeps its commits from before the ${operation}.\n` +
+                         `•  ${leftovers}\n` +
+                         `•  The remaining commits are not replayed, and the ${operation} cannot be continued ` +
+                         "or aborted afterwards.\n" +
+                         "•  Unsaved edits in this editor are discarded; every file stays as it is on disk."
+
+        dialog.acceptTitle       = `Quit ${currentOperationName}`
+        dialog.acceptDescription = "Stop here and leave HEAD, the index and every file exactly as they are"
+
+        dialog.aborted.connect(() => root.quitOperation())
+        dialog.open()
+    }
+
+    function resetSelectedFile() {
+        if (!selectedPath || !conflictController)
+            return
+
+        let path     = root.selectedPath
+        let original = root.originalContent[path]
+
+        if (original === undefined) {
+            if (notificationController)
+                notificationController.warning("Nothing recorded to restore this file from.",
+                                               "Conflict", 3000)
+            return
+        }
+
+        let res = conflictController.writeWorkingFile(path, original)
+        if (!res.success) {
+            if (notificationController)
+                notificationController.error(res.errorMessage || "Reset failed", "Conflict", 4000)
+            return
+        }
+
+        let copy = Object.assign({}, modifiedFiles)
+        delete copy[path]
+        modifiedFiles = copy
+
+        loadConflicts(true)
+
+        if (notificationController)
+            notificationController.info("File restored to its unresolved state", "Conflict", 2500)
     }
 }

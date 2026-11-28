@@ -1,0 +1,20 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Coverage
+*.coverprofile
+coverage.txt
+
+# Workspace and dependencies
+go.work
+go.work.sum
+vendor/
+
+# Environment
+.env

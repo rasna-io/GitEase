@@ -57,7 +57,7 @@ Rectangle {
                     default: return ""
                 }
             }
-            showBackButton: root.controller ? root.controller.canGoBack : false
+            showBackButton: (root.controller ? root.controller.canGoBack : false) && !repositorySelector.busy
             backButtonText: root.appModel?.appSettings?.hasCompletedWelcome ? Style.icons.close : Style.icons.angleLeft
             onBackClicked: {
                 if(root.appModel?.appSettings?.hasCompletedWelcome)
@@ -76,19 +76,83 @@ Rectangle {
             Layout.fillHeight: true
 
             StackLayout {
+                id: welcomeStack
+
                 anchors.fill: parent
                 currentIndex: root.controller ? root.controller.currentPageIndex : Enums.WelcomePages.WelcomeBanner
 
-                // Step 1: Welcome
-                WelcomeContent {
-                    controller: root.controller
+                property bool hasPresented: false
+
+                onCurrentIndexChanged: {
+                    if (!welcomeStack.hasPresented) {
+                        welcomeStack.hasPresented = true
+                        return
+                    }
+
+                    if (!Style.motionEnabled) {
+                        welcomeStack.opacity = 1
+                        welcomeStack.x = 0
+                        return
+                    }
+
+                    welcomeStack.opacity = 0
+                    welcomeStack.x = 14
+                    welcomePageTransition.restart()
                 }
 
-                SetupProfileForm {
-                    id: setupProfileForm
+                ParallelAnimation {
+                    id: welcomePageTransition
+
+                    NumberAnimation {
+                        target: welcomeStack
+                        property: "opacity"
+                        to: 1
+                        duration: Style.motionPage
+                        easing.type: Easing.OutCubic
+                    }
+
+                    NumberAnimation {
+                        target: welcomeStack
+                        property: "x"
+                        to: 0
+                        duration: Style.motionPage
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                // Step 1: Welcome
+                Loader {
+                    id: welcomeContentLoader
+
+                    readonly property bool isCurrent: root.controller?.currentPageIndex === Enums.WelcomePages.WelcomeBanner
+                    property bool needed: false
+
+                    active: needed || isCurrent
+                    onIsCurrentChanged: if (isCurrent) needed = true
+                    Component.onCompleted: if (isCurrent) needed = true
+
+                    sourceComponent: WelcomeContent {
+                        controller: root.controller
+                    }
+                }
+
+                Loader {
+                    id: setupProfileLoader
+
+                    readonly property bool isCurrent: root.controller?.currentPageIndex === Enums.WelcomePages.SetupProfle
+                    property bool needed: false
+
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    showHint: true
+
+                    active: needed || isCurrent
+                    onIsCurrentChanged: if (isCurrent) needed = true
+                    Component.onCompleted: if (isCurrent) needed = true
+
+                    sourceComponent: SetupProfileForm {
+                        showHint: true
+                        userProfileController: root.userProfileController
+                    }
                 }
 
                 RepositorySelector {
@@ -112,17 +176,92 @@ Rectangle {
             }
         }
 
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.topMargin: 6
+            Layout.preferredHeight: 1
+            color: Style.colors.primaryBorder
+            opacity: 0.5
+        }
 
         Item {
             id: continueButtonContainer
 
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 20
-            Layout.preferredWidth: 320
-            Layout.preferredHeight: 43
+            Layout.fillWidth: true
+            Layout.topMargin: 8
+            Layout.preferredHeight: 40
+
+            Button {
+                id: cancelCloneButton
+                anchors.right: continueButton.left
+                anchors.rightMargin: 10
+                width: 110
+                height: 40
+                flat: true
+                visible: repositorySelector.busy
+                enabled: !repositorySelector.cancelling
+                text: repositorySelector.cancelling ? "Cancelling…" : "Cancel"
+                font.family: Style.fontTypes.inter
+                font.pixelSize: 12
+
+                background: Rectangle {
+                    radius: 8
+                    color: cancelCloneButton.hovered ? Style.colors.controlBackgroundHover : "transparent"
+                    border.width: 1
+                    border.color: Style.colors.controlBorder
+                }
+
+                contentItem: Text {
+                    text: cancelCloneButton.text
+                    font: cancelCloneButton.font
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: repositorySelector.cancelClone()
+            }
+
+            // Setting up a user is optional; GitEase asks the first time a commit needs one.
+            Button {
+                id: skipProfileButton
+                anchors.right: continueButton.left
+                anchors.rightMargin: 10
+                width: 120
+                height: 40
+                flat: true
+                visible: root.controller?.currentPageIndex === Enums.WelcomePages.SetupProfle
+                         && !(setupProfileLoader.item?.hasExistingUser ?? false)
+                text: "Skip for now"
+                font.family: Style.fontTypes.inter
+                font.pixelSize: 12
+
+                background: Rectangle {
+                    radius: 8
+                    color: skipProfileButton.hovered ? Style.colors.controlBackgroundHover : "transparent"
+                    border.width: 1
+                    border.color: Style.colors.controlBorder
+                }
+
+                contentItem: Text {
+                    text: skipProfileButton.text
+                    font: skipProfileButton.font
+                    color: Style.colors.foreground
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    setupProfileLoader.item.errorMessage = ""
+                    root.controller.nextPage()
+                }
+            }
 
             ProgressButton {
-                anchors.fill: parent
+                id: continueButton
+                anchors.right: parent.right
+                width: 140
+                height: 40
                 progress: repositorySelector.progress
                 busy: repositorySelector.busy
 
@@ -131,11 +270,11 @@ Rectangle {
                         return (repositorySelector.progress) + " %"
                     }
                     if (!root.controller) {
-                        return "Continue " + Style.icons.arrowRight
+                        return "Continue  " + Style.icons.arrowRight
                     }
                     switch(root.controller.currentPageIndex) {
-                        case Enums.WelcomePages.WelcomeBanner: return "Get Started " + Style.icons.arrowRight
-                        default: return "Continue " + Style.icons.arrowRight
+                        case Enums.WelcomePages.WelcomeBanner: return "Get Started  " + Style.icons.arrowRight
+                        default: return "Continue  " + Style.icons.arrowRight
                     }
                 }
 
@@ -159,41 +298,83 @@ Rectangle {
                     }
                 }
 
+                background: Rectangle {
+                    radius: 8
+                    color: continueButton.enabled
+                           ? (continueButton.hovered ? Style.colors.accentHover : Style.colors.accent)
+                           : Style.colors.disabledButton
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 150
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: -1
+                        radius: parent.radius + 1
+                        color: "transparent"
+                        border.width: 1
+                        border.color: Qt.rgba(0, 0, 0, 0.06)
+                        z: -1
+                    }
+
+                    // Progress overlay
+                    Rectangle {
+                        anchors.fill: parent
+                        visible: continueButton.busy
+                        radius: 8
+                        color: Style.colors.progressOverlay
+
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: parent.width * (continueButton.progress / 100.0)
+                            radius: 8
+                            color: Style.colors.accent
+
+                            Behavior on width {
+                                NumberAnimation {
+                                    duration: 100
+                                }
+                            }
+                        }
+                    }
+                }
+
+                contentItem: Text {
+                    text: continueButton.text
+                    font: continueButton.font
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
 
                 onClicked: {
                     if (!root.controller) return
+
+                    let setupProfileForm = setupProfileLoader.item
 
                     switch(root.controller.currentPageIndex) {
                         case Enums.WelcomePages.WelcomeBanner:
                             root.controller.nextPage()
                             break
                         case Enums.WelcomePages.SetupProfle:
-                            if(setupProfileForm.fullName.length === 0
-                                    && setupProfileForm.email.length === 0)
-                                root.controller.nextPage()
-                            else{
-                                if(setupProfileForm.fullName.length === 0){
-                                    setupProfileForm.errorMessage = "full name can't empty"
-                                    break
-                                }
-
-                                if(setupProfileForm.email.length === 0){
-                                    setupProfileForm.errorMessage = "email can't empty"
-                                    break
-                                }
-
-                                let userProfile = userProfileController.createUserProfile(
-                                                    setupProfileForm.fullName,
-                                                    "", // Password
-                                                    setupProfileForm.email)
-
-                                if(userProfile) {
-                                    root.controller.nextPage()
-                                    setupProfileForm.errorMessage = ""
-                                }else
-                                    setupProfileForm.errorMessage = "can't register profile"
+                            if(!setupProfileForm) {
+                                break
                             }
 
+                            // Skipping is its own button now; Continue always saves the choice.
+                            let problem = setupProfileForm.save()
+                            if (problem !== "") {
+                                setupProfileForm.errorMessage = problem
+                                break
+                            }
+
+                            setupProfileForm.errorMessage = ""
+                            root.controller.nextPage()
                             break
                         case Enums.WelcomePages.OpenRepository:
                             if(repositorySelector.submit())

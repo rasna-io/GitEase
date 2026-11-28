@@ -5,6 +5,8 @@
 #include <QtCore/QAbstractNativeEventFilter>
 #include <QtGui/QWindow>
 
+class QQuickItem;
+
 #ifdef Q_OS_WIN
 #  include <windows.h>
 #  include <dwmapi.h>
@@ -17,18 +19,23 @@ class BorderlessWindowHelper final
     Q_OBJECT
 public:
     explicit BorderlessWindowHelper(QWindow* window, QObject* parent = nullptr);
-    ~BorderlessWindowHelper() override = default;
+    ~BorderlessWindowHelper() override;
 
     bool nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result) override;
 
     QSize minimumSize() const;
     void setMinimumSize(const QSize &newSize);
 
+    void refreshBorderless();
+
+    bool minimizePreservingState();
+
 private:
 #ifdef Q_OS_WIN
     void attach();
     void ensureWindowStyles();
     void setupDwmShadow();
+    void applyRoundedCorners();
     static UINT dpiForWindow(HWND h);
     static int smForDpi(int index, UINT dpi);
     static int resizeBorderThicknessX(HWND h);
@@ -43,5 +50,8 @@ private:
     QSize m_minimumSize;
 #ifdef Q_OS_WIN
     HWND m_hwnd = nullptr;
+#endif
+#ifdef Q_OS_LINUX
+    QPointer<QQuickItem> m_cornerMask;
 #endif
 };

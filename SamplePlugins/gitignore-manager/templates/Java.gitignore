@@ -1,0 +1,14 @@
+# Compiled
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+
+# Build output
+target/
+out/
+bin/
+
+# Logs
+*.log

@@ -24,16 +24,17 @@ Item {
 
     property                FileIO            fileIO:                   FileIO {}
 
-    property                var               pages:                    []
-
-    property                Page              currentPage:              null
-
     property                AppSettings       appSettings:              AppSettings {}
 
     property                var               userProfiles:             []
 
     property                UserProfile       currentUserProfile:       null
 
+    property                var               plugins:                  []
+
+    property                var               enabledPluginIds:         []
+
+    property                var               pluginsCategories:         []
 
     /* Signals
      * ****************************************************************************************/
@@ -51,10 +52,13 @@ Item {
         for(let i = 0 ; i < root.userProfiles.length ; ++i){
             let profile = root.userProfiles[i]
             if(profile.levels.includes(Config.App)) {
-                if (!profile.levels.includes(Config.App)) {
-                    profile.levels.push(Config.App)
-                }
-                profilesSerialized.push(profile)
+                profilesSerialized.push({
+                    username:    profile.username,
+                    password:    profile.password,
+                    email:       profile.email,
+                    avatarColor: profile.avatarColor,
+                    levels:      [Config.App]
+                })
             }
         }
 
@@ -62,7 +66,8 @@ Item {
             recentRepositories: root.recentRepositories,
             repositoriesHistory: root.repositoriesHistory,
             userProfiles: profilesSerialized,
-            settings: root.appSettings.serialize()
+            settings: root.appSettings.serialize(),
+            enabledPlugins: root.enabledPluginIds
         }
 
 
@@ -94,8 +99,9 @@ Item {
 
         let jsonContent = JSON.parse(fileIO.fileContent)
 
-        root.recentRepositories = jsonContent.recentRepositories
+        root.recentRepositories  = jsonContent.recentRepositories ?? []
         root.repositoriesHistory = jsonContent.repositoriesHistory ?? []
+        root.enabledPluginIds    = jsonContent.enabledPlugins ?? []
         root.appSettings.deserialize(jsonContent.settings)
 
         console.info("[Config] Configuration successfully loaded.");
@@ -109,8 +115,19 @@ Item {
     }
 
 
+    Connections {
+        target: Style
+
+        function onThemeFallbackRequested() {
+            root.appSettings.appearanceSettings.currentTheme = "Modern Soft"
+            root.save()
+        }
+    }
+
     Component.onCompleted: {
         Style.currentTheme = Qt.binding(function() { return appSettings.appearanceSettings.currentTheme})
+        Style.appFont.defaultPt = Qt.binding(function() { return appSettings.appearanceSettings.fontSizePt})
+        Style.reducedMotion = Qt.binding(function() { return appSettings.appearanceSettings.reducedMotion})
         load()
     }
 

@@ -68,12 +68,30 @@ public:
      */
     Q_INVOKABLE QString getCurrentBranchName();
 
+    Q_INVOKABLE QString getDisplayBranchName();
+
+    /**
+     * \brief Whether HEAD points straight at a commit instead of at a branch, e.g. after
+     *        checking out a commit or quitting a rebase.
+     */
+    Q_INVOKABLE bool isHeadDetached() const;
+
     Q_INVOKABLE QString formatRefName(const QString &branchName);
 
     QString resolveBranchName(const QString &branchName);
     
+    /**
+     * \brief Name of the branch HEAD points at, for any repository handle.
+     * \return The branch name, "initial/no-commits" before the first commit or "Detached HEAD".
+     */
+    static QString currentBranchName(git_repository *repo);
+
     static git_object * getHead(git_repository *repo, const QString &branchName);
-    
+
     static git_reference * getRef(git_repository *, const QString &branchName);
+
+private:
+    GitResult checkBranchRules(const QString &branchName);
+    bool remoteBranchExists(const QString &branchName);
 };
 

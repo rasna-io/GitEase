@@ -44,7 +44,7 @@ T.SpinBox {
             readOnly: !control.editable
             validator: control.validator
             inputMethodHints: control.inputMethodHints
-            font.pointSize: Style.appFont.h4Pt
+            font.pixelSize: Style.appFont.mediumPt
 
             Rectangle {
                 anchors.fill: parent
@@ -71,8 +71,9 @@ T.SpinBox {
         Text {
             anchors.centerIn: parent
             text: Style.icons.minus
-            font.family: Style.fontTypes.font6ProSolid
-            font.pixelSize: 14
+            font.family: Style.fontTypes.font6Pro
+            font.styleName: "Solid"
+            font.pixelSize: Style.appFont.largePt
             color: control.down.pressed ? Style.colors.secondaryForeground : Style.colors.foreground
             opacity: control.down.indicator.enabled ? 1 : 0.3
         }
@@ -92,8 +93,9 @@ T.SpinBox {
         Text {
             anchors.centerIn: parent
             text: Style.icons.plus
-            font.family: Style.fontTypes.font6ProSolid
-            font.pixelSize: 14
+            font.family: Style.fontTypes.font6Pro
+            font.styleName: "Solid"
+            font.pixelSize: Style.appFont.largePt
             color: control.up.pressed ? Style.colors.secondaryForeground : Style.colors.foreground
             opacity: control.up.indicator.enabled ? 1 : 0.3
         }

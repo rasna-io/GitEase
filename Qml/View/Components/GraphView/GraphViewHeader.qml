@@ -14,270 +14,399 @@ RowLayout {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property GuideController guideController : null
+    property RemoteController remoteController : null
+    property RemoteOperationsSession remoteOperationsSession : null
+    property RepositoryController repositoryController : null
+
+    property bool   showHeading     : true
     property bool   isGraphReady    : false
     property string filterText      : ""
     property string filterStartDate : ""
     property string filterEndDate   : ""
+    property var    filterModes     : []
+    property var    filterFieldOptions: ["Messages", "Subjects", "Authors", "Emails", "SHA-1"]
+    property var    branchNames     : []
+    property string branchFilter    : ""
+    property bool   restoreFocusOnClose : false
+    property bool   suppressFilterRequests : false
 
     readonly property bool  compact         : headerRow.parent ? headerRow.parent.width < 650 : false
-    property var            navigationRules : ["Author Email", "Author", "Parent 1", "Branch"]
+    readonly property bool  tight           : headerRow.parent ? headerRow.parent.width < 820 : false
+    readonly property bool  crowded         : headerRow.parent ? headerRow.parent.width < 600 : false
+    readonly property int   controlSize     : 26
+    property var            navigationRules : ["Commit", "Author Email", "Author", "Parent 1", "Branch"]
     property string         navigationRule  : navigationRules[0]
 
     /* Signals
      * ****************************************************************************************/
     signal filterRequested(string text, string startDate, string endDate, var modes)
+    signal branchSelected(string branchName)
     signal nextRequested(string rule)
     signal previousRequested(string rule)
+    signal filtersApplied()
     signal reloadRequested()
+    signal pullRequested()
+    signal pushRequested(bool force)
+    signal fetchRequested()
+    signal filterPanelOpening()
 
     /* Object Properties
      * ****************************************************************************************/
-    spacing             : (parent && parent.width < Style.appHeight) ? 6 : 10
+    spacing             : (parent && parent.width < Style.appHeight) ? 3 : 5
     anchors.leftMargin  : (parent && parent.width < Style.appHeight) ? 8 : 20
     anchors.rightMargin : (parent && parent.width < Style.appHeight) ? 4 : 5
 
-    ListModel {
-        id: filterOptionsModel
-        ListElement { text: "Messages"; checked: false }
-        ListElement { text: "Subjects"; checked: false }
-        ListElement { text: "Authors";  checked: false }
-        ListElement { text: "Emails";   checked: false }
-        ListElement { text: "SHA-1";    checked: false }
+    HoverHandler {
+        id: rowHover
     }
 
-    TextField {
-        id: textFilterField
-        placeholderTextColor: Style.colors.descriptionText
-        backgroundColor: hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+    Text {
+        text: "Commit Graph"
+        color: Style.colors.descriptionText
+        font.family: Style.fontTypes.inter
+        font.weight: Font.DemiBold
+        font.pixelSize: Style.appFont.smallPt
+
+        visible: headerRow.showHeading && !headerRow.compact
+    }
+
+    Rectangle {
+        Layout.preferredHeight: parent.height - Style.dp(8)
+        Layout.preferredWidth: Style.dp(1)
+        Layout.alignment: Qt.AlignVCenter
+
+        color: Style.colors.primaryBorder
+
+        visible: headerRow.showHeading && !headerRow.compact
+    }
+
+    Item {
+        id: textFilterArea
         Layout.fillWidth: true
-        minHeight: 25
-        placeholderText: {
-            var selected = filterOptionsPopup.selectedItems
-            var display = selected && selected.length > 0
-                          ? selected.map(function(it) { return it.text }).join(", ")
-                          : ""
-            return display.length > 0 ? "Write Filter By " + display : "Write Filter By"
+        Layout.minimumWidth: compact ? 42 : (crowded ? 64 : (tight ? 96 : 100))
+        Layout.maximumWidth: 240
+        Layout.preferredHeight: headerRow.controlSize
+        clip: true
+
+        TextField {
+            id: textFilterField
+            width: textFilterArea.width
+            height: textFilterArea.height
+            placeholderTextColor: Style.colors.descriptionText
+            hoverEnabled: true
+            backgroundColor: textFilterField.hovered ? Style.colors.headerButtonBackgroundHover
+                                                     : Style.colors.headerButtonBackground
+            borderColor: Style.colors.headerButtonBorder
+
+            minHeight: headerRow.controlSize
+            placeholderText: {
+                var modes = headerRow.filterModes || []
+                var display = modes.length > 0 ? modes.join(", ") : ""
+                return display.length > 0 ? "Write Filter By " + display : "Write Filter By"
+            }
+            text: headerRow.filterText
+            font.family: Style.fontTypes.inter
+            font.weight: 400
+            font.pixelSize: Style.appFont.captionPt
+            borderRadius: 5
+            borderWidth: 1
+            focusBorderWidth: 1
+            onTextChanged: {
+                headerRow.filterText = text
+                headerRow.applyFilter()
+            }
         }
-        text: headerRow.filterText
-        font.family: Style.fontTypes.roboto
-        font.weight: 400
-        font.pixelSize: 9
-        borderRadius: 5
-        borderWidth: 0
-        focusBorderWidth: 1
-        onTextChanged: {
-            headerRow.filterText = text
-            headerRow.applyFilter()
+
+        Behavior on width {
+            NumberAnimation {
+                duration: 160
+                easing.type: Easing.OutCubic
+            }
         }
     }
 
-    ToolButton {
+    IconButton {
         id: filterButton
-        Layout.preferredWidth: 25
-        Layout.preferredHeight: 25
-        hoverEnabled: true
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
+        Layout.preferredHeight: headerRow.controlSize
 
-        text: Style.icons.filter
-        font.family: (filterOptionsPopup.visible || hovered)
-                     ? Style.fontTypes.font6ProSolid
-                     : Style.fontTypes.font6Pro
-        font.pixelSize: 14
+        text: "Filters"
+        font.family: Style.fontTypes.inter
+        font.weight: Font.Medium
+        font.pixelSize: Style.appFont.smallPt
+        leftPadding: 12
+        rightPadding: 12
+        topPadding: 4
+        bottomPadding: 4
+        spacing: 6
 
-        contentItem: Text {
-            anchors.centerIn: parent
-            text: filterButton.text
-            font: filterButton.font
-            color: filterButton.enabled ? Style.colors.foreground : Style.colors.mutedText
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
+        contentItem: Row {
+            spacing: filterButton.spacing
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: Style.icons.filter
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.foreground
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: filterButton.text
+                font: filterButton.font
+                color: Style.colors.foreground
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: Style.icons.caretDown
+                font.family: Style.fontTypes.font6Pro
+                font.styleName: "Solid"
+                font.pixelSize: Style.appFont.smallPt
+                color: Style.colors.foreground
+            }
         }
 
-        background: Rectangle {
-            radius: 5
-            color: !filterButton.enabled ? Style.colors.primaryBackground :
-                   filterButton.down ? Style.colors.surfaceMuted :
-                   filterButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+        onClicked: {
+            headerRow.filterPanelOpening()
+            filterPopup.filterField = headerRow.filterModes && headerRow.filterModes.length > 0 ? headerRow.filterModes[0] : ""
+            filterPopup.startDate = headerRow.filterStartDate
+            filterPopup.endDate = headerRow.filterEndDate
+            filterPopup.branchFilter = headerRow.branchFilter
+            filterPopup.open()
         }
-
-        onClicked: filterOptionsPopup.open()
     }
 
-    ItemSelectorPopup {
-        id: filterOptionsPopup
-        x: filterButton.x
+    GraphFilterPopup {
+        id: filterPopup
+        x: filterButton.x - filterPopup.width + filterButton.width
         y: filterButton.y + filterButton.height + 6
-        model: filterOptionsModel
+        filterFieldOptions: headerRow.filterFieldOptions
+        branchNames: headerRow.branchNames
+        navigationRules: headerRow.navigationRules
+        navigationRule: headerRow.navigationRule
 
-        onOpened: {
-            x = Math.max(0, Math.min(x, parent.width - width))
+        onApplyRequested: function(field, startDate, endDate, branch) {
+            var modes           = field === "" ? [] : [field]
+            var modesChanged    = modes.join(",") !== (headerRow.filterModes || []).join(",")
+            var datesChanged    = startDate !== headerRow.filterStartDate || endDate !== headerRow.filterEndDate
+            var branchChanged   = branch !== headerRow.branchFilter
+
+            //! Only the navigation rule may have changed; rebuilding the graph would drop the selected commit.
+            if (modesChanged || datesChanged || branchChanged) {
+                headerRow.filterModes = modes
+                headerRow.filterStartDate = startDate
+                headerRow.filterEndDate = endDate
+                headerRow.applyFilter()
+
+                if (branchChanged && branch.length > 0) {
+                    headerRow.navigationRule = "Branch"
+                }
+                headerRow.branchSelected(branch)
+            }
+
+            headerRow.restoreFocusOnClose = true
         }
-        onSelectionChanged: function(items) {
+
+        onClearRequested: {
+            headerRow.filterModes = []
+            headerRow.filterStartDate = ""
+            headerRow.filterEndDate = ""
+            headerRow.navigationRule = headerRow.navigationRules[0]
             headerRow.applyFilter()
+            headerRow.branchSelected("")
+            headerRow.restoreFocusOnClose = true
+        }
+
+        onStartDateFieldClicked: function(field) {
+            calendarPopup.prepareAndOpen(field, true, filterPopup.startDate, filterPopup.endDate)
+        }
+
+        onEndDateFieldClicked: function(field) {
+            calendarPopup.prepareAndOpen(field, false, filterPopup.endDate, filterPopup.startDate)
+        }
+
+        onNavigationRuleSelected: function(rule) {
+            headerRow.navigationRule = rule
         }
     }
 
-    Label {
-        Layout.leftMargin: compact ? 8 : 40
-        color: Style.colors.descriptionText
-        text: "From:"
-        font.family: Style.fontTypes.roboto
-        font.weight: 400
-        font.pixelSize: 12
-    }
+    Connections {
+        target: headerRow.repositoryController
 
-    DateField {
-        id: startDateField
-        Layout.preferredWidth: compact ? 22 : 90
-        Layout.preferredHeight: 25
-        compact: compact
-        placeholder: "2025-08-30"
-        dateString: headerRow.filterStartDate
-
-        onClicked: calendarPopup.prepareAndOpen(startDateField, true, headerRow.filterStartDate, headerRow.filterEndDate)
-
-    }
-
-    Label {
-        color: Style.colors.descriptionText
-        text: "To:"
-        font.family: Style.fontTypes.roboto
-        font.weight: 400
-        font.pixelSize: 12
-    }
-
-    DateField {
-        id: endDateField
-        Layout.preferredWidth: compact ? 22 : 90
-        Layout.preferredHeight: 25
-        compact: compact
-        placeholder: "2025-09-30"
-        dateString: headerRow.filterEndDate
-
-        onClicked: calendarPopup.prepareAndOpen(endDateField, false, headerRow.filterEndDate, headerRow.filterStartDate)
-
-    }
-
-    ComboBox {
-        id: columnCombo
-        model: navigationRules
-
-        Layout.leftMargin: compact ? 6 : 20
-        minHeight: 26
-        visible: !compact
-        borderWidth: 0
-        focusBorderWidth: 1
-        font.family: Style.fontTypes.roboto
-        font.weight: 400
-        font.pixelSize: 10
-
-        Material.background: Style.colors.primaryBackground
-        Material.foreground: Style.colors.secondaryText
-
-        background: Rectangle {
-            radius: 5
-            color: columnCombo.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-        }
-
-        Layout.preferredWidth: 120
-        currentIndex: navigationRules.indexOf(navigationRule)
-        onActivated: function(index) {
-            navigationRule = navigationRules[index]
-            headerRow.applyFilter()
+        function onRepositorySelected() {
+            headerRow.resetFilters()
         }
     }
 
-    ToolButton {
+    //! The popup takes focus back when it finishes closing, so the hand-off waits for that.
+    Connections {
+        target: filterPopup
+
+        function onClosed() {
+            if (headerRow.restoreFocusOnClose) {
+                headerRow.restoreFocusOnClose = false
+                headerRow.filtersApplied()
+            }
+        }
+    }
+
+    IconButton {
         id: downButton
-        Layout.preferredWidth: 26
-        Layout.preferredHeight: 26
+        Layout.preferredHeight: headerRow.controlSize
+        Layout.preferredWidth: headerRow.controlSize
 
-        visible: !compact
+        visible: !compact && !crowded
         enabled: headerRow.isGraphReady
-        hoverEnabled: true
 
-        text: Style.icons.caretDown
-        font.family: Style.fontTypes.font6ProSolid
-        font.pixelSize: 15
-
-        contentItem: Text {
-            anchors.centerIn: parent
-            text: downButton.text
-            font: downButton.font
-            color: downButton.enabled ? Style.colors.foreground : Style.colors.mutedText
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
-
-        background: Rectangle {
-            radius: 5
-            color: !downButton.enabled ? Style.colors.primaryBackground :
-                   downButton.down ? Style.colors.surfaceMuted :
-                   downButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-        }
+        display: IconButton.IconOnly
+        icon.name: Style.icons.caretDown
+        icon.width: Style.appFont.largerPt
+        icon.height: Style.appFont.largerPt
+        solidIcon: true
 
         onClicked: headerRow.previousRequested(navigationRule)
     }
 
-    ToolButton {
+    IconButton {
         id: upButton
-        Layout.preferredWidth: 26
-        Layout.preferredHeight: 26
+        Layout.preferredWidth: headerRow.controlSize
+        Layout.preferredHeight: headerRow.controlSize
 
-        visible: !compact
+        visible: !compact && !crowded
         enabled: headerRow.isGraphReady
-        hoverEnabled: true
 
-        text: Style.icons.caretUp
-        font.family: Style.fontTypes.font6ProSolid
-        font.pixelSize: 15
-
-        contentItem: Text {
-            anchors.centerIn: parent
-            text: upButton.text
-            font: upButton.font
-            color: upButton.enabled ? Style.colors.foreground : Style.colors.mutedText
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
-
-        background: Rectangle {
-            radius: 5
-            color: !upButton.enabled ? Style.colors.primaryBackground :
-                   upButton.down ? Style.colors.surfaceMuted :
-                   upButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
-        }
+        display: IconButton.IconOnly
+        icon.name: Style.icons.caretUp
+        icon.width: Style.appFont.largerPt
+        icon.height: Style.appFont.largerPt
+        solidIcon: true
 
         onClicked: headerRow.nextRequested(navigationRule)
     }
 
-    ToolButton {
-        id: reloadButton
-        Layout.preferredWidth: 26
-        Layout.preferredHeight: 26
-        Layout.leftMargin: 10
+    Item {
+        Layout.fillWidth: true
+    }
 
-        enabled: headerRow.isGraphReady
-        hoverEnabled: true
+    IconButton {
+        id: pullBtn
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
+        Layout.preferredHeight: headerRow.controlSize
 
-        text: Style.icons.refresh
-        font.family: Style.fontTypes.font6Pro
-        font.pixelSize: 14
+        solidIcon: true
+        icon.name: Style.icons.arrowDown
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.inter
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
+        text: "Pull"
+        tooltip: headerRow.remoteOperationsSession?.pullTooltip ?? ""
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+        enabled: headerRow.remoteOperationsSession?.canPull ?? false
 
-        contentItem: Text {
-            anchors.centerIn: parent
-            text: reloadButton.text
-            font: reloadButton.font
-            color: reloadButton.enabled ? Style.colors.foreground : Style.colors.mutedText
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
+        hoveredWhileDisabled: headerRow.isHovered(pullBtn)
+
+        onClicked: headerRow.pullRequested()
+    }
+
+    IconButton {
+        id: pushBtnHeader
+        Layout.preferredHeight: headerRow.controlSize
+        Layout.minimumWidth: 30
+        Material.accent: Style.colors.accent
+
+        property bool isBusy: headerRow.remoteController?.pushInProgress && !headerRow.remoteController?.forcePush
 
         background: Rectangle {
             radius: 5
-            color: !reloadButton.enabled ? Style.colors.primaryBackground :
-                   reloadButton.down ? Style.colors.surfaceMuted :
-                   reloadButton.hovered ? Style.colors.cardBackground : Style.colors.secondaryBackground
+            color: pushBtnHeader.down ? Style.colors.surfaceMuted :
+                   pushBtnHeader.hovered ? Style.colors.headerButtonBackgroundHover : Style.colors.headerButtonBackground
+            border.width: 1
+            border.color: Style.colors.headerButtonBorder
         }
+
+        BusyWaiter {
+            id: pushBusyIndicator
+            compact: true
+            anchors.centerIn: parent
+            width: 30
+            height: 30
+            running: pushBtnHeader.isBusy
+            visible: pushBtnHeader.isBusy
+        }
+
+        enabled: headerRow.remoteOperationsSession?.canPush ?? false
+        solidIcon: true
+        icon.name: !isBusy ? Style.icons.arrowUp : ""
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.inter
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
+        text: !isBusy ? (headerRow.remoteOperationsSession?.pushLabel ?? "Push") : ""
+        tooltip: !isBusy ? (headerRow.remoteOperationsSession?.pushTooltip ?? "") : "Pushing..."
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+
+        hoveredWhileDisabled: headerRow.isHovered(pushBtnHeader)
+
+        onClicked: headerRow.pushRequested(false)
+    }
+
+    IconButton {
+        id: fetchBtnHeader
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
+        Layout.preferredHeight: headerRow.controlSize
+
+        enabled: headerRow.remoteOperationsSession?.canFetch ?? false
+
+        solidIcon: true
+        icon.name: Style.icons.download
+        icon.width: Style.appFont.h3Pt
+        icon.height: Style.appFont.h3Pt
+        font.family: Style.fontTypes.inter
+        font.pixelSize: Style.appFont.defaultPt
+        font.weight: Font.Medium
+        text: "Fetch"
+        tooltip: headerRow.remoteOperationsSession?.fetchTooltip ?? ""
+        display: headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
+
+        hoveredWhileDisabled: headerRow.isHovered(fetchBtnHeader)
+
+        onClicked: headerRow.fetchRequested()
+    }
+
+    IconButton {
+        id: reloadButton
+        backgroundColor: Style.colors.headerButtonBackground
+        hoverBackgroundColor: Style.colors.headerButtonBackgroundHover
+        borderColor: Style.colors.headerButtonBorder
+        borderWidth: 1
+        Layout.preferredWidth: headerRow.controlSize
+        Layout.preferredHeight: headerRow.controlSize
+        Layout.leftMargin: compact ? 3 : (tight ? 5 : 7)
+
+        enabled: headerRow.isGraphReady
+
+        display: IconButton.IconOnly
+        icon.name: Style.icons.refresh
+        icon.width: Style.appFont.largePt
+        icon.height: Style.appFont.largePt
+        solidIcon: false
+        tooltip: "Reload graph view"
 
         onClicked: headerRow.reloadRequested()
     }
@@ -286,44 +415,115 @@ RowLayout {
         id: calendarPopup
 
         onDateSelected: function(dateString, isStart) {
-            headerRow.handleDateSelected(dateString, isStart)
+            if (isStart)
+                filterPopup.startDate = dateString
+            else
+                filterPopup.endDate = dateString
         }
 
         onClearRequested: function(isStart) {
-            headerRow.handleClearRequested(isStart)
+            if (isStart)
+                filterPopup.startDate = ""
+            else
+                filterPopup.endDate = ""
+        }
+    }
+
+    /* Guide
+     * ****************************************************************************************/
+    GuideHoverTrigger {
+        guideController: headerRow.guideController
+        guideId: "graph_header_tutorial"
+        guideName: "Graph Search & Filters"
+        guideIcon: Style.icons.filter
+        guidePage: "graph"
+        stepsFactory: function() {
+            return [
+                {
+                    targetProvider: function() { return textFilterField },
+                    icon: Style.icons.filter,
+                    title: "Search Commits",
+                    description: "Type to filter commits in real time. Results update as you type across the whole graph."
+                },
+                {
+                    targetProvider: function() { return filterButton },
+                    icon: Style.icons.filter,
+                    title: "Filters",
+                    description: "Narrow the search field, date range, and branch, and choose how the arrow buttons and the Up/Down keys navigate: Commit (the adjacent commit), Author Email, Author, Parent commit, or Branch."
+                },
+                {
+                    targetProvider: function() { return downButton.visible ? downButton : null },
+                    icon: Style.icons.arrowDown,
+                    title: "Previous Result",
+                    description: "Jump to the previous commit that matches your current search or navigation rule."
+                },
+                {
+                    targetProvider: function() { return upButton.visible ? upButton : null },
+                    icon: Style.icons.arrowUp,
+                    title: "Next Result",
+                    description: "Jump to the next commit that matches your current search or navigation rule."
+                },
+                {
+                    targetProvider: function() { return pullBtn },
+                    icon: Style.icons.arrowDown,
+                    title: "Pull",
+                    description: "Downloads commits from the remote and merges them into your current branch. Run this before starting work to stay in sync with your team.",
+                    commands: [{ command: "git pull" }]
+                },
+                {
+                    targetProvider: function() { return pushBtnHeader },
+                    icon: Style.icons.arrowUp,
+                    title: "Push",
+                    description: "Uploads your local commits to the remote so teammates can fetch or pull them. Only commits that are already saved locally will be sent.",
+                    commands: [{ command: "git push" }]
+                },
+                {
+                    targetProvider: function() { return fetchBtnHeader },
+                    icon: Style.icons.download,
+                    title: "Fetch",
+                    description: "Downloads all remote changes and updates your remote-tracking branches without touching your working tree or current branch. Always safe to run.",
+                    commands: [{ command: "git fetch --all" }]
+                },
+                {
+                    targetProvider: function() { return reloadButton },
+                    icon: Style.icons.refresh,
+                    title: "Reload Graph",
+                    description: "Reload the commit graph and the utility docks from the repository. With \"Auto Update\" turned off in the settings this is the only thing that rebuilds the graph."
+                }
+            ]
         }
     }
 
     /* Functions
      * ****************************************************************************************/
-    function applyFilter() {
-        var selectedItems = filterOptionsPopup.selectedItems;
+    function resetFilters() {
+        headerRow.restoreFocusOnClose = false
+        filterPopup.close()
+        calendarPopup.close()
 
-        var modes = selectedItems && selectedItems.length > 0
-                     ? selectedItems.map(function(it) { return it.text })
-                     : [];
+        headerRow.suppressFilterRequests = true
+        headerRow.filterText = ""
+        headerRow.filterStartDate = ""
+        headerRow.filterEndDate = ""
+        headerRow.filterModes = []
+        headerRow.navigationRule = headerRow.navigationRules[0]
+        headerRow.suppressFilterRequests = false
+    }
+
+    function applyFilter() {
+        if (headerRow.suppressFilterRequests)
+            return
+
         headerRow.filterRequested(headerRow.filterText,
                                   headerRow.filterStartDate,
                                   headerRow.filterEndDate,
-                                  modes);
-
+                                  headerRow.filterModes);
     }
 
-    function handleDateSelected(dateString, isStart) {
-        if (isStart)
-            headerRow.filterStartDate = dateString;
-        else
-            headerRow.filterEndDate = dateString;
+    function isHovered(item) {
+        if (!rowHover.hovered || !item)
+            return false
 
-        headerRow.applyFilter();
-    }
-
-    function handleClearRequested(isStart) {
-        if (isStart)
-            headerRow.filterStartDate = "";
-        else
-            headerRow.filterEndDate = "";
-
-        headerRow.applyFilter();
+        return item.contains(item.mapFromItem(headerRow, rowHover.point.position))
     }
 }

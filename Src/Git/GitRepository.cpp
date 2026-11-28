@@ -1,8 +1,8 @@
 #include "GitRepository.h"
+#include "GitCommandText.h"
 #include "GitResult.h"
 
 #include <QDir>
-#include <QtConcurrent>
 
 #include <git2.h>
 
@@ -47,7 +47,7 @@ GitResult GitRepository::init(const QString &path)
 
     // Store path and emit signal
     m_currentRepoPath = path;
-    emitGitCommand(QString("git init %1").arg(quoteCommandArg(path)));
+    emitGitCommand(GitCommandText::init(path));
 
     return GitResult(true, path);
 }
@@ -76,18 +76,12 @@ GitResult GitRepository::open(const QString &path)
 
     newRepo->setParent(this);
 
-    Repository *oldRepo = m_currentRepo;
     m_currentRepo = newRepo;
-    
+
     // Store path and emit signal
     m_currentRepoPath = path;
     emit currentRepoChanged();
     emitGitCommand(QString("git -C %1 rev-parse --git-dir").arg(quoteCommandArg(path)));
-
-    if (oldRepo)
-    {
-        oldRepo->deleteLater();
-    }
 
     return GitResult(true, path);
 }
@@ -115,6 +109,8 @@ Repository *GitRepository::openDetached(const QString &path)
         delete repo;
         return nullptr;
     }
+
+    git_repository_open(&repo->netRepo, pathUtf8.constData());
 
     return repo;
 }
@@ -160,86 +156,82 @@ GitResult GitRepository::cloneInternal(const QString& url,
         }
     }
 
-    const QString safeUrl = url;
-    const QString safePath = localPath;
+    GitPayload payload {
+        this,
+        auth.get(),
+        &m_cloneCancelRequested
+    };
 
-    auto future = QtConcurrent::run(
-        [this,
-         safeUrl,
-         safePath,
-         auth = std::move(auth)]() mutable -> QVariantMap {
+    auto progressCallback = [](const git_indexer_progress *stats, void *p) -> int {
+        auto *data = static_cast<GitPayload*>(p);
 
-        GitPayload payload {
-            this,
-            auth.get()
-        };
-
-        auto progressCallback = [](const git_indexer_progress *stats, void *p) -> int {
-            auto *data = static_cast<GitPayload*>(p);
-
-            if (stats->total_objects > 0) {
-                int percent = static_cast<int>(
-                    (100.0 * stats->received_objects) / stats->total_objects
-                    );
-
-                QMetaObject::invokeMethod(
-                    data->parentThread,
-                    "cloneProgress",
-                    Qt::QueuedConnection,
-                    Q_ARG(int, percent)
-                    );
-            }
-            return 0;
-        };
-
-        git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
-        opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
-
-        opts.fetch_opts.callbacks.transfer_progress = progressCallback;
-        opts.fetch_opts.callbacks.payload = &payload;
-
-        auth->apply(opts.fetch_opts);
-
-        git_repository* repo = nullptr;
-        int result = git_clone(
-            &repo,
-            safeUrl.toUtf8().constData(),
-            safePath.toUtf8().constData(),
-            &opts
-            );
-
-        if (result != 0) {
-            const git_error *err = git_error_last();
-            QString msg = err ? err->message : "Unknown git error";
-            return QVariantMap { {"success", false}, {"error", msg}, {"path", safePath} };
+        if (data->cancelFlag && data->cancelFlag->load()) {
+            return -1;
         }
 
-        git_repository_free(repo);
-        return QVariantMap { {"success", true}, {"data", safePath} };
-    });
+        if (stats->total_objects > 0) {
+            int percent = static_cast<int>(
+                (100.0 * stats->received_objects) / stats->total_objects
+                );
 
-    auto* watcher = new QFutureWatcher<QVariantMap>(this);
+            QMetaObject::invokeMethod(
+                data->parentThread,
+                "cloneProgress",
+                Qt::QueuedConnection,
+                Q_ARG(int, percent)
+                );
+        }
+        return 0;
+    };
 
-    connect(watcher, &QFutureWatcher<QVariantMap>::finished,
-            this, [=]() {
+    git_clone_options opts = GIT_CLONE_OPTIONS_INIT;
+    opts.fetch_opts = GIT_FETCH_OPTIONS_INIT;
 
-                QVariantMap result = watcher->result();
+    opts.fetch_opts.callbacks.transfer_progress = progressCallback;
+    opts.fetch_opts.callbacks.sideband_progress = [](const char *, int, void *p) -> int {
+        auto *data = static_cast<GitPayload*>(p);
+        return (data->cancelFlag && data->cancelFlag->load()) ? -1 : 0;
+    };
+    opts.fetch_opts.callbacks.payload = &payload;
 
-                if (result["success"].toBool()) {
-                    result["path"] = safePath;
-                    m_currentRepoPath = safePath;
-                }
+    auth->apply(opts.fetch_opts);
 
-                emit cloneFinished(result);
-                watcher->deleteLater();
-            });
+    git_repository* repo = nullptr;
+    int result = git_clone(
+        &repo,
+        url.toUtf8().constData(),
+        localPath.toUtf8().constData(),
+        &opts
+        );
 
-    watcher->setFuture(future);
+    emitGitCommand(GitCommandText::clone(url, localPath));
 
-    emitGitCommand(QString("git clone %1 %2")
-                       .arg(quoteCommandArg(url), quoteCommandArg(localPath)));
+    if (result != 0 && m_cloneCancelRequested.load()) {
+        // The directory did not exist when the clone started, so whatever is there is partial.
+        QDir(localPath).removeRecursively();
+        return GitResult(false, {}, "Clone cancelled");
+    }
 
-    return GitResult(true, {}, "Clone started");
+    if (result != 0) {
+        const git_error *err = git_error_last();
+        QString msg = err ? err->message : "Unknown git error";
+        return GitResult(false, {}, msg);
+    }
+
+    git_repository_free(repo);
+    m_currentRepoPath = localPath;
+
+    return GitResult(true, localPath);
+}
+
+void GitRepository::cancelClone()
+{
+    m_cloneCancelRequested.store(true);
+}
+
+void GitRepository::resetCloneCancel()
+{
+    m_cloneCancelRequested.store(false);
 }
 
 GitResult GitRepository::close()

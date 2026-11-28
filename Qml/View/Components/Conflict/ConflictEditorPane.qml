@@ -1,0 +1,399 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+
+import GitEase
+import GitEase_Style
+import GitEase_Style_Impl
+
+import "qrc:/GitEase/Qml/Core/Scripts/ConflictPopupUtils.js" as ConflictUtils
+
+/*! ***********************************************************************************************
+ * ConflictEditorPane
+ * Right-hand side of the conflict window: which file is open, and its rows.
+ * ************************************************************************************************/
+Rectangle {
+    id: root
+
+    /* Property Declarations
+     * ****************************************************************************************/
+    property ListModel  displayModel        : null
+    property string     selectedPath        : ""
+    property var        selectedConflict    : null
+    property alias      contentMetrics      : conflictListView
+    property int        revision            : 0
+
+    property TextDirectionController textDirectionController: null
+    property bool aiAvailable: false
+    property string assistLabel: "Ask"
+    property bool recommendationReady: false
+    property int recommendationBlock: -1
+    property bool stagedBinary: false
+    readonly property bool conflictBinary: root.selectedConflict?.isBinary === true
+    readonly property bool showsBinary: root.conflictBinary || root.stagedBinary
+
+    readonly property int openBlockCount: {
+        root.revision
+        return root.selectedConflict?.blocks?.length ?? 0
+    }
+
+    readonly property int firstOpenBlock: {
+        root.revision
+        return root.openBlockCount > 0 ? root.selectedConflict.blocks[0].index : -1
+    }
+
+    readonly property bool canNavigate: root.openBlockCount > 0
+    readonly property bool canReset: root.selectedConflict !== null && !root.conflictBinary
+
+    //! Where the unresolved conflict zones sit, as fractions of the row count.
+    property var conflictMarkers: []
+
+    //! blockIndex -> { ours, theirs }, read off each block's own marker lines.
+    readonly property var blockLabels: {
+        root.revision
+        let labels = ({})
+        let blocks = root.selectedConflict?.blocks ?? []
+
+        for (let block of blocks) {
+            let ours   = "OURS"
+            let theirs = "THEIRS"
+
+            for (let line of (block.lines || [])) {
+                if (line.role === "marker-start")
+                    ours = `OURS (${line.text.replace("<<<<<<<", "").trim() || "HEAD"})`
+                else if (line.role === "marker-end")
+                    theirs = `THEIRS (${line.text.replace(">>>>>>>", "").trim()})`
+            }
+
+            labels[block.index] = { ours: `${Style.icons.caretRight} ${ours}`,
+                                    theirs: `${Style.icons.caretRight} ${theirs}` }
+        }
+
+        return labels
+    }
+
+    /* Signals
+     * ****************************************************************************************/
+    signal acceptBlockRequested(int blockIndex, string mode)
+    signal askAiRequested(int blockIndex)
+    signal useAiRecommendationRequested(int blockIndex)
+    signal resetRequested()
+    signal resolveBinaryRequested(string side)
+    signal contentChanged()
+
+    /* Object Properties
+     * ****************************************************************************************/
+    color: Style.colors.editorBackgroound
+
+    /* Functions
+     * ****************************************************************************************/
+    function openChunkRows() {
+        let rows = []
+        if (!root.displayModel)
+            return rows
+
+        for (let i = 0; i < root.displayModel.count; ++i) {
+            let row = root.displayModel.get(i)
+            if (row.type === "blockButton" && !(row.resolvedGroup > 0))
+                rows.push(i)
+        }
+        return rows
+    }
+
+    function goToNextChunk() {
+        let rows = root.openChunkRows()
+        let next = rows.find(r => r > conflictListView.currentIndex)
+        root.jumpTo(next !== undefined ? next : rows[0])
+    }
+
+    function goToPreviousChunk() {
+        let rows = root.openChunkRows()
+        let previous = rows.filter(r => r < conflictListView.currentIndex).pop()
+        root.jumpTo(previous !== undefined ? previous : rows[rows.length - 1])
+    }
+
+    //! Block index of the open chunk under the caret, or the first open chunk.
+    function focusedOpenBlock() {
+        if (!root.displayModel)
+            return -1
+
+        let start = conflictListView.currentIndex
+        if (start < 0)
+            start = 0
+
+        for (let i = start; i >= 0; --i) {
+            let row = root.displayModel.get(i)
+            if (row.type === "blockButton" && row.blockIndex > 0 && !(row.resolvedGroup > 0))
+                return row.blockIndex
+        }
+        return root.firstOpenBlock
+    }
+
+    function jumpTo(rowIndex) {
+        if (rowIndex === undefined)
+            return
+
+        conflictListView.currentIndex = rowIndex
+        conflictListView.positionViewAtIndex(rowIndex, ListView.Beginning)
+    }
+
+    /*! Moves the caret to the first editable line of a block, so it can be resolved by hand. */
+    function editBlock(blockIndex) {
+        let range = ConflictUtils.findBlockRowRange(root.displayModel, blockIndex)
+        if (range.start < 0)
+            return
+
+        for (let i = range.start; i <= range.end; ++i) {
+            let role = root.displayModel.get(i).role
+            if (role === "ours" || role === "theirs") {
+                root.jumpTo(i)
+                return
+            }
+        }
+
+        root.jumpTo(range.start)
+    }
+
+    /* Children
+     * ****************************************************************************************/
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
+
+        // File bar
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: Style.dp(32)
+            visible: root.selectedPath !== ""
+            color: Style.colors.primaryBackground
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 8
+                spacing: 8
+
+                Text {
+                    Layout.fillWidth: true
+                    text: root.selectedPath
+                    color: Style.colors.foreground
+                    font.family: Style.fontTypes.jetBrainsMono
+                    font.pixelSize: Style.appFont.captionPt
+                    elide: Text.ElideLeft
+                }
+
+                ConflictPillButton {
+                    text: "Reset"
+                    leadingText: Style.icons.undo
+                    accentColor: Style.colors.mutedText
+                    actionEnabled: root.canReset
+                    tooltip: root.canReset
+                             ? "Undo everything done to this file here, bringing back every conflict"
+                             : root.conflictBinary ? "Binary files are resolved by keeping one version"
+                                                   : "This file is already staged"
+                    onClicked: root.resetRequested()
+                }
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            visible: root.selectedPath !== ""
+            color: Style.colors.primaryBorder
+        }
+
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            ListView {
+                id: conflictListView
+
+                property real horizontalScrollOffset: hScrollBar.offset
+                property real maxContentWidth: 0
+
+                anchors.fill: parent
+                anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
+                clip: true
+                visible: !root.showsBinary
+                model: root.displayModel
+
+                cacheBuffer: 5000
+                reuseItems: true
+
+                ScrollBar.vertical: DiffScrollBar {
+                    id: vScrollBar
+                    markers: root.conflictMarkers
+                    markerColor: Style.colors.conflictMarker
+
+                    onHeightChanged: {
+                        if (height > 0)
+                            markersUpdateTimer.restart()
+                    }
+                }
+
+                delegate: ConflictEditorDelegate {
+                    width: conflictListView.width
+                    horizontalOffset: conflictListView.horizontalScrollOffset
+                    isCurrentItem: ListView.isCurrentItem
+                    blockLabels: root.blockLabels
+                    openBlockCount: root.openBlockCount
+                    firstOpenBlock: root.firstOpenBlock
+                    aiAvailable: root.aiAvailable
+                    assistLabel: root.assistLabel
+                    recommendationReady: root.recommendationReady
+                    recommendationBlock: root.recommendationBlock
+                    textDirectionController: root.textDirectionController
+
+                    onSplitRequested: (cursorPos) => {
+                        ConflictUtils.splitLine(root.displayModel, index, cursorPos, conflictListView)
+                        root.contentChanged()
+                    }
+
+                    onMergeUpRequested: {
+                        ConflictUtils.mergeLineUp(root.displayModel, index, conflictListView)
+                        root.contentChanged()
+                    }
+
+                    onAcceptBlockRequested: (blockIndex, mode) => root.acceptBlockRequested(blockIndex, mode)
+                    onAskAiRequested: (blockIndex) => root.askAiRequested(blockIndex)
+                    onUseAiRecommendationRequested: (blockIndex) => root.useAiRecommendationRequested(blockIndex)
+                    onEditBlockRequested: (blockIndex) => root.editBlock(blockIndex)
+                    onMoveFocusUp: conflictListView.currentIndex = Math.max(0, index - 1)
+                    onMoveFocusDown: conflictListView.currentIndex =
+                                     Math.min(root.displayModel.count - 1, index + 1)
+                }
+            }
+
+            DiffScrollBar {
+                id: hScrollBar
+                orientation: Qt.Horizontal
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                visible: !root.showsBinary
+
+                contentSize:  conflictListView.maxContentWidth
+                viewportSize: conflictListView.width
+            }
+
+            EmptyStateView {
+                anchors.fill: parent
+                visible: !root.showsBinary && (!root.displayModel || root.displayModel.count === 0)
+                title: "No conflicted files to show"
+                details: "All conflicts have been resolved."
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: root.showsBinary
+                color: Style.colors.primaryBackground
+
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width - 48, Style.dp(420))
+                    spacing: 10
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: Style.icons.file
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: Style.appFont.displayLgPt
+                        color: Style.colors.mutedText
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Binary file"
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.h2Pt
+                        font.weight: 500
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.conflictBinary
+                              ? "This file isn't text, so it can't be shown or merged line by line. "
+                                + "Keep one version of the whole file."
+                              : "This file isn't text, so it can't be shown here. It is resolved and staged."
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
+                        color: Style.colors.placeholderText
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
+
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.topMargin: 6
+                        visible: root.conflictBinary
+                        spacing: 8
+
+                        ConflictPillButton {
+                            readonly property bool exists: root.selectedConflict?.hasOurs !== false
+
+                            text: exists ? "Use Ours" : "Use Ours (delete)"
+                            leadingText: Style.icons.arrowLeft
+                            accentColor: Style.colors.conflictOursLabel
+                            tooltip: exists ? "Keep the version already on this branch, and stage it"
+                                            : "This branch deleted the file: delete it, and stage that"
+                            onClicked: root.resolveBinaryRequested("ours")
+                        }
+
+                        ConflictPillButton {
+                            readonly property bool exists: root.selectedConflict?.hasTheirs !== false
+
+                            text: exists ? "Use Theirs" : "Use Theirs (delete)"
+                            trailingText: Style.icons.arrowRight
+                            accentColor: Style.colors.conflictTheirsLabel
+                            tooltip: exists ? "Keep the incoming version, and stage it"
+                                            : "The incoming side deleted the file: delete it, and stage that"
+                            onClicked: root.resolveBinaryRequested("theirs")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: markersUpdateTimer
+        interval: 50
+        onTriggered: root.updateConflictMarkers()
+    }
+
+    /* Marker minimap
+     * ****************************************************************************************/
+    function updateConflictMarkers() {
+        let totalRows = root.displayModel ? root.displayModel.count : 0
+        if (totalRows === 0 || vScrollBar.height <= 0) {
+            root.conflictMarkers = []
+            return
+        }
+
+        let markers = []
+        let stack = []
+
+        for (let i = 0; i < totalRows; ++i) {
+            let row = root.displayModel.get(i)
+
+            if (row.role === "marker-start") {
+                stack.push(i)
+            } else if (row.role === "marker-end" && stack.length > 0) {
+                let startIdx = stack.pop()
+                markers.push({ startRatio: startIdx / totalRows,
+                               sizeRatio: (i - startIdx + 1) / totalRows })
+            }
+        }
+
+        root.conflictMarkers = markers
+    }
+
+    function scheduleMarkerUpdate() {
+        markersUpdateTimer.restart()
+    }
+}

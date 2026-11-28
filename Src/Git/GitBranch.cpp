@@ -1,8 +1,10 @@
 #include "GitBranch.h"
+#include "GitCommandText.h"
 #include "GitResult.h"
 
 #include <QDebug>
 #include <git2/branch.h>
+#include <git2/buffer.h>
 #include <git2/deprecated.h>
 #include <git2/object.h>
 #include <git2/refs.h>
@@ -17,15 +19,15 @@ QVariantList GitBranch::getBranches()
 {
     QVariantList branches;
 
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return branches;
 
     git_reference *head = nullptr;
-    git_repository_head(&head, m_currentRepo->repo);
+    git_repository_head(&head, activeRepo());
 
     git_branch_iterator *iter = nullptr;
 
-    if (git_branch_iterator_new(&iter, m_currentRepo->repo, GIT_BRANCH_ALL) == 0) {
+    if (git_branch_iterator_new(&iter, activeRepo(), GIT_BRANCH_ALL) == 0) {
         git_reference *ref = nullptr;
         git_branch_t type;
 
@@ -63,6 +65,33 @@ QVariantList GitBranch::getBranches()
                 bool isCurrent = (isHead == 1);
                 branch["isCurrent"] = isCurrent;
 
+                // Where a local branch pulls from and pushes to; empty when it was never published.
+                QString upstreamRemote;
+                QString upstreamBranch;
+                if (type == GIT_BRANCH_LOCAL) {
+                    git_buf remote = GIT_BUF_INIT;
+                    git_buf merge  = GIT_BUF_INIT;
+                    const char *refName = git_reference_name(ref);
+
+                    if (git_branch_upstream_remote(&remote, activeRepo(), refName) == GIT_OK
+                        && git_branch_upstream_merge(&merge, activeRepo(), refName) == GIT_OK
+                        && remote.ptr && merge.ptr) {
+                        const QString remoteName = QString::fromUtf8(remote.ptr, int(remote.size));
+                        const QString mergeRef   = QString::fromUtf8(merge.ptr, int(merge.size));
+
+                        // "." as the remote means it tracks another local branch, not a remote one.
+                        if (remoteName != "." && mergeRef.startsWith("refs/heads/")) {
+                            upstreamRemote = remoteName;
+                            upstreamBranch = mergeRef.mid(int(qstrlen("refs/heads/")));
+                        }
+                    }
+
+                    git_buf_dispose(&remote);
+                    git_buf_dispose(&merge);
+                }
+                branch["upstreamRemote"] = upstreamRemote;
+                branch["upstreamBranch"] = upstreamBranch;
+
                 branches.append(branch);
             }
 
@@ -84,15 +113,19 @@ QVariantList GitBranch::getBranches()
 
 GitResult GitBranch::createBranch(const QString &branchName)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not found");
+
+    GitResult rulesResult = checkBranchRules(branchName);
+    if (!rulesResult.success())
+        return rulesResult;
 
     git_reference* new_branch_ref = nullptr;
     git_object* target_object = nullptr;
 
-    if (git_revparse_single(&target_object, m_currentRepo->repo, "HEAD") == 0)
+    if (git_revparse_single(&target_object, activeRepo(), "HEAD") == 0)
     {
-        int error = git_branch_create(&new_branch_ref, m_currentRepo->repo,
+        int error = git_branch_create(&new_branch_ref, activeRepo(),
             branchName.toUtf8(), (const git_commit*)target_object, 0 );
 
         if (error != GIT_OK)
@@ -106,13 +139,20 @@ GitResult GitBranch::createBranch(const QString &branchName)
         git_reference_free(new_branch_ref);
     }
 
-    emitGitCommand(QString("git branch %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::createBranch(branchName));
 
     return GitResult(true, QVariant(), QString("Branch created successfully: %1").arg(branchName));
 }
 
 GitResult GitBranch::createBranch(const QString &commitSha, const QString &branchName)
 {
+    if (!m_currentRepo || !activeRepo())
+        return GitResult(false, QVariant(), "Repository not found");
+
+    GitResult rulesResult = checkBranchRules(branchName);
+    if (!rulesResult.success())
+        return rulesResult;
+
     // Convert SHA to git_oid
     git_oid commitOid;
     if (git_oid_fromstr(&commitOid, commitSha.toUtf8().constData()) != 0) {
@@ -122,7 +162,7 @@ GitResult GitBranch::createBranch(const QString &commitSha, const QString &branc
 
     // Look up the commit
     git_commit* commit = nullptr;
-    if (git_commit_lookup(&commit, m_currentRepo->repo, &commitOid) != 0) {
+    if (git_commit_lookup(&commit, activeRepo(), &commitOid) != 0) {
         return GitResult(false, QVariant(),
                          QString("Commit %1 not found").arg(commitSha.left(8)));
     }
@@ -131,7 +171,7 @@ GitResult GitBranch::createBranch(const QString &commitSha, const QString &branc
     git_reference* existingRef = nullptr;
     QString fullRefName = "refs/heads/" + branchName;
 
-    if (git_reference_lookup(&existingRef, m_currentRepo->repo,
+    if (git_reference_lookup(&existingRef, activeRepo(),
                              fullRefName.toUtf8().constData()) == 0) {
         git_reference_free(existingRef);
         git_commit_free(commit);
@@ -141,7 +181,7 @@ GitResult GitBranch::createBranch(const QString &commitSha, const QString &branc
 
     // Create the branch
     git_reference* newRef = nullptr;
-    int error = git_branch_create(&newRef, m_currentRepo->repo,
+    int error = git_branch_create(&newRef, activeRepo(),
                                   branchName.toUtf8().constData(),
                                   commit, 0);
 
@@ -154,20 +194,62 @@ GitResult GitBranch::createBranch(const QString &commitSha, const QString &branc
                          QString("Failed to create branch '%1'").arg(branchName));
     }
 
-    emitGitCommand(QString("git branch %1 %2")
-                       .arg(quoteCommandArg(branchName), quoteCommandArg(commitSha)));
+    emitGitCommand(GitCommandText::createBranch(branchName, commitSha));
 
     return GitResult(true);
 }
 
+GitResult GitBranch::checkBranchRules(const QString &branchName)
+{
+    // Local copies of existing remote branches keep the remote's name; rules only govern new names.
+    if (remoteBranchExists(branchName))
+        return GitResult(true);
+
+    ActionContext context;
+    context.type = ActionType::BranchCreate;
+    context.branchName = branchName;
+    return runRuleCheck(context);
+}
+
+bool GitBranch::remoteBranchExists(const QString &branchName)
+{
+    git_branch_iterator *iter = nullptr;
+    if (git_branch_iterator_new(&iter, activeRepo(), GIT_BRANCH_REMOTE) != 0)
+        return false;
+
+    bool found = false;
+    git_reference *ref = nullptr;
+    git_branch_t type;
+
+    while (!found && git_branch_next(&ref, &type, iter) == 0) {
+        const char *name = nullptr;
+        if (git_branch_name(&name, ref) == GIT_OK && name) {
+            const QString remoteBranch = QString::fromUtf8(name);
+            const int slash = remoteBranch.indexOf('/');
+            found = slash > 0 && remoteBranch.mid(slash + 1) == branchName;
+        }
+        git_reference_free(ref);
+    }
+
+    git_branch_iterator_free(iter);
+    return found;
+}
+
 GitResult GitBranch::deleteBranch(const QString &branchName)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
+    if (!m_currentRepo || !activeRepo())
         return GitResult(false, QVariant(), "Repository not found for creating branch");
+
+    ActionContext context;
+    context.type = ActionType::BranchDelete;
+    context.branchName = branchName;
+    GitResult rulesResult = runRuleCheck(context);
+    if (!rulesResult.success())
+        return rulesResult;
 
     git_reference* branchRef = nullptr;
 
-    int error = git_branch_lookup(&branchRef, m_currentRepo->repo, branchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+    int error = git_branch_lookup(&branchRef, activeRepo(), branchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
 
     if (error == GIT_OK) {
         error = git_branch_delete(branchRef);
@@ -182,14 +264,14 @@ GitResult GitBranch::deleteBranch(const QString &branchName)
         git_reference_free(branchRef);
     }
 
-    emitGitCommand(QString("git branch -d %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::deleteBranch(branchName));
 
     return GitResult(true, QVariant(), QString("Successfully deleted branch: %1").arg(branchName));
 }
 
 GitResult GitBranch::checkoutBranch(const QString &branchName)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository is not open.");
     }
 
@@ -197,7 +279,7 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
     git_object* targetCommit = nullptr;
 
     // Attempt to find the branch reference
-    int error = git_branch_lookup(&targetRef, m_currentRepo->repo, branchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+    int error = git_branch_lookup(&targetRef, activeRepo(), branchName.toUtf8().constData(), GIT_BRANCH_LOCAL);
     if (error != 0) {
         return GitResult(false, QVariant(), QString("Branch '%1' not found.").arg(branchName));
     }
@@ -213,7 +295,7 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
     git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
     opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
 
-    error = git_checkout_tree(m_currentRepo->repo, targetCommit, &opts);
+    error = git_checkout_tree(activeRepo(), targetCommit, &opts);
     if (error != GIT_OK) {
         git_object_free(targetCommit);
         git_reference_free(targetRef);
@@ -221,7 +303,7 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
     }
 
     // Set HEAD to the target branch
-    error = git_repository_set_head(m_currentRepo->repo, git_reference_name(targetRef));
+    error = git_repository_set_head(activeRepo(), git_reference_name(targetRef));
     if (error != GIT_OK) {
         git_object_free(targetCommit);
         git_reference_free(targetRef);
@@ -232,14 +314,19 @@ GitResult GitBranch::checkoutBranch(const QString &branchName)
     git_object_free(targetCommit);
     git_reference_free(targetRef);
 
-    emitGitCommand(QString("git checkout %1").arg(quoteCommandArg(branchName)));
+    emitGitCommand(GitCommandText::checkoutBranch(branchName));
+
+    ActionContext postCheckout;
+    postCheckout.type = ActionType::PostCheckout;
+    postCheckout.branchName = branchName;
+    runRuleCheck(postCheckout);
 
     return GitResult(true, QVariant(), QString("Successfully checked out branch '%1'.").arg(branchName));
 }
 
 GitResult GitBranch::checkoutCommit(const QString &commitHash)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository is not open.");
     }
 
@@ -249,7 +336,7 @@ GitResult GitBranch::checkoutCommit(const QString &commitHash)
     }
 
     git_object *targetCommit = nullptr;
-    if (git_object_lookup(&targetCommit, m_currentRepo->repo, &oid, GIT_OBJECT_COMMIT) != 0) {
+    if (git_object_lookup(&targetCommit, activeRepo(), &oid, GIT_OBJECT_COMMIT) != 0) {
         return GitResult(false, QVariant(), "Commit not found.");
     }
 
@@ -257,14 +344,14 @@ GitResult GitBranch::checkoutCommit(const QString &commitHash)
     git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
     opts.checkout_strategy = GIT_CHECKOUT_SAFE | GIT_CHECKOUT_RECREATE_MISSING;
 
-    int error = git_checkout_tree(m_currentRepo->repo, targetCommit, &opts);
+    int error = git_checkout_tree(activeRepo(), targetCommit, &opts);
     if (error != GIT_OK) {
         git_object_free(targetCommit);
         return GitResult(false, QVariant(), "Failed to checkout tree. Check for local changes.");
     }
 
     // Set HEAD to the specific commit (Detached HEAD state)
-    error = git_repository_set_head_detached(m_currentRepo->repo, &oid);
+    error = git_repository_set_head_detached(activeRepo(), &oid);
 
     git_object_free(targetCommit);
 
@@ -272,22 +359,26 @@ GitResult GitBranch::checkoutCommit(const QString &commitHash)
         return GitResult(false, QVariant(), "Failed to detach HEAD to commit.");
     }
 
-    emitGitCommand(QString("git checkout --detach %1").arg(quoteCommandArg(commitHash)));
+    emitGitCommand(GitCommandText::checkoutCommit(commitHash));
 
     return GitResult(true, QVariant(), QString("Checked out commit %1").arg(commitHash.left(8)));
 }
 
 GitResult GitBranch::renameBranch(const QString &oldName, const QString &newName)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository is not open.");
     }
+
+    GitResult rulesResult = checkBranchRules(newName);
+    if (!rulesResult.success())
+        return rulesResult;
 
     git_reference* branchRef = nullptr;
     git_reference* newRef = nullptr;
 
     // Attempt to find the old branch reference
-    int error = git_branch_lookup(&branchRef, m_currentRepo->repo, oldName.toUtf8().constData(), GIT_BRANCH_LOCAL);
+    int error = git_branch_lookup(&branchRef, activeRepo(), oldName.toUtf8().constData(), GIT_BRANCH_LOCAL);
     if (error != GIT_OK) {
         return GitResult(false, QVariant(), QString("Branch '%1' not found.").arg(oldName));
     }
@@ -304,15 +395,14 @@ GitResult GitBranch::renameBranch(const QString &oldName, const QString &newName
     git_reference_free(newRef);
     git_reference_free(branchRef);
 
-    emitGitCommand(QString("git branch -m %1 %2")
-                       .arg(quoteCommandArg(oldName), quoteCommandArg(newName)));
+    emitGitCommand(GitCommandText::renameBranch(oldName, newName));
 
     return GitResult(true, QVariant(), QString("Successfully renamed branch '%1' to '%2'.").arg(oldName).arg(newName));
 }
 
 GitResult GitBranch::getBranchLineage(const QString &branchName)
 {
-    if (!m_currentRepo || !m_currentRepo->repo) {
+    if (!m_currentRepo || !activeRepo()) {
         return GitResult(false, QVariant(), "Repository is not open.");
     }
 
@@ -324,7 +414,7 @@ GitResult GitBranch::getBranchLineage(const QString &branchName)
     QByteArray branchPath = "refs/heads/" + branchName.toUtf8();
 
     // Find the OID of the target branch
-    int error = git_reference_lookup(&targetRef, m_currentRepo->repo, branchPath.constData());
+    int error = git_reference_lookup(&targetRef, activeRepo(), branchPath.constData());
     if (error != GIT_OK) {
         return GitResult(false, QVariant(), QString("Target branch '%1' not found.").arg(branchName));
     }
@@ -334,7 +424,7 @@ GitResult GitBranch::getBranchLineage(const QString &branchName)
 
     // Initialize iterator for local branches
     git_branch_iterator *iterator = nullptr;
-    error = git_branch_iterator_new(&iterator, m_currentRepo->repo, GIT_BRANCH_LOCAL);
+    error = git_branch_iterator_new(&iterator, activeRepo(), GIT_BRANCH_LOCAL);
     if (error != GIT_OK) {
         return GitResult(false, QVariant(), "Failed to initialize branch iterator.");
     }
@@ -361,7 +451,7 @@ GitResult GitBranch::getBranchLineage(const QString &branchName)
         /* * A branch is an ancestor if the merge base between the target
          * and the candidate is the candidate's tip itself.
          */
-        int mergeBaseError = git_merge_base(&mergeBaseOid, m_currentRepo->repo, &targetOid, &currentOid);
+        int mergeBaseError = git_merge_base(&mergeBaseOid, activeRepo(), &targetOid, &currentOid);
 
         if (mergeBaseError == GIT_OK && git_oid_equal(&mergeBaseOid, &currentOid)) {
             lineage.append(currentBranchName);
@@ -377,27 +467,22 @@ GitResult GitBranch::getBranchLineage(const QString &branchName)
     return GitResult(true, lineage, QString("Successfully retrieved lineage for '%1'.").arg(branchName));
 }
 
-QString GitBranch::getCurrentBranchName()
+QString GitBranch::currentBranchName(git_repository *repo)
 {
-    if (!m_currentRepo || !m_currentRepo->repo)
-        return "";
+    QString branchName;
+    git_reference* head = nullptr;
 
-    QString branchName;  // Empty string to start
-    git_reference* head = nullptr;  // libgit2 HEAD reference
+    int error = git_repository_head(&head, repo);
 
-    int error = git_repository_head(&head, m_currentRepo->repo);
-
-    // Get HEAD reference (points to current branch)
     if (error == GIT_OK)
     {
-        const char* name = nullptr;  // Will store branch name
+        const char* name = nullptr;
 
-        // Extract branch name from reference
         if (git_branch_name(&name, head) == GIT_OK && name)
         {
-            branchName = QString::fromUtf8(name);  // Convert C string to QString
+            branchName = QString::fromUtf8(name);
         }
-        git_reference_free(head);  // Clean up libgit2 object
+        git_reference_free(head);
     } else if (error == GIT_ENOTFOUND)
     {
         branchName = "initial/no-commits";
@@ -406,9 +491,53 @@ QString GitBranch::getCurrentBranchName()
         branchName = "Detached HEAD";
     }
 
+    return branchName;
+}
+
+QString GitBranch::getCurrentBranchName()
+{
+    if (!m_currentRepo || !activeRepo())
+        return "";
+
+    const QString branchName = currentBranchName(activeRepo());
+
     emitGitCommand("git rev-parse --abbrev-ref HEAD");
 
     return branchName;  // "main", "master", or Detached HEAD if detached
+}
+
+QString GitBranch::getDisplayBranchName()
+{
+    QString branch = getCurrentBranchName();
+    if (!branch.isEmpty())
+        return branch;
+
+    // Detached HEAD — fall back to short SHA
+    if (!m_currentRepo || !activeRepo())
+        return "";
+
+    git_reference* head = nullptr;
+    if (git_repository_head(&head, activeRepo()) != GIT_OK)
+        return "";
+
+    const git_oid* oid = git_reference_target(head);
+    QString sha;
+    if (oid) {
+        char buf[8];
+        git_oid_tostr(buf, sizeof(buf), oid);
+        sha = QString::fromUtf8(buf);
+    }
+
+    git_reference_free(head);
+    return sha;
+}
+
+bool GitBranch::isHeadDetached() const
+{
+    if (!m_currentRepo || !activeRepo())
+        return false;
+
+    return git_repository_head_detached(activeRepo()) == 1;
 }
 
 QString GitBranch::formatRefName(const QString &branchName)
@@ -441,7 +570,7 @@ QString GitBranch::formatRefName(const QString &branchName)
 
 QString GitBranch::resolveBranchName(const QString& branchName)
 {
-    git_reference* ref = getRef(m_currentRepo->repo, branchName);
+    git_reference* ref = getRef(activeRepo(), branchName);
     QString resolvedName;
 
 

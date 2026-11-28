@@ -17,14 +17,21 @@ private:
 
     QString m_token;    ///< HTTPS token or password
 
+    QString m_answeredUrl;              ///< The URL the token was already offered to
+    bool    m_tokenRejected = false;    ///< The server turned the token down
+
     /**
      * @brief libgit2 credentials callback for HTTPS authentication.
      *
      * This callback is invoked by libgit2 when credentials are required.
      * The payload is expected to point to a GitCloneContext structure.
      *
+     * libgit2 asks again for a URL it already has credentials for only when the server refused
+     * them. Offering the same token again would just replay the request until libgit2 gives up
+     * with "too many redirects or authentication replays", so the second request fails at once.
+     *
      * @param out          Output credentials object
-     * @param url          Remote URL (unused)
+     * @param url          Remote URL the credentials are for
      * @param username_from_url Username parsed from URL (may be null)
      * @param allowed_types Bitmask of allowed credential types
      * @param payload      Pointer to GitCloneContext
@@ -69,4 +76,18 @@ public:
      * @param pushOpts libgit2 push options to modify
      */
     void applyPush(git_push_options& opts) override;
+
+    /**
+     * @brief Whether the server refused the token during the operation this object served.
+     */
+    bool tokenRejected() const;
+
+    /**
+     * @brief What to tell the user when the server refused the token for a remote.
+     *
+     * @param remoteName Name of the remote
+     * @param url        URL the token was sent to
+     * @param forPush    The operation writes to the remote, so the token needs write access
+     */
+    static QString rejectedTokenMessage(const QString& remoteName, const QString& url, bool forPush);
 };

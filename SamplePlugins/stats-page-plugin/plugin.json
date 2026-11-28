@@ -1,0 +1,10 @@
+{
+  "id": "com.gitease.stats-page",
+  "name": "Stats Page",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "capabilities": ["page"],
+  "author": "GitEase",
+  "description": "Adds a live Stats page to the NavigationRail that demonstrates the plugin event bus.",
+  "cppEntry": "lib/stats-page-plugin"
+}

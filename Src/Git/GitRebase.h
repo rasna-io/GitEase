@@ -55,10 +55,24 @@ public:
                                      const QString& upstream,
                                      QString branch = QString());
 
-    /// Build an interactive rebase plan without changing the repository.
-    Q_INVOKABLE GitResult previewRebasePlan(const QString& onto,
-                                            const QString& upstream,
-                                            const QString& branch = QString());
+    /**
+     * @brief Start an asynchronous generation of an interactive rebase plan.
+     *
+     * This function computes the list of commits that would be replayed by a
+     * rebase of `branch` onto `onto` (or `upstream` if `onto` is empty) in a
+     * background thread.  The plan is returned via the `previewRebasePlanReady`
+     * signal, allowing the UI to remain responsive while the computation runs.
+     *
+     * @param onto     New base commit (may be empty).
+     * @param upstream Upstream boundary; commits after this point are replayed.
+     * @param branch   Branch to rebase (empty = current HEAD).
+     * @return A GitResult indicating whether the asynchronous operation was
+     *         successfully started.  The actual plan is delivered through the
+     *         previewRebasePlanReady signal.
+     */
+    Q_INVOKABLE GitResult startPreviewRebasePlan(const QString& onto,
+                                                 const QString& upstream,
+                                                 const QString& branch);
 
 
     /// Continue an in-progress rebase (`git rebase --continue`).
@@ -115,6 +129,20 @@ public:
      */
     Q_INVOKABLE void interactiveAbort();
 
+    /**
+     * @brief Quit the interactive rebase without rewinding anything (`git rebase --quit`).
+     *
+     * Unlike interactiveAbort(), nothing is restored: HEAD stays detached where the replay
+     * stopped, the original branch keeps pointing where it did before the rebase started, and
+     * the index and working tree keep whatever the stopped commit left in them - conflict
+     * markers included - for the user to salvage by hand.
+     *
+     * @return On success the data map holds `head` (the detached HEAD commit),
+     *         `originalBranch` (the branch HEAD was on when the rebase started, empty if it
+     *         was detached) and `conflictedFiles` (paths still unmerged in the index).
+     */
+    Q_INVOKABLE GitResult interactiveQuit();
+
 private:
     GitResult startRebase(const QString& onto,
                           const QString& upstream,
@@ -130,12 +158,18 @@ private:
     QVariantMap rebaseProgressData(git_rebase* rebase) const;
     GitResult resetWorktreeToHead() const;
     bool repositoryHasConflicts() const;
+    QStringList conflictedPaths() const;
     bool isRebaseInProgress() const;
 
     // Helper to check out a branch
     GitResult checkoutBranch(const QString& branchName);
     QString getCurrentBranchName();
 
+
+    /// Build an interactive rebase plan without changing the repository.
+    GitResult previewRebasePlan(const QString& onto,
+                                const QString& upstream,
+                                const QString& branch = QString());
 
     /**
      * @brief Process the next entry in the plan.
@@ -146,6 +180,10 @@ private:
      * to keep the event loop responsive.
      */
     void processNextOperation();
+
+    /*! Reports the command of the run that just stopped (conflict or end), so the pages re-read
+     *  the repository; the steps of a run change it without reporting anything themselves. */
+    void reportRunCommand();
 
     /**
      * @brief Release all resources held by the interactive rebase session.
@@ -203,6 +241,7 @@ private:
     int             m_currentPlanIndex      = 0;        ///< Current position in m_interactivePlan.
     QString         m_currentOpHash;                    ///< Hash of the commit currently being processed.
     bool            m_isCherryPickActive    = false;    ///< True while a cherry‑pick is in progress (possibly conflicted).
+    QString         m_pendingRunCommand;                ///< Command of the current run (start, --continue, --skip), reported once it stops.
 
     git_oid         m_originalHeadOid;                  ///< Original HEAD commit OID (if detached).
     bool            m_originalHeadDetached;             ///< True if we started from a detached HEAD.
@@ -210,6 +249,19 @@ private:
     git_signature*  m_defaultSignature      = nullptr;
 
 signals:
+
+    /**
+     * @brief Emitted when the asynchronous rebase plan generation finishes.
+     *
+     * This signal is emitted after a call to startPreviewRebasePlan completes
+     * its background work.  The `result` parameter contains the GitResult
+     * object produced by the plan computation; on success its data field holds
+     * the plan map (commits, upstream, onto, branch, etc.).
+     *
+     * @param result The result of the plan generation.
+     */
+    void previewRebasePlanReady(GitResult result);
+
     /**
      * @brief Emitted when a rebase operation begins for a commit.
      *
@@ -253,5 +305,11 @@ signals:
      * @brief Emitted when the user aborts the interactive rebase.
      */
     void rebaseAborted();
+
+    /**
+     * @brief Emitted when the user quits the interactive rebase, leaving HEAD detached and the
+     *        working tree as it is.
+     */
+    void rebaseQuit();
 
 };

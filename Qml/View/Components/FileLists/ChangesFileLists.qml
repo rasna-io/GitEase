@@ -2,6 +2,10 @@ import QtQuick
 import QtQuick.Layouts
 
 import GitEase
+import GitEase_Style
+
+import "qrc:/GitEase/Qml/Core/Scripts/AsyncGit.js" as AsyncGit
+
 /*! ***********************************************************************************************
  * ChangesFileLists
  * Two stacked file lists used in Committing page:
@@ -17,11 +21,30 @@ Item {
     property StatusController        statusController:        null
     property NotificationController  notificationController:  null
     property StashController         stashController:         null
+    property GuideController         guideController:         null
+    property IdentityGuard           identityGuard:           null
 
     property var unstagedModel: []
     property var stagedModel: []
     property string currentFile: ""
+    property int currentFileStatus: -1
     property var showSaveDialog
+
+    property int statusToken: 0
+
+    property var bulkJobs: []
+    readonly property var activeRepo: root.statusController ? root.statusController.currentRepo : null
+    readonly property var bulkJob: root.bulkJobs.find(job => job.repo === root.activeRepo) || null
+    property var loadedRepo: null
+    readonly property bool statusLoading: root.activeRepo !== null && root.loadedRepo !== root.activeRepo
+    readonly property bool listsBusy: root.bulkJob !== null || root.statusLoading
+    readonly property string busyText: root.bulkJob ? root.bulkJob.text : "Loading changes"
+    property bool busyVisible: false
+    readonly property int fillingSections: (stagedSection.wantsFillHeight ? 1 : 0) + (unstagedSection.wantsFillHeight ? 1 : 0)
+    readonly property real fixedHeight: (stagedSection.wantsFillHeight ? 0 : stagedSection.implicitHeight) +
+                                        (unstagedSection.wantsFillHeight ? 0 : unstagedSection.implicitHeight)
+    readonly property real fillHeight: root.fillingSections > 0 ? Math.max(0, (root.height - root.fixedHeight) / root.fillingSections) : 0
+    property bool resizing: false
 
     /* Signals
      * ****************************************************************************************/
@@ -33,20 +56,80 @@ Item {
     implicitWidth: 1
     implicitHeight: 1
 
-    Component.onCompleted: Qt.callLater(function() {root.updateStatus()})
+    onHeightChanged: {
+        root.resizing = true
+        resizeSettleTimer.restart()
+    }
+
+    onListsBusyChanged: {
+        if(!root.listsBusy) {
+            root.busyVisible = false
+        }
+    }
+
+    Component.onCompleted: root.updateStatus()
+
+    Connections {
+        target: root.statusController
+
+        function onCurrentRepoChanged() {
+            root.updateStatus()
+        }
+    }
+
+    Timer {
+        id: statusCoalesceTimer
+        interval: 16
+        repeat: false
+        onTriggered: root.requestStatus()
+    }
+
+    Timer {
+        interval: 250
+        running: root.listsBusy
+        onTriggered: root.busyVisible = true
+    }
+
+    Timer {
+        id: resizeSettleTimer
+        interval: 150
+        onTriggered: root.resizing = false
+    }
+
+    GuideHoverTrigger {
+        guideController: root.guideController
+        guideId: "staging_tutorial"
+        guideName: "Staging Changes"
+        guideIcon: Style.icons.arrowRight
+        guidePage: "committing"
+        stepsFactory: function() {
+            return [
+                {
+                    targetProvider: function() { return stagedSection },
+                    icon: Style.icons.arrowRight,
+                    title: "Staged Changes",
+                    description: "Files here are queued for your next commit — they will be included in the snapshot. Click any file to preview its diff."
+                },
+                {
+                    targetProvider: function() { return unstagedSection },
+                    icon: Style.icons.arrowRight,
+                    title: "Unstaged Changes",
+                    description: "Files here have local edits not yet marked for commit. Stage individual files from the list, select specific lines in the diff view, or use the header button to stage everything at once."
+                }
+            ]
+        }
+    }
 
     /* Children
      * ****************************************************************************************/
-    ColumnLayout {
+    Column {
         anchors.fill: parent
-        spacing: 10
 
         StagedFileListSection {
             id: stagedSection
-            Layout.fillWidth: true
-            Layout.fillHeight: wantsFillHeight
-            Layout.minimumHeight: 32
-            Layout.preferredHeight: expanded ? -1 : 32
+            width: parent.width
+            height: wantsFillHeight ? root.fillHeight : implicitHeight
+            animated: !root.resizing
 
             model: root.stagedModel
 
@@ -69,28 +152,21 @@ Item {
             onUnstageAllRequested: function() {
                 root.showSaveDialog(
                             () => {
-                                let failedFiles = []
-                                root.stagedModel.forEach((file)=>{
-                                    let res = statusController.unstageFile(file.path)
-                                    if (!res.success) {
-                                        failedFiles.push(file.path)
-                                    }
-                                })
-                                if (failedFiles.length > 0) {
-                                    root.notificationController.error("Failed to unstage some files", "Unstage Error", 5000)
-                                } else if (root.unstagedModel.length > 0) {
-                                    root.notificationController.success("All files unstaged successfully", "Unstage All", 3000)
-                                }
-                                root.updateStatus()
+                                root.runBulk("unstageAll",
+                                             "All files unstaged successfully", "Unstage All",
+                                             "Failed to unstage all files", "Unstage Error",
+                                             "Unstaging all files")
                             }
                 )
             }
 
             onStashAllRequested: function() {
-                root.showSaveDialog(
-                            () => {
+                const stashStaged = () => {
                                 let message = "Stash staged changes";
-                                let result = stashController.save(message, true);
+                                let result = stashController.saveStaged(message);
+
+                                if (root.identityGuard.handle(result, "stash", stashStaged))
+                                    return
 
                                 if (result.success) {
                                     root.notificationController.success("Changes stashed successfully", "Stash", 3000)
@@ -100,7 +176,7 @@ Item {
                                     errorMessageLabel.text = result.errorMessage ?? "Stash failed";
                                 }
                             }
-                )
+                root.showSaveDialog(stashStaged)
             }
 
             onFileSelected: function(filePath) {
@@ -111,28 +187,32 @@ Item {
 
         UnstagedFileListSection {
             id: unstagedSection
-            Layout.fillWidth: true
-            Layout.fillHeight: wantsFillHeight
-            Layout.minimumHeight: 32
-            Layout.preferredHeight: expanded ? -1 : 32
+            width: parent.width
+            height: wantsFillHeight ? root.fillHeight : implicitHeight
+            animated: !root.resizing
 
             model: root.unstagedModel
 
-            onStageFileRequested: function(filePath) {
+            onStageFileRequested: function(filePath, isDeleted) {
                 root.showSaveDialog(
-                            () => {
-                                let res = statusController.stageFile(filePath)
-                                if (!res.success) {
-                                    root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
-                                }
-                                root.updateStatus()
+                    () => {
+                        root.confirmConflictStaging([filePath], () => {
+                            let res = statusController.stageFile(filePath, isDeleted)
+                            if (!res.success) {
+                                root.notificationController.error(res.errorMessage || "Failed to stage file", "Stage Error", 5000)
                             }
+                            root.updateStatus()
+                        })
+                    }
                 )
             }
 
             onStashFileRequested: function(filePath) {
                 let message = "Stashing file: " + filePath
                 let res = stashController.stashFile(filePath, message)
+                if (root.identityGuard.handle(res, "stash", function() { unstagedSection.stashFileRequested(filePath) }))
+                    return
+
                 if (res.success) {
                     root.notificationController.success("File stashed: " + filePath, "Stash File", 3000)
                 } else {
@@ -177,18 +257,19 @@ Item {
             onStageAllRequested: function() {
                 root.showSaveDialog(
                             () => {
-                                let res = statusController.stageAll()
-                                if (res.success) {
-                                    root.notificationController.success("All files staged successfully", "Stage All", 3000)
-                                } else {
-                                    root.notificationController.error(res.errorMessage || "Failed to stage all files", "Stage Error", 5000)
-                                }
-                                root.updateStatus()
+                                root.confirmConflictStaging(root.unstagedModel.map(file => file.path), () => {
+                                    root.runBulk("stageAll",
+                                                 "All files staged successfully", "Stage All",
+                                                 "Failed to stage all files", "Stage Error",
+                                                 "Staging all files")
+                                }, true)
                             }
                 )
             }
 
             onDiscardAllRequested: function() {
+                root.changesAborted()
+
                 let res = statusController.revertAll()
                 if (res.success) {
                     root.notificationController.success("All changes discarded successfully", "Discard All", 3000)
@@ -199,10 +280,12 @@ Item {
             }
 
             onStashAllRequested: function() {
-                root.showSaveDialog(
-                            () => {
+                const stashUnstaged = () => {
                                 let message = "Stash unstaged changes"
-                                let result = stashController.save(message, false);
+                                let result = stashController.saveUnstaged(message);
+
+                                if (root.identityGuard.handle(result, "stash", stashUnstaged))
+                                    return
 
                                 if (result.success) {
                                     root.notificationController.success("Changes stashed successfully", "Stash", 3000)
@@ -212,45 +295,235 @@ Item {
                                     errorMessageLabel.text = result.errorMessage ?? "Stash failed";
                                 }
                             }
-                )
+                root.showSaveDialog(stashUnstaged)
             }
 
-            onFileSelected: function(filePath) {
+            onFileSelected: function(filePath, fileStatus) {
                 stagedSection.selectedFilePath = ""
+                root.currentFileStatus = fileStatus
                 root.fileSelected(filePath, false)
             }
         }
+    }
 
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: !(stagedSection.wantsFillHeight && unstagedSection.wantsFillHeight)
-            Layout.preferredHeight: 0
-            visible: true
+    // Blocks the lists while they are stale, and shows the waiter once the wait is noticeable
+    MouseArea {
+        anchors.fill: parent
+        enabled: root.listsBusy
+
+        Loader {
+            anchors.fill: parent
+            active: root.busyVisible || opacity > 0
+            opacity: root.busyVisible ? 1 : 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Style.motionMedium
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            sourceComponent: BusyWaiter {
+                // Keeps its text while fading out
+                Binding on message {
+                    value: root.busyText
+                    when: root.listsBusy
+                    restoreMode: Binding.RestoreNone
+                }
+            }
         }
+    }
+
+    Component {
+        id: conflictStagingDialogComp
+        ConflictConfirmationDialog { }
     }
 
     /* Functions
      * ****************************************************************************************/
     function updateStatus() {
-        let res = root.statusController.status()
+        statusCoalesceTimer.restart()
+    }
 
-        if (!res.success)
-            return;
+    //! Highlights currentFile again, e.g. after switching to another file was cancelled.
+    function selectCurrentFile(isStaged) {
+        unstagedSection.selectedFilePath = isStaged ? "" : root.currentFile
+        stagedSection.selectedFilePath   = isStaged ? root.currentFile : ""
 
-        root.unstagedModel = []
-        root.stagedModel = []
+        const file = root.unstagedModel.find(entry => entry.path === root.currentFile)
+        if (!isStaged && file)
+            root.currentFileStatus = file.unstagedStatus ? file.unstagedStatus : GitFileStatus.Unknown
+    }
 
-        res.data.forEach((file) => {
-            if (file.isStaged) {
-                root.stagedModel.push(file)
-            }
-            if (file.isUnstaged || file.isUntracked) {
-                root.unstagedModel.push(file)
+    function confirmConflictStaging(paths, stageAction, stagingAll = false) {
+        const conflictedPaths = new Set()
+        root.unstagedModel.forEach(file => {
+            if (file.isConflicted) {
+                conflictedPaths.add(file.path)
             }
         })
 
-        root.unstagedModel = root.unstagedModel.slice(0)
-        root.stagedModel = root.stagedModel.slice(0)
+        let conflicted = paths.filter(path => conflictedPaths.has(path))
+        if (conflicted.length === 0) {
+            stageAction()
+            return
+        }
+
+        let withMarkers = conflicted.filter(path => root.statusController.hasConflictMarkers(path))
+        let dialog      = conflictStagingDialogComp.createObject(root)
+
+        const escape  = text => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        const tint    = (text, color) => `<span style="color:${color}">${escape(text)}</span>`
+        const code    = (text, color) => `<span style="font-family:'${Style.fontTypes.jetBrainsMono}'; ` +
+                                         `font-weight:600; color:${color}">${escape(text)}</span>`
+        const pathOf  = path => code(path, Style.colors.popupTitleText)
+
+        const markers = code(["<<<<<<<", "=======", ">>>>>>>"].join(String.fromCharCode(0xA0)),
+                             Style.colors.conflictMarker)
+
+        if (conflicted.length === 1) {
+            dialog.title   = "Mark Conflict as Resolved?"
+            dialog.message = withMarkers.length > 0
+                    ? `${pathOf(conflicted[0])} still contains conflict markers ${markers}.<br><br>` +
+                      "Staging it marks the conflict as resolved. If you commit the file like this, " +
+                      "the markers are committed with it."
+                    : `${pathOf(conflicted[0])} has no conflict markers left, but Git still lists it ` +
+                      "as conflicted.<br><br>" +
+                      "Staging it marks the conflict as resolved, using the file exactly as it is now."
+        } else {
+            const shown = conflicted.slice(0, 5)
+            let   list  = shown.map(path => "•&nbsp;&nbsp;" + pathOf(path) +
+                                            (withMarkers.includes(path)
+                                             ? "&nbsp;&nbsp;" + tint("has markers", Style.colors.conflictMarker)
+                                             : ""))
+
+            if (conflicted.length > shown.length)
+                list.push(`•&nbsp;&nbsp;and ${conflicted.length - shown.length} more`)
+
+            dialog.title   = "Mark Conflicts as Resolved?"
+            dialog.message = `${conflicted.length} conflicted files will be marked as resolved:<br>` +
+                             list.join("<br>") + "<br><br>" +
+                             (withMarkers.length > 0
+                              ? (withMarkers.length === conflicted.length ? "All" : withMarkers.length) +
+                                ` of them still contain conflict markers ${markers}. ` +
+                                "Committing them like this would commit the markers too."
+                              : "None of them has conflict markers left, so each is staged exactly as it is now.")
+        }
+
+        dialog.messageFormat = Text.RichText
+
+        dialog.saveTitle       = stagingAll ? "Stage All and Resolve" : "Stage and Resolve"
+        dialog.saveDescription = stagingAll ? "Stage every file and mark its conflict resolved"
+                                            : "Mark the conflict resolved with the file as it is now"
+
+        dialog.hasSave           = true
+        dialog.hasAbort          = false
+        dialog.cancelTitle       = "Cancel"
+        dialog.cancelDescription = "Keep the conflicts unresolved"
+
+        dialog.saved.connect(stageAction)
+        dialog.open()
+    }
+
+    function runBulk(method, successText, successTitle, failureText, failureTitle, busyText) {
+        const repo = root.activeRepo
+        if(!root.statusController || !repo || root.bulkJob) {
+            return
+        }
+
+        root.bulkJobs = root.bulkJobs.concat([{ repo: repo, text: busyText, refreshing: false }])
+
+        AsyncGit.call(root.statusController, method, [],
+            function(res) {
+                if(res && res.success) {
+                    root.notificationController.success(successText, successTitle, 3000)
+                } else {
+                    root.notificationController.error((res && res.errorMessage) || failureText, failureTitle, 5000)
+                }
+
+                root.refreshAfterBulk(repo)
+            },
+            function(error) {
+                // Another repository was opened meanwhile: this one reloads when it is opened again
+                if(error === AsyncGit.STALE) {
+                    root.endBulkJob(repo, false)
+                    return
+                }
+
+                root.notificationController.error(failureText, failureTitle, 5000)
+                root.refreshAfterBulk(repo)
+            })
+    }
+
+    // The lists show the old state until the status is read again, which takes a while on large
+    // change sets, so the job stays until that status has been applied.
+    function refreshAfterBulk(repo) {
+        root.bulkJobs.forEach(job => {
+            if(job.repo === repo) {
+                job.refreshing = true
+            }
+        })
+
+        root.requestStatus()
+    }
+
+    // Ends the job of \a repo, or only if its result is already being read when \a refreshedOnly
+    function endBulkJob(repo, refreshedOnly) {
+        root.bulkJobs = root.bulkJobs.filter(job => job.repo !== repo || (refreshedOnly && !job.refreshing))
+    }
+
+    function requestStatus() {
+        if (!root.statusController)
+            return
+
+        const repo  = root.activeRepo
+        let   token = ++root.statusToken
+
+        statusCoalesceTimer.stop()
+
+        AsyncGit.call(root.statusController, "status", [false],
+            function (res) {
+                if (token === root.statusToken) {
+                    root.showStatus(repo, res && res.success ? res.data : null)
+                }
+            },
+            function () {
+                root.showStatus(repo, null)
+            })
+    }
+
+    // \a files is null when the status could not be read
+    function showStatus(repo, files) {
+        if (repo === root.activeRepo) {
+            if (files) {
+                root.applyStatus(files)
+            } else if (root.loadedRepo !== repo) {
+                // Nothing to show for this repository, and nothing of the previous one either
+                root.unstagedModel = []
+                root.stagedModel = []
+            }
+
+            root.loadedRepo = repo
+        }
+
+        root.endBulkJob(repo, true)
+    }
+
+    function applyStatus(files) {
+        let unstaged = []
+        let staged = []
+
+        files.forEach((file) => {
+            if (file.isStaged) {
+                staged.push(file)
+            }
+            if (file.isUnstaged || file.isUntracked) {
+                unstaged.push(file)
+            }
+        })
+
+        root.unstagedModel = unstaged
+        root.stagedModel = staged
 
         let path = ""
         let isStaged = false
@@ -258,13 +531,15 @@ Item {
         if (root.unstagedModel.length > 0) {
             path = root.unstagedModel[0].path
         } else if (root.stagedModel.length > 0) {
-            isStaged = true
             path = root.stagedModel[0].path
         }
 
-        unstagedSection.selectedFilePath = isStaged ? "" : path
-        stagedSection.selectedFilePath = isStaged ? path : ""
+        const targetPath = root.currentFile || path
+        isStaged = !(root.unstagedModel.some(file => file.path === targetPath))
 
-        root.fileSelected(path, isStaged)
+        unstagedSection.selectedFilePath = isStaged ? "" : targetPath
+        stagedSection.selectedFilePath = isStaged ? targetPath : ""
+
+        root.fileSelected(targetPath, isStaged)
     }
 }

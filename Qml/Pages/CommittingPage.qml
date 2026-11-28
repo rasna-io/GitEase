@@ -1,4 +1,4 @@
-﻿import QtQuick
+import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -11,12 +11,14 @@ import GitEase
  * Committing Page shown commit actions placeholder, file list placeholder and diff placeholder
  * ************************************************************************************************/
 
-Item {
+Page {
     id: root
 
     /* Property Declarations
      * ****************************************************************************************/
-    property var                     page:                    null
+    pageId: "committing"
+    title: "Local Changes"
+    icon: Style.icons.gitBranch
 
     property AppModel                appModel:                null
 
@@ -42,49 +44,55 @@ Item {
 
     property var                     pluginController:        null
 
-    property bool                    isFetching:             false
-    property var                     activeFetchRemotes:     []
-    property string                  authPurpose:            "push"  // "push" | "fetch"
-    property var                     pendingFetchRemoteNames: []    // HTTP/HTTPS remotes to fetch with token
-    property var                     fetchBatchResults:      []
-    property bool                    currentFileEdited: false
+    property TerminalController      terminalController:      null
+
+    property GuideController         guideController:         null
+
+    property GitStateNotifier        gitStateNotifier:        null
+
+    property TextDirectionController textDirectionController: null
+
+    property GitTreeController       gitTreeController:       null
+
+    property IdentityGuard           identityGuard:           null
+
+    // Remote actions (Pull / Push / Fetch) are owned by the shared RemoteOperationsSession so
+    property RemoteOperationsSession remoteOperationsSession:              null
+    property bool                    isFetching:             remoteOperationsSession ? remoteOperationsSession.isFetching : false
+    property var                     activeFetchRemotes:     remoteOperationsSession ? remoteOperationsSession.activeFetchRemotes : []
+    property var                     pendingFetchRemoteNames: remoteOperationsSession ? remoteOperationsSession.pendingFetchRemoteNames : []
+    property var                     fetchBatchResults:      remoteOperationsSession ? remoteOperationsSession.fetchBatchResults : []
+    readonly property bool           currentFileEdited:       diffView.fileIsEdited
 
     property string                  selectedFilePath:        ""
+    property bool                    selectedFileIsStaged:    false
+
+    property var                     changesDialog:           null
 
     // Exposed to MainWindow's header area (see MainWindow.qml)
-    property Component headerContent: CommittingPageHeader {
+    headerContent: CommittingPageHeader {
         branchController: root.branchController
         notificationController: root.notificationController
         remoteController: root.remoteController
+        guideController: root.guideController
+        gitStateNotifier: root.gitStateNotifier
+        remoteOperationsSession: root.remoteOperationsSession
+
+        onPullRequested: root.pullAndUpdate()
+        onPushRequested: function(force) { root.pushAndUpdate(force) }
+        onFetchRequested: root.fetch()
     }
 
     onStatusControllerChanged: {
-        branchController.getCurrentBranchName()
+        if (root.branchController)
+            root.branchController.getCurrentBranchName()
     }
 
-    onPageChanged: {
-        if (root.page) {
-            root.page.onPageChange = function(callback) {
-                if (!root.currentFileEdited) {
-                    callback(true)
-                    return
-                }
-                var d = unsavedChangesDialogComp.createObject(root)
-                d.title = "Unsaved Changes"
-                d.message = "You have unsaved changes in: " + root.selectedFilePath
-                d.saved.connect(() => {
-                    root.saveFile()
-                    callback(true)
-                })
-                d.aborted.connect(() => { callback(true) })
-                d.cancelled.connect(() => { callback(false) })
-                d.open()
-            }
+    Component.onCompleted: {
+        root.onPageChange = function(callback) {
+            root.showSaveDialog(() => callback(true), { cancelled: () => callback(false) })
         }
     }
-    /* Object Properties
-     * ****************************************************************************************/
-    anchors.fill: parent
 
     /* Children
      * ****************************************************************************************/
@@ -97,87 +105,14 @@ Item {
         }
     }
 
-    Connections {
-        target: remoteController
-
-        function onFetchFinished(result) {
-            if (!result || !result.remote)
-                return
-
-            const remoteName = result.remote
-            root.activeFetchRemotes = root.activeFetchRemotes.filter(function(name) { return name !== remoteName })
-            root.fetchBatchResults.push(result)
-
-            if (notificationController) {
-                if (result.success)
-                    notificationController.success("Fetched from " + remoteName, "Fetch", 5000)
-                else
-                    notificationController.error("Fetch failed for " + remoteName + ": " + (result.errorMessage || "Unknown error"), "Fetch Error", 7000)
-            }
-
-            root.isFetching = root.activeFetchRemotes.length > 0 || root.pendingFetchRemoteNames.length > 0
-            if (root.activeFetchRemotes.length === 0 && root.pendingFetchRemoteNames.length === 0 && root.fetchBatchResults.length > 0) {
-                let popup = root.uiSessionPopups?.fetchSummaryPopup
-                if (popup) {
-                    popup.results = []
-                    popup.results = root.fetchBatchResults
-                    popup.open()
-                }
-            }
-            changesFileLists.updateStatus()
-        }
-
-        function onPullFinished(result) {
-            if (root.authPurpose !== "pull_async_origin")
-                return
-
-            if (!result || result.remote !== "origin")
-                return
-
-            root.isFetching = false
-            root.authPurpose = "push"
-
-            if (result.success) {
-                if (root.notificationController)
-                    root.notificationController.success("Pull completed", "Pull", 3000)
-                errorMessageLabel.text = ""
-            } else {
-                errorMessageLabel.text = result.errorMessage ?? "Pull error"
-                if (root.notificationController)
-                    root.notificationController.error(errorMessageLabel.text, "Pull Error", 5000)
-            }
-
-            changesFileLists.updateStatus()
-        }
-
-        function onPushFinished(result) {
-            if (!result || result.remote !== "origin")
-                return
-
-            root.isFetching = false
-
-            if (result.success) {
-                let isForce =  result.data.force === true
-                if (root.notificationController)
-                    root.notificationController.success(isForce ? "Changes force pushed successfully" : "Changes pushed successfully", isForce ? "Push Force" : "Push", 3000)
-                errorMessageLabel.text = ""
-            } else {
-                errorMessageLabel.text = result.errorMessage ?? "Push error"
-                if (root.notificationController)
-                    root.notificationController.error(errorMessageLabel.text, "Push Error", 5000)
-            }
-
-            changesFileLists.updateStatus()
-        }
-    }
-
     CommitAmendPopup {
         id: amendPopup
         anchors.centerIn: parent
 
         commitController        : root.commitController
         notificationController  : root.notificationController
-        changeCommitMessage     : !committingButton.commitEnabled
+        identityGuard           : root.identityGuard
+        changeCommitMessage     : changesFileLists.stagedModel.length == 0
 
         onAmendSuccessful: {
             changesFileLists.updateStatus()
@@ -186,98 +121,44 @@ Item {
     }
 
     Connections {
-        target: root.uiSessionPopups ? root.uiSessionPopups.fetchSummaryPopup : null
+        target: root.gitStateNotifier
 
-        function onClosed() {
-            root.fetchBatchResults = []
+        function onRepositoryChanged() {
+            changesFileLists.updateStatus()
         }
     }
 
     Connections {
-        target: userAuthenticationPopup
+        target: terminalController
 
-        function onPasswordConfirm(password){
-            if (root.authPurpose === "fetch") {
-                let failed = []
-                for (let i = 0; i < root.pendingFetchRemoteNames.length; i++) {
-                    let name = root.pendingFetchRemoteNames[i]
-                    let res = root.remoteController.fetchWithToken(name, password)
-                    if (res.success) {
-                        if (root.activeFetchRemotes.indexOf(name) === -1)
-                            root.activeFetchRemotes.push(name)
-                    } else {
-                        failed.push({ name: name, message: res.errorMessage || "Unknown error" })
-                        root.fetchBatchResults.push({
-                                                        remote: name,
-                                                        success: false,
-                                                        errorMessage: res.errorMessage || "Unknown error",
-                                                        data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                                                    })
-                    }
-                }
-                if (failed.length > 0 && root.notificationController) {
-                    root.notificationController.error("Fetch failed for: " + failed.map(function(f){ return f.name + " (" + f.message + ")" }).join("; "), "Fetch Error", 7000)
-                }
-                root.isFetching = root.activeFetchRemotes.length > 0
-                root.authPurpose = "push"
-                root.pendingFetchRemoteNames = []
-                root.pendingPullRemoteNames = []
-                changesFileLists.updateStatus()
+        function onGitStateChanged(workingDirectory) {
+            if (workingDirectory !== root.terminalController.workingDirectory)
                 return
-            }
 
-            if (root.authPurpose === "pull") {
-                root.pull(password)
-                root.authPurpose = "push"
-                return
-            }
-
-            if (root.authPurpose === "pull_async_origin") {
-                let startRes = root.remoteController.pull("origin", "", password)
-                if (!startRes.success) {
-                    root.isFetching = false
-                    root.authPurpose = "push"
-                    errorMessageLabel.text = startRes.errorMessage ?? "Failed to start pull"
-                    if (root.notificationController)
-                        root.notificationController.error(errorMessageLabel.text, "Pull Error", 5000)
-                    return
-                }
-                root.isFetching = true
-                return
-            }
-
-            let branchName = branchController.getCurrentBranchName()
-            if(branchName.length === 0){
-                root.notificationController.error("Current branch name is invalid", "Branch Error", 5000)
-                errorMessageLabel.text = "current Branch Name invalid!"
-            }else{
-                let isForce = root.authPurpose === "pushForce"
-                remoteController.push(
-                        "origin",
-                        branchName,
-                        password,
-                        isForce)
-                root.notificationController.info("Push operation started", "Push", 3000)
-            }
-            root.authPurpose = "push"
+            root.showSaveDialog(
+                        () => {
+                            changesFileLists.updateStatus()
+                        }
+            )
         }
+    }
 
-        function onRejected() {
-            if (root.authPurpose === "fetch" || root.authPurpose === "pull" || root.authPurpose === "pull_async_origin") {
-                root.isFetching = root.activeFetchRemotes.length > 0
-                root.isFetching = false
-                root.authPurpose = "push"
-                root.pendingFetchRemoteNames = []
-                root.pendingPullRemoteNames = []
+    Connections {
+        target: Qt.application
+        
+        function onStateChanged() {
+            if (Qt.application.state === Qt.ApplicationActive) {
+                changesFileLists.updateStatus()
             }
         }
     }
 
+
+
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 8
-        anchors.topMargin: 8
-        spacing: 8
+        anchors.margins: 0
+        spacing: 0
 
         // Left panel: two stacked placeholders
         Rectangle {
@@ -292,22 +173,67 @@ Item {
                 Rectangle {
                     id: commitPanel
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 140
-                    color: Style.colors.secondaryBackground
-                    radius: 2
+                    Layout.preferredHeight: commitColumn.implicitHeight + 24
+                    Layout.maximumHeight: 300
+                    color: "transparent"
+
+                    GuideHoverTrigger {
+                        guideController: root.guideController
+                        guideId: "commit_panel_tutorial"
+                        guideName: "Commit Panel"
+                        guideIcon: Style.icons.penToSquare
+                        guidePage: "committing"
+                        stepsFactory: function() {
+                            return [
+                                {
+                                    targetProvider: function() { return commitTextArea },
+                                    icon: Style.icons.penToSquare,
+                                    title: "Commit Message",
+                                    description: "Describe your change in the present tense — 'Fix login timeout' not 'Fixed login timeout'. Keep the summary under 72 characters."
+                                },
+                                {
+                                    targetProvider: function() { return commitBtn },
+                                    icon: Style.icons.arrowRight,
+                                    title: "Commit",
+                                    description: "Records every staged file as a permanent snapshot in history. Nothing leaves your machine — this is a local operation only.",
+                                    commands: [{ command: "git commit -m \"…\"" }]
+                                },
+                                {
+                                    targetProvider: function() { return caretBtn },
+                                    icon: Style.icons.caretDown,
+                                    title: "Commit Extras  ·  ▾ dropdown",
+                                    description: "Commit & Push runs git commit then git push in one step. Amend Commit runs git commit --amend — rewrites the most recent local commit (message or content) instead of creating a new one."
+                                },
+                                {
+                                    targetProvider: function() { return moreOptionsBtn },
+                                    icon: Style.icons.arrowRight,
+                                    title: "Remote Operations  ·  ⋯ menu",
+                                    description: "Push uploads your local commits. Force Push rewrites the remote branch with your local history, but safely aborts if someone else pushed first. Fetch downloads remote changes without merging. Pull fetches and merges in one step.",
+                                    commands: [
+                                        { label: "Push",       command: "git push" },
+                                        { label: "Force Push", command: "git push --force-with-lease" },
+                                        { label: "Fetch",      command: "git fetch --all" },
+                                        { label: "Pull",       command: "git pull" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
 
                     ColumnLayout {
+                        id: commitColumn
                         anchors.fill: parent
                         anchors.margins: 12
-                        spacing: 10
+                        spacing: 8
 
                         ContextMenu {
                             id: commitOptionsMenu
                             parent: commitPanel
                             menuModel: [
                                 {
-                                    text: "Push Force",
+                                    text: "Force Push",
                                     icon: Style.icons.arrowUp,
+                                    enabled: root.remoteOperationsSession?.canPush ?? false,
                                     action: function() {
                                         root.pushAndUpdate(true)
                                     }
@@ -315,7 +241,7 @@ Item {
                                 {
                                     text: "Fetch",
                                     icon: Style.icons.download,
-                                    enabled: !root.isFetching,
+                                    enabled: root.remoteOperationsSession?.canFetch ?? false,
                                     action: function() {
                                         root.fetch()
                                     }
@@ -323,7 +249,7 @@ Item {
                                 {
                                     text: "Pull",
                                     icon: Style.icons.arrowDown,
-                                    enabled: !root.isFetching,
+                                    enabled: !root.isFetching && (root.remoteOperationsSession?.canPull ?? false),
                                     action: function() {
                                         root.pullAndUpdate()
                                     }
@@ -335,9 +261,17 @@ Item {
                             id: commitTextArea
 
                             Layout.fillWidth: true
-                            Layout.fillHeight: true
 
-                            placeholder: "What did you change?..."
+                            placeholder: "Commit message (required)"
+                        }
+
+                        CommandPreview {
+                            Layout.fillWidth: true
+
+                            placeholder: qsTr("Write a message to see the command")
+                            command: commitTextArea.text.trim() === ""
+                                     ? ""
+                                     : GitCommandText.commit(commitTextArea.text)
                         }
 
                         RowLayout {
@@ -345,28 +279,45 @@ Item {
                             Layout.fillWidth: true
                             spacing: 6
 
-                            readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== ""
+                            readonly property int stagedCount: changesFileLists.stagedModel.length
+                            readonly property bool commitEnabled: changesFileLists.stagedModel.length > 0 && commitTextArea.text !== "" && !changesFileLists.busyVisible
 
                             Component.onCompleted: buildCommitMenu()
-
+                            onStagedCountChanged: buildCommitMenu()
                             onCommitEnabledChanged: buildCommitMenu()
+
+                            Connections {
+                                target: changesFileLists
+
+                                function onBusyVisibleChanged() {
+                                    committingButton.buildCommitMenu()
+                                }
+                            }
 
                             function buildCommitMenu() {
                                 let items = []
 
                                 items.push({
-                                    text: commitEnabled ? "Commit Amend" : "Change commit message",
+                                    text: changesFileLists.stagedModel.length == 0
+                                         ? "Change Commit Message..."
+                                         : "Amend Commit...",
                                     icon: Style.icons.penToSquare,
+                                    enabled: !changesFileLists.busyVisible,
                                     action: function() { amendPopup.open() }
                                 })
 
                                 if (commitEnabled) {
                                     items.push({
-                                        text: "Commit && Push",
+                                        text: (root.remoteOperationsSession?.publishes ?? false) ? "Commit & Publish" : "Commit & Push",
                                         icon: Style.icons.arrowUp,
                                         action: function() {
-                                            if (!root.commitAndUpdate()) return
-                                            root.pushAndUpdate()
+                                            const commitAndPush = function() {
+                                                if (!root.commitAndUpdate()) 
+                                                    return
+                                                root.pushAndUpdate()
+                                            }
+                                            if (root.identityGuard.check("commit", commitAndPush))
+                                                commitAndPush()
                                         }
                                     })
                                 }
@@ -378,75 +329,67 @@ Item {
                                 id: commitBtn
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 30
-                                radius: 4
-                                color: committingButton.commitEnabled ? Style.colors.accent : Style.colors.disabledButton
+                                radius: 5
+                                color: committingButton.commitEnabled ? Style.colors.commitButton : Style.colors.disabledButton
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Commit"
+                                    color: Style.colors.secondaryForeground
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.mediumPt
+                                    font.weight: Font.DemiBold
+                                }
 
                                 MouseArea {
                                     id: commitBtnMouse
-                                    anchors.left: parent.left
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    width: parent.width - 29
+                                    anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: committingButton.commitEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                     enabled: committingButton.commitEnabled
 
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: 4
-                                        color: commitBtnMouse.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
-                                    }
-
-                                    Text {
-                                        id: commitBtnLabel
-                                        anchors.centerIn: parent
-                                        text: "Commit"
-                                        color: Style.colors.secondaryForeground
-                                        font.family: Style.fontTypes.roboto
-                                        font.pixelSize: 12
+                                        radius: 5
+                                        color: parent.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
                                     }
 
                                     onClicked: root.commitAndUpdate()
                                 }
+                            }
 
-                                Rectangle {
-                                    id: caretDivider
-                                    anchors.right: commitCaretZone.left
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    anchors.topMargin: 7
-                                    anchors.bottomMargin: 7
-                                    width: 1
-                                    color: Style.colors.secondaryForeground
-                                    opacity: 0.35
+                            Rectangle {
+                                id: caretBtn
+                                Layout.preferredWidth: 30
+                                Layout.preferredHeight: 30
+                                radius: 5
+                                color: Style.colors.actionPillBg
+                                border.color: Style.colors.chipBorder
+                                border.width: 1
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: Style.icons.caretDown
+                                    font.family: Style.fontTypes.font6Pro
+                                    font.styleName: "Solid"
+                                    font.pixelSize: Style.appFont.defaultPt
+                                    color: caretBtnMouse.containsMouse ? Style.colors.foreground : Style.colors.chipText
                                 }
 
                                 MouseArea {
-                                    id: commitCaretZone
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    width: 28
+                                    id: caretBtnMouse
+                                    anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
 
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: 3
-                                        color: committingButton.commitEnabled ?
-                                                   commitCaretZone.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent" : Style.colors.accent
-                                    }
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: Style.icons.caretDown
-                                        font.family: Style.fontTypes.font6ProSolid
-                                        font.pixelSize: 11
-                                        color: Style.colors.secondaryForeground
+                                        radius: 5
+                                        color: parent.containsMouse ? Qt.rgba(0,0,0,0.12) : "transparent"
                                     }
 
                                     onClicked: {
-                                        var pos = commitCaretZone.mapToItem(commitPanel, 0, commitBtn.height)
+                                        var pos = caretBtn.mapToItem(commitPanel, 0, caretBtn.height)
                                         commitDropMenu.x = Math.min(pos.x, commitPanel.width - commitDropMenu.implicitWidth - 48)
                                         commitDropMenu.y = pos.y + 4
                                         commitDropMenu.open()
@@ -456,22 +399,26 @@ Item {
                                 ContextMenu {
                                     id: commitDropMenu
                                     parent: commitPanel
+                                    implicitWidth: 240
                                 }
                             }
 
                             Rectangle {
+                                id: moreOptionsBtn
                                 Layout.preferredWidth: 30
                                 Layout.preferredHeight: 30
-                                radius: 4
-                                color: commitOptionsDotMouse.containsMouse ? Style.colors.cardBackground : Style.colors.secondaryBackground
-                                border.color: Style.colors.primaryBorder
+                                radius: 5
+                                color: Style.colors.actionPillBg
+                                border.color: Style.colors.chipBorder
                                 border.width: 1
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "\u22EE"
-                                    font.pixelSize: 16
-                                    color: commitOptionsDotMouse.containsMouse ? Style.colors.foreground : Style.colors.secondaryText
+                                    text: Style.icons.ellipsis
+                                    font.family: Style.fontTypes.font6Pro
+                                    font.styleName: "Solid"
+                                    font.pixelSize: Style.appFont.h2Pt
+                                    color: commitOptionsDotMouse.containsMouse ? Style.colors.foreground : Style.colors.chipText
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
                                 }
@@ -497,8 +444,8 @@ Item {
 
                             visible: errorMessageLabel.text !== ""
                             color: Style.colors.error
-                            font.family: Style.fontTypes.roboto
-                            font.pixelSize: 10
+                            font.family: Style.fontTypes.inter
+                            font.pixelSize: Style.appFont.smallPt
                             wrapMode: TextEdit.Wrap
                         }
                     }
@@ -510,17 +457,22 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
+                    guideController: root.guideController
                     statusController: root.statusController
                     notificationController: root.notificationController
                     stashController: root.stashController
+                    identityGuard: root.identityGuard
                     currentFile: root.selectedFilePath
                     showSaveDialog: root.showSaveDialog
 
                     onFileSelected: function(filePath, isStaged) {
-                        if (filePath === root.selectedFilePath)
+                        if (filePath === root.selectedFilePath && isStaged === root.selectedFileIsStaged)
                         {
-                            root.selectedFilePath = filePath
-                            root.updateDiff(isStaged)
+                            // A refresh would replace the unsaved edits, so with edits the user decides
+                            if (!root.currentFileEdited)
+                                root.updateDiff(isStaged)
+                            else
+                                root.askAboutExternalChange()
                             return
                         }
 
@@ -528,14 +480,33 @@ Item {
                                     () => {
                                         root.selectedFilePath = filePath
                                         root.updateDiff(isStaged)
+                                    },
+                                    {
+                                        cancelled: () => changesFileLists.selectCurrentFile(root.selectedFileIsStaged)
                                     }
                         )
                     }
 
                     onChangesAborted: {
-                        root.currentFileEdited = false
+                        diffView.discardEdits()
                     }
                 }
+            }
+        }
+
+        // Resizable divider
+        Rectangle {
+            Layout.fillHeight: true
+            Layout.preferredWidth: 3
+            color: dividerMouse.containsMouse ? Style.colors.accent : Style.colors.primaryBorder
+            z: 1
+
+            MouseArea {
+                id: dividerMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.SplitHCursor
+                // ToDO: drag-to-resize logic
             }
         }
 
@@ -544,14 +515,28 @@ Item {
             Layout.fillHeight: true
             Layout.fillWidth: true
             chunkMode: true
+            showDetachedPlaceholder: true
+            detachedPlaceholderDetails: qsTr("Select a file in the list to see its changes there.")
             hasHeaderMiddleComponent: true
             selectEnabled: false
+            appModel: root.appModel
+            pluginManager: root.pluginController?.pluginManager ?? null
+            gitTree: root.gitTreeController
+            repositoryPath: root.appModel?.currentRepository?.path ?? ""
+            textDirectionController: root.textDirectionController
             contextLines: 0
             expandLines: 10
+            selectedFileStatus: changesFileLists.currentFileStatus
+            showSaveDialog: root.showSaveDialog
 
+            guideController: root.guideController
             currentRepositoryName: root.appModel.currentRepository.name || ""
 
             onRequestStage: function (start, end, type, rows) {
+                if (changesFileLists.listsBusy) {
+                    return
+                }
+
                 root.showSaveDialog(
                             () => {
                                 let res = root.statusController.stageSelectedLines(root.selectedFilePath, start, end, type)
@@ -566,6 +551,10 @@ Item {
             }
 
             onRequestRevert: function (start, end, type) {
+                if (changesFileLists.listsBusy) {
+                    return
+                }
+
                 root.showSaveDialog(
                             () => {
                                 let res = root.statusController.revertSelectedLines(root.selectedFilePath, start, end, type)
@@ -579,12 +568,15 @@ Item {
                 )
             }
 
-            onFileEdited: function (isEdited) {
-                root.currentFileEdited = isEdited
-            }
-
             onRequestStash: function (start, end, type) {
+                if (changesFileLists.listsBusy) {
+                    return
+                }
+
                 let res = root.stashController.stashLines(root.selectedFilePath, start, end, type)
+                if (root.identityGuard.handle(res, "stash", function() { diffView.requestStash(start, end, type) }))
+                    return
+
                 if (res.success) {
                     root.notificationController.success("Selected lines stashed", "Stash", 2000)
                 } else {
@@ -593,23 +585,11 @@ Item {
                 changesFileLists.updateStatus()
             }
         }
-
-        // Non-visual loader: fetches the plugin's colorizer QtObject
-        Loader {
-            id: colorizerLoader
-            visible: false
-            onLoaded: {
-                diffView.textColorizer = item ? function(text) { return item.colorize(text) } : null
-            }
-            onSourceChanged: {
-                if (source === "") diffView.textColorizer = null
-            }
-        }
     }
 
     Component {
         id: unsavedChangesDialogComp
-        UnsavedChangesDialog { }
+        ConflictConfirmationDialog { }
     }
 
     Shortcut {
@@ -617,85 +597,63 @@ Item {
         context: Qt.ApplicationShortcut
 
         onActivated: {
-            let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
-
-            if (res.success) {
-                root.currentFileEdited = false
-                root.notificationController.success("File saved successfully", "Save", 3000)
-            } else {
-                root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
-            }
-
-            changesFileLists.updateStatus()
+            if (root.currentFileEdited)
+                root.saveFile()
         }
     }
 
     function fetch() {
-        let remotesRes = remoteController.getRemotes()
-        if (!remotesRes.success || !remotesRes.data || remotesRes.data.length === 0) {
-            if (notificationController)
-                notificationController.error("No remotes configured", "Fetch", 5000)
-            return
-        }
-        root.fetchBatchResults = []
-        let httpsRemotes = []
-        let sshFailed = []
-        root.activeFetchRemotes = []
-        root.isFetching = true
-        for (let i = 0; i < remotesRes.data.length; i++) {
-            let remote = remotesRes.data[i]
-            let urlRes = remoteController.getRemoteUrl(remote.name)
-            if (!urlRes.success) {
-                sshFailed.push({ name: remote.name, message: urlRes.errorMessage || "No URL" })
-                continue
-            }
-            let url = urlRes.data.url
-            let protocol = repositoryController.detectGitProtocol(url)
-            switch (protocol) {
-            case RepositoryController.GitProtocol.SSH: {
-                let res = remoteController.fetch(remote.name)
-                if (res.success) {
-                    if (root.activeFetchRemotes.indexOf(remote.name) === -1)
-                        root.activeFetchRemotes.push(remote.name)
-                } else {
-                    let msg = res.errorMessage || "Fetch failed"
-                    sshFailed.push({ name: remote.name, message: msg })
-                    root.fetchBatchResults.push({
-                                                    remote: remote.name,
-                                                    success: false,
-                                                    errorMessage: msg,
-                                                    data: { timestamp: Qt.formatDateTime(new Date(), Qt.ISODate), status: "Fetch did not start" }
-                                                })
-                }
-                break
-            }
-            case RepositoryController.GitProtocol.HTTPS:
-            case RepositoryController.GitProtocol.HTTP:
-                httpsRemotes.push(remote.name)
-                break
-            default:
-                sshFailed.push({ name: remote.name, message: "Unsupported protocol" })
-            }
-        }
-        if (sshFailed.length > 0 && notificationController) {
-            let msg = sshFailed.map(f => f.name + ": " + f.message).join("; ")
-            notificationController.error(msg, "Fetch Error", 7000)
-        }
-        if (httpsRemotes.length > 0) {
-            root.pendingFetchRemoteNames = httpsRemotes
-            root.authPurpose = "fetch"
-            userAuthenticationPopup.open()
-        }
-        if (httpsRemotes.length === 0 && root.activeFetchRemotes.length === 0)
-            root.isFetching = false
+        root.remoteOperationsSession?.fetch()
     }
 
     function commit(amend) : bool {
+        if (changesFileLists.listsBusy) {
+            return false
+        }
+
         amend = amend || false
+
+        if (!root.identityGuard.check(amend ? "amend" : "commit", function() { root.commitAndUpdate(amend) }))
+            return false
+
+        const pm = root.pluginController?.pluginManager
+        if (pm && pm.hasWorkflowPluginsFor("pre-commit")) {
+            root._pendingCommitAmend = amend
+            pm.notifyWorkflowEvent("pre-commit", { message: commitTextArea.text, amend: amend })
+            // actual commit is triggered from workflowConnections.onWorkflowEventResolved
+            return false  // async — result determined by workflow resolution
+        }
+        return root._doCommit(amend)
+    }
+
+    property bool _pendingCommitAmend: false
+
+    Connections {
+        id: workflowConnections
+        target: root.pluginController?.pluginManager ?? null
+        function onWorkflowEventResolved(event, ctx, allowed) {
+            if (event !== "pre-commit") return
+            if (allowed) {
+                root._doCommit(root._pendingCommitAmend)
+            } else {
+                root.notificationController.warning("Commit blocked by a plugin.", "Commit", 4000)
+            }
+        }
+    }
+
+    function _doCommit(amend) : bool {
+        if (changesFileLists.listsBusy) {
+            return false
+        }
+
         let res = commitController.commit(commitTextArea.text, amend, false)
+        if (root.identityGuard.handle(res, amend ? "amend" : "commit", function() { root.commitAndUpdate(amend) }))
+            return false
+
         if (res.success) {
             commitTextArea.text = ""
             root.notificationController.success(`Commit ${amend ? "amended" : ""} successfully`, `Commit ${amend ? "Amend" : "" }`, 3000)
+            root.pluginController?.pluginManager?.notifyWorkflowEvent("post-commit", { amend: amend })
         } else {
             root.notificationController.error(res.errorMessage || `Commit ${amend ? "Amend" : ""} failed`, `Commit ${amend ? "Amend" : ""} Error`, 5000)
             errorMessageLabel.text = res.errorMessage ?? `Commit ${amend ? "Amend" : ""} Error`
@@ -710,110 +668,65 @@ Item {
     }
 
     function push(force) {
-        force = force || false
-
-        let urlRes = remoteController.getRemoteUrl("origin")
-        if (!urlRes.success) {
-            root.notificationController.error(urlRes.errorMessage || "Failed to get remote URL", `${force ? "Force" : ""} Push Error`, 5000)
-            return
-        }
-        let protocol = repositoryController.detectGitProtocol(urlRes.data.url)
-        switch (protocol) {
-        case RepositoryController.GitProtocol.SSH: {
-            let branchName = branchController.getCurrentBranchName()
-            remoteController.push("origin", branchName, force)
-            root.notificationController.info("Push operation started", "Push", 3000)
-
-            break
-        }
-
-        // Fall-through: both HTTP/HTTPS require auth popup
-        case RepositoryController.GitProtocol.HTTPS:
-        case RepositoryController.GitProtocol.HTTP:
-            root.authPurpose = force ? "pushForce" : "push"
-            userAuthenticationPopup.open()
-            break
-        default:
-            root.notificationController.error("Unsupported protocol", `${force ? "Force" : ""} Push Error`, 5000)
-        }
+        root.remoteOperationsSession?.push(force)
     }
 
     function pushAndUpdate(force) {
-        root.push(force)
+        root.remoteOperationsSession?.pushAndUpdate(force)
     }
 
-    function pull(secret: string) {
-        let res = remoteController.getRemoteUrl("origin")
-        if (!res.success) {
-            if (notificationController)
-                notificationController.error(res.errorMessage || "Failed to get remote URL", "Pull Error", 5000)
-            return
-        }
-        let url = res.data.url
-        let protocol = repositoryController.detectGitProtocol(url)
-        switch (protocol) {
-        case RepositoryController.GitProtocol.SSH: {
-            let pullRes = remoteController.pull("origin", root.branchController.getCurrentBranchName())
-            if (!pullRes.success) {
-                if (notificationController)
-                    notificationController.error(pullRes.errorMessage || "Pull failed", "Pull Error", 5000)
-            } else {
-                if (notificationController)
-                    notificationController.success("Pulled successfully", "Pull", 3000)
-            }
-            break
-        }
-        case RepositoryController.GitProtocol.HTTPS:
-        case RepositoryController.GitProtocol.HTTP:
-            if(secret.length > 0 && secret !== "undefined" && secret) {
-                let res = root.remoteController.pull("origin", root.branchController.getCurrentBranchName(), secret)
-                if (!res.success) {
-                    if (notificationController)
-                        notificationController.error(res.errorMessage || "Pull failed", "Pull Error", 5000)
-                } else {
-                    if (notificationController)
-                        notificationController.success("Pulled successfully", "Pull", 3000)
-                }
-            }else {
-                root.authPurpose = "pull"
-                userAuthenticationPopup.open()
-            }
-            break
-        default:
-            if (notificationController)
-                notificationController.error("Unsupported protocol", "Pull Error", 5000)
-        }
+    function pull() {
+        root.remoteOperationsSession?.pull()
     }
 
-    function pullAndUpdate(secret: string) {
-        root.pull(secret)
+    function pullAndUpdate() {
+        root.remoteOperationsSession?.pullAndUpdate()
         changesFileLists.updateStatus()
     }
 
     function updateDiff(isStaged) {
-        // Load colorizer plugin for this file extension (or clear if none)
-        const ext         = root.selectedFilePath.split('.').pop().toLowerCase()
-        const colorizerUrl = root.pluginController?.pluginManager?.colorizerUrlFor(ext) ?? ""
-        if (colorizerLoader.source !== colorizerUrl)
-            colorizerLoader.source = colorizerUrl
+        root.selectedFileIsStaged = isStaged
+
+        diffView.repositoryPath = root.appModel?.currentRepository?.path ?? ""
+        diffView.imageSource = isStaged ? "index" : "workdir"
+        diffView.imageOldRevision = "HEAD"
+        diffView.imageNewRevision = ""
+
+        if (diffView.prefersImageViewer(root.selectedFilePath)) {
+            diffView.isBinaryFile = false
+            diffView.chunkData = []
+            diffView.diffData = []
+            diffView.originalFileBuffer = []
+            diffView.editedFileBuffer = []
+            diffView.selectedFile = root.selectedFilePath
+            diffView.readOnly = isStaged
+            return
+        }
 
         let oldY = diffView.scrollPosition
 
         let res = root.statusController.getChunkedDiffView(root.selectedFilePath, isStaged)
+
+        // A binary file has no text diff: show the binary state instead of its bytes as text.
+        if (res.success && res.data.isBinary) {
+            diffView.isBinaryFile = true
+            diffView.chunkData = []
+            diffView.diffData = []
+            diffView.originalFileBuffer = []
+            diffView.editedFileBuffer = []
+            diffView.selectedFile = root.selectedFilePath
+            diffView.readOnly = true
+            return
+        }
+
+        diffView.isBinaryFile = false
         if (res.success)
             diffView.chunkData = res.data.chunks
         res = root.statusController.getDiffView(root.selectedFilePath, isStaged)
         if (res.success)
             diffView.diffData = res.data.lines
 
-        let fileRows = []
-        for(var i =0;i<res.data.lines.length;i++)
-        {
-            let line = res.data.lines[i]
-            let right   = (line.type === GitDiff.Deleted)   ? "" :
-                          (line.type === GitDiff.Modified   ? line.newContent : line.content)
-            fileRows.push(right)
-        }
+        let fileRows = root.rightSideRows(res.data.lines)
 
         diffView.selectedFile = root.selectedFilePath
         diffView.originalFileBuffer = fileRows.slice()
@@ -824,43 +737,138 @@ Item {
         Qt.callLater(() => { diffView.scrollPosition = oldY })
     }
 
-    function showSaveDialog(nextAction) {
+    function showSaveDialog(nextAction, options = {}) {
         if (!root.currentFileEdited) {
             nextAction()
             return
         }
 
-        let d = unsavedChangesDialogComp.createObject(root)
+        const cancelled = options.cancelled ?? (() => {})
 
-        d.title = "Unsaved Changes"
-        d.message = "You have unsaved changes in: " + root.selectedFilePath
+        if (root.changesDialog) {
+            cancelled()
+            return
+        }
+
+        const d = unsavedChangesDialogComp.createObject(root)
+
+        d.title         = "Unsaved Changes"
+        d.messageFormat = Text.RichText
+        d.message       = `You have unsaved changes in ${root.selectedPathMarkup()}.<br><br>` +
+                          "Save them before you continue?"
+
+        d.hasSave           = true
+        d.saveTitle         = "Save"
+        d.saveDescription   = "Write the changes to the file, then continue"
+        d.acceptTitle       = "Discard"
+        d.acceptDescription = "Throw the changes away, then continue"
+        d.cancelTitle       = "Cancel"
+        d.cancelDescription = "Stay here and keep the changes in the editor"
 
         d.saved.connect(() => {
-            root.saveFile()
-            d.destroy()
-            nextAction()
+            if (root.saveFile())
+                nextAction()
+            else
+                cancelled()
         })
 
         d.aborted.connect(() => {
-            d.destroy()
+            diffView.discardEdits()
             nextAction()
         })
 
-        d.cancelled.connect(() => {
-            d.destroy()
-        })
+        d.cancelled.connect(cancelled)
 
-        d.open()
+        root.showChangesDialog(d)
     }
 
-    function saveFile() {
+    function showChangesDialog(d) {
+        root.changesDialog = d
+        diffView.openPopup(d)
+
+        const diffWindow = diffView.detached ? diffView.activeItem.Window.window : null
+        if (diffWindow) {
+            if (diffWindow.visibility === Window.Minimized)
+                diffWindow.showNormal()
+
+            diffWindow.raise()
+            diffWindow.requestActivate()
+        }
+    }
+
+    //! Writes the edited file to disk. Returns false, and keeps the edits, when that fails.
+    function saveFile() : bool {
+        if (diffView.prefersImageViewer(root.selectedFilePath))
+            return true
+
         let res = root.statusController.saveFile(root.selectedFilePath, diffView.editedFileBuffer)
 
-        if (res.success) {
-            root.currentFileEdited = false
-            root.notificationController.success("File saved successfully", "Save", 3000)
-        } else {
-            root.notificationController.error("Failed to save changes to the file", "Save Error", 5000)
+        if (!res.success) {
+            root.notificationController.error(res.errorMessage || "Failed to save changes to the file", "Save Error", 5000)
+            return false
         }
+
+        diffView.markSaved()
+        root.notificationController.success("File saved successfully", "Save", 3000)
+
+        root.updateDiff(root.selectedFileIsStaged)
+        changesFileLists.updateStatus()
+        return true
+    }
+
+    function askAboutExternalChange() {
+        if (root.changesDialog || root.selectedFileIsStaged
+                || diffView.prefersImageViewer(root.selectedFilePath))
+            return
+
+        const res = root.statusController.getDiffView(root.selectedFilePath, false)
+        if (!res.success || res.data.isBinary)
+            return
+
+        const diskRows = root.rightSideRows(res.data.lines)
+        if (JSON.stringify(diskRows) === JSON.stringify(diffView.originalFileBuffer))
+            return
+
+        const d = unsavedChangesDialogComp.createObject(root)
+
+        d.title         = "File Changed on Disk"
+        d.messageFormat = Text.RichText
+        d.message       = `${root.selectedPathMarkup()} was changed outside GitEase.<br><br>` +
+                          "Reload it? Your unsaved changes will be lost. Ignore keeps them."
+
+        d.acceptTitle       = "Reload"
+        d.acceptDescription = "Load the file from disk and discard your unsaved changes"
+        d.cancelTitle       = "Ignore"
+        d.cancelDescription = "Keep your unsaved changes and ignore the change on disk"
+
+        d.aborted.connect(() => root.updateDiff(root.selectedFileIsStaged))
+
+        // The disk version becomes the one the edits are compared with, so it isn't asked about again
+        d.cancelled.connect(() => { diffView.originalFileBuffer = diskRows })
+
+        root.showChangesDialog(d)
+    }
+
+    //! The text of the right-hand side of each diff line: the file as the editor shows it.
+    function rightSideRows(lines) {
+        let rows = []
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i]
+            rows.push(line.type === GitDiff.Deleted  ? ""
+                    : line.type === GitDiff.Modified ? line.newContent
+                                                     : line.content)
+        }
+        return rows
+    }
+
+    function selectedPathMarkup() {
+        const escaped = root.selectedFilePath.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+
+        return `<span style="font-family:'${Style.fontTypes.jetBrainsMono}'; font-weight:600; ` +
+               `color:${Style.colors.popupTitleText}">${escaped}</span>`
+    }
+
+    function onPageActivated() {
+        changesFileLists.updateStatus()
     }
 }

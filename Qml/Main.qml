@@ -7,6 +7,7 @@ import GitEase
 import GitEase_Style
 import GitEase.Resources
 import GitEase_Style_Impl
+import Logger
 
 
 
@@ -21,19 +22,122 @@ ApplicationWindow {
 
     /* Property Declarations
      * ****************************************************************************************/
+    property bool closeAnimationPlayed: false
+    property bool hasActivatedBefore: false
+
+    property Component mainWindowPreload: null
+
+    property bool contentReady: false
+    property bool revealed: false
 
 
     /* Object Properties
      * ****************************************************************************************/
     width: 523
     height: 475
-    visible: true
+    visible: window.contentReady
+    opacity: Style.windowOpacitySupported ? 0 : 1
     color: Style.colors.primaryBackground
     title: qsTr("GitEase")
-    
+
+    readonly property var fadeTarget: Style.windowOpacitySupported ? window : window.contentItem
+
+    Component.onCompleted: {
+        Log.info("App", "Main window created")
+
+        if(!Style.windowOpacitySupported) {
+            window.contentItem.opacity = 0
+        }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    function preloadMainWindow() {
+        if(window.mainWindowPreload) {
+            return
+        }
+
+        window.mainWindowPreload = Qt.createComponent("qrc:/GitEase/Qml/View/MainWindow.qml",
+                                                      Component.Asynchronous, window)
+    }
+
+    function revealWindow() {
+        if(window.contentReady) {
+            return
+        }
+
+        mainContentLoader.opacity = 1
+        window.contentReady = true
+        revealFallbackTimer.restart()
+    }
+
+    function showRevealedWindow() {
+        if(window.revealed) {
+            return
+        }
+
+        window.revealed = true
+        revealFallbackTimer.stop()
+        windowRevealAnimation.restart()
+    }
+
     /* Event Handlers
      * ****************************************************************************************/
+    Connections {
+        target: window
+
+        function onFrameSwapped() {
+            if(window.contentReady) {
+                window.showRevealedWindow()
+            }
+        }
+    }
+
+    Timer {
+        id: revealFallbackTimer
+
+        interval: 1000
+        repeat: false
+
+        onTriggered: window.showRevealedWindow()
+    }
+
+    NumberAnimation {
+        id: windowRevealAnimation
+
+        target: window.fadeTarget
+        property: "opacity"
+        from: 0
+        to: 1
+        duration: Style.motionFast
+        easing.type: Easing.OutCubic
+    }
+
+    Connections {
+        target: Qt.application
+
+        function onStateChanged(state) {
+            if(state !== Qt.ApplicationActive) {
+                return
+            }
+
+            if(window.hasActivatedBefore) {
+                uiSession?.gitStateNotifier?.notifyChanged()
+                uiSession?.userProfileController?.refreshFromGit()
+            }
+
+            window.hasActivatedBefore = true
+        }
+    }
+
     onClosing: function(close) {
+        if (Style.motionEnabled && !window.closeAnimationPlayed) {
+            close.accepted = false
+            window.closeAnimationPlayed = true
+            windowCloseAnimation.restart()
+            return
+        }
+
         close.accepted = true
 
         try {
@@ -47,6 +151,28 @@ ApplicationWindow {
         })
     }
 
+    ParallelAnimation {
+        id: windowCloseAnimation
+
+        NumberAnimation {
+            target: window.fadeTarget
+            property: "opacity"
+            to: 0
+            duration: Style.motionMedium
+            easing.type: Easing.InCubic
+        }
+
+        NumberAnimation {
+            target: window.contentItem
+            property: "scale"
+            to: 0.985
+            duration: Style.motionMedium
+            easing.type: Easing.InCubic
+        }
+
+        onStopped: window.close()
+    }
+
 
     /* Fonts
      * ****************************************************************************************/
@@ -55,22 +181,77 @@ ApplicationWindow {
     FontLoader { source: "qrc:/GitEase/Resources/Fonts/Font Awesome 6 Pro-Regular-400.otf" }
     FontLoader { source: "qrc:/GitEase/Resources/Fonts/Font Awesome 6 Pro-Light-300.otf" }
 
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-Regular.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-Medium.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-SemiBold.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/Inter-Bold.ttf" }
+
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-Regular.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-Medium.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-SemiBold.ttf" }
+    FontLoader { source: "qrc:/GitEase/Resources/Fonts/JetBrainsMono-Bold.ttf" }
+
+    /* Shortcuts
+     * ****************************************************************************************/
+    Action {
+        text: qsTr("Increments font size")
+        shortcut: qsTr("Ctrl+=")
+        onTriggered: {
+            let appearance = uiSession.appModel.appSettings.appearanceSettings
+            appearance.fontSizePt = Math.min(Style.appFont.maxAppFontPt, appearance.fontSizePt + 1)
+            uiSession.appModel.save()
+        }
+    }
+
+    Action {
+        text: qsTr("Decrements  font size")
+        shortcut: qsTr("Ctrl+-")
+        onTriggered: {
+            let appearance = uiSession.appModel.appSettings.appearanceSettings
+            appearance.fontSizePt = Math.max(Style.appFont.minAppFontPt, appearance.fontSizePt - 1)
+            uiSession.appModel.save()
+        }
+    }
 
     /* Children
      * ****************************************************************************************/
     UiSession {
         id: uiSession
-        popups: uiSessionPopups
+        popups: popupsLoader.item
 
-        Component.onCompleted: uiSession.windowController.window = window
+        Component.onCompleted: {
+            uiSession.windowController.window = window
+            Qt.callLater(function() {
+                uiSession.updateController.checkForUpdatesOnStartup()
+            })
+        }
     }
 
-    UiSessionPopups {
-        id: uiSessionPopups
-        width: window.width
-        height: window.height
-        appModel: uiSession.appModel
-        notificationController: uiSession.notificationController
+    Binding {
+        target: uiSession.notificationController
+        property: "overlayHost"
+        value: window.Overlay.overlay
+    }
+
+    Loader {
+        id: popupsLoader
+
+        readonly property bool needsPopupsNow: uiSession?.shellController?.commandExecuted ?? false
+
+        active: window.revealed || openRepositoryTransition.opening || popupsLoader.needsPopupsNow
+        asynchronous: !popupsLoader.needsPopupsNow
+
+        sourceComponent: UiSessionPopups {
+            width: window.width
+            height: window.height
+            appModel: uiSession.appModel
+            notificationController: uiSession.notificationController
+            guideController: uiSession.guideController
+            sshKeyController: uiSession.sshKeyController
+            textDirectionController: uiSession.textDirectionController
+            userProfileController: uiSession.userProfileController
+            identityGuard: uiSession.identityGuard
+        }
     }
 
     // Main content loader - switches between welcome flow and main application
@@ -78,9 +259,45 @@ ApplicationWindow {
     Loader {
         id: mainContentLoader
         anchors.fill: parent
+        opacity: 0
 
         sourceComponent: uiSession?.shellController.commandExecuted
                          ? mainApplicationComponent : welcomeFlowComponent
+
+        onLoaded: {
+            if(mainContentLoader.sourceComponent !== mainApplicationComponent) {
+                return
+            }
+
+            if(window.contentReady) {
+                mainContentFadeIn.restart()
+            } else {
+                window.revealWindow()
+            }
+        }
+
+        NumberAnimation {
+            id: mainContentFadeIn
+
+            target: mainContentLoader
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: Style.motionMedium
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    OpenRepositoryTransition {
+        id: openRepositoryTransition
+
+        anchors.fill: parent
+        z: 1
+        window: window
+        session: uiSession
+        preload: window.mainWindowPreload
+
+        onFinished: mainContentLoader.sourceComponent = mainApplicationComponent
     }
 
     // Welcome Flow Component
@@ -90,6 +307,19 @@ ApplicationWindow {
         Item {
             anchors.fill: parent
 
+            Timer {
+                id: preloadTimer
+
+                interval: 50
+                repeat: false
+                running: true
+
+                onTriggered: {
+                    preloadTimer.stop()
+                    window.preloadMainWindow()
+                }
+            }
+
             WelcomeController {
                 id: welcomeController
 
@@ -97,14 +327,21 @@ ApplicationWindow {
                 onWelcomeFlowCompleted: {
                     uiSession.appModel.appSettings.hasCompletedWelcome = true
                     uiSession.appModel.save()
-                    mainContentLoader.sourceComponent = mainApplicationComponent
+                    openRepositoryTransition.start()
                 }
             }
 
             Loader {
                 id: welcomePageLoader
                 anchors.fill: parent
+                asynchronous: true
                 source: "qrc:/GitEase/Qml/Pages/WelcomePage.qml"
+
+                onStatusChanged: {
+                    if(welcomePageLoader.status === Loader.Error) {
+                        window.revealWindow()
+                    }
+                }
 
                 // Pass controller to loaded page
                 onLoaded: {
@@ -126,6 +363,8 @@ ApplicationWindow {
                     if (item.hasOwnProperty("notificationController")) {
                         item.notificationController = Qt.binding(function() { return uiSession.notificationController })
                     }
+
+                    window.revealWindow()
                 }
             }
         }
@@ -136,20 +375,20 @@ ApplicationWindow {
         id: mainApplicationComponent
 
         Item {
+            id: mainWindowContainer
             anchors.fill: parent
 
             Loader {
                 anchors.fill: parent
-                source: "qrc:/GitEase/Qml/View/MainWindow.qml"
+                active: openRepositoryTransition.mainWindow === null
 
-                onLoaded: {
-                    if (item && item.hasOwnProperty("uiSession")) {
-                        item.uiSession = uiSession
-                    }
-                }
+                Component.onCompleted: setSource("qrc:/GitEase/Qml/View/MainWindow.qml",
+                                                 { "uiSession": uiSession })
             }
 
             Component.onCompleted: {
+                openRepositoryTransition.adoptInto(mainWindowContainer)
+
                 window.width = Qt.binding(function() {return Style.appWidth})
                 window.height = Qt.binding(function() {return Style.appHeight})
                 window.x = (Screen.width - Style.appWidth) / 2

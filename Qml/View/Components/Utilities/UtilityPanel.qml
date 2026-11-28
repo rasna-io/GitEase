@@ -1,0 +1,395 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+
+import GitEase_Style
+import GitEase_Style_Impl
+import GitEase
+
+/*! ***********************************************************************************************
+ * UtilityPanel
+ * ************************************************************************************************/
+Rectangle {
+    id: root
+
+    /* Property Declarations
+     * ****************************************************************************************/
+    property          bool open: true
+    readonly property real borderWidth: 1
+    readonly property real contentWidth: Style.dp(279)
+    readonly property real expandedWidth: contentWidth + borderWidth
+
+    property BranchController        branchController        : null
+    property RemoteController        remoteController        : null
+    property RemoteOperationsSession remoteOperationsSession : null
+    property RepositoryController    repositoryController    : null
+    property CommitController        commitController        : null
+    property StatusController        statusController        : null
+    property StashController         stashController         : null
+    property TagController           tagController           : null
+    property RebaseController        rebaseController        : null
+    property ConflictController      conflictController      : null
+    property BundleController        bundleController        : null
+    property ActivityController      activityController      : null
+    property NotificationController  notificationController  : null
+    property GuideController         guideController         : null
+    property UserAuthenticationPopup userAuthenticationPopup : null
+    property UiSessionPopups         uiSessionPopups         : null
+    property var                     pluginController        : null
+    property GitTreeController       gitTreeController       : null
+    property GitStateNotifier        gitStateNotifier        : null
+    property TextDirectionController textDirectionController : null
+    property IdentityGuard           identityGuard           : null
+    property real                    animatedWidth           : root.open ? expandedWidth : 0
+
+    /* Object Properties
+     * ****************************************************************************************/
+    visible: animatedWidth > 0
+    clip: true
+    Layout.fillHeight: true
+    Layout.preferredWidth: animatedWidth
+
+    color: Style.colors.utilitiesPanelBackground
+    border.width: 0
+
+    Behavior on animatedWidth {
+        NumberAnimation {
+            duration: 200
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    /* Signals and Connections
+     * ****************************************************************************************/
+    Connections {
+        target: root.gitStateNotifier
+
+        function onRepositoryChanged() {
+            root.reload()
+        }
+    }
+
+    Connections {
+        target: root.guideController
+
+        function onActiveGuideChanged() {
+            const guide = root.guideController ? root.guideController.activeGuide : null
+
+            if (guide && guide.page === "utilities" && filterField.text.length > 0)
+                filterField.text = ""
+        }
+    }
+
+    /* Children
+     * ****************************************************************************************/
+    GuideHoverTrigger {
+        guideController: root.guideController
+        guideId: "utility_panel_tutorial"
+        guideName: "Utility Panel"
+        guideIcon: Style.icons.panelRight
+        guidePage: "utilities"
+        stepsFactory: function() {
+            return [
+                {
+                    targetProvider: function() { return filterField },
+                    icon: Style.icons.search,
+                    title: "Filter Docks",
+                    description: "Type to filter the utility docks — a dock stays visible when its title or anything listed inside it (branches, tags, stashes, remotes, ...) matches.",
+                    isInPopup: false,
+                    activationDelay: 300,
+                },
+                {
+                    targetProvider: function() { return dockFlick },
+                    icon: Style.icons.panelRight,
+                    title: "Utility Docks",
+                    description: "Each card is a specialized dock (Branches, Remotes, Stashes, Tags, etc.). Click the header to expand/collapse. The panel remembers which docks you leave open.",
+                }
+            ]
+        }
+    }
+
+    Rectangle {
+        id: leftBorder
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: root.borderWidth
+        color: Style.colors.utilitiesPanelBorder
+    }
+
+    ColumnLayout {
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        width: root.contentWidth
+        spacing: 0
+
+        TextField {
+            id: filterField
+            Layout.fillWidth: true
+            Layout.margins: Style.dp(8)
+            Layout.preferredHeight: Style.dp(28)
+            placeholderText: qsTr("Filter...")
+            backgroundColor: Style.colors.utilitiesFilterBackground
+            borderWidth: 1
+            borderColor: Style.colors.utilitiesFilterBorder
+            focusBorderWidth: 1
+            focusBorderColor: Style.colors.utilitiesFilterBorderFocus
+            color: Style.colors.utilitiesFilterText
+            placeholderTextColor: Style.colors.utilitiesFilterPlaceholder
+            font.family: Style.fontTypes.inter
+            font.weight: 400
+            font.pixelSize: Style.appFont.smallPt
+
+            onTextChanged: dockFlow.filterText = text
+        }
+
+        Flickable {
+            id: dockFlick
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.leftMargin: Style.dp(1)
+            clip: true
+
+            interactive: !dockFlow.dockHovered
+            flickableDirection: Flickable.VerticalFlick
+            boundsBehavior: Flickable.StopAtBounds
+
+            contentWidth: dockFlow.width
+            contentHeight: dockFlow.implicitHeight
+
+            ScrollBar.vertical: ScrollBar {
+                policy: ScrollBar.AsNeeded
+            }
+
+            Flow {
+                id: dockFlow
+                width: dockFlick.width
+
+                property bool dockHovered: false
+                property string filterText: ""
+
+                function matchesFilter(sectionTitle) {
+                    var needle = dockFlow.filterText.trim().toLowerCase()
+                    if (needle.length === 0)
+                        return true
+                    return sectionTitle.toLowerCase().indexOf(needle) !== -1
+                }
+
+                function scrollBlockingHovered(item) {
+                    return item
+                        && item.visible !== false
+                        && item.hasOwnProperty("pageScrollBlocking")
+                        && item.pageScrollBlocking === true
+                        && item.hasOwnProperty("hovered")
+                        && item.hovered === true
+                }
+
+                function updateDockHovered() {
+                    for (let i = 0; i < children.length; ++i) {
+                        const child = children[i]
+                        if (scrollBlockingHovered(child) || scrollBlockingHovered(child.item)) {
+                            dockFlow.dockHovered = true
+                            return
+                        }
+                    }
+
+                    dockFlow.dockHovered = false
+                }
+
+                function setupPluginDock(item) {
+                    if (!item)
+                        return
+
+                    if (item.hasOwnProperty("pageScrollBlocking")
+                            && item.pageScrollBlocking === true
+                            && item.hoveredChanged)
+                    {
+                        item.hoveredChanged.connect(dockFlow.updateDockHovered)
+                    }
+
+                    updateDockHovered()
+                }
+
+                ImportExportBundleDock {
+                    filterText: dockFlow.filterText
+                    branchController: root.branchController
+                    bundleController: root.bundleController
+                    notificationController: root.notificationController
+                    guideController: root.guideController
+                }
+
+                RemoteView {
+                    id: remoteView
+                    filterText: dockFlow.filterText
+                    remoteController: root.remoteController
+                    remoteOperationsSession: root.remoteOperationsSession
+                    repositoryController: root.repositoryController
+                    userAuthenticationPopup: root.userAuthenticationPopup
+                    uiSessionPopups: root.uiSessionPopups
+                    addEditRemotePopup: root.uiSessionPopups ? root.uiSessionPopups.addEditRemotePopup : null
+                    notificationController: root.notificationController
+                    guideController: root.guideController
+
+                    onHoveredChanged: dockFlow.updateDockHovered()
+                }
+
+                BranchManagementView {
+                    id: branchManagementView
+                    filterText: dockFlow.filterText
+                    branchController: root.branchController
+                    addBranchPopup: root.uiSessionPopups ? root.uiSessionPopups.addBranchPopup : null
+                    notificationController: root.notificationController
+                    remoteOperationsSession: root.remoteOperationsSession
+                    guideController: root.guideController
+
+                    onHoveredChanged: dockFlow.updateDockHovered()
+                }
+
+                StashManagerDock {
+                    id: stashManagerDock
+                    filterText: dockFlow.filterText
+                    stashController: root.stashController
+                    commitController: root.commitController
+                    statusController: root.statusController
+                    addStashPopup: root.uiSessionPopups ? root.uiSessionPopups.addStashPopup : null
+                    manageStashPopup: root.uiSessionPopups ? root.uiSessionPopups.manageStashPopup : null
+                    guideController: root.guideController
+
+                    notificationController: root.notificationController
+
+                    onHoveredChanged: dockFlow.updateDockHovered()
+                }
+
+                TagManagementView {
+                    id: tagManagementView
+                    filterText: dockFlow.filterText
+                    tagController: root.tagController
+                    remoteOperationsSession: root.remoteOperationsSession
+                    addTagPopup: root.uiSessionPopups ? root.uiSessionPopups.addTagPopup : null
+                    guideController: root.guideController
+                    notificationController: root.notificationController
+
+                    onHoveredChanged: dockFlow.updateDockHovered()
+                }
+
+                RecentActivityDock {
+                    filterText: dockFlow.filterText
+                    activityController: root.activityController
+                    guideController: root.guideController
+
+                    onHoveredChanged: dockFlow.updateDockHovered()
+                }
+
+                RepositoriesHistoryDock {
+                    filterText: dockFlow.filterText
+                    repositoryController: root.repositoryController
+                    guideController: root.guideController
+
+                    onHoveredChanged: dockFlow.updateDockHovered()
+                }
+
+                RebaseDock {
+                    id: rebaseDock
+                    filterText: dockFlow.filterText
+                    branchController        : root.branchController
+                    rebaseController        : root.rebaseController
+                    commitController        : root.commitController
+                    statusController        : root.statusController
+                    notificationController  : root.notificationController
+                    conflictController      : root.conflictController
+                    guideController         : root.guideController
+                    textDirectionController : root.textDirectionController
+                    gitTreeController       : root.gitTreeController
+                    identityGuard           : root.identityGuard
+                    repositoryPath          : root.repositoryController?.appModel?.currentRepository?.path ?? ""
+                    repositoryName          : root.repositoryController?.appModel?.currentRepository?.name ?? ""
+                    pluginManager           : root.pluginController?.pluginManager ?? null
+                }
+
+                // ── Plugin docks ─────────────────────────────────────────────────
+                Repeater {
+                    model: root.pluginController?.pluginManager?.registeredDocks ?? []
+
+                    delegate: Loader {
+                        width: root.contentWidth
+                        // A UtilitiesCard sizes itself, including while it expands.
+                        // A dock that fails to load takes no space.
+                        height: item ? item.height : 0
+                        // Plugin docks built on UtilitiesCard filter their own content;
+                        // any other plugin dock is matched by its title only.
+                        visible: item && item.matchesFilter !== undefined
+                                 ? item.matchesFilter
+                                 : (item ? dockFlow.matchesFilter(modelData.title ?? "") : false)
+                        active: !!modelData?.url
+                        source: modelData?.url ?? ""
+
+                        onLoaded: {
+                            if (!item)
+                                return
+
+                            if (item.hasOwnProperty("filterText"))
+                                item.filterText = Qt.binding(function() { return dockFlow.filterText })
+                            if (item.hasOwnProperty("pluginManager"))
+                                item.pluginManager = Qt.binding(function() { return root.pluginController?.pluginManager })
+                            if (item.hasOwnProperty("pluginId"))
+                                item.pluginId = modelData.id
+                            if (item.hasOwnProperty("repositoryController"))
+                                item.repositoryController = Qt.binding(function() { return root.repositoryController })
+                            if (item.hasOwnProperty("branchController"))
+                                item.branchController = Qt.binding(function() { return root.branchController })
+                            if (item.hasOwnProperty("remoteController"))
+                                item.remoteController = Qt.binding(function() { return root.remoteController })
+                            if (item.hasOwnProperty("userAuthenticationPopup"))
+                                item.userAuthenticationPopup = Qt.binding(function() { return root.userAuthenticationPopup })
+                            if (item.hasOwnProperty("uiSessionPopups"))
+                                item.uiSessionPopups = Qt.binding(function() { return root.uiSessionPopups })
+                            if (item.hasOwnProperty("notificationController"))
+                                item.notificationController = Qt.binding(function() { return root.notificationController })
+                            if (item.hasOwnProperty("guideController"))
+                                item.guideController = Qt.binding(function() { return root.guideController })
+                            if (item.hasOwnProperty("commitController"))
+                                item.commitController = Qt.binding(function() { return root.commitController })
+                            if (item.hasOwnProperty("statusController"))
+                                item.statusController = Qt.binding(function() { return root.statusController })
+                            if (item.hasOwnProperty("stashController"))
+                                item.stashController = Qt.binding(function() { return root.stashController })
+                            if (item.hasOwnProperty("tagController"))
+                                item.tagController = Qt.binding(function() { return root.tagController })
+                            if (item.hasOwnProperty("eventBus"))
+                                item.eventBus = Qt.binding(function() { return root.pluginController?.pluginManager })
+
+                            dockFlow.setupPluginDock(item)
+                        }
+
+                        onStatusChanged: {
+                            if (status === Loader.Error)
+                                console.error("[UtilityPanel] Failed to load plugin dock:", source)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* Functions
+     * ****************************************************************************************/
+    //! Re-reads every dock that caches repository state, plugin docks included
+    function reload() {
+        for (let i = 0; i < dockFlow.children.length; ++i) {
+            let child = dockFlow.children[i]
+
+            // Plugin docks are wrapped in a Loader.
+            let dock = (child && typeof child.reload === "function") ? child
+                     : (child && child.item && typeof child.item.reload === "function") ? child.item
+                     : null
+
+            if (!dock)
+                continue
+
+            try {
+                dock.reload()
+            } catch (error) {}
+        }
+    }
+}

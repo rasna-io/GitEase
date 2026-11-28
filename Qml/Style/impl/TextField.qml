@@ -61,7 +61,7 @@ T.TextField {
     
     // Font setup
     font.pixelSize: baseFontSize
-    font.family: Style.fontTypes.roboto
+    font.family: Style.fontTypes.inter
     font.weight: 400
 
     /* Placeholder Text
@@ -82,7 +82,7 @@ T.TextField {
         renderType: control.renderType
         
         Behavior on color {
-            ColorAnimation { duration: 150 }
+            ColorAnimation { duration: Style.motionFast; easing.type: Easing.OutCubic }
         }
     }
 
@@ -100,7 +100,7 @@ T.TextField {
         color: control.error ? control.errorBorderColor : control.iconColor
         
         Behavior on color {
-            ColorAnimation { duration: 150 }
+            ColorAnimation { duration: Style.motionFast; easing.type: Easing.OutCubic }
         }
     }
 
@@ -117,11 +117,11 @@ T.TextField {
                         : control.borderColor
         
         Behavior on border.width {
-            NumberAnimation { duration: 150 }
+            NumberAnimation { duration: Style.motionFast; easing.type: Easing.OutCubic }
         }
         
         Behavior on border.color {
-            ColorAnimation { duration: 150 }
+            ColorAnimation { duration: Style.motionFast; easing.type: Easing.OutCubic }
         }
     }
 }
