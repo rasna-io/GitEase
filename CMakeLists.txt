@@ -1,8 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(GitEase VERSION 0.9.0 LANGUAGES CXX)
+project(GitEase VERSION 1.0.0 LANGUAGES CXX)
+
+# project(VERSION) accepts only numbers, so the pre-release label lives here.
+# Leave it empty for a final release.
+set(PROJECT_VERSION_SUFFIX "alpha")
 
 set(PROJECT_VERSION_SHORT ${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR}.${CMAKE_PROJECT_VERSION_PATCH})
+if(PROJECT_VERSION_SUFFIX)
+    set(PROJECT_VERSION_FULL "${PROJECT_VERSION_SHORT}-${PROJECT_VERSION_SUFFIX}")
+else()
+    set(PROJECT_VERSION_FULL "${PROJECT_VERSION_SHORT}")
+endif()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -60,7 +69,7 @@ endif()
 
 target_link_libraries(GitEase PRIVATE Qt6::Core)
 target_include_directories(${MAIN_TARGET_NAME} PRIVATE ${INCLUDE_DIRS_BACKEND})
-target_compile_definitions(${MAIN_TARGET_NAME} PRIVATE GITEASE_VERSION="${PROJECT_VERSION_SHORT}")
+target_compile_definitions(${MAIN_TARGET_NAME} PRIVATE GITEASE_VERSION="${PROJECT_VERSION_FULL}")
 
 # NO_CACHEGEN is set for qt_add_qml_module() in DEBUG mode so we can have a better QML Preview
 # functionality (Only Qt6.6 and later)

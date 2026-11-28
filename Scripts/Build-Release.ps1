@@ -162,9 +162,13 @@ if ($Installer) {
     if ($CmakeLists -match 'project\(\s*GitEase\s+VERSION\s+([0-9.]+)') {
         $Version = $Matches[1]
     }
+    $VersionSuffix = ""
+    if ($CmakeLists -match 'set\(\s*PROJECT_VERSION_SUFFIX\s+"([^"]*)"') {
+        $VersionSuffix = $Matches[1]
+    }
 
     Write-Host "Building installer..." -ForegroundColor Cyan
-    & $Iscc "/DMyAppVersion=$Version" (Join-Path $RepoRoot "installer\GitEase.iss")
+    & $Iscc "/DMyAppVersion=$Version" "/DMyAppVersionSuffix=$VersionSuffix" (Join-Path $RepoRoot "installer\GitEase.iss")
     if ($LASTEXITCODE -ne 0) { throw "Inno Setup compile failed." }
 }
 
