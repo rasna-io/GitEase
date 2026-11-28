@@ -579,55 +579,12 @@ Rectangle {
                         color: root.busyAccent
                     }
 
-                    Canvas {
-                        id: spinnerCanvas
+                    BusyWaiter {
+                        compact: true
                         anchors.fill: parent
                         visible: !root.isDone
-                        property real sweep: 0
-
-                        onPaint: {
-                            var ctx = getContext("2d")
-                            ctx.clearRect(0, 0, width, height)
-                            var cx = width / 2
-                            var cy = height / 2
-                            var r = Math.min(cx, cy) - 1.25
-
-                            ctx.globalAlpha = 0.2
-                            ctx.beginPath()
-                            ctx.arc(cx, cy, r, 0, Math.PI * 2)
-                            ctx.strokeStyle = root.busyAccent
-                            ctx.lineWidth = 2
-                            ctx.stroke()
-
-                            ctx.globalAlpha = 1.0
-                            ctx.beginPath()
-                            ctx.arc(cx, cy, r, sweep, sweep + Math.PI * 1.25)
-                            ctx.strokeStyle = root.busyAccent
-                            ctx.lineWidth = 2
-                            ctx.lineCap = "round"
-                            ctx.stroke()
-                        }
-
-                        onSweepChanged: requestPaint()
-                        Component.onCompleted: requestPaint()
-
-                        Connections {
-                            target: root
-                            function onBusyAccentChanged() { spinnerCanvas.requestPaint() }
-                            function onPluginBusyChanged() {
-                                if (root.pluginBusy)
-                                    spinnerCanvas.requestPaint()
-                            }
-                        }
-
-                        NumberAnimation on sweep {
-                            from: 0
-                            to: Math.PI * 2
-                            duration: 1000
-                            loops: Animation.Infinite
-                            running: root.pluginBusy && !root.isDone
-                            easing.type: Easing.Linear
-                        }
+                        running: root.pluginBusy && !root.isDone
+                        accentColor: root.busyAccent
                     }
                 }
 

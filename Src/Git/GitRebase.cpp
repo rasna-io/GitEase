@@ -1039,6 +1039,13 @@ GitResult GitRebase::startInteractiveRebase(const QString& onto,
     }
     m_defaultSignature = sig;
 
+    // Reported once the run stops; the same text the plan previews (plain unless the plan edits).
+    bool planEdits = false;
+    for (const QVariant& entry : operations)
+        planEdits = planEdits || entry.toMap().value("action").toString().toLower() != "pick";
+    m_pendingRunCommand = GitCommandText::rebase(m_interactiveOnto, m_interactiveUpstream,
+                                                 m_interactiveBranch, planEdits);
+
     // Kick off processing
     m_interactiveInProgress = true;
     m_currentPlanIndex = 0;
@@ -1068,6 +1075,7 @@ void GitRebase::processNextOperation()
             git_repository_set_head(activeRepo(), git_reference_name(m_originalHeadRef));
         }
         cleanupInteractiveState();
+        reportRunCommand();
         emit rebaseFinished(true);
         return;
     }
@@ -1092,6 +1100,7 @@ void GitRebase::processNextOperation()
         git_commit* commit = lookupCommit(hash);
         if (!commit) {
             cleanupInteractiveState();
+            reportRunCommand();
             emit rebaseFinished(false);
             return;
         }
@@ -1111,6 +1120,7 @@ void GitRebase::processNextOperation()
                 // Treat as a conflict – do not try to commit
                 git_commit_free(commit);
                 m_isCherryPickActive = true;
+                reportRunCommand();
                 emit rebaseConflict(hash);
                 return;
             }
@@ -1121,6 +1131,7 @@ void GitRebase::processNextOperation()
                 abortCherryPick();
                 git_repository_state_cleanup(activeRepo());
                 cleanupInteractiveState();
+                reportRunCommand();
                 emit rebaseFinished(false);
                 return;
             }
@@ -1134,12 +1145,14 @@ void GitRebase::processNextOperation()
         } else if (cpResult == GIT_EMERGECONFLICT) {
             git_commit_free(commit);
             m_isCherryPickActive = true;
+            reportRunCommand();
             emit rebaseConflict(hash);
         } else {
             git_commit_free(commit);
             abortCherryPick();
             git_repository_state_cleanup(activeRepo());
             cleanupInteractiveState();
+            reportRunCommand();
             emit rebaseFinished(false);
         }
         return;
@@ -1153,10 +1166,13 @@ void GitRebase::interactiveContinue()
     if (!m_interactiveInProgress || !m_isCherryPickActive)
         return;
 
+    m_pendingRunCommand = GitCommandText::rebaseContinue();
+
     // Look up the original commit again to preserve its metadata
     git_commit* originalCommit = lookupCommit(m_currentOpHash);
     if (!originalCommit) {
         cleanupInteractiveState();
+        reportRunCommand();
         emit rebaseFinished(false);
         return;
     }
@@ -1165,6 +1181,7 @@ void GitRebase::interactiveContinue()
     if (!commitCherryPick(originalCommit)) {
         git_commit_free(originalCommit);
         cleanupInteractiveState();
+        reportRunCommand();
         emit rebaseFinished(false);
         return;
     }
@@ -1182,6 +1199,8 @@ void GitRebase::interactiveSkip()
 {
     if (!m_interactiveInProgress || !m_isCherryPickActive)
         return;
+
+    m_pendingRunCommand = GitCommandText::rebaseSkip();
 
     // Abort the cherry‑pick (reset index and worktree)
     abortCherryPick();
@@ -1225,6 +1244,10 @@ void GitRebase::interactiveAbort()
 
     git_repository_state_cleanup(activeRepo());
     cleanupInteractiveState();
+
+    // Reported like abortOp(): it is what tells the pages to re-read the repository.
+    m_pendingRunCommand.clear();
+    emitGitCommand(GitCommandText::rebaseAbort());
     emit rebaseAborted();
 }
 
@@ -1257,6 +1280,7 @@ GitResult GitRebase::interactiveQuit()
 
     cleanupInteractiveState();
 
+    m_pendingRunCommand.clear();
     emitGitCommand(GitCommandText::rebaseQuit());
     emit rebaseQuit();
 
@@ -1396,6 +1420,16 @@ bool GitRebase::resetToCommit(git_commit* target)
     if (result != GIT_OK)
         return false;
     return git_repository_set_head_detached(activeRepo(), git_commit_id(target)) == GIT_OK;
+}
+
+void GitRebase::reportRunCommand()
+{
+    if (m_pendingRunCommand.isEmpty())
+        return;
+
+    const QString command = m_pendingRunCommand;
+    m_pendingRunCommand.clear();
+    emitGitCommand(command);
 }
 
 void GitRebase::cleanupInteractiveState()

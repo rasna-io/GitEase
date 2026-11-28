@@ -240,6 +240,7 @@ Rectangle {
                     branchController: root.branchController
                     addBranchPopup: root.uiSessionPopups ? root.uiSessionPopups.addBranchPopup : null
                     notificationController: root.notificationController
+                    remoteOperationsSession: root.remoteOperationsSession
                     guideController: root.guideController
 
                     onHoveredChanged: dockFlow.updateDockHovered()
@@ -302,6 +303,7 @@ Rectangle {
                     gitTreeController       : root.gitTreeController
                     identityGuard           : root.identityGuard
                     repositoryPath          : root.repositoryController?.appModel?.currentRepository?.path ?? ""
+                    repositoryName          : root.repositoryController?.appModel?.currentRepository?.name ?? ""
                     pluginManager           : root.pluginController?.pluginManager ?? null
                 }
 

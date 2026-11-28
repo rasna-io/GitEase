@@ -281,6 +281,7 @@ Page {
                     currentRepositoryName: root.appModel.currentRepository.name || ""
 
                     minimizable: true
+                    isMinimized: true
                     icon: Style.icons.list
                     layoutController: root.layoutController
                     layoutId: "graphView.fileChangesDock"
@@ -298,6 +299,7 @@ Page {
                     id: diffView
 
                     minimizable: true
+                    isMinimized: true
                     icon: Style.icons.file
                     layoutController: root.layoutController
                     layoutId: "graphView.diffView"

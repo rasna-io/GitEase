@@ -49,6 +49,7 @@ IWindow {
     property string selectedPath    : ""
     property var    modifiedFiles   : ({})
     property var    stagedFiles     : []
+    property bool   selectedStagedBinary: false
 
     //! path -> the file's contents as Git first reported them to this window, markers and all.
     property var    originalContent : ({})
@@ -94,7 +95,7 @@ IWindow {
         root.modelRevision
         let total = 0
         for (let conflict of root.conflicts)
-            total += conflict?.blocks?.length ?? 0
+            total += root.conflictCountOf(conflict)
         return total
     }
 
@@ -368,7 +369,9 @@ IWindow {
                                 root.askAssist(root.conflictAssists[0], blockIndex)
                         }
                         onUseAiRecommendationRequested: (blockIndex) => root.applyAssistRecommendation(blockIndex)
+                        stagedBinary: root.selectedStagedBinary
                         onResetRequested: root.resetSelectedFile()
+                        onResolveBinaryRequested: (side) => root.resolveBinary(root.selectedPath, side)
                         onContentChanged: editorPane.scheduleMarkerUpdate()
                     }
                 }
@@ -563,6 +566,7 @@ IWindow {
         if (conflicts.length === 0) {
             selectedConflict = null
             selectedPath = ""
+            selectedStagedBinary = false
             conflictRows.clear()
             root.modelRevision++
             return
@@ -625,7 +629,7 @@ IWindow {
                 continue
 
             baselines[conflict.path] = (conflict.lines || []).join("\n")
-            counts[conflict.path] = conflict.blocks?.length ?? 0
+            counts[conflict.path] = root.conflictCountOf(conflict)
             added = true
         }
 
@@ -633,6 +637,13 @@ IWindow {
             root.originalContent = baselines
             root.originalConflictCounts = counts
         }
+    }
+
+    //! A binary file has no marker blocks; it counts as one conflict until a side is kept.
+    function conflictCountOf(conflict) {
+        if (!conflict)
+            return 0
+        return conflict.isBinary ? 1 : (conflict.blocks?.length ?? 0)
     }
 
     function clearFileCaches() {
@@ -685,7 +696,9 @@ IWindow {
 
             let statusRes = statusController.getUnstagedDiffView(path)
             conflictRows.clear()
-            if (statusRes && statusRes.success) {
+            root.selectedStagedBinary = !!(statusRes && statusRes.success && statusRes.data
+                                           && statusRes.data.isBinary)
+            if (statusRes && statusRes.success && !root.selectedStagedBinary) {
                 let liveContent = statusRes.data && statusRes.data.newText
                 if (liveContent) {
                     let linesArray = liveContent.split('\n')
@@ -704,10 +717,19 @@ IWindow {
             return
         }
 
+        root.selectedStagedBinary = false
+
         for (let i = 0; i < conflicts.length; ++i) {
             if (conflicts[i].path === path) {
                 selectedConflict = conflicts[i]
                 selectedPath = path
+
+                // A binary file is never read as text: the pane shows a keep-a-side panel instead.
+                if (selectedConflict.isBinary) {
+                    conflictRows.clear()
+                    break
+                }
+
                 ConflictUtils.buildDisplayModel(
                     selectedConflict,
                     modifiedFiles,
@@ -793,6 +815,11 @@ IWindow {
                 selectedConflict = conflicts[i]
         }
 
+        if (selectedConflict && selectedConflict.isBinary) {
+            showBinaryStageHint()
+            return
+        }
+
         if (selectedConflict && selectedConflict.blocks && selectedConflict.blocks.length > 0) {
             showConflictStageWarning(path)
             return
@@ -822,6 +849,29 @@ IWindow {
         })
 
         d.open()
+    }
+
+    function showBinaryStageHint() {
+        if (notificationController)
+            notificationController.warning("Binary files can't be merged line by line. "
+                                           + "Choose Use Ours or Use Theirs for this file.",
+                                           "Conflict", 4000)
+    }
+
+    //! Keeps one side of a conflicted binary file whole and stages it.
+    function resolveBinary(path, side) {
+        if (!path || !conflictController)
+            return
+
+        let res = conflictController.resolveWithVersion(path, side)
+        if (!res.success) {
+            notificationController.error(res.errorMessage || "Could not resolve the file", "Conflict", 4000)
+            return
+        }
+
+        notificationController.success(side === "ours" ? "Kept our version" : "Took their version",
+                                       "Conflict", 2500)
+        loadConflicts(true)
     }
 
     function performStage(path) {

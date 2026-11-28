@@ -28,7 +28,9 @@ public:
      * @brief Retrieves all merge conflicts in the repository.
      * @return GitResult containing a QVariantList. Each entry is a QVariantMap with:
      *         - "path": file path relative to repo root
-     *         - "lines": raw lines of the working file (QStringList)
+     *         - "lines": raw lines of the working file (QStringList); empty for a binary file
+ *         - "isBinary": true when the file has no text form; then "hasOurs" / "hasTheirs" say
+ *           which sides still have the file
      *         - "blocks": list of conflict blocks (each block is a map with:
      *             "index": int, unique block index
      *             "startLine": int, 1‑based start line of the block
@@ -69,7 +71,15 @@ public:
     //! Working tree of the open repository. Empty when no repository is open.
     Q_INVOKABLE QString repositoryPath() const;
 
+    /*! Resolves a conflicted file by keeping one side whole ("ours" or "theirs") and staging it,
+     *  like `git checkout --ours -- <path>` followed by `git add`. Used for binary files, which have
+     *  no lines to pick from. When the chosen side deleted the file, the file is removed. */
+    Q_INVOKABLE GitResult resolveWithVersion(const QString& filePath, const QString& side);
+
 private:
+    //! Absolute path of a working-tree file of the active repository.
+    QString workdirPath(const QString& filePath) const;
+
     // Reads the current working file content as lines
     QStringList readWorkdirLines(const QString& filePath) const;
 

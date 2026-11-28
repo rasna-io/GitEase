@@ -124,14 +124,12 @@ Rectangle {
                 Loader {
                     id: welcomeContentLoader
 
+                    readonly property bool isCurrent: root.controller?.currentPageIndex === Enums.WelcomePages.WelcomeBanner
                     property bool needed: false
 
-                    active: needed || root.controller?.currentPageIndex === Enums.WelcomePages.WelcomeBanner
-                    onActiveChanged: {
-                        if(active) {
-                            needed = true
-                        }
-                    }
+                    active: needed || isCurrent
+                    onIsCurrentChanged: if (isCurrent) needed = true
+                    Component.onCompleted: if (isCurrent) needed = true
 
                     sourceComponent: WelcomeContent {
                         controller: root.controller
@@ -141,17 +139,15 @@ Rectangle {
                 Loader {
                     id: setupProfileLoader
 
+                    readonly property bool isCurrent: root.controller?.currentPageIndex === Enums.WelcomePages.SetupProfle
                     property bool needed: false
 
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
-                    active: needed || root.controller?.currentPageIndex === Enums.WelcomePages.SetupProfle
-                    onActiveChanged: {
-                        if(active) {
-                            needed = true
-                        }
-                    }
+                    active: needed || isCurrent
+                    onIsCurrentChanged: if (isCurrent) needed = true
+                    Component.onCompleted: if (isCurrent) needed = true
 
                     sourceComponent: SetupProfileForm {
                         showHint: true

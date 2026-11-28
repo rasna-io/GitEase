@@ -55,10 +55,15 @@ GitResult GitMerge::mergeBranchIntoCurrent(const QString& sourceBranch, bool noF
     git_reference_free(headRef);
     git_reference_free(sourceRef);
 
+    const QString cmd = noFF
+        ? QString("git merge --no-ff %1").arg(quoteCommandArg(sourceBranch))
+        : QString("git merge %1").arg(quoteCommandArg(sourceBranch));
+
+    // A merge that stops on conflicts has still written to the index and the working tree.
+    if (!result.success() && m_mergeInProgress)
+        emitGitCommand(cmd);
+
     if (result.success()) {
-        QString cmd = noFF
-            ? QString("git merge --no-ff %1").arg(quoteCommandArg(sourceBranch))
-            : QString("git merge %1").arg(quoteCommandArg(sourceBranch));
         emitGitCommand(cmd);
 
         // Rule plugins may ask for the merged branch to be cleaned up (auto-delete after merge).
@@ -446,6 +451,144 @@ void GitMerge::resetMergeState()
     emit mergeStateChanged();  // CRITICAL: Add this line
 }
 
+namespace {
+
+struct MergeHeads
+{
+    QList<git_oid> oids;
+};
+
+int collectMergeHead(const git_oid* oid, void* payload)
+{
+    static_cast<MergeHeads*>(payload)->oids.append(*oid);
+    return 0;
+}
+
+void addPath(QList<QByteArray>& paths, const char* path)
+{
+    if (path && *path && !paths.contains(QByteArray(path)))
+        paths.append(QByteArray(path));
+}
+
+} // namespace
+
+/*! Like `git reset --merge`, which `git merge --abort` runs: the paths the merge wrote are the ones
+ *  still conflicted plus everything the merged-in side changed since the merge base. Those go back to
+ *  HEAD in the index and the working tree, and files the merge added are removed. libgit2 refuses to
+ *  merge into paths with local changes, so local changes anywhere else are left alone. */
+GitResult GitMerge::restoreMergedPaths()
+{
+    git_repository* repo = activeRepo();
+
+    git_index* index = nullptr;
+    if (git_repository_index(&index, repo) != GIT_OK)
+        return GitResult(false, QVariant(), "Failed to read the index.");
+    git_index_read(index, 0);
+
+    QList<QByteArray> paths;
+
+    // Conflicted paths, under every name they carry (renames).
+    git_index_conflict_iterator* conflicts = nullptr;
+    if (git_index_conflict_iterator_new(&conflicts, index) == GIT_OK) {
+        const git_index_entry* ancestor = nullptr;
+        const git_index_entry* ours     = nullptr;
+        const git_index_entry* theirs   = nullptr;
+        while (git_index_conflict_next(&ancestor, &ours, &theirs, conflicts) == GIT_OK) {
+            addPath(paths, ancestor ? ancestor->path : nullptr);
+            addPath(paths, ours     ? ours->path     : nullptr);
+            addPath(paths, theirs   ? theirs->path   : nullptr);
+        }
+        git_index_conflict_iterator_free(conflicts);
+    }
+
+    git_oid headOid;
+    git_commit* headCommit = nullptr;
+    if (git_reference_name_to_id(&headOid, repo, "HEAD") != GIT_OK
+        || git_commit_lookup(&headCommit, repo, &headOid) != GIT_OK) {
+        git_index_free(index);
+        return GitResult(false, QVariant(), "Failed to resolve HEAD.");
+    }
+
+    // Everything each merged-in commit changed since its merge base with HEAD. Without rename
+    // detection a rename shows up as its old and its new path, so both are covered.
+    MergeHeads heads;
+    git_repository_mergehead_foreach(repo, collectMergeHead, &heads);
+
+    for (const git_oid& theirOid : heads.oids) {
+        git_commit* theirCommit = nullptr;
+        git_tree*   theirTree   = nullptr;
+        git_commit* baseCommit  = nullptr;
+        git_tree*   baseTree    = nullptr;
+        git_diff*   diff        = nullptr;
+
+        git_oid baseOid;
+        if (git_commit_lookup(&theirCommit, repo, &theirOid) == GIT_OK
+            && git_commit_tree(&theirTree, theirCommit) == GIT_OK) {
+            // No common ancestor: everything on their side counts (diff from the empty tree).
+            if (git_merge_base(&baseOid, repo, &headOid, &theirOid) == GIT_OK
+                && git_commit_lookup(&baseCommit, repo, &baseOid) == GIT_OK)
+                git_commit_tree(&baseTree, baseCommit);
+
+            if (git_diff_tree_to_tree(&diff, repo, baseTree, theirTree, nullptr) == GIT_OK) {
+                for (size_t i = 0; i < git_diff_num_deltas(diff); ++i) {
+                    const git_diff_delta* delta = git_diff_get_delta(diff, i);
+                    addPath(paths, delta->old_file.path);
+                    addPath(paths, delta->new_file.path);
+                }
+            }
+        }
+
+        git_diff_free(diff);
+        git_tree_free(baseTree);
+        git_commit_free(baseCommit);
+        git_tree_free(theirTree);
+        git_commit_free(theirCommit);
+    }
+
+    if (paths.isEmpty()) {
+        git_commit_free(headCommit);
+        git_index_free(index);
+        return GitResult(true);
+    }
+
+    QList<char*> pathPointers;
+    for (QByteArray& path : paths)
+        pathPointers.append(path.data());
+
+    git_strarray pathspec;
+    pathspec.strings = pathPointers.data();
+    pathspec.count   = size_t(pathPointers.size());
+
+    // Index: drop the conflict entries, then take each path from HEAD (or drop it if HEAD has none).
+    for (const QByteArray& path : paths)
+        git_index_conflict_remove(index, path.constData());
+
+    int error = git_index_write(index);
+    if (error == GIT_OK)
+        error = git_reset_default(repo, reinterpret_cast<git_object*>(headCommit), &pathspec);
+
+    // Working tree: the same paths from HEAD. Files only the merge added are untracked by now and
+    // get removed; the exact path list keeps everything else out of reach.
+    if (error == GIT_OK) {
+        git_checkout_options options = GIT_CHECKOUT_OPTIONS_INIT;
+        options.checkout_strategy = GIT_CHECKOUT_FORCE
+                                    | GIT_CHECKOUT_REMOVE_UNTRACKED
+                                    | GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+        options.paths = pathspec;
+        error = git_checkout_head(repo, &options);
+    }
+
+    git_commit_free(headCommit);
+    git_index_free(index);
+
+    if (error != GIT_OK) {
+        return GitResult(false, QVariant(),
+                         QString("Failed to restore the files the merge changed: %1").arg(GitUtils::getLastError()));
+    }
+
+    return GitResult(true);
+}
+
 GitResult GitMerge::abortOp()
 {
     if (!m_currentRepo || !activeRepo())
@@ -453,6 +596,12 @@ GitResult GitMerge::abortOp()
 
     if (!isMergeInProgress())
         return GitResult(false, QVariant(), "No merge in progress.");
+
+    // Cleaning up the merge state alone leaves the conflicted index entries and the files with
+    // conflict markers behind; undo what the merge wrote first, as `git merge --abort` does.
+    GitResult restoreResult = restoreMergedPaths();
+    if (!restoreResult.success())
+        return restoreResult;
 
     int result = git_repository_state_cleanup(activeRepo());
 

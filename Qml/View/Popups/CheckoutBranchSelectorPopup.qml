@@ -15,9 +15,10 @@ IPopup {
 
     /* Property Declarations
      * ****************************************************************************************/
+    // [{ name, isLocal, remote, localName (remote entries: the branch checking it out creates) }]
     property var branches: []
 
-    property string hoveredBranch: ""
+    property var hoveredEntry: null
 
     /* Signals
      * ****************************************************************************************/
@@ -109,10 +110,16 @@ IPopup {
                 }
 
                 delegate: Item {
+                    id: branchRow
+
                     width: branchList.width
                     height: 40
 
-                    readonly property bool isHovered: rowMouse.containsMouse
+                    readonly property bool   isHovered:  rowMouse.containsMouse
+                    readonly property string branchName: modelData?.name ?? ""
+                    readonly property bool   isLocal:    modelData?.isLocal ?? false
+                    readonly property color  kindColor:  branchRow.isLocal ? Style.colors.accent
+                                                                           : Style.colors.mutedText
 
                     Rectangle {
                         anchors.fill: parent
@@ -128,22 +135,45 @@ IPopup {
                             spacing: 10
 
                             Text {
-                                text: Style.icons.gitBranch
+                                text: branchRow.isLocal ? Style.icons.gitBranch : Style.icons.cloud
                                 font.family: Style.fontTypes.font6Pro
                                 font.styleName: "Solid"
                                 font.pixelSize: Style.appFont.mediumPt
-                                color: Style.colors.accent
+                                color: branchRow.kindColor
                                 Layout.preferredWidth: 16
                                 horizontalAlignment: Text.AlignHCenter
                             }
 
                             Text {
                                 Layout.fillWidth: true
-                                text: modelData
+                                text: branchRow.branchName
                                 font.family: Style.fontTypes.inter
                                 font.pixelSize: Style.appFont.h3Pt
                                 color: Style.colors.foreground
                                 elide: Text.ElideMiddle
+                            }
+
+                            // Local / Remote badge
+                            Rectangle {
+                                Layout.alignment: Qt.AlignVCenter
+                                implicitWidth: kindLabel.implicitWidth + 12
+                                implicitHeight: kindLabel.implicitHeight + 4
+                                radius: 4
+                                color: Qt.rgba(branchRow.kindColor.r, branchRow.kindColor.g,
+                                               branchRow.kindColor.b, 0.14)
+                                border.width: 1
+                                border.color: Qt.rgba(branchRow.kindColor.r, branchRow.kindColor.g,
+                                                      branchRow.kindColor.b, 0.35)
+
+                                Text {
+                                    id: kindLabel
+                                    anchors.centerIn: parent
+                                    text: branchRow.isLocal ? qsTr("Local") : qsTr("Remote")
+                                    font.family: Style.fontTypes.inter
+                                    font.pixelSize: Style.appFont.smallPt
+                                    font.weight: Font.Medium
+                                    color: branchRow.kindColor
+                                }
                             }
 
                             Text {
@@ -168,15 +198,15 @@ IPopup {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            root.branchSelected(modelData)
+                            root.branchSelected(branchRow.branchName)
                             root.close()
                         }
 
                         onContainsMouseChanged: {
                             if (containsMouse)
-                                root.hoveredBranch = modelData
-                            else if (root.hoveredBranch === modelData)
-                                root.hoveredBranch = ""
+                                root.hoveredEntry = modelData
+                            else if (root.hoveredEntry?.name === branchRow.branchName)
+                                root.hoveredEntry = null
                         }
                     }
                 }
@@ -202,9 +232,13 @@ IPopup {
                     anchors.verticalCenter: parent.verticalCenter
 
                     placeholder: qsTr("Point at a branch to see the command")
-                    command: root.hoveredBranch === ""
+                    // A remote branch is checked out by creating its local branch from it.
+                    command: !root.hoveredEntry
                              ? ""
-                             : GitCommandText.checkoutBranch(root.hoveredBranch)
+                             : root.hoveredEntry.isLocal
+                               ? GitCommandText.checkoutBranch(root.hoveredEntry.name)
+                               : GitCommandText.createBranchAndCheckout(root.hoveredEntry.localName,
+                                                                        root.hoveredEntry.name)
                 }
 
                 Button {
@@ -229,7 +263,7 @@ IPopup {
     }
 
     onAboutToHide: {
-        root.hoveredBranch = ""
+        root.hoveredEntry = null
         root.branches = []
     }
 }

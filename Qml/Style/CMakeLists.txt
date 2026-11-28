@@ -67,6 +67,7 @@ qt_add_qml_module(${MAIN_TARGET_NAME}_Style_Impl
         impl/ToolButton.qml
         impl/Popup.qml
         impl/ScrollBar.qml
+        impl/ScrollView.qml
         impl/TextField.qml
         impl/Dialog.qml
         impl/RoundButton.qml

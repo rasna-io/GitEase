@@ -29,12 +29,12 @@ Item {
             Layout.fillWidth: true
             spacing: Style.dp(10)
 
-            BusyIndicator {
+            BusyWaiter {
+                compact: true
                 Layout.preferredWidth: Style.dp(18)
                 Layout.preferredHeight: Style.dp(18)
                 running: root.running
                 visible: root.running
-                Material.accent: Style.colors.accent
             }
 
             Label {

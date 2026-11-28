@@ -29,6 +29,7 @@ UtilitiesCard {
     property GitTreeController       gitTreeController:       null
     property IdentityGuard           identityGuard:           null
     property string                  repositoryPath:         ""
+    property string                  repositoryName:         ""
     property var                     pluginManager:          null
 
     /* Object Properties
@@ -238,6 +239,7 @@ UtilitiesCard {
         pluginManager: root.pluginManager
         gitTree: root.gitTreeController
         repositoryPath: root.repositoryPath
+        repositoryName: root.repositoryName
     }
 
     /* Functions

@@ -308,7 +308,7 @@ Page {
 
                                 if (commitEnabled) {
                                     items.push({
-                                        text: "Commit & Push",
+                                        text: (root.remoteOperationsSession?.publishes ?? false) ? "Commit & Publish" : "Commit & Push",
                                         icon: Style.icons.arrowUp,
                                         action: function() {
                                             const commitAndPush = function() {

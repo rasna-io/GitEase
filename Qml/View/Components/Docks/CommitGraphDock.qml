@@ -691,6 +691,7 @@ DetachablePanel {
         pluginManager: root.pluginController?.pluginManager ?? null
         gitTree: root.gitTreeController
         repositoryPath: root.appModel?.currentRepository?.path ?? ""
+        repositoryName: root.appModel?.currentRepository?.name ?? ""
     }
 
     CommitFileBrowserPopup {
@@ -1566,9 +1567,17 @@ DetachablePanel {
         var currentBranch   = root.branchController.getCurrentBranchName()
         var selected        = selectedCommitsInOrder()
 
-        var localBranches   = root.branchController.getBranches()
+        var branchesHere    = root.branchController.getBranches()
                                   .filter(function(b) { return b.isLocal && b.targetHash === commitData.hash })
-                                  .map(function(b) { return b.name })
+        var localBranches   = branchesHere.map(function(b) { return b.name })
+
+        var session         = root.remoteOperationsSession
+        var unpublished     = (session && session.hasRemotes)
+                                  ? branchesHere.filter(function(b) {
+                                        return b.name !== currentBranch
+                                               && !(b.upstreamRemote && session.remoteNamed(b.upstreamRemote))
+                                    }).map(function(b) { return b.name })
+                                  : []
 
         //! A branch pointing at HEAD is already merged, and a detached HEAD has no branch to merge into.
         var mergeable       = (currentBranch && !isHead)
@@ -1585,6 +1594,9 @@ DetachablePanel {
 
             localBranches       : localBranches,
             pushEnabled         : isHead && (root.remoteOperationsSession?.canPush ?? false),
+            pushPublishes       : isHead && (root.remoteOperationsSession?.publishes ?? false),
+            unpublishedBranches : unpublished,
+            publishEnabled      : !(root.remoteOperationsSession?.pushBusy ?? false),
             isStash             : commitData.isStash || false,
             canCherryPick       : root.canCherryPick(commitData),
             canRebase           : root.canRebaseOnto(commitData, currentBranch),
@@ -1656,6 +1668,10 @@ DetachablePanel {
 
         case "push":
             executePush(item.payload.branch, checked)
+            break
+
+        case "publishBranch":
+            root.remoteOperationsSession?.publishBranch(item.payload.branch, "", root.activeItem)
             break
 
         case "newBranch":
@@ -1971,22 +1987,42 @@ DetachablePanel {
             if (b && b.isLocal) localNames[b.name] = true
         }
 
-        var seen = {}
-        var deduped = []
+        // One entry per branch the checkout would land on. Local branch names may contain slashes
+        // (fix/...), so only a known remote prefix is stripped; a remote branch whose local branch
+        // exists stands for that local branch, which is what checking it out switches to.
+        var seen    = {}
+        var entries = []
         for (var j = 0; j < branches.length; j++) {
             var name = branches[j]
-            var base = name.replace(/^[^/]+\//, "")
-            if (!seen[base]) {
-                seen[base] = true
-                deduped.push(localNames[base] ? base : name)
+            if (name.endsWith("/HEAD"))
+                continue
+
+            var entry
+            if (localNames[name]) {
+                entry = { name: name, isLocal: true, remote: "" }
+            } else {
+                var remote    = root.remoteOfBranch(name)
+                var localName = remote !== "" ? name.substring(remote.length + 1)
+                                              : name.replace(/^[^/]+\//, "")
+                entry = localNames[localName]
+                        ? { name: localName, isLocal: true, remote: "" }
+                        : { name: name, isLocal: false, remote: remote, localName: localName }
             }
+
+            if (seen[entry.name])
+                continue
+            seen[entry.name] = true
+            entries.push(entry)
         }
 
-        if (deduped.length === 1) {
-            handleCheckoutBranchOrCreate(deduped[0], data.hash)
+        if (entries.length === 0)
+            return
+
+        if (entries.length === 1) {
+            handleCheckoutBranchOrCreate(entries[0].name, data.hash)
         } else {
             checkoutBranchSelector.commitHash = data.hash
-            checkoutBranchSelector.branches = deduped
+            checkoutBranchSelector.branches = entries
             checkoutBranchSelector.open()
         }
     }

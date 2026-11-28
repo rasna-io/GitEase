@@ -174,7 +174,7 @@ RowLayout {
 
         property bool isBusy: remoteController?.pushInProgress && !remoteController?.forcePush
 
-        text    : !isBusy ? "Push" : ""
+        text    : !isBusy ? (headerRow.remoteOperationsSession?.pushLabel ?? "Push") : ""
         tooltip : !isBusy ? (headerRow.remoteOperationsSession?.pushTooltip ?? "") : "Pushing..."
         display : headerRow.compact ? IconButton.IconOnly : IconButton.TextBesideIcon
         enabled : headerRow.remoteOperationsSession?.canPush ?? false
@@ -199,8 +199,9 @@ RowLayout {
             border.color: Style.colors.headerButtonBorder
         }
 
-        BusyIndicator {
+        BusyWaiter {
             id: pushBusyIndicator
+            compact: true
             anchors.centerIn: parent
             width: 30
             height: 30
@@ -312,8 +313,9 @@ RowLayout {
             border.color: Style.colors.headerButtonBorder
         }
 
-        BusyIndicator {
+        BusyWaiter {
             id: pushForceBusyIndicator
+            compact: true
             anchors.centerIn: parent
             width: 30
             height: 30

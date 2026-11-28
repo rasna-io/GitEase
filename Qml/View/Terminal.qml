@@ -4,6 +4,7 @@ import QtQuick.Layouts
 
 import GitEase
 import GitEase_Style
+import GitEase_Style_Impl
 
 /*! ***********************************************************************************************
  * Terminal
@@ -130,14 +131,6 @@ DetachablePanel {
             ScrollBar.vertical: ScrollBar {
                 id: vScrollBar
                 policy: ScrollBar.AsNeeded
-                contentItem: Rectangle {
-                    implicitWidth: 10
-                    radius: 2
-                    color: vScrollBar.pressed ? Style.colors.terminalScrollBarPressed
-                         : vScrollBar.hovered ? Style.colors.terminalScrollBarHover
-                         : Style.colors.terminalScrollBar
-                }
-                background: Rectangle { color: "transparent" }
             }
 
             onContentHeightChanged: contentY = Math.max(0, contentHeight - height)

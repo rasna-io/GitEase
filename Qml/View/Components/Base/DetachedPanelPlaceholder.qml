@@ -25,6 +25,9 @@ Rectangle {
     /* Object Properties
      * ****************************************************************************************/
     color: Style.colors.primaryBackground
+    clip: true
+    readonly property bool showIcon:    root.height >= Style.dp(240)
+    readonly property bool showDetails: root.height >= Style.dp(160) && root.details.length > 0
 
     /* Children
      * ****************************************************************************************/
@@ -35,6 +38,7 @@ Rectangle {
 
         Text {
             Layout.fillWidth: true
+            visible: root.showIcon
             text: Style.icons.detach
             font.family: Style.fontTypes.font6Pro
             font.styleName: "Solid"
@@ -56,7 +60,7 @@ Rectangle {
 
         Text {
             Layout.fillWidth: true
-            visible: root.details.length > 0
+            visible: root.showDetails
             text: root.details
             font.family: Style.fontTypes.inter
             font.pixelSize: Style.appFont.mediumPt

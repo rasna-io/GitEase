@@ -4,6 +4,7 @@
 
 #include <QDebug>
 #include <git2/branch.h>
+#include <git2/buffer.h>
 #include <git2/deprecated.h>
 #include <git2/object.h>
 #include <git2/refs.h>
@@ -63,6 +64,33 @@ QVariantList GitBranch::getBranches()
                 int isHead = git_branch_is_head(ref);
                 bool isCurrent = (isHead == 1);
                 branch["isCurrent"] = isCurrent;
+
+                // Where a local branch pulls from and pushes to; empty when it was never published.
+                QString upstreamRemote;
+                QString upstreamBranch;
+                if (type == GIT_BRANCH_LOCAL) {
+                    git_buf remote = GIT_BUF_INIT;
+                    git_buf merge  = GIT_BUF_INIT;
+                    const char *refName = git_reference_name(ref);
+
+                    if (git_branch_upstream_remote(&remote, activeRepo(), refName) == GIT_OK
+                        && git_branch_upstream_merge(&merge, activeRepo(), refName) == GIT_OK
+                        && remote.ptr && merge.ptr) {
+                        const QString remoteName = QString::fromUtf8(remote.ptr, int(remote.size));
+                        const QString mergeRef   = QString::fromUtf8(merge.ptr, int(merge.size));
+
+                        // "." as the remote means it tracks another local branch, not a remote one.
+                        if (remoteName != "." && mergeRef.startsWith("refs/heads/")) {
+                            upstreamRemote = remoteName;
+                            upstreamBranch = mergeRef.mid(int(qstrlen("refs/heads/")));
+                        }
+                    }
+
+                    git_buf_dispose(&remote);
+                    git_buf_dispose(&merge);
+                }
+                branch["upstreamRemote"] = upstreamRemote;
+                branch["upstreamBranch"] = upstreamBranch;
 
                 branches.append(branch);
             }

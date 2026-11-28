@@ -62,7 +62,7 @@ Rectangle {
             font.family: Style.fontTypes.jetBrainsMono
             font.pixelSize: Style.appFont.defaultPt
 
-            wrapMode: Text.WrapAnywhere
+            wrapMode: Text.Wrap
             maximumLineCount: 2
             elide: Text.ElideRight
 

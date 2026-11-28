@@ -22,6 +22,7 @@ QtObject {
     // Persisted per-panel layout state, keyed by DetachablePanel.layoutId.
     // Shape: { "<layoutId>": { width: <int>, minimized: <bool> } }
     property var panelLayouts: ({})
+    property bool layoutsLoaded: false
 
     readonly property string layoutFileName: "Layout.json"
 
@@ -57,14 +58,17 @@ QtObject {
         if (!panel || !panel.layoutId)
             return
 
+        root.loadLayouts()
         let entry = root.panelLayouts[panel.layoutId]
-        if (!entry)
-            return
+        if (entry) {
+            if (entry.width !== undefined)
+                panel.lastWidth = entry.width
+            if (entry.minimized !== undefined)
+                panel.isMinimized = entry.minimized
+        }
 
-        if (entry.width !== undefined)
-            panel.lastWidth = entry.width
-        if (entry.minimized !== undefined)
-            panel.isMinimized = entry.minimized
+        if (panel.minimizable && panel.isMinimized)
+            root.register(panel)
     }
 
     /**
@@ -87,8 +91,10 @@ QtObject {
      * Load persisted panel layouts from disk (via AppModel's FileIO)
      */
     function loadLayouts() {
-        if (!root.appModel || !root.appModel.fileIO)
+        if (root.layoutsLoaded || !root.appModel || !root.appModel.fileIO)
             return
+
+        root.layoutsLoaded = true
 
         let fileIO = root.appModel.fileIO
         let path = fileIO.configFilePath + "/" + root.layoutFileName
@@ -110,7 +116,8 @@ QtObject {
      * Persist all panel layouts to disk (via AppModel's FileIO)
      */
     function saveLayouts() {
-        if (!root.appModel || !root.appModel.fileIO)
+        root.loadLayouts()
+        if (!root.layoutsLoaded)
             return
 
         let fileIO = root.appModel.fileIO

@@ -75,14 +75,25 @@ function buildCommitMenu(state) {
         separator: true
     });
 
+    // A branch with no upstream yet is published: created on the remote and tracked there.
     model.push({
-        text: "Push",
-        icon: "arrowUp",
+        text: state.pushPublishes ? "Publish '" + state.currentBranch + "'" : "Push",
+        icon: state.pushPublishes ? "cloudArrowUp" : "arrowUp",
         action: "push",
         enabled: state.pushEnabled,
-        hasCheckBox: true,
+        hasCheckBox: !state.pushPublishes,
         checkBoxText: "Force",
         payload: { branch: state.currentBranch }
+    });
+
+    (state.unpublishedBranches || []).forEach(function(bName) {
+        model.push({
+            text: "Publish '" + bName + "'",
+            icon: "cloudArrowUp",
+            action: "publishBranch",
+            enabled: state.publishEnabled,
+            payload: { branch: bName }
+        });
     });
 
     // Create Branch / Tag

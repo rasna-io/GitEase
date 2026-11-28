@@ -28,6 +28,9 @@ Rectangle {
     property string assistLabel: "Ask"
     property bool recommendationReady: false
     property int recommendationBlock: -1
+    property bool stagedBinary: false
+    readonly property bool conflictBinary: root.selectedConflict?.isBinary === true
+    readonly property bool showsBinary: root.conflictBinary || root.stagedBinary
 
     readonly property int openBlockCount: {
         root.revision
@@ -40,7 +43,7 @@ Rectangle {
     }
 
     readonly property bool canNavigate: root.openBlockCount > 0
-    readonly property bool canReset: root.selectedConflict !== null
+    readonly property bool canReset: root.selectedConflict !== null && !root.conflictBinary
 
     //! Where the unresolved conflict zones sit, as fractions of the row count.
     property var conflictMarkers: []
@@ -75,6 +78,7 @@ Rectangle {
     signal askAiRequested(int blockIndex)
     signal useAiRecommendationRequested(int blockIndex)
     signal resetRequested()
+    signal resolveBinaryRequested(string side)
     signal contentChanged()
 
     /* Object Properties
@@ -185,7 +189,8 @@ Rectangle {
                     actionEnabled: root.canReset
                     tooltip: root.canReset
                              ? "Undo everything done to this file here, bringing back every conflict"
-                             : "This file is already staged"
+                             : root.conflictBinary ? "Binary files are resolved by keeping one version"
+                                                   : "This file is already staged"
                     onClicked: root.resetRequested()
                 }
             }
@@ -211,6 +216,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.bottomMargin: hScrollBar.visible ? hScrollBar.height : 0
                 clip: true
+                visible: !root.showsBinary
                 model: root.displayModel
 
                 cacheBuffer: 5000
@@ -266,6 +272,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
+                visible: !root.showsBinary
 
                 contentSize:  conflictListView.maxContentWidth
                 viewportSize: conflictListView.width
@@ -273,9 +280,82 @@ Rectangle {
 
             EmptyStateView {
                 anchors.fill: parent
-                visible: !root.displayModel || root.displayModel.count === 0
+                visible: !root.showsBinary && (!root.displayModel || root.displayModel.count === 0)
                 title: "No conflicted files to show"
                 details: "All conflicts have been resolved."
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: root.showsBinary
+                color: Style.colors.primaryBackground
+
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width - 48, Style.dp(420))
+                    spacing: 10
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: Style.icons.file
+                        font.family: Style.fontTypes.font6Pro
+                        font.pixelSize: Style.appFont.displayLgPt
+                        color: Style.colors.mutedText
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Binary file"
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.h2Pt
+                        font.weight: 500
+                        color: Style.colors.foreground
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.conflictBinary
+                              ? "This file isn't text, so it can't be shown or merged line by line. "
+                                + "Keep one version of the whole file."
+                              : "This file isn't text, so it can't be shown here. It is resolved and staged."
+                        font.family: Style.fontTypes.inter
+                        font.pixelSize: Style.appFont.mediumPt
+                        color: Style.colors.placeholderText
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
+
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.topMargin: 6
+                        visible: root.conflictBinary
+                        spacing: 8
+
+                        ConflictPillButton {
+                            readonly property bool exists: root.selectedConflict?.hasOurs !== false
+
+                            text: exists ? "Use Ours" : "Use Ours (delete)"
+                            leadingText: Style.icons.arrowLeft
+                            accentColor: Style.colors.conflictOursLabel
+                            tooltip: exists ? "Keep the version already on this branch, and stage it"
+                                            : "This branch deleted the file: delete it, and stage that"
+                            onClicked: root.resolveBinaryRequested("ours")
+                        }
+
+                        ConflictPillButton {
+                            readonly property bool exists: root.selectedConflict?.hasTheirs !== false
+
+                            text: exists ? "Use Theirs" : "Use Theirs (delete)"
+                            trailingText: Style.icons.arrowRight
+                            accentColor: Style.colors.conflictTheirsLabel
+                            tooltip: exists ? "Keep the incoming version, and stage it"
+                                            : "The incoming side deleted the file: delete it, and stage that"
+                            onClicked: root.resolveBinaryRequested("theirs")
+                        }
+                    }
+                }
             }
         }
     }

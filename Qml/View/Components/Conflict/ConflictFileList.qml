@@ -32,39 +32,73 @@ Rectangle {
 
     /* Children
      * ****************************************************************************************/
-    ScrollView {
-        id: scroll
+    RowLayout {
         anchors.fill: parent
         anchors.topMargin: 6
-        clip: true
+        spacing: 0
 
-        contentWidth: availableWidth
+        Flickable {
+            id: scroll
 
-        ColumnLayout {
-            spacing: 0
-            width: scroll.availableWidth
+            readonly property bool needsVScroll: scroll.contentHeight > (scroll.height + 1)
 
-            SectionLabel {
-                Layout.fillWidth: true
-                visible: root.conflictFiles.length > 0
-                text: `CONFLICTS (${root.conflictFiles.length})`
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+
+            contentWidth: width
+            contentHeight: fileColumn.implicitHeight
+
+            ScrollBar.vertical: vBar
+
+            ColumnLayout {
+                id: fileColumn
+
+                spacing: 0
+                width: scroll.width
+
+                SectionLabel {
+                    Layout.fillWidth: true
+                    visible: root.conflictFiles.length > 0
+                    text: `CONFLICTS (${root.conflictFiles.length})`
+                }
+
+                Repeater {
+                    model: root.conflictFiles
+                    delegate: fileDelegate
+                }
+
+                SectionLabel {
+                    Layout.fillWidth: true
+                    Layout.topMargin: root.conflictFiles.length > 0 ? 8 : 0
+                    visible: root.stagedFiles.length > 0
+                    text: `RESOLVED (${root.stagedFiles.length})`
+                }
+
+                Repeater {
+                    model: root.stagedFiles
+                    delegate: fileDelegate
+                }
+            }
+        }
+
+        Item {
+            Layout.fillHeight: true
+            Layout.preferredWidth: scroll.needsVScroll ? 5 : 0
+
+            Behavior on Layout.preferredWidth {
+                NumberAnimation {
+                    duration: 120
+                }
             }
 
-            Repeater {
-                model: root.conflictFiles
-                delegate: fileDelegate
-            }
-
-            SectionLabel {
-                Layout.fillWidth: true
-                Layout.topMargin: root.conflictFiles.length > 0 ? 8 : 0
-                visible: root.stagedFiles.length > 0
-                text: `RESOLVED (${root.stagedFiles.length})`
-            }
-
-            Repeater {
-                model: root.stagedFiles
-                delegate: fileDelegate
+            ScrollBar {
+                id: vBar
+                anchors.fill: parent
+                policy: ScrollBar.AsNeeded
+                visible: scroll.needsVScroll
             }
         }
     }
@@ -81,8 +115,10 @@ Rectangle {
 
             readonly property bool isStaged  : root.stagedFiles.some(f => f.path === modelData.path)
             readonly property bool isCurrent : root.currentPath === modelData.path
-            readonly property bool hasMarkers: modelData.blocks !== undefined
-                                               && modelData.blocks.length > 0
+            //! Still unresolved: marker blocks left, or a binary file with no side kept yet.
+            readonly property bool hasMarkers: modelData.isBinary === true
+                                               || (modelData.blocks !== undefined
+                                                   && modelData.blocks.length > 0)
 
             Layout.fillWidth: true
             Layout.preferredHeight: Style.dp(30)

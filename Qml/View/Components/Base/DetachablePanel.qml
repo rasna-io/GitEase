@@ -25,6 +25,8 @@ Item {
     property bool                   layoutVisible:           true
     property bool                   minimizable:            false
     property string                 title:                  ""
+    //! Where the panel comes from, shown after the title while detached (e.g. "Commit Plan")
+    property string                 titleContext:           ""
     property int                    headerHeight:           32
     property int                    minWindowWidth:         420
     property int                    minWindowHeight:        320
@@ -48,9 +50,25 @@ Item {
      * ****************************************************************************************/
     property int lastWidth: 600
     property int lastHeight: 400
+    // Size of the detached window, kept apart from lastWidth/lastHeight so resizing the window
+    // never resizes the panel's place in its layout. 0 until the window is first shown.
+    property int detachedWidth: 0
+    property int detachedHeight: 0
+
+    readonly property string detachedTitle: {
+        let text = root.titleContext !== "" ? root.title + " · " + root.titleContext : root.title
+        return root.currentRepositoryName ? text + ` [${root.currentRepositoryName}]` : text
+    }
     property bool guideDetached: false
     property bool showLocalGuide: false
     property bool transitionInitialized: false
+
+    //! The window this panel sits in, and that window when it is modal (a popup window such as
+    //! CommitPlanPopup). A detached window must be owned by a modal host, or the host blocks it
+    //! and keeps it behind; over the main window it stays independent.
+    readonly property var hostWindow:      root.Window.window
+    readonly property var modalHostWindow: root.hostWindow && root.hostWindow.modality !== Qt.NonModal
+                                           ? root.hostWindow : null
 
     /* Object Properties
      * ****************************************************************************************/
@@ -85,8 +103,8 @@ Item {
     /* Functions
      * ****************************************************************************************/
     function updateWindowGeometry() {
-        detachedWindow.width = Math.max(minWindowWidth, lastWidth)
-        detachedWindow.height = Math.max(minWindowHeight, lastHeight)
+        detachedWindow.width = Math.max(minWindowWidth, root.detachedWidth > 0 ? root.detachedWidth : lastWidth)
+        detachedWindow.height = Math.max(minWindowHeight, root.detachedHeight > 0 ? root.detachedHeight : lastHeight)
 
         // Center on the screen the panel is currently displayed on, not always the primary one.
         let screenWidth  = root.Screen.width  || Qt.application.screens[0]?.width  || 0
@@ -408,12 +426,12 @@ Item {
 
     Window {
         id: detachedWindow
-        transientParent: null
+        transientParent: root.modalHostWindow
         visible: root.detached
         width: root.lastWidth
         height: root.lastHeight
         color: Style.colors.primaryBackground
-        title: root.title
+        title: root.detachedTitle
         flags: Qt.Window | Qt.FramelessWindowHint
 
         onClosing: function(close) {
@@ -423,13 +441,13 @@ Item {
 
         onWidthChanged: {
             if (root.detached && width > 0) {
-                root.lastWidth = width
+                root.detachedWidth = width
             }
         }
 
         onHeightChanged: {
             if (root.detached && height > 0) {
-                root.lastHeight = height
+                root.detachedHeight = height
             }
         }
 
@@ -456,7 +474,7 @@ Item {
 
                     Label {
                         Layout.alignment: Qt.AlignLeft
-                        text: root.title  + ` [${root.currentRepositoryName}]`
+                        text: root.detachedTitle
                         color: Style.colors.foreground
                         font.family: Style.fontTypes.inter
                         font.weight: 500
@@ -569,6 +587,15 @@ Item {
             anchors.fill: parent
             z: 100
             guideController: localGuideCtrl
+        }
+    }
+
+    Connections {
+        target: root.hostWindow
+
+        function onVisibleChanged() {
+            if (!root.hostWindow.visible && root.detached)
+                root.detached = false
         }
     }
 

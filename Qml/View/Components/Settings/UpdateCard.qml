@@ -138,7 +138,8 @@ Rectangle {
         contentItem: RowLayout {
             spacing: 6
 
-            BusyIndicator {
+            BusyWaiter {
+                compact: true
                 visible: cardButton.loading
                 running: cardButton.loading
                 implicitWidth: 16
